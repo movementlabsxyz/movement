@@ -1,4 +1,7 @@
 use crate::{da_db::DaDB, tasks};
+use anyhow::Context;
+use hyper_util::client::legacy::connect::HttpConnector;
+use hyper_util::rt::TokioExecutor;
 use m1_da_light_node_client::LightNodeServiceClient;
 use maptos_dof_execution::MakeOptFinServices;
 use maptos_dof_execution::{v1::Executor, DynOptFinExecutor};
@@ -7,15 +10,18 @@ use mcr_settlement_manager::CommitmentEventStream;
 use mcr_settlement_manager::McrSettlementManager;
 use movement_rest::MovementRest;
 use suzuka_config::Config;
-
-use anyhow::Context;
 use tokio::sync::mpsc;
 use tokio::try_join;
+use tonic_web::{GrpcWebCall, GrpcWebClientLayer, GrpcWebClientService};
 use tracing::debug;
 
+// pub type LightNodeClient = LightNodeServiceClient<tonic::transport::Channel>;
+pub type LightNodeClient = LightNodeServiceClient<
+	GrpcWebClientService<hyper_util::client::legacy::Client<HttpConnector, GrpcWebCall<_>>>,
+>;
 pub struct SuzukaPartialNode<T> {
 	executor: T,
-	light_node_client: LightNodeServiceClient<tonic::transport::Channel>,
+	light_node_client: LightNodeClient,
 	settlement_manager: McrSettlementManager,
 	commitment_events: Option<CommitmentEventStream>,
 	movement_rest: MovementRest,
@@ -89,12 +95,22 @@ impl SuzukaPartialNode<Executor> {
 			"Connecting to light node at {}:{}",
 			light_node_connection_hostname, light_node_connection_port
 		);
-		let light_node_client = LightNodeServiceClient::connect(format!(
-			"http://{}:{}",
-			light_node_connection_hostname, light_node_connection_port
-		))
-		.await
-		.context("Failed to connect to light node")?;
+
+		let client = hyper_util::client::legacy::Client::builder(TokioExecutor::new()).build_http();
+
+		let svc = tower::ServiceBuilder::new().layer(GrpcWebClientLayer::new()).service(client);
+
+		let other_client = LightNodeServiceClient::with_origin(
+			svc,
+			format!("http://{}:{}", light_node_connection_hostname, light_node_connection_port)
+				.try_into()?,
+		);
+
+		let light_node_client = LightNodeServiceClient::with_origin(
+			svc,
+			format!("http://{}:{}", light_node_connection_hostname, light_node_connection_port)
+				.try_into()?,
+		);
 
 		debug!("Creating the executor");
 		let executor = Executor::try_from_config(&config.execution_config.maptos_config)

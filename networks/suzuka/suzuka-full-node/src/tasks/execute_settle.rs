@@ -3,8 +3,7 @@
 use crate::da_db::DaDB;
 
 use m1_da_light_node_client::{
-	blob_response, LightNodeServiceClient, StreamReadFromHeightRequest,
-	StreamReadFromHeightResponse,
+	blob_response, StreamReadFromHeightRequest, StreamReadFromHeightResponse,
 };
 use maptos_dof_execution::{
 	DynOptFinExecutor, ExecutableBlock, ExecutableTransactions, HashValue,
@@ -13,6 +12,7 @@ use maptos_dof_execution::{
 use mcr_settlement_manager::{CommitmentEventStream, McrSettlementManagerOperations};
 use movement_types::block::{Block, BlockCommitment, BlockCommitmentEvent};
 
+use crate::partial::LightNodeClient;
 use anyhow::Context;
 use futures::{future::Either, stream};
 use suzuka_config::execution_extension;
@@ -24,7 +24,7 @@ pub struct Task<E, S> {
 	executor: E,
 	settlement_manager: S,
 	da_db: DaDB,
-	da_light_node_client: LightNodeServiceClient<tonic::transport::Channel>,
+	da_light_node_client: LightNodeClient,
 	// Stream receiving commitment events, conditionally enabled
 	commitment_events:
 		Either<CommitmentEventStream, stream::Pending<<CommitmentEventStream as Stream>::Item>>,
@@ -36,7 +36,7 @@ impl<E, S> Task<E, S> {
 		executor: E,
 		settlement_manager: S,
 		da_db: DaDB,
-		da_light_node_client: LightNodeServiceClient<tonic::transport::Channel>,
+		da_light_node_client: LightNodeClient,
 		commitment_events: Option<CommitmentEventStream>,
 		execution_extension: execution_extension::Config,
 	) -> Self {
