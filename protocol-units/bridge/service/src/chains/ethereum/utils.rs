@@ -91,6 +91,7 @@ pub async fn send_transaction<
 	// I define a first one but other should be added depending on the test with mainnet.
 	for _ in 0..number_retry {
 		let call_builder = base_call_builder.clone().gas(estimate_gas);
+		tracing::info!("Call: {:?}", call_builder);
 
 		//detect if the gas price doesn't execeed the limit.
 		let gas_price = call_builder.provider.get_gas_price().await?;
