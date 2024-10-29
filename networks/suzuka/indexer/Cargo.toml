@@ -28,5 +28,7 @@ reqwest = { workspace = true, features = ["json"] }
 serde_json = { workspace = true }
 tempfile = { workspace = true }
 
+serde_yaml = "0.9.34"
+
 [lints]
 workspace = true
