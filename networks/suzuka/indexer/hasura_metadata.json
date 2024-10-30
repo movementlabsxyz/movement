@@ -137,7 +137,7 @@
               {
                 "role": "readonly",
                 "permission": {
-                  "columns": ["account_address", "transaction_version"],
+                  "columns": ["account_address", "inserted_at", "transaction_version"],
                   "filter": {},
                   "limit": 100,
                   "allow_aggregations": true
@@ -447,6 +447,7 @@
                   "columns": [
                     "amount",
                     "coin_type",
+                    "inserted_at",
                     "coin_type_hash",
                     "owner_address",
                     "transaction_timestamp",
@@ -1553,6 +1554,7 @@
                 "permission": {
                   "columns": [
                     "first_transaction_version",
+                    "inserted_at",
                     "staking_pool_address"
                   ],
                   "filter": {},
@@ -1777,7 +1779,7 @@
               {
                 "role": "readonly",
                 "permission": {
-                  "columns": ["address", "transaction_version"],
+                  "columns": ["address", "inserted_at", "transaction_version"],
                   "filter": {},
                   "limit": 100,
                   "allow_aggregations": true
@@ -1911,7 +1913,7 @@
               {
                 "role": "readonly",
                 "permission": {
-                  "columns": ["handle", "key_type", "value_type"],
+                  "columns": ["handle", "inserted_at", "key_type", "value_type"],
                   "filter": {},
                   "limit": 100
                 }

@@ -13432,6 +13432,7 @@ dependencies = [
  "processor",
  "reqwest 0.12.8",
  "serde_json",
+ "serde_yaml 0.9.34+deprecated",
  "server-framework",
  "tempfile",
  "tokio",
