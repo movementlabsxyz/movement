@@ -85,11 +85,6 @@ struct EthBridgeTransferDetailsCounterparty {
 	pub state: u8,
 }
 
-// We need to be able to build the client and deploy the contracts
-//  therfore the `initiator_contract` and `counterparty_contract`
-// should be optional, as their values will be unknown at the time of building the client.
-// This is true for the integration tests.
-#[allow(dead_code)]
 #[derive(Clone)]
 pub struct EthClient {
 	rpc_provider: AlloyProvider,
@@ -240,10 +235,6 @@ impl EthClient {
 			.map_err(|e| anyhow::anyhow!("Failed to get block number: {}", e))
 	}
 
-	// pub fn set_signer_address(&mut self, key: SecretKey<Secp256k1>) {
-	// 	self.config.signer_private_key = LocalSigner::from(key);
-	// }
-
 	pub fn get_signer_address(&self) -> Address {
 		self.config.signer_private_key.address()
 	}
@@ -255,10 +246,6 @@ impl EthClient {
 	pub fn initiator_contract_address(&self) -> Address {
 		self.config.initiator_contract
 	}
-
-	// pub fn set_weth_contract(&mut self, contract: WETH9Contract) {
-	// 	self.weth_contract = contract;
-	// }
 
 	pub fn weth_contract_address(&self) -> Address {
 		self.config.weth_contract
