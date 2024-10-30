@@ -2,10 +2,8 @@ use super::client::MovementClient;
 use crate::chains::bridge_contracts::BridgeContractError;
 use crate::types::{BridgeAddress, HashLockPreImage};
 use anyhow::{Context, Result};
-use aptos_sdk::crypto::ed25519::Ed25519PrivateKey;
-use aptos_sdk::types::AccountKey;
 use aptos_sdk::{
-	crypto::ed25519::Ed25519Signature,
+	crypto::ed25519::{Ed25519PrivateKey, Ed25519Signature},
 	move_types::{
 		account_address::AccountAddressParseError,
 		ident_str,
@@ -16,10 +14,11 @@ use aptos_sdk::{
 			EntryFunctionId, MoveType, Transaction as AptosTransaction, TransactionInfo,
 			ViewRequest,
 		},
-		Client as RestClient, Transaction,
+		Client as RestClient, FaucetClient, Transaction,
 	},
 	transaction_builder::TransactionFactory,
 	types::{
+		AccountKey,
 		account_address::AccountAddress,
 		chain_id::ChainId,
 		transaction::{EntryFunction, SignedTransaction, TransactionPayload},
@@ -35,7 +34,12 @@ use std::str::FromStr;
 use thiserror::Error;
 use tiny_keccak::{Hasher, Keccak};
 use tracing::log::{error, info};
+use url::Url;
+
 pub type TestRng = StdRng;
+
+const MOVEMENT_RPC_URL: &str = "https://testnet.bardock.movementnetwork.xyz";
+const MOVEMENT_FAUCET_URL: &str = "https://faucet.testnet.bardock.movementnetwork.xyz";
 
 pub trait RngSeededClone: Rng + SeedableRng {
 	fn seeded_clone(&mut self) -> Self;
@@ -415,4 +419,48 @@ pub fn to_eip55(address: &str) -> String {
 			}
 		})
 		.collect()
+}
+
+
+pub async fn fund_recipient(recipient: &BridgeAddress<Vec<u8>>) -> Result<(), BridgeContractError> {
+        info!("Recipient is a Movement address. Creating faucet client...");
+
+        let faucet_url = Url::parse(MOVEMENT_FAUCET_URL)
+                .map_err(|_| BridgeContractError::InvalidUrl)?;
+        let rest_url = Url::parse(MOVEMENT_RPC_URL)
+                .map_err(|_| BridgeContractError::InvalidUrl)?;
+
+        // Create FaucetClient and RestClient
+        let rest_client = RestClient::new(rest_url.clone());
+        let faucet_client = FaucetClient::new(faucet_url, rest_url);
+
+        // Convert recipient to an AccountAddress
+        let recipient_address: [u8; 32] = recipient.0.clone().try_into()
+                .map_err(|_| BridgeContractError::SerializationError)?;
+        let account_address = AccountAddress::new(recipient_address);
+
+        // Fetch and log balance before funding
+        match rest_client.get_account_balance(account_address).await {
+                Ok(balance) => info!("Balance before funding: {:?}", balance),
+                Err(e) => info!("Failed to retrieve balance before funding, likely a new account: {:?}", e),
+        }
+
+        // Execute the funding transaction
+        match faucet_client.fund(account_address, 100_000_000).await {
+                Ok(_) => {
+                        info!("Successfully funded Movement address: {:?}", account_address);
+                }
+                Err(e) => {
+                        tracing::error!("Failed to fund Movement address: {:?}", e);
+                        return Err(BridgeContractError::SerializationError);
+                }
+        };
+
+        // Fetch and log balance after funding
+        match rest_client.get_account_balance(account_address).await {
+                Ok(balance) => info!("Balance after funding: {:?}", balance),
+                Err(e) => tracing::error!("Failed to retrieve balance after funding: {:?}", e),
+        }
+
+        Ok(())
 }
