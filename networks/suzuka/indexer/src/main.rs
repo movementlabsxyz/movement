@@ -30,18 +30,25 @@ fn main() -> Result<(), anyhow::Error> {
 		build_processor_conf("transaction_metadata_processor", &maptos_config)?;
 
 	// Token processor
-
-	let token_indexer_config = build_processor_conf(
-		"token_processor
+	let activate_tokes: bool = std::env::var("ACTIVATE_TOKEN_INDEXING")
+		.map(|t| t.parse().unwrap_or(true))
+		.unwrap_or(true);
+	let token_configs = if activate_tokes {
+		let token_indexer_config = build_processor_conf(
+			"token_processor
   nft_points_contract: null",
-		&maptos_config,
-	)?;
+			&maptos_config,
+		)?;
 
-	let tokenv2_indexer_config = build_processor_conf(
-		"token_v2_processor
+		let tokenv2_indexer_config = build_processor_conf(
+			"token_v2_processor
   query_retries: 5",
-		&maptos_config,
-	)?;
+			&maptos_config,
+		)?;
+		Some((token_indexer_config, tokenv2_indexer_config))
+	} else {
+		None
+	};
 
 	let num_cpus = num_cpus::get();
 	let worker_threads = (num_cpus * RUNTIME_WORKER_MULTIPLIER).max(16);
@@ -74,8 +81,10 @@ fn main() -> Result<(), anyhow::Error> {
 				set.spawn(async move { event_indexer_config.run().await });
 				set.spawn(async move { fungible_indexer_config.run().await });
 				set.spawn(async move { txmeta_indexer_config.run().await });
-				set.spawn(async move { token_indexer_config.run().await });
-				set.spawn(async move { tokenv2_indexer_config.run().await });
+				if let Some((token_indexer_config, tokenv2_indexer_config)) = token_configs {
+					set.spawn(async move { token_indexer_config.run().await });
+					set.spawn(async move { tokenv2_indexer_config.run().await });
+				}
 
 				while let Some(res) = set.join_next().await {
 					if let Err(err) = res {
