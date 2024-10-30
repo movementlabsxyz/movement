@@ -117,6 +117,7 @@ async fn initialize_initiator_contract(
 	transaction_send_retries: u32,
 ) -> Result<(), anyhow::Error> {
 	tracing::info!("Setup Eth initialize_initiator_contract with timelock:{timelock});");
+	let signer_address = signer_private_key.address();
 
 	let rpc_provider = ProviderBuilder::new()
 		.with_recommended_fillers()
@@ -129,9 +130,15 @@ async fn initialize_initiator_contract(
 
 	let call =
 		initiator_contract.initialize(weth.0, owner.0, U256::from(timelock), U256::from(100));
-	send_transaction(call, &send_transaction_rules(), transaction_send_retries, gas_limit.into())
-		.await
-		.expect("Failed to send transaction");
+	send_transaction(
+		call,
+		signer_address,
+		&send_transaction_rules(),
+		transaction_send_retries,
+		gas_limit.into(),
+	)
+	.await
+	.expect("Failed to send transaction");
 	Ok(())
 }
 
