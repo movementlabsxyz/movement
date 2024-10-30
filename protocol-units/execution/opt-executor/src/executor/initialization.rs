@@ -1,5 +1,6 @@
 use super::Executor;
-use crate::{bootstrap, Context, TransactionPipe};
+use crate::background::BackgroundTask;
+use crate::{bootstrap, Context};
 
 use aptos_config::config::NodeConfig;
 #[cfg(test)]
@@ -127,7 +128,7 @@ impl Executor {
 	pub fn background(
 		&self,
 		transaction_sender: mpsc::Sender<SignedTransaction>,
-	) -> anyhow::Result<(Context, Option<TransactionPipe>)> {
+	) -> anyhow::Result<(Context, BackgroundTask)> {
 		let node_config = self.node_config.clone();
 		let maptos_config = self.config.clone();
 
@@ -135,23 +136,22 @@ impl Executor {
 		let (mempool_client_sender, mempool_client_receiver) =
 			futures_mpsc::channel::<MempoolClientRequest>(EXECUTOR_CHANNEL_SIZE);
 
-		let transaction_pipe = if maptos_config.chain.read_only {
-			None
+		let background_task = if maptos_config.chain.read_only {
+			BackgroundTask::read_only(mempool_client_receiver)
 		} else {
-			Some(TransactionPipe::new(
+			BackgroundTask::transaction_pipe(
 				mempool_client_receiver,
 				transaction_sender,
 				self.db().reader.clone(),
 				&node_config,
+				&self.config.mempool,
 				Arc::clone(&self.transactions_in_flight),
 				maptos_config.load_shedding.max_transactions_in_flight,
-				self.config.mempool.sequence_number_ttl_ms,
-				self.config.mempool.gc_slot_duration_ms,
-			))
+			)
 		};
 
 		let cx = Context::new(self.db().clone(), mempool_client_sender, maptos_config, node_config);
 
-		Ok((cx, transaction_pipe))
+		Ok((cx, background_task))
 	}
 }
