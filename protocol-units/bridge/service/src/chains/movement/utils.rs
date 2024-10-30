@@ -101,7 +101,7 @@ impl FromStr for MovementAddress {
 impl std::fmt::Display for MovementAddress {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		write!(f, "{}", self.0.to_standard_string())
-	}
+	} 
 }
 
 impl From<Vec<u8>> for MovementAddress {
@@ -423,44 +423,24 @@ pub fn to_eip55(address: &str) -> String {
 
 
 pub async fn fund_recipient(recipient: &BridgeAddress<Vec<u8>>) -> Result<(), BridgeContractError> {
-        info!("Recipient is a Movement address. Creating faucet client...");
+	// Parse URLs
+	let faucet_url = Url::parse(MOVEMENT_FAUCET_URL)
+	.map_err(|_| BridgeContractError::InvalidUrl)?;
+	let rest_url = Url::parse(MOVEMENT_RPC_URL)
+	.map_err(|_| BridgeContractError::InvalidUrl)?;
+	
+	// Create clients
+	let faucet_client = FaucetClient::new(faucet_url, rest_url);
 
-        let faucet_url = Url::parse(MOVEMENT_FAUCET_URL)
-                .map_err(|_| BridgeContractError::InvalidUrl)?;
-        let rest_url = Url::parse(MOVEMENT_RPC_URL)
-                .map_err(|_| BridgeContractError::InvalidUrl)?;
+	// Convert recipient to AccountAddress
+	let recipient_address: [u8; 32] = recipient.0.clone().try_into()
+	.map_err(|_| BridgeContractError::SerializationError)?;
+	let account_address = AccountAddress::new(recipient_address);
 
-        // Create FaucetClient and RestClient
-        let rest_client = RestClient::new(rest_url.clone());
-        let faucet_client = FaucetClient::new(faucet_url, rest_url);
+	// Execute the funding transaction
+	faucet_client.fund(account_address, 100_000_000)
+	.await
+	.map_err(|_| BridgeContractError::FundingError)?;
 
-        // Convert recipient to an AccountAddress
-        let recipient_address: [u8; 32] = recipient.0.clone().try_into()
-                .map_err(|_| BridgeContractError::SerializationError)?;
-        let account_address = AccountAddress::new(recipient_address);
-
-        // Fetch and log balance before funding
-        match rest_client.get_account_balance(account_address).await {
-                Ok(balance) => info!("Balance before funding: {:?}", balance),
-                Err(e) => info!("Failed to retrieve balance before funding, likely a new account: {:?}", e),
-        }
-
-        // Execute the funding transaction
-        match faucet_client.fund(account_address, 100_000_000).await {
-                Ok(_) => {
-                        info!("Successfully funded Movement address: {:?}", account_address);
-                }
-                Err(e) => {
-                        tracing::error!("Failed to fund Movement address: {:?}", e);
-                        return Err(BridgeContractError::SerializationError);
-                }
-        };
-
-        // Fetch and log balance after funding
-        match rest_client.get_account_balance(account_address).await {
-                Ok(balance) => info!("Balance after funding: {:?}", balance),
-                Err(e) => tracing::error!("Failed to retrieve balance after funding: {:?}", e),
-        }
-
-        Ok(())
+	Ok(())
 }
