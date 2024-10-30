@@ -842,7 +842,8 @@ jobs:
           ./scripts/movement/manifest bridge-setup
 
   helios-build:
-    if: github.event.label.name == 'cicd:suzuka-containers' ||  github.ref == 'refs/heads/main'
+    if: false
+    # if: github.event.label.name == 'cicd:bridge-containers' ||  github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write

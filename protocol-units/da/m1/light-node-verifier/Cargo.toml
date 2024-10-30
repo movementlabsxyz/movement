@@ -16,8 +16,6 @@ integration-tests = []
 tokio = { workspace = true }
 tokio-stream = { workspace = true }
 tonic = { workspace = true }
-tonic-reflection = { workspace = true }
-tonic-web = { workspace = true }
 prost = { workspace = true }
 m1-da-light-node-grpc = { workspace = true, features = [] }
 m1-da-light-node-util = { workspace = true }
@@ -26,11 +24,16 @@ celestia-types = { workspace = true }
 anyhow = { workspace = true }
 hex = { workspace = true }
 async-stream = { workspace = true }
+thiserror = { workspace = true }
 serde_json = { workspace = true }
+ecdsa = { workspace = true, features = [ "signing", "verifying", "der"] }
+tracing = { workspace = true }
 
 [dev-dependencies]
 m1-da-light-node-setup = { workspace = true }
 dot-movement = { workspace = true }
+k256 = { workspace = true }
+rand = { workspace = true }
 
 [lints]
 workspace = true

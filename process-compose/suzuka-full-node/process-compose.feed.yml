@@ -1,0 +1,17 @@
+version: "3"
+
+environment:
+
+processes:
+
+  client-test-feed:
+    command: |
+      # loop the test examples 
+      while true; do
+        cargo test -p suzuka-client test_example_ || break
+      done
+    depends_on:
+      suzuka-full-node:
+        condition: process_healthy
+      suzuka-faucet:
+        condition: process_healthy

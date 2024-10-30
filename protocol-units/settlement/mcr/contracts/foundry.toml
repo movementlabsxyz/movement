@@ -10,5 +10,8 @@ extra_output = ["storageLayout"]
 solc = "0.8.26"
 evm_version = "cancun"
 
+fs_permissions = [{ access = "read-write", path = "./script/"}]
+
 [profile.dependencies]
 openzeppelin = { git = "https://github.com/OpenZeppelin/openzeppelin-contracts", tag = "v4.7.0" }
+

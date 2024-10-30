@@ -142,3 +142,11 @@ To provide users access to graphql explorer we will use  cloud.hasura.io and
 add our graphql endpoint: https://cloud.hasura.io/public/graphiql?endpoint=https%3A%2F%2Findexer.testnet.suzuka.movementnetwork.xyz%2Fv1%2Fgraphql
 A manual second step is needed to add a header `Authorization Bearer tokenValue`
 (stored in 1password)
+
+#### Update hasura metadata
+To update the Hasura metadata use this command in the movement root folder:
+
+
+```bash
+INDEXER_API_URL=https://indexer.testnet.porto.movementnetwork.xyz HASURA_ADMIN_AUTH_KEY=<auth key> POSTGRES_DB_URL=postgres://<login>:<password>@<host>:5432/postgres cargo run -p suzuka-indexer-service --bin load_metadata
+```

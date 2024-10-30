@@ -4,21 +4,28 @@ use alloy::{
 };
 use anyhow::Result;
 use aptos_sdk::coin_client::CoinClient;
+use aptos_sdk::types::LocalAccount;
 use bridge_config::Config;
 use bridge_integration_tests::utils as test_utils;
 use bridge_integration_tests::EthToMovementCallArgs;
 use bridge_integration_tests::HarnessMvtClient;
 use bridge_integration_tests::TestHarness;
+use bridge_service::chains::bridge_contracts::BridgeContractEvent;
+use bridge_service::chains::ethereum::event_monitoring::EthMonitoring;
 use bridge_service::chains::ethereum::types::EthAddress;
+use bridge_service::chains::movement::utils::MovementAddress;
 use bridge_service::chains::{
 	bridge_contracts::BridgeContract, ethereum::types::EthHash, movement::utils::MovementHash,
 };
 use bridge_service::types::{
 	Amount, AssetType, BridgeAddress, BridgeTransferId, HashLock, HashLockPreImage,
 };
+use futures::StreamExt;
+use std::io::BufRead;
 use tokio::time::{sleep, Duration};
 use tokio::{self};
 use tracing::info;
+use tracing_subscriber::EnvFilter;
 
 #[tokio::test]
 async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Error> {
@@ -114,11 +121,10 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 		assert_eq!(details.bridge_transfer_id.0, args.bridge_transfer_id.0);
 		assert_eq!(details.hash_lock.0, args.hash_lock.0);
 		assert_eq!(
-			&details.initiator_address.0 .0[32 - args.initiator.len()..],
-			&args.initiator,
+			&details.initiator_address.0, &args.initiator,
 			"Initiator address does not match"
 		);
-		assert_eq!(details.recipient_address.0, args.recipient.0.to_vec());
+		assert_eq!(details.recipient_address.0, args.recipient);
 		assert_eq!(details.amount.0, AssetType::Moveth(args.amount));
 		assert_eq!(details.state, 1, "Bridge transfer is supposed to be locked but it's not.");
 
@@ -145,11 +151,10 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 		assert_eq!(details.bridge_transfer_id.0, args.bridge_transfer_id.0);
 		assert_eq!(details.hash_lock.0, args.hash_lock.0);
 		assert_eq!(
-			&details.initiator_address.0 .0[32 - args.initiator.len()..],
-			&args.initiator,
+			&details.initiator_address.0, &args.initiator,
 			"Initiator address does not match"
 		);
-		assert_eq!(details.recipient_address.0, args.recipient.0.to_vec());
+		assert_eq!(details.recipient_address.0, args.recipient);
 		assert_eq!(details.amount.0, AssetType::Moveth(args.amount));
 		assert_eq!(details.state, 2, "Bridge transfer is supposed to be completed but it's not.");
 
@@ -224,11 +229,10 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 		assert_eq!(details.bridge_transfer_id.0, args.bridge_transfer_id.0);
 		assert_eq!(details.hash_lock.0, args.hash_lock.0);
 		assert_eq!(
-			&details.initiator_address.0 .0[32 - args.initiator.len()..],
-			&args.initiator,
+			&details.initiator_address.0, &args.initiator,
 			"Initiator address does not match"
 		);
-		assert_eq!(details.recipient_address.0, args.recipient.0.to_vec());
+		assert_eq!(details.recipient_address.0, args.recipient);
 		assert_eq!(details.amount.0, AssetType::Moveth(args.amount));
 		assert_eq!(details.state, 1, "Bridge transfer is supposed to be locked but it's not.");
 
@@ -251,11 +255,10 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 		assert_eq!(abort_details.bridge_transfer_id.0, args.bridge_transfer_id.0);
 		assert_eq!(abort_details.hash_lock.0, args.hash_lock.0);
 		assert_eq!(
-			&abort_details.initiator_address.0 .0[32 - args.initiator.len()..],
-			&args.initiator,
+			&abort_details.initiator_address.0, &args.initiator,
 			"Initiator address does not match"
 		);
-		assert_eq!(abort_details.recipient_address.0, args.recipient.0.to_vec());
+		assert_eq!(abort_details.recipient_address.0, args.recipient);
 		assert_eq!(abort_details.amount.0, AssetType::Moveth(args.amount));
 
 		Ok(())
@@ -455,4 +458,75 @@ async fn test_eth_client_should_successfully_complete_transfer() {
 		.expect("Failed to initiate bridge transfer");
 
 	//TODO: Here call complete with the id captured from the event
+}
+
+#[tokio::test]
+async fn test_eth_client_lock_then_complete_transfer() -> Result<(), anyhow::Error> {
+	tracing_subscriber::fmt()
+		.with_env_filter(
+			EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
+		)
+		.init();
+
+	let config = Config::default();
+	let (mut eth_client_harness, config, mut anvil) =
+		TestHarness::new_only_eth(config.clone()).await;
+
+	println!("Config :{config:?}",);
+
+	let mut eth_monitoring = EthMonitoring::build(&config.eth).await.unwrap();
+
+	let signer_address: alloy::primitives::Address = eth_client_harness.signer_address();
+
+	let recipient_privkey = LocalAccount::generate(&mut rand::rngs::OsRng);
+	let recipient_address = MovementAddress(recipient_privkey.address());
+	let recipient_bytes: Vec<u8> = recipient_address.into();
+
+	let secret = "secret".to_string();
+	let hash_lock = keccak256(secret.as_bytes());
+	let hash_lock: [u8; 32] = hash_lock.into();
+
+	println!("Before initiate_bridge_transfer");
+
+	eth_client_harness
+		.eth_client
+		.initiate_bridge_transfer(
+			BridgeAddress(EthAddress(signer_address)),
+			BridgeAddress(recipient_bytes.clone()),
+			HashLock(EthHash(hash_lock).0),
+			Amount(AssetType::EthAndWeth((42, 0))),
+		)
+		.await
+		.expect("Failed to initiate bridge transfer");
+
+	// Wait for InitialtorCompleted event
+	tracing::info!("Wait for Bridge Initiated event.");
+	let bridge_transfer_id;
+	loop {
+		let event =
+			tokio::time::timeout(std::time::Duration::from_secs(30), eth_monitoring.next()).await?;
+		if let Some(Ok(BridgeContractEvent::Initiated(detail))) = event {
+			bridge_transfer_id = detail.bridge_transfer_id;
+			break;
+		} else {
+			println!("wrong event {event:?}",);
+		}
+	}
+	println!("Initialte Event ok. Before lock_bridge_transfer");
+
+	loop {
+		let event =
+			tokio::time::timeout(std::time::Duration::from_secs(30), eth_monitoring.next()).await?;
+		if let Some(Ok(BridgeContractEvent::Locked(detail))) = event {
+			break;
+		}
+	}
+
+	let stdout = anvil.child_mut().stdout.take().unwrap();
+	let mut reader = std::io::BufReader::new(stdout).lines();
+	while let Some(Ok(line)) = reader.next() {
+		println!(">:{:?}", line);
+	}
+
+	Ok(())
 }

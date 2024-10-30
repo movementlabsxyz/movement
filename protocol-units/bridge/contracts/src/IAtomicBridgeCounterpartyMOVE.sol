@@ -20,6 +20,7 @@ interface IAtomicBridgeCounterpartyMOVE {
     error BridgeTransferStateNotInitialized();
     error BridgeTransferStateNotPending();
     error InsufficientMOVEBalance();
+    error TimeLockExpired();
     error TimeLockNotExpired();
     error ZeroAddress();
     error Unauthorized();

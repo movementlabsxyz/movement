@@ -1,3 +1,4 @@
+use k256::Secp256k1;
 use m1_da_light_node::v1::{LightNodeV1, Manager};
 
 use std::env;
@@ -13,7 +14,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
 	let config_path = dot_movement.get_config_json_path();
 	let config_file = tokio::fs::File::open(config_path).await?;
-	let manager = Manager::<LightNodeV1>::new(config_file).await?;
+	// todo: consider whether LightNode implementation should encapsulate signing type
+	let manager = Manager::<LightNodeV1<Secp256k1>>::new(config_file).await?;
 	manager.try_run().await?;
 
 	Ok(())

@@ -3,7 +3,7 @@ pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
 import {MOVEToken} from "../../src/token/MOVEToken.sol";
-import {MOVETokenV2} from "../../src/token/MOVETokenV2.sol";
+import {MOVETokenDev} from "../../src/token/MOVETokenDev.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
@@ -24,14 +24,15 @@ contract MOVETokenTest is Test {
     TransparentUpgradeableProxy public tokenProxy;
     ProxyAdmin public admin;
     MOVEToken public moveTokenImplementation;
-    MOVETokenV2 public moveTokenImplementation2;
+    MOVETokenDev public moveTokenImplementation2;
     TimelockController public timelock;
-    string public moveSignature = "initialize(address)";
+    string public moveSignature = "initialize(address,address)";
     address public multisig = address(0x00db70A9e12537495C359581b7b3Bc3a69379A00);
+    address public anchorage = address(0xabc);
 
     function setUp() public {
         moveTokenImplementation = new MOVEToken();
-        moveTokenImplementation2 = new MOVETokenV2();
+        moveTokenImplementation2 = new MOVETokenDev();
 
         uint256 minDelay = 1 days;
         address[] memory proposers = new address[](5);
@@ -49,11 +50,13 @@ contract MOVETokenTest is Test {
         vm.recordLogs();
         // Deploy proxy
         tokenProxy = new TransparentUpgradeableProxy(
-            address(moveTokenImplementation), address(timelock), abi.encodeWithSignature(moveSignature, multisig)
+            address(moveTokenImplementation),
+            address(timelock),
+            abi.encodeWithSignature(moveSignature, multisig, anchorage)
         );
         Vm.Log[] memory entries = vm.getRecordedLogs();
 
-        admin = ProxyAdmin(entries[entries.length -2].emitter);
+        admin = ProxyAdmin(entries[entries.length - 2].emitter);
 
         token = MOVEToken(address(tokenProxy));
     }
@@ -61,7 +64,7 @@ contract MOVETokenTest is Test {
     function testCannotInitializeTwice() public {
         // Initialize the contract
         vm.expectRevert(0xf92ee8a9);
-        token.initialize(multisig);
+        token.initialize(multisig, anchorage);
     }
 
     function testDecimals() public {
@@ -73,12 +76,18 @@ contract MOVETokenTest is Test {
     }
 
     function testMultisigBalance() public {
-        assertEq(token.balanceOf(multisig), 10000000000 * 10 ** 8);
+        assertEq(token.balanceOf(anchorage), 10000000000 * 10 ** 8);
     }
 
     function testAdminRoleFuzz(address other) public {
-        assert(!token.hasRole(token.DEFAULT_ADMIN_ROLE(), other));
-        assert(token.hasRole(token.DEFAULT_ADMIN_ROLE(), multisig));
+        assertEq(token.hasRole(0x00, other), false);
+        assertEq(token.hasRole(0x00, multisig), true);
+        assertEq(token.hasRole(0x00, anchorage), false);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, address(this), 0x00)
+        );
+        token.grantRole(0x00, other);
     }
 
     function testUpgradeFromTimelock() public {
@@ -92,7 +101,7 @@ contract MOVETokenTest is Test {
                 "upgradeAndCall(address,address,bytes)",
                 address(tokenProxy),
                 address(moveTokenImplementation2),
-                abi.encodeWithSignature("initialize()")
+                ""
             ),
             bytes32(0),
             bytes32(0),
@@ -109,7 +118,7 @@ contract MOVETokenTest is Test {
                 "upgradeAndCall(address,address,bytes)",
                 address(tokenProxy),
                 address(moveTokenImplementation2),
-                abi.encodeWithSignature("initialize()")
+                ""
             ),
             bytes32(0),
             bytes32(0)
@@ -118,7 +127,7 @@ contract MOVETokenTest is Test {
         // Check the token details
         assertEq(token.decimals(), 8);
         assertEq(token.totalSupply(), 10000000000 * 10 ** 8);
-        assertEq(token.balanceOf(multisig), 10000000000 * 10 ** 8);
+        assertEq(token.balanceOf(anchorage), 10000000000 * 10 ** 8);
     }
 
     function testTransferToNewTimelock() public {
@@ -143,10 +152,7 @@ contract MOVETokenTest is Test {
         timelock.schedule(
             address(admin),
             0,
-            abi.encodeWithSignature(
-                "transferOwnership(address)",
-                address(newTimelock)
-            ),
+            abi.encodeWithSignature("transferOwnership(address)", address(newTimelock)),
             bytes32(0),
             bytes32(0),
             block.timestamp + 1 days
@@ -157,130 +163,146 @@ contract MOVETokenTest is Test {
         timelock.execute(
             address(admin),
             0,
-            abi.encodeWithSignature(
-                "transferOwnership(address)",
-                address(newTimelock)
-            ),
+            abi.encodeWithSignature("transferOwnership(address)", address(newTimelock)),
             bytes32(0),
             bytes32(0)
         );
 
         assertEq(admin.owner(), address(newTimelock));
-        
     }
 
     function testGrants() public {
         testUpgradeFromTimelock();
 
+        vm.prank(multisig);
+        MOVETokenDev(address(token)).grantRoles(multisig);
+
         // Check the token details
-        assertEq(MOVETokenV2(address(token)).hasRole(MOVETokenV2(address(token)).MINTER_ROLE(), multisig), true);
+        assertEq(MOVETokenDev(address(token)).hasRole(MOVETokenDev(address(token)).MINTER_ROLE(), multisig), true);
     }
 
     function testMint() public {
         testUpgradeFromTimelock();
-        uint256 intialBalance = MOVETokenV2(address(token)).balanceOf(address(0x1337));
+
+        vm.prank(multisig);
+        MOVETokenDev(address(token)).grantRoles(multisig);
+        uint256 intialBalance = MOVETokenDev(address(token)).balanceOf(address(0x1337));
         // Mint tokens
         vm.prank(multisig);
-        MOVETokenV2(address(token)).mint(address(0x1337), 100);
+        MOVETokenDev(address(token)).mint(address(0x1337), 100);
 
         // Check the token details
-        assertEq(MOVETokenV2(address(token)).balanceOf(address(0x1337)), intialBalance + 100);
+        assertEq(MOVETokenDev(address(token)).balanceOf(address(0x1337)), intialBalance + 100);
     }
 
     function testRevokeMinterRole() public {
         testUpgradeFromTimelock();
-        assertEq(MOVETokenV2(address(token)).hasRole(MOVETokenV2(address(token)).MINTER_ROLE(), multisig), true);
+
+        vm.prank(multisig);
+        MOVETokenDev(address(token)).grantRoles(multisig);
         
+        assertEq(MOVETokenDev(address(token)).hasRole(MOVETokenDev(address(token)).MINTER_ROLE(), multisig), true);
+
         vm.startPrank(multisig);
-        MOVETokenV2(address(token)).mint(address(0x1337), 100);
+        MOVETokenDev(address(token)).mint(address(0x1337), 100);
         // Revoke minter role
-        MOVETokenV2(address(token)).revokeMinterRole(multisig);
+        MOVETokenDev(address(token)).revokeMinterRole(multisig);
 
         // Check the token details
-        assertEq(MOVETokenV2(address(token)).hasRole(MOVETokenV2(address(token)).MINTER_ROLE(), multisig), false);
+        assertEq(MOVETokenDev(address(token)).hasRole(MOVETokenDev(address(token)).MINTER_ROLE(), multisig), false);
 
         vm.expectRevert(
             abi.encodeWithSelector(
                 IAccessControl.AccessControlUnauthorizedAccount.selector,
                 multisig,
-                MOVETokenV2(address(token)).MINTER_ROLE()
+                MOVETokenDev(address(token)).MINTER_ROLE()
             )
         );
-        MOVETokenV2(address(token)).mint(address(0x1337), 100);
+        MOVETokenDev(address(token)).mint(address(0x1337), 100);
         vm.stopPrank();
     }
 
     function testGrantRevokeMinterAdminRole() public {
         testUpgradeFromTimelock();
-        assertEq(MOVETokenV2(address(token)).hasRole(MOVETokenV2(address(token)).MINTER_ROLE(), multisig), true);
+        vm.prank(multisig);
+        MOVETokenDev(address(token)).grantRoles(multisig);
+        assertEq(MOVETokenDev(address(token)).hasRole(MOVETokenDev(address(token)).MINTER_ROLE(), multisig), true);
         vm.startPrank(multisig);
 
-        MOVETokenV2(address(token)).mint(address(0x1337), 100);
+        MOVETokenDev(address(token)).mint(address(0x1337), 100);
         // Revoke minter role
-        MOVETokenV2(address(token)).revokeMinterRole(multisig);
+        MOVETokenDev(address(token)).revokeMinterRole(multisig);
 
         // Check the token details
-        assertEq(MOVETokenV2(address(token)).hasRole(MOVETokenV2(address(token)).MINTER_ROLE(), multisig), false);
+        assertEq(MOVETokenDev(address(token)).hasRole(MOVETokenDev(address(token)).MINTER_ROLE(), multisig), false);
 
         vm.expectRevert(
             abi.encodeWithSelector(
                 IAccessControl.AccessControlUnauthorizedAccount.selector,
                 multisig,
-                MOVETokenV2(address(token)).MINTER_ROLE()
+                MOVETokenDev(address(token)).MINTER_ROLE()
             )
         );
-        MOVETokenV2(address(token)).mint(address(0x1337), 100);
+        MOVETokenDev(address(token)).mint(address(0x1337), 100);
 
-        assertEq(MOVETokenV2(address(token)).hasRole(MOVETokenV2(address(token)).MINTER_ROLE(), address(0x1337)), false);
+        assertEq(
+            MOVETokenDev(address(token)).hasRole(MOVETokenDev(address(token)).MINTER_ROLE(), address(0x1337)), false
+        );
         // Grant minter role
-        MOVETokenV2(address(token)).grantMinterRole(address(0x1337));
+        MOVETokenDev(address(token)).grantMinterRole(address(0x1337));
         vm.stopPrank();
         vm.prank(address(0x1337));
-        MOVETokenV2(address(token)).mint(address(0x1337), 100);
+        MOVETokenDev(address(token)).mint(address(0x1337), 100);
 
         // Check the token details
-        assertEq(MOVETokenV2(address(token)).hasRole(MOVETokenV2(address(token)).MINTER_ROLE(), address(0x1337)), true);
+        assertEq(
+            MOVETokenDev(address(token)).hasRole(MOVETokenDev(address(token)).MINTER_ROLE(), address(0x1337)), true
+        );
 
         // Revoke minter role
         vm.prank(multisig);
-        MOVETokenV2(address(token)).revokeMinterRole(address(0x1337));
+        MOVETokenDev(address(token)).revokeMinterRole(address(0x1337));
 
-        assertEq(MOVETokenV2(address(token)).hasRole(MOVETokenV2(address(token)).MINTER_ROLE(), address(0x1337)), false);
+        assertEq(
+            MOVETokenDev(address(token)).hasRole(MOVETokenDev(address(token)).MINTER_ROLE(), address(0x1337)), false
+        );
 
         vm.expectRevert(
             abi.encodeWithSelector(
                 IAccessControl.AccessControlUnauthorizedAccount.selector,
                 address(0x1337),
-                MOVETokenV2(address(token)).MINTER_ROLE()
+                MOVETokenDev(address(token)).MINTER_ROLE()
             )
         );
         vm.prank(address(0x1337));
-        MOVETokenV2(address(token)).mint(address(0x1337), 100);
+        MOVETokenDev(address(token)).mint(address(0x1337), 100);
 
-        assertEq(MOVETokenV2(address(token)).hasRole(MOVETokenV2(address(token)).MINTER_ADMIN_ROLE(), multisig), true);
+        assertEq(MOVETokenDev(address(token)).hasRole(MOVETokenDev(address(token)).MINTER_ADMIN_ROLE(), multisig), true);
         // Revoke minter admin role
         vm.startPrank(multisig);
-        MOVETokenV2(address(token)).revokeMinterAdminRole(multisig);
+        MOVETokenDev(address(token)).revokeMinterAdminRole(multisig);
 
-        assertEq(MOVETokenV2(address(token)).hasRole(MOVETokenV2(address(token)).MINTER_ADMIN_ROLE(), multisig), false);
+        assertEq(
+            MOVETokenDev(address(token)).hasRole(MOVETokenDev(address(token)).MINTER_ADMIN_ROLE(), multisig), false
+        );
 
         vm.expectRevert(
             abi.encodeWithSelector(
                 IAccessControl.AccessControlUnauthorizedAccount.selector,
                 multisig,
-                MOVETokenV2(address(token)).MINTER_ADMIN_ROLE()
+                MOVETokenDev(address(token)).MINTER_ADMIN_ROLE()
             )
         );
-        MOVETokenV2(address(token)).grantMinterRole(multisig);
+        MOVETokenDev(address(token)).grantMinterRole(multisig);
 
         vm.expectRevert(
             abi.encodeWithSelector(
                 IAccessControl.AccessControlUnauthorizedAccount.selector,
                 multisig,
-                MOVETokenV2(address(token)).MINTER_ROLE()
+                MOVETokenDev(address(token)).MINTER_ROLE()
             )
         );
-        MOVETokenV2(address(token)).mint(address(0x1337), 100);
+        MOVETokenDev(address(token)).mint(address(0x1337), 100);
         vm.stopPrank();
     }
 }

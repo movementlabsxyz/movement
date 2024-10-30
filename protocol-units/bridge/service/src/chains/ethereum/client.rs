@@ -1,13 +1,14 @@
 use super::types::{
-	AlloyProvider, AtomicBridgeCounterparty, AtomicBridgeInitiator, CounterpartyContract,
-	EthAddress, InitiatorContract, WETH9Contract, WETH9,
+	AlloyProvider, AssetKind, AtomicBridgeCounterparty, AtomicBridgeCounterpartyMOVE,
+	AtomicBridgeInitiator, AtomicBridgeInitiatorMOVE, CounterpartyContract, EthAddress,
+	InitiatorContract, WETH9Contract, WETH9,
 };
 use super::utils::{calculate_storage_slot, send_transaction, send_transaction_rules};
 use crate::chains::bridge_contracts::BridgeContractError;
 use crate::chains::bridge_contracts::BridgeContractResult;
 use crate::types::{
-	Amount, AssetType, BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock,
-	HashLockPreImage, TimeLock,
+	Amount, AssetType, BridgeAddress, BridgeTransferDetails, BridgeTransferDetailsCounterparty,
+	BridgeTransferId, HashLock, HashLockPreImage, TimeLock,
 };
 use alloy::primitives::{Address, FixedBytes, U256};
 use alloy::providers::{Provider, ProviderBuilder};
@@ -18,7 +19,14 @@ use alloy::{
 };
 use alloy_rlp::Decodable;
 use bridge_config::common::eth::EthConfig;
+use bridge_grpc::{
+	bridge_server::{Bridge, BridgeServer},
+	BridgeTransferDetailsResponse, GetBridgeTransferDetailsRequest,
+};
 use std::fmt::{self, Debug};
+use std::net::SocketAddr;
+use tonic::transport::Server;
+use tracing::info;
 use url::Url;
 
 impl fmt::Debug for AtomicBridgeInitiator::wethReturn {
@@ -28,7 +36,7 @@ impl fmt::Debug for AtomicBridgeInitiator::wethReturn {
 	}
 }
 
-//Configuration for the Ethereum Bridge Client
+/// Configuration for the Ethereum Bridge Client
 #[derive(Clone, Debug)]
 pub struct Config {
 	pub rpc_url: Url,
@@ -38,6 +46,7 @@ pub struct Config {
 	pub weth_contract: Address,
 	pub gas_limit: u128,
 	pub transaction_send_retries: u32,
+	pub asset: AssetKind,
 }
 impl TryFrom<&EthConfig> for Config {
 	type Error = anyhow::Error;
@@ -54,6 +63,7 @@ impl TryFrom<&EthConfig> for Config {
 			weth_contract: conf.eth_weth_contract.parse()?,
 			gas_limit: conf.gas_limit.into(),
 			transaction_send_retries: conf.transaction_send_retries,
+			asset: conf.asset.clone().into(),
 		})
 	}
 }
@@ -63,6 +73,16 @@ struct EthBridgeTransferDetails {
 	pub amount: U256,
 	pub originator: EthAddress,
 	pub recipient: [u8; 32],
+	pub hash_lock: [u8; 32],
+	pub time_lock: U256,
+	pub state: u8,
+}
+
+#[derive(RlpDecodable, RlpEncodable)]
+struct EthBridgeTransferDetailsCounterparty {
+	pub amount: U256,
+	pub originator: [u8; 32],
+	pub recipient: EthAddress,
 	pub hash_lock: [u8; 32],
 	pub time_lock: U256,
 	pub state: u8,
@@ -91,19 +111,35 @@ impl EthClient {
 			.on_builtin(config.rpc_url.as_str())
 			.await?;
 
-		//load smart contract
-		let initiator_contract =
-			AtomicBridgeInitiator::new(config.initiator_contract, rpc_provider.clone());
-		let counterparty_contract =
-			CounterpartyContract::new(config.counterparty_contract, rpc_provider.clone());
+		//Load the smart contracts based on the asset type
+		let (initiator_contract, counterparty_contract) = match config.asset {
+			AssetKind::Weth => {
+				let initiator_contract =
+					AtomicBridgeInitiator::new(config.initiator_contract, rpc_provider.clone());
+				let counterparty_contract = AtomicBridgeCounterparty::new(
+					config.counterparty_contract,
+					rpc_provider.clone(),
+				);
+				(
+					InitiatorContract::Weth(initiator_contract),
+					CounterpartyContract::Weth(counterparty_contract),
+				)
+			}
+			AssetKind::Move => {
+				let initiator_contract =
+					AtomicBridgeInitiatorMOVE::new(config.initiator_contract, rpc_provider.clone());
+				let counterparty_contract = AtomicBridgeCounterpartyMOVE::new(
+					config.counterparty_contract,
+					rpc_provider.clone(),
+				);
+				(
+					InitiatorContract::Move(initiator_contract),
+					CounterpartyContract::Move(counterparty_contract),
+				)
+			}
+		};
+
 		let weth_contract = WETH9Contract::new(config.weth_contract, rpc_provider.clone());
-
-		//TODO: initialise / monitoring here which should setup the ws connection
-
-		// let ws = WsConnect::new(ws_url);
-		// println!("ws {:?}", ws);
-		// let ws_provider = ProviderBuilder::new().on_ws(ws).await?;
-		// println!("ws_provider {:?}", ws_provider);
 
 		Ok(EthClient {
 			rpc_provider,
@@ -114,25 +150,52 @@ impl EthClient {
 		})
 	}
 
+	/// Start the gRPC server
+	/// internally this passes a cloned self `EthClient` as the service.
+	pub async fn serve_grpc(
+		&self,
+		grpc_addr: SocketAddr,
+	) -> Result<(), Box<dyn std::error::Error>> {
+		tracing::info!("Starting gRPC server at: {:?}", grpc_addr);
+		Server::builder()
+			.add_service(BridgeServer::new(self.clone()))
+			.serve(grpc_addr)
+			.await?;
+
+		Ok(())
+	}
+
 	pub async fn initialize_initiator_contract(
 		&self,
 		weth: EthAddress,
 		owner: EthAddress,
 		timelock: TimeLock,
 	) -> Result<(), anyhow::Error> {
-		let call = self.initiator_contract.initialize(
-			weth.0,
-			owner.0,
-			U256::from(timelock.0),
-			U256::from(100),
-		);
-		send_transaction(
-			call.to_owned(),
-			&send_transaction_rules(),
-			self.config.transaction_send_retries,
-			self.config.gas_limit,
-		)
-		.await?;
+		match &self.initiator_contract {
+			InitiatorContract::Weth(contract) => {
+				let call =
+					contract.initialize(weth.0, owner.0, U256::from(timelock.0), U256::from(100));
+				send_transaction(
+					call.to_owned(),
+					&send_transaction_rules(),
+					self.config.transaction_send_retries,
+					self.config.gas_limit,
+				)
+				.await?;
+			}
+			InitiatorContract::Move(contract) => {
+				let call =
+					contract.initialize(weth.0, owner.0, U256::from(timelock.0), U256::from(100));
+				send_transaction(
+					call.to_owned(),
+					&send_transaction_rules(),
+					self.config.transaction_send_retries,
+					self.config.gas_limit,
+				)
+				.await?;
+			}
+		}
+
 		Ok(())
 	}
 
@@ -214,31 +277,57 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 		hash_lock: HashLock,
 		amount: Amount, // the ETH amount
 	) -> BridgeContractResult<()> {
-		let contract =
-			AtomicBridgeInitiator::new(self.initiator_contract_address(), &self.rpc_provider);
 		let recipient_bytes: [u8; 32] = recipient_address.0.try_into().map_err(|e| {
 			BridgeContractError::ConversionFailed(format!(
 				"Failed to convert in [u8; 32] recipient_address: {e:?}"
 			))
 		})?;
-		let call = contract
-			.initiateBridgeTransfer(
-				U256::from(amount.weth_value()),
-				FixedBytes(recipient_bytes),
-				FixedBytes(hash_lock.0),
-			)
-			.value(U256::from(amount.eth_value()))
-			.from(*initiator_address.0);
-		let _ = send_transaction(
-			call,
-			&send_transaction_rules(),
-			self.config.transaction_send_retries,
-			self.config.gas_limit,
-		)
-		.await
-		.map_err(|e| {
-			BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
-		})?;
+
+		// While these match arms may look the same, the underlying contract type
+		// is different as it's initalized with a different ABI. So therefor we must explicitly
+		// call the correct one
+		match &self.initiator_contract {
+			InitiatorContract::Weth(weth_contract) => {
+				let call = weth_contract
+					.initiateBridgeTransfer(
+						U256::from(amount.weth_value()),
+						FixedBytes(recipient_bytes),
+						FixedBytes(hash_lock.0),
+					)
+					.value(U256::from(amount.eth_value()))
+					.from(*initiator_address.0);
+				let _ = send_transaction(
+					call,
+					&send_transaction_rules(),
+					self.config.transaction_send_retries,
+					self.config.gas_limit,
+				)
+				.await
+				.map_err(|e| {
+					BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
+				})?;
+			}
+			InitiatorContract::Move(move_contract) => {
+				let call = move_contract
+					.initiateBridgeTransfer(
+						U256::from(amount.weth_value()),
+						FixedBytes(recipient_bytes),
+						FixedBytes(hash_lock.0),
+					)
+					.value(U256::from(amount.eth_value()))
+					.from(*initiator_address.0);
+				let _ = send_transaction(
+					call,
+					&send_transaction_rules(),
+					self.config.transaction_send_retries,
+					self.config.gas_limit,
+				)
+				.await
+				.map_err(|e| {
+					BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
+				})?;
+			}
+		}
 		Ok(())
 	}
 
@@ -256,21 +345,42 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 			.ok_or(generic_error("Could not get required slice from pre-image"))?
 			.try_into()
 			.map_err(|_| generic_error("Could not convert pre-image to [u8; 32]"))?;
+		info! {"Pre-image: {:?}", pre_image};
+		match &self.initiator_contract {
+			InitiatorContract::Weth(weth_contract) => {
+				let call = weth_contract.completeBridgeTransfer(
+					FixedBytes(bridge_transfer_id.0),
+					FixedBytes(pre_image),
+				);
+				send_transaction(
+					call,
+					&send_transaction_rules(),
+					self.config.transaction_send_retries,
+					self.config.gas_limit,
+				)
+				.await
+				.map_err(|e| {
+					BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
+				})?;
+			}
+			InitiatorContract::Move(move_contract) => {
+				let call = move_contract.completeBridgeTransfer(
+					FixedBytes(bridge_transfer_id.0),
+					FixedBytes(pre_image),
+				);
+				send_transaction(
+					call,
+					&send_transaction_rules(),
+					self.config.transaction_send_retries,
+					self.config.gas_limit,
+				)
+				.await
+				.map_err(|e| {
+					BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
+				})?;
+			}
+		}
 
-		let contract =
-			AtomicBridgeInitiator::new(self.initiator_contract_address(), &self.rpc_provider);
-		let call = contract
-			.completeBridgeTransfer(FixedBytes(bridge_transfer_id.0), FixedBytes(pre_image));
-		send_transaction(
-			call,
-			&send_transaction_rules(),
-			self.config.transaction_send_retries,
-			self.config.gas_limit,
-		)
-		.await
-		.map_err(|e| {
-			BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
-		})?;
 		Ok(())
 	}
 
@@ -289,20 +399,41 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 			.try_into()
 			.map_err(|_| generic_error("Could not convert pre-image to [u8; 32]"))?;
 
-		let contract =
-			AtomicBridgeCounterparty::new(self.counterparty_contract_address(), &self.rpc_provider);
-		let call = contract
-			.completeBridgeTransfer(FixedBytes(bridge_transfer_id.0), FixedBytes(pre_image));
-		send_transaction(
-			call,
-			&send_transaction_rules(),
-			self.config.transaction_send_retries,
-			self.config.gas_limit,
-		)
-		.await
-		.map_err(|e| {
-			BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
-		})?;
+		match &self.counterparty_contract {
+			CounterpartyContract::Weth(weth_contract) => {
+				let call = weth_contract.completeBridgeTransfer(
+					FixedBytes(bridge_transfer_id.0),
+					FixedBytes(pre_image),
+				);
+				send_transaction(
+					call,
+					&send_transaction_rules(),
+					self.config.transaction_send_retries,
+					self.config.gas_limit,
+				)
+				.await
+				.map_err(|e| {
+					BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
+				})?;
+			}
+			CounterpartyContract::Move(move_contract) => {
+				let call = move_contract.completeBridgeTransfer(
+					FixedBytes(bridge_transfer_id.0),
+					FixedBytes(pre_image),
+				);
+				send_transaction(
+					call,
+					&send_transaction_rules(),
+					self.config.transaction_send_retries,
+					self.config.gas_limit,
+				)
+				.await
+				.map_err(|e| {
+					BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
+				})?;
+			}
+		}
+
 		Ok(())
 	}
 
@@ -310,19 +441,35 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
 	) -> BridgeContractResult<()> {
-		let contract =
-			AtomicBridgeInitiator::new(self.initiator_contract_address(), &self.rpc_provider);
-		let call = contract.refundBridgeTransfer(FixedBytes(bridge_transfer_id.0));
-		send_transaction(
-			call,
-			&send_transaction_rules(),
-			self.config.transaction_send_retries,
-			self.config.gas_limit,
-		)
-		.await
-		.map_err(|e| {
-			BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
-		})?;
+		match &self.initiator_contract {
+			InitiatorContract::Weth(weth_contract) => {
+				let call = weth_contract.refundBridgeTransfer(FixedBytes(bridge_transfer_id.0));
+				send_transaction(
+					call,
+					&send_transaction_rules(),
+					self.config.transaction_send_retries,
+					self.config.gas_limit,
+				)
+				.await
+				.map_err(|e| {
+					BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
+				})?;
+			}
+			InitiatorContract::Move(move_contract) => {
+				let call = move_contract.refundBridgeTransfer(FixedBytes(bridge_transfer_id.0));
+				send_transaction(
+					call,
+					&send_transaction_rules(),
+					self.config.transaction_send_retries,
+					self.config.gas_limit,
+				)
+				.await
+				.map_err(|e| {
+					BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
+				})?;
+			}
+		}
+
 		Ok(())
 	}
 
@@ -334,27 +481,50 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 		recipient: BridgeAddress<EthAddress>,
 		amount: Amount,
 	) -> BridgeContractResult<()> {
-		let contract =
-			AtomicBridgeCounterparty::new(self.counterparty_contract_address(), &self.rpc_provider);
 		let initiator: [u8; 32] = initiator.0.try_into().unwrap();
-		let call = contract.lockBridgeTransfer(
-			FixedBytes(initiator),
-			FixedBytes(bridge_transfer_id.0),
-			FixedBytes(hash_lock.0),
-			*recipient.0,
-			U256::try_from(amount.0)
-				.map_err(|_| BridgeContractError::ConversionFailed("U256".to_string()))?,
-		);
-		send_transaction(
-			call,
-			&send_transaction_rules(),
-			self.config.transaction_send_retries,
-			self.config.gas_limit,
-		)
-		.await
-		.map_err(|e| {
-			BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
-		})?;
+		match &self.counterparty_contract {
+			CounterpartyContract::Weth(weth_contract) => {
+				let call = weth_contract.lockBridgeTransfer(
+					FixedBytes(initiator),
+					FixedBytes(bridge_transfer_id.0),
+					FixedBytes(hash_lock.0),
+					*recipient.0,
+					U256::try_from(amount.0)
+						.map_err(|_| BridgeContractError::ConversionFailed("U256".to_string()))?,
+				);
+				send_transaction(
+					call,
+					&send_transaction_rules(),
+					self.config.transaction_send_retries,
+					self.config.gas_limit,
+				)
+				.await
+				.map_err(|e| {
+					BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
+				})?;
+			}
+			CounterpartyContract::Move(move_contract) => {
+				let call = move_contract.lockBridgeTransfer(
+					FixedBytes(initiator),
+					FixedBytes(bridge_transfer_id.0),
+					FixedBytes(hash_lock.0),
+					*recipient.0,
+					U256::try_from(amount.0)
+						.map_err(|_| BridgeContractError::ConversionFailed("U256".to_string()))?,
+				);
+				send_transaction(
+					call,
+					&send_transaction_rules(),
+					self.config.transaction_send_retries,
+					self.config.gas_limit,
+				)
+				.await
+				.map_err(|e| {
+					BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
+				})?;
+			}
+		}
+
 		Ok(())
 	}
 
@@ -362,19 +532,35 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
 	) -> BridgeContractResult<()> {
-		let contract =
-			AtomicBridgeCounterparty::new(self.counterparty_contract_address(), &self.rpc_provider);
-		let call = contract.abortBridgeTransfer(FixedBytes(bridge_transfer_id.0));
-		send_transaction(
-			call,
-			&send_transaction_rules(),
-			self.config.transaction_send_retries,
-			self.config.gas_limit,
-		)
-		.await
-		.map_err(|e| {
-			BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
-		})?;
+		match &self.counterparty_contract {
+			CounterpartyContract::Weth(weth_contract) => {
+				let call = weth_contract.abortBridgeTransfer(FixedBytes(bridge_transfer_id.0));
+				send_transaction(
+					call,
+					&send_transaction_rules(),
+					self.config.transaction_send_retries,
+					self.config.gas_limit,
+				)
+				.await
+				.map_err(|e| {
+					BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
+				})?;
+			}
+			CounterpartyContract::Move(move_contract) => {
+				let call = move_contract.abortBridgeTransfer(FixedBytes(bridge_transfer_id.0));
+				send_transaction(
+					call,
+					&send_transaction_rules(),
+					self.config.transaction_send_retries,
+					self.config.gas_limit,
+				)
+				.await
+				.map_err(|e| {
+					BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
+				})?;
+			}
+		}
+
 		Ok(())
 	}
 
@@ -414,7 +600,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 	async fn get_bridge_transfer_details_counterparty(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
-	) -> BridgeContractResult<Option<BridgeTransferDetails<EthAddress>>> {
+	) -> BridgeContractResult<Option<BridgeTransferDetailsCounterparty<EthAddress>>> {
 		let generic_error = |desc| BridgeContractError::GenericError(String::from(desc));
 
 		let mapping_slot = U256::from(0); // the mapping is the zeroth slot in the contract
@@ -429,13 +615,13 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 
 		println!("storage_bytes: {:?}", storage_bytes);
 		let mut storage_slice = &storage_bytes[..];
-		let eth_details = EthBridgeTransferDetails::decode(&mut storage_slice)
+		let eth_details = EthBridgeTransferDetailsCounterparty::decode(&mut storage_slice)
 			.map_err(|_| generic_error("could not decode storage"))?;
 
-		Ok(Some(BridgeTransferDetails {
+		Ok(Some(BridgeTransferDetailsCounterparty {
 			bridge_transfer_id,
-			initiator_address: BridgeAddress(eth_details.originator),
-			recipient_address: BridgeAddress(eth_details.recipient.to_vec()),
+			initiator_address: BridgeAddress(eth_details.originator.to_vec()),
+			recipient_address: BridgeAddress(eth_details.recipient),
 			hash_lock: HashLock(eth_details.hash_lock),
 			//@TODO unit test these wrapping to check for any nasty side effects.
 			time_lock: TimeLock(eth_details.time_lock.wrapping_to::<u64>()),

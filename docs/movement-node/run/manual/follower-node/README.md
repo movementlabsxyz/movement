@@ -27,6 +27,7 @@ First create, an environment file for the follower node. The example below is fo
 ```bash
 CONTAINER_REV=<latest-commit-hash>
 DOT_MOVEMENT_PATH=./.movement
+MAPTOS_CHAIN_ID=250 # change this to the chain id of the network you are running
 MOVEMENT_SYNC="follower::mtnet-l-sync-bucket-sync<=>{maptos,maptos-storage,suzuka-da-db}/**" # change to the sync bucket for the network you are running
 M1_DA_LIGHT_NODE_CONNECTION_PROTOCOL=https
 M1_DA_LIGHT_NODE_CONNECTION_HOSTNAME="m1-da-light-node.testnet.movementlabs.xyz" # changes this to the hostname of the m1_da_light_node_service on network you are running

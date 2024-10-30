@@ -1,0 +1,16 @@
+[package]
+name = "mock-tokens"
+version = "1.0.0"
+authors = []
+
+[addresses]
+mock="0x275f508689de8756169d1ee02d889c777de1cebda3a7bbcce63ba8a27c563c6f"
+
+[dev-addresses]
+
+[dependencies.AptosFramework]
+git = "https://github.com/aptos-labs/aptos-core.git"
+rev = "mainnet"
+subdir = "aptos-move/framework/aptos-framework"
+
+[dev-dependencies]

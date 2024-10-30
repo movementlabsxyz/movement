@@ -1,0 +1,43 @@
+syntax = "proto3";
+package movementlabs.protocol_units.bridge.v1beta1;
+
+service Bridge {
+  rpc GetBridgeTransferDetailsInitiatorEth (GetBridgeTransferDetailsRequest) returns (BridgeTransferDetailsResponse) {}
+  rpc GetBridgeTransferDetailsCounterpartyEth (GetBridgeTransferDetailsRequest) returns (BridgeTransferDetailsResponse) {}
+  rpc GetBridgeTransferDetailsInitiatorMovement (GetBridgeTransferDetailsRequest) returns (BridgeTransferDetailsResponse) {}
+  rpc GetBridgeTransferDetailsCounterpartyMovement (GetBridgeTransferDetailsRequest) returns (BridgeTransferDetailsResponse) {}
+}
+
+service Health {
+  rpc Check(HealthCheckRequest) returns (HealthCheckResponse);
+  rpc Watch(HealthCheckRequest) returns (stream HealthCheckResponse);
+}
+
+message GetBridgeTransferDetailsRequest {
+  bytes bridge_transfer_id = 1;
+  bytes signature = 2;
+}
+
+message BridgeTransferDetailsResponse {
+  string initiator_address = 1;
+  bytes recipient_address = 2;
+  bytes hash_lock = 3;
+  uint64 time_lock = 4;
+  uint64 amount = 5;
+  uint32 state = 6;
+  string error_message = 7;
+}
+
+message HealthCheckRequest {
+  string service = 1;
+} 
+
+message HealthCheckResponse {
+  enum ServingStatus {
+    UNKNOWN = 0;
+    SERVING = 1;
+    NOT_SERVING = 2;
+    SERVICE_UNKNOWN = 3;
+  }
+  ServingStatus status = 1;
+}

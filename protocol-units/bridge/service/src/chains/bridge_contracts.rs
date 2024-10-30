@@ -1,4 +1,4 @@
-use crate::types::LockDetails;
+use crate::types::{BridgeTransferDetailsCounterparty, LockDetails};
 use std::fmt;
 use thiserror::Error;
 use tokio_stream::Stream;
@@ -173,7 +173,7 @@ pub trait BridgeContract<A>: Clone + Unpin + Send + Sync {
 	async fn get_bridge_transfer_details_counterparty(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
-	) -> BridgeContractResult<Option<BridgeTransferDetails<A>>>;
+	) -> BridgeContractResult<Option<BridgeTransferDetailsCounterparty<A>>>;
 
 	async fn lock_bridge_transfer(
 		&mut self,
