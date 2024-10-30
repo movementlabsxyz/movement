@@ -2,6 +2,11 @@ use crate::set::{Cold, ColdGuard, Hot, HotColdSet, HotGuard, Member, TryAsMember
 use std::collections::BTreeSet;
 use thiserror::Error;
 
+#[cfg(feature = "grpc")]
+pub mod grpc;
+#[cfg(feature = "rest")]
+pub mod rest;
+
 #[derive(Debug, Error)]
 pub enum CheckpointError {
 	#[error("Failed to enumerate checkpoints: {0}")]
@@ -381,6 +386,7 @@ pub mod tests {
 
 		// A(2) should be satisfied in the hot set
 		let hot_satisfied = checkpoint_hot_cold_set.hot_satisfied(&[TestCheckpoint::A(2)]).await?;
+		assert_eq!(hot_satisfied, true);
 
 		// B(1) should not be satisfied in the hot set
 		let hot_satisfied = checkpoint_hot_cold_set.hot_satisfied(&[TestCheckpoint::B(1)]).await?;

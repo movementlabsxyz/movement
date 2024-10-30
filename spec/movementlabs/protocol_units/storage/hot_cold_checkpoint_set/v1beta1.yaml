@@ -1,0 +1,67 @@
+openapi: 3.0.0
+paths:
+  /hot/contains:
+    post:
+      summary: Check if the JSON-encoded data is in the hot storage
+      requestBody:
+        description: JSON data to check in hot storage
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Boolean value indicating if the data is in the hot storage
+          content:
+            application/json:
+              schema:
+                type: boolean
+        '404':
+          description: User not found
+        '500':
+          description: Internal server error
+
+  /hot/likely-contained:
+    post:
+      summary: Check if the JSON-encoded data was likely in the hot storage
+      requestBody:
+        description: JSON data to check in hot storage
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Boolean value indicating if the data was likely in the hot storage
+          content:
+            application/json:
+              schema:
+                type: boolean
+        '404':
+          description: User not found
+        '500':
+          description: Internal server error
+
+  /cold/contains:
+    post:
+      summary: Check if the JSON-encoded data is in the cold storage
+      requestBody:
+        description: JSON data to check in cold storage
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Boolean value indicating if the data is in the cold storage
+          content:
+            application/json:
+              schema:
+                type: boolean
+        '404':
+          description: User not found
+        '500':
+          description: Internal server error

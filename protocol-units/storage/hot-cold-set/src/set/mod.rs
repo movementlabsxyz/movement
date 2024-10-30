@@ -14,6 +14,11 @@
 use std::marker::PhantomData;
 use thiserror::Error;
 
+#[cfg(feature = "grpc")]
+pub mod grpc;
+#[cfg(feature = "rest")]
+pub mod rest;
+
 /// A member of the set.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Member(pub Vec<u8>);

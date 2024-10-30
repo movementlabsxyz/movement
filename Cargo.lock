@@ -7194,12 +7194,15 @@ name = "hot-cold-set"
 version = "0.0.2"
 dependencies = [
  "anyhow",
+ "prost 0.12.6",
  "rocksdb",
  "serde",
  "serde_json",
  "tempfile",
  "thiserror",
  "tokio",
+ "tonic 0.11.0",
+ "tonic-reflection",
 ]
 
 [[package]]
