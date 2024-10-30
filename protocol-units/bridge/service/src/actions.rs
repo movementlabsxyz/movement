@@ -98,15 +98,24 @@ where
 					.expect("Invalid REST URL");
 		
 					// Create FaucetClient and RestClient
-					//let rest_client = RestClient::new(rest_url);
+					let rest_client = RestClient::new(rest_url.clone());
 					let faucet_client = FaucetClient::new(faucet_url, rest_url);
 		
 					let recipient_address: [u8; 32] = recipient.0.clone().try_into()
 					.map_err(|_| ActionExecError(action.clone(), BridgeContractError::SerializationError))?;
-		
+
+					let account_address = AccountAddress::new(recipient_address);
+
+					/// Fetch and log balance before funding
+					/// This should return an error for a new address because funding creates the account
+					match rest_client.get_account_balance(account_address).await {
+						Ok(balance) => tracing::info!("Balance before funding: {:?}", balance),
+						Err(e) => tracing::error!("Failed to retrieve balance before funding: {:?}", e),
+					}
+					
 					// Execute the funding transaction and capture the result
 					match faucet_client
-						.fund(AccountAddress::new(recipient_address), 100_000_000)
+						.fund(account_address, 100_000_000)
 						.await
 					{
 						Ok(tx_result) => {
@@ -118,8 +127,13 @@ where
 						}
 					};
 
+					// Fetch and log balance before funding
+					match rest_client.get_account_balance(account_address).await {
+						Ok(balance) => tracing::info!("Balance after funding: {:?}", balance),
+						Err(e) => tracing::error!("Failed to retrieve balance before funding: {:?}", e),
+					}
+
 				}
-				
 
 				client
 					.lock_bridge_transfer(
