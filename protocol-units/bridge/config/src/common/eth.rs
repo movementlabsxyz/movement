@@ -79,7 +79,7 @@ env_default!(
 );
 env_default!(
 	default_eth_move_token_contract,
-	"ETH_MOVETOKEN_CONTRACT",
+	"ETH_MOVE_TOKEN_CONTRACT",
 	String,
 	DEFAULT_ETH_MOVETOKEN_CONTRACT.to_string()
 );
