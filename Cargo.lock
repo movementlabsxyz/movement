@@ -7195,6 +7195,8 @@ version = "0.0.2"
 dependencies = [
  "anyhow",
  "rocksdb",
+ "serde",
+ "serde_json",
  "tempfile",
  "thiserror",
  "tokio",

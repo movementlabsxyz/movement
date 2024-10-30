@@ -19,6 +19,8 @@ rocksdb = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
+serde_json = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
 
 [lints]
 workspace = true

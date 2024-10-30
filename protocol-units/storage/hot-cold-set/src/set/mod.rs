@@ -9,6 +9,7 @@
 //! 2. The Cold set is append-only and is never garbage collected by the application.
 //!
 //! Originally designed for event sets, this protocol can be extended to other contexts, such as synchronization of transactions.
+//! 
 //! Implementers should be cautious of failure points, as frequent commit failures will flag the system as inconsistent and induce recovery attempts when using the `rinsert` method.
 use std::marker::PhantomData;
 use thiserror::Error;
@@ -327,6 +328,8 @@ where
 pub mod test {
     use super::*;
     use std::collections::HashSet;
+	use std::sync::Arc;
+	use tokio::sync::RwLock;
 
     #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
     pub struct TestMember(pub u8);
@@ -341,7 +344,7 @@ pub mod test {
 	pub struct ReliableHot {
 		pub cardinality: u64,
 		pub ttl: u64,
-		pub set: HashSet<Member>,
+		pub set: Arc<RwLock<HashSet<Member>>>,
 	}
 
 	pub struct ReliableHotGuard;
@@ -379,14 +382,26 @@ pub mod test {
 			Ok(self.ttl)
 		}
 
-		async fn prepare_insert(&self, _members: &[M]) -> Result<ReliableHotGuard, HotError> {
+		async fn prepare_insert(&self, members: &[M]) -> Result<ReliableHotGuard, HotError> {
+
+			let mut set = self.set.write().await;
+
+			// just insert all the members
+			for member in members {
+				let converted_member = member.try_as_member().map_err(|_| HotError::Internal)?;
+				set.insert(converted_member);
+			}
+
 			Ok(ReliableHotGuard)  // Always succeed for ReliableHot
 		}
 
 		async fn contains(&self, members: &[M]) -> Result<bool, HotError> {
+
+			let set = self.set.read().await;
+
 			for member in members {
 				let converted_member = member.try_as_member().map_err(|_| HotError::Internal)?;
-				if !self.set.contains(&converted_member) {
+				if !set.contains(&converted_member) {
 					return Ok(false);
 				}
 			}
@@ -404,7 +419,7 @@ pub mod test {
 
 	// Reliable Cold set
 	pub struct ReliableCold {
-		pub set: HashSet<Member>,
+		pub set: Arc<RwLock<HashSet<Member>>>,
 	}
 
 	pub struct ReliableColdGuard;
@@ -439,9 +454,10 @@ pub mod test {
 		}
 
 		async fn contains(&self, members: &[M]) -> Result<bool, ColdError> {
+			let set = self.set.read().await;
 			for member in members {
 				let converted_member = member.try_as_member().map_err(|_| ColdError::Internal)?;
-				if !self.set.contains(&converted_member) {
+				if !set.contains(&converted_member) {
 					return Ok(false);
 				}
 			}
@@ -454,17 +470,17 @@ pub mod test {
 	}
 
     #[tokio::test]
-    async fn test_successful_insertion() {
+    async fn test_successful_insertion() -> Result<(), anyhow::Error> {
         // Create a reliable Hot set
         let hot = ReliableHot {
             cardinality: 0,
             ttl: 60,
-            set: HashSet::new(),
+            set: Arc::new(RwLock::new(HashSet::new())),
         };
 
         // Create a reliable Cold set
         let cold = ReliableCold {
-            set: HashSet::new(),
+            set: Arc::new(RwLock::new(HashSet::new())),
         };
 
         // Create a HotColdSet with the reliable sets
@@ -474,10 +490,12 @@ pub mod test {
         let members = vec![TestMember(1), TestMember(2)];
 
         // Try inserting into both sets
-        let result = hot_cold_set.insert(members.clone()).await;
+        hot_cold_set.insert(members.clone()).await?;
 
-        // Ensure the insertion was successful
-        assert!(result.is_ok(), "Insertion should succeed for reliable Hot and Cold sets.");
+        // Check that insertion was successful
+		assert!(hot_cold_set.hot().contains(&members).await?);
+
+		Ok(())
     }
 
 }
