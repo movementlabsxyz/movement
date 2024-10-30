@@ -82,7 +82,6 @@ where
 
 				if recipient.0.len() == 32 {
 					if let Err(e) = movement_utils::fund_recipient(&recipient).await {
-					tracing::error!("Funding failed: {:?}", e);
 					return Err(ActionExecError(action.clone(), e));
 					}
 				}
