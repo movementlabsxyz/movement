@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.22;
 
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {IAtomicBridgeInitiatorMOVE} from "./IAtomicBridgeInitiatorMOVE.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
-contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgradeable {
+contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, AccessControlUpgradeable {
     enum MessageState {
         INITIALIZED,
         COMPLETED,
@@ -34,10 +34,10 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
     // Prevents initialization of implementation contract exploits
     constructor(){_disableInitializers();}
 
-    // Initialize the contract with MOVE token address, owner, custom time lock duration, and initial pool balance
+    // Initialize the contract with MOVE token address, owner, and custom time lock duration
     function initialize(
         address _moveToken,
-        address owner,
+        address _owner,
         uint256 _timeLockDuration
     ) public initializer {
         if (_moveToken == address(0) && owner == address(0)) {
@@ -47,15 +47,19 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
             revert ZeroValue();
         }
         moveToken = ERC20Upgradeable(_moveToken);
-        __Ownable_init(owner);
+        grantRole(DEFAULT_ADMIN_ROLE, _owner);
 
         // Set the custom time lock duration
         initiatorTimeLockDuration = _timeLockDuration;
     }
 
-    function setCounterpartyAddress(address _counterpartyAddress) external onlyOwner {
+    function setCounterpartyAddress(address _counterpartyAddress) external onlyRole(ADMIN_ROLE) {
         if (_counterpartyAddress == address(0)) revert ZeroAddress();
         counterpartyAddress = _counterpartyAddress;
+    }
+
+    function setTimeLockDuration(uint256 _timeLockDuration) external onlyRole(ADMIN_ROLE) {
+        initiatorTimeLockDuration = _timeLockDuration;
     }
 
     function initiateBridgeTransfer(uint256 moveAmount, bytes32 recipient, bytes32 hashLock)
@@ -100,7 +104,7 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         emit BridgeTransferCompleted(bridgeTransferId, preImage);
     }
 
-    function refundBridgeTransfer(bytes32 bridgeTransferId) external onlyOwner {
+    function refundBridgeTransfer(bytes32 bridgeTransferId) external onlyRole(REFUNDER_ROLE) {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
         if (bridgeTransfer.state != MessageState.INITIALIZED) revert BridgeTransferStateNotInitialized();
         if (block.timestamp < bridgeTransfer.timeLock) revert TimeLockNotExpired();
