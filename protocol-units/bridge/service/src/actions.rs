@@ -1,3 +1,6 @@
+use anyhow::anyhow;
+use aptos_sdk::rest_client::{Client as RestClient, FaucetClient};
+use aptos_sdk::types::account_address::AccountAddress;
 use crate::chains::bridge_contracts::BridgeContract;
 use crate::chains::bridge_contracts::BridgeContractError;
 use crate::types::Amount;
@@ -10,6 +13,8 @@ use std::fmt;
 use std::future::Future;
 use std::pin::Pin;
 use thiserror::Error;
+
+use url::Url;
 
 #[derive(Error, Debug, Clone)]
 pub struct ActionExecError(TransferAction, BridgeContractError);
@@ -83,6 +88,39 @@ where
 			amount,
 		} => {
 			let future = async move {
+
+				// Check whether recipient is a Movement address (32 bytes)
+				if recipient.0.len() == 32 {
+					tracing::info!("Recipient is a Movement address. Creating faucet client...");
+					let faucet_url = Url::parse("https://faucet.testnet.bardock.movementnetwork.xyz")
+					.expect("Invalid faucet URL");
+					let rest_url = Url::parse("https://testnet.bardock.movementnetwork.xyz")
+					.expect("Invalid REST URL");
+		
+					// Create FaucetClient and RestClient
+					//let rest_client = RestClient::new(rest_url);
+					let faucet_client = FaucetClient::new(faucet_url, rest_url);
+		
+					let recipient_address: [u8; 32] = recipient.0.clone().try_into()
+					.map_err(|_| ActionExecError(action.clone(), BridgeContractError::SerializationError))?;
+		
+					// Execute the funding transaction and capture the result
+					match faucet_client
+						.fund(AccountAddress::new(recipient_address), 100_000_000)
+						.await
+					{
+						Ok(tx_result) => {
+						tracing::info!("Successfully funded Movement address. Transaction result: {:?}", tx_result);
+						}
+						Err(e) => {
+						tracing::error!("Failed to fund Movement address: {:?}", e);
+						return Err(ActionExecError(action.clone(), BridgeContractError::SerializationError));
+						}
+					};
+
+				}
+				
+
 				client
 					.lock_bridge_transfer(
 						bridge_transfer_id,
