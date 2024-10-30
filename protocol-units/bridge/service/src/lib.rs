@@ -48,10 +48,16 @@ where
 	let one_client_lock = Arc::new(Mutex::new(()));
 	let two_client_lock = Arc::new(Mutex::new(()));
 
-	// let mut action_to_exec_futures_one = FuturesUnordered::new();
-	// let mut action_to_exec_futures_two = FuturesUnordered::new();
-
 	let mut tranfer_log_interval = tokio::time::interval(tokio::time::Duration::from_secs(60));
+
+	// Keep-alive task for monitoring, every three minutes.
+	tokio::spawn(async {
+		let mut keep_alive_interval = tokio::time::interval(tokio::time::Duration::from_secs(180));
+		loop {
+			keep_alive_interval.tick().await;
+			tracing::debug!("Keep-alive: bridge loop is still active.");
+		}
+	});
 
 	loop {
 		select! {
