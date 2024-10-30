@@ -6,6 +6,7 @@ use super::types::{
 use super::utils::{calculate_storage_slot, send_transaction, send_transaction_rules};
 use crate::chains::bridge_contracts::BridgeContractError;
 use crate::chains::bridge_contracts::BridgeContractResult;
+use crate::gas_master::{GasMaster, GasMasterError, GasMasterResult};
 use crate::types::{
 	Amount, AssetType, BridgeAddress, BridgeTransferDetails, BridgeTransferDetailsCounterparty,
 	BridgeTransferId, HashLock, HashLockPreImage, TimeLock,
@@ -20,6 +21,7 @@ use alloy::{
 use alloy_rlp::Decodable;
 use bridge_config::common::eth::EthConfig;
 use bridge_grpc::bridge_server::BridgeServer;
+use std::borrow::Cow;
 use std::fmt::{self, Debug};
 use std::net::SocketAddr;
 use tonic::transport::Server;
@@ -633,6 +635,26 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 			amount: Amount(AssetType::EthAndWeth((0, eth_details.amount.wrapping_to::<u64>()))),
 			state: eth_details.state,
 		}))
+	}
+}
+
+#[async_trait::async_trait]
+impl GasMaster for EthClient {
+	async fn get_base_gas_price(&self) -> GasMasterResult<u64> {
+		let gas_price: U256 = self
+			.rpc_provider
+			.raw_request(Cow::Borrowed("eth_gasPrice"), ())
+			.await
+			.map_err(|_| GasMasterError::GetGasPriceError)?;
+		Ok(gas_price.wrapping_to::<u64>())
+	}
+
+	async fn get_priority_gas_fee_estimate(&self) -> GasMasterResult<u64> {
+		unimplemented!()
+	}
+
+	async fn calculate_dynamic_fee(&self) -> GasMasterResult<u64> {
+		unimplemented!()
 	}
 }
 
