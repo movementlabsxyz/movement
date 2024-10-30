@@ -250,7 +250,7 @@ mod tests {
 		let private_key = Ed25519PrivateKey::generate_for_testing();
 		let mut config = Config::default();
 		config.chain.maptos_private_key = private_key.clone();
-		config.chain.read_only = true;
+		config.chain.maptos_read_only = true;
 		let (tx_sender, _tx_receiver) = mpsc::channel(16);
 		let (executor, _tempdir) = setup(config)?;
 		let (context, background) = executor.background(tx_sender)?;

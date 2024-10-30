@@ -71,7 +71,7 @@ env_default!(
 env_default!(default_maptos_chain_id, "MAPTOS_CHAIN_ID", ChainId, ChainId::from_str("27").unwrap());
 
 // The default read-only mode
-env_default!(default_read_only, "MAPTOS_READ_ONLY", bool, false);
+env_default!(default_maptos_read_only, "MAPTOS_READ_ONLY", bool, false);
 
 // The default private key
 pub fn default_maptos_private_key() -> Ed25519PrivateKey {

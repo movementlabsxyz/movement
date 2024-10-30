@@ -31,7 +31,7 @@ impl Executor {
 		let mut node_config = NodeConfig::default();
 
 		// read-only settings
-		if maptos_config.chain.read_only {
+		if maptos_config.chain.maptos_read_only {
 			node_config.api.transaction_submission_enabled = false;
 			node_config.api.encode_submission_enabled = false;
 			node_config.api.transaction_simulation_enabled = false;
@@ -136,7 +136,7 @@ impl Executor {
 		let (mempool_client_sender, mempool_client_receiver) =
 			futures_mpsc::channel::<MempoolClientRequest>(EXECUTOR_CHANNEL_SIZE);
 
-		let background_task = if maptos_config.chain.read_only {
+		let background_task = if maptos_config.chain.maptos_read_only {
 			BackgroundTask::read_only(mempool_client_receiver)
 		} else {
 			BackgroundTask::transaction_pipe(
