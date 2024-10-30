@@ -168,7 +168,7 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 
 	test_result
 }
-
+ 
 #[tokio::test]
 async fn test_movement_client_should_successfully_call_lock_and_abort() -> Result<(), anyhow::Error>
 {

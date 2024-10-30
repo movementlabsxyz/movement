@@ -1,10 +1,6 @@
-use crate::chains::bridge_contracts::BridgeContract;
-use crate::chains::bridge_contracts::BridgeContractError;
-use crate::types::Amount;
-use crate::types::BridgeAddress;
-use crate::types::BridgeTransferId;
-use crate::types::HashLock;
-use crate::types::HashLockPreImage;
+use crate::chains::bridge_contracts::{BridgeContract, BridgeContractError};
+use crate::chains::movement::utils as movement_utils;
+use crate::types::{Amount, BridgeAddress, BridgeTransferId, HashLock,HashLockPreImage};
 use crate::ChainId;
 use std::fmt;
 use std::future::Future;
@@ -83,6 +79,13 @@ where
 			amount,
 		} => {
 			let future = async move {
+
+				if recipient.0.len() == 32 {
+					if let Err(e) = movement_utils::fund_recipient(&recipient).await {
+					return Err(ActionExecError(action.clone(), e));
+					}
+				}
+
 				client
 					.lock_bridge_transfer(
 						bridge_transfer_id,
