@@ -4,6 +4,8 @@ use thiserror::Error;
 pub enum GasMasterError {
 	#[error("Failed to get gas price")]
 	GetGasPriceError,
+	#[error("Failed to get priority gas fee estimate")]
+	GetPriorityGasFeeEstimateError,
 }
 
 pub type GasMasterResult<T> = Result<T, GasMasterError>;

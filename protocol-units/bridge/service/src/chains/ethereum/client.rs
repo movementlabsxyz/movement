@@ -650,11 +650,32 @@ impl GasMaster for EthClient {
 	}
 
 	async fn get_priority_gas_fee_estimate(&self) -> GasMasterResult<u64> {
-		unimplemented!()
+		let params = ("0x1", "latest", vec![0.2, 0.5, 0.9]);
+		let fee_history: serde_json::Value = self
+			.rpc_provider
+			.raw_request(Cow::Borrowed("eth_feeHistory"), params)
+			.await
+			.map_err(|_| GasMasterError::GetPriorityGasFeeEstimateError)?;
+
+		let priority_fee = fee_history["reward"]
+			.as_array()
+			.and_then(|rewards| rewards.last())
+			.and_then(|last_block_rewards| last_block_rewards[0].as_str())
+			.map(|fee_str| U256::from_str_radix(&fee_str[2..], 16)) // parse hex string
+			.transpose()
+			.map_err(|_| GasMasterError::GetGasPriceError);
+		priority_fee.ok_or_else(|| GasMasterError::GetPriorityGasFeeEstimateError)
 	}
 
 	async fn calculate_dynamic_fee(&self) -> GasMasterResult<u64> {
-		unimplemented!()
+		let base_gas_price = self.get_base_gas_price().await?;
+		let priority_fee = self.get_priority_gas_fee_estimate().await?;
+		let percentage_adjustment = 0.2; // 20% adjustment hardcoded for now
+
+		// Apply the percentage adjustment to base gas price
+		let adjusted_base_fee =
+			base_gas_price * U256::from((100.0 + percentage_adjustment) as u64) / U256::from(100);
+		Ok(adjusted_base_fee + priority_fee)
 	}
 }
 
