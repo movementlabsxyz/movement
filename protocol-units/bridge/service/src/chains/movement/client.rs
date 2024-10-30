@@ -140,7 +140,7 @@ impl BridgeContract<MovementAddress> for MovementClient {
 		];
 
 		let payload = utils::make_aptos_payload(
-			self.native_address,
+			FRAMEWORK_ADDRESS,
 			"atomic_bridge_initiator",
 			"initiate_bridge_transfer",
 			Vec::new(),

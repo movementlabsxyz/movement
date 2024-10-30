@@ -11,7 +11,7 @@ const DEFAULT_ETH_WS_CONNECTION_PORT: u16 = 8545; // same as RPC
 const DEFAULT_ETH_INITIATOR_CONTRACT: &str = "Oxeee";
 const DEFAULT_ETH_COUNTERPARTY_CONTRACT: &str = "0xccc";
 const DEFAULT_ETH_WETH_CONTRACT: &str = "0xe3e3";
-const DEFAULT_ASSET: &str = "MOVE";
+const DEFAULT_ASSET: &str = "WETH";
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct EthConfig {
