@@ -8594,6 +8594,7 @@ dependencies = [
  "maptos-opt-executor",
  "movement-types",
  "rand 0.7.3",
+ "tempfile",
  "tokio",
  "tokio-stream",
  "tracing",
