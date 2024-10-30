@@ -17,8 +17,6 @@ paths:
             application/json:
               schema:
                 type: boolean
-        '404':
-          description: User not found
         '500':
           description: Internal server error
 
@@ -39,8 +37,6 @@ paths:
             application/json:
               schema:
                 type: boolean
-        '404':
-          description: User not found
         '500':
           description: Internal server error
 
@@ -61,7 +57,5 @@ paths:
             application/json:
               schema:
                 type: boolean
-        '404':
-          description: User not found
         '500':
           description: Internal server error

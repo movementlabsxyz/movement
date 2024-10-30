@@ -1,10 +1,10 @@
 openapi: 3.0.0
 paths:
-  /hot/contains:
+  /hot/satisfies:
     post:
-      summary: Check if the JSON-encoded data is in the hot storage
+      summary: Checks if the checkpoint is satisfied by the hot storage
       requestBody:
-        description: JSON data to check in hot storage
+        description: JSON data to check if checkpoint is satisfied
         required: true
         content:
           application/json:
@@ -12,21 +12,19 @@ paths:
               type: object
       responses:
         '200':
-          description: Boolean value indicating if the data is in the hot storage
+          description: Boolean value indicating whether the checkpoint and all previous checkpoints are in the hot storage
           content:
             application/json:
               schema:
                 type: boolean
-        '404':
-          description: User not found
         '500':
           description: Internal server error
 
-  /hot/likely-contained:
+  /hot/likely-satisfies:
     post:
-      summary: Check if the JSON-encoded data was likely in the hot storage
+      summary: Checks if the checkpoint is likely satisfied by the hot storage
       requestBody:
-        description: JSON data to check in hot storage
+        description: JSON data to check if checkpoint is likely satisfied
         required: true
         content:
           application/json:
@@ -34,21 +32,19 @@ paths:
               type: object
       responses:
         '200':
-          description: Boolean value indicating if the data was likely in the hot storage
+          description: Boolean value indicating whether the checkpoint and all previous checkpoints were likely in the hot storage
           content:
             application/json:
               schema:
                 type: boolean
-        '404':
-          description: User not found
         '500':
           description: Internal server error
 
-  /cold/contains:
+  /cold/satisfies:
     post:
-      summary: Check if the JSON-encoded data is in the cold storage
+      summary: Checks if the checkpoint is satisfied by the cold storage
       requestBody:
-        description: JSON data to check in cold storage
+        description: JSON data to check if checkpoint is satisfied
         required: true
         content:
           application/json:
@@ -56,12 +52,73 @@ paths:
               type: object
       responses:
         '200':
-          description: Boolean value indicating if the data is in the cold storage
+          description: Boolean value indicating whether the checkpoint and all previous checkpoints are in the cold storage
           content:
             application/json:
               schema:
                 type: boolean
-        '404':
-          description: User not found
         '500':
           description: Internal server error
+
+  /hot/satisfies/latest:
+    post:
+      summary: Gets the latest checkpoint that is satisfied by the hot storage
+      requestBody:
+        description: JSON data for the inner value that is satisfied by the hot storage
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Latest checkpoint that is satisfied by the hot storage
+          content:
+            application/json:
+              schema:
+                type: object
+        '500':
+          description: Internal server error
+
+  /hot/likely-satisfies/latest:
+    post:
+      summary: Gets the latest checkpoint that is likely satisfied by the hot storage
+      requestBody:
+        description: JSON data for the inner value that is likely satisfied by the hot storage
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Latest checkpoint that is likely satisfied by the hot storage
+          content:
+            application/json:
+              schema:
+                type: object
+        '500':
+          description: Internal server error
+
+  /cold/satisfies/latest:
+    post:
+      summary: Gets the latest checkpoint that is satisfied by the cold storage
+      requestBody:
+        description: JSON data for the inner value that is satisfied by the cold storage
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Latest checkpoint that is satisfied by the cold storage
+          content:
+            application/json:
+              schema:
+                type: object
+        '500':
+          description: Internal server error
+
+
+      
