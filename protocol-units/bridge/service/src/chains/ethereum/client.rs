@@ -40,6 +40,7 @@ pub struct Config {
 	pub signer_private_key: PrivateKeySigner,
 	pub initiator_contract: Address,
 	pub counterparty_contract: Address,
+	pub movetoken_contract: Address,
 	pub weth_contract: Address,
 	pub gas_limit: u128,
 	pub transaction_send_retries: u32,
@@ -57,7 +58,9 @@ impl TryFrom<&EthConfig> for Config {
 			signer_private_key,
 			initiator_contract: conf.eth_initiator_contract.parse()?,
 			counterparty_contract: conf.eth_counterparty_contract.parse()?,
-			weth_contract: conf.eth_weth_contract.parse()?,
+			movetoken_contract: conf.eth_move_token_contract.parse()?,
+			//TODO remove
+			weth_contract: conf.eth_move_token_contract.parse()?,
 			gas_limit: conf.gas_limit.into(),
 			transaction_send_retries: conf.transaction_send_retries,
 			asset: conf.asset.clone().into(),
@@ -138,7 +141,8 @@ impl EthClient {
 			}
 		};
 
-		let weth_contract = WETH9Contract::new(config.weth_contract, rpc_provider.clone());
+		//TODO remove WETH contract
+		let weth_contract = WETH9Contract::new(config.movetoken_contract, rpc_provider.clone());
 
 		Ok(EthClient {
 			rpc_provider,
