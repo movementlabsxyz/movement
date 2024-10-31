@@ -7,9 +7,10 @@ const DEFAULT_MVT_RPC_CONNECTION_HOSTNAME: &str = "127.0.0.1";
 const DEFAULT_MVT_RPC_CONNECTION_PORT: u16 = 8080;
 const DEFAULT_MVT_FAUCET_CONNECTION_HOSTNAME: &str = "127.0.0.1";
 const DEFAULT_MVT_FAUCET_CONNECTION_PORT: u16 = 8081;
-const DEFAULT_REST_CONNECTION_HOSTNAME: &str = "127.0.0.1";
-const DEFAULT_GRPC_CONNECTION_HOSTNAME: &str = "127.0.0.1";
+const DEFAULT_REST_CONNECTION_HOSTNAME: &str = "0.0.0.0";
+const DEFAULT_GRPC_CONNECTION_HOSTNAME: &str = "0.0.0.0";
 const DEFAULT_GRPC_CONNECTION_PORT: u16 = 50051;
+const DEFAULT_REST_CONNECTION_PORT: u16 = 30883;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MovementConfig {
@@ -39,7 +40,7 @@ pub struct MovementConfig {
 	#[serde(default = "default_rest_connection_hostname")]
 	pub rest_hostname: String,
 	#[serde(default = "default_rest_connection_port")]
-	pub rest_port: u32,
+	pub rest_port: u16,
 
 	// gRPC service connection details
 	#[serde(default = "default_grpc_connection_protocol")]
@@ -86,7 +87,12 @@ env_default!(
 	DEFAULT_REST_CONNECTION_HOSTNAME.to_string()
 );
 
-env_default!(default_rest_connection_port, "REST_CONNECTION_PORT", u32, 308833);
+env_default!(
+	default_rest_connection_port,
+	"REST_CONNECTION_PORT",
+	u16,
+	DEFAULT_REST_CONNECTION_PORT
+);
 
 env_default!(
 	default_movement_native_address,
