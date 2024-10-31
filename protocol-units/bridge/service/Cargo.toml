@@ -12,6 +12,7 @@ rust-version.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 bridge-util = { workspace = true }
+bridge-indexer-db = { workspace = true }
 alloy-primitives = { workspace = true }
 anyhow = { workspace = true }
 async-trait = "0.1.80"

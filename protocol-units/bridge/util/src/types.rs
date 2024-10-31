@@ -1,4 +1,5 @@
 use alloy::primitives::Uint;
+use alloy::serde::quantity::vec;
 use derive_more::{Deref, DerefMut};
 use hex::{self, FromHexError};
 use rand::Rng;
@@ -81,9 +82,24 @@ impl From<String> for BridgeAddress<Vec<u8>> {
 	}
 }
 
-impl<A: Into<Vec<u8>>> BridgeAddress<A> {
-	pub fn into_vec(self) -> Vec<u8> {
-		self.0.into()
+#[derive(Error, Debug)]
+pub enum BridgeAddressError {
+	#[error("Invalid conversion from BridgeAddress to Vec<u8>")]
+	InvalidConversion,
+}
+
+pub trait ToCommonAddress: Sized {
+	fn to_common_address(self) -> Result<BridgeAddress<Vec<u8>>, BridgeAddressError> {
+		Err(BridgeAddressError::InvalidConversion)
+	}
+}
+
+impl<A> ToCommonAddress for BridgeAddress<A>
+where
+	A: Into<Vec<u8>>,
+{
+	fn to_common_address(self) -> Result<BridgeAddress<Vec<u8>>, BridgeAddressError> {
+		Ok(BridgeAddress(self.0.into()))
 	}
 }
 

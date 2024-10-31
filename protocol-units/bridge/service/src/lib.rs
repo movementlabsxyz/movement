@@ -1,4 +1,5 @@
 use crate::actions::process_action;
+use bridge_indexer_db::client::Client;
 use bridge_util::actions::ActionExecError;
 use bridge_util::actions::TransferAction;
 use bridge_util::actions::TransferActionType;
@@ -37,7 +38,7 @@ where
 	Vec<u8>: From<A1>,
 	Vec<u8>: From<A2>,
 {
-	let mut state_runtime = Runtime::new();
+	let mut state_runtime = Runtime::new(None);
 
 	let mut client_exec_result_futures_one = FuturesUnordered::new();
 	let mut client_exec_result_futures_two = FuturesUnordered::new();
@@ -180,15 +181,56 @@ where
 
 struct Runtime {
 	swap_state_map: HashMap<BridgeTransferId, TransferState>,
+	indexer_db_client: Option<Client>,
 }
 
 impl Runtime {
-	pub fn new() -> Self {
-		Runtime { swap_state_map: HashMap::new() }
+	pub fn new(indexer_db_client: Option<Client>) -> Self {
+		Runtime { swap_state_map: HashMap::new(), indexer_db_client }
 	}
 
 	pub fn iter_state(&self) -> impl Iterator<Item = &TransferState> {
 		self.swap_state_map.values()
+	}
+
+	fn index_event<A>(&mut self, event: TransferEvent<A>) -> Result<(), InvalidEventError>
+	where
+		A: Into<Vec<u8>> + std::clone::Clone,
+	{
+		match self.indexer_db_client {
+			Some(ref mut client) => {
+				client.insert_bridge_contract_event(event.contract_event.clone()).map_err(
+					|_| {
+						tracing::warn!("Fail to index event");
+						InvalidEventError::BadEvent
+					},
+				)?;
+				Ok(())
+			}
+			None => {
+				tracing::warn!("No indexer db client found. Event not indexed");
+				Ok(())
+			}
+		}
+	}
+
+	pub fn index_transfer_action(
+		&mut self,
+		action: TransferAction,
+	) -> Result<(), InvalidEventError> {
+		match self.indexer_db_client {
+			Some(ref mut client) => {
+				client.insert_transfer_action(action.kind).map_err(|_| {
+					tracing::warn!("Fail to index action");
+					InvalidEventError::BadEvent
+				})?;
+				Ok(())
+			}
+			None => {
+				tracing::warn!("No indexer db client found. Action not indexed");
+				Ok(())
+			}
+		}
 	}
 
 	pub fn process_event<A>(
@@ -199,6 +241,7 @@ impl Runtime {
 		A: Into<Vec<u8>> + std::clone::Clone,
 	{
 		self.validate_state(&event)?;
+		let indexer_event = event.clone();
 		let event_transfer_id = event.contract_event.bridge_transfer_id();
 		let state_opt = self.swap_state_map.remove(&event_transfer_id);
 		//create swap state if need
@@ -248,8 +291,15 @@ impl Runtime {
 			}
 		};
 
+		//index event
+		self.index_event(indexer_event)?;
+
 		let action =
 			TransferAction { chain: chain_id, transfer_id: state.transfer_id, kind: action_kind };
+
+		// index action
+		// todo: really this should come after process_action completion, but the current use of process_action is hacky
+		self.index_transfer_action(action.clone())?;
 
 		if state.state != TransferStateType::Done {
 			self.swap_state_map.insert(state.transfer_id, state);
