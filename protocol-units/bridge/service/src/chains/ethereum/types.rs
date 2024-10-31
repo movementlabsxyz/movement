@@ -32,20 +32,6 @@ pub const COUNTERPARTY_COMPLETED_SELECT: FixedBytes<32> =
 pub const COUNTERPARTY_ABORTED_SELECT: FixedBytes<32> =
 	AtomicBridgeCounterparty::BridgeTransferAborted::SIGNATURE_HASH;
 
-// Codegen for the WETH bridge contracts
-alloy::sol!(
-	#[allow(missing_docs)]
-	#[sol(rpc)]
-	AtomicBridgeInitiator,
-	"abis/AtomicBridgeInitiator.json"
-);
-alloy::sol!(
-	#[allow(missing_docs)]
-	#[sol(rpc)]
-	AtomicBridgeCounterparty,
-	"abis/AtomicBridgeCounterparty.json"
-);
-
 // Codegen for the MOVE bridge contracts
 alloy::sol!(
 	#[allow(missing_docs)]
@@ -60,27 +46,14 @@ alloy::sol!(
 	"abis/AtomicBridgeCounterpartyMOVE.json"
 );
 
-alloy::sol!(
-	#[allow(missing_docs)]
-	#[sol(rpc)]
-	WETH9,
-	"abis/WETH9.json"
-);
-
-alloy::sol!(
-	#[allow(missing_docs)]
-	#[sol(rpc)]
-	MockMOVEToken,
-	"abis/MockMOVEToken.json"
-);
-
 /// Specifies the kind of asset being transferred,
 /// This will associate the client with its respective ABIs
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub enum AssetKind {
 	/// This will initialize the client with the WETH Bridge ABIs
 	Weth,
 	/// This will initialize the client with the MOVE Bridge ABIs
+	#[default]
 	Move,
 }
 
@@ -91,12 +64,6 @@ impl From<String> for AssetKind {
 			"MOVE" => AssetKind::Move,
 			_ => panic!("Invalid asset kind"),
 		}
-	}
-}
-
-impl Default for AssetKind {
-	fn default() -> Self {
-		AssetKind::Move
 	}
 }
 
@@ -146,24 +113,10 @@ pub fn hash_static_string(pre_image: &'static str) -> [u8; 32] {
 	hash_vec_u32(&fixed_bytes)
 }
 
-#[derive(Debug, Clone)]
-pub enum InitiatorContract {
-	Weth(AtomicBridgeInitiator::AtomicBridgeInitiatorInstance<BoxTransport, AlloyProvider>),
-	Move(AtomicBridgeInitiatorMOVE::AtomicBridgeInitiatorMOVEInstance<BoxTransport, AlloyProvider>),
-}
-
-#[derive(Debug, Clone)]
-pub enum CounterpartyContract {
-	Weth(AtomicBridgeCounterparty::AtomicBridgeCounterpartyInstance<BoxTransport, AlloyProvider>),
-	Move(
-		AtomicBridgeCounterpartyMOVE::AtomicBridgeCounterpartyMOVEInstance<
-			BoxTransport,
-			AlloyProvider,
-		>,
-	),
-}
-
-pub type WETH9Contract = WETH9::WETH9Instance<BoxTransport, AlloyProvider>;
+pub type InitiatorContract =
+	AtomicBridgeInitiatorMOVE::AtomicBridgeInitiatorMOVEInstance<BoxTransport, AlloyProvider>;
+pub type CounterpartyContract =
+	AtomicBridgeCounterpartyMOVE::AtomicBridgeCounterpartyMOVEInstance<BoxTransport, AlloyProvider>;
 
 pub type AlloyProvider = FillProvider<
 	JoinFill<
