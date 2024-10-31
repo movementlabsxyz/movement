@@ -6,9 +6,10 @@ use alloy_primitives::U256;
 use bridge_config::common::eth::EthConfig;
 use bridge_config::common::movement::MovementConfig;
 use bridge_config::Config as BridgeConfig;
-use bridge_service::chains::ethereum::types::AtomicBridgeCounterparty;
-use bridge_service::chains::ethereum::types::AtomicBridgeInitiator;
+use bridge_service::chains::ethereum::types::AtomicBridgeCounterpartyMOVE;
+use bridge_service::chains::ethereum::types::AtomicBridgeInitiatorMOVE;
 use bridge_service::chains::ethereum::types::EthAddress;
+use bridge_service::chains::ethereum::types::MockMOVEToken;
 use bridge_service::chains::ethereum::types::WETH9;
 use bridge_service::chains::ethereum::utils::{send_transaction, send_transaction_rules};
 use bridge_service::types::TimeLock;
@@ -42,14 +43,14 @@ pub async fn setup_local_ethereum(config: &mut EthConfig) -> Result<(), anyhow::
 		deploy_counterpart_contract(signer_private_key.clone(), &rpc_url)
 			.await
 			.to_string();
-	let eth_weth_contract = deploy_weth_contract(signer_private_key.clone(), &rpc_url).await;
-	config.eth_weth_contract = eth_weth_contract.to_string();
+	let move_token_contract = deploy_movetoken_contract(signer_private_key.clone(), &rpc_url).await;
+	config.eth_move_token_contract = move_token_contract.to_string();
 
 	initialize_initiator_contract(
 		signer_private_key.clone(),
 		&rpc_url,
 		&config.eth_initiator_contract,
-		EthAddress(eth_weth_contract),
+		EthAddress(move_token_contract),
 		EthAddress(signer_private_key.address()),
 		*TimeLock(config.time_lock_secs),
 		config.gas_limit,
@@ -70,9 +71,9 @@ async fn deploy_eth_initiator_contract(
 		.await
 		.expect("Error during provider creation");
 
-	let contract = AtomicBridgeInitiator::deploy(rpc_provider.clone())
+	let contract = AtomicBridgeInitiatorMOVE::deploy(rpc_provider.clone())
 		.await
-		.expect("Failed to deploy AtomicBridgeInitiator");
+		.expect("Failed to deploy AtomicBridgeInitiatorMOVE");
 	tracing::info!("initiator_contract address: {}", contract.address().to_string());
 	contract.address().to_owned()
 }
@@ -87,36 +88,39 @@ async fn deploy_counterpart_contract(
 		.on_builtin(rpc_url)
 		.await
 		.expect("Error during provider creation");
-	let contract = AtomicBridgeCounterparty::deploy(rpc_provider.clone())
+	let contract = AtomicBridgeCounterpartyMOVE::deploy(rpc_provider.clone())
 		.await
-		.expect("Failed to deploy AtomicBridgeInitiator");
+		.expect("Failed to deploy AtomicBridgeCounterpartyMOVE");
 	tracing::info!("counterparty_contract address: {}", contract.address().to_string());
 	contract.address().to_owned()
 }
 
-async fn deploy_weth_contract(signer_private_key: PrivateKeySigner, rpc_url: &str) -> Address {
+async fn deploy_movetoken_contract(signer_private_key: PrivateKeySigner, rpc_url: &str) -> Address {
 	let rpc_provider = ProviderBuilder::new()
 		.with_recommended_fillers()
 		.wallet(EthereumWallet::from(signer_private_key.clone()))
 		.on_builtin(rpc_url)
 		.await
 		.expect("Error during provider creation");
-	let weth = WETH9::deploy(rpc_provider).await.expect("Failed to deploy WETH9");
-	tracing::info!("weth_contract address: {}", weth.address().to_string());
-	weth.address().to_owned()
+	let move_token = MockMOVEToken::deploy(rpc_provider)
+		.await
+		.expect("Failed to deploy Mock MOVE token");
+	tracing::info!("Move token address: {}", move_token.address().to_string());
+	move_token.address().to_owned()
 }
 
 async fn initialize_initiator_contract(
 	signer_private_key: PrivateKeySigner,
 	rpc_url: &str,
 	initiator_contract_address: &str,
-	weth: EthAddress,
+	move_token: EthAddress,
 	owner: EthAddress,
 	timelock: u64,
 	gas_limit: u64,
 	transaction_send_retries: u32,
 ) -> Result<(), anyhow::Error> {
 	tracing::info!("Setup Eth initialize_initiator_contract with timelock:{timelock});");
+	let signer_address = signer_private_key.address();
 
 	let rpc_provider = ProviderBuilder::new()
 		.with_recommended_fillers()
@@ -125,13 +129,19 @@ async fn initialize_initiator_contract(
 		.await
 		.expect("Error during provider creation");
 	let initiator_contract =
-		AtomicBridgeInitiator::new(initiator_contract_address.parse()?, rpc_provider);
+		AtomicBridgeInitiatorMOVE::new(initiator_contract_address.parse()?, rpc_provider);
 
 	let call =
-		initiator_contract.initialize(weth.0, owner.0, U256::from(timelock), U256::from(100));
-	send_transaction(call, &send_transaction_rules(), transaction_send_retries, gas_limit.into())
-		.await
-		.expect("Failed to send transaction");
+		initiator_contract.initialize(move_token.0, owner.0, U256::from(timelock), U256::from(100));
+	send_transaction(
+		call,
+		signer_address,
+		&send_transaction_rules(),
+		transaction_send_retries,
+		gas_limit.into(),
+	)
+	.await
+	.expect("Failed to send transaction");
 	Ok(())
 }
 
