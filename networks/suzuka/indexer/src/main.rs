@@ -151,14 +151,12 @@ default_sleep_time_between_request: {}
 
 	//let indexer_config_path = dot_movement.get_path().join("indexer_config.yaml");
 	let mut output_file = tempfile::NamedTempFile::new()?;
-	// let mut output_file = std::fs::File::create(&indexer_config_path).map_err(|err| {
-	// 	anyhow::anyhow!("Indexer temps config file :{indexer_config_path:?} can't be created because of err:{err}")
-	// })?;
 	write!(output_file, "{}", indexer_config_content)?;
 
 	let mut indexer_config =
 		server_framework::load::<IndexerGrpcProcessorConfig>(&output_file.path().to_path_buf())?;
 
+	// Leave here for debug purpose. Will be removed later.
 	// Use to print the generated config, to have an example when activating a new processor.
 	// indexer_config.processor_config = ProcessorConfig::TokenV2Processor(TokenV2ProcessorConfig {
 	// 	query_retries: 5,
