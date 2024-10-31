@@ -34,7 +34,7 @@ Restart=on-failure
 WantedBy=multi-user.target
 ```
 
-An Ansible script to deploy the above systemd service is available [here](./suzuka-full-follower.yml). An example usage with an ec2 inventory is below. You may also benefit from watching our tutorial [VIDEO](https://www.loom.com/share/59e6a31a08ef4260bdc9b082a3980f52).
+An Ansible script to deploy the above systemd service is available [here](./suzuka-full-follower.yml). An example usage with an EC2 inventory is below. You may also benefit from watching our tutorial [VIDEO](https://www.loom.com/share/59e6a31a08ef4260bdc9b082a3980f52).
 
 ```shell
 ansible-playbook --inventory <your-inventory> \

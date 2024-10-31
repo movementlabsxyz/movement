@@ -2,7 +2,7 @@
 - [General Full Node Guide](./README.md) (this document)
 - [Follower Node](./follower-node/README.md)
 
-We recommend that you run a movement node using containers to leverage the portability and reproducibility properties that come with containers.
+We recommend that you run a Movement node using containers to leverage the portability and reproducibility properties that come with containers.
 
 
 ## Prerequisites
@@ -11,10 +11,10 @@ We recommend that you run a movement node using containers to leverage the porta
 3. [Docker compose](https://docs.docker.com/compose/install/linux/)
 4. Make sure you are logged in as the user who wants to run the node
 
-## Run the movement node as an RPC provider
+## Run the Movement node as an RPC provider
 
 
-1. Clone the movement repo.
+1. Clone the Movement repo.
 
 _The paths below are not mandatory, they are presented for a better understanding 
 of the setup. If you would like to follow the steps below you will need to use them._
@@ -25,14 +25,14 @@ git clone https://github.com/movementlabsxyz/movement.git
 cd movement
 ```
 
-2. Create movement configuration directory and environment file.
-At the moment the latest version of the movement network is named "Suzuka".
+2. Create Movement configuration directory and environment file.
+At the moment the latest version of the Movement network is named "Suzuka".
 This will change in the future. Please check "Naming Conventions Latest" section in the
 README.md file at the git root of this repo.
 
 We use [just](https://github.com/casey/just?tab=readme-ov-file#installation) command
 to instrument deployments. This tool reads `.env` files.
-The configuration file for movement node is stored in `GIT_ROOT/.env`
+The configuration file for Movement node is stored in `GIT_ROOT/.env`
 
 We recommend to use the latest commit of the "main" branch:
 
@@ -43,7 +43,7 @@ MOVEMENT_ENV_FILE="${GIT_ROOT}/.env"
 mkdir -p .movement
 ```
 
-3. Set the movement container version.
+3. Set the Movement container version.
 ```bash
 CONTAINER_REV=$(git rev-parse HEAD)
 [[ -n "${CONTAINER_REV}" ]] \
@@ -54,7 +54,7 @@ cat ${MOVEMENT_ENV_FILE}
 ```
 
 
-4. Pull the container images. For this you need to make sure the movement config dir
+4. Pull the container images. For this you need to make sure the Movement config dir
 exists.
 ```bash
 DOT_MOVEMENT_PATH="~/.movement"
@@ -69,7 +69,7 @@ docker compose \
         pull
 ```
 
-5. Make sure that the containers image tag match the desired container version.
+5. Make sure that the containers image tag matches the desired container version.
 ```bash
 cat "${MOVEMENT_ENV_FILE}"
 CONTAINER_REV=e6cb8e287cb837af6e61451f2ff405047dd285c9

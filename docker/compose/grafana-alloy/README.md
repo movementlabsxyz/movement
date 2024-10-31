@@ -9,8 +9,8 @@ echo "DOCKER_SOCKET_PATH=${HOME}/.docker/run/docker.sock" >> .env
 echo "MOVE_DEV=${HOME}" >> .env
 ```
 
-You need to add also env vars that will be passed to grafana alloy. Those will be used
-to ship logs, metrics and traces ti grafana cloud.
+You need to add also env vars that will be passed to Grafana Alloy. Those will be used
+to ship logs, metrics and traces ti Grafana Cloud.
 
 GOTO -> 1password -> grafana-alloy(vault) -> grafana-cloud-alloy-credentials(secure note)
 <br>
@@ -61,11 +61,11 @@ docker compose \
         up
 ```
 
-5. Login to grafana cloud using shared credentials. Link to grafana cloud is in 1pass also:
+5. Login to Grafana Cloud using shared credentials. Link to Grafana Cloud is in 1pass also:
 
 1password -> Engineering (vault) -> Grafana Cloud Shared account
 
-Once you login in grafana cloud go to Explore -> Chose grafanacloud-mvmt-logs (data source)
+Once you login in Grafana Cloud go to Explore -> Chose grafanacloud-mvmt-logs (data source)
 -> Label Browser. There should be a label `MOVE_DEV`. If everything is setup working,
 you should see also a value for that label  `MOVE_DEV="/Users/YOUR_MAC_USER`,
 for example `MOVE_DEV="/Users/`radupopa`

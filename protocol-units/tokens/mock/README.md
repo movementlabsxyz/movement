@@ -33,7 +33,7 @@ The following tokens can be minted through their own contract once per hour by c
 
 #### Wrapped Tokens
 
-The following tokens cam be minted by depositing the network native asset (MOVE) to it:
+The following tokens can be minted by depositing the network native asset (MOVE) to it:
 
 - WMOVE: `0xc02df8710Be33901D11A7E2D49B6c841e12B6f76`
 
@@ -69,7 +69,7 @@ The following tokens can be minted through their own contract once per hour by c
 
 #### Wrapped Tokens
 
-The following tokens cam be minted by depositing the network native asset (MOVE) to it:
+The following tokens can be minted by depositing the network native asset (MOVE) to it:
 
 - WMOVE: `0xBcD2b1D0263b7735138fBCAd05Df7f08dD5F73DA`
 

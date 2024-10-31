@@ -25,7 +25,7 @@ Restart=on-failure
 WantedBy=multi-user.target
 ```
 
-An Ansible script to deploy the above systemd service is available [here](./suzuka-full-follower.yml). An example usage with an ec2 inventory is below. You may also benefit from watching our tutorial [VIDEO](https://www.loom.com/share/59e6a31a08ef4260bdc9b082a3980f52).
+An Ansible script to deploy the above systemd service is available [here](./suzuka-full-follower.yml). An example usage with an EC2 inventory is below. You may also benefit from watching our tutorial [VIDEO](https://www.loom.com/share/59e6a31a08ef4260bdc9b082a3980f52).
 
 ```shell
 ansible-playbook --inventory <your-inventory> \
@@ -48,7 +48,7 @@ If you do not see the `0.tgz` that could indicate an issue with sync. See the tr
 If you encounter an error reported by the `setup` service for a reject bucket connection, ensure that you are able to access the bucket manually by getting objects via the AWS CLI. 
 
 ### Invalid Aptos State Error
-If you encounter an error reported by the `setup` service for an invalid Aptos state, this likely because the sync has fetched state into an invalid location relative to your Docker Compose application. An Aptos state error will likely be the first one reported. However, it most likely indicates a corruption of all state Perform a hierarchy of checks:
+If you encounter an error reported by the `setup` service for an invalid Aptos state, this likely because the sync has fetched state into an invalid location relative to your Docker Compose application. An Aptos state error will likely be the first one reported. However, it most likely indicates a corruption of all state. Perform a hierarchy of checks:
 1. Does the directory indicated by the `DOT_MOVEMENT_PATH` contain folders for `maptos`, `maptos-storage`, and `suzuka-da-db`?
 2. Does each of these folders have successfully unarchived files? There should be no archives in these folders.
 3. Is the host volume mounted correctly? Check the `volumes` section of your Docker Compose file.

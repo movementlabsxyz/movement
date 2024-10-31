@@ -14,7 +14,7 @@
 The Movement SDK is a collection of tools and libraries for building, deploying, and working with Movement Labs infrastructure. The SDK is designed to be modular and extensible, allowing developers to build custom tools and libraries on top of the core components as well as to interact with Movement Labs' own networks.
 
 ## Important
-Unless otherwise specified assume all commands below are run after entering a nix shell with `nix develop`.  Development is made possible Within the Nix environment with all needed tooling being available.  If you are wishing to run the network then this can also be achieved without the need to install `nix` with having docker and [just](https://github.com/casey/just) installed only. 
+Unless otherwise specified assume all commands below are run after entering a Nix shell with `nix develop`.  Development is made possible Within the Nix environment with all needed tooling being available.  If you are wishing to run the network then this can also be achieved without the need to install `nix` with having docker and [just](https://github.com/casey/just) installed only. 
 
 ## Organization
 - [`scripts`](./scripts): Scripts for running Movement Labs software. See the [scripts README](./scripts/README.md) for more information about the organization of scripts.
@@ -26,7 +26,7 @@ Unless otherwise specified assume all commands below are run after entering a ni
 - [`proto`](./proto): Protocol buffer definitions for the Movement Network. These definitions are used to generate code for interacting with the Movement Network. See the [proto README](./proto/README.md) for more information about the organization of protocol buffer definitions.
 
 ## Prerequisites (Development)
-- Nix package manager. Use nix to run and build Movement developer environments.  https://nix.dev/install-nix
+- Nix package manager. Use Nix to run and build Movement developer environments.  https://nix.dev/install-nix
 
 ## Prerequisites (Running Node)
 - Docker and Docker Compose
@@ -53,7 +53,7 @@ just m1-da-light-node native build.setup.test.local
 - **Features**:
     - `build`: Build the `suzuka-full-node` binaries.
     - `celestia-arabica`: DA on Celestia's Arabica network
-    - `celestia-local`: Run a local Celesta Data Availability service.
+    - `celestia-local`: Run a local Celestia Data Availability service.
     - `celestia-mocha`: DA on Celestia's Mocha network
     - `eth-local`: Settlement on a local Ethereum network
     - `eth-holesky`: Settlement on a Holesky Ethereum network
@@ -89,7 +89,7 @@ echo "INFO: movement version is $(cat ${MOVEMENT_ENV_FILE})"
 ### `suzuka-full-node`
 
 - **Features**:
-    - `local`: Run a local Celesta Data Availability service.
+    - `local`: Run a local Celestia Data Availability service.
 
 We only support running the `suzuka-full-node` with a local Celestia Data Availability 
 service via Docker Compose.

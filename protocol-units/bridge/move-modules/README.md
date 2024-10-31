@@ -30,7 +30,7 @@ If successful, you'll get the following prompt:
 Do you want to publish this package under the resource account's address 0xdc04f3645b836fd1c0c2bd168b186cb98d70206122069d257871856e7a1834a7? [yes/no]
 ```
 
-However, because dummy values `0xcafe` for origin address and `0xc3bb...` for resource address are included for testing in `Move.toml` already, you'll likely get this instead:
+However, because dummy values `0xcafe` for origin address and `0xc3bb...` for resource addresses are included for testing in `Move.toml` already, you'll likely get this instead:
 
 ```
 {

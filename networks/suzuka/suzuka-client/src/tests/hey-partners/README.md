@@ -1,6 +1,6 @@
 # MovementSwap
 
-**MovementSwap** is AMM protocol for [Aptos](https://www.aptos.com/) blockchain. It's a fork of [AnimeSwap](https://animeswap.org).
+**MovementSwap** is an AMM protocol for [Aptos](https://www.aptos.com/) blockchain. It's a fork of [AnimeSwap](https://animeswap.org).
 
 * [Contracts documents](https://docs.animeswap.org/docs/contracts/Aptos/contracts)
 * [SDK](https://github.com/AnimeSwap/v1-sdk)

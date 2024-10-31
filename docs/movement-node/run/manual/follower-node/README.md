@@ -1,5 +1,5 @@
 # Movement Follower Node
-The Movement Follower Node is a node type introduced for RPC providers from the work on the Open Network PR documented under [Movement Node Experimental](../../../../movement-node-experimental/). The follower node type runs executions and forwards transaction to block proposers included in the trusted validator set. Follower Nodes help the Movement Network to scale by providing increased transaction ingress capacity and horizontal scaling for queries over network state.
+The Movement Follower Node is a node type introduced for RPC providers from the work on the Open Network PR documented under [Movement Node Experimental](../../../../movement-node-experimental/). The follower node type runs executions and forwards transactions to block proposers included in the trusted validator set. Follower Nodes help the Movement Network to scale by providing increased transaction ingress capacity and horizontal scaling for queries over network state.
 
 ## Getting Started
 We provide more comprehensive guides for deployment later in this document and elsewhere. However, it is easiest to gain quick familiarity with the Movement Follower Node by running it locally.
