@@ -18,7 +18,6 @@ bridge-util = { workspace = true }
 anyhow = { workspace = true }
 
 [dev-dependencies]
-postgresql_embedded = { workspace = true }
 tokio = { workspace = true }
 
 [features]
