@@ -4457,9 +4457,9 @@ dependencies = [
 
 [[package]]
 name = "celestia-proto"
-version = "0.4.1"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c6eb26c852e42015f85f3aed5c3d1472c751b143e2199d0401ebac2f4500b20d"
+checksum = "0ab6f922c6488623dc5f78e602e0cea658d41c40825033ecbd810a83b73636e1"
 dependencies = [
  "celestia-tendermint-proto",
  "prost 0.12.6",
@@ -4471,12 +4471,13 @@ dependencies = [
 
 [[package]]
 name = "celestia-rpc"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "688345250891163ec0747e429fbbb172f053f8cae40ec99875a2ee2c997d03c6"
+checksum = "677fc8e51b4f53987fcd18bb0f3234ebe938155539cb272d5c771e22ce2ed6d1"
 dependencies = [
  "async-trait",
  "celestia-types",
+ "futures",
  "http 1.1.0",
  "jsonrpsee 0.24.7",
  "serde",
@@ -4533,9 +4534,9 @@ dependencies = [
 
 [[package]]
 name = "celestia-types"
-version = "0.6.1"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "caf52cc4b4cdf73fc07d9eeaea6d27bb39eed81f4bf8c89f01df86ace4e6da10"
+checksum = "ab143eba97ed0c957769fa16baecac8e88e479b8d7eae9a71bd084bb2ca80eca"
 dependencies = [
  "base64 0.22.1",
  "bech32",
@@ -4552,6 +4553,7 @@ dependencies = [
  "multiaddr",
  "multihash",
  "nmt-rs",
+ "prost 0.12.6",
  "ruint",
  "serde",
  "serde_repr",
@@ -8370,7 +8372,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "regex-syntax 0.8.5",
- "syn 2.0.82",
+ "syn 2.0.85",
 ]
 
 [[package]]
@@ -8953,7 +8955,7 @@ checksum = "dcf09caffaac8068c346b6df2a7fc27a177fd20b39421a39ce0a211bde679a6c"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.82",
+ "syn 2.0.85",
 ]
 
 [[package]]
