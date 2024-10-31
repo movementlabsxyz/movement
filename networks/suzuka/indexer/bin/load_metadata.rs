@@ -18,8 +18,6 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	// Replace the postgres connection definition in the metadata file
 	// with the provided in the env var INDEXER_V2_POSTGRES_URL
-	//	let postgres_host = std::env::var("POSTGRES_DB_HOST").unwrap_or("postgres".to_string());
-	//	let postgres_url = format!("postgres://postgres:password@{postgres_host}:5432/postgres");
 	let postgres_url = std::env::var("POSTGRES_DB_URL")
 		.unwrap_or("postgres://postgres:password@postgres:5432/postgres".to_string());
 	let metadata_file = HASURA_METADATA.replace("INDEXER_V2_POSTGRES_URL", &postgres_url);
