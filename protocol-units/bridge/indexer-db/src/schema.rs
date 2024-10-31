@@ -14,7 +14,7 @@ table! {
 table! {
 	wait_and_complete_initiators (id) {
 		id -> Int4,
-		timestamp -> BigInt,
+		wait_time_secs -> BigInt,
 		pre_image -> Binary,
 	}
 }

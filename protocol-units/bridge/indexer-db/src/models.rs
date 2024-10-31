@@ -7,7 +7,6 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Queryable, Insertable, Serialize, Deserialize)]
 #[table_name = "lock_bridge_transfers"]
 pub struct LockBridgeTransfer {
-	pub id: i32,
 	pub bridge_transfer_id: Vec<u8>,
 	pub hash_lock: Vec<u8>,
 	pub initiator: Vec<u8>,
@@ -19,8 +18,7 @@ pub struct LockBridgeTransfer {
 #[derive(Debug, Queryable, Insertable, Serialize, Deserialize)]
 #[table_name = "wait_and_complete_initiators"]
 pub struct WaitAndCompleteInitiator {
-	pub id: i32,
-	pub timestamp: i64,
+	pub wait_time_secs: i64,
 	pub pre_image: Vec<u8>,
 }
 
@@ -28,7 +26,6 @@ pub struct WaitAndCompleteInitiator {
 #[derive(Debug, Queryable, Insertable, Serialize, Deserialize)]
 #[table_name = "initiated_events"]
 pub struct InitiatedEvent {
-	pub id: i32,
 	pub bridge_transfer_id: Vec<u8>,
 	pub initiator_address: Vec<u8>,
 	pub recipient_address: Vec<u8>,
@@ -42,7 +39,6 @@ pub struct InitiatedEvent {
 #[derive(Debug, Queryable, Insertable, Serialize, Deserialize)]
 #[table_name = "locked_events"]
 pub struct LockedEvent {
-	pub id: i32,
 	pub bridge_transfer_id: Vec<u8>,
 	pub initiator: Vec<u8>,
 	pub recipient: Vec<u8>,
@@ -55,7 +51,6 @@ pub struct LockedEvent {
 #[derive(Debug, Queryable, Insertable, Serialize, Deserialize)]
 #[table_name = "initiator_completed_events"]
 pub struct InitiatorCompletedEvent {
-	pub id: i32,
 	pub bridge_transfer_id: Vec<u8>,
 }
 
@@ -63,7 +58,6 @@ pub struct InitiatorCompletedEvent {
 #[derive(Debug, Queryable, Insertable, Serialize, Deserialize)]
 #[table_name = "counter_part_completed_events"]
 pub struct CounterPartCompletedEvent {
-	pub id: i32,
 	pub bridge_transfer_id: Vec<u8>,
 	pub pre_image: Vec<u8>,
 }
@@ -72,7 +66,6 @@ pub struct CounterPartCompletedEvent {
 #[derive(Debug, Queryable, Insertable, Serialize, Deserialize)]
 #[table_name = "cancelled_events"]
 pub struct CancelledEvent {
-	pub id: i32,
 	pub bridge_transfer_id: Vec<u8>,
 }
 
@@ -80,6 +73,5 @@ pub struct CancelledEvent {
 #[derive(Debug, Queryable, Insertable, Serialize, Deserialize)]
 #[table_name = "refunded_events"]
 pub struct RefundedEvent {
-	pub id: i32,
 	pub bridge_transfer_id: Vec<u8>,
 }
