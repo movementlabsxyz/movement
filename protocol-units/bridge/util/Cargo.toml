@@ -17,4 +17,4 @@ rand = { workspace = true }
 serde = { workspace = true }
 hex = { workspace = true }
 derive_more = { workspace = true }
-alloy = { workspace = true }
+alloy = { workspace = true, features = ["serde"]}

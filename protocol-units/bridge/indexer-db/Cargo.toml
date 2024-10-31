@@ -15,11 +15,14 @@ diesel_migrations = { workspace = true }
 bigdecimal = { workspace = true }
 serde = { workspace = true }
 bridge-util = { workspace = true }
+anyhow = { workspace = true }
+
+[dev-dependencies]
+postgresql_embedded = { workspace = true }
+tokio = { workspace = true }
 
 [features]
 default = []
-client = []
-server = []
 
 [lints]
 workspace = true

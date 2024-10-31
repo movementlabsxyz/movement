@@ -51,6 +51,11 @@ impl BridgeTransferId {
 		rng.fill(&mut random_bytes);
 		BridgeTransferId(random_bytes)
 	}
+
+	pub fn test() -> Self {
+		let array = [0u8; 32];
+		BridgeTransferId(array)
+	}
 }
 
 impl TryFrom<Vec<u8>> for BridgeTransferId {
@@ -69,6 +74,13 @@ impl fmt::Display for BridgeTransferId {
 
 #[derive(Deref, Debug, Clone, Copy, PartialEq, Eq, Hash, Deserialize)]
 pub struct BridgeAddress<A>(pub A);
+
+impl BridgeAddress<Vec<u8>> {
+	pub fn test() -> Self {
+		let array = [0u8; 32];
+		BridgeAddress(array.to_vec())
+	}
+}
 
 impl From<&str> for BridgeAddress<Vec<u8>> {
 	fn from(value: &str) -> Self {
@@ -120,6 +132,11 @@ impl HashLock {
 		rng.fill(&mut secret);
 		HashLock(secret)
 	}
+
+	pub fn test() -> Self {
+		let array = [0u8; 32];
+		HashLock(array)
+	}
 }
 
 #[derive(Deref, Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
@@ -162,6 +179,10 @@ impl Amount {
 	// 		AssetType::Moveth(value) => value,
 	// 	}
 	// }
+
+	pub fn test() -> Self {
+		Amount(AssetType::Moveth(0))
+	}
 
 	pub fn moveth_value(&self) -> u64 {
 		match self.0 {
