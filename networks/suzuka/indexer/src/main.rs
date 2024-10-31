@@ -29,6 +29,27 @@ fn main() -> Result<(), anyhow::Error> {
 	let txmeta_indexer_config =
 		build_processor_conf("transaction_metadata_processor", &maptos_config)?;
 
+	// Token processor
+	let activate_tokes: bool = std::env::var("ACTIVATE_TOKEN_INDEXING")
+		.map(|t| t.parse().unwrap_or(true))
+		.unwrap_or(true);
+	let token_configs = if activate_tokes {
+		let token_indexer_config = build_processor_conf(
+			"token_processor
+  nft_points_contract: null",
+			&maptos_config,
+		)?;
+
+		let tokenv2_indexer_config = build_processor_conf(
+			"token_v2_processor
+  query_retries: 5",
+			&maptos_config,
+		)?;
+		Some((token_indexer_config, tokenv2_indexer_config))
+	} else {
+		None
+	};
+
 	let num_cpus = num_cpus::get();
 	let worker_threads = (num_cpus * RUNTIME_WORKER_MULTIPLIER).max(16);
 	println!(
@@ -60,6 +81,10 @@ fn main() -> Result<(), anyhow::Error> {
 				set.spawn(async move { event_indexer_config.run().await });
 				set.spawn(async move { fungible_indexer_config.run().await });
 				set.spawn(async move { txmeta_indexer_config.run().await });
+				if let Some((token_indexer_config, tokenv2_indexer_config)) = token_configs {
+					set.spawn(async move { token_indexer_config.run().await });
+					set.spawn(async move { tokenv2_indexer_config.run().await });
+				}
 
 				while let Some(res) = set.join_next().await {
 					if let Err(err) = res {
@@ -119,13 +144,20 @@ default_sleep_time_between_request: {}
 
 	//let indexer_config_path = dot_movement.get_path().join("indexer_config.yaml");
 	let mut output_file = tempfile::NamedTempFile::new()?;
-	// let mut output_file = std::fs::File::create(&indexer_config_path).map_err(|err| {
-	// 	anyhow::anyhow!("Indexer temps config file :{indexer_config_path:?} can't be created because of err:{err}")
-	// })?;
 	write!(output_file, "{}", indexer_config_content)?;
 
-	let indexer_config =
+	let mut indexer_config =
 		server_framework::load::<IndexerGrpcProcessorConfig>(&output_file.path().to_path_buf())?;
+
+	// Use to print the generated config, to have an example when activating a new processor.
+	// indexer_config.processor_config = ProcessorConfig::TokenV2Processor(TokenV2ProcessorConfig {
+	// 	query_retries: 5,
+	// 	query_retry_delay_ms: 100,
+	// });
+
+	// let yaml = serde_yaml::to_string(&indexer_config)?;
+	// println!("{yaml}",);
+
 	Ok(indexer_config)
 }
 
