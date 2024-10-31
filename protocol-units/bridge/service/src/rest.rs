@@ -27,7 +27,7 @@ impl BridgeRest {
 		conf: &MovementConfig,
 		request_tx: mpsc::Sender<oneshot::Sender<String>>,
 	) -> Result<Self, anyhow::Error> {
-		let url = format!("{}:{}", conf.rest_hostname, conf.rest_port);
+		let url = format!("{}:{}", conf.rest_listener_hostname, conf.rest_port);
 
 		let context = RestContext { request_tx };
 		Ok(Self { url, context: Arc::new(context) })

@@ -7,10 +7,10 @@ const DEFAULT_MVT_RPC_CONNECTION_HOSTNAME: &str = "127.0.0.1";
 const DEFAULT_MVT_RPC_CONNECTION_PORT: u16 = 8080;
 const DEFAULT_MVT_FAUCET_CONNECTION_HOSTNAME: &str = "127.0.0.1";
 const DEFAULT_MVT_FAUCET_CONNECTION_PORT: u16 = 8081;
-const DEFAULT_REST_CONNECTION_HOSTNAME: &str = "0.0.0.0";
-const DEFAULT_GRPC_CONNECTION_HOSTNAME: &str = "0.0.0.0";
-const DEFAULT_GRPC_CONNECTION_PORT: u16 = 50051;
-const DEFAULT_REST_CONNECTION_PORT: u16 = 30883;
+const DEFAULT_REST_LISTENER_HOSTNAME: &str = "0.0.0.0";
+const DEFAULT_GRPC_LISTENER_HOSTNAME: &str = "0.0.0.0";
+const DEFAULT_GRPC_LISTENER_PORT: u16 = 50051;
+const DEFAULT_REST_LISTENER_PORT: u16 = 30883;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MovementConfig {
@@ -37,17 +37,17 @@ pub struct MovementConfig {
 	pub mvt_init_network: String,
 
 	/// Endpoint for the REST service
-	#[serde(default = "default_rest_connection_hostname")]
-	pub rest_hostname: String,
-	#[serde(default = "default_rest_connection_port")]
+	#[serde(default = "default_rest_listener_hostname")]
+	pub rest_listener_hostname: String,
+	#[serde(default = "default_rest_listener_port")]
 	pub rest_port: u16,
 
 	// gRPC service connection details
 	#[serde(default = "default_grpc_connection_protocol")]
 	pub grpc_protocol: String,
-	#[serde(default = "default_grpc_connection_hostname")]
-	pub grpc_hostname: String,
-	#[serde(default = "default_grpc_connection_port")]
+	#[serde(default = "default_grpc_listener_hostname")]
+	pub grpc_listener_hostname: String,
+	#[serde(default = "default_grpc_listener_port")]
 	pub grpc_port: u16,
 }
 
@@ -67,32 +67,22 @@ env_default!(
 );
 
 env_default!(
-	default_grpc_connection_hostname,
-	"GRPC_CONNECTION_HOSTNAME",
+	default_grpc_listener_hostname,
+	"GRPC_LISTENER_HOSTNAME",
 	String,
-	DEFAULT_GRPC_CONNECTION_HOSTNAME.to_string()
+	DEFAULT_GRPC_LISTENER_HOSTNAME.to_string()
 );
 
-env_default!(
-	default_grpc_connection_port,
-	"GRPC_CONNECTION_PORT",
-	u16,
-	DEFAULT_GRPC_CONNECTION_PORT
-);
+env_default!(default_grpc_listener_port, "GRPC_LISTENER_PORT", u16, DEFAULT_GRPC_LISTENER_PORT);
 
 env_default!(
-	default_rest_connection_hostname,
-	"REST_CONNECTION_HOSTNAME",
+	default_rest_listener_hostname,
+	"REST_LISTENER_HOSTNAME",
 	String,
-	DEFAULT_REST_CONNECTION_HOSTNAME.to_string()
+	DEFAULT_REST_LISTENER_HOSTNAME.to_string()
 );
 
-env_default!(
-	default_rest_connection_port,
-	"REST_CONNECTION_PORT",
-	u16,
-	DEFAULT_REST_CONNECTION_PORT
-);
+env_default!(default_rest_listener_port, "REST_LISTENER_PORT", u16, DEFAULT_REST_LISTENER_PORT);
 
 env_default!(
 	default_movement_native_address,
@@ -179,11 +169,11 @@ impl MovementConfig {
 			mvt_faucet_connection_hostname: default_mvt_rpc_connection_hostname(),
 			mvt_faucet_connection_port: 30732,
 			mvt_init_network: default_mvt_init_network(),
-			rest_hostname: default_rest_connection_hostname(),
-			rest_port: default_rest_connection_port(),
+			rest_listener_hostname: default_rest_listener_hostname(),
+			rest_port: default_rest_listener_port(),
 			grpc_protocol: default_grpc_connection_protocol(),
-			grpc_hostname: default_grpc_connection_hostname(),
-			grpc_port: default_grpc_connection_port(),
+			grpc_listener_hostname: default_grpc_listener_hostname(),
+			grpc_port: default_grpc_listener_port(),
 		}
 	}
 }
@@ -200,11 +190,11 @@ impl Default for MovementConfig {
 			mvt_faucet_connection_hostname: default_mvt_rpc_connection_hostname(),
 			mvt_faucet_connection_port: default_mvt_faucet_connection_port(),
 			mvt_init_network: default_mvt_init_network(),
-			rest_hostname: default_rest_connection_hostname(),
-			rest_port: default_rest_connection_port(),
+			rest_listener_hostname: default_rest_listener_hostname(),
+			rest_port: default_rest_listener_port(),
 			grpc_protocol: default_grpc_connection_protocol(),
-			grpc_hostname: default_grpc_connection_hostname(),
-			grpc_port: default_grpc_connection_port(),
+			grpc_listener_hostname: default_grpc_listener_hostname(),
+			grpc_port: default_grpc_listener_port(),
 		}
 	}
 }
