@@ -9,28 +9,14 @@ use std::hash::{DefaultHasher, Hash, Hasher};
 
 use alloy::json_abi::Param;
 use alloy::network::{Ethereum, EthereumWallet};
-use alloy::primitives::{Address, FixedBytes};
+use alloy::primitives::Address;
 use alloy::providers::fillers::{
 	ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller,
 };
 use alloy::providers::RootProvider;
 use alloy::rlp::{RlpDecodable, RlpEncodable};
-use alloy::sol_types::SolEvent;
 use alloy::transports::BoxTransport;
 use rand::Rng;
-
-pub const INITIATOR_INITIATED_SELECT: FixedBytes<32> =
-	AtomicBridgeInitiator::BridgeTransferInitiated::SIGNATURE_HASH;
-pub const INITIATOR_COMPLETED_SELECT: FixedBytes<32> =
-	AtomicBridgeInitiator::BridgeTransferCompleted::SIGNATURE_HASH;
-pub const INITIATOR_REFUNDED_SELECT: FixedBytes<32> =
-	AtomicBridgeInitiator::BridgeTransferRefunded::SIGNATURE_HASH;
-pub const COUNTERPARTY_LOCKED_SELECT: FixedBytes<32> =
-	AtomicBridgeCounterparty::BridgeTransferLocked::SIGNATURE_HASH;
-pub const COUNTERPARTY_COMPLETED_SELECT: FixedBytes<32> =
-	AtomicBridgeCounterparty::BridgeTransferCompleted::SIGNATURE_HASH;
-pub const COUNTERPARTY_ABORTED_SELECT: FixedBytes<32> =
-	AtomicBridgeCounterparty::BridgeTransferAborted::SIGNATURE_HASH;
 
 // Codegen for the MOVE bridge contracts
 alloy::sol!(
@@ -154,12 +140,6 @@ impl std::ops::Deref for EthAddress {
 	}
 }
 
-// impl From<String> for EthAddress {
-// 	fn from(s: String) -> Self {
-// 		EthAddress(Address::parse_checksummed(s, None).expect("Invalid Ethereum address"))
-// 	}
-// }
-
 impl From<Vec<u8>> for EthAddress {
 	fn from(vec: Vec<u8>) -> Self {
 		// Ensure the vector has the correct length
@@ -239,68 +219,6 @@ impl AlloyParam {
 				components: vec![],
 				internal_type: None,
 			},
-		}
-	}
-}
-
-pub(crate) enum EventName {
-	InitiatorInitiated,
-	InitiatorCompleted,
-	InitiatorRefunded,
-	CounterpartyLocked,
-	CounterpartyCompleted,
-	CounterpartyAborted,
-}
-
-impl EventName {
-	pub fn as_str(&self) -> &str {
-		match self {
-			EventName::InitiatorInitiated => "BridgeTransferInitiated",
-			EventName::InitiatorCompleted => "BridgeTransferCompleted",
-			EventName::InitiatorRefunded => "BridgeTransferRefunded",
-			EventName::CounterpartyLocked => "BridgeTransferLocked",
-			EventName::CounterpartyCompleted => "BridgeTransferCompleted",
-			EventName::CounterpartyAborted => "BridgeTransferAborted",
-		}
-	}
-
-	pub fn params(&self) -> Vec<Param> {
-		match self {
-			EventName::InitiatorInitiated => vec![
-				AlloyParam::BridgeTransferId.fill(),
-				AlloyParam::InitiatorAddress.fill(),
-				AlloyParam::RecipientAddress.fill(),
-				AlloyParam::PreImage.fill(),
-				AlloyParam::HashLock.fill(),
-				AlloyParam::TimeLock.fill(),
-				AlloyParam::Amount.fill(),
-			],
-			EventName::InitiatorCompleted => {
-				vec![AlloyParam::BridgeTransferId.fill(), AlloyParam::PreImage.fill()]
-			}
-			EventName::InitiatorRefunded => vec![AlloyParam::BridgeTransferId.fill()],
-			EventName::CounterpartyLocked => vec![
-				AlloyParam::BridgeTransferId.fill(),
-				AlloyParam::InitiatorAddress.fill(),
-				AlloyParam::Amount.fill(),
-				AlloyParam::HashLock.fill(),
-				AlloyParam::TimeLock.fill(),
-			],
-			EventName::CounterpartyCompleted => {
-				vec![AlloyParam::BridgeTransferId.fill(), AlloyParam::PreImage.fill()]
-			}
-			EventName::CounterpartyAborted => vec![AlloyParam::BridgeTransferId.fill()],
-		}
-	}
-}
-
-impl From<&str> for EventName {
-	fn from(s: &str) -> Self {
-		match s {
-			"BridgeTransferInitiated" => EventName::InitiatorInitiated,
-			"BridgeTransferCompleted" => EventName::InitiatorCompleted,
-			"BridgeTransferRefunded" => EventName::InitiatorRefunded,
-			_ => panic!("Invalid event name"),
 		}
 	}
 }
