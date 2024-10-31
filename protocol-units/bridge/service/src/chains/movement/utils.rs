@@ -1,6 +1,5 @@
 use super::client::MovementClient;
-use crate::chains::bridge_contracts::BridgeContractError;
-use crate::types::{BridgeAddress, HashLockPreImage};
+use bridge_util::chains::bridge_contracts::BridgeContractError;
 use anyhow::{Context, Result};
 use aptos_sdk::{
 	crypto::ed25519::{Ed25519PrivateKey, Ed25519Signature},
@@ -18,13 +17,13 @@ use aptos_sdk::{
 	},
 	transaction_builder::TransactionFactory,
 	types::{
-		AccountKey,
 		account_address::AccountAddress,
 		chain_id::ChainId,
 		transaction::{EntryFunction, SignedTransaction, TransactionPayload},
-		LocalAccount,
+		AccountKey, LocalAccount,
 	},
 };
+use bridge_util::types::{BridgeAddress, HashLockPreImage};
 use derive_new::new;
 use rand::{rngs::StdRng, Rng, RngCore, SeedableRng};
 use rand_chacha::ChaChaRng;
@@ -101,7 +100,7 @@ impl FromStr for MovementAddress {
 impl std::fmt::Display for MovementAddress {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		write!(f, "{}", self.0.to_standard_string())
-	} 
+	}
 }
 
 impl From<Vec<u8>> for MovementAddress {
@@ -421,26 +420,28 @@ pub fn to_eip55(address: &str) -> String {
 		.collect()
 }
 
-
 pub async fn fund_recipient(recipient: &BridgeAddress<Vec<u8>>) -> Result<(), BridgeContractError> {
 	// Parse URLs
-	let faucet_url = Url::parse(MOVEMENT_FAUCET_URL)
-	.map_err(|_| BridgeContractError::InvalidUrl)?;
-	let rest_url = Url::parse(MOVEMENT_RPC_URL)
-	.map_err(|_| BridgeContractError::InvalidUrl)?;
-	
+	let faucet_url =
+		Url::parse(MOVEMENT_FAUCET_URL).map_err(|_| BridgeContractError::InvalidUrl)?;
+	let rest_url = Url::parse(MOVEMENT_RPC_URL).map_err(|_| BridgeContractError::InvalidUrl)?;
+
 	// Create clients
 	let faucet_client = FaucetClient::new(faucet_url, rest_url);
 
 	// Convert recipient to AccountAddress
-	let recipient_address: [u8; 32] = recipient.0.clone().try_into()
-	.map_err(|_| BridgeContractError::SerializationError)?;
+	let recipient_address: [u8; 32] = recipient
+		.0
+		.clone()
+		.try_into()
+		.map_err(|_| BridgeContractError::SerializationError)?;
 	let account_address = AccountAddress::new(recipient_address);
 
 	// Execute the funding transaction
-	faucet_client.fund(account_address, 100_000_000)
-	.await
-	.map_err(|_| BridgeContractError::FundingError)?;
+	faucet_client
+		.fund(account_address, 100_000_000)
+		.await
+		.map_err(|_| BridgeContractError::FundingError)?;
 
 	Ok(())
 }

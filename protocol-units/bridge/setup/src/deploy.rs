@@ -12,7 +12,7 @@ use bridge_service::chains::ethereum::types::EthAddress;
 use bridge_service::chains::ethereum::types::MockMOVEToken;
 use bridge_service::chains::ethereum::types::WETH9;
 use bridge_service::chains::ethereum::utils::{send_transaction, send_transaction_rules};
-use bridge_service::types::TimeLock;
+use bridge_util::types::TimeLock;
 use hex::ToHex;
 use rand::Rng;
 use std::{

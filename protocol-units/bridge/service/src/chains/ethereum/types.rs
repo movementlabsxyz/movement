@@ -1,10 +1,10 @@
-use crate::types::Amount;
-use crate::types::BridgeAddress;
-use crate::types::BridgeTransferDetails;
-use crate::types::BridgeTransferId;
-use crate::types::HashLock;
-use crate::types::HashLockPreImage;
-use crate::types::LockDetails;
+use bridge_util::types::Amount;
+use bridge_util::types::BridgeAddress;
+use bridge_util::types::BridgeTransferDetails;
+use bridge_util::types::BridgeTransferId;
+use bridge_util::types::HashLock;
+use bridge_util::types::HashLockPreImage;
+use bridge_util::types::LockDetails;
 use std::hash::{DefaultHasher, Hash, Hasher};
 
 use alloy::json_abi::Param;

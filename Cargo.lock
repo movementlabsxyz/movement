@@ -4106,6 +4106,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "bridge-indexer-db"
+version = "0.0.2"
+dependencies = [
+ "bigdecimal",
+ "bridge-util",
+ "diesel",
+ "diesel_migrations",
+ "serde",
+]
+
+[[package]]
 name = "bridge-integration-tests"
 version = "0.0.2"
 dependencies = [
@@ -4159,6 +4170,7 @@ dependencies = [
  "bcs 0.1.4",
  "bridge-config",
  "bridge-grpc",
+ "bridge-util",
  "delegate",
  "derive-new",
  "derive_more 0.99.18",
@@ -4197,6 +4209,7 @@ dependencies = [
  "aptos-sdk",
  "bridge-config",
  "bridge-service",
+ "bridge-util",
  "commander",
  "dot-movement",
  "godfig",
@@ -4209,6 +4222,20 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.18",
+]
+
+[[package]]
+name = "bridge-util"
+version = "0.0.2"
+dependencies = [
+ "alloy",
+ "async-trait",
+ "derive_more 0.99.18",
+ "hex",
+ "rand 0.7.3",
+ "serde",
+ "thiserror",
+ "tokio-stream",
 ]
 
 [[package]]
@@ -5729,12 +5756,14 @@ dependencies = [
  "chrono",
  "diesel_derives",
  "itoa",
+ "libsqlite3-sys",
  "num-bigint 0.4.6",
  "num-integer",
  "num-traits",
  "pq-sys",
  "r2d2",
  "serde_json",
+ "time",
 ]
 
 [[package]]
@@ -8269,6 +8298,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3db8d6ba2cec9eacc40e6e8ccc98931840301f1006e95647ceb2dd5c3aa06f7c"
 dependencies = [
  "libsecp256k1-core",
+]
+
+[[package]]
+name = "libsqlite3-sys"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "afc22eff61b133b115c6e8c74e818c628d6d5e7a502afea6f64dee076dd94326"
+dependencies = [
+ "pkg-config",
+ "vcpkg",
 ]
 
 [[package]]

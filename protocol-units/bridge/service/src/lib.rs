@@ -1,16 +1,17 @@
 use crate::actions::process_action;
-use crate::actions::ActionExecError;
-use crate::actions::TransferAction;
-use crate::actions::TransferActionType;
-use crate::chains::bridge_contracts::BridgeContract;
-use crate::chains::bridge_contracts::BridgeContractEvent;
-use crate::chains::bridge_contracts::BridgeContractMonitoring;
-use crate::events::InvalidEventError;
-use crate::events::TransferEvent;
-use crate::states::TransferState;
-use crate::states::TransferStateType;
-use crate::types::BridgeTransferId;
-use crate::types::ChainId;
+use bridge_util::actions::ActionExecError;
+use bridge_util::actions::TransferAction;
+use bridge_util::actions::TransferActionType;
+use bridge_util::chains::bridge_contracts::BridgeContract;
+use bridge_util::chains::bridge_contracts::BridgeContractEvent;
+use bridge_util::chains::bridge_contracts::BridgeContractMonitoring;
+use bridge_util::events::InvalidEventError;
+use bridge_util::events::TransferEvent;
+use bridge_util::states::TransferState;
+use bridge_util::states::TransferStateType;
+pub use bridge_util::types;
+use bridge_util::types::BridgeTransferId;
+use bridge_util::types::ChainId;
 use futures::stream::FuturesUnordered;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -20,11 +21,8 @@ use tokio_stream::StreamExt;
 
 mod actions;
 pub mod chains;
-mod events;
 pub mod grpc;
 pub mod rest;
-mod states;
-pub mod types;
 
 pub async fn run_bridge<
 	A1: Send + From<Vec<u8>> + std::clone::Clone + 'static + std::fmt::Debug,

@@ -80,11 +80,12 @@ impl From<String> for BridgeAddress<Vec<u8>> {
 		Self(value.as_bytes().to_vec())
 	}
 }
-// impl<A: Into<Vec<u8>>> Into<BridgeAddress<Vec<u8>>> for BridgeAddress<A> {
-// 	fn into(self) -> BridgeAddress<Vec<u8>> {
-// 		BridgeAddress(self.0.into())
-// 	}
-// }
+
+impl<A: Into<Vec<u8>>> BridgeAddress<A> {
+	pub fn into_vec(self) -> Vec<u8> {
+		self.0.into()
+	}
+}
 
 #[derive(Deref, Debug, Clone, Copy, PartialEq, Eq, Hash, Deserialize)]
 pub struct HashLock(pub [u8; 32]);
@@ -164,6 +165,13 @@ impl Amount {
 		match self.0 {
 			AssetType::EthAndWeth((_, weth_value)) => weth_value,
 			AssetType::Moveth(_) => 0,
+		}
+	}
+
+	pub fn value(&self) -> u64 {
+		match self.0 {
+			AssetType::EthAndWeth((eth_value, weth_value)) => eth_value + weth_value,
+			AssetType::Moveth(value) => value,
 		}
 	}
 }

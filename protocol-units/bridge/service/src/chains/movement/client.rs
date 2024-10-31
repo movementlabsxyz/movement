@@ -1,10 +1,10 @@
 use super::client_framework::FRAMEWORK_ADDRESS;
 use super::utils::{self, MovementAddress};
-use crate::chains::bridge_contracts::BridgeContract;
-use crate::chains::bridge_contracts::BridgeContractError;
-use crate::chains::bridge_contracts::BridgeContractResult;
-use crate::types::BridgeTransferDetailsCounterparty;
-use crate::types::{
+use bridge_util::chains::bridge_contracts::BridgeContract;
+use bridge_util::chains::bridge_contracts::BridgeContractError;
+use bridge_util::chains::bridge_contracts::BridgeContractResult;
+use bridge_util::types::BridgeTransferDetailsCounterparty;
+use bridge_util::types::{
 	Amount, AssetType, BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock,
 	HashLockPreImage, TimeLock,
 };
