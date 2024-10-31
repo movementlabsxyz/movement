@@ -30,7 +30,7 @@ DOT_MOVEMENT_PATH=./.movement
 MAPTOS_CHAIN_ID=250 # change this to the chain id of the network you are running
 MOVEMENT_SYNC="follower::mtnet-l-sync-bucket-sync<=>{maptos,maptos-storage,suzuka-da-db}/**" # change to the sync bucket for the network you are running
 M1_DA_LIGHT_NODE_CONNECTION_PROTOCOL=https
-M1_DA_LIGHT_NODE_CONNECTION_HOSTNAME="m1-da-light-node.testnet.movementlabs.xyz" # changes this to the hostname of the m1_da_light_node_service on network you are running
+M1_DA_LIGHT_NODE_CONNECTION_HOSTNAME="m1-da-light-node.testnet.bardock.movementlabs.xyz" # changes this to the hostname of the m1_da_light_node_service on network you are running
 M1_DA_LIGHT_NODE_CONNECTION_PORT=443
 # you may need to provide AWS credentials for the Amazon SDK to properly interact with the sync bucket
 # often this will be picked up appropriately if your environment is configured to use AWS
@@ -60,7 +60,7 @@ To check on the status of the service under either runner, run:
 curl http://localhost:30731/v1
 ```
 
-You should see a `ledger_version` field CLOSE to the other values on the network, e.g., [https://testnet.movementnetwork.xyz/v1](https://testnet.movementnetwork.xyz/v1).
+You should see a `ledger_version` field CLOSE to the other values on the network, e.g., [https://aptos.testnet.bardock.movementlabs.xyz/v1](https://aptos.testnet.bardock.movementlabs.xyz/v1).
 
 ## Deployment and Advanced Usage
 For deployment and advanced usage, we recommend you use our [provided Ansible scripts](../../ansible/follower-node/README.md).
