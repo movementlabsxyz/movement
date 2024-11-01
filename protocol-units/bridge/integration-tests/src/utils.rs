@@ -54,10 +54,10 @@ pub fn assert_counterparty_bridge_transfer_details_framework(
 }
 
 pub async fn extract_bridge_transfer_id(
-	movement_client: &mut MovementClient,
+	movement_client: &mut MovementClientFramework,
 ) -> Result<[u8; 32], anyhow::Error> {
 	let sender_address = movement_client.signer().address();
-	let sequence_number = 0; // Modify as needed
+	let sequence_number = 0;
 	let rest_client = movement_client.rest_client();
 
 	let transactions = rest_client
@@ -162,7 +162,8 @@ pub async fn fetch_bridge_transfer_details(
 
 	if let Some(transfers) = json_value.get("inner").and_then(|t| t.get("buckets")) {
 		for (key, value) in transfers.as_object().unwrap().iter() {
-			let key_vec = hex::decode(key).expect("Failed to decode key"); // Convert the key into Vec<u8>
+			// Convert the key into Vec<u8>
+			let key_vec = hex::decode(key).expect("Failed to decode key");
 
 			if key_vec == bridge_transfer_id {
 				let bridge_transfer_details: BridgeTransferDetails<AccountAddress> =
@@ -226,7 +227,7 @@ pub async fn fund_and_check_balance_framework(
 }
 
 pub async fn initiate_bridge_transfer_helper(
-	movement_client: &mut MovementClient,
+	movement_client: &mut MovementClientFramework,
 	initiator_address: AccountAddress,
 	recipient_address: Vec<u8>,
 	hash_lock: [u8; 32],
