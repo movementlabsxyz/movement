@@ -32,6 +32,13 @@ alloy::sol!(
 	"abis/AtomicBridgeCounterpartyMOVE.json"
 );
 
+alloy::sol!(
+	#[allow(missing_docs)]
+	#[sol(rpc)]
+	MockMOVEToken,
+	"abis/MockMOVEToken.json"
+);
+
 /// Specifies the kind of asset being transferred,
 /// This will associate the client with its respective ABIs
 #[derive(Debug, Clone, Default)]
