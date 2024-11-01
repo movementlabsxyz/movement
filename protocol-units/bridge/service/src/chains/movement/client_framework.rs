@@ -501,16 +501,14 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 	}
 }
 
-#[cfg(test)]
-use rand::prelude::*;
-#[cfg(test)]
+//@TODO: feature flag from here for testing only
+
 use std::{
 	env, fs,
 	io::Write,
 	path::PathBuf,
 	process::{Command, Stdio},
 };
-#[cfg(test)]
 use tokio::{
 	io::{AsyncBufReadExt, BufReader},
 	process::Command as TokioCommand,
@@ -518,7 +516,6 @@ use tokio::{
 	task,
 };
 
-#[cfg(test)]
 impl MovementClientFramework {
 	pub async fn bridge_setup_scripts() -> Result<()> {
 		let current_dir = env::current_dir().expect("Failed to get current directory");

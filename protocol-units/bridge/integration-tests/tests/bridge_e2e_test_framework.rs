@@ -40,7 +40,7 @@ async fn initiate_eth_bridge_transfer(
 		.await?;
 
 	let contract =
-		AtomicBridgeInitiator::new(config.eth.eth_initiator_contract.parse()?, &rpc_provider);
+		AtomicBridgeInitiatorMOVE::new(config.eth.eth_initiator_contract.parse()?, &rpc_provider);
 
 	let initiator_address = BridgeAddress(EthAddress(initiator_address));
 
@@ -67,6 +67,9 @@ async fn initiate_eth_bridge_transfer(
 	.map_err(|e| BridgeContractError::GenericError(format!("Failed to send transaction: {}", e)))?;
 	Ok(())
 }
+
+#[cfg(test)]
+use bridge_service::chains::movement::client_framework::test_helpers::MovementClientFramework;
 
 #[tokio::test]
 async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Error> {
