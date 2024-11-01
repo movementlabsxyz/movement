@@ -1,18 +1,18 @@
-use alloy::network::EthereumWallet;
-use alloy::providers::ProviderBuilder;
-use alloy::signers::local::PrivateKeySigner;
-use alloy_primitives::Address;
-use alloy_primitives::U256;
-use bridge_config::common::eth::EthConfig;
-use bridge_config::common::movement::MovementConfig;
-use bridge_config::Config as BridgeConfig;
-use bridge_service::chains::ethereum::types::AtomicBridgeCounterpartyMOVE;
-use bridge_service::chains::ethereum::types::AtomicBridgeInitiatorMOVE;
-use bridge_service::chains::ethereum::types::EthAddress;
-use bridge_service::chains::ethereum::types::MockMOVEToken;
-use bridge_service::chains::ethereum::types::WETH9;
-use bridge_service::chains::ethereum::utils::{send_transaction, send_transaction_rules};
-use bridge_service::types::TimeLock;
+use alloy::{
+	network::EthereumWallet, providers::ProviderBuilder, signers::local::PrivateKeySigner,
+};
+use alloy_primitives::{Address, U256};
+use bridge_config::{
+	common::{eth::EthConfig, movement::MovementConfig},
+	Config as BridgeConfig,
+};
+use bridge_service::{
+	chains::ethereum::types::{
+		AtomicBridgeCounterpartyMOVE, AtomicBridgeInitiatorMOVE, EthAddress,
+	},
+	types::TimeLock,
+	utils::{send_transaction, send_transaction_rules},
+};
 use hex::ToHex;
 use rand::Rng;
 use std::{
