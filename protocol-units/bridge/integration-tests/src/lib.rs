@@ -161,10 +161,11 @@ impl HarnessEthClient {
 }
 
 pub struct HarnessMvtClient {
-	pub movement_client: MovementClient,
+	/// The Client for the Movement Framework
+	pub movement_client: MovementClientFramework,
 	///The Apotos Rest Client
 	pub rest_client: Client,
-	///The Apotos Rest Client
+	/// The Aptos Faucet Client
 	pub faucet_client: Arc<RwLock<FaucetClient>>,
 }
 
@@ -176,7 +177,7 @@ impl HarnessMvtClient {
 	}
 
 	pub async fn build(config: &Config) -> Self {
-		let movement_client = MovementClient::new(&config.movement)
+		let movement_client = MovementClientFramework::new(&config.movement)
 			.await
 			.expect("Failed to create MovementClient");
 
@@ -225,7 +226,7 @@ impl HarnessMvtClient {
 
 		let payload = bridge_service::chains::movement::utils::make_aptos_payload(
 			FRAMEWORK_ADDRESS,
-			bridge_service::chains::movement::client::COUNTERPARTY_MODULE_NAME,
+			bridge_service::chains::movement::client_framework::COUNTERPARTY_MODULE_NAME,
 			"complete_bridge_transfer",
 			Vec::new(),
 			args2,
