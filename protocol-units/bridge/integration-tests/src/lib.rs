@@ -14,6 +14,7 @@ use bridge_service::chains::bridge_contracts::BridgeContractError;
 use bridge_service::chains::ethereum::types::AlloyProvider;
 use bridge_service::chains::ethereum::types::EthAddress;
 use bridge_service::chains::ethereum::{client::EthClient, types::EthHash};
+use bridge_service::chains::movement::client_framework::FRAMEWORK_ADDRESS;
 use bridge_service::chains::movement::utils::MovementAddress;
 use bridge_service::chains::movement::{client::MovementClient, client_framework::MovementClientFramework, utils::MovementHash};
 use bridge_service::types::Amount;
@@ -66,7 +67,11 @@ impl Default for EthToMovementCallArgs {
 
                 Self {
 			// Dummy valid EIP-55 address used in framework modules
-                        initiator: b"32Be343B94f860124dC4fEe278FDCBD38C102D88".to_vec(),
+                        // initiator: b"32Be343B94f860124dC4fEe278FDCBD38C102D88".to_vec(),
+			// Actual Eth address
+			initiator: b"0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc".to_vec(),
+			// All lowercase version:
+			//initiator: b"0x32be343b94f860124dc4fee278fdcbd38c102d88".to_vec(),
 			// Dummy recipient address
                         recipient: MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face")),
                         // Convert to [u8; 32] with explicit type annotation
@@ -231,7 +236,7 @@ impl HarnessMvtClient {
 		];
 
 		let payload = bridge_service::chains::movement::utils::make_aptos_payload(
-			self.movement_client.native_address,
+			FRAMEWORK_ADDRESS,
 			bridge_service::chains::movement::client::COUNTERPARTY_MODULE_NAME,
 			"complete_bridge_transfer",
 			Vec::new(),

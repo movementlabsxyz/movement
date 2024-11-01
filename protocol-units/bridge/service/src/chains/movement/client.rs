@@ -1,3 +1,4 @@
+use super::client_framework::FRAMEWORK_ADDRESS;
 use super::utils::{self, MovementAddress};
 use crate::chains::bridge_contracts::BridgeContract;
 use crate::chains::bridge_contracts::BridgeContractError;
@@ -211,7 +212,7 @@ impl BridgeContract<MovementAddress> for MovementClient {
 		];
 
 		let payload = utils::make_aptos_payload(
-			self.native_address,
+			FRAMEWORK_ADDRESS,
 			COUNTERPARTY_MODULE_NAME,
 			"complete_bridge_transfer",
 			Vec::new(),

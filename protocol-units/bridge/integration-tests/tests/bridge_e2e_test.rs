@@ -62,6 +62,7 @@ async fn initiate_eth_bridge_transfer(
 		.from(*initiator_address.0);
 	let _ = send_transaction(
 		call,
+		**initiator_address,
 		&send_transaction_rules(),
 		config.eth.transaction_send_retries,
 		config.eth.gas_limit as u128,

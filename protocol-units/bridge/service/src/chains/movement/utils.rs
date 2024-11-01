@@ -2,10 +2,8 @@ use super::client::MovementClient;
 use crate::chains::bridge_contracts::BridgeContractError;
 use crate::types::{BridgeAddress, HashLockPreImage};
 use anyhow::{Context, Result};
-use aptos_sdk::crypto::ed25519::Ed25519PrivateKey;
-use aptos_sdk::crypto::ed25519::Ed25519PublicKey;
 use aptos_sdk::{
-	crypto::ed25519::Ed25519Signature,
+	crypto::ed25519::{Ed25519PrivateKey, Ed25519Signature},
 	move_types::{
 		account_address::AccountAddressParseError,
 		ident_str,
@@ -16,10 +14,11 @@ use aptos_sdk::{
 			EntryFunctionId, MoveType, Transaction as AptosTransaction, TransactionInfo,
 			ViewRequest,
 		},
-		Client as RestClient, Transaction,
+		Client as RestClient, FaucetClient, Transaction,
 	},
 	transaction_builder::TransactionFactory,
 	types::{
+		AccountKey,
 		account_address::AccountAddress,
 		chain_id::ChainId,
 		transaction::{EntryFunction, SignedTransaction, TransactionPayload},
@@ -33,9 +32,14 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::str::FromStr;
 use thiserror::Error;
-use tracing::log::{debug, error, info};
+use tiny_keccak::{Hasher, Keccak};
+use tracing::log::{error, info};
+use url::Url;
 
 pub type TestRng = StdRng;
+
+const MOVEMENT_RPC_URL: &str = "https://testnet.bardock.movementnetwork.xyz";
+const MOVEMENT_FAUCET_URL: &str = "https://faucet.testnet.bardock.movementnetwork.xyz";
 
 pub trait RngSeededClone: Rng + SeedableRng {
 	fn seeded_clone(&mut self) -> Self;
@@ -97,7 +101,7 @@ impl FromStr for MovementAddress {
 impl std::fmt::Display for MovementAddress {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		write!(f, "{}", self.0.to_standard_string())
-	}
+	} 
 }
 
 impl From<Vec<u8>> for MovementAddress {
@@ -185,16 +189,16 @@ pub async fn send_and_confirm_aptos_transaction(
 
 	let signed_tx = signer.sign_transaction(raw_tx);
 
-	debug!("Signed TX: {:?}", signed_tx);
+	//info!("Signed TX: {:?}", signed_tx);
 
 	let response = rest_client.submit_and_wait(&signed_tx).await.map_err(|e| {
 		let err_msg = format!("Transaction submission error: {}", e.to_string());
-		error!("{}", err_msg); // Log the error in detail
+		error!("Full error: {}", err_msg); // Log the error in detail
 		err_msg
 	})?;
 
 	let txn = response.into_inner();
-	debug!("Response: {:?}", txn);
+	//info!("Response: {:?}", txn);
 
 	match &txn {
 		Transaction::UserTransaction(user_txn) => {
@@ -370,17 +374,73 @@ pub async fn create_local_account(
 	client: &RestClient,
 ) -> Result<LocalAccount, anyhow::Error> {
 	// Derive the public key from the private key
-	let public_key = Ed25519PublicKey::from(&private_key);
+	let account_key = AccountKey::from_private_key(private_key);
 
 	// Get the account address from the public key
-	let account_address: AccountAddress =
-		aptos_sdk::types::account_address::from_public_key(&public_key);
+	let account_address = account_key.authentication_key().account_address();
 
 	// Fetch the current sequence number from the blockchain
 	let sequence_number = client.get_account(account_address).await?.inner().sequence_number;
 
 	// Create the LocalAccount
-	let local_account = LocalAccount::new(account_address, private_key, sequence_number);
+	let local_account = LocalAccount::new(account_address, account_key, sequence_number);
 
 	Ok(local_account)
+}
+fn keccak256(input: &str) -> Vec<u8> {
+	let mut hasher = Keccak::v256();
+	let mut output = [0u8; 32];
+	hasher.update(input.as_bytes());
+	hasher.finalize(&mut output);
+	output.to_vec()
+}
+
+pub fn to_eip55(address: &str) -> String {
+	let lowercased_address = address.trim_start_matches("0x").to_lowercase();
+	let hash = keccak256(&lowercased_address);
+
+	lowercased_address
+		.chars()
+		.enumerate()
+		.map(|(i, c)| {
+			if c.is_digit(10) {
+				c
+			} else {
+				let byte_index = i / 2;
+				let nibble_index = i % 2;
+				let hash_byte = hash[byte_index];
+				let should_uppercase = (hash_byte >> (4 * (1 - nibble_index))) & 0xF >= 8;
+
+				if should_uppercase {
+					c.to_ascii_uppercase()
+				} else {
+					c.to_ascii_lowercase()
+				}
+			}
+		})
+		.collect()
+}
+
+
+pub async fn fund_recipient(recipient: &BridgeAddress<Vec<u8>>) -> Result<(), BridgeContractError> {
+	// Parse URLs
+	let faucet_url = Url::parse(MOVEMENT_FAUCET_URL)
+	.map_err(|_| BridgeContractError::InvalidUrl)?;
+	let rest_url = Url::parse(MOVEMENT_RPC_URL)
+	.map_err(|_| BridgeContractError::InvalidUrl)?;
+	
+	// Create clients
+	let faucet_client = FaucetClient::new(faucet_url, rest_url);
+
+	// Convert recipient to AccountAddress
+	let recipient_address: [u8; 32] = recipient.0.clone().try_into()
+	.map_err(|_| BridgeContractError::SerializationError)?;
+	let account_address = AccountAddress::new(recipient_address);
+
+	// Execute the funding transaction
+	faucet_client.fund(account_address, 100_000_000)
+	.await
+	.map_err(|_| BridgeContractError::FundingError)?;
+
+	Ok(())
 }

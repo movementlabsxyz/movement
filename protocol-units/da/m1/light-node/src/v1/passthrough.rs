@@ -2,7 +2,7 @@ use m1_da_light_node_util::ir_blob::IntermediateBlobRepresentation;
 use std::fmt::{self, Debug, Formatter};
 use std::sync::Arc;
 use tokio_stream::{Stream, StreamExt};
-use tracing::{error, info};
+use tracing::{debug, error, info};
 
 use celestia_rpc::{BlobClient, Client, HeaderClient};
 use celestia_types::{blob::GasPrice, nmt::Namespace, Blob as CelestiaBlob};
@@ -257,7 +257,7 @@ where
 
 					while let Some(blob) = blob_stream.next().await {
 
-						info!("Stream got blob: {:?}", blob);
+						debug!("Stream got blob: {:?}", blob);
 
 						yield blob?;
 					}
@@ -268,7 +268,7 @@ where
 				let blobs = me.get_blobs_at_height(height).await?;
 				for blob in blobs {
 
-					info!("Stream got blob: {:?}", blob);
+					debug!("Stream got blob: {:?}", blob);
 
 					yield blob;
 				}

@@ -67,6 +67,13 @@ alloy::sol!(
 	"abis/WETH9.json"
 );
 
+alloy::sol!(
+	#[allow(missing_docs)]
+	#[sol(rpc)]
+	MockMOVEToken,
+	"abis/MockMOVEToken.json"
+);
+
 /// Specifies the kind of asset being transferred,
 /// This will associate the client with its respective ABIs
 #[derive(Debug, Clone)]
@@ -84,6 +91,12 @@ impl From<String> for AssetKind {
 			"MOVE" => AssetKind::Move,
 			_ => panic!("Invalid asset kind"),
 		}
+	}
+}
+
+impl Default for AssetKind {
+	fn default() -> Self {
+		AssetKind::Move
 	}
 }
 
@@ -368,7 +381,7 @@ where
 	pub fn from_lock_details(lock_details: LockDetails<A>, secret: HashLockPreImage) -> Self {
 		CompletedDetails {
 			bridge_transfer_id: lock_details.bridge_transfer_id,
-			recipient_address: lock_details.recipient_address,
+			recipient_address: lock_details.recipient,
 			hash_lock: lock_details.hash_lock,
 			secret,
 			amount: lock_details.amount,
