@@ -10,8 +10,8 @@ use bridge_service::{
 	chains::ethereum::types::{
 		AtomicBridgeCounterpartyMOVE, AtomicBridgeInitiatorMOVE, EthAddress,
 	},
+	chains::ethereum::utils::{send_transaction, send_transaction_rules},
 	types::TimeLock,
-	utils::{send_transaction, send_transaction_rules},
 };
 use hex::ToHex;
 use rand::Rng;
@@ -93,20 +93,6 @@ async fn deploy_counterpart_contract(
 		.expect("Failed to deploy AtomicBridgeCounterpartyMOVE");
 	tracing::info!("counterparty_contract address: {}", contract.address().to_string());
 	contract.address().to_owned()
-}
-
-async fn deploy_movetoken_contract(signer_private_key: PrivateKeySigner, rpc_url: &str) -> Address {
-	let rpc_provider = ProviderBuilder::new()
-		.with_recommended_fillers()
-		.wallet(EthereumWallet::from(signer_private_key.clone()))
-		.on_builtin(rpc_url)
-		.await
-		.expect("Error during provider creation");
-	let move_token = MockMOVEToken::deploy(rpc_provider)
-		.await
-		.expect("Failed to deploy Mock MOVE token");
-	tracing::info!("Move token address: {}", move_token.address().to_string());
-	move_token.address().to_owned()
 }
 
 async fn initialize_initiator_contract(
