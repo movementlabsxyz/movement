@@ -68,9 +68,6 @@ async fn initiate_eth_bridge_transfer(
 	Ok(())
 }
 
-#[cfg(test)]
-use bridge_service::chains::movement::client_framework::test_helpers::MovementClientFramework;
-
 #[tokio::test]
 async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Error> {
 	tracing_subscriber::fmt().with_env_filter(EnvFilter::new("info")).init();

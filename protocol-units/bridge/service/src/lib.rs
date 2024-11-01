@@ -40,9 +40,6 @@ where
 	let one_client_lock = Arc::new(Mutex::new(()));
 	let two_client_lock = Arc::new(Mutex::new(()));
 
-	// let mut action_to_exec_futures_one = FuturesUnordered::new();
-	// let mut action_to_exec_futures_two = FuturesUnordered::new();
-
 	let mut tranfer_log_interval = tokio::time::interval(tokio::time::Duration::from_secs(60));
 
 	loop {
