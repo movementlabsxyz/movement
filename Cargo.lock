@@ -4169,6 +4169,7 @@ dependencies = [
  "hex",
  "keccak-hash",
  "mcr-settlement-client",
+ "opentelemetry",
  "poem",
  "rand 0.7.3",
  "rand_chacha 0.2.2",
@@ -10188,6 +10189,20 @@ dependencies = [
  "libc",
  "pkg-config",
  "vcpkg",
+]
+
+[[package]]
+name = "opentelemetry"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "570074cc999d1a58184080966e5bd3bf3a9a4af650c3b05047c2621e7405cd17"
+dependencies = [
+ "futures-core",
+ "futures-sink",
+ "js-sys",
+ "once_cell",
+ "pin-project-lite",
+ "thiserror",
 ]
 
 [[package]]

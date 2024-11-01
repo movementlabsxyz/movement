@@ -19,6 +19,9 @@ use tonic::transport::Server;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+
+	init_telemetry()?;
+	
 	use tracing_subscriber::EnvFilter;
 
 	tracing_subscriber::fmt()
