@@ -12,7 +12,7 @@ use bridge_service::{
 		bridge_contracts::{BridgeContractError, BridgeContractEvent},
 		ethereum::{
 			event_monitoring::EthMonitoring,
-			types::{AtomicBridgeInitiator, EthAddress},
+			types::{AtomicBridgeInitiatorMOVE, EthAddress},
 			utils::{send_transaction, send_transaction_rules},
 		},
 		movement::{
