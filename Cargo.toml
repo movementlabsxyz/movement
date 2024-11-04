@@ -183,8 +183,8 @@ secp256k1 = { version = "0.27", default-features = false, features = [
 ] }
 
 ## Celestia Dependencies
-celestia-rpc = { version = "0.3.0" }
-celestia-types = { version = "0.3.0" }
+celestia-rpc = { version = "0.7.0" }
+celestia-types = { version = "0.7.0" }
 
 alloy = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2", features = [
     "node-bindings",
