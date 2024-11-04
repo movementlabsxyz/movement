@@ -11,7 +11,7 @@ use bridge_service::{
 		},
 	},
 	grpc::HealthCheckService,
-	rest::BridgeRest,
+	rest::BridgeRest, telemetry::init_telemetry,
 };
 use godfig::{backend::config_file::ConfigFile, Godfig};
 use std::net::SocketAddr;
@@ -19,6 +19,9 @@ use tonic::transport::Server;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+
+	init_telemetry()?;
+	
 	use tracing_subscriber::EnvFilter;
 
 	tracing_subscriber::fmt()

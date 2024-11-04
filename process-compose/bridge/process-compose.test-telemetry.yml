@@ -1,0 +1,22 @@
+version: "3"
+
+environment:
+
+processes:
+  test-telemetry:
+    command: |
+      BRIDGE_TRACES_JSON=$(curl http://localhost:16687/api/traces?service=bridge-service)
+      # Check if traces are found
+      if [ $(echo $BRIDGE_TRACES_JSON | jq '.total') -gt 0 ]; then
+        echo "Bridge-service traces found"
+      else
+        echo "Bridge-service traces not found"
+        exit 1
+      fi
+    depends_on:
+      bridge-otlp-collector:
+        condition: process_healthy
+      bridge-service:
+        condition: process_healthy
+    availability:
+      exit_on_end: true
