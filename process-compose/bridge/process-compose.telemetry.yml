@@ -1,0 +1,22 @@
+version: "3"
+
+environment:
+
+processes:
+  bridge-otlp-collector:
+    is_daemon: true
+    command: |
+      docker run -d --rm --name bridge-otlp-collector -p16687:16687 -p4318:4318 -e COLLECTOR_OTLP_ENABLED=true jaegertracing/all-in-one:latest
+    shutdown:
+      command: |
+        docker stop bridge-otlp-collector
+    readiness_probe:
+      initial_delay_seconds: 3
+      exec:
+        command: curl http://localhost:16687/api/traces
+  bridge-service:
+    depends_on:
+      bridge-otlp-collector:
+        condition: process_started
+    environment:
+      - MOVEMENT_OTLP=http://localhost:4318
