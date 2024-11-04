@@ -249,10 +249,10 @@ num-derive = "0.4.2"
 num-traits = "0.2.14"
 once_cell = "1.8.0"
 opentelemetry = { version = "0.26" }
+opentelemetry-jaeger = { version = "0.26" }
 opentelemetry-otlp = { version = "0.26" }
 opentelemetry_sdk = { version = "0.26", features = ["rt-tokio"] }
 opentelemetry-semantic-conventions = { version = "0.26" }
-
 parking_lot = { version = "0.12.1" }
 poem = { version = "=1.3.59", features = ["anyhow", "rustls"] }
 poem-openapi = { version = "=2.0.11", features = ["swagger-ui", "url"] }

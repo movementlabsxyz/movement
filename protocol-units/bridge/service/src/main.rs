@@ -11,7 +11,7 @@ use bridge_service::{
 		},
 	},
 	grpc::HealthCheckService,
-	rest::BridgeRest,
+	rest::BridgeRest, telemetry::init_telemetry,
 };
 use godfig::{backend::config_file::ConfigFile, Godfig};
 use std::net::SocketAddr;

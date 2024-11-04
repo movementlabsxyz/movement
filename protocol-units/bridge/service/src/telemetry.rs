@@ -1,31 +1,32 @@
 // service/src/telemetry.rs
-
-use opentelemetry::sdk::{export::metrics::aggregation, metrics::controllers, Resource};
+use anyhow::Result;
+use opentelemetry_sdk::{trace::Config, runtime, Resource};
+use opentelemetry::trace::TracerProvider;
 use opentelemetry::KeyValue;
-use opentelemetry_jaeger;
-use opentelemetry_otlp::ExporterConfig;
+use opentelemetry_otlp::WithExportConfig;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::Registry;
 
-pub fn init_telemetry() -> Result<(), Box<dyn std::error::Error>> {
-        // Initialize Jaeger tracer for distributed tracing
-        let tracer = opentelemetry_jaeger::new_pipeline()
-                .with_service_name("relayer")
-                .install_simple()?;
-        
-        // OpenTelemetry tracing layer and subscriber
+pub fn init_telemetry() -> Result<()> {
+        // Define OpenTelemetry resource attributes, such as service name
+        let resource = Resource::new(vec![KeyValue::new("service.name", "relayer")]);
+
+        // Configure OTLP trace pipeline
+        let tracer_provider = opentelemetry_otlp::new_pipeline()
+                .tracing()
+                .with_exporter(opentelemetry_otlp::new_exporter().tonic().with_endpoint("http://localhost:4317"))
+                .with_trace_config(Config::default().with_resource(resource.clone()))
+                .install_batch(runtime::Tokio)?;
+
+        // Get a Tracer using tracer_builder
+        let tracer = tracer_provider.tracer_builder("relayer_tracer")
+                .with_version(env!("CARGO_PKG_VERSION"))
+                .build();
+
+        // Set up tracing layer with OpenTelemetry
         let telemetry = tracing_opentelemetry::layer().with_tracer(tracer);
         let subscriber = Registry::default().with(telemetry);
-
-        // Set the global subscriber to handle tracing
         tracing::subscriber::set_global_default(subscriber)?;
-
-        // Configure OTLP exporter to send metrics
-        let resource = Resource::new(vec![KeyValue::new("service.name", "relayer")]);
-        let controller = controllers::basic(aggregation::cumulative_temporality_selector())
-                .with_resource(resource)
-                .build();
-        opentelemetry::global::set_meter_provider(controller.provider());
 
         Ok(())
 }

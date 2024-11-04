@@ -25,6 +25,8 @@ pub mod grpc;
 pub mod rest;
 mod states;
 pub mod types;
+pub mod metrics;
+pub mod telemetry;
 
 pub async fn run_bridge<
 	A1: Send + From<Vec<u8>> + std::clone::Clone + 'static + std::fmt::Debug,

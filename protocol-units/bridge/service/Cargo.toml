@@ -39,6 +39,9 @@ alloy-network = { workspace = true }
 alloy-rlp.workspace = true
 keccak-hash = { workspace = true }
 opentelemetry = { workspace = true }
+opentelemetry_sdk = { workspace = true, features = ["rt-tokio"] }
+opentelemetry-otlp = { workspace = true }
+opentelemetry-semantic-conventions = { workspace = true }
 reqwest = { workspace = true }
 serde = { workspace = true }
 serde_with.workspace = true
@@ -55,7 +58,7 @@ serde_json = { workspace = true }
 bcs = { workspace = true }
 derive-new = { workspace = true }
 async-stream = { workspace = true }
-
+tracing-opentelemetry = { workspace = true }
 #To be removed after send_transaction refactor
 bridge-grpc = { workspace = true, features = ["server"] }
 mcr-settlement-client = { workspace = true }
