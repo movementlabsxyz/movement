@@ -38,7 +38,7 @@ async fn main() -> Result<()> {
 
 	// Get a matching godfig object
 	let godfig: Godfig<Config, ConfigFile> = Godfig::new(ConfigFile::new(config_file), vec![]);
-	let mut bridge_config: Config = godfig.try_wait_for_ready().await?;
+	let bridge_config: Config = godfig.try_wait_for_ready().await?;
 
 	tracing::info!("Bridge config loaded: {bridge_config:?}");
 

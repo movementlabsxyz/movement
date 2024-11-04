@@ -497,7 +497,9 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 		recipient: BridgeAddress<EthAddress>,
 		amount: Amount,
 	) -> BridgeContractResult<()> {
-		let initiator: [u8; 32] = initiator.0.try_into().unwrap();
+		let initiator: [u8; 32] = initiator.0.try_into().map_err(|_| {
+			BridgeContractError::ConversionFailed("lock_bridge_transfer initiator".to_string())
+		})?;
 		match &self.counterparty_contract {
 			CounterpartyContract::Weth(weth_contract) => {
 				let call = weth_contract.lockBridgeTransfer(
@@ -505,8 +507,11 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 					FixedBytes(bridge_transfer_id.0),
 					FixedBytes(hash_lock.0),
 					*recipient.0,
-					U256::try_from(amount.0)
-						.map_err(|_| BridgeContractError::ConversionFailed("U256".to_string()))?,
+					U256::try_from(amount.0).map_err(|_| {
+						BridgeContractError::ConversionFailed(
+							"lock_bridge_transfer U256".to_string(),
+						)
+					})?,
 				);
 				send_transaction(
 					call,

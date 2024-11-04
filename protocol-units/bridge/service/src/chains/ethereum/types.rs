@@ -1,3 +1,4 @@
+use crate::types::AddressError;
 use crate::types::Amount;
 use crate::types::BridgeAddress;
 use crate::types::BridgeTransferDetails;
@@ -5,9 +6,6 @@ use crate::types::BridgeTransferId;
 use crate::types::HashLock;
 use crate::types::HashLockPreImage;
 use crate::types::LockDetails;
-use std::hash::{DefaultHasher, Hash, Hasher};
-
-use alloy::json_abi::Param;
 use alloy::network::{Ethereum, EthereumWallet};
 use alloy::primitives::{Address, FixedBytes};
 use alloy::providers::fillers::{
@@ -18,6 +16,9 @@ use alloy::rlp::{RlpDecodable, RlpEncodable};
 use alloy::sol_types::SolEvent;
 use alloy::transports::BoxTransport;
 use rand::Rng;
+use std::hash::{DefaultHasher, Hash, Hasher};
+
+pub const ETH_ADDRESS_LEN: usize = 20;
 
 pub const INITIATOR_INITIATED_SELECT: FixedBytes<32> =
 	AtomicBridgeInitiator::BridgeTransferInitiated::SIGNATURE_HASH;
@@ -201,25 +202,17 @@ impl std::ops::Deref for EthAddress {
 	}
 }
 
-// impl From<String> for EthAddress {
-// 	fn from(s: String) -> Self {
-// 		EthAddress(Address::parse_checksummed(s, None).expect("Invalid Ethereum address"))
-// 	}
-// }
+impl TryFrom<Vec<u8>> for EthAddress {
+	type Error = AddressError;
 
-impl From<Vec<u8>> for EthAddress {
-	fn from(vec: Vec<u8>) -> Self {
+	fn try_from(vec: Vec<u8>) -> Result<Self, Self::Error> {
 		// Ensure the vector has the correct length
-		//TODO change to a try_from but need a rewrite of
-		// the address generic management to make try_from compatible.
-		if vec.len() != 20 {
-			tracing::warn!("Bad vec<u8> size forEthAddress conversion:{}", vec.len());
-			return EthAddress(Address([0; 20].into()));
+		if vec.len() != ETH_ADDRESS_LEN {
+			return Err(AddressError::InvalidByteLength(vec.len()));
 		}
-
-		let mut bytes = [0u8; 20];
+		let mut bytes = [0u8; ETH_ADDRESS_LEN];
 		bytes.copy_from_slice(&vec);
-		EthAddress(Address(bytes.into()))
+		Ok(bytes.into())
 	}
 }
 
@@ -227,130 +220,135 @@ impl From<[u8; 32]> for EthAddress {
 	fn from(bytes: [u8; 32]) -> Self {
 		let mut address_bytes = [0u8; 20];
 		address_bytes.copy_from_slice(&bytes[0..20]);
-		EthAddress(Address(address_bytes.into()))
+		address_bytes.into()
+	}
+}
+impl From<[u8; 20]> for EthAddress {
+	fn from(bytes: [u8; 20]) -> Self {
+		EthAddress(Address(bytes.into()))
 	}
 }
 
-pub(crate) enum AlloyParam {
-	BridgeTransferId,
-	InitiatorAddress,
-	RecipientAddress,
-	PreImage,
-	HashLock,
-	TimeLock,
-	Amount,
-}
+// pub(crate) enum AlloyParam {
+// 	BridgeTransferId,
+// 	InitiatorAddress,
+// 	RecipientAddress,
+// 	PreImage,
+// 	HashLock,
+// 	TimeLock,
+// 	Amount,
+// }
 
-impl AlloyParam {
-	pub fn fill(&self) -> Param {
-		match self {
-			AlloyParam::BridgeTransferId => Param {
-				name: "_bridgeTransferId".to_string(),
-				ty: "bytes32".to_string(),
-				components: vec![],
-				internal_type: None,
-			},
-			AlloyParam::InitiatorAddress => Param {
-				name: "_originator".to_string(),
-				ty: "address".to_string(),
-				components: vec![],
-				internal_type: None,
-			},
-			AlloyParam::RecipientAddress => Param {
-				name: "_recipient".to_string(),
-				ty: "bytes32".to_string(),
-				components: vec![],
-				internal_type: None,
-			},
-			AlloyParam::PreImage => Param {
-				name: "pre_image".to_string(),
-				ty: "bytes32".to_string(),
-				components: vec![],
-				internal_type: None,
-			},
-			AlloyParam::HashLock => Param {
-				name: "_hashLock".to_string(),
-				ty: "bytes32".to_string(),
-				components: vec![],
-				internal_type: None,
-			},
-			AlloyParam::TimeLock => Param {
-				name: "_timeLock".to_string(),
-				ty: "uint256".to_string(),
-				components: vec![],
-				internal_type: None,
-			},
-			AlloyParam::Amount => Param {
-				name: "amount".to_string(),
-				ty: "uint256".to_string(),
-				components: vec![],
-				internal_type: None,
-			},
-		}
-	}
-}
+// impl AlloyParam {
+// 	pub fn fill(&self) -> Param {
+// 		match self {
+// 			AlloyParam::BridgeTransferId => Param {
+// 				name: "_bridgeTransferId".to_string(),
+// 				ty: "bytes32".to_string(),
+// 				components: vec![],
+// 				internal_type: None,
+// 			},
+// 			AlloyParam::InitiatorAddress => Param {
+// 				name: "_originator".to_string(),
+// 				ty: "address".to_string(),
+// 				components: vec![],
+// 				internal_type: None,
+// 			},
+// 			AlloyParam::RecipientAddress => Param {
+// 				name: "_recipient".to_string(),
+// 				ty: "bytes32".to_string(),
+// 				components: vec![],
+// 				internal_type: None,
+// 			},
+// 			AlloyParam::PreImage => Param {
+// 				name: "pre_image".to_string(),
+// 				ty: "bytes32".to_string(),
+// 				components: vec![],
+// 				internal_type: None,
+// 			},
+// 			AlloyParam::HashLock => Param {
+// 				name: "_hashLock".to_string(),
+// 				ty: "bytes32".to_string(),
+// 				components: vec![],
+// 				internal_type: None,
+// 			},
+// 			AlloyParam::TimeLock => Param {
+// 				name: "_timeLock".to_string(),
+// 				ty: "uint256".to_string(),
+// 				components: vec![],
+// 				internal_type: None,
+// 			},
+// 			AlloyParam::Amount => Param {
+// 				name: "amount".to_string(),
+// 				ty: "uint256".to_string(),
+// 				components: vec![],
+// 				internal_type: None,
+// 			},
+// 		}
+// 	}
+// }
 
-pub(crate) enum EventName {
-	InitiatorInitiated,
-	InitiatorCompleted,
-	InitiatorRefunded,
-	CounterpartyLocked,
-	CounterpartyCompleted,
-	CounterpartyAborted,
-}
+// pub(crate) enum EventName {
+// 	InitiatorInitiated,
+// 	InitiatorCompleted,
+// 	InitiatorRefunded,
+// 	CounterpartyLocked,
+// 	CounterpartyCompleted,
+// 	CounterpartyAborted,
+// }
 
-impl EventName {
-	pub fn as_str(&self) -> &str {
-		match self {
-			EventName::InitiatorInitiated => "BridgeTransferInitiated",
-			EventName::InitiatorCompleted => "BridgeTransferCompleted",
-			EventName::InitiatorRefunded => "BridgeTransferRefunded",
-			EventName::CounterpartyLocked => "BridgeTransferLocked",
-			EventName::CounterpartyCompleted => "BridgeTransferCompleted",
-			EventName::CounterpartyAborted => "BridgeTransferAborted",
-		}
-	}
+// impl EventName {
+// 	pub fn as_str(&self) -> &str {
+// 		match self {
+// 			EventName::InitiatorInitiated => "BridgeTransferInitiated",
+// 			EventName::InitiatorCompleted => "BridgeTransferCompleted",
+// 			EventName::InitiatorRefunded => "BridgeTransferRefunded",
+// 			EventName::CounterpartyLocked => "BridgeTransferLocked",
+// 			EventName::CounterpartyCompleted => "BridgeTransferCompleted",
+// 			EventName::CounterpartyAborted => "BridgeTransferAborted",
+// 		}
+// 	}
 
-	pub fn params(&self) -> Vec<Param> {
-		match self {
-			EventName::InitiatorInitiated => vec![
-				AlloyParam::BridgeTransferId.fill(),
-				AlloyParam::InitiatorAddress.fill(),
-				AlloyParam::RecipientAddress.fill(),
-				AlloyParam::PreImage.fill(),
-				AlloyParam::HashLock.fill(),
-				AlloyParam::TimeLock.fill(),
-				AlloyParam::Amount.fill(),
-			],
-			EventName::InitiatorCompleted => {
-				vec![AlloyParam::BridgeTransferId.fill(), AlloyParam::PreImage.fill()]
-			}
-			EventName::InitiatorRefunded => vec![AlloyParam::BridgeTransferId.fill()],
-			EventName::CounterpartyLocked => vec![
-				AlloyParam::BridgeTransferId.fill(),
-				AlloyParam::InitiatorAddress.fill(),
-				AlloyParam::Amount.fill(),
-				AlloyParam::HashLock.fill(),
-				AlloyParam::TimeLock.fill(),
-			],
-			EventName::CounterpartyCompleted => {
-				vec![AlloyParam::BridgeTransferId.fill(), AlloyParam::PreImage.fill()]
-			}
-			EventName::CounterpartyAborted => vec![AlloyParam::BridgeTransferId.fill()],
-		}
-	}
-}
+// 	pub fn params(&self) -> Vec<Param> {
+// 		match self {
+// 			EventName::InitiatorInitiated => vec![
+// 				AlloyParam::BridgeTransferId.fill(),
+// 				AlloyParam::InitiatorAddress.fill(),
+// 				AlloyParam::RecipientAddress.fill(),
+// 				AlloyParam::PreImage.fill(),
+// 				AlloyParam::HashLock.fill(),
+// 				AlloyParam::TimeLock.fill(),
+// 				AlloyParam::Amount.fill(),
+// 			],
+// 			EventName::InitiatorCompleted => {
+// 				vec![AlloyParam::BridgeTransferId.fill(), AlloyParam::PreImage.fill()]
+// 			}
+// 			EventName::InitiatorRefunded => vec![AlloyParam::BridgeTransferId.fill()],
+// 			EventName::CounterpartyLocked => vec![
+// 				AlloyParam::BridgeTransferId.fill(),
+// 				AlloyParam::InitiatorAddress.fill(),
+// 				AlloyParam::Amount.fill(),
+// 				AlloyParam::HashLock.fill(),
+// 				AlloyParam::TimeLock.fill(),
+// 			],
+// 			EventName::CounterpartyCompleted => {
+// 				vec![AlloyParam::BridgeTransferId.fill(), AlloyParam::PreImage.fill()]
+// 			}
+// 			EventName::CounterpartyAborted => vec![AlloyParam::BridgeTransferId.fill()],
+// 		}
+// 	}
+// }
 
-impl From<&str> for EventName {
-	fn from(s: &str) -> Self {
-		match s {
-			"BridgeTransferInitiated" => EventName::InitiatorInitiated,
-			"BridgeTransferCompleted" => EventName::InitiatorCompleted,
-			"BridgeTransferRefunded" => EventName::InitiatorRefunded,
-			_ => panic!("Invalid event name"),
-		}
-	}
-}
+// impl From<&str> for EventName {
+// 	fn from(s: &str) -> Self {
+// 		match s {
+// 			"BridgeTransferInitiated" => EventName::InitiatorInitiated,
+// 			"BridgeTransferCompleted" => EventName::InitiatorCompleted,
+// 			"BridgeTransferRefunded" => EventName::InitiatorRefunded,
+// 			_ => panic!("Invalid event name"),
+// 		}
+// 	}
+// }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct CompletedDetails<A> {

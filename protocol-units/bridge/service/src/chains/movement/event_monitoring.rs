@@ -1,4 +1,3 @@
-use super::client::MovementClient;
 use super::client_framework::FRAMEWORK_ADDRESS;
 use super::utils::MovementAddress;
 use crate::chains::bridge_contracts::BridgeContractError;
@@ -30,7 +29,6 @@ use serde::Serialize;
 use std::{pin::Pin, task::Poll};
 use tokio::fs::{self, File};
 use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
-use tracing::info;
 
 const PULL_STATE_FILE_NAME: &str = "pullstate.store";
 
@@ -158,7 +156,6 @@ impl MovementMonitoring {
 		tokio::spawn({
 			let config = config.clone();
 			async move {
-				let mvt_client = MovementClient::new(&config).await.unwrap();
 				loop {
 					let mut init_event_list = match pool_initiator_contract(
 						FRAMEWORK_ADDRESS,
@@ -509,7 +506,10 @@ impl TryFrom<BridgeInitEventData> for BridgeTransferDetails<MovementAddress> {
 				))
 				},
 			)?),
-			initiator_address: BridgeAddress(MovementAddress::from(data.initiator)),
+			initiator_address: BridgeAddress(
+				MovementAddress::try_from(data.initiator)
+					.map_err(|err| BridgeContractError::OnChainError(err.to_string()))?,
+			),
 			recipient_address: BridgeAddress(data.recipient),
 			hash_lock: HashLock(data.hash_lock.try_into().map_err(|e| {
 				BridgeContractError::ConversionFailed(format!(
@@ -538,7 +538,10 @@ impl TryFrom<BridgeInitEventData> for LockDetails<MovementAddress> {
 				},
 			)?),
 			initiator: BridgeAddress(data.recipient),
-			recipient: BridgeAddress(MovementAddress::from(data.initiator)),
+			recipient: BridgeAddress(
+				MovementAddress::try_from(data.initiator)
+					.map_err(|err| BridgeContractError::OnChainError(err.to_string()))?,
+			),
 			hash_lock: HashLock(data.hash_lock.try_into().map_err(|e| {
 				BridgeContractError::ConversionFailed(format!(
 					"MVT BridgeTransferDetails data onchain hash_lock conversion error error:{:?}",
