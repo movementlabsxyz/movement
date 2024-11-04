@@ -5,7 +5,7 @@ use tokio_stream::{Stream, StreamExt};
 use tracing::{debug, error, info};
 
 use celestia_rpc::{BlobClient, Client, HeaderClient};
-use celestia_types::{blob::GasPrice, nmt::Namespace, Blob as CelestiaBlob};
+use celestia_types::{nmt::Namespace, Blob as CelestiaBlob, TxConfig};
 
 // FIXME: glob imports are bad style
 use m1_da_light_node_grpc::light_node_service_server::LightNodeService;
@@ -127,11 +127,14 @@ where
 
 	/// Submits a CelestiaBlob to the Celestia node.
 	pub async fn submit_celestia_blob(&self, blob: CelestiaBlob) -> Result<u64, anyhow::Error> {
-		let height = self
-			.default_client
-			.blob_submit(&[blob], GasPrice::default())
-			.await
-			.map_err(|e| anyhow::anyhow!("Failed submitting the blob: {}", e))?;
+		let height =
+			self.default_client
+				.blob_submit(&[blob], TxConfig::default())
+				.await
+				.map_err(|e| {
+					error!(error = %e, "failed to submit the blob");
+					anyhow::anyhow!("Failed submitting the blob: {}", e)
+				})?;
 
 		Ok(height)
 	}
@@ -141,11 +144,11 @@ where
 		&self,
 		blobs: &[CelestiaBlob],
 	) -> Result<u64, anyhow::Error> {
-		let height = self
-			.default_client
-			.blob_submit(blobs, GasPrice::default())
-			.await
-			.map_err(|e| anyhow::anyhow!("Failed submitting the blob: {}", e))?;
+		let height =
+			self.default_client.blob_submit(blobs, TxConfig::default()).await.map_err(|e| {
+				error!(error = %e, "failed to submit the blobs");
+				anyhow::anyhow!("Failed submitting the blob: {}", e)
+			})?;
 
 		Ok(height)
 	}
@@ -162,31 +165,34 @@ where
 		&self,
 		height: u64,
 	) -> Result<Vec<IntermediateBlobRepresentation>, anyhow::Error> {
-		let blobs = self.default_client.blob_get_all(height, &[self.celestia_namespace]).await;
+		match self.default_client.blob_get_all(height, &[self.celestia_namespace]).await {
+			Err(e) => {
+				error!(error = %e, "failed to get blobs at height {height}");
+				anyhow::bail!(e);
+			}
+			Ok(blobs) => {
+				let blobs = blobs.unwrap_or_default();
 
-		if let Err(e) = &blobs {
-			error!("Error getting blobs: {:?}", e);
-		}
-
-		let blobs = blobs.unwrap_or_default();
-
-		let mut verified_blobs = Vec::new();
-		for blob in blobs {
-			match self.verifier.verify(blob, height).await {
-				Ok(verified_blob) => {
-					let blob = verified_blob.into_inner();
-					info!("Verified blob at height: {} {:?}", height, blob.id());
-					verified_blobs.push(blob);
+				let mut verified_blobs = Vec::new();
+				for blob in blobs {
+					match self.verifier.verify(blob, height).await {
+						Ok(verified_blob) => {
+							let blob = verified_blob.into_inner();
+							info!("verified blob at height {}: {}", height, hex::encode(blob.id()));
+							verified_blobs.push(blob);
+						}
+						Err(e) => {
+							error!(error = %e, "failed to verify blob");
+						}
+					}
 				}
-				Err(e) => {
-					error!("Failed to verify blob: {:?}", e,);
-				}
+
+				Ok(verified_blobs)
 			}
 		}
-
-		Ok(verified_blobs)
 	}
 
+	#[tracing::instrument(target = "movement_timing", level = "info", skip(self))]
 	async fn get_blobs_at_height(&self, height: u64) -> Result<Vec<Blob>, anyhow::Error> {
 		let ir_blobs = self.get_ir_blobs_at_height(height).await?;
 		let mut blobs = Vec::new();

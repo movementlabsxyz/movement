@@ -97,6 +97,8 @@ impl Local {
 				"gentx",
 				"validator",
 				"5000000000utia",
+				"--fees",
+				"1utia",
 				"--keyring-backend=test",
 				"--chain-id",
 				&celestia_chain_id,
