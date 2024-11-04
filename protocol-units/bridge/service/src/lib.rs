@@ -15,6 +15,8 @@ use futures::stream::FuturesUnordered;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::select;
+use tokio::sync::mpsc;
+use tokio::sync::oneshot;
 use tokio::sync::Mutex;
 use tokio_stream::StreamExt;
 
@@ -34,6 +36,7 @@ pub async fn run_bridge<
 	mut one_stream: impl BridgeContractMonitoring<Address = A1>,
 	two_client: impl BridgeContract<A2> + 'static,
 	mut two_stream: impl BridgeContractMonitoring<Address = A2>,
+	mut healthcheck_request_rx: mpsc::Receiver<oneshot::Sender<String>>,
 ) -> Result<(), anyhow::Error>
 where
 	Vec<u8>: From<A1>,
@@ -48,13 +51,17 @@ where
 	let one_client_lock = Arc::new(Mutex::new(()));
 	let two_client_lock = Arc::new(Mutex::new(()));
 
-	// let mut action_to_exec_futures_one = FuturesUnordered::new();
-	// let mut action_to_exec_futures_two = FuturesUnordered::new();
-
 	let mut tranfer_log_interval = tokio::time::interval(tokio::time::Duration::from_secs(60));
 
 	loop {
 		select! {
+			//Manage HealthCheck request
+			Some(oneshot_tx) = healthcheck_request_rx.recv() => {
+				if let Err(err) = oneshot_tx.send("OK".to_string()){
+					tracing::warn!("Heal check oneshot channel closed abnormally :{err:?}");
+				}
+
+			}
 			// Log all current transfer
 			_ = tranfer_log_interval.tick() => {
 				//format logs

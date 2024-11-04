@@ -49,16 +49,19 @@ async fn main() -> Result<()> {
 
 	let one_client_for_grpc = one_client.clone();
 
+	// Initialize the gRPC health check service
 	let health_service = HealthCheckService::default();
 	health_service.set_service_status("", ServingStatus::Serving);
 	health_service.set_service_status("Bridge", ServingStatus::Serving);
 
-	let grpc_addr: SocketAddr =
-		format!("{}:{}", bridge_config.movement.grpc_hostname, bridge_config.movement.grpc_port)
-			.parse()
-			.unwrap();
+	let grpc_addr: SocketAddr = format!(
+		"{}:{}",
+		bridge_config.movement.grpc_listener_hostname, bridge_config.movement.grpc_port
+	)
+	.parse()
+	.unwrap();
 
-	tokio::spawn(async move {
+	let grpc_jh = tokio::spawn(async move {
 		Server::builder()
 			.add_service(HealthServer::new(health_service))
 			.add_service(BridgeServer::new(one_client_for_grpc))
@@ -68,18 +71,29 @@ async fn main() -> Result<()> {
 	});
 
 	// Initialize the gRPC health check service
-	let health_service = HealthCheckService::default();
-	health_service.set_service_status("", ServingStatus::Serving);
-	health_service.set_service_status("Bridge", ServingStatus::Serving);
-
+	let (health_tx, health_rx) = tokio::sync::mpsc::channel(10);
 	// Start the gRPC server on a specific address (e.g., localhost:50051)
 	// Create and run the REST service
-	let rest_service = BridgeRest::new(&bridge_config.movement)?;
+	let rest_service = BridgeRest::new(&bridge_config.movement, health_tx)?;
 	let rest_service_future = rest_service.run_service();
-	tokio::spawn(rest_service_future);
+	let rest_jh = tokio::spawn(rest_service_future);
 
 	tracing::info!("Bridge Eth and Movement Inited. Starting bridge loop.");
-	bridge_service::run_bridge(one_client, one_stream, two_client, two_stream).await?;
+	let loop_jh = tokio::spawn(async move {
+		bridge_service::run_bridge(one_client, one_stream, two_client, two_stream, health_rx).await
+	});
+
+	tokio::select! {
+		res = rest_jh => {
+			tracing::error!("Heath check Rest server exit because :{res:?}");
+		}
+		res = loop_jh => {
+			tracing::error!("Main relayer loop exit because :{res:?}");
+		}
+		res = grpc_jh => {
+			tracing::error!("gRpc server exit because :{res:?}");
+		}
+	};
 
 	Ok(())
 }
