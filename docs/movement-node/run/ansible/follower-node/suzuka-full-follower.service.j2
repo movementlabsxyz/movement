@@ -18,7 +18,7 @@ Environment="AWS_ACCESS_KEY_ID={{ aws_access_key_id }}"
 Environment="AWS_SECRET_ACCESS_KEY={{ aws_secret_access_key }}"
 Environment="AWS_DEFAULT_REGION={{ aws_default_region }}"
 Environment="AWS_REGION={{ aws_default_region }}"
-ExecStart=/usr/bin/docker compose --env-file .env -f /home/{{ user }}/movement/docker/compose/suzuka-full-node/docker-compose.yml -f /home/{{ user }}/movement/docker/compose/suzuka-full-node/docker-compose.local.yml up --force-recreate --remove-orphans
+ExecStart=/usr/bin/docker compose --env-file .env -f /home/{{ user }}/movement/docker/compose/suzuka-full-node/docker-compose.yml -f /home/{{ user }}/movement/docker/compose/suzuka-full-node/docker-compose.follower.yml up --force-recreate --remove-orphans
 Restart=on-failure
 
 [Install]
