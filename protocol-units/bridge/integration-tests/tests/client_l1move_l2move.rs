@@ -308,10 +308,13 @@ async fn test_eth_client_should_successfully_call_initiate_transfer_only_weth() 
 
 	let recipient = HarnessMvtClient::gen_aptos_account();
 	let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
-	eth_client_harness
-		.deposit_weth_and_approve(BridgeAddress(EthAddress(signer_address)), Amount(1000))
-		.await
-		.expect("Failed to deposit WETH");
+	// eth_client_harness
+	// 	.deposit_weth_and_approve(
+	// 		BridgeAddress(EthAddress(signer_address)),
+	// 		Amount(AssetType::EthAndWeth((0, 1))),
+	// 	)
+	// 	.await
+	// 	.expect("Failed to deposit WETH");
 
 	eth_client_harness
 		.eth_client
@@ -334,10 +337,13 @@ async fn test_eth_client_should_successfully_call_initiate_transfer_eth_and_weth
 
 	let recipient = HarnessMvtClient::gen_aptos_account();
 	let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
-	eth_client_harness
-		.deposit_weth_and_approve(BridgeAddress(EthAddress(signer_address)), Amount(1000))
-		.await
-		.expect("Failed to deposit WETH");
+	// eth_client_harness
+	// 	.deposit_weth_and_approve(
+	// 		BridgeAddress(EthAddress(signer_address)),
+	// 		Amount(AssetType::EthAndWeth((0, 1))),
+	// 	)
+	// 	.await
+	// 	.expect("Failed to deposit WETH");
 
 	eth_client_harness
 		.eth_client

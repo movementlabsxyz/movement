@@ -1,34 +1,33 @@
-use super::client::MovementClient;
-use super::client_framework::FRAMEWORK_ADDRESS;
-use super::utils::MovementAddress;
-use crate::chains::bridge_contracts::BridgeContractError;
-use crate::chains::bridge_contracts::BridgeContractEvent;
-use crate::chains::bridge_contracts::BridgeContractEventType;
-use crate::chains::bridge_contracts::BridgeContractMonitoring;
-use crate::chains::bridge_contracts::BridgeContractResult;
-use crate::types::Amount;
-use crate::types::BridgeAddress;
-use crate::types::BridgeTransferDetails;
-use crate::types::BridgeTransferId;
-use crate::types::HashLock;
-use crate::types::HashLockPreImage;
-use crate::types::LockDetails;
-use crate::types::TimeLock;
+use super::{
+	client_framework::{MovementClientFramework, FRAMEWORK_ADDRESS},
+	utils::MovementAddress,
+};
+use crate::{
+	chains::bridge_contracts::{
+		BridgeContractError, BridgeContractEvent, BridgeContractEventType,
+		BridgeContractMonitoring, BridgeContractResult,
+	},
+	types::{
+		Amount, BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock,
+		HashLockPreImage, LockDetails, TimeLock,
+	},
+};
 use anyhow::Result;
-use aptos_sdk::rest_client::aptos_api_types::VersionedEvent;
-use aptos_sdk::types::account_address::AccountAddress;
+use aptos_sdk::{
+	rest_client::aptos_api_types::VersionedEvent, types::account_address::AccountAddress,
+};
 use bridge_config::common::movement::MovementConfig;
-use futures::channel::mpsc::{self};
-use futures::SinkExt;
-use futures::Stream;
-use futures::StreamExt;
+use futures::{
+	channel::mpsc::{self},
+	SinkExt, Stream, StreamExt,
+};
 use hex::FromHex;
-use serde::Deserialize;
-use serde::Deserializer;
-use serde::Serialize;
+use serde::{Deserialize, Deserializer, Serialize};
 use std::{pin::Pin, task::Poll};
-use tokio::fs::{self, File};
-use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
+use tokio::{
+	fs::{self, File},
+	io::{self, AsyncReadExt, AsyncWriteExt},
+};
 
 const PULL_STATE_FILE_NAME: &str = "pullstate.store";
 
@@ -156,7 +155,7 @@ impl MovementMonitoring {
 		tokio::spawn({
 			let config = config.clone();
 			async move {
-				let _mvt_client = MovementClient::new(&config).await.unwrap();
+				let _ = MovementClientFramework::new(&config).await.unwrap();
 				loop {
 					let mut init_event_list = match pool_initiator_contract(
 						FRAMEWORK_ADDRESS,
@@ -549,15 +548,16 @@ impl TryFrom<BridgeInitEventData> for LockDetails<MovementAddress> {
 	}
 }
 
-/// Asynchronously fetches events for a specified account from a blockchain REST API endpoint.
+/// Queries events from a specified account on the Aptos blockchain and returns a list of `VersionedEvent`.
 ///
-/// This function retrieves a list of events related to a specific `account_address`, starting from the
-/// specified `start_version`. The function takes parameters to customize the REST URL, event type,
-/// and field name, allowing it to query a variety of event types.
+/// This function sends a GET request to the provided `rest_url` with the account address, event type, and field name
+/// to retrieve events starting from the specified `start_version`.
 ///
-/// # Example of Returned JSON Structure
+/// # Returns
 ///
-/// The response JSON is deserialized into a `Vec<VersionedEvent>` with each event having a structure like the following:
+/// - `Result<Vec<VersionedEvent>, BridgeContractError>`: On success, returns a vector of `VersionedEvent`.
+///
+/// # Example Return
 ///
 /// ```json
 /// [
@@ -592,11 +592,9 @@ async fn get_account_events(
 		rest_url, account_address, event_type, field_name
 	);
 
-	//	tracing::info!("ICI url: {:?}", url);
 	let client = reqwest::Client::new();
 
 	// Send the GET request
-
 	let response = client
 		.get(&url)
 		.query(&[("start", &start_version.to_string()[..]), ("limit", "10")])

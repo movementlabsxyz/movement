@@ -4,6 +4,8 @@ use std::io::Write;
 use tokio::task::JoinSet;
 use tokio::time::Duration;
 
+mod service;
+
 const RUNTIME_WORKER_MULTIPLIER: usize = 2;
 
 fn main() -> Result<(), anyhow::Error> {
@@ -19,6 +21,12 @@ fn main() -> Result<(), anyhow::Error> {
 	let maptos_config =
 		dot_movement.try_get_config_from_json::<maptos_execution_util::config::Config>()?;
 
+	let health_check_url = format!(
+		"{}:{}",
+		maptos_config.indexer.maptos_indexer_grpc_healthcheck_hostname,
+		maptos_config.indexer.maptos_indexer_grpc_healthcheck_port
+	);
+
 	let default_indexer_config = build_processor_conf("default_processor", &maptos_config)?;
 	let usertx_indexer_config = build_processor_conf("user_transaction_processor", &maptos_config)?;
 	let accounttx_indexer_config =
@@ -28,6 +36,27 @@ fn main() -> Result<(), anyhow::Error> {
 	let fungible_indexer_config = build_processor_conf("fungible_asset_processor", &maptos_config)?;
 	let txmeta_indexer_config =
 		build_processor_conf("transaction_metadata_processor", &maptos_config)?;
+
+	// Token processor
+	let activate_tokes: bool = std::env::var("ACTIVATE_TOKEN_INDEXING")
+		.map(|t| t.parse().unwrap_or(true))
+		.unwrap_or(true);
+	let token_configs = if activate_tokes {
+		let token_indexer_config = build_processor_conf(
+			"token_processor
+  nft_points_contract: null",
+			&maptos_config,
+		)?;
+
+		let tokenv2_indexer_config = build_processor_conf(
+			"token_v2_processor
+  query_retries: 5",
+			&maptos_config,
+		)?;
+		Some((token_indexer_config, tokenv2_indexer_config))
+	} else {
+		None
+	};
 
 	let num_cpus = num_cpus::get();
 	let worker_threads = (num_cpus * RUNTIME_WORKER_MULTIPLIER).max(16);
@@ -51,6 +80,7 @@ fn main() -> Result<(), anyhow::Error> {
 				test_grpc_connection(&maptos_config).await?;
 
 				let mut set = JoinSet::new();
+				set.spawn(async move { crate::service::run_service(health_check_url).await });
 				set.spawn(async move { default_indexer_config.run().await });
 				//wait all the migration is done.
 				tokio::time::sleep(Duration::from_secs(12)).await;
@@ -60,13 +90,15 @@ fn main() -> Result<(), anyhow::Error> {
 				set.spawn(async move { event_indexer_config.run().await });
 				set.spawn(async move { fungible_indexer_config.run().await });
 				set.spawn(async move { txmeta_indexer_config.run().await });
+				if let Some((token_indexer_config, tokenv2_indexer_config)) = token_configs {
+					set.spawn(async move { token_indexer_config.run().await });
+					set.spawn(async move { tokenv2_indexer_config.run().await });
+				}
 
 				while let Some(res) = set.join_next().await {
-					if let Err(err) = res {
-						tracing::error!("An Error occurs during indexer execution: {err}");
-						// If a processor break to avoid data inconsistency between processor
-						break;
-					}
+					tracing::error!("An Error occurs during indexer execution: {res:?}");
+					// If a processor break to avoid data inconsistency between processor
+					break;
 				}
 				set.shutdown().await;
 				Err(anyhow::anyhow!("At least One indexer processor failed. Exit"))
@@ -119,13 +151,21 @@ default_sleep_time_between_request: {}
 
 	//let indexer_config_path = dot_movement.get_path().join("indexer_config.yaml");
 	let mut output_file = tempfile::NamedTempFile::new()?;
-	// let mut output_file = std::fs::File::create(&indexer_config_path).map_err(|err| {
-	// 	anyhow::anyhow!("Indexer temps config file :{indexer_config_path:?} can't be created because of err:{err}")
-	// })?;
 	write!(output_file, "{}", indexer_config_content)?;
 
-	let indexer_config =
+	let mut indexer_config =
 		server_framework::load::<IndexerGrpcProcessorConfig>(&output_file.path().to_path_buf())?;
+
+	// Leave here for debug purpose. Will be removed later.
+	// Use to print the generated config, to have an example when activating a new processor.
+	// indexer_config.processor_config = ProcessorConfig::TokenV2Processor(TokenV2ProcessorConfig {
+	// 	query_retries: 5,
+	// 	query_retry_delay_ms: 100,
+	// });
+
+	// let yaml = serde_yaml::to_string(&indexer_config)?;
+	// println!("{yaml}",);
+
 	Ok(indexer_config)
 }
 

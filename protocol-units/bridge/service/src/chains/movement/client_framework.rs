@@ -1,11 +1,10 @@
 use super::utils::{self, MovementAddress};
-use crate::chains::bridge_contracts::BridgeContract;
-use crate::chains::bridge_contracts::BridgeContractError;
-use crate::chains::bridge_contracts::BridgeContractResult;
-use crate::types::BridgeTransferDetailsCounterparty;
-use crate::types::{
-	Amount, BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage,
-	TimeLock,
+use crate::{
+	chains::bridge_contracts::{BridgeContract, BridgeContractError, BridgeContractResult},
+	types::{
+		Amount, BridgeAddress, BridgeTransferDetails, BridgeTransferDetailsCounterparty,
+		BridgeTransferId, HashLock, HashLockPreImage, TimeLock,
+	},
 };
 use anyhow::{Context, Result};
 use aptos_api_types::{EntryFunctionId, MoveModuleId, ViewRequest};
@@ -18,17 +17,16 @@ use aptos_types::account_address::AccountAddress;
 use bridge_config::common::movement::MovementConfig;
 use hex;
 use rand::prelude::*;
-use std::path::Path;
-use std::str::FromStr;
-use std::sync::Arc;
+use std::{path::Path, str::FromStr, sync::Arc};
 use tracing::{debug, info};
 use url::Url;
 
 pub const FRAMEWORK_ADDRESS: AccountAddress = AccountAddress::new([
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
 ]);
-const INITIATOR_MODULE_NAME: &str = "atomic_bridge_initiator";
-const COUNTERPARTY_MODULE_NAME: &str = "atomic_bridge_counterparty";
+
+pub const INITIATOR_MODULE_NAME: &str = "atomic_bridge_initiator";
+pub const COUNTERPARTY_MODULE_NAME: &str = "atomic_bridge_counterparty";
 const DUMMY_ADDRESS: AccountAddress = AccountAddress::new([0; 32]);
 
 #[allow(dead_code)]
@@ -39,13 +37,11 @@ enum Call {
 	GetDetails,
 }
 
-#[allow(dead_code)]
+/// The Client for making calls to the atomic bridge framework modules
 #[derive(Clone)]
 pub struct MovementClientFramework {
 	///Native Address of the
 	pub native_address: AccountAddress,
-	/// Bytes of the non-native (external) chain.
-	pub non_native_address: Vec<u8>,
 	///The Apotos Rest Client
 	pub rest_client: Client,
 	///The signer account
@@ -62,12 +58,7 @@ impl MovementClientFramework {
 		let signer =
 			utils::create_local_account(config.movement_signer_key.clone(), &rest_client).await?;
 		let native_address = AccountAddress::from_hex_literal(&config.movement_native_address)?;
-		Ok(MovementClientFramework {
-			native_address,
-			non_native_address: Vec::new(), //dummy for now
-			rest_client,
-			signer: Arc::new(signer),
-		})
+		Ok(MovementClientFramework { native_address, rest_client, signer: Arc::new(signer) })
 	}
 
 	pub fn rest_client(&self) -> &Client {
@@ -495,6 +486,8 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 		Ok(Some(details))
 	}
 }
+
+//@TODO: feature flag from here for testing only
 
 use std::{
 	env, fs,
@@ -959,7 +952,6 @@ impl MovementClientFramework {
 		Ok((
 			MovementClientFramework {
 				native_address: DUMMY_ADDRESS,
-				non_native_address: Vec::new(),
 				rest_client,
 				signer: Arc::new(LocalAccount::generate(&mut rng)),
 			},

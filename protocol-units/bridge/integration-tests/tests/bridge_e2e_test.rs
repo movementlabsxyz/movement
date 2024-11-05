@@ -1,4 +1,4 @@
-use alloy::primitives::keccak256;
+use alloy::primitives::{keccak256, Address};
 use alloy::primitives::{FixedBytes, U256};
 use alloy::providers::ProviderBuilder;
 use alloy::signers::local::PrivateKeySigner;
@@ -11,13 +11,13 @@ use bridge_integration_tests::TestHarness;
 use bridge_service::chains::bridge_contracts::BridgeContractError;
 use bridge_service::chains::bridge_contracts::BridgeContractEvent;
 use bridge_service::chains::ethereum::event_monitoring::EthMonitoring;
-use bridge_service::chains::ethereum::types::AtomicBridgeInitiator;
+use bridge_service::chains::ethereum::types::AtomicBridgeInitiatorMOVE;
 use bridge_service::chains::ethereum::utils::send_transaction;
 use bridge_service::chains::ethereum::utils::send_transaction_rules;
 use bridge_service::chains::{
 	ethereum::types::EthAddress,
 	movement::{
-		client::MovementClient, event_monitoring::MovementMonitoring, utils::MovementAddress,
+		client_framework::MovementClientFramework, event_monitoring::MovementMonitoring, utils::MovementAddress,
 	},
 };
 use bridge_service::types::Amount;
@@ -42,7 +42,7 @@ async fn initiate_eth_bridge_transfer(
 		.await?;
 
 	let contract =
-		AtomicBridgeInitiator::new(config.eth.eth_initiator_contract.parse()?, &rpc_provider);
+		AtomicBridgeInitiatorMOVE::new(config.eth.eth_initiator_contract.parse()?, &rpc_provider);
 
 	let initiator_address = BridgeAddress(EthAddress(initiator_address));
 
@@ -62,6 +62,7 @@ async fn initiate_eth_bridge_transfer(
 
 	let _ = send_transaction(
 		call,
+		initiator_address.0.0,
 		&send_transaction_rules(),
 		config.eth.transaction_send_retries,
 		config.eth.gas_limit as u128,
@@ -164,7 +165,7 @@ async fn test_movement_event() -> Result<(), anyhow::Error> {
 
 	use bridge_integration_tests::MovementToEthCallArgs;
 
-	let mut movement_client = MovementClient::new(&config.movement).await.unwrap();
+	let mut movement_client = MovementClientFramework::new(&config.movement).await.unwrap();
 
 	let args = MovementToEthCallArgs::default();
 	bridge_integration_tests::utils::initiate_bridge_transfer_helper(

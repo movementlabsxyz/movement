@@ -3,8 +3,8 @@ use crate::chains::bridge_contracts::BridgeContractError;
 use crate::chains::bridge_contracts::BridgeContractEvent;
 use crate::chains::bridge_contracts::BridgeContractMonitoring;
 use crate::chains::bridge_contracts::BridgeContractResult;
-use crate::chains::ethereum::types::AtomicBridgeCounterparty;
-use crate::chains::ethereum::types::AtomicBridgeInitiator;
+use crate::chains::ethereum::types::AtomicBridgeCounterpartyMOVE;
+use crate::chains::ethereum::types::AtomicBridgeInitiatorMOVE;
 use crate::types::HashLockPreImage;
 use crate::types::LockDetails;
 use crate::types::{BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock};
@@ -17,7 +17,6 @@ use bridge_config::common::eth::EthConfig;
 use futures::SinkExt;
 use futures::{channel::mpsc::UnboundedReceiver, Stream, StreamExt};
 use std::{pin::Pin, task::Poll};
-use tokio::select;
 
 pub struct EthMonitoring {
 	listener: UnboundedReceiver<BridgeContractResult<BridgeContractEvent<EthAddress>>>,
@@ -49,11 +48,11 @@ impl EthMonitoring {
 		tokio::spawn({
 			let config = config.clone();
 			async move {
-				let initiator_contract = AtomicBridgeInitiator::new(
+				let initiator_contract = AtomicBridgeInitiatorMOVE::new(
 					config.eth_initiator_contract.parse().unwrap(),
 					rpc_provider.clone(),
 				);
-				let counterpart_contract = AtomicBridgeCounterparty::new(
+				let counterpart_contract = AtomicBridgeCounterpartyMOVE::new(
 					config.eth_counterparty_contract.parse().unwrap(),
 					rpc_provider.clone(),
 				);
@@ -81,7 +80,7 @@ impl EthMonitoring {
 							.from_block(BlockNumberOrTag::Number(last_processed_block));
 						//event BridgeTransferAborted(bytes32 indexed bridgeTransferId);
 						let counterpart_trcaborted_event_filter = counterpart_contract
-							.BridgeTransferCompleted_filter()
+							.BridgeTransferAborted_filter()
 							.from_block(BlockNumberOrTag::Number(last_processed_block));
 
 						//Initiator event stream
@@ -186,7 +185,7 @@ impl EthMonitoring {
 											bridge_transfer_id: BridgeTransferId(
 												*trlocked.bridgeTransferId,
 											),
-											initiator: BridgeAddress(trlocked.initiator.to_vec()),
+											initiator: BridgeAddress([0, 32].into()), // TODO add the originator fields. trlocked.originator.to_vec()
 											recipient: BridgeAddress(EthAddress(Address::from(
 												trlocked.recipient,
 											))),

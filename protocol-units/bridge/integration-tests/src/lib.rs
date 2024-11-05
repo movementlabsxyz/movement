@@ -1,35 +1,36 @@
-#![allow(dead_code)]
-use alloy::node_bindings::AnvilInstance;
-use alloy::primitives::Address;
-use alloy::primitives::{keccak256, U256};
-use alloy::providers::ProviderBuilder;
-use alloy::signers::local::PrivateKeySigner;
-use alloy_network::EthereumWallet;
-use aptos_sdk::rest_client::aptos_api_types::Transaction as AptosTransaction;
-use aptos_sdk::rest_client::{Client, FaucetClient};
-use aptos_sdk::types::account_address::AccountAddress;
-use aptos_sdk::types::LocalAccount;
-use bridge_config::Config;
-use bridge_service::chains::bridge_contracts::BridgeContractError;
-use bridge_service::chains::ethereum::types::AlloyProvider;
-use bridge_service::chains::ethereum::types::EthAddress;
-use bridge_service::chains::ethereum::{client::EthClient, types::EthHash};
-use bridge_service::chains::movement::client_framework::FRAMEWORK_ADDRESS;
-use bridge_service::chains::movement::utils::MovementAddress;
-use bridge_service::chains::movement::{
-	client::MovementClient, client_framework::MovementClientFramework, utils::MovementHash,
+use alloy::{
+	node_bindings::AnvilInstance,
+	primitives::{keccak256, Address, U256},
+	providers::ProviderBuilder,
+	signers::local::PrivateKeySigner,
 };
-use bridge_service::types::Amount;
-use bridge_service::types::BridgeTransferId;
-use bridge_service::types::HashLockPreImage;
-use bridge_service::{chains::bridge_contracts::BridgeContractResult, types::BridgeAddress};
+use alloy_network::EthereumWallet;
+use aptos_sdk::{
+	rest_client::{aptos_api_types::Transaction as AptosTransaction, Client, FaucetClient},
+	types::{account_address::AccountAddress, LocalAccount},
+};
+use bridge_config::Config;
+use bridge_service::{
+	chains::{
+		bridge_contracts::{BridgeContractError, BridgeContractResult},
+		ethereum::{
+			client::EthClient,
+			types::{AlloyProvider, EthAddress, EthHash},
+		},
+		movement::{
+			client_framework::{MovementClientFramework, FRAMEWORK_ADDRESS},
+			utils::{MovementAddress, MovementHash},
+		},
+	},
+	types::{Amount, BridgeAddress, BridgeTransferId, HashLockPreImage},
+};
 use godfig::{backend::config_file::ConfigFile, Godfig};
-use rand::distributions::Alphanumeric;
-use rand::SeedableRng;
-use rand::{thread_rng, Rng};
-use std::convert::TryInto;
-use std::str::FromStr;
-use std::sync::{Arc, RwLock};
+use rand::{distributions::Alphanumeric, thread_rng, Rng, SeedableRng};
+use std::{
+	convert::TryInto,
+	str::FromStr,
+	sync::{Arc, RwLock},
+};
 use url::Url;
 
 pub mod utils;
@@ -157,25 +158,14 @@ impl HarnessEthClient {
 	pub fn get_recipeint_address(config: &Config) -> Address {
 		HarnessEthClient::get_recipient_private_key(config).address()
 	}
-
-	pub async fn deposit_weth_and_approve(
-		&mut self,
-		initiator_address: BridgeAddress<EthAddress>,
-		amount: Amount,
-	) -> BridgeContractResult<()> {
-		self.eth_client
-			.deposit_weth_and_approve(initiator_address.0 .0, U256::from(amount.0))
-			.await
-			.expect("Failed to deposit WETH");
-		Ok(())
-	}
 }
 
 pub struct HarnessMvtClient {
-	pub movement_client: MovementClient,
+	/// The Client for the Movement Framework
+	pub movement_client: MovementClientFramework,
 	///The Apotos Rest Client
 	pub rest_client: Client,
-	///The Apotos Rest Client
+	/// The Aptos Faucet Client
 	pub faucet_client: Arc<RwLock<FaucetClient>>,
 }
 
@@ -187,7 +177,7 @@ impl HarnessMvtClient {
 	}
 
 	pub async fn build(config: &Config) -> Self {
-		let movement_client = MovementClient::new(&config.movement)
+		let movement_client = MovementClientFramework::new(&config.movement)
 			.await
 			.expect("Failed to create MovementClient");
 
@@ -236,7 +226,7 @@ impl HarnessMvtClient {
 
 		let payload = bridge_service::chains::movement::utils::make_aptos_payload(
 			FRAMEWORK_ADDRESS,
-			bridge_service::chains::movement::client::COUNTERPARTY_MODULE_NAME,
+			bridge_service::chains::movement::client_framework::COUNTERPARTY_MODULE_NAME,
 			"complete_bridge_transfer",
 			Vec::new(),
 			args2,

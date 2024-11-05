@@ -33,6 +33,11 @@ services:
     depends_on:
       - postgres
       - suzuka-full-node
+    # to access services running on localhost extra_hosts from below is required
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+
   graphql-engine:
     image: hasura/graphql-engine:v2.40.0
     ports:
