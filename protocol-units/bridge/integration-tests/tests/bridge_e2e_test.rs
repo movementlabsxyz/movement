@@ -6,24 +6,25 @@ use alloy_network::EthereumWallet;
 use anyhow::Result;
 use aptos_types::account_address::AccountAddress;
 use bridge_config::Config;
-use bridge_integration_tests::{HarnessEthClient, TestHarness};
-use bridge_service::{
-	chains::{
-		bridge_contracts::{BridgeContractError, BridgeContractEvent},
-		ethereum::{
-			event_monitoring::EthMonitoring,
-			types::{AtomicBridgeInitiatorMOVE, EthAddress, MockMOVEToken},
-			utils::{send_transaction, send_transaction_rules},
-		},
-		movement::{
-			client_framework::MovementClientFramework, event_monitoring::MovementMonitoring,
-			utils::MovementAddress,
-		},
+use bridge_integration_tests::HarnessEthClient;
+use bridge_integration_tests::TestHarness;
+use bridge_service::chains::bridge_contracts::BridgeContractError;
+use bridge_service::chains::bridge_contracts::BridgeContractEvent;
+use bridge_service::chains::ethereum::event_monitoring::EthMonitoring;
+use bridge_service::chains::ethereum::types::AtomicBridgeInitiatorMOVE;
+use bridge_service::chains::ethereum::utils::send_transaction;
+use bridge_service::chains::ethereum::utils::send_transaction_rules;
+use bridge_service::chains::{
+	ethereum::types::EthAddress,
+	movement::{
+		client_framework::MovementClientFramework, event_monitoring::MovementMonitoring, utils::MovementAddress,
 	},
-	types::{Amount, BridgeAddress, HashLock, HashLockPreImage},
 };
+use bridge_service::types::Amount;
+use bridge_service::types::BridgeAddress;
+use bridge_service::types::HashLock;
+use bridge_service::types::HashLockPreImage;
 use futures::StreamExt;
-use tracing::info;
 use tracing_subscriber::EnvFilter;
 
 async fn initiate_eth_bridge_transfer(
@@ -39,51 +40,6 @@ async fn initiate_eth_bridge_transfer(
 		.wallet(EthereumWallet::from(initiator_privatekey))
 		.on_builtin(&config.eth.eth_rpc_connection_url())
 		.await?;
-	
-	let mock_move_token = MockMOVEToken::new(Address::from_str(&config.eth.eth_move_token_contract)?, &rpc_provider);
-	
-	let multisig_address = Address::from_str("0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc")?;
-	
-	//let initialize_call = mock_move_token.initialize(multisig_address);
-	//let initialize_send = initialize_call.send().await;
-	//let initialize_result = initialize_send.expect("Failed to initialize MockMOVEToken contract");
-	// info!("Initialize result: {:?}", initialize_result);
-
-	info!("Before token approval");
-	info!("Mock MOVE token address: {:?}", Address::from_str(&config.eth.eth_move_token_contract)?);
-	info!("Initiator address: {:?}", initiator_address);
-	info!("Initiator contract address: {}", config.eth.eth_initiator_contract);
-
-	let token_balance = mock_move_token
-		.balanceOf(initiator_address)
-		.call()
-		.await?;
-	info!("MockMOVEToken balance: {:?}", token_balance._0);
-
-	// Get the ETH balance for the initiator address
-
-	let eth_value = U256::from(amount.0.clone());
-	info!("Eth value: {}", eth_value);
-	let approve_call = mock_move_token
-        .approve(Address::from_str(&config.eth.eth_initiator_contract)?, eth_value)
-        .from(initiator_address);
-
-	let signer_address = initiator_address;
-	let number_retry = config.eth.transaction_send_retries;
-	let gas_limit = config.eth.gas_limit as u128;
-
-	let transaction_receipt = send_transaction(
-		approve_call,
-		signer_address,
-		&send_transaction_rules(),
-		number_retry,
-		gas_limit,
-	)
-	.await
-	.map_err(|e| BridgeContractError::GenericError(format!("Failed to send approve transaction: {}", e)))?;
-
-	info!("After token approval, transaction receipt: {:?}", transaction_receipt);
-
 
 	let contract =
 		AtomicBridgeInitiatorMOVE::new(config.eth.eth_initiator_contract.parse()?, &rpc_provider);
@@ -95,11 +51,6 @@ async fn initiate_eth_bridge_transfer(
 	let recipient_bytes: [u8; 32] =
 		recipient_address.0.try_into().expect("Recipient address must be 32 bytes");
 
-	info!("Before initiate");
-	info!("Amount: {}", U256::from(amount.0));
-	info!("Recipient: {}", FixedBytes(recipient_bytes));
-	info!("hashLock: {}", FixedBytes(hash_lock.0));
-
 	let call = contract
 		.initiateBridgeTransfer(
 			U256::from(amount.0),
@@ -108,9 +59,10 @@ async fn initiate_eth_bridge_transfer(
 		)
 		.value(U256::from(amount.0))
 		.from(*initiator_address.0);
+
 	let _ = send_transaction(
 		call,
-		**initiator_address,
+		initiator_address.0.0,
 		&send_transaction_rules(),
 		config.eth.transaction_send_retries,
 		config.eth.gas_limit as u128,
@@ -122,12 +74,14 @@ async fn initiate_eth_bridge_transfer(
 
 #[tokio::test]
 async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Error> {
-	tracing_subscriber::fmt().with_env_filter(EnvFilter::new("info")).init();
+	tracing_subscriber::fmt()
+		.with_env_filter(
+			EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
+		)
+		.init();
 
-	let (eth_client_harness, mut mvt_client_harness, config) =
+	let (_eth_client_harness, mut mvt_client_harness, config) =
 		TestHarness::new_with_eth_and_movement().await?;
-
-	MovementClientFramework::bridge_setup_scripts().await?;
 
 	tracing::info!("Init initiator and counter part test account.");
 	tracing::info!("Use client signer for Mvt and index 2 of config.eth.eth_well_known_account_private_keys array for Eth");
@@ -143,7 +97,7 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 	let recipient_privkey = mvt_client_harness.fund_account().await;
 	let recipient_address = MovementAddress(recipient_privkey.address());
 
-	// initialize Eth transfer
+	// 1) initialize Eth transfer
 	tracing::info!("Call initiate_transfer on Eth");
 	let hash_lock_pre_image = HashLockPreImage::random();
 	let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
@@ -214,13 +168,13 @@ async fn test_movement_event() -> Result<(), anyhow::Error> {
 	let mut movement_client = MovementClientFramework::new(&config.movement).await.unwrap();
 
 	let args = MovementToEthCallArgs::default();
-
-	bridge_integration_tests::utils::initiate_bridge_transfer_helper_framework(
+	bridge_integration_tests::utils::initiate_bridge_transfer_helper(
 		&mut movement_client,
 		args.initiator.0,
 		args.recipient.clone(),
 		args.hash_lock.0,
 		args.amount,
+		true,
 	)
 	.await
 	.expect("Failed to initiate bridge transfer");
@@ -273,6 +227,7 @@ async fn test_get_events_by_account_event_handle(
 		.unwrap()
 		.text()
 		.await;
+
 	println!("Account direct response: {response:?}",);
 }
 

@@ -5,7 +5,7 @@ use super::types::{
 use super::utils::{calculate_storage_slot, send_transaction, send_transaction_rules};
 use crate::chains::bridge_contracts::{BridgeContractError, BridgeContractResult};
 use crate::types::{
-	Amount, AssetType, BridgeAddress, BridgeTransferDetails, BridgeTransferDetailsCounterparty,
+	Amount, BridgeAddress, BridgeTransferDetails, BridgeTransferDetailsCounterparty,
 	BridgeTransferId, HashLock, HashLockPreImage, TimeLock,
 };
 use alloy::{
@@ -75,11 +75,6 @@ struct EthBridgeTransferDetailsCounterparty {
 	pub state: u8,
 }
 
-// We need to be able to build the client and deploy the contracts
-//  therfore the `initiator_contract` and `counterparty_contract`
-// should be optional, as their values will be unknown at the time of building the client.
-// This is true for the integration tests.
-#[allow(dead_code)]
 #[derive(Clone)]
 pub struct EthClient {
 	rpc_provider: AlloyProvider,
@@ -195,11 +190,11 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 		);
 		let call = contract
 			.initiateBridgeTransfer(
-				U256::from(amount.weth_value()),
+				U256::from(amount.0),
 				FixedBytes(recipient_bytes),
 				FixedBytes(hash_lock.0),
 			)
-			.value(U256::from(amount.eth_value()))
+			.value(U256::from(amount.0))
 			.from(*initiator_address.0);
 		let _ = send_transaction(
 			call,
@@ -411,9 +406,8 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 			initiator_address: BridgeAddress(eth_details.originator),
 			recipient_address: BridgeAddress(eth_details.recipient.to_vec()),
 			hash_lock: HashLock(eth_details.hash_lock),
-			//@TODO unit test these wrapping to check for any nasty side effects.
 			time_lock: TimeLock(eth_details.time_lock.wrapping_to::<u64>()),
-			amount: Amount(AssetType::EthAndWeth((0, eth_details.amount.wrapping_to::<u64>()))),
+			amount: eth_details.amount.into(),
 			state: eth_details.state,
 		}))
 	}
@@ -444,9 +438,8 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 			initiator_address: BridgeAddress(eth_details.originator.to_vec()),
 			recipient_address: BridgeAddress(eth_details.recipient),
 			hash_lock: HashLock(eth_details.hash_lock),
-			//@TODO unit test these wrapping to check for any nasty side effects.
 			time_lock: TimeLock(eth_details.time_lock.wrapping_to::<u64>()),
-			amount: Amount(AssetType::EthAndWeth((0, eth_details.amount.wrapping_to::<u64>()))),
+			amount: eth_details.amount.into(),
 			state: eth_details.state,
 		}))
 	}

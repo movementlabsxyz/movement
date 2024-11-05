@@ -8,7 +8,7 @@ use crate::{
 		BridgeContractMonitoring, BridgeContractResult,
 	},
 	types::{
-		Amount, AssetType, BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock,
+		Amount, BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock,
 		HashLockPreImage, LockDetails, TimeLock,
 	},
 };
@@ -515,7 +515,7 @@ impl TryFrom<BridgeInitEventData> for BridgeTransferDetails<MovementAddress> {
 				))
 			})?),
 			time_lock: TimeLock(data.time_lock),
-			amount: Amount(AssetType::Moveth(data.amount)),
+			amount: Amount(data.amount),
 			state: 0,
 		})
 	}
@@ -543,7 +543,7 @@ impl TryFrom<BridgeInitEventData> for LockDetails<MovementAddress> {
 				))
 			})?),
 			time_lock: TimeLock(data.time_lock),
-			amount: Amount(AssetType::Moveth(data.amount)),
+			amount: Amount(data.amount),
 		})
 	}
 }

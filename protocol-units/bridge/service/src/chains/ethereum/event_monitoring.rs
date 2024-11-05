@@ -56,8 +56,6 @@ impl EthMonitoring {
 					config.eth_counterparty_contract.parse().unwrap(),
 					rpc_provider.clone(),
 				);
-				//We start at the current block.
-				//TODO save the start between restart.
 				let mut last_processed_block = 0;
 				loop {
 					let block_number = rpc_provider.get_block_number().await.unwrap();
