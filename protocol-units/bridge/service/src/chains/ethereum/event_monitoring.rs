@@ -105,8 +105,13 @@ impl EthMonitoring {
 							.from_block(BlockNumberOrTag::Number(last_processed_block));
 
 						//Initiator event stream
-						match initiator_initiate_event_filter.query().await {
-							Ok(events) => {
+						match tokio::time::timeout(
+							tokio::time::Duration::from_secs(5),
+							initiator_initiate_event_filter.query(),
+						)
+						.await
+						{
+							Ok(Ok(events)) => {
 								for (initiated, _log) in events {
 									let event = {
 										// BridgeTransferInitiated(bridgeTransferId, originator, recipient, totalAmount, hashLock, initiatorTimeLockDuration);
@@ -134,6 +139,16 @@ impl EthMonitoring {
 									}
 								}
 							}
+							Ok(Err(_)) => {
+								if sender
+									.send(Err(BridgeContractError::OnChainError("Eth monitoring query initiator_initiate_event_filter timeout.".to_string())))
+									.await
+									.is_err()
+								{
+									tracing::error!("Failed to send event to listener channel");
+									break;
+								}
+							}
 							Err(err) => {
 								if sender
 									.send(Err(BridgeContractError::OnChainError(err.to_string())))
@@ -145,8 +160,9 @@ impl EthMonitoring {
 								}
 							}
 						}
-						match initiator_trcompleted_event_filter.query().await {
-							Ok(events) => {
+						match tokio::time::timeout(
+							tokio::time::Duration::from_secs(5),initiator_trcompleted_event_filter.query()).await {
+							Ok(Ok(events)) => {
 								for (completed, _log) in events {
 									if sender
 										.send(Ok(BridgeContractEvent::InitialtorCompleted(
@@ -160,6 +176,16 @@ impl EthMonitoring {
 									}
 								}
 							}
+							Ok(Err(_)) => {
+								if sender
+									.send(Err(BridgeContractError::OnChainError("Eth monitoring query initiator_trcompleted_event_filter timeout.".to_string())))
+									.await
+									.is_err()
+								{
+									tracing::error!("Failed to send event to listener channel");
+									break;
+								}
+							}
 							Err(err) => {
 								if sender
 									.send(Err(BridgeContractError::OnChainError(err.to_string())))
@@ -171,8 +197,13 @@ impl EthMonitoring {
 								}
 							}
 						}
-						match initiator_trrefund_event_filter.query().await {
-							Ok(events) => {
+						match tokio::time::timeout(
+							tokio::time::Duration::from_secs(5),
+							initiator_trrefund_event_filter.query(),
+						)
+						.await
+						{
+							Ok(Ok(events)) => {
 								for (refund, _log) in events {
 									if sender
 										.send(Ok(BridgeContractEvent::Refunded(BridgeTransferId(
@@ -186,6 +217,16 @@ impl EthMonitoring {
 									}
 								}
 							}
+							Ok(Err(_)) => {
+								if sender
+									.send(Err(BridgeContractError::OnChainError("Eth monitoring query initiator_trrefund_event_filter timeout.".to_string())))
+									.await
+									.is_err()
+								{
+									tracing::error!("Failed to send event to listener channel");
+									break;
+								}
+							}
 							Err(err) => {
 								if sender
 									.send(Err(BridgeContractError::OnChainError(err.to_string())))
@@ -197,8 +238,13 @@ impl EthMonitoring {
 								}
 							}
 						}
-						match counterpart_trlocked_event_filter.query().await {
-							Ok(events) => {
+						match tokio::time::timeout(
+							tokio::time::Duration::from_secs(5),
+							counterpart_trlocked_event_filter.query(),
+						)
+						.await
+						{
+							Ok(Ok(events)) => {
 								for (trlocked, _log) in events {
 									let event = {
 										// BridgeTransferInitiated(bridgeTransferId, originator, recipient, totalAmount, hashLock, initiatorTimeLockDuration);
@@ -222,6 +268,16 @@ impl EthMonitoring {
 									}
 								}
 							}
+							Ok(Err(_)) => {
+								if sender
+									.send(Err(BridgeContractError::OnChainError("Eth monitoring query counterpart_trlocked_event_filter timeout.".to_string())))
+									.await
+									.is_err()
+								{
+									tracing::error!("Failed to send event to listener channel");
+									break;
+								}
+							}
 							Err(err) => {
 								if sender
 									.send(Err(BridgeContractError::OnChainError(err.to_string())))
@@ -233,8 +289,13 @@ impl EthMonitoring {
 								}
 							}
 						}
-						match counterpart_trcompleted_event_filter.query().await {
-							Ok(events) => {
+						match tokio::time::timeout(
+							tokio::time::Duration::from_secs(5),
+							counterpart_trcompleted_event_filter.query(),
+						)
+						.await
+						{
+							Ok(Ok(events)) => {
 								for (completed, _log) in events {
 									if sender
 										.send(Ok(BridgeContractEvent::CounterPartCompleted(
@@ -249,6 +310,16 @@ impl EthMonitoring {
 									}
 								}
 							}
+							Ok(Err(_)) => {
+								if sender
+									.send(Err(BridgeContractError::OnChainError("Eth monitoring query counterpart_trcompleted_event_filter timeout.".to_string())))
+									.await
+									.is_err()
+								{
+									tracing::error!("Failed to send event to listener channel");
+									break;
+								}
+							}
 							Err(err) => {
 								if sender
 									.send(Err(BridgeContractError::OnChainError(err.to_string())))
@@ -260,8 +331,13 @@ impl EthMonitoring {
 								}
 							}
 						}
-						match counterpart_trcaborted_event_filter.query().await {
-							Ok(events) => {
+						match tokio::time::timeout(
+							tokio::time::Duration::from_secs(5),
+							counterpart_trcaborted_event_filter.query(),
+						)
+						.await
+						{
+							Ok(Ok(events)) => {
 								for (aborted, _log) in events {
 									if sender
 										.send(Ok(BridgeContractEvent::Cancelled(BridgeTransferId(
@@ -273,6 +349,16 @@ impl EthMonitoring {
 										tracing::error!("Failed to send event to listener channel");
 										break;
 									}
+								}
+							}
+							Ok(Err(_)) => {
+								if sender
+									.send(Err(BridgeContractError::OnChainError("Eth monitoring query counterpart_trcaborted_event_filter timeout.".to_string())))
+									.await
+									.is_err()
+								{
+									tracing::error!("Failed to send event to listener channel");
+									break;
 								}
 							}
 							Err(err) => {

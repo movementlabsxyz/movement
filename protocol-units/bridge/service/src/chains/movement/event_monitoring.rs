@@ -612,17 +612,29 @@ async fn get_account_events(
 
 	// Send the GET request
 
-	let response = client
-		.get(&url)
-		.query(&[("start", &start_version.to_string()[..]), ("limit", "10")])
-		.send()
-		.await
-		.map_err(|e| {
+	let response = match tokio::time::timeout(
+		tokio::time::Duration::from_secs(5),
+		client
+			.get(&url)
+			.query(&[("start", &start_version.to_string()[..]), ("limit", "10")])
+			.send(),
+	)
+	.await
+	{
+		Ok(res) => res.map_err(|e| {
 			BridgeContractError::OnChainError(format!(
 				"MVT get_account_events get request error:{}",
 				e
 			))
-		})?;
+		})?,
+		Err(err) => {
+			//sleep a few second before retesting.
+			tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+			Err(BridgeContractError::OnChainError(format!(
+				"MVT get_account_events Rpc entry point timeout:{err}",
+			)))?
+		}
+	};
 
 	if response.status().is_success() {
 		let body = response.text().await.map_err(|e| {
