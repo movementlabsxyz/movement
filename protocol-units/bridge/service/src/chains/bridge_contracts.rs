@@ -9,6 +9,12 @@ use crate::types::{
 
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
 pub enum BridgeContractError {
+	#[error("Account balance error")]
+	AccountBalanceError,
+	#[error("Funding error")]
+	FundingError,
+	#[error("Invalid Url")]
+	InvalidUrl,
 	#[error("Failed to extract transfer Id")]
 	TransferIdExtractionError,
 	#[error("Failed to mint")]

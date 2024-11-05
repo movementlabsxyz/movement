@@ -1,3 +1,4 @@
+use super::client_framework::MovementClientFramework;
 use crate::{
 	chains::bridge_contracts::BridgeContractError,
 	types::{BridgeAddress, HashLockPreImage},
@@ -15,7 +16,7 @@ use aptos_sdk::{
 			EntryFunctionId, MoveType, Transaction as AptosTransaction, TransactionInfo,
 			ViewRequest,
 		},
-		Client as RestClient, Transaction,
+		Client as RestClient, FaucetClient, Transaction,
 	},
 	transaction_builder::TransactionFactory,
 	types::{
@@ -34,9 +35,12 @@ use std::str::FromStr;
 use thiserror::Error;
 use tiny_keccak::{Hasher, Keccak};
 use tracing::log::{error, info};
+use url::Url;
 
-use super::client_framework::MovementClientFramework;
 pub type TestRng = StdRng;
+
+const MOVEMENT_RPC_URL: &str = "https://testnet.bardock.movementnetwork.xyz";
+const MOVEMENT_FAUCET_URL: &str = "https://faucet.testnet.bardock.movementnetwork.xyz";
 
 pub trait RngSeededClone: Rng + SeedableRng {
 	fn seeded_clone(&mut self) -> Self;
@@ -415,4 +419,30 @@ pub fn to_eip55(address: &str) -> String {
 			}
 		})
 		.collect()
+}
+
+pub async fn fund_recipient(recipient: &BridgeAddress<Vec<u8>>) -> Result<(), BridgeContractError> {
+	// Parse URLs
+	let faucet_url =
+		Url::parse(MOVEMENT_FAUCET_URL).map_err(|_| BridgeContractError::InvalidUrl)?;
+	let rest_url = Url::parse(MOVEMENT_RPC_URL).map_err(|_| BridgeContractError::InvalidUrl)?;
+
+	// Create clients
+	let faucet_client = FaucetClient::new(faucet_url, rest_url);
+
+	// Convert recipient to AccountAddress
+	let recipient_address: [u8; 32] = recipient
+		.0
+		.clone()
+		.try_into()
+		.map_err(|_| BridgeContractError::SerializationError)?;
+	let account_address = AccountAddress::new(recipient_address);
+
+	// Execute the funding transaction
+	faucet_client
+		.fund(account_address, 100_000_000)
+		.await
+		.map_err(|_| BridgeContractError::FundingError)?;
+
+	Ok(())
 }

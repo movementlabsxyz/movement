@@ -7,6 +7,8 @@ use crate::{
 };
 use futures::stream::FuturesUnordered;
 use std::{collections::HashMap, sync::Arc};
+use tokio::sync::mpsc;
+use tokio::sync::oneshot;
 use tokio::{select, sync::Mutex};
 use tokio_stream::StreamExt;
 
@@ -26,6 +28,7 @@ pub async fn run_bridge<
 	mut one_stream: impl BridgeContractMonitoring<Address = A1>,
 	two_client: impl BridgeContract<A2> + 'static,
 	mut two_stream: impl BridgeContractMonitoring<Address = A2>,
+	mut healthcheck_request_rx: mpsc::Receiver<oneshot::Sender<String>>,
 ) -> Result<(), anyhow::Error>
 where
 	Vec<u8>: From<A1>,
@@ -44,6 +47,13 @@ where
 
 	loop {
 		select! {
+			//Manage HealthCheck request
+			Some(oneshot_tx) = healthcheck_request_rx.recv() => {
+				if let Err(err) = oneshot_tx.send("OK".to_string()){
+					tracing::warn!("Heal check oneshot channel closed abnormally :{err:?}");
+				}
+
+			}
 			// Log all current transfer
 			_ = tranfer_log_interval.tick() => {
 				//format logs
