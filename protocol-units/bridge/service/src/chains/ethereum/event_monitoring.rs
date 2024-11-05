@@ -56,8 +56,6 @@ impl EthMonitoring {
 					config.eth_counterparty_contract.parse().unwrap(), //If unwrap start fail. Config must be updated.
 					rpc_provider.clone(),
 				);
-				//We start at the current block.
-				//TODO save the start between restart.
 				let mut last_processed_block = 0;
 				loop {
 					match rpc_provider.get_block_number().await {

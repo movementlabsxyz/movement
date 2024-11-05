@@ -4,16 +4,12 @@ use anyhow::Result;
 use aptos_sdk::{
 	coin_client::CoinClient, rest_client::Transaction, types::account_address::AccountAddress,
 };
-use bridge_service::{
-	chains::{
-		bridge_contracts::{BridgeContract, BridgeContractError},
-		movement::{
-			client_framework::MovementClientFramework,
-			utils::{self as movement_utils, MovementAddress, MovementHash},
-		},
-	},
-	types::{Amount, AssetType, BridgeAddress, BridgeTransferDetails, HashLock},
+use bridge_service::chains::bridge_contracts::{BridgeContract, BridgeContractError};
+use bridge_service::chains::movement::utils::{
+	self as movement_utils, MovementAddress, MovementHash,
 };
+use bridge_service::chains::movement::client_framework::MovementClientFramework;
+use bridge_service::types::{Amount, BridgeAddress, BridgeTransferDetails, HashLock};
 use serde_json::Value;
 use tracing::debug;
 
@@ -34,7 +30,7 @@ pub fn assert_bridge_transfer_details(
 	assert_eq!(details.hash_lock.0, expected_hash_lock);
 	assert_eq!(details.initiator_address.0 .0, expected_sender_address);
 	assert_eq!(details.recipient_address.0, expected_recipient_address);
-	assert_eq!(details.amount.0, AssetType::Moveth(expected_amount));
+	assert_eq!(details.amount.0, expected_amount);
 	assert_eq!(details.state, expected_state, "Bridge transfer state mismatch.");
 }
 
@@ -48,7 +44,7 @@ pub fn assert_counterparty_bridge_transfer_details_framework(
 ) {
 	assert_eq!(details.initiator_address.to_string(), expected_sender_address);
 	assert_eq!(details.recipient_address, BridgeAddress(expected_recipient_address));
-	assert_eq!(details.amount, Amount(AssetType::Moveth(expected_amount)));
+	assert_eq!(details.amount, Amount(expected_amount));
 	assert_eq!(details.hash_lock.0, expected_hash_lock);
 	assert_eq!(details.time_lock.0, expected_time_lock);
 }
@@ -274,7 +270,7 @@ pub async fn initiate_bridge_transfer_helper(
 			BridgeAddress(MovementAddress(initiator_address)),
 			BridgeAddress(recipient_address),
 			HashLock(MovementHash(hash_lock).0),
-			Amount(AssetType::Moveth(amount)),
+			Amount(amount),
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");
@@ -294,7 +290,7 @@ pub async fn initiate_bridge_transfer_helper_framework(
 			BridgeAddress(MovementAddress(initiator_address)),
 			BridgeAddress(recipient_address),
 			HashLock(MovementHash(hash_lock).0),
-			Amount(AssetType::Moveth(amount)),
+			Amount(amount),
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");

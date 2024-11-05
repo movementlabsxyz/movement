@@ -2,7 +2,7 @@ use super::utils::{self, MovementAddress};
 use crate::{
 	chains::bridge_contracts::{BridgeContract, BridgeContractError, BridgeContractResult},
 	types::{
-		Amount, AssetType, BridgeAddress, BridgeTransferDetails, BridgeTransferDetailsCounterparty,
+		Amount, BridgeAddress, BridgeTransferDetails, BridgeTransferDetailsCounterparty,
 		BridgeTransferId, HashLock, HashLockPreImage, TimeLock,
 	},
 };
@@ -121,16 +121,12 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 		hash_lock: HashLock,
 		amount: Amount,
 	) -> BridgeContractResult<()> {
-		let amount_value = match amount.0 {
-			AssetType::Moveth(value) => value,
-			_ => return Err(BridgeContractError::ConversionFailed("Amount".to_string())),
-		};
-		debug!("Amount value: {:?}", amount_value);
+		debug!("Amount value: {:?}", amount);
 
 		let args = vec![
 			utils::serialize_vec_initiator(&recipient.0)?,
 			utils::serialize_vec_initiator(&hash_lock.0[..])?,
-			utils::serialize_u64_initiator(&amount_value)?,
+			utils::serialize_u64_initiator(&amount)?,
 		];
 
 		let payload = utils::make_aptos_payload(
@@ -243,17 +239,14 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 		amount: Amount,
 	) -> BridgeContractResult<()> {
 		debug!("Starting lock bridge transfer");
-		let amount_value = match amount.0 {
-			AssetType::Moveth(value) => value,
-			_ => return Err(BridgeContractError::SerializationError),
-		};
 		debug!("Initiator: {:?}", initiator.0);
+
 		let args = vec![
 			utils::serialize_vec(&initiator.0)?,
 			utils::serialize_vec(&bridge_transfer_id.0[..])?,
 			utils::serialize_vec(&hash_lock.0[..])?,
 			utils::serialize_vec(&recipient.0)?,
-			utils::serialize_u64(&amount_value)?,
+			utils::serialize_u64(&amount)?,
 		];
 
 		let payload = utils::make_aptos_payload(
@@ -398,7 +391,7 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 			bridge_transfer_id,
 			initiator_address: BridgeAddress(MovementAddress(originator_address)),
 			recipient_address: BridgeAddress(recipient_address_bytes),
-			amount: Amount(AssetType::Moveth(amount)),
+			amount: Amount(amount),
 			hash_lock: HashLock(hash_lock_array),
 			time_lock: TimeLock(time_lock),
 			state,
@@ -484,7 +477,7 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 			bridge_transfer_id,
 			initiator_address: BridgeAddress(originator_address_bytes),
 			recipient_address: BridgeAddress(MovementAddress(recipient_address)),
-			amount: Amount(AssetType::Moveth(amount)),
+			amount: Amount(amount),
 			hash_lock: HashLock(hash_lock_array),
 			time_lock: TimeLock(time_lock),
 			state,
