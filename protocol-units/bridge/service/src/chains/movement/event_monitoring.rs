@@ -19,7 +19,7 @@ use anyhow::Result;
 use aptos_sdk::rest_client::aptos_api_types::VersionedEvent;
 use aptos_sdk::types::account_address::AccountAddress;
 use bridge_config::common::movement::MovementConfig;
-use futures::channel::mpsc::{self};
+use futures::channel::mpsc::{self as futurempsc};
 use futures::SinkExt;
 use futures::Stream;
 use futures::StreamExt;
@@ -30,6 +30,8 @@ use serde::Serialize;
 use std::{pin::Pin, task::Poll};
 use tokio::fs::{self, File};
 use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
+use tokio::sync::mpsc;
+use tokio::sync::oneshot;
 use tracing::info;
 
 const PULL_STATE_FILE_NAME: &str = "pullstate.store";
@@ -138,7 +140,8 @@ impl MvtPullingState {
 }
 
 pub struct MovementMonitoring {
-	listener: mpsc::UnboundedReceiver<BridgeContractResult<BridgeContractEvent<MovementAddress>>>,
+	listener:
+		futurempsc::UnboundedReceiver<BridgeContractResult<BridgeContractEvent<MovementAddress>>>,
 }
 
 impl BridgeContractMonitoring for MovementMonitoring {
@@ -146,7 +149,10 @@ impl BridgeContractMonitoring for MovementMonitoring {
 }
 
 impl MovementMonitoring {
-	pub async fn build(config: &MovementConfig) -> Result<Self, anyhow::Error> {
+	pub async fn build(
+		config: &MovementConfig,
+		mut health_check_rx: mpsc::Receiver<oneshot::Sender<bool>>,
+	) -> Result<Self, anyhow::Error> {
 		// Spawn a task to forward events to the listener channel
 		let (mut sender, listener) = futures::channel::mpsc::unbounded::<
 			BridgeContractResult<BridgeContractEvent<MovementAddress>>,
@@ -160,6 +166,21 @@ impl MovementMonitoring {
 			async move {
 				let mvt_client = MovementClient::new(&config).await.unwrap();
 				loop {
+					//Check if there's a health check request
+					match health_check_rx.try_recv() {
+						Ok(tx) => {
+							if let Err(err) = tx.send(true) {
+								tracing::warn!(
+									"Mvt Heath check send on oneshot channel failed:{err}"
+								);
+							}
+						}
+						Err(mpsc::error::TryRecvError::Empty) => (), //nothing
+						Err(err) => {
+							tracing::warn!("Check Mvt monitoring loop health channel error: {err}");
+						}
+					}
+
 					let mut init_event_list = match pool_initiator_contract(
 						FRAMEWORK_ADDRESS,
 						&config.mvt_rpc_connection_url(),

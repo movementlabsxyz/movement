@@ -17,6 +17,7 @@ use bridge_config::common::eth::EthConfig;
 use futures::SinkExt;
 use futures::{channel::mpsc::UnboundedReceiver, Stream, StreamExt};
 use std::{pin::Pin, task::Poll};
+use tokio::sync::{mpsc, oneshot};
 
 pub struct EthMonitoring {
 	listener: UnboundedReceiver<BridgeContractResult<BridgeContractEvent<EthAddress>>>,
@@ -27,7 +28,10 @@ impl BridgeContractMonitoring for EthMonitoring {
 }
 
 impl EthMonitoring {
-	pub async fn build(config: &EthConfig) -> Result<Self, anyhow::Error> {
+	pub async fn build(
+		config: &EthConfig,
+		mut health_check_rx: mpsc::Receiver<oneshot::Sender<bool>>,
+	) -> Result<Self, anyhow::Error> {
 		let client_config: crate::chains::ethereum::client::Config = config.try_into()?;
 		let rpc_provider = ProviderBuilder::new()
 			.with_recommended_fillers()
@@ -60,6 +64,21 @@ impl EthMonitoring {
 				//TODO save the start between restart.
 				let mut last_processed_block = 0;
 				loop {
+					//Check if there's a health check request
+					match health_check_rx.try_recv() {
+						Ok(tx) => {
+							if let Err(err) = tx.send(true) {
+								tracing::warn!(
+									"Eth Health check send on oneshot channel failed:{err}"
+								);
+							}
+						}
+						Err(mpsc::error::TryRecvError::Empty) => (), //nothing
+						Err(err) => {
+							tracing::warn!("Check Eth monitoring loop health channel error: {err}");
+						}
+					}
+
 					let block_number = rpc_provider.get_block_number().await.unwrap();
 					if last_processed_block < block_number {
 						last_processed_block = block_number;

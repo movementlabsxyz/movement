@@ -28,6 +28,28 @@ pub mod rest;
 mod states;
 pub mod types;
 
+#[derive(Debug)]
+struct HeathCheckStatus {
+	chain_one: bool,
+	chain_two: bool,
+}
+
+impl HeathCheckStatus {
+	fn new() -> Self {
+		HeathCheckStatus { chain_one: true, chain_two: true }
+	}
+	fn check(&self) -> bool {
+		self.chain_one && self.chain_two
+	}
+
+	fn update_state(&mut self, chain: ChainId, state: bool) {
+		match chain {
+			ChainId::ONE => self.chain_one = state,
+			ChainId::TWO => self.chain_two = state,
+		}
+	}
+}
+
 pub async fn run_bridge<
 	A1: Send + From<Vec<u8>> + std::clone::Clone + 'static + std::fmt::Debug,
 	A2: Send + From<Vec<u8>> + std::clone::Clone + 'static + std::fmt::Debug,
@@ -37,6 +59,8 @@ pub async fn run_bridge<
 	two_client: impl BridgeContract<A2> + 'static,
 	mut two_stream: impl BridgeContractMonitoring<Address = A2>,
 	mut healthcheck_request_rx: mpsc::Receiver<oneshot::Sender<String>>,
+	one_healthcheck_tx: mpsc::Sender<oneshot::Sender<bool>>,
+	two_healthcheck_tx: mpsc::Sender<oneshot::Sender<bool>>,
 ) -> Result<(), anyhow::Error>
 where
 	Vec<u8>: From<A1>,
@@ -46,21 +70,66 @@ where
 
 	let mut client_exec_result_futures_one = FuturesUnordered::new();
 	let mut client_exec_result_futures_two = FuturesUnordered::new();
+	let mut health_check_result_futures = FuturesUnordered::new();
 
 	//only one client can use at a time.
 	let one_client_lock = Arc::new(Mutex::new(()));
 	let two_client_lock = Arc::new(Mutex::new(()));
 
 	let mut tranfer_log_interval = tokio::time::interval(tokio::time::Duration::from_secs(60));
+	let mut monitoring_health_check_interval =
+		tokio::time::interval(tokio::time::Duration::from_secs(5));
+
+	let mut health_status = HeathCheckStatus::new();
 
 	loop {
 		select! {
-			//Manage HealthCheck request
+			//Manage REST HealthCheck request
 			Some(oneshot_tx) = healthcheck_request_rx.recv() => {
-				if let Err(err) = oneshot_tx.send("OK".to_string()){
+				let res = if health_status.check() {
+					"OK".to_string()
+				} else {
+					format!("NOK : {health_status:?}")
+				};
+				if let Err(err) = oneshot_tx.send(res){
 					tracing::warn!("Heal check oneshot channel closed abnormally :{err:?}");
 				}
 
+			}
+			// verify that monitoring heath check still works.
+			_ = monitoring_health_check_interval.tick() => {
+				//Chain one monitoring health check.
+				let jh = tokio::spawn({
+					let healthcheck_tx = one_healthcheck_tx.clone();
+					async move {
+						(ChainId::ONE, check_monitoring_loop_heath(healthcheck_tx).await)
+					}
+				});
+				health_check_result_futures.push(jh);
+				//Chain two monitoring health check.
+				let jh = tokio::spawn({
+					let healthcheck_tx = two_healthcheck_tx.clone();
+					async move {
+						(ChainId::TWO, check_monitoring_loop_heath(healthcheck_tx).await)
+					}
+				});
+				health_check_result_futures.push(jh);
+			}
+			// Process health check result.
+			Some(res) = health_check_result_futures.next() => {
+				match res {
+					//Client execution ok.
+					Ok((chain, Ok(status))) => health_status.update_state(chain, status),
+					Ok((chain, Err(err))) => {
+						tracing::warn!("Chain {chain} monitoring health check fail with an error:{err}",);
+						health_status.update_state(chain, false);
+					},
+					Err(err)=>{
+						// Tokio execution fail. Process should exit.
+						tracing::error!("Error during health check tokio task execution exiting: {err}");
+						return Err(err.into());
+					}
+				}
 			}
 			// Log all current transfer
 			_ = tranfer_log_interval.tick() => {
@@ -178,13 +247,35 @@ where
 					}
 					Err(err)=>{
 						// Tokio execution fail. Process should exit.
-						tracing::error!("Error during client tokio tasj execution exiting: {err}");
+						tracing::error!("Error during client tokio task execution exiting: {err}");
 						return Err(err.into());
 					}
 				}
 			}
 		}
 	}
+}
+
+async fn check_monitoring_loop_heath(
+	healthcheck_tx: mpsc::Sender<oneshot::Sender<bool>>,
+) -> Result<bool, String> {
+	let (tx, rx) = oneshot::channel();
+	healthcheck_tx
+		.send(tx)
+		.await
+		.map_err(|err| format!("Chain one Health check send error: {}", err))?;
+	let res = match tokio::time::timeout(tokio::time::Duration::from_secs(5), rx).await {
+		Ok(Ok(res)) => res,
+		Ok(Err(err)) => {
+			tracing::warn!("Chain one monitoring health check return an error:{err}");
+			false
+		}
+		Err(_) => {
+			tracing::warn!("Chain one monitoring health check timeout. Monitoring is idle.");
+			false
+		}
+	};
+	Ok(res)
 }
 
 struct Runtime {
