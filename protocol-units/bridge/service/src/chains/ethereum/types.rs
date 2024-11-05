@@ -7,45 +7,17 @@ use crate::types::HashLock;
 use crate::types::HashLockPreImage;
 use crate::types::LockDetails;
 use alloy::network::{Ethereum, EthereumWallet};
-use alloy::primitives::{Address, FixedBytes};
+use alloy::primitives::Address;
 use alloy::providers::fillers::{
 	ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller,
 };
 use alloy::providers::RootProvider;
 use alloy::rlp::{RlpDecodable, RlpEncodable};
-use alloy::sol_types::SolEvent;
 use alloy::transports::BoxTransport;
 use rand::Rng;
 use std::hash::{DefaultHasher, Hash, Hasher};
 
 pub const ETH_ADDRESS_LEN: usize = 20;
-
-pub const INITIATOR_INITIATED_SELECT: FixedBytes<32> =
-	AtomicBridgeInitiator::BridgeTransferInitiated::SIGNATURE_HASH;
-pub const INITIATOR_COMPLETED_SELECT: FixedBytes<32> =
-	AtomicBridgeInitiator::BridgeTransferCompleted::SIGNATURE_HASH;
-pub const INITIATOR_REFUNDED_SELECT: FixedBytes<32> =
-	AtomicBridgeInitiator::BridgeTransferRefunded::SIGNATURE_HASH;
-pub const COUNTERPARTY_LOCKED_SELECT: FixedBytes<32> =
-	AtomicBridgeCounterparty::BridgeTransferLocked::SIGNATURE_HASH;
-pub const COUNTERPARTY_COMPLETED_SELECT: FixedBytes<32> =
-	AtomicBridgeCounterparty::BridgeTransferCompleted::SIGNATURE_HASH;
-pub const COUNTERPARTY_ABORTED_SELECT: FixedBytes<32> =
-	AtomicBridgeCounterparty::BridgeTransferAborted::SIGNATURE_HASH;
-
-// Codegen for the WETH bridge contracts
-alloy::sol!(
-	#[allow(missing_docs)]
-	#[sol(rpc)]
-	AtomicBridgeInitiator,
-	"abis/AtomicBridgeInitiator.json"
-);
-alloy::sol!(
-	#[allow(missing_docs)]
-	#[sol(rpc)]
-	AtomicBridgeCounterparty,
-	"abis/AtomicBridgeCounterparty.json"
-);
 
 // Codegen for the MOVE bridge contracts
 alloy::sol!(
@@ -64,24 +36,18 @@ alloy::sol!(
 alloy::sol!(
 	#[allow(missing_docs)]
 	#[sol(rpc)]
-	WETH9,
-	"abis/WETH9.json"
-);
-
-alloy::sol!(
-	#[allow(missing_docs)]
-	#[sol(rpc)]
 	MockMOVEToken,
 	"abis/MockMOVEToken.json"
 );
 
 /// Specifies the kind of asset being transferred,
 /// This will associate the client with its respective ABIs
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub enum AssetKind {
 	/// This will initialize the client with the WETH Bridge ABIs
 	Weth,
 	/// This will initialize the client with the MOVE Bridge ABIs
+	#[default]
 	Move,
 }
 
@@ -92,12 +58,6 @@ impl From<String> for AssetKind {
 			"MOVE" => AssetKind::Move,
 			_ => panic!("Invalid asset kind"),
 		}
-	}
-}
-
-impl Default for AssetKind {
-	fn default() -> Self {
-		AssetKind::Move
 	}
 }
 
@@ -147,24 +107,10 @@ pub fn hash_static_string(pre_image: &'static str) -> [u8; 32] {
 	hash_vec_u32(&fixed_bytes)
 }
 
-#[derive(Debug, Clone)]
-pub enum InitiatorContract {
-	Weth(AtomicBridgeInitiator::AtomicBridgeInitiatorInstance<BoxTransport, AlloyProvider>),
-	Move(AtomicBridgeInitiatorMOVE::AtomicBridgeInitiatorMOVEInstance<BoxTransport, AlloyProvider>),
-}
-
-#[derive(Debug, Clone)]
-pub enum CounterpartyContract {
-	Weth(AtomicBridgeCounterparty::AtomicBridgeCounterpartyInstance<BoxTransport, AlloyProvider>),
-	Move(
-		AtomicBridgeCounterpartyMOVE::AtomicBridgeCounterpartyMOVEInstance<
-			BoxTransport,
-			AlloyProvider,
-		>,
-	),
-}
-
-pub type WETH9Contract = WETH9::WETH9Instance<BoxTransport, AlloyProvider>;
+pub type InitiatorContract =
+	AtomicBridgeInitiatorMOVE::AtomicBridgeInitiatorMOVEInstance<BoxTransport, AlloyProvider>;
+pub type CounterpartyContract =
+	AtomicBridgeCounterpartyMOVE::AtomicBridgeCounterpartyMOVEInstance<BoxTransport, AlloyProvider>;
 
 pub type AlloyProvider = FillProvider<
 	JoinFill<
@@ -284,68 +230,6 @@ impl From<[u8; 20]> for EthAddress {
 // 				components: vec![],
 // 				internal_type: None,
 // 			},
-// 		}
-// 	}
-// }
-
-// pub(crate) enum EventName {
-// 	InitiatorInitiated,
-// 	InitiatorCompleted,
-// 	InitiatorRefunded,
-// 	CounterpartyLocked,
-// 	CounterpartyCompleted,
-// 	CounterpartyAborted,
-// }
-
-// impl EventName {
-// 	pub fn as_str(&self) -> &str {
-// 		match self {
-// 			EventName::InitiatorInitiated => "BridgeTransferInitiated",
-// 			EventName::InitiatorCompleted => "BridgeTransferCompleted",
-// 			EventName::InitiatorRefunded => "BridgeTransferRefunded",
-// 			EventName::CounterpartyLocked => "BridgeTransferLocked",
-// 			EventName::CounterpartyCompleted => "BridgeTransferCompleted",
-// 			EventName::CounterpartyAborted => "BridgeTransferAborted",
-// 		}
-// 	}
-
-// 	pub fn params(&self) -> Vec<Param> {
-// 		match self {
-// 			EventName::InitiatorInitiated => vec![
-// 				AlloyParam::BridgeTransferId.fill(),
-// 				AlloyParam::InitiatorAddress.fill(),
-// 				AlloyParam::RecipientAddress.fill(),
-// 				AlloyParam::PreImage.fill(),
-// 				AlloyParam::HashLock.fill(),
-// 				AlloyParam::TimeLock.fill(),
-// 				AlloyParam::Amount.fill(),
-// 			],
-// 			EventName::InitiatorCompleted => {
-// 				vec![AlloyParam::BridgeTransferId.fill(), AlloyParam::PreImage.fill()]
-// 			}
-// 			EventName::InitiatorRefunded => vec![AlloyParam::BridgeTransferId.fill()],
-// 			EventName::CounterpartyLocked => vec![
-// 				AlloyParam::BridgeTransferId.fill(),
-// 				AlloyParam::InitiatorAddress.fill(),
-// 				AlloyParam::Amount.fill(),
-// 				AlloyParam::HashLock.fill(),
-// 				AlloyParam::TimeLock.fill(),
-// 			],
-// 			EventName::CounterpartyCompleted => {
-// 				vec![AlloyParam::BridgeTransferId.fill(), AlloyParam::PreImage.fill()]
-// 			}
-// 			EventName::CounterpartyAborted => vec![AlloyParam::BridgeTransferId.fill()],
-// 		}
-// 	}
-// }
-
-// impl From<&str> for EventName {
-// 	fn from(s: &str) -> Self {
-// 		match s {
-// 			"BridgeTransferInitiated" => EventName::InitiatorInitiated,
-// 			"BridgeTransferCompleted" => EventName::InitiatorCompleted,
-// 			"BridgeTransferRefunded" => EventName::InitiatorRefunded,
-// 			_ => panic!("Invalid event name"),
 // 		}
 // 	}
 // }

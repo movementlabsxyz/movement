@@ -1,11 +1,12 @@
-use super::client::MovementClient;
-use crate::chains::bridge_contracts::BridgeContractError;
-use crate::types::AddressError;
-use crate::types::{BridgeAddress, HashLockPreImage};
+use crate::{
+	chains::bridge_contracts::BridgeContractError,
+	types::{AddressError, BridgeAddress, HashLockPreImage},
+};
 use anyhow::{Context, Result};
 use aptos_sdk::{
 	crypto::ed25519::{Ed25519PrivateKey, Ed25519Signature},
 	move_types::{
+		account_address::AccountAddressParseError,
 		ident_str,
 		language_storage::{ModuleId, TypeTag},
 	},
@@ -29,11 +30,13 @@ use rand::{rngs::StdRng, Rng, RngCore, SeedableRng};
 use rand_chacha::ChaChaRng;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use url::Url;
 use std::str::FromStr;
+use thiserror::Error;
 use tiny_keccak::{Hasher, Keccak};
 use tracing::log::{error, info};
-use url::Url;
 
+use super::client_framework::MovementClientFramework;
 pub type TestRng = StdRng;
 
 const MOVEMENT_RPC_URL: &str = "https://testnet.bardock.movementnetwork.xyz";
@@ -55,6 +58,16 @@ impl RngSeededClone for ChaChaRng {
 		self.fill_bytes(&mut seed);
 		ChaChaRng::from_seed(seed)
 	}
+}
+
+#[derive(Debug, Error)]
+pub enum MovementAddressError {
+	#[error("Invalid hex string")]
+	InvalidHexString,
+	#[error("Invalid byte length for AccountAddress")]
+	InvalidByteLength,
+	#[error("Invalid AccountAddress")]
+	AccountParseError(#[from] AccountAddressParseError),
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
@@ -79,14 +92,10 @@ impl From<&MovementAddress> for Vec<u8> {
 }
 
 impl FromStr for MovementAddress {
-	type Err = AddressError;
+	type Err = MovementAddressError;
 
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
-		AccountAddress::from_str(s).map(MovementAddress).map_err(|_| {
-			AddressError::AddressConvertionlError(
-				"MovementAddress from_str AccountAddress conversion error".to_string(),
-			)
-		})
+		AccountAddress::from_str(s).map(MovementAddress).map_err(From::from)
 	}
 }
 
@@ -100,7 +109,6 @@ impl TryFrom<Vec<u8>> for MovementAddress {
 	type Error = AddressError;
 
 	fn try_from(vec: Vec<u8>) -> Result<Self, Self::Error> {
-		// Ensure the vector has the correct length
 		if vec.len() != AccountAddress::LENGTH {
 			return Err(AddressError::InvalidByteLength(vec.len()));
 		}
@@ -111,6 +119,7 @@ impl TryFrom<Vec<u8>> for MovementAddress {
 		})
 	}
 }
+
 
 impl TryFrom<&str> for MovementAddress {
 	type Error = AddressError;
@@ -286,9 +295,8 @@ pub fn serialize_vec_initiator<T: serde::Serialize + ?Sized>(
 	bcs::to_bytes(value).map_err(|_| BridgeContractError::SerializationError)
 }
 
-// This is not used for now, but we may need to use it in later for estimating gas.
 pub async fn simulate_aptos_transaction(
-	aptos_client: &MovementClient,
+	aptos_client: &MovementClientFramework,
 	signer: &mut LocalAccount,
 	payload: TransactionPayload,
 ) -> Result<TransactionInfo> {
@@ -343,7 +351,7 @@ pub fn make_aptos_payload(
 
 /// Send View Request
 pub async fn send_view_request(
-	aptos_client: &MovementClient,
+	aptos_client: &MovementClientFramework,
 	package_address: String,
 	module_name: String,
 	function_name: String,
