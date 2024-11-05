@@ -42,8 +42,6 @@ enum Call {
 pub struct MovementClientFramework {
 	///Native Address of the
 	pub native_address: AccountAddress,
-	/// Bytes of the non-native (external) chain.
-	pub non_native_address: Vec<u8>,
 	///The Apotos Rest Client
 	pub rest_client: Client,
 	///The signer account
@@ -60,12 +58,7 @@ impl MovementClientFramework {
 		let signer =
 			utils::create_local_account(config.movement_signer_key.clone(), &rest_client).await?;
 		let native_address = AccountAddress::from_hex_literal(&config.movement_native_address)?;
-		Ok(MovementClientFramework {
-			native_address,
-			non_native_address: Vec::new(), //This seems unused
-			rest_client,
-			signer: Arc::new(signer),
-		})
+		Ok(MovementClientFramework { native_address, rest_client, signer: Arc::new(signer) })
 	}
 
 	pub fn rest_client(&self) -> &Client {
@@ -966,7 +959,6 @@ impl MovementClientFramework {
 		Ok((
 			MovementClientFramework {
 				native_address: DUMMY_ADDRESS,
-				non_native_address: Vec::new(),
 				rest_client,
 				signer: Arc::new(LocalAccount::generate(&mut rng)),
 			},
