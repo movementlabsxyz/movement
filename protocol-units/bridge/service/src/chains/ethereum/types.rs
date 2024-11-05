@@ -175,65 +175,6 @@ impl From<[u8; 20]> for EthAddress {
 	}
 }
 
-// pub(crate) enum AlloyParam {
-// 	BridgeTransferId,
-// 	InitiatorAddress,
-// 	RecipientAddress,
-// 	PreImage,
-// 	HashLock,
-// 	TimeLock,
-// 	Amount,
-// }
-
-// impl AlloyParam {
-// 	pub fn fill(&self) -> Param {
-// 		match self {
-// 			AlloyParam::BridgeTransferId => Param {
-// 				name: "_bridgeTransferId".to_string(),
-// 				ty: "bytes32".to_string(),
-// 				components: vec![],
-// 				internal_type: None,
-// 			},
-// 			AlloyParam::InitiatorAddress => Param {
-// 				name: "_originator".to_string(),
-// 				ty: "address".to_string(),
-// 				components: vec![],
-// 				internal_type: None,
-// 			},
-// 			AlloyParam::RecipientAddress => Param {
-// 				name: "_recipient".to_string(),
-// 				ty: "bytes32".to_string(),
-// 				components: vec![],
-// 				internal_type: None,
-// 			},
-// 			AlloyParam::PreImage => Param {
-// 				name: "pre_image".to_string(),
-// 				ty: "bytes32".to_string(),
-// 				components: vec![],
-// 				internal_type: None,
-// 			},
-// 			AlloyParam::HashLock => Param {
-// 				name: "_hashLock".to_string(),
-// 				ty: "bytes32".to_string(),
-// 				components: vec![],
-// 				internal_type: None,
-// 			},
-// 			AlloyParam::TimeLock => Param {
-// 				name: "_timeLock".to_string(),
-// 				ty: "uint256".to_string(),
-// 				components: vec![],
-// 				internal_type: None,
-// 			},
-// 			AlloyParam::Amount => Param {
-// 				name: "amount".to_string(),
-// 				ty: "uint256".to_string(),
-// 				components: vec![],
-// 				internal_type: None,
-// 			},
-// 		}
-// 	}
-// }
-
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct CompletedDetails<A> {
 	pub bridge_transfer_id: BridgeTransferId,
