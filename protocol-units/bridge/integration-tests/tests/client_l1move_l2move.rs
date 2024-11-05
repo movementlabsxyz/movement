@@ -1,14 +1,14 @@
 use alloy::primitives::{address, keccak256};
 use anyhow::Result;
-use aptos_sdk::types::account_address::AccountAddress;
 use aptos_sdk::coin_client::CoinClient;
+use aptos_sdk::types::account_address::AccountAddress;
 use bridge_config::Config;
 use bridge_integration_tests::EthToMovementCallArgs;
 use bridge_integration_tests::HarnessMvtClient;
 use bridge_integration_tests::{TestHarness, TestHarnessFramework};
-use bridge_service::chains::{ethereum::types::EthAddress, movement::client_framework::MovementClientFramework};
+use bridge_service::chains::{bridge_contracts::BridgeContract, ethereum::types::EthHash};
 use bridge_service::chains::{
-	bridge_contracts::BridgeContract, ethereum::types::EthHash
+	ethereum::types::EthAddress, movement::client_framework::MovementClientFramework,
 };
 use bridge_service::types::{
 	Amount, AssetType, BridgeAddress, BridgeTransferId, HashLock, HashLockPreImage,
@@ -18,14 +18,13 @@ use tokio::{self};
 use tracing::info;
 
 #[tokio::test]
-async fn test_movement_client_lock_transfer(
-) -> Result<(), anyhow::Error> {
+async fn test_movement_client_lock_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 	MovementClientFramework::bridge_setup_scripts().await?;
 	let config: Config = Config::suzuka();
 	let (mut mvt_client_harness, _config) = TestHarnessFramework::new_with_suzuka(config).await;
 	let args = EthToMovementCallArgs::default();
-	info!{"Args Initiator: {:?}", args.initiator};
+	info! {"Args Initiator: {:?}", args.initiator};
 	let test_result = async {
 		let coin_client = CoinClient::new(&mvt_client_harness.rest_client);
 		let movement_client_signer = mvt_client_harness.movement_client.signer();
@@ -71,8 +70,7 @@ async fn test_movement_client_lock_transfer(
 }
 
 #[tokio::test]
-async fn test_movement_client_complete_transfer(
-) -> Result<(), anyhow::Error> {
+async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 	MovementClientFramework::bridge_setup_scripts().await?;
 	let config: Config = Config::suzuka();
@@ -84,11 +82,21 @@ async fn test_movement_client_complete_transfer(
 		{
 			let faucet_client = mvt_client_harness.faucet_client.write().unwrap();
 			faucet_client.fund(movement_client_signer.address(), 100_000_000).await?;
-			faucet_client.fund(AccountAddress::from_hex_literal("0xface")?, 100_000_000).await?;
-			faucet_client.fund(AccountAddress::from_hex_literal("0x1")?, 100_000_000).await?;
+			faucet_client
+				.fund(AccountAddress::from_hex_literal("0xface")?, 100_000_000)
+				.await?;
+			faucet_client
+				.fund(AccountAddress::from_hex_literal("0x1")?, 100_000_000)
+				.await?;
 			// This address is the recipient in test_movement_client_complete_transfer, so it needs an AptosCoin store
-			faucet_client.fund(AccountAddress::from_hex_literal("0x3078303030303030303030303030303030303030303030303030303066616365")?, 100_000_000).await?;
-			
+			faucet_client
+				.fund(
+					AccountAddress::from_hex_literal(
+						"0x3078303030303030303030303030303030303030303030303030303066616365",
+					)?,
+					100_000_000,
+				)
+				.await?;
 		}
 		let balance = coin_client.get_account_balance(&movement_client_signer.address()).await?;
 		assert!(
@@ -121,7 +129,7 @@ async fn test_movement_client_complete_transfer(
 
 		assert_eq!(details.state, 1, "Bridge transfer should be pending.");
 		info!("Bridge transfer details: {:?}", details);
-		
+
 		let secret = b"secret";
 		let mut padded_secret = [0u8; 32];
 		padded_secret[..secret.len()].copy_from_slice(secret);
@@ -145,8 +153,7 @@ async fn test_movement_client_complete_transfer(
 		assert_eq!(details.bridge_transfer_id.0, args.bridge_transfer_id.0);
 		assert_eq!(details.hash_lock.0, args.hash_lock.0);
 		assert_eq!(
-			&details.initiator_address.0,
-			&args.initiator,
+			&details.initiator_address.0, &args.initiator,
 			"Initiator address does not match"
 		);
 		assert_eq!(details.recipient_address.0, args.recipient);
@@ -161,8 +168,7 @@ async fn test_movement_client_complete_transfer(
 }
 
 #[tokio::test]
-async fn test_movement_client_abort_transfer(
-) -> Result<(), anyhow::Error> {
+async fn test_movement_client_abort_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 	MovementClientFramework::bridge_setup_scripts().await?;
 	let config: Config = Config::suzuka();
@@ -209,14 +215,14 @@ async fn test_movement_client_abort_transfer(
 		assert_eq!(details.state, 1, "Bridge transfer should be pending.");
 
 		sleep(Duration::from_secs(20)).await;
-		
+
 		let secret = b"secret";
 		let mut padded_secret = [0u8; 32];
 		padded_secret[..secret.len()].copy_from_slice(secret);
 
 		BridgeContract::abort_bridge_transfer(
 			&mut mvt_client_harness.movement_client,
-			BridgeTransferId(args.bridge_transfer_id.0)
+			BridgeTransferId(args.bridge_transfer_id.0),
 		)
 		.await
 		.expect("Failed to complete bridge transfer");
@@ -232,8 +238,7 @@ async fn test_movement_client_abort_transfer(
 		assert_eq!(details.bridge_transfer_id.0, args.bridge_transfer_id.0);
 		assert_eq!(details.hash_lock.0, args.hash_lock.0);
 		assert_eq!(
-			&details.initiator_address.0,
-			&args.initiator,
+			&details.initiator_address.0, &args.initiator,
 			"Initiator address does not match"
 		);
 		assert_eq!(details.recipient_address.0, args.recipient);
@@ -305,13 +310,13 @@ async fn test_eth_client_should_successfully_call_initiate_transfer_only_weth() 
 
 	let recipient = HarnessMvtClient::gen_aptos_account();
 	let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
-	eth_client_harness
-		.deposit_weth_and_approve(
-			BridgeAddress(EthAddress(signer_address)),
-			Amount(AssetType::EthAndWeth((0, 1))),
-		)
-		.await
-		.expect("Failed to deposit WETH");
+	// eth_client_harness
+	// 	.deposit_weth_and_approve(
+	// 		BridgeAddress(EthAddress(signer_address)),
+	// 		Amount(AssetType::EthAndWeth((0, 1))),
+	// 	)
+	// 	.await
+	// 	.expect("Failed to deposit WETH");
 
 	eth_client_harness
 		.eth_client
@@ -334,13 +339,13 @@ async fn test_eth_client_should_successfully_call_initiate_transfer_eth_and_weth
 
 	let recipient = HarnessMvtClient::gen_aptos_account();
 	let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
-	eth_client_harness
-		.deposit_weth_and_approve(
-			BridgeAddress(EthAddress(signer_address)),
-			Amount(AssetType::EthAndWeth((0, 1))),
-		)
-		.await
-		.expect("Failed to deposit WETH");
+	// eth_client_harness
+	// 	.deposit_weth_and_approve(
+	// 		BridgeAddress(EthAddress(signer_address)),
+	// 		Amount(AssetType::EthAndWeth((0, 1))),
+	// 	)
+	// 	.await
+	// 	.expect("Failed to deposit WETH");
 
 	eth_client_harness
 		.eth_client

@@ -1,18 +1,20 @@
-use alloy::network::EthereumWallet;
-use alloy::providers::ProviderBuilder;
-use alloy::signers::local::PrivateKeySigner;
-use alloy_primitives::Address;
-use alloy_primitives::U256;
-use bridge_config::common::eth::EthConfig;
-use bridge_config::common::movement::MovementConfig;
-use bridge_config::Config as BridgeConfig;
-use bridge_service::chains::ethereum::types::AtomicBridgeCounterpartyMOVE;
-use bridge_service::chains::ethereum::types::AtomicBridgeInitiatorMOVE;
-use bridge_service::chains::ethereum::types::EthAddress;
-use bridge_service::chains::ethereum::types::MockMOVEToken;
-use bridge_service::chains::ethereum::types::WETH9;
-use bridge_service::chains::ethereum::utils::{send_transaction, send_transaction_rules};
-use bridge_service::types::TimeLock;
+use alloy::{
+	network::EthereumWallet, providers::ProviderBuilder, signers::local::PrivateKeySigner,
+};
+use alloy_primitives::{Address, U256};
+use bridge_config::{
+	common::{eth::EthConfig, movement::MovementConfig},
+	Config as BridgeConfig,
+};
+use bridge_service::{
+	chains::ethereum::{
+		types::{
+			AtomicBridgeCounterpartyMOVE, AtomicBridgeInitiatorMOVE, EthAddress, MockMOVEToken,
+		},
+		utils::{send_transaction, send_transaction_rules},
+	},
+	types::TimeLock,
+};
 use hex::ToHex;
 use rand::Rng;
 use std::{
@@ -43,7 +45,8 @@ pub async fn setup_local_ethereum(config: &mut EthConfig) -> Result<(), anyhow::
 		deploy_counterpart_contract(signer_private_key.clone(), &rpc_url)
 			.await
 			.to_string();
-	let move_token_contract = deploy_movetoken_contract(signer_private_key.clone(), &rpc_url).await;
+	let move_token_contract =
+		deploy_move_token_contract(signer_private_key.clone(), &rpc_url).await;
 	config.eth_move_token_contract = move_token_contract.to_string();
 
 	initialize_initiator_contract(
@@ -95,7 +98,10 @@ async fn deploy_counterpart_contract(
 	contract.address().to_owned()
 }
 
-async fn deploy_movetoken_contract(signer_private_key: PrivateKeySigner, rpc_url: &str) -> Address {
+async fn deploy_move_token_contract(
+	signer_private_key: PrivateKeySigner,
+	rpc_url: &str,
+) -> Address {
 	let rpc_provider = ProviderBuilder::new()
 		.with_recommended_fillers()
 		.wallet(EthereumWallet::from(signer_private_key.clone()))
