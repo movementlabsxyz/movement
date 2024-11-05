@@ -1,14 +1,11 @@
 use super::utils::{self, MovementAddress};
-use crate::chains::bridge_contracts::BridgeContract;
-use crate::chains::bridge_contracts::BridgeContractError;
-use crate::chains::bridge_contracts::BridgeContractResult;
-use crate::types::BridgeTransferDetailsCounterparty;
-use crate::types::{
-	Amount, AssetType, BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock,
-	HashLockPreImage, TimeLock,
+use crate::{
+	chains::bridge_contracts::{BridgeContract, BridgeContractError, BridgeContractResult},
+	types::{
+		Amount, BridgeAddress, BridgeTransferDetails, BridgeTransferDetailsCounterparty,
+		BridgeTransferId, HashLock, HashLockPreImage, TimeLock,
+	},
 };
-use alloy_primitives::Address;
-use alloy_primitives::FixedBytes;
 use anyhow::{Context, Result};
 use aptos_api_types::{EntryFunctionId, MoveModuleId, ViewRequest};
 use aptos_sdk::{
@@ -20,17 +17,16 @@ use aptos_types::account_address::AccountAddress;
 use bridge_config::common::movement::MovementConfig;
 use hex;
 use rand::prelude::*;
-use std::path::Path;
-use std::str::FromStr;
-use std::sync::Arc;
+use std::{path::Path, str::FromStr, sync::Arc};
 use tracing::{debug, info};
 use url::Url;
 
 pub const FRAMEWORK_ADDRESS: AccountAddress = AccountAddress::new([
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
 ]);
-const INITIATOR_MODULE_NAME: &str = "atomic_bridge_initiator";
-const COUNTERPARTY_MODULE_NAME: &str = "atomic_bridge_counterparty";
+
+pub const INITIATOR_MODULE_NAME: &str = "atomic_bridge_initiator";
+pub const COUNTERPARTY_MODULE_NAME: &str = "atomic_bridge_counterparty";
 const DUMMY_ADDRESS: AccountAddress = AccountAddress::new([0; 32]);
 
 #[allow(dead_code)]
@@ -41,13 +37,11 @@ enum Call {
 	GetDetails,
 }
 
-#[allow(dead_code)]
+/// The Client for making calls to the atomic bridge framework modules
 #[derive(Clone)]
 pub struct MovementClientFramework {
 	///Native Address of the
 	pub native_address: AccountAddress,
-	/// Bytes of the non-native (external) chain.
-	pub non_native_address: Vec<u8>,
 	///The Apotos Rest Client
 	pub rest_client: Client,
 	///The signer account
@@ -64,12 +58,7 @@ impl MovementClientFramework {
 		let signer =
 			utils::create_local_account(config.movement_signer_key.clone(), &rest_client).await?;
 		let native_address = AccountAddress::from_hex_literal(&config.movement_native_address)?;
-		Ok(MovementClientFramework {
-			native_address,
-			non_native_address: Vec::new(), //dummy for now
-			rest_client,
-			signer: Arc::new(signer),
-		})
+		Ok(MovementClientFramework { native_address, rest_client, signer: Arc::new(signer) })
 	}
 
 	pub fn rest_client(&self) -> &Client {
@@ -132,16 +121,12 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 		hash_lock: HashLock,
 		amount: Amount,
 	) -> BridgeContractResult<()> {
-		let amount_value = match amount.0 {
-			AssetType::Moveth(value) => value,
-			_ => return Err(BridgeContractError::ConversionFailed("Amount".to_string())),
-		};
-		debug!("Amount value: {:?}", amount_value);
+		debug!("Amount value: {:?}", amount);
 
 		let args = vec![
 			utils::serialize_vec_initiator(&recipient.0)?,
 			utils::serialize_vec_initiator(&hash_lock.0[..])?,
-			utils::serialize_u64_initiator(&amount_value)?,
+			utils::serialize_u64_initiator(&amount)?,
 		];
 
 		let payload = utils::make_aptos_payload(
@@ -254,17 +239,14 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 		amount: Amount,
 	) -> BridgeContractResult<()> {
 		debug!("Starting lock bridge transfer");
-		let amount_value = match amount.0 {
-			AssetType::Moveth(value) => value,
-			_ => return Err(BridgeContractError::SerializationError),
-		};
 		debug!("Initiator: {:?}", initiator.0);
+
 		let args = vec![
 			utils::serialize_vec(&initiator.0)?,
 			utils::serialize_vec(&bridge_transfer_id.0[..])?,
 			utils::serialize_vec(&hash_lock.0[..])?,
 			utils::serialize_vec(&recipient.0)?,
-			utils::serialize_u64(&amount_value)?,
+			utils::serialize_u64(&amount)?,
 		];
 
 		let payload = utils::make_aptos_payload(
@@ -409,7 +391,7 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 			bridge_transfer_id,
 			initiator_address: BridgeAddress(MovementAddress(originator_address)),
 			recipient_address: BridgeAddress(recipient_address_bytes),
-			amount: Amount(AssetType::Moveth(amount)),
+			amount: Amount(amount),
 			hash_lock: HashLock(hash_lock_array),
 			time_lock: TimeLock(time_lock),
 			state,
@@ -495,7 +477,7 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 			bridge_transfer_id,
 			initiator_address: BridgeAddress(originator_address_bytes),
 			recipient_address: BridgeAddress(MovementAddress(recipient_address)),
-			amount: Amount(AssetType::Moveth(amount)),
+			amount: Amount(amount),
 			hash_lock: HashLock(hash_lock_array),
 			time_lock: TimeLock(time_lock),
 			state,
@@ -504,6 +486,8 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 		Ok(Some(details))
 	}
 }
+
+//@TODO: feature flag from here for testing only
 
 use std::{
 	env, fs,
@@ -968,7 +952,6 @@ impl MovementClientFramework {
 		Ok((
 			MovementClientFramework {
 				native_address: DUMMY_ADDRESS,
-				non_native_address: Vec::new(),
 				rest_client,
 				signer: Arc::new(LocalAccount::generate(&mut rng)),
 			},
