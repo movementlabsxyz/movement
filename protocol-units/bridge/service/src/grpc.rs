@@ -40,7 +40,7 @@ impl Health for HealthCheckService {
 		request: Request<HealthCheckRequest>,
 	) -> Result<Response<HealthCheckResponse>, Status> {
 		let service = request.into_inner().service;
-		let status_map = self.status.lock().unwrap();
+		let status_map = self.status.lock().map_err(|_| Status::aborted("lock failed."))?;
 		let status = status_map.get(&service).cloned().unwrap_or(ServingStatus::ServiceUnknown);
 
 		Ok(Response::new(HealthCheckResponse { status: status.into() }))
@@ -53,7 +53,7 @@ impl Health for HealthCheckService {
 		// Create an mpsc channel for the stream
 		let (tx, rx) = mpsc::channel(4);
 		let status_update = HealthCheckResponse { status: ServingStatus::Serving.into() };
-		tx.send(Ok(status_update)).await.unwrap();
+		tx.send(Ok(status_update)).await.map_err(|_| Status::aborted("send failed."))?;
 
 		Ok(Response::new(HealthWatchStream { receiver: rx }))
 	}

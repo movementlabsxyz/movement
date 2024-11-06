@@ -10,6 +10,18 @@ use thiserror::Error;
 
 pub type BridgeHash = [u8; 32];
 
+#[derive(Debug, Error)]
+pub enum AddressError {
+	#[error("Invalid hex string")]
+	InvalidHexString,
+	#[error("Invalid byte length for AccountAddress: {0}")]
+	InvalidByteLength(usize),
+	#[error("Invalid AccountAddress: {0}")]
+	AccountParseError(String),
+	#[error("Error during address conversion: {0}")]
+	AddressConvertionlError(String),
+}
+
 #[derive(Debug, Clone, Copy, Eq, PartialEq, PartialOrd, Ord, Hash)]
 pub enum ChainId {
 	ONE,

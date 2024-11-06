@@ -456,7 +456,8 @@ async fn test_eth_client_lock_then_complete_transfer() -> Result<(), anyhow::Err
 	let (mut eth_client_harness, config, mut anvil) =
 		TestHarness::new_only_eth(config.clone()).await;
 
-	let mut eth_monitoring = EthMonitoring::build(&config.eth).await.unwrap();
+	let (_, eth_health_rx) = tokio::sync::mpsc::channel(10);
+	let mut eth_monitoring = EthMonitoring::build(&config.eth, eth_health_rx).await.unwrap();
 
 	let signer_address: alloy::primitives::Address = eth_client_harness.signer_address();
 

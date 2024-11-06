@@ -43,8 +43,8 @@ impl HeathCheckStatus {
 }
 
 pub async fn run_bridge<
-	A1: Send + From<Vec<u8>> + std::clone::Clone + 'static + std::fmt::Debug,
-	A2: Send + From<Vec<u8>> + std::clone::Clone + 'static + std::fmt::Debug,
+	A1: Send + TryFrom<Vec<u8>> + std::clone::Clone + 'static + std::fmt::Debug,
+	A2: Send + TryFrom<Vec<u8>> + std::clone::Clone + 'static + std::fmt::Debug,
 >(
 	one_client: impl BridgeContract<A1> + 'static,
 	mut one_stream: impl BridgeContractMonitoring<Address = A1>,
@@ -301,7 +301,7 @@ impl Runtime {
 			self.swap_state_map.insert(state.transfer_id, state);
 			return Ok(action);
 		} else {
-			//tested before state can be unwrap
+			//tested before in validate_state() state can be unwrap
 			state_opt.unwrap()
 		};
 

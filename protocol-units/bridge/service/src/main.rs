@@ -70,7 +70,6 @@ async fn main() -> Result<()> {
 			.add_service(BridgeServer::new(one_client_for_grpc))
 			.serve(grpc_addr)
 			.await
-			.unwrap();
 	});
 
 	// Initialize the gRPC health check service

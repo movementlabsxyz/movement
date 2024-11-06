@@ -159,7 +159,6 @@ impl MovementMonitoring {
 		tokio::spawn({
 			let config = config.clone();
 			async move {
-				let _ = MovementClientFramework::new(&config).await.unwrap();
 				loop {
 					//Check if there's a health check request
 					match health_check_rx.try_recv() {
@@ -525,7 +524,10 @@ impl TryFrom<BridgeInitEventData> for BridgeTransferDetails<MovementAddress> {
 				))
 				},
 			)?),
-			initiator_address: BridgeAddress(MovementAddress::from(data.initiator)),
+			initiator_address: BridgeAddress(
+				MovementAddress::try_from(data.initiator)
+					.map_err(|err| BridgeContractError::OnChainError(err.to_string()))?,
+			),
 			recipient_address: BridgeAddress(data.recipient),
 			hash_lock: HashLock(data.hash_lock.try_into().map_err(|e| {
 				BridgeContractError::ConversionFailed(format!(
@@ -554,7 +556,10 @@ impl TryFrom<BridgeInitEventData> for LockDetails<MovementAddress> {
 				},
 			)?),
 			initiator: BridgeAddress(data.recipient),
-			recipient: BridgeAddress(MovementAddress::from(data.initiator)),
+			recipient: BridgeAddress(
+				MovementAddress::try_from(data.initiator)
+					.map_err(|err| BridgeContractError::OnChainError(err.to_string()))?,
+			),
 			hash_lock: HashLock(data.hash_lock.try_into().map_err(|e| {
 				BridgeContractError::ConversionFailed(format!(
 					"MVT BridgeTransferDetails data onchain hash_lock conversion error error:{:?}",
