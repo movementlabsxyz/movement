@@ -25,9 +25,11 @@ async fn test_grpc_health_check() -> Result<(), anyhow::Error> {
 	health_service.set_service_status("", ServingStatus::Serving);
 
 	// Set up the gRPC address based on the mock config
-	let grpc_addr: SocketAddr =
-		format!("{}:{}", mock_config.movement.grpc_hostname, mock_config.movement.grpc_port)
-			.parse()?;
+	let grpc_addr: SocketAddr = format!(
+		"{}:{}",
+		mock_config.movement.grpc_listener_hostname, mock_config.movement.grpc_port
+	)
+	.parse()?;
 	// Spawn the gRPC server
 	let grpc_server_handle = tokio::spawn(async move {
 		Server::builder()
@@ -39,8 +41,10 @@ async fn test_grpc_health_check() -> Result<(), anyhow::Error> {
 
 	tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
 
-	let grpc_address =
-		format!("http://{}:{}", mock_config.movement.grpc_hostname, mock_config.movement.grpc_port);
+	let grpc_address = format!(
+		"http://{}:{}",
+		mock_config.movement.grpc_listener_hostname, mock_config.movement.grpc_port
+	);
 
 	let mut client = HealthClient::connect(grpc_address).await?;
 	let request = Request::new(HealthCheckRequest { service: "".to_string() });

@@ -1,7 +1,10 @@
 use crate::chains::movement::utils as movement_utils;
-use bridge_util::actions::*;
 use bridge_util::chains::bridge_contracts::BridgeContract;
+use bridge_util::chains::bridge_contracts::BridgeContractError;
 use bridge_util::types::BridgeAddress;
+use bridge_util::ActionExecError;
+use bridge_util::TransferAction;
+use bridge_util::TransferActionType;
 use std::future::Future;
 use std::pin::Pin;
 
@@ -10,7 +13,7 @@ pub fn process_action<A>(
 	mut client: impl BridgeContract<A> + 'static,
 ) -> Option<Pin<Box<dyn Future<Output = Result<(), ActionExecError>> + Send>>>
 where
-	A: Clone + Send + From<Vec<u8>>,
+	A: Clone + Send + TryFrom<Vec<u8>>,
 {
 	tracing::info!("Action: creating execution for action:{action}");
 	match action.kind.clone() {
@@ -33,7 +36,12 @@ where
 						bridge_transfer_id,
 						hash_lock,
 						initiator,
-						BridgeAddress(recipient.0.into()),
+						BridgeAddress(recipient.0.try_into().map_err(|_| {
+							ActionExecError(
+								action.clone(),
+								BridgeContractError::BadAddressEncoding("lock bridge traénsfer fail to convert recipient address to vec<u8>".to_string()),
+							)
+						})?),
 						amount,
 					)
 					.await

@@ -52,7 +52,7 @@ impl Client {
 						hash_lock: hash_lock.0.to_vec(),
 						initiator: initiator.0.to_vec(),
 						recipient: recipient.0.to_vec(),
-						amount: amount.value().into(),
+						amount: amount.0.into(),
 					})
 					.execute(&mut self.conn)?;
 			}
@@ -106,7 +106,7 @@ impl Client {
 						recipient_address: bridge_transfer_details.recipient_address.0.to_vec(),
 						hash_lock: bridge_transfer_details.hash_lock.0.to_vec(),
 						time_lock: bridge_transfer_details.time_lock.0 as i64,
-						amount: bridge_transfer_details.amount.value().into(),
+						amount: bridge_transfer_details.amount.0.into(),
 						state: 0,
 					})
 					.execute(&mut self.conn)?;
@@ -119,7 +119,7 @@ impl Client {
 						recipient: lock_details.recipient.0.into(),
 						hash_lock: lock_details.hash_lock.0.to_vec(),
 						time_lock: lock_details.time_lock.0 as i64,
-						amount: lock_details.amount.value().into(),
+						amount: lock_details.amount.0.into(),
 					})
 					.execute(&mut self.conn)?;
 			}

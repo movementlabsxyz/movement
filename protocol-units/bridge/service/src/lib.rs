@@ -1,24 +1,20 @@
 use crate::actions::process_action;
 use bridge_indexer_db::client::Client;
-use bridge_util::actions::ActionExecError;
-use bridge_util::actions::TransferAction;
-use bridge_util::actions::TransferActionType;
-use bridge_util::chains::bridge_contracts::BridgeContract;
-use bridge_util::chains::bridge_contracts::BridgeContractEvent;
-use bridge_util::chains::bridge_contracts::BridgeContractMonitoring;
-use bridge_util::events::InvalidEventError;
-use bridge_util::events::TransferEvent;
-use bridge_util::states::TransferState;
-use bridge_util::states::TransferStateType;
-pub use bridge_util::types;
-use bridge_util::types::BridgeTransferId;
-use bridge_util::types::ChainId;
+use bridge_util::{
+	actions::{ActionExecError, TransferAction, TransferActionType},
+	chains::bridge_contracts::{BridgeContract, BridgeContractEvent, BridgeContractMonitoring},
+	events::{InvalidEventError, TransferEvent},
+	states::{TransferState, TransferStateType},
+	types::{BridgeTransferId, ChainId},
+};
 use futures::stream::FuturesUnordered;
-use std::collections::HashMap;
-use std::sync::Arc;
-use tokio::select;
-use tokio::sync::Mutex;
+use std::{collections::HashMap, sync::Arc};
+use tokio::sync::mpsc;
+use tokio::sync::oneshot;
+use tokio::{select, sync::Mutex};
 use tokio_stream::StreamExt;
+
+pub use bridge_util::types;
 
 mod actions;
 pub mod chains;
@@ -26,13 +22,14 @@ pub mod grpc;
 pub mod rest;
 
 pub async fn run_bridge<
-	A1: Send + From<Vec<u8>> + std::clone::Clone + 'static + std::fmt::Debug,
-	A2: Send + From<Vec<u8>> + std::clone::Clone + 'static + std::fmt::Debug,
+	A1: Send + TryFrom<Vec<u8>> + std::clone::Clone + 'static + std::fmt::Debug,
+	A2: Send + TryFrom<Vec<u8>> + std::clone::Clone + 'static + std::fmt::Debug,
 >(
 	one_client: impl BridgeContract<A1> + 'static,
 	mut one_stream: impl BridgeContractMonitoring<Address = A1>,
 	two_client: impl BridgeContract<A2> + 'static,
 	mut two_stream: impl BridgeContractMonitoring<Address = A2>,
+	mut healthcheck_request_rx: mpsc::Receiver<oneshot::Sender<String>>,
 ) -> Result<(), anyhow::Error>
 where
 	Vec<u8>: From<A1>,
@@ -47,13 +44,17 @@ where
 	let one_client_lock = Arc::new(Mutex::new(()));
 	let two_client_lock = Arc::new(Mutex::new(()));
 
-	// let mut action_to_exec_futures_one = FuturesUnordered::new();
-	// let mut action_to_exec_futures_two = FuturesUnordered::new();
-
 	let mut tranfer_log_interval = tokio::time::interval(tokio::time::Duration::from_secs(60));
 
 	loop {
 		select! {
+			//Manage HealthCheck request
+			Some(oneshot_tx) = healthcheck_request_rx.recv() => {
+				if let Err(err) = oneshot_tx.send("OK".to_string()){
+					tracing::warn!("Heal check oneshot channel closed abnormally :{err:?}");
+				}
+
+			}
 			// Log all current transfer
 			_ = tranfer_log_interval.tick() => {
 				//format logs
@@ -252,7 +253,7 @@ impl Runtime {
 			self.swap_state_map.insert(state.transfer_id, state);
 			return Ok(action);
 		} else {
-			//tested before state can be unwrap
+			//tested before in validate_state() state can be unwrap
 			state_opt.unwrap()
 		};
 
