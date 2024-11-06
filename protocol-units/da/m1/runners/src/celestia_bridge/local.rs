@@ -108,7 +108,7 @@ impl Local {
 				"--gateway",
 				"--core.ip",
 				&config.bridge.celestia_rpc_connection_hostname,
-				"--keyring.accname",
+				"--keyring.keyname",
 				"validator",
 				"--gateway.addr",
 				&config.bridge.celestia_websocket_listen_hostname,

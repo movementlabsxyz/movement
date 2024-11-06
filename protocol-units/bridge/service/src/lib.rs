@@ -1,23 +1,15 @@
-use crate::actions::process_action;
-use crate::actions::ActionExecError;
-use crate::actions::TransferAction;
-use crate::actions::TransferActionType;
-use crate::chains::bridge_contracts::BridgeContract;
-use crate::chains::bridge_contracts::BridgeContractEvent;
-use crate::chains::bridge_contracts::BridgeContractMonitoring;
-use crate::events::InvalidEventError;
-use crate::events::TransferEvent;
-use crate::states::TransferState;
-use crate::states::TransferStateType;
-use crate::types::BridgeTransferId;
-use crate::types::ChainId;
+use crate::{
+	actions::{process_action, ActionExecError, TransferAction, TransferActionType},
+	chains::bridge_contracts::{BridgeContract, BridgeContractEvent, BridgeContractMonitoring},
+	events::{InvalidEventError, TransferEvent},
+	states::{TransferState, TransferStateType},
+	types::{BridgeTransferId, ChainId},
+};
 use futures::stream::FuturesUnordered;
-use std::collections::HashMap;
-use std::sync::Arc;
-use tokio::select;
+use std::{collections::HashMap, sync::Arc};
 use tokio::sync::mpsc;
 use tokio::sync::oneshot;
-use tokio::sync::Mutex;
+use tokio::{select, sync::Mutex};
 use tokio_stream::StreamExt;
 
 mod actions;
@@ -51,8 +43,8 @@ impl HeathCheckStatus {
 }
 
 pub async fn run_bridge<
-	A1: Send + From<Vec<u8>> + std::clone::Clone + 'static + std::fmt::Debug,
-	A2: Send + From<Vec<u8>> + std::clone::Clone + 'static + std::fmt::Debug,
+	A1: Send + TryFrom<Vec<u8>> + std::clone::Clone + 'static + std::fmt::Debug,
+	A2: Send + TryFrom<Vec<u8>> + std::clone::Clone + 'static + std::fmt::Debug,
 >(
 	client_one: impl BridgeContract<A1> + 'static,
 	mut stream_one: impl BridgeContractMonitoring<Address = A1>,
@@ -309,7 +301,7 @@ impl Runtime {
 			self.swap_state_map.insert(state.transfer_id, state);
 			return Ok(action);
 		} else {
-			//tested before state can be unwrap
+			//tested before in validate_state() state can be unwrap
 			state_opt.unwrap()
 		};
 

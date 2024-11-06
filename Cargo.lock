@@ -1979,7 +1979,7 @@ dependencies = [
 [[package]]
 name = "aptos-moving-average"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=8e83cde3cb75fabdade9485e0af680cc4b73ca8e#8e83cde3cb75fabdade9485e0af680cc4b73ca8e"
+source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=65185e5998c1a6892aee20045b09fcf17718c866#65185e5998c1a6892aee20045b09fcf17718c866"
 dependencies = [
  "chrono",
 ]
@@ -3970,9 +3970,9 @@ dependencies = [
 
 [[package]]
 name = "blockstore"
-version = "0.6.1"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc99329facbb960effbe7ed707c753a718877c1878eb8ca08704fa391c494020"
+checksum = "7679095248a6dc7555fae81154ed1baef264383c16621ef881a219576c72a9be"
 dependencies = [
  "cid",
  "dashmap 6.1.0",
@@ -4457,26 +4457,27 @@ dependencies = [
 
 [[package]]
 name = "celestia-proto"
-version = "0.3.1"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4cde2c574760f88d5a6da8dfc55dbb79d91f4da15aa87b9e0d57d4d3a8fa5687"
+checksum = "0ab6f922c6488623dc5f78e602e0cea658d41c40825033ecbd810a83b73636e1"
 dependencies = [
- "anyhow",
  "celestia-tendermint-proto",
  "prost 0.12.6",
  "prost-build",
  "prost-types 0.12.6",
+ "protox",
  "serde",
 ]
 
 [[package]]
 name = "celestia-rpc"
-version = "0.3.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5110ce517363b075f3880f4bc88fd1f5c0b3f711a11daa3c34c66da7ae94b9a7"
+checksum = "677fc8e51b4f53987fcd18bb0f3234ebe938155539cb272d5c771e22ce2ed6d1"
 dependencies = [
  "async-trait",
  "celestia-types",
+ "futures",
  "http 1.1.0",
  "jsonrpsee 0.24.7",
  "serde",
@@ -4533,9 +4534,9 @@ dependencies = [
 
 [[package]]
 name = "celestia-types"
-version = "0.3.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "08e6a207db787043faf6b630e2caa365d5be1b72553d541a75cfd4e17086191c"
+checksum = "ab143eba97ed0c957769fa16baecac8e88e479b8d7eae9a71bd084bb2ca80eca"
 dependencies = [
  "base64 0.22.1",
  "bech32",
@@ -4552,6 +4553,7 @@ dependencies = [
  "multiaddr",
  "multihash",
  "nmt-rs",
+ "prost 0.12.6",
  "ruint",
  "serde",
  "serde_repr",
@@ -8350,6 +8352,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "logos"
+version = "0.14.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1c6b6e02facda28ca5fb8dbe4b152496ba3b1bd5a4b40bb2b1b2d8ad74e0f39b"
+dependencies = [
+ "logos-derive",
+]
+
+[[package]]
+name = "logos-codegen"
+version = "0.14.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b32eb6b5f26efacd015b000bfc562186472cd9b34bdba3f6b264e2a052676d10"
+dependencies = [
+ "beef",
+ "fnv",
+ "lazy_static",
+ "proc-macro2",
+ "quote",
+ "regex-syntax 0.8.5",
+ "syn 2.0.85",
+]
+
+[[package]]
+name = "logos-derive"
+version = "0.14.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3e5d0c5463c911ef55624739fc353238b4e310f0144be1f875dc42fec6bfd5ec"
+dependencies = [
+ "logos-codegen",
+]
+
+[[package]]
 name = "lru"
 version = "0.7.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8898,6 +8933,29 @@ dependencies = [
  "keccak",
  "rand_core 0.6.4",
  "zeroize",
+]
+
+[[package]]
+name = "miette"
+version = "7.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4edc8853320c2a0dab800fbda86253c8938f6ea88510dc92c5f1ed20e794afc1"
+dependencies = [
+ "cfg-if",
+ "miette-derive",
+ "thiserror",
+ "unicode-width",
+]
+
+[[package]]
+name = "miette-derive"
+version = "7.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dcf09caffaac8068c346b6df2a7fc27a177fd20b39421a39ce0a211bde679a6c"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.85",
 ]
 
 [[package]]
@@ -11162,13 +11220,13 @@ dependencies = [
 [[package]]
 name = "processor"
 version = "1.0.0"
-source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=8e83cde3cb75fabdade9485e0af680cc4b73ca8e#8e83cde3cb75fabdade9485e0af680cc4b73ca8e"
+source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=65185e5998c1a6892aee20045b09fcf17718c866#65185e5998c1a6892aee20045b09fcf17718c866"
 dependencies = [
  "ahash 0.8.11",
  "allocative",
  "allocative_derive",
  "anyhow",
- "aptos-moving-average 0.1.0 (git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=8e83cde3cb75fabdade9485e0af680cc4b73ca8e)",
+ "aptos-moving-average 0.1.0 (git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=65185e5998c1a6892aee20045b09fcf17718c866)",
  "aptos-protos 1.3.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=338f9a1bcc06f62ce4a4994f1642b9a61b631ee0)",
  "async-trait",
  "bcs 0.1.4",
@@ -11346,6 +11404,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "prost-reflect"
+version = "0.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6f5eec97d5d34bdd17ad2db2219aabf46b054c6c41bd5529767c9ce55be5898f"
+dependencies = [
+ "logos",
+ "miette",
+ "once_cell",
+ "prost 0.12.6",
+ "prost-types 0.12.6",
+]
+
+[[package]]
 name = "prost-types"
 version = "0.11.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11386,6 +11457,33 @@ checksum = "95a29399fc94bcd3eeaa951c715f7bea69409b2445356b00519740bcd6ddd865"
 dependencies = [
  "protobuf",
  "protobuf-codegen",
+]
+
+[[package]]
+name = "protox"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ac532509cee918d40f38c3e12f8ef9230f215f017d54de7dd975015538a42ce7"
+dependencies = [
+ "bytes 1.8.0",
+ "miette",
+ "prost 0.12.6",
+ "prost-reflect",
+ "prost-types 0.12.6",
+ "protox-parse",
+ "thiserror",
+]
+
+[[package]]
+name = "protox-parse"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7f6c33f43516fe397e2f930779d720ca12cd057f7da4cd6326a0ef78d69dee96"
+dependencies = [
+ "logos",
+ "miette",
+ "prost-types 0.12.6",
+ "thiserror",
 ]
 
 [[package]]
@@ -12711,7 +12809,7 @@ dependencies = [
 [[package]]
 name = "server-framework"
 version = "1.0.0"
-source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=8e83cde3cb75fabdade9485e0af680cc4b73ca8e#8e83cde3cb75fabdade9485e0af680cc4b73ca8e"
+source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=65185e5998c1a6892aee20045b09fcf17718c866#65185e5998c1a6892aee20045b09fcf17718c866"
 dependencies = [
  "anyhow",
  "aptos-system-utils",

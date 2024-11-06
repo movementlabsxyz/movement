@@ -5,8 +5,8 @@ use crate::chains::bridge_contracts::BridgeContractError;
 use crate::chains::bridge_contracts::BridgeContractResult;
 use crate::types::BridgeTransferDetailsCounterparty;
 use crate::types::{
-	Amount, AssetType, BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock,
-	HashLockPreImage, TimeLock,
+	Amount, BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage,
+	TimeLock,
 };
 use anyhow::Result;
 use aptos_api_types::{EntryFunctionId, MoveModuleId, ViewRequest};
@@ -56,8 +56,7 @@ impl MovementClient {
 		let rest_client = Client::new(node_connection_url.clone());
 
 		let signer =
-			utils::create_local_account(config.movement_signer_key.clone(), &rest_client)
-				.await?;
+			utils::create_local_account(config.movement_signer_key.clone(), &rest_client).await?;
 		let native_address = AccountAddress::from_hex_literal(&config.movement_native_address)?;
 		Ok(MovementClient {
 			native_address,
@@ -127,16 +126,12 @@ impl BridgeContract<MovementAddress> for MovementClient {
 		hash_lock: HashLock,
 		amount: Amount,
 	) -> BridgeContractResult<()> {
-		let amount_value = match amount.0 {
-			AssetType::Moveth(value) => value,
-			_ => return Err(BridgeContractError::ConversionFailed("Amount".to_string())),
-		};
-		debug!("Amount value: {:?}", amount_value);
+		debug!("Amount value: {:?}", amount);
 
 		let args = vec![
 			utils::serialize_vec_initiator(&recipient.0)?,
 			utils::serialize_vec_initiator(&hash_lock.0[..])?,
-			utils::serialize_u64_initiator(&amount_value)?,
+			utils::serialize_u64_initiator(&amount)?,
 		];
 
 		let payload = utils::make_aptos_payload(
@@ -247,17 +242,12 @@ impl BridgeContract<MovementAddress> for MovementClient {
 		recipient: BridgeAddress<MovementAddress>,
 		amount: Amount,
 	) -> BridgeContractResult<()> {
-		let amount_value = match amount.0 {
-			AssetType::Moveth(value) => value,
-			_ => return Err(BridgeContractError::SerializationError),
-		};
-
 		let args = vec![
 			utils::serialize_vec(&initiator.0)?,
 			utils::serialize_vec(&bridge_transfer_id.0[..])?,
 			utils::serialize_vec(&hash_lock.0[..])?,
 			utils::serialize_vec(&recipient.0)?,
-			utils::serialize_u64(&amount_value)?,
+			utils::serialize_u64(&amount)?,
 		];
 
 		let payload = utils::make_aptos_payload(
@@ -387,7 +377,7 @@ impl BridgeContract<MovementAddress> for MovementClient {
 			bridge_transfer_id,
 			initiator_address: BridgeAddress(MovementAddress(originator_address)),
 			recipient_address: BridgeAddress(recipient_address_bytes),
-			amount: Amount(AssetType::Moveth(amount)),
+			amount: Amount(amount),
 			hash_lock: HashLock(hash_lock_array),
 			time_lock: TimeLock(time_lock),
 			state,
@@ -448,7 +438,7 @@ impl BridgeContract<MovementAddress> for MovementClient {
 			hex::decode(&originator[2..]).map_err(|_| BridgeContractError::SerializationError)?;
 		let recipient_address = AccountAddress::from_hex_literal(recipient)
 			.map_err(|_| BridgeContractError::SerializationError)?;
-			let hash_lock_array: [u8; 32] = hex::decode(&hash_lock[2..])
+		let hash_lock_array: [u8; 32] = hex::decode(&hash_lock[2..])
 			.map_err(|_| BridgeContractError::SerializationError)?
 			.try_into()
 			.map_err(|_| BridgeContractError::SerializationError)?;
@@ -457,7 +447,7 @@ impl BridgeContract<MovementAddress> for MovementClient {
 			bridge_transfer_id,
 			initiator_address: BridgeAddress(originator_address_bytes),
 			recipient_address: BridgeAddress(MovementAddress(recipient_address)),
-			amount: Amount(AssetType::Moveth(amount)),
+			amount: Amount(amount),
 			hash_lock: HashLock(hash_lock_array),
 			time_lock: TimeLock(time_lock),
 			state,
@@ -477,7 +467,6 @@ use tokio::{
 };
 
 impl MovementClient {
-
 	pub async fn new_for_test() -> Result<(Self, tokio::process::Child), anyhow::Error> {
 		let kill_cmd = TokioCommand::new("sh")
 			.arg("-c")
