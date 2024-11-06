@@ -42,7 +42,7 @@ impl FromStr for EthAddress {
 			return Err(EthUtilError::LengthError);
 		}
 		// Try to convert the Vec<u8> to EthAddress
-		Ok(vec.into())
+		Ok(vec.try_into().map_err(|_| EthUtilError::HexDecodeError)?)
 	}
 }
 

@@ -55,6 +55,8 @@ pub enum BridgeContractError {
 	OnChainUnknownEvent,
 	#[error("Error during onchain call:{0}")]
 	OnChainError(String),
+	#[error("Error during decoding address:{0}")]
+	BadAddressEncoding(String),
 	#[error("Error during deserializing an event :{1:?} : {0}")]
 	EventDeserializingFail(String, BridgeContractEventType),
 }

@@ -316,12 +316,10 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 		recipient: BridgeAddress<EthAddress>,
 		amount: Amount,
 	) -> BridgeContractResult<()> {
-		let initiator: [u8; 32] = initiator.0.try_into().unwrap();
-		let contract = AtomicBridgeCounterpartyMOVE::new(
-			self.config.counterparty_contract,
-			self.rpc_provider.clone(),
-		);
-		let call = contract.lockBridgeTransfer(
+		let initiator: [u8; 32] = initiator.0.try_into().map_err(|_| {
+			BridgeContractError::ConversionFailed("lock_bridge_transfer initiator".to_string())
+		})?;
+		let call = self.counterparty_contract.lockBridgeTransfer(
 			FixedBytes(initiator),
 			FixedBytes(bridge_transfer_id.0),
 			FixedBytes(hash_lock.0),
@@ -329,7 +327,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 			U256::try_from(amount.0)
 				.map_err(|_| BridgeContractError::ConversionFailed("U256".to_string()))?,
 		);
-		send_transaction(
+		let receipt = send_transaction(
 			call,
 			self.signer_address,
 			&send_transaction_rules(),
@@ -341,6 +339,8 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 			BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
 		})?;
 
+		tracing::info!("LockBridgeTransfer receipt: {:?}", receipt);
+			
 		Ok(())
 	}
 

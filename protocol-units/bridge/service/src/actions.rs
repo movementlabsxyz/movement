@@ -1,6 +1,6 @@
 use crate::chains::bridge_contracts::{BridgeContract, BridgeContractError};
 use crate::chains::movement::utils as movement_utils;
-use crate::types::{Amount, BridgeAddress, BridgeTransferId, HashLock,HashLockPreImage};
+use crate::types::{Amount, BridgeAddress, BridgeTransferId, HashLock, HashLockPreImage};
 use crate::ChainId;
 use std::fmt;
 use std::future::Future;
@@ -67,7 +67,7 @@ pub fn process_action<A>(
 	mut client: impl BridgeContract<A> + 'static,
 ) -> Option<Pin<Box<dyn Future<Output = Result<(), ActionExecError>> + Send>>>
 where
-	A: Clone + Send + From<Vec<u8>>,
+	A: Clone + Send + TryFrom<Vec<u8>>,
 {
 	tracing::info!("Action: creating execution for action:{action}");
 	match action.kind.clone() {
@@ -79,10 +79,9 @@ where
 			amount,
 		} => {
 			let future = async move {
-
 				if recipient.0.len() == 32 {
 					if let Err(e) = movement_utils::fund_recipient(&recipient).await {
-					return Err(ActionExecError(action.clone(), e));
+						return Err(ActionExecError(action.clone(), e));
 					}
 				}
 
@@ -91,7 +90,12 @@ where
 						bridge_transfer_id,
 						hash_lock,
 						initiator,
-						BridgeAddress(recipient.0.into()),
+						BridgeAddress(recipient.0.try_into().map_err(|_| {
+							ActionExecError(
+								action.clone(),
+								BridgeContractError::BadAddressEncoding("lock bridge traénsfer fail to convert recipient address to vec<u8>".to_string()),
+							)
+						})?),
 						amount,
 					)
 					.await
