@@ -5,13 +5,10 @@ use m1_da_light_node_util::config::Config as LightNodeConfig;
 use maptos_dof_execution::SignedTransaction;
 
 use tokio::sync::mpsc;
-use tracing::{info, warn};
+use tracing::{info, info_span, warn, Instrument};
 
 use std::ops::ControlFlow;
-use std::sync::atomic::AtomicU64;
 use std::time::{Duration, Instant};
-
-const LOGGING_UID: AtomicU64 = AtomicU64::new(0);
 
 pub struct Task {
 	transaction_receiver: mpsc::Receiver<SignedTransaction>,
@@ -29,14 +26,13 @@ impl Task {
 	}
 
 	pub async fn run(mut self) -> anyhow::Result<()> {
-		while let ControlFlow::Continue(()) = self.spawn_write_next_transaction_batch().await? {}
+		while let ControlFlow::Continue(()) = self.build_and_write_batch().await? {}
 		Ok(())
 	}
 
 	/// Constructs a batch of transactions then spawns the write request to the DA in the background.
-	async fn spawn_write_next_transaction_batch(
-		&mut self,
-	) -> Result<ControlFlow<(), ()>, anyhow::Error> {
+	#[tracing::instrument(target = "movement_telemetry", skip(self))]
+	async fn build_and_write_batch(&mut self) -> Result<ControlFlow<(), ()>, anyhow::Error> {
 		use ControlFlow::{Break, Continue};
 
 		// limit the total time batching transactions
@@ -45,7 +41,6 @@ impl Task {
 
 		let mut transactions = Vec::new();
 
-		let batch_id = LOGGING_UID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
 		loop {
 			let remaining = match half_building_time.checked_sub(start.elapsed().as_millis() as u64)
 			{
@@ -64,13 +59,15 @@ impl Task {
 			{
 				Ok(transaction) => match transaction {
 					Some(transaction) => {
+						// Instrumentation for aggregated metrics:
+						// Transactions per second: https://github.com/movementlabsxyz/movement/discussions/422
+						// Transaction latency: https://github.com/movementlabsxyz/movement/discussions/423
 						info!(
-							target : "movement_timing",
-							batch_id = %batch_id,
+							target: "movement_telemetry",
 							tx_hash = %transaction.committed_hash(),
 							sender = %transaction.sender(),
 							sequence_number = transaction.sequence_number(),
-							"received transaction",
+							"received_transaction",
 						);
 						let serialized_aptos_transaction = serde_json::to_vec(&transaction)?;
 						let movement_transaction = movement_types::transaction::Transaction::new(
@@ -93,19 +90,22 @@ impl Task {
 
 		if transactions.len() > 0 {
 			info!(
-				target: "movement_timing",
-				batch_id = %batch_id,
+				target: "movement_telemetry",
 				transaction_count = transactions.len(),
 				"built_batch_write"
 			);
 			let batch_write = BatchWriteRequest { blobs: transactions };
 			// spawn the actual batch write request in the background
 			let mut da_light_node_client = self.da_light_node_client.clone();
-			tokio::spawn(async move {
-				if let Err(e) = da_light_node_client.batch_write(batch_write).await {
-					warn!("failed to write batch to DA: {:?}", e);
+			let write_span = info_span!(target: "movement_telemetry", "batch_write");
+			tokio::spawn(
+				async move {
+					if let Err(e) = da_light_node_client.batch_write(batch_write).await {
+						warn!("failed to write batch to DA: {:?}", e);
+					}
 				}
-			});
+				.instrument(write_span),
+			);
 		}
 
 		Ok(Continue(()))

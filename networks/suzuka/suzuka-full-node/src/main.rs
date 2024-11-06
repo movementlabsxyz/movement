@@ -1,15 +1,15 @@
 use suzuka_full_node::manager::Manager;
 
-use std::env;
 use std::process::ExitCode;
-
-const TIMING_LOG_ENV: &str = "SUZUKA_TIMING_LOG";
 
 #[tokio::main]
 async fn main() -> Result<ExitCode, anyhow::Error> {
-	let tracing_config =
-		movement_tracing::Config { timing_log_path: env::var_os(TIMING_LOG_ENV).map(Into::into) };
-	let _guard = movement_tracing::init_tracing_subscriber(tracing_config);
+	let tracing_config = movement_tracing::Config::from_env()?;
+	let _guard = movement_tracing::init_tracing_subscriber(
+		env!("CARGO_BIN_NAME"),
+		env!("CARGO_PKG_VERSION"),
+		&tracing_config,
+	)?;
 
 	// get the config file
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
