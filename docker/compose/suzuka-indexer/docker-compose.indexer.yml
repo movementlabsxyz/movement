@@ -29,11 +29,21 @@ services:
       - DOT_MOVEMENT_PATH=/.movement
       - MAPTOS_INDEXER_GRPC_LISTEN_HOSTNAME=${MAPTOS_INDEXER_GRPC_LISTEN_HOSTNAME}
       - INDEXER_PROCESSOR_POSTGRES_CONNECTION_STRING=${INDEXER_PROCESSOR_POSTGRES_CONNECTION_STRING}
+      - MAPTOS_INDEXER_HEALTHCHECK_HOSTNAME=${MAPTOS_INDEXER_HEALTHCHECK_HOSTNAME}
+      - MAPTOS_INDEXER_HEALTHCHECK_PORT=${MAPTOS_INDEXER_HEALTHCHECK_PORT}
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement
     restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/health"]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+      start_period: 5s
     depends_on:
       - postgres
+    ports:
+      - "8084:8084"
 
   graphql-engine:
     image: hasura/graphql-engine:v2.40.0

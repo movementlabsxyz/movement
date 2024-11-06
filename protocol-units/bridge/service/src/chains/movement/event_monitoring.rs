@@ -1,36 +1,33 @@
-use super::client::MovementClient;
-use super::client_framework::FRAMEWORK_ADDRESS;
-use super::utils::MovementAddress;
-use crate::chains::bridge_contracts::BridgeContractError;
-use crate::chains::bridge_contracts::BridgeContractEvent;
-use crate::chains::bridge_contracts::BridgeContractEventType;
-use crate::chains::bridge_contracts::BridgeContractMonitoring;
-use crate::chains::bridge_contracts::BridgeContractResult;
-use crate::types::Amount;
-use crate::types::AssetType;
-use crate::types::BridgeAddress;
-use crate::types::BridgeTransferDetails;
-use crate::types::BridgeTransferId;
-use crate::types::HashLock;
-use crate::types::HashLockPreImage;
-use crate::types::LockDetails;
-use crate::types::TimeLock;
+use super::{
+	client_framework::{MovementClientFramework, FRAMEWORK_ADDRESS},
+	utils::MovementAddress,
+};
+use crate::{
+	chains::bridge_contracts::{
+		BridgeContractError, BridgeContractEvent, BridgeContractEventType,
+		BridgeContractMonitoring, BridgeContractResult,
+	},
+	types::{
+		Amount, BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock,
+		HashLockPreImage, LockDetails, TimeLock,
+	},
+};
 use anyhow::Result;
-use aptos_sdk::rest_client::aptos_api_types::VersionedEvent;
-use aptos_sdk::types::account_address::AccountAddress;
+use aptos_sdk::{
+	rest_client::aptos_api_types::VersionedEvent, types::account_address::AccountAddress,
+};
 use bridge_config::common::movement::MovementConfig;
-use futures::channel::mpsc::{self};
-use futures::SinkExt;
-use futures::Stream;
-use futures::StreamExt;
+use futures::{
+	channel::mpsc::{self},
+	SinkExt, Stream, StreamExt,
+};
 use hex::FromHex;
-use serde::Deserialize;
-use serde::Deserializer;
-use serde::Serialize;
+use serde::{Deserialize, Deserializer, Serialize};
 use std::{pin::Pin, task::Poll};
-use tokio::fs::{self, File};
-use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
-use tracing::info;
+use tokio::{
+	fs::{self, File},
+	io::{self, AsyncReadExt, AsyncWriteExt},
+};
 
 const PULL_STATE_FILE_NAME: &str = "pullstate.store";
 
@@ -158,7 +155,6 @@ impl MovementMonitoring {
 		tokio::spawn({
 			let config = config.clone();
 			async move {
-				let mvt_client = MovementClient::new(&config).await.unwrap();
 				loop {
 					let mut init_event_list = match pool_initiator_contract(
 						FRAMEWORK_ADDRESS,
@@ -509,7 +505,10 @@ impl TryFrom<BridgeInitEventData> for BridgeTransferDetails<MovementAddress> {
 				))
 				},
 			)?),
-			initiator_address: BridgeAddress(MovementAddress::from(data.initiator)),
+			initiator_address: BridgeAddress(
+				MovementAddress::try_from(data.initiator)
+					.map_err(|err| BridgeContractError::OnChainError(err.to_string()))?,
+			),
 			recipient_address: BridgeAddress(data.recipient),
 			hash_lock: HashLock(data.hash_lock.try_into().map_err(|e| {
 				BridgeContractError::ConversionFailed(format!(
@@ -518,7 +517,7 @@ impl TryFrom<BridgeInitEventData> for BridgeTransferDetails<MovementAddress> {
 				))
 			})?),
 			time_lock: TimeLock(data.time_lock),
-			amount: Amount(AssetType::Moveth(data.amount)),
+			amount: Amount(data.amount),
 			state: 0,
 		})
 	}
@@ -538,7 +537,10 @@ impl TryFrom<BridgeInitEventData> for LockDetails<MovementAddress> {
 				},
 			)?),
 			initiator: BridgeAddress(data.recipient),
-			recipient: BridgeAddress(MovementAddress::from(data.initiator)),
+			recipient: BridgeAddress(
+				MovementAddress::try_from(data.initiator)
+					.map_err(|err| BridgeContractError::OnChainError(err.to_string()))?,
+			),
 			hash_lock: HashLock(data.hash_lock.try_into().map_err(|e| {
 				BridgeContractError::ConversionFailed(format!(
 					"MVT BridgeTransferDetails data onchain hash_lock conversion error error:{:?}",
@@ -546,34 +548,43 @@ impl TryFrom<BridgeInitEventData> for LockDetails<MovementAddress> {
 				))
 			})?),
 			time_lock: TimeLock(data.time_lock),
-			amount: Amount(AssetType::Moveth(data.amount)),
+			amount: Amount(data.amount),
 		})
 	}
 }
 
-// Example of return string.
-// [
-//     {
-//         "version": "25",
-//         "guid":
-//         {
-//             "creation_number": "5",
-//             "account_address": "0xb07a6a200d595dd4ed39d9b91e3132e6c15735549e9920c585b2beec0ae659b6"
-//         },
-//         "sequence_number": "0",
-//         "type": "0xb07a6a200d595dd4ed39d9b91e3132e6c15735549e9920c585b2beec0ae659b6::atomic_bridge_initiator::BridgeTransferInitiatedEvent",
-//         "data":
-//         {
-//             "amount": "100",
-//             "bridge_transfer_id": "0xeaefd189df98d57b8f4619584cff1fd67f2787c664ac8e9761ecfd7a6ae1fa2b",
-//             "hash_lock": "0xfb54fb738082d0214980feb4055e779d7d4722cb0809d5fbe79df8117801c3bb",
-//             "originator": "0xf90391c81027f03cdea491ed8b36ffaced26b6df208a9b569e5baf2590eb9b16",
-//             "recipient": "0x3078313233",
-//             "time_lock": "1",
-//			   "state": 1
-//         }
-//     }
-// ]
+/// Queries events from a specified account on the Aptos blockchain and returns a list of `VersionedEvent`.
+///
+/// This function sends a GET request to the provided `rest_url` with the account address, event type, and field name
+/// to retrieve events starting from the specified `start_version`.
+///
+/// # Returns
+///
+/// - `Result<Vec<VersionedEvent>, BridgeContractError>`: On success, returns a vector of `VersionedEvent`.
+///
+/// # Example Return
+///
+/// ```json
+/// [
+///     {
+///         "version": "25",
+///         "guid": {
+///             "creation_number": "5",
+///             "account_address": "0xb07a6a200d595dd4ed39d9b91e3132e6c15735549e9920c585b2beec0ae659b6"
+///         },
+///         "sequence_number": "0",
+///         "type": "0xb07a6a200d595dd4ed39d9b91e3132e6c15735549e9920c585b2beec0ae659b6::atomic_bridge_initiator::BridgeTransferInitiatedEvent",
+///         "data": {
+///             "amount": "100",
+///             "bridge_transfer_id": "0xeaefd189df98d57b8f4619584cff1fd67f2787c664ac8e9761ecfd7a6ae1fa2b",
+///             "hash_lock": "0xfb54fb738082d0214980feb4055e779d7d4722cb0809d5fbe79df8117801c3bb",
+///             "originator": "0xf90391c81027f03cdea491ed8b36ffaced26b6df208a9b569e5baf2590eb9b16",
+///             "recipient": "0x3078313233",
+///             "time_lock": "1",
+///             "state": 1
+///         }
+///     }
+/// ]
 async fn get_account_events(
 	rest_url: &str,
 	account_address: &str,
@@ -586,11 +597,9 @@ async fn get_account_events(
 		rest_url, account_address, event_type, field_name
 	);
 
-	//	tracing::info!("ICI url: {:?}", url);
 	let client = reqwest::Client::new();
 
 	// Send the GET request
-
 	let response = client
 		.get(&url)
 		.query(&[("start", &start_version.to_string()[..]), ("limit", "10")])

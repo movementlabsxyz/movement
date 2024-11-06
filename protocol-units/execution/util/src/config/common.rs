@@ -110,6 +110,15 @@ env_default!(
 );
 
 env_default!(
+	default_maptos_indexer_healthcheck_hostname,
+	"MAPTOS_INDEXER_HEALTHCHECK_HOSTNAME",
+	String,
+	"0.0.0.0".to_string()
+);
+
+env_default!(default_maptos_indexer_healthcheck_port, "MAPTOS_INDEXER_HEALTHCHECK_PORT", u16, 8084);
+
+env_default!(
 	default_maptos_indexer_grpc_inactivity_timeout,
 	"MAPTOS_INDEXER_GRPC_INACTIVITY_TIMEOUT_SEC",
 	u64,
