@@ -54,13 +54,13 @@ pub async fn run_bridge<
 	A1: Send + From<Vec<u8>> + std::clone::Clone + 'static + std::fmt::Debug,
 	A2: Send + From<Vec<u8>> + std::clone::Clone + 'static + std::fmt::Debug,
 >(
-	one_client: impl BridgeContract<A1> + 'static,
-	mut one_stream: impl BridgeContractMonitoring<Address = A1>,
-	two_client: impl BridgeContract<A2> + 'static,
-	mut two_stream: impl BridgeContractMonitoring<Address = A2>,
+	client_one: impl BridgeContract<A1> + 'static,
+	mut stream_one: impl BridgeContractMonitoring<Address = A1>,
+	client_two: impl BridgeContract<A2> + 'static,
+	mut stream_two: impl BridgeContractMonitoring<Address = A2>,
 	mut healthcheck_request_rx: mpsc::Receiver<oneshot::Sender<String>>,
-	one_healthcheck_tx: mpsc::Sender<oneshot::Sender<bool>>,
-	two_healthcheck_tx: mpsc::Sender<oneshot::Sender<bool>>,
+	healthcheck_tx_one: mpsc::Sender<oneshot::Sender<bool>>,
+	healthcheck_tx_two: mpsc::Sender<oneshot::Sender<bool>>,
 ) -> Result<(), anyhow::Error>
 where
 	Vec<u8>: From<A1>,
@@ -73,8 +73,8 @@ where
 	let mut health_check_result_futures = FuturesUnordered::new();
 
 	//only one client can use at a time.
-	let one_client_lock = Arc::new(Mutex::new(()));
-	let two_client_lock = Arc::new(Mutex::new(()));
+	let client_lock_one = Arc::new(Mutex::new(()));
+	let client_lock_two = Arc::new(Mutex::new(()));
 
 	let mut tranfer_log_interval = tokio::time::interval(tokio::time::Duration::from_secs(60));
 	let mut monitoring_health_check_interval =
@@ -100,7 +100,7 @@ where
 			_ = monitoring_health_check_interval.tick() => {
 				//Chain one monitoring health check.
 				let jh = tokio::spawn({
-					let healthcheck_tx = one_healthcheck_tx.clone();
+					let healthcheck_tx = healthcheck_tx_one.clone();
 					async move {
 						(ChainId::ONE, check_monitoring_loop_heath(healthcheck_tx).await)
 					}
@@ -108,7 +108,7 @@ where
 				health_check_result_futures.push(jh);
 				//Chain two monitoring health check.
 				let jh = tokio::spawn({
-					let healthcheck_tx = two_healthcheck_tx.clone();
+					let healthcheck_tx = healthcheck_tx_two.clone();
 					async move {
 						(ChainId::TWO, check_monitoring_loop_heath(healthcheck_tx).await)
 					}
@@ -140,20 +140,20 @@ where
 				});
 			}
 			// Wait on chain one events.
-			Some(one_event_res) = one_stream.next() =>{
-				match one_event_res {
-					Ok(one_event) => {
-						let event : TransferEvent<A1> = (one_event, ChainId::ONE).into();
+			Some(event_res_one) = stream_one.next() =>{
+				match event_res_one {
+					Ok(event_one) => {
+						let event : TransferEvent<A1> = (event_one, ChainId::ONE).into();
 						tracing::info!("Receive event from chain ONE:{} ", event.contract_event);
 						match state_runtime.process_event(event) {
 							Ok(action) => {
 								//Execute action
 								match action.chain {
 									ChainId::ONE => {
-										let fut = process_action(action, one_client.clone());
+										let fut = process_action(action, client_one.clone());
 										if let Some(fut) = fut {
 											let jh = tokio::spawn({
-												let client_lock_clone = one_client_lock.clone();
+												let client_lock_clone = client_lock_one.clone();
 												async move {
 													let _lock = client_lock_clone.lock().await;
 													fut.await
@@ -164,10 +164,10 @@ where
 
 									},
 									ChainId::TWO => {
-										let fut = process_action(action, two_client.clone());
+										let fut = process_action(action, client_two.clone());
 										if let Some(fut) = fut {
 											let jh = tokio::spawn({
-												let client_lock_clone = two_client_lock.clone();
+												let client_lock_clone = client_lock_two.clone();
 												async move {
 													let _lock = client_lock_clone.lock().await;
 													fut.await
@@ -185,17 +185,17 @@ where
 				}
 			}
 			// Wait on chain two events.
-			Some(two_event_res) = two_stream.next() =>{
-				match two_event_res {
-					Ok(two_event) => {
-						let event : TransferEvent<A2> = (two_event, ChainId::TWO).into();
+			Some(event_res_two) = stream_two.next() =>{
+				match event_res_two {
+					Ok(event_two) => {
+						let event : TransferEvent<A2> = (event_two, ChainId::TWO).into();
 						tracing::info!("Receive event from chain TWO id:{}", event.contract_event.bridge_transfer_id());
 						match state_runtime.process_event(event) {
 							Ok(action) => {
 								//Execute action
 								match action.chain {
 									ChainId::ONE => {
-										let fut = process_action(action, one_client.clone());
+										let fut = process_action(action, client_one.clone());
 										if let Some(fut) = fut {
 											let jh = tokio::spawn(fut);
 											client_exec_result_futures_one.push(jh);
@@ -203,7 +203,7 @@ where
 
 									},
 									ChainId::TWO => {
-										let fut = process_action(action, two_client.clone());
+										let fut = process_action(action, client_two.clone());
 										if let Some(fut) = fut {
 											let jh = tokio::spawn(fut);
 											client_exec_result_futures_two.push(jh);
