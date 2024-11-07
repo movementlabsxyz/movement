@@ -1,3 +1,4 @@
+use crate::common::DEFAULT_REST_CONNECTION_TIMEOUT;
 use alloy::signers::local::PrivateKeySigner;
 use godfig::env_default;
 use godfig::env_short_default;
@@ -55,7 +56,17 @@ pub struct EthConfig {
 
 	#[serde(default = "default_asset")]
 	pub asset: String,
+
+	#[serde(default = "rest_connection_timeout_secs")]
+	pub rest_connection_timeout_secs: u64,
 }
+
+env_default!(
+	rest_connection_timeout_secs,
+	"ETH_REST_CONNECTION_TIMEOUT",
+	u64,
+	DEFAULT_REST_CONNECTION_TIMEOUT
+);
 
 env_default!(
 	default_eth_initiator_contract,
@@ -200,6 +211,8 @@ impl Default for EthConfig {
 			transaction_send_retries: default_transaction_send_retries(),
 
 			asset: default_asset(),
+
+			rest_connection_timeout_secs: rest_connection_timeout_secs(),
 		}
 	}
 }
