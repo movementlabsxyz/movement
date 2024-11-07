@@ -1,18 +1,18 @@
-use alloy_primitives::Address;
-use std::str::FromStr;
-
 use crate::chains::ethereum::types::EthAddress;
-use alloy::contract::{CallBuilder, CallDecoder};
-use alloy::network::Ethereum;
-use alloy::primitives::U256;
-use alloy::providers::Provider;
-use alloy::rlp::{Encodable, RlpEncodable};
-use alloy::rpc::types::TransactionReceipt;
-use alloy::transports::Transport;
+use alloy::{
+	contract::{CallBuilder, CallDecoder},
+	network::Ethereum,
+	primitives::{Address, U256},
+	providers::Provider,
+	rlp::{Encodable, RlpEncodable},
+	rpc::types::TransactionReceipt,
+	transports::Transport,
+};
 use keccak_hash::keccak;
 use mcr_settlement_client::send_eth_transaction::{
 	InsufficentFunds, SendTransactionErrorRule, UnderPriced, VerifyRule,
 };
+use std::str::FromStr;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -42,7 +42,7 @@ impl FromStr for EthAddress {
 			return Err(EthUtilError::LengthError);
 		}
 		// Try to convert the Vec<u8> to EthAddress
-		Ok(vec.into())
+		Ok(vec.try_into().map_err(|_| EthUtilError::HexDecodeError)?)
 	}
 }
 

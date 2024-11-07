@@ -479,7 +479,7 @@ where
 
 pub mod block {
 
-	use celestia_types::{nmt::Namespace, Blob};
+	use celestia_types::{consts::appconsts::AppVersion, nmt::Namespace, Blob};
 	use movement_algs::grouping_heuristic::{binpacking::BinpackingWeighted, splitting::Splitable};
 	use movement_types::block::Block;
 
@@ -505,7 +505,7 @@ pub mod block {
 			let compressed_block_bytes = zstd::encode_all(block_bytes.as_slice(), 0)?;
 
 			// then create a blob from the compressed block bytes
-			let blob = Blob::new(namespace, compressed_block_bytes)?;
+			let blob = Blob::new(namespace, compressed_block_bytes, AppVersion::V2)?;
 
 			Ok(Self { block, blob })
 		}
