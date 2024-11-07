@@ -16,7 +16,7 @@ processes:
       postgres:
         condition: process_healthy
     environment: 
-      - BRIDGE_INDEXER_DATABASE_URL="postgresql://postgres:password@localhost:5432"
+      - BRIDGE_INDEXER_DATABASE_URL=postgresql://postgres:password@localhost:5432
 
   hasura:
     environment:
