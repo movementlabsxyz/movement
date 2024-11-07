@@ -1,5 +1,6 @@
 use super::Executor;
-use crate::{bootstrap, Context, TransactionPipe};
+use crate::background::BackgroundTask;
+use crate::{bootstrap, Context};
 
 use aptos_config::config::NodeConfig;
 #[cfg(test)]
@@ -8,7 +9,6 @@ use aptos_crypto::PrivateKey;
 use aptos_executor::block_executor::BlockExecutor;
 use aptos_mempool::MempoolClientRequest;
 use aptos_types::transaction::SignedTransaction;
-use futures::FutureExt;
 use maptos_execution_util::config::Config;
 
 use anyhow::Context as _;
@@ -26,9 +26,18 @@ use std::sync::{atomic::AtomicU64, Arc};
 const EXECUTOR_CHANNEL_SIZE: usize = 2_usize.pow(16);
 
 impl Executor {
-	pub fn bootstrap(maptos_config: &Config) -> Result<Self, anyhow::Error> {
+	pub fn bootstrap(maptos_config: Config) -> Result<Self, anyhow::Error> {
 		// set up the node config
 		let mut node_config = NodeConfig::default();
+
+		// read-only settings
+		if maptos_config.chain.maptos_read_only {
+			node_config.api.transaction_submission_enabled = false;
+			node_config.api.encode_submission_enabled = false;
+			node_config.api.transaction_simulation_enabled = false;
+			node_config.api.gas_estimation.enabled = false;
+			node_config.api.periodic_gas_estimation_ms = None;
+		}
 
 		// pruning config
 		node_config.storage.storage_pruner_config.ledger_pruner_config.prune_window =
@@ -92,14 +101,14 @@ impl Executor {
 		})
 	}
 
-	pub fn try_from_config(maptos_config: &Config) -> Result<Self, anyhow::Error> {
+	pub fn try_from_config(maptos_config: Config) -> Result<Self, anyhow::Error> {
 		Self::bootstrap(maptos_config)
 	}
 
 	#[cfg(test)]
 	pub fn try_test_default(
 		private_key: Ed25519PrivateKey,
-	) -> Result<(Self, Config, TempDir), anyhow::Error> {
+	) -> Result<(Self, TempDir), anyhow::Error> {
 		let tempdir = tempfile::tempdir()?;
 
 		let mut maptos_config = Config::default();
@@ -107,42 +116,42 @@ impl Executor {
 
 		// replace the db path with the temporary directory
 		maptos_config.chain.maptos_db_path.replace(tempdir.path().to_path_buf());
-		let executor = Self::try_from_config(&maptos_config)?;
-		Ok((executor, maptos_config, tempdir))
+		let executor = Self::try_from_config(maptos_config)?;
+		Ok((executor, tempdir))
 	}
 
 	/// Creates an instance of [`Context`] and the background [`TransactionPipe`]
-	/// task to process transactions.
+	/// task to process transactions. If the configuration is for a read-only node,
+	/// `None` is returned instead of the transaction pipe task.
 	/// The `Context` must be kept around for as long as the `TransactionPipe`
 	/// task needs to be running.
 	pub fn background(
 		&self,
 		transaction_sender: mpsc::Sender<SignedTransaction>,
-	) -> anyhow::Result<(Context, TransactionPipe)> {
+	) -> anyhow::Result<(Context, BackgroundTask)> {
 		let node_config = self.node_config.clone();
 		let maptos_config = self.config.clone();
 
 		// use the default signer, block executor, and mempool
 		let (mempool_client_sender, mempool_client_receiver) =
 			futures_mpsc::channel::<MempoolClientRequest>(EXECUTOR_CHANNEL_SIZE);
-		let transaction_pipe = TransactionPipe::new(
-			mempool_client_receiver,
-			transaction_sender,
-			self.db().reader.clone(),
-			&node_config,
-			Arc::clone(&self.transactions_in_flight),
-			maptos_config.load_shedding.max_transactions_in_flight,
-			self.config.mempool.sequence_number_ttl_ms,
-			self.config.mempool.gc_slot_duration_ms,
-		);
 
-		let cx = Context::new(
-			self.db().clone(),
-			mempool_client_sender,
-			maptos_config.clone(),
-			node_config.clone(),
-		);
+		let background_task = if maptos_config.chain.maptos_read_only {
+			BackgroundTask::read_only(mempool_client_receiver)
+		} else {
+			BackgroundTask::transaction_pipe(
+				mempool_client_receiver,
+				transaction_sender,
+				self.db().reader.clone(),
+				&node_config,
+				&self.config.mempool,
+				Arc::clone(&self.transactions_in_flight),
+				maptos_config.load_shedding.max_transactions_in_flight,
+			)
+		};
 
-		Ok((cx, transaction_pipe))
+		let cx = Context::new(self.db().clone(), mempool_client_sender, maptos_config, node_config);
+
+		Ok((cx, background_task))
 	}
 }
