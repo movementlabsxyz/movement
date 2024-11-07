@@ -315,7 +315,7 @@ globset = "0.4.15"
 glob = "0.3.1"
 
 # trying to pin diesel
-diesel = { version = "=2.1.1", features = ["postgres", "sqlite", "numeric", "r2d2"]}
+diesel = { version = "=2.1.1", features = ["postgres", "numeric", "r2d2"]}
 diesel_migrations = { version = "=2.1.0"}
 bigdecimal = "0.4.0"
 num_cpus = "=1.16.0"

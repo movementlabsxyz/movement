@@ -10,7 +10,7 @@ publish = { workspace = true }
 rust-version = { workspace = true }
 
 [dependencies]
-diesel = { workspace = true, features = ["postgres", "numeric", "r2d2", "sqlite"]}
+diesel = { workspace = true, features = ["postgres", "numeric", "r2d2"]}
 diesel_migrations = { workspace = true }
 bigdecimal = { workspace = true }
 serde = { workspace = true }
