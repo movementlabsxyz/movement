@@ -127,14 +127,12 @@ where
 
 	/// Submits a CelestiaBlob to the Celestia node.
 	pub async fn submit_celestia_blob(&self, blob: CelestiaBlob) -> Result<u64, anyhow::Error> {
-		let height =
-			self.default_client
-				.blob_submit(&[blob], TxConfig::default())
-				.await
-				.map_err(|e| {
-					error!(error = %e, "failed to submit the blob");
-					anyhow::anyhow!("Failed submitting the blob: {}", e)
-				})?;
+		let config = TxConfig::default();
+		// config.with_gas(2);
+		let height = self.default_client.blob_submit(&[blob], config).await.map_err(|e| {
+			error!(error = %e, "failed to submit the blob");
+			anyhow::anyhow!("Failed submitting the blob: {}", e)
+		})?;
 
 		Ok(height)
 	}
@@ -165,6 +163,7 @@ where
 		&self,
 		height: u64,
 	) -> Result<Vec<IntermediateBlobRepresentation>, anyhow::Error> {
+		let height = if height == 0 { 1 } else { height };
 		match self.default_client.blob_get_all(height, &[self.celestia_namespace]).await {
 			Err(e) => {
 				error!(error = %e, "failed to get blobs at height {height}");
