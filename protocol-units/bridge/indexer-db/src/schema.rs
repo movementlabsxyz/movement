@@ -3,10 +3,10 @@ use diesel::prelude::*;
 table! {
 	lock_bridge_transfers (id) {
 		id -> Int4,
-		bridge_transfer_id -> Binary,
-		hash_lock -> Binary,
-		initiator -> Binary,
-		recipient -> Binary,
+		bridge_transfer_id -> Text,
+		hash_lock -> Text,
+		initiator -> Text,
+		recipient -> Text,
 		amount -> Numeric,
 	}
 }
@@ -15,17 +15,17 @@ table! {
 	wait_and_complete_initiators (id) {
 		id -> Int4,
 		wait_time_secs -> BigInt,
-		pre_image -> Binary,
+		pre_image -> Text,
 	}
 }
 
 table! {
 	initiated_events (id) {
 		id -> Int4,
-		bridge_transfer_id -> Binary,
-		initiator_address -> Binary,
-		recipient_address -> Binary,
-		hash_lock -> Binary,
+		bridge_transfer_id -> Text,
+		initiator_address -> Text,
+		recipient_address -> Text,
+		hash_lock -> Text,
 		time_lock -> BigInt,
 		amount -> Numeric,
 		state -> Int2,
@@ -35,10 +35,10 @@ table! {
 table! {
 	locked_events (id) {
 		id -> Int4,
-		bridge_transfer_id -> Binary,
-		initiator -> Binary,
-		recipient -> Binary,
-		hash_lock -> Binary,
+		bridge_transfer_id -> Text,
+		initiator -> Text,
+		recipient -> Text,
+		hash_lock -> Text,
 		time_lock -> BigInt,
 		amount -> Numeric,
 	}
@@ -47,28 +47,28 @@ table! {
 table! {
 	initiator_completed_events (id) {
 		id -> Int4,
-		bridge_transfer_id -> Binary,
+		bridge_transfer_id -> Text,
 	}
 }
 
 table! {
 	counter_part_completed_events (id) {
 		id -> Int4,
-		bridge_transfer_id -> Binary,
-		pre_image -> Binary,
+		bridge_transfer_id -> Text,
+		pre_image -> Text,
 	}
 }
 
 table! {
 	cancelled_events (id) {
 		id -> Int4,
-		bridge_transfer_id -> Binary,
+		bridge_transfer_id -> Text,
 	}
 }
 
 table! {
 	refunded_events (id) {
 		id -> Int4,
-		bridge_transfer_id -> Binary,
+		bridge_transfer_id -> Text,
 	}
 }

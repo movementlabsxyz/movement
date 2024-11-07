@@ -48,10 +48,10 @@ impl Client {
 			} => {
 				diesel::insert_into(lock_bridge_transfers::table)
 					.values(NewLockBridgeTransfer {
-						bridge_transfer_id: bridge_transfer_id.0.to_vec(),
-						hash_lock: hash_lock.0.to_vec(),
-						initiator: initiator.0.to_vec(),
-						recipient: recipient.0.to_vec(),
+						bridge_transfer_id: hex::encode(bridge_transfer_id.0.to_vec()),
+						hash_lock: hex::encode(hash_lock.0.to_vec()),
+						initiator: hex::encode(initiator.0.to_vec()),
+						recipient: hex::encode(recipient.0.to_vec()),
 						amount: amount.value().into(),
 					})
 					.execute(&mut self.conn)?;
@@ -60,7 +60,7 @@ impl Client {
 				diesel::insert_into(wait_and_complete_initiators::table)
 					.values(NewWaitAndCompleteInitiator {
 						wait_time_secs: wait_time_secs as i64,
-						pre_image: hash_lock_pre_image.0.to_vec(),
+						pre_image: hex::encode(hash_lock_pre_image.0.to_vec()),
 					})
 					.execute(&mut self.conn)?;
 			}
@@ -83,7 +83,7 @@ impl Client {
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
 	) -> Result<LockBridgeTransfer, diesel::result::Error> {
-		let bridge_transfer_id = bridge_transfer_id.0.to_vec();
+		let bridge_transfer_id = hex::encode(bridge_transfer_id.0.to_vec());
 		lock_bridge_transfers::table
 			.filter(lock_bridge_transfers::bridge_transfer_id.eq(bridge_transfer_id))
 			.first::<LockBridgeTransfer>(&mut self.conn)
@@ -101,10 +101,16 @@ impl Client {
 			BridgeContractEvent::Initiated(bridge_transfer_details) => {
 				diesel::insert_into(initiated_events::table)
 					.values(NewInitiatedEvent {
-						bridge_transfer_id: bridge_transfer_details.bridge_transfer_id.0.to_vec(),
-						initiator_address: bridge_transfer_details.initiator_address.0.into(),
-						recipient_address: bridge_transfer_details.recipient_address.0.to_vec(),
-						hash_lock: bridge_transfer_details.hash_lock.0.to_vec(),
+						bridge_transfer_id: hex::encode(
+							bridge_transfer_details.bridge_transfer_id.0.to_vec(),
+						),
+						initiator_address: hex::encode(
+							bridge_transfer_details.initiator_address.0.into(),
+						),
+						recipient_address: hex::encode(
+							bridge_transfer_details.recipient_address.0.to_vec(),
+						),
+						hash_lock: hex::encode(bridge_transfer_details.hash_lock.0.to_vec()),
 						time_lock: bridge_transfer_details.time_lock.0 as i64,
 						amount: bridge_transfer_details.amount.value().into(),
 						state: 0,
@@ -114,10 +120,10 @@ impl Client {
 			BridgeContractEvent::Locked(lock_details) => {
 				diesel::insert_into(locked_events::table)
 					.values(NewLockedEvent {
-						bridge_transfer_id: lock_details.bridge_transfer_id.0.to_vec(),
-						initiator: lock_details.initiator.0.into(),
-						recipient: lock_details.recipient.0.into(),
-						hash_lock: lock_details.hash_lock.0.to_vec(),
+						bridge_transfer_id: hex::encode(lock_details.bridge_transfer_id.0.to_vec()),
+						initiator: hex::encode::<Vec<u8>>(lock_details.initiator.0.into()),
+						recipient: hex::encode::<Vec<u8>>(lock_details.recipient.0.into()),
+						hash_lock: hex::encode(lock_details.hash_lock.0.to_vec()),
 						time_lock: lock_details.time_lock.0 as i64,
 						amount: lock_details.amount.value().into(),
 					})
@@ -126,26 +132,30 @@ impl Client {
 			BridgeContractEvent::InitialtorCompleted(initiator_completed_events) => {
 				diesel::insert_into(initiator_completed_events::table)
 					.values(NewInitiatorCompletedEvent {
-						bridge_transfer_id: initiator_completed_events.0.to_vec(),
+						bridge_transfer_id: hex::encode(initiator_completed_events.0.to_vec()),
 					})
 					.execute(&mut self.conn)?;
 			}
 			BridgeContractEvent::CounterPartCompleted(bridge_transfer_id, hash_lock_pre_image) => {
 				diesel::insert_into(counter_part_completed_events::table)
 					.values(NewCounterPartCompletedEvent {
-						bridge_transfer_id: bridge_transfer_id.0.to_vec(),
-						pre_image: hash_lock_pre_image.0.to_vec(),
+						bridge_transfer_id: hex::encode(bridge_transfer_id.0.to_vec()),
+						pre_image: hex::encode(hash_lock_pre_image.0.to_vec()),
 					})
 					.execute(&mut self.conn)?;
 			}
 			BridgeContractEvent::Cancelled(bridge_transfer_id) => {
 				diesel::insert_into(cancelled_events::table)
-					.values(NewCancelledEvent { bridge_transfer_id: bridge_transfer_id.0.to_vec() })
+					.values(NewCancelledEvent {
+						bridge_transfer_id: hex::encode(bridge_transfer_id.0.to_vec()),
+					})
 					.execute(&mut self.conn)?;
 			}
 			BridgeContractEvent::Refunded(bridge_transfer_id) => {
 				diesel::insert_into(refunded_events::table)
-					.values(NewRefundedEvent { bridge_transfer_id: bridge_transfer_id.0.to_vec() })
+					.values(NewRefundedEvent {
+						bridge_transfer_id: hex::encode(bridge_transfer_id.0.to_vec()),
+					})
 					.execute(&mut self.conn)?;
 			}
 		}
@@ -158,7 +168,7 @@ impl Client {
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
 	) -> Result<BridgeEventPackage, diesel::result::Error> {
-		let bridge_transfer_id = bridge_transfer_id.0.to_vec();
+		let bridge_transfer_id = hex::encode(bridge_transfer_id.0.to_vec());
 
 		let initiated_events = initiated_events::table
 			.filter(initiated_events::bridge_transfer_id.eq(bridge_transfer_id.clone()))

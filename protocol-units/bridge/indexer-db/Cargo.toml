@@ -16,6 +16,7 @@ bigdecimal = { workspace = true }
 serde = { workspace = true }
 bridge-util = { workspace = true }
 anyhow = { workspace = true }
+hex = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true }

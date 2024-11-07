@@ -4113,6 +4113,7 @@ dependencies = [
  "bridge-util",
  "diesel",
  "diesel_migrations",
+ "hex",
  "serde",
  "tokio",
 ]
