@@ -1,4 +1,5 @@
 use crate::actions::process_action;
+use aptos_types::indexer;
 use bridge_indexer_db::client::Client;
 use bridge_util::{
 	actions::{ActionExecError, TransferAction, TransferActionType},
@@ -30,12 +31,13 @@ pub async fn run_bridge<
 	two_client: impl BridgeContract<A2> + 'static,
 	mut two_stream: impl BridgeContractMonitoring<Address = A2>,
 	mut healthcheck_request_rx: mpsc::Receiver<oneshot::Sender<String>>,
+	indexer_db_client: Option<Client>,
 ) -> Result<(), anyhow::Error>
 where
 	Vec<u8>: From<A1>,
 	Vec<u8>: From<A2>,
 {
-	let mut state_runtime = Runtime::new(None);
+	let mut state_runtime = Runtime::new(indexer_db_client);
 
 	let mut client_exec_result_futures_one = FuturesUnordered::new();
 	let mut client_exec_result_futures_two = FuturesUnordered::new();
@@ -196,17 +198,17 @@ impl Runtime {
 
 	fn index_event<A>(&mut self, event: TransferEvent<A>) -> Result<(), InvalidEventError>
 	where
-		A: Into<Vec<u8>> + std::clone::Clone,
+		A: Into<Vec<u8>> + std::clone::Clone + std::fmt::Debug,
 	{
 		match self.indexer_db_client {
 			Some(ref mut client) => {
-				client.insert_bridge_contract_event(event.contract_event.clone()).map_err(
-					|_| {
-						tracing::warn!("Fail to index event");
-						InvalidEventError::BadEvent
-					},
-				)?;
-				tracing::info!("Index event:{event.contract_event:?}");
+				let event = event.contract_event;
+
+				client.insert_bridge_contract_event(event.clone()).map_err(|_| {
+					tracing::warn!("Fail to index event");
+					InvalidEventError::BadEvent
+				})?;
+				tracing::info!("Index event:{event:?}");
 				Ok(())
 			}
 			None => {
@@ -222,7 +224,8 @@ impl Runtime {
 	) -> Result<(), InvalidEventError> {
 		match self.indexer_db_client {
 			Some(ref mut client) => {
-				client.insert_transfer_action(action.kind).map_err(|_| {
+				let action = action.kind;
+				client.insert_transfer_action(action.clone()).map_err(|_| {
 					tracing::warn!("Fail to index action");
 					InvalidEventError::BadEvent
 				})?;
@@ -241,7 +244,7 @@ impl Runtime {
 		event: TransferEvent<A>,
 	) -> Result<TransferAction, InvalidEventError>
 	where
-		A: Into<Vec<u8>> + std::clone::Clone,
+		A: Into<Vec<u8>> + std::clone::Clone + std::fmt::Debug,
 	{
 		self.validate_state(&event)?;
 		let indexer_event = event.clone();
