@@ -339,6 +339,7 @@ impl Runtime {
 	{
 		self.validate_state(&event)?;
 		let indexer_event = event.clone();
+		self.index_event(indexer_event)?;
 		let event_transfer_id = event.contract_event.bridge_transfer_id();
 		let state_opt = self.swap_state_map.remove(&event_transfer_id);
 		//create swap state if need
@@ -387,9 +388,6 @@ impl Runtime {
 				(action_kind, state.init_chain)
 			}
 		};
-
-		//index event
-		self.index_event(indexer_event)?;
 
 		let action =
 			TransferAction { chain: chain_id, transfer_id: state.transfer_id, kind: action_kind };
