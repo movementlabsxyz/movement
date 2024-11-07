@@ -41,9 +41,11 @@ ansible-playbook --inventory <your-inventory> \
     --user ubuntu  \
     --extra-vars "movement_container_version=${CONTAINER_REV}" \
     --extra-vars "user=ubuntu" \
-    docs/movement-node-experimental/Follower Node/suzuka-full-follower.yml \
-    --private-key open-network-demo.pem
+    docs/movement-node/run/ansible/follower-node/suzuka-full-follower.yml \
+    --private-key your-private-key.pem
 ```
+
+The username (`ubuntu` in this example) is the remote user to connect to instances in the inventory.
 
 This will set up the Movement Node to connect to sync with the Follower Node environment.
 

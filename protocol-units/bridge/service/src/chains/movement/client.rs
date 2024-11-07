@@ -1,10 +1,12 @@
+use super::client_framework::FRAMEWORK_ADDRESS;
 use super::utils::{self, MovementAddress};
 use crate::chains::bridge_contracts::BridgeContract;
 use crate::chains::bridge_contracts::BridgeContractError;
 use crate::chains::bridge_contracts::BridgeContractResult;
+use crate::types::BridgeTransferDetailsCounterparty;
 use crate::types::{
-	Amount, AssetType, BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock,
-	HashLockPreImage, TimeLock,
+	Amount, BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage,
+	TimeLock,
 };
 use anyhow::Result;
 use aptos_api_types::{EntryFunctionId, MoveModuleId, ViewRequest};
@@ -54,8 +56,7 @@ impl MovementClient {
 		let rest_client = Client::new(node_connection_url.clone());
 
 		let signer =
-			utils::create_local_account(config.movement_signer_address.clone(), &rest_client)
-				.await?;
+			utils::create_local_account(config.movement_signer_key.clone(), &rest_client).await?;
 		let native_address = AccountAddress::from_hex_literal(&config.movement_native_address)?;
 		Ok(MovementClient {
 			native_address,
@@ -125,16 +126,12 @@ impl BridgeContract<MovementAddress> for MovementClient {
 		hash_lock: HashLock,
 		amount: Amount,
 	) -> BridgeContractResult<()> {
-		let amount_value = match amount.0 {
-			AssetType::Moveth(value) => value,
-			_ => return Err(BridgeContractError::ConversionFailed("Amount".to_string())),
-		};
-		debug!("Amount value: {:?}", amount_value);
+		debug!("Amount value: {:?}", amount);
 
 		let args = vec![
 			utils::serialize_vec_initiator(&recipient.0)?,
 			utils::serialize_vec_initiator(&hash_lock.0[..])?,
-			utils::serialize_u64_initiator(&amount_value)?,
+			utils::serialize_u64_initiator(&amount)?,
 		];
 
 		let payload = utils::make_aptos_payload(
@@ -210,7 +207,7 @@ impl BridgeContract<MovementAddress> for MovementClient {
 		];
 
 		let payload = utils::make_aptos_payload(
-			self.native_address,
+			FRAMEWORK_ADDRESS,
 			COUNTERPARTY_MODULE_NAME,
 			"complete_bridge_transfer",
 			Vec::new(),
@@ -245,17 +242,12 @@ impl BridgeContract<MovementAddress> for MovementClient {
 		recipient: BridgeAddress<MovementAddress>,
 		amount: Amount,
 	) -> BridgeContractResult<()> {
-		let amount_value = match amount.0 {
-			AssetType::Moveth(value) => value,
-			_ => return Err(BridgeContractError::SerializationError),
-		};
-
 		let args = vec![
 			utils::serialize_vec(&initiator.0)?,
 			utils::serialize_vec(&bridge_transfer_id.0[..])?,
 			utils::serialize_vec(&hash_lock.0[..])?,
 			utils::serialize_vec(&recipient.0)?,
-			utils::serialize_u64(&amount_value)?,
+			utils::serialize_u64(&amount)?,
 		];
 
 		let payload = utils::make_aptos_payload(
@@ -385,7 +377,7 @@ impl BridgeContract<MovementAddress> for MovementClient {
 			bridge_transfer_id,
 			initiator_address: BridgeAddress(MovementAddress(originator_address)),
 			recipient_address: BridgeAddress(recipient_address_bytes),
-			amount: Amount(AssetType::Moveth(amount)),
+			amount: Amount(amount),
 			hash_lock: HashLock(hash_lock_array),
 			time_lock: TimeLock(time_lock),
 			state,
@@ -397,7 +389,7 @@ impl BridgeContract<MovementAddress> for MovementClient {
 	async fn get_bridge_transfer_details_counterparty(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
-	) -> BridgeContractResult<Option<BridgeTransferDetails<MovementAddress>>> {
+	) -> BridgeContractResult<Option<BridgeTransferDetailsCounterparty<MovementAddress>>> {
 		let bridge_transfer_id_hex = format!("0x{}", hex::encode(bridge_transfer_id.0));
 
 		let view_request = ViewRequest {
@@ -442,21 +434,20 @@ impl BridgeContract<MovementAddress> for MovementClient {
 			.parse::<u64>()
 			.map_err(|_| BridgeContractError::SerializationError)?;
 		let state = utils::val_as_u64_initiator(values.get(5))? as u8;
-
-		let originator_address = AccountAddress::from_hex_literal(originator)
+		let originator_address_bytes =
+			hex::decode(&originator[2..]).map_err(|_| BridgeContractError::SerializationError)?;
+		let recipient_address = AccountAddress::from_hex_literal(recipient)
 			.map_err(|_| BridgeContractError::SerializationError)?;
-		let recipient_address_bytes =
-			hex::decode(&recipient[2..]).map_err(|_| BridgeContractError::SerializationError)?;
 		let hash_lock_array: [u8; 32] = hex::decode(&hash_lock[2..])
 			.map_err(|_| BridgeContractError::SerializationError)?
 			.try_into()
 			.map_err(|_| BridgeContractError::SerializationError)?;
 
-		let details = BridgeTransferDetails {
+		let details = BridgeTransferDetailsCounterparty {
 			bridge_transfer_id,
-			initiator_address: BridgeAddress(MovementAddress(originator_address)),
-			recipient_address: BridgeAddress(recipient_address_bytes),
-			amount: Amount(AssetType::Moveth(amount)),
+			initiator_address: BridgeAddress(originator_address_bytes),
+			recipient_address: BridgeAddress(MovementAddress(recipient_address)),
+			amount: Amount(amount),
 			hash_lock: HashLock(hash_lock_array),
 			time_lock: TimeLock(time_lock),
 			state,
@@ -466,12 +457,8 @@ impl BridgeContract<MovementAddress> for MovementClient {
 	}
 }
 
-use std::{
-	env, fs,
-	io::Write,
-	path::PathBuf,
-	process::{Command, Stdio},
-};
+use std::process::Stdio;
+
 use tokio::{
 	io::{AsyncBufReadExt, BufReader},
 	process::Command as TokioCommand,
@@ -480,228 +467,6 @@ use tokio::{
 };
 
 impl MovementClient {
-	pub fn publish_for_test(&mut self) -> Result<()> {
-		let random_seed = rand::thread_rng().gen_range(0, 1000000).to_string();
-
-		let mut process = Command::new("movement")
-			.args(&["init"])
-			.stdin(Stdio::piped())
-			.stdout(Stdio::piped())
-			.stderr(Stdio::piped())
-			.spawn()
-			.expect("Failed to execute command");
-
-		let private_key_hex = hex::encode(self.signer.private_key().to_bytes());
-
-		let stdin: &mut std::process::ChildStdin =
-			process.stdin.as_mut().expect("Failed to open stdin");
-
-		let movement_dir = PathBuf::from(".movement");
-
-		if movement_dir.exists() {
-			stdin.write_all(b"yes\n").expect("Failed to write to stdin");
-		}
-
-		stdin.write_all(b"local\n").expect("Failed to write to stdin");
-
-		let _ = stdin.write_all(format!("{}\n", private_key_hex).as_bytes());
-
-		let addr_output = process.wait_with_output().expect("Failed to read command output");
-
-		if !addr_output.stdout.is_empty() {
-			println!("stdout: {}", String::from_utf8_lossy(&addr_output.stdout));
-		}
-
-		if !addr_output.stderr.is_empty() {
-			eprintln!("stderr: {}", String::from_utf8_lossy(&addr_output.stderr));
-		}
-		let addr_output_str = String::from_utf8_lossy(&addr_output.stderr);
-		let address = addr_output_str
-			.split_whitespace()
-			.find(|word| word.starts_with("0x"))
-			.expect("Failed to extract the Movement account address");
-
-		println!("Extracted address: {}", address);
-
-		let resource_output = Command::new("movement")
-			.args(&[
-				"account",
-				"derive-resource-account-address",
-				"--address",
-				address,
-				"--seed",
-				&random_seed,
-			])
-			.stdout(Stdio::piped())
-			.stderr(Stdio::piped())
-			.output()
-			.expect("Failed to execute command");
-
-		// Print the output of the resource address command for debugging
-		if !resource_output.stdout.is_empty() {
-			println!("stdout: {}", String::from_utf8_lossy(&resource_output.stdout));
-		}
-		if !resource_output.stderr.is_empty() {
-			eprintln!("stderr: {}", String::from_utf8_lossy(&resource_output.stderr));
-		}
-
-		// Extract the resource address from the JSON output
-		let resource_output_str = String::from_utf8_lossy(&resource_output.stdout);
-		let resource_address = resource_output_str
-			.lines()
-			.find(|line| line.contains("\"Result\""))
-			.and_then(|line| line.split('"').nth(3))
-			.expect("Failed to extract the resource account address");
-
-		// Ensure the address has a "0x" prefix
-		let formatted_resource_address = if resource_address.starts_with("0x") {
-			resource_address.to_string()
-		} else {
-			format!("0x{}", resource_address)
-		};
-
-		// Set counterparty module address to resource address, for function calls:
-		self.native_address = AccountAddress::from_hex_literal(&formatted_resource_address)?;
-
-		println!("Derived resource address: {}", formatted_resource_address);
-
-		let current_dir = env::current_dir().expect("Failed to get current directory");
-		println!("Current directory: {:?}", current_dir);
-
-		let move_toml_path = PathBuf::from("../move-modules/Move.toml");
-
-		// Read the existing content of Move.toml
-		let move_toml_content =
-			fs::read_to_string(&move_toml_path).expect("Failed to read Move.toml file");
-
-		// Update the content of Move.toml with the new addresses
-		let updated_content = move_toml_content
-			.lines()
-			.map(|line| match line {
-				_ if line.starts_with("resource_addr = ") => {
-					format!(r#"resource_addr = "{}""#, formatted_resource_address)
-				}
-				_ if line.starts_with("atomic_bridge = ") => {
-					format!(r#"atomic_bridge = "{}""#, formatted_resource_address)
-				}
-				_ if line.starts_with("moveth = ") => {
-					format!(r#"moveth = "{}""#, formatted_resource_address)
-				}
-				_ if line.starts_with("master_minter = ") => {
-					format!(r#"master_minter = "{}""#, formatted_resource_address)
-				}
-				_ if line.starts_with("minter = ") => {
-					format!(r#"minter = "{}""#, formatted_resource_address)
-				}
-				_ if line.starts_with("admin = ") => {
-					format!(r#"admin = "{}""#, formatted_resource_address)
-				}
-				_ if line.starts_with("origin_addr = ") => {
-					format!(r#"origin_addr = "{}""#, address)
-				}
-				_ if line.starts_with("source_account = ") => {
-					format!(r#"source_account = "{}""#, address)
-				}
-				_ => line.to_string(),
-			})
-			.collect::<Vec<_>>()
-			.join("\n");
-
-		// Write the updated content back to Move.toml
-		let mut file =
-			fs::File::create(&move_toml_path).expect("Failed to open Move.toml file for writing");
-		file.write_all(updated_content.as_bytes())
-			.expect("Failed to write updated Move.toml file");
-
-		println!("Move.toml updated successfully.");
-
-		let output2 = Command::new("movement")
-			.args(&[
-				"move",
-				"create-resource-account-and-publish-package",
-				"--assume-yes",
-				"--address-name",
-				"moveth",
-				"--seed",
-				&random_seed,
-				"--package-dir",
-				"../move-modules",
-			])
-			.stdout(Stdio::piped())
-			.stderr(Stdio::piped())
-			.output()
-			.expect("Failed to execute command");
-
-		if !output2.stdout.is_empty() {
-			eprintln!("stdout: {}", String::from_utf8_lossy(&output2.stdout));
-		}
-
-		if !output2.stderr.is_empty() {
-			eprintln!("stderr: {}", String::from_utf8_lossy(&output2.stderr));
-		}
-
-		if movement_dir.exists() {
-			fs::remove_dir_all(movement_dir).expect("Failed to delete .movement directory");
-			println!(".movement directory deleted successfully.");
-		}
-
-		// Read the existing content of Move.toml
-		let move_toml_content =
-			fs::read_to_string(&move_toml_path).expect("Failed to read Move.toml file");
-
-		// Directly assign the address
-		let final_address = "0xcafe";
-
-		// Directly assign the formatted resource address
-		let final_formatted_resource_address =
-			"0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5";
-
-		let updated_content = move_toml_content
-			.lines()
-			.map(|line| match line {
-				_ if line.starts_with("resource_addr = ") => {
-					format!(r#"resource_addr = "{}""#, final_formatted_resource_address)
-				}
-				_ if line.starts_with("atomic_bridge = ") => {
-					format!(r#"atomic_bridge = "{}""#, final_formatted_resource_address)
-				}
-				_ if line.starts_with("moveth = ") => {
-					format!(r#"moveth = "{}""#, final_formatted_resource_address)
-				}
-				_ if line.starts_with("master_minter = ") => {
-					format!(r#"master_minter = "{}""#, final_formatted_resource_address)
-				}
-				_ if line.starts_with("minter = ") => {
-					format!(r#"minter = "{}""#, final_formatted_resource_address)
-				}
-				_ if line.starts_with("admin = ") => {
-					format!(r#"admin = "{}""#, final_formatted_resource_address)
-				}
-				_ if line.starts_with("origin_addr = ") => {
-					format!(r#"origin_addr = "{}""#, final_address)
-				}
-				_ if line.starts_with("pauser = ") => {
-					format!(r#"pauser = "{}""#, "0xdafe")
-				}
-				_ if line.starts_with("denylister = ") => {
-					format!(r#"denylister = "{}""#, "0xcade")
-				}
-				_ => line.to_string(),
-			})
-			.collect::<Vec<_>>()
-			.join("\n");
-
-		// Write the updated content back to Move.toml
-		let mut file =
-			fs::File::create(&move_toml_path).expect("Failed to open Move.toml file for writing");
-		file.write_all(updated_content.as_bytes())
-			.expect("Failed to write updated Move.toml file");
-
-		println!("Move.toml addresses updated successfully at the end of the test.");
-
-		Ok(())
-	}
-
 	pub async fn new_for_test() -> Result<(Self, tokio::process::Child), anyhow::Error> {
 		let kill_cmd = TokioCommand::new("sh")
 			.arg("-c")

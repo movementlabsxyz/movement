@@ -1,32 +1,61 @@
-use anyhow::Context;
+use m1_da_light_node_util::ir_blob::IntermediateBlobRepresentation;
 use std::fmt::{self, Debug, Formatter};
 use std::sync::Arc;
-
-use tokio::sync::RwLock;
 use tokio_stream::{Stream, StreamExt};
-use tracing::debug;
+use tracing::{debug, error, info};
 
 use celestia_rpc::{BlobClient, Client, HeaderClient};
-use celestia_types::{blob::GasPrice, nmt::Namespace, Blob as CelestiaBlob};
+use celestia_types::{nmt::Namespace, Blob as CelestiaBlob, TxConfig};
 
 // FIXME: glob imports are bad style
 use m1_da_light_node_grpc::light_node_service_server::LightNodeService;
 use m1_da_light_node_grpc::*;
-use m1_da_light_node_util::config::Config;
-use m1_da_light_node_verifier::{v1::V1Verifier, Verifier};
+use m1_da_light_node_util::{
+	config::Config,
+	ir_blob::{celestia::CelestiaIntermediateBlobRepresentation, InnerSignedBlobV1Data},
+};
+use m1_da_light_node_verifier::{permissioned_signers::Verifier, VerifierOperations};
 
 use crate::v1::LightNodeV1Operations;
+use ecdsa::{
+	elliptic_curve::{
+		generic_array::ArrayLength,
+		ops::Invert,
+		point::PointCompression,
+		sec1::{FromEncodedPoint, ModulusSize, ToEncodedPoint},
+		subtle::CtOption,
+		AffinePoint, CurveArithmetic, FieldBytesSize, PrimeCurve, Scalar,
+	},
+	hazmat::{DigestPrimitive, SignPrimitive, VerifyPrimitive},
+	SignatureSize, SigningKey,
+};
 
 #[derive(Clone)]
-pub struct LightNodeV1 {
+pub struct LightNodeV1<C>
+where
+	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
+	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
+	SignatureSize<C>: ArrayLength<u8>,
+	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
+	FieldBytesSize<C>: ModulusSize,
+{
 	pub config: Config,
 	pub celestia_namespace: Namespace,
 	pub default_client: Arc<Client>,
-	pub verification_mode: Arc<RwLock<VerificationMode>>,
-	pub verifier: Arc<Box<dyn Verifier + Send + Sync>>,
+	pub verifier: Arc<
+		Box<dyn VerifierOperations<CelestiaBlob, IntermediateBlobRepresentation> + Send + Sync>,
+	>,
+	pub signing_key: SigningKey<C>,
 }
 
-impl Debug for LightNodeV1 {
+impl<C> Debug for LightNodeV1<C>
+where
+	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
+	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
+	SignatureSize<C>: ArrayLength<u8>,
+	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
+	FieldBytesSize<C>: ModulusSize,
+{
 	fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
 		f.debug_struct("LightNodeV1")
 			.field("celestia_namespace", &self.config.celestia_namespace())
@@ -34,23 +63,34 @@ impl Debug for LightNodeV1 {
 	}
 }
 
-impl LightNodeV1Operations for LightNodeV1 {
+impl<C> LightNodeV1Operations for LightNodeV1<C>
+where
+	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
+	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
+	SignatureSize<C>: ArrayLength<u8>,
+	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
+	FieldBytesSize<C>: ModulusSize,
+{
 	/// Tries to create a new LightNodeV1 instance from the toml config file.
 	async fn try_from_config(config: Config) -> Result<Self, anyhow::Error> {
 		let client = Arc::new(config.connect_celestia().await?);
+
+		let signing_key_str = config.da_signing_key();
+		let hex_bytes = hex::decode(signing_key_str)?;
+
+		let signing_key = SigningKey::from_bytes(hex_bytes.as_slice().try_into()?)
+			.map_err(|e| anyhow::anyhow!("Failed to create signing key: {}", e))?;
 
 		Ok(Self {
 			config: config.clone(),
 			celestia_namespace: config.celestia_namespace(),
 			default_client: client.clone(),
-			verification_mode: Arc::new(RwLock::new(
-				VerificationMode::from_str_name("M_OF_N")
-					.context("Failed to parse verification mode")?,
-			)),
-			verifier: Arc::new(Box::new(V1Verifier {
+			verifier: Arc::new(Box::new(Verifier::<C>::new(
 				client,
-				namespace: config.celestia_namespace(),
-			})),
+				config.celestia_namespace(),
+				config.da_signers_sec1_keys(),
+			))),
+			signing_key,
 		})
 	}
 
@@ -64,20 +104,37 @@ impl LightNodeV1Operations for LightNodeV1 {
 	}
 }
 
-impl LightNodeV1 {
-	/// Creates a new blob instance with the provided data.
+impl<C> LightNodeV1<C>
+where
+	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
+	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
+	SignatureSize<C>: ArrayLength<u8>,
+	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
+	FieldBytesSize<C>: ModulusSize,
+{
+	/// Creates a new signed blob instance with the provided data.
 	pub fn create_new_celestia_blob(&self, data: Vec<u8>) -> Result<CelestiaBlob, anyhow::Error> {
-		CelestiaBlob::new(self.celestia_namespace, data)
-			.map_err(|e| anyhow::anyhow!("Failed to create a blob: {}", e))
+		// mark the timestamp as now in milliseconds
+		let timestamp = chrono::Utc::now().timestamp_micros() as u64;
+
+		// sign the blob data and the timestamp
+		let data = InnerSignedBlobV1Data::new(data, timestamp).try_to_sign(&self.signing_key)?;
+
+		// create the celestia blob
+		CelestiaIntermediateBlobRepresentation(data.into(), self.celestia_namespace.clone())
+			.try_into()
 	}
 
-	/// Submits a CelestiaNlob to the Celestia node.
+	/// Submits a CelestiaBlob to the Celestia node.
 	pub async fn submit_celestia_blob(&self, blob: CelestiaBlob) -> Result<u64, anyhow::Error> {
-		let height = self
-			.default_client
-			.blob_submit(&[blob], GasPrice::default())
-			.await
-			.map_err(|e| anyhow::anyhow!("Failed submitting the blob: {}", e))?;
+		let height =
+			self.default_client
+				.blob_submit(&[blob], TxConfig::default())
+				.await
+				.map_err(|e| {
+					error!(error = %e, "failed to submit the blob");
+					anyhow::anyhow!("Failed submitting the blob: {}", e)
+				})?;
 
 		Ok(height)
 	}
@@ -87,11 +144,11 @@ impl LightNodeV1 {
 		&self,
 		blobs: &[CelestiaBlob],
 	) -> Result<u64, anyhow::Error> {
-		let height = self
-			.default_client
-			.blob_submit(blobs, GasPrice::default())
-			.await
-			.map_err(|e| anyhow::anyhow!("Failed submitting the blob: {}", e))?;
+		let height =
+			self.default_client.blob_submit(blobs, TxConfig::default()).await.map_err(|e| {
+				error!(error = %e, "failed to submit the blobs");
+				anyhow::anyhow!("Failed submitting the blob: {}", e)
+			})?;
 
 		Ok(height)
 	}
@@ -104,55 +161,44 @@ impl LightNodeV1 {
 	}
 
 	/// Gets the blobs at a given height.
-	pub async fn get_celestia_blobs_at_height(
+	pub async fn get_ir_blobs_at_height(
 		&self,
 		height: u64,
-	) -> Result<Vec<CelestiaBlob>, anyhow::Error> {
-		let blobs = self.default_client.blob_get_all(height, &[self.celestia_namespace]).await;
-
-		if let Err(e) = &blobs {
-			debug!("Error getting blobs: {:?}", e);
-		}
-
-		let blobs = blobs.unwrap_or_default();
-
-		let mut verified_blobs = Vec::new();
-		for blob in blobs {
-			debug!("Verifying blob");
-
-			let blob_data = blob.data.clone();
-
-			// todo: improve error boundary here to detect crashes
-			let verified = self
-				.verifier
-				.verify(*self.verification_mode.read().await, &blob_data, height)
-				.await;
-
-			if let Err(e) = &verified {
-				debug!("Error verifying blob: {:?}", e);
+	) -> Result<Vec<IntermediateBlobRepresentation>, anyhow::Error> {
+		match self.default_client.blob_get_all(height, &[self.celestia_namespace]).await {
+			Err(e) => {
+				error!(error = %e, "failed to get blobs at height {height}");
+				anyhow::bail!(e);
 			}
+			Ok(blobs) => {
+				let blobs = blobs.unwrap_or_default();
 
-			// FIXME: check the implications of treating errors as verification success.
-			// @l-monninger: under the assumption we are running a light node in the same
-			// trusted setup and have not experience a highly intrusive(?), the vulnerability here
-			// is fairly low. The light node should take care of verification on its own.
-			let verified = verified.unwrap_or(true);
+				let mut verified_blobs = Vec::new();
+				for blob in blobs {
+					match self.verifier.verify(blob, height).await {
+						Ok(verified_blob) => {
+							let blob = verified_blob.into_inner();
+							info!("verified blob at height {}: {}", height, hex::encode(blob.id()));
+							verified_blobs.push(blob);
+						}
+						Err(e) => {
+							error!(error = %e, "failed to verify blob");
+						}
+					}
+				}
 
-			if verified {
-				verified_blobs.push(blob);
+				Ok(verified_blobs)
 			}
 		}
-
-		Ok(verified_blobs)
 	}
 
-	#[tracing::instrument(target = "movement_timing", level = "debug")]
+	#[tracing::instrument(target = "movement_timing", level = "info", skip(self))]
 	async fn get_blobs_at_height(&self, height: u64) -> Result<Vec<Blob>, anyhow::Error> {
-		let celestia_blobs = self.get_celestia_blobs_at_height(height).await?;
+		let ir_blobs = self.get_ir_blobs_at_height(height).await?;
 		let mut blobs = Vec::new();
-		for celestia_blob in celestia_blobs {
-			let blob = Self::celestia_blob_to_blob(celestia_blob, height)?;
-			debug!(blob_id = %blob.blob_id, "got blob");
+		for ir_blob in ir_blobs {
+			let blob = Self::ir_blob_to_blob(ir_blob, height)?;
+			// todo: update logging here
 			blobs.push(blob);
 		}
 		Ok(blobs)
@@ -208,7 +254,7 @@ impl LightNodeV1 {
 				let header = header_res?;
 				let height = header.height().into();
 
-				debug!("Stream got header: {:?}", header.height());
+				info!("Stream got header: {:?}", header.height());
 
 				// back fetch the blobs
 				if first_flag && (height > start_height) {
@@ -239,15 +285,30 @@ impl LightNodeV1 {
 			as std::pin::Pin<Box<dyn Stream<Item = Result<Blob, anyhow::Error>> + Send>>)
 	}
 
+	pub fn ir_blob_to_blob(
+		ir_blob: IntermediateBlobRepresentation,
+		height: u64,
+	) -> Result<Blob, anyhow::Error> {
+		Ok(Blob {
+			data: ir_blob.blob().to_vec(),
+			signature: ir_blob.signature().to_vec(),
+			timestamp: ir_blob.timestamp(),
+			signer: ir_blob.signer().to_vec(),
+			blob_id: ir_blob.id().to_vec(),
+			height,
+		})
+	}
+
 	pub fn celestia_blob_to_blob(blob: CelestiaBlob, height: u64) -> Result<Blob, anyhow::Error> {
-		let timestamp = chrono::Utc::now().timestamp_micros() as u64;
+		let ir_blob: IntermediateBlobRepresentation = blob.try_into()?;
 
 		Ok(Blob {
-			data: blob.data,
-			blob_id: serde_json::to_string(&blob.commitment)
-				.map_err(|e| anyhow::anyhow!("Failed to serialize commitment: {}", e))?,
+			data: ir_blob.blob().to_vec(),
+			signature: ir_blob.signature().to_vec(),
+			timestamp: ir_blob.timestamp(),
+			signer: ir_blob.signer().to_vec(),
+			blob_id: ir_blob.id().to_vec(),
 			height,
-			timestamp,
 		})
 	}
 
@@ -269,7 +330,14 @@ impl LightNodeV1 {
 }
 
 #[tonic::async_trait]
-impl LightNodeService for LightNodeV1 {
+impl<C> LightNodeService for LightNodeV1<C>
+where
+	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
+	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
+	SignatureSize<C>: ArrayLength<u8>,
+	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
+	FieldBytesSize<C>: ModulusSize,
+{
 	/// Server streaming response type for the StreamReadFromHeight method.
 	type StreamReadFromHeightStream = std::pin::Pin<
 		Box<
@@ -443,18 +511,5 @@ impl LightNodeService for LightNodeV1 {
 		}
 
 		Ok(tonic::Response::new(BatchWriteResponse { blobs: blob_responses }))
-	}
-	/// Update and manage verification parameters.
-	async fn update_verification_parameters(
-		&self,
-		request: tonic::Request<UpdateVerificationParametersRequest>,
-	) -> std::result::Result<tonic::Response<UpdateVerificationParametersResponse>, tonic::Status> {
-		let verification_mode = request.into_inner().mode();
-		let mut mode = self.verification_mode.write().await;
-		*mode = verification_mode;
-
-		Ok(tonic::Response::new(UpdateVerificationParametersResponse {
-			mode: verification_mode.into(),
-		}))
 	}
 }

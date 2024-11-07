@@ -1,35 +1,34 @@
-use crate::actions::process_action;
-use crate::actions::ActionExecError;
-use crate::actions::TransferAction;
-use crate::actions::TransferActionType;
-use crate::chains::bridge_contracts::BridgeContract;
-use crate::chains::bridge_contracts::BridgeContractEvent;
-use crate::chains::bridge_contracts::BridgeContractMonitoring;
-use crate::events::InvalidEventError;
-use crate::events::TransferEvent;
-use crate::states::TransferState;
-use crate::states::TransferStateType;
-use crate::types::BridgeTransferId;
-use crate::types::ChainId;
+use crate::{
+	actions::{process_action, ActionExecError, TransferAction, TransferActionType},
+	chains::bridge_contracts::{BridgeContract, BridgeContractEvent, BridgeContractMonitoring},
+	events::{InvalidEventError, TransferEvent},
+	states::{TransferState, TransferStateType},
+	types::{BridgeTransferId, ChainId},
+};
 use futures::stream::FuturesUnordered;
-use std::collections::HashMap;
-use tokio::select;
+use std::{collections::HashMap, sync::Arc};
+use tokio::sync::mpsc;
+use tokio::sync::oneshot;
+use tokio::{select, sync::Mutex};
 use tokio_stream::StreamExt;
 
 mod actions;
 pub mod chains;
 mod events;
+pub mod grpc;
+pub mod rest;
 mod states;
 pub mod types;
 
 pub async fn run_bridge<
-	A1: Send + From<Vec<u8>> + std::clone::Clone + 'static + std::fmt::Debug,
-	A2: Send + From<Vec<u8>> + std::clone::Clone + 'static + std::fmt::Debug,
+	A1: Send + TryFrom<Vec<u8>> + std::clone::Clone + 'static + std::fmt::Debug,
+	A2: Send + TryFrom<Vec<u8>> + std::clone::Clone + 'static + std::fmt::Debug,
 >(
 	one_client: impl BridgeContract<A1> + 'static,
 	mut one_stream: impl BridgeContractMonitoring<Address = A1>,
 	two_client: impl BridgeContract<A2> + 'static,
 	mut two_stream: impl BridgeContractMonitoring<Address = A2>,
+	mut healthcheck_request_rx: mpsc::Receiver<oneshot::Sender<String>>,
 ) -> Result<(), anyhow::Error>
 where
 	Vec<u8>: From<A1>,
@@ -40,13 +39,21 @@ where
 	let mut client_exec_result_futures_one = FuturesUnordered::new();
 	let mut client_exec_result_futures_two = FuturesUnordered::new();
 
-	// let mut action_to_exec_futures_one = FuturesUnordered::new();
-	// let mut action_to_exec_futures_two = FuturesUnordered::new();
+	//only one client can use at a time.
+	let one_client_lock = Arc::new(Mutex::new(()));
+	let two_client_lock = Arc::new(Mutex::new(()));
 
 	let mut tranfer_log_interval = tokio::time::interval(tokio::time::Duration::from_secs(60));
 
 	loop {
 		select! {
+			//Manage HealthCheck request
+			Some(oneshot_tx) = healthcheck_request_rx.recv() => {
+				if let Err(err) = oneshot_tx.send("OK".to_string()){
+					tracing::warn!("Heal check oneshot channel closed abnormally :{err:?}");
+				}
+
+			}
 			// Log all current transfer
 			_ = tranfer_log_interval.tick() => {
 				//format logs
@@ -68,7 +75,13 @@ where
 									ChainId::ONE => {
 										let fut = process_action(action, one_client.clone());
 										if let Some(fut) = fut {
-											let jh = tokio::spawn(fut);
+											let jh = tokio::spawn({
+												let client_lock_clone = one_client_lock.clone();
+												async move {
+													let _lock = client_lock_clone.lock().await;
+													fut.await
+												}
+											});
 											client_exec_result_futures_one.push(jh);
 										}
 
@@ -76,7 +89,13 @@ where
 									ChainId::TWO => {
 										let fut = process_action(action, two_client.clone());
 										if let Some(fut) = fut {
-											let jh = tokio::spawn(fut);
+											let jh = tokio::spawn({
+												let client_lock_clone = two_client_lock.clone();
+												async move {
+													let _lock = client_lock_clone.lock().await;
+													fut.await
+												}
+											});
 											client_exec_result_futures_two.push(jh);
 										}
 									}
@@ -191,7 +210,7 @@ impl Runtime {
 			self.swap_state_map.insert(state.transfer_id, state);
 			return Ok(action);
 		} else {
-			//tested before state can be unwrap
+			//tested before in validate_state() state can be unwrap
 			state_opt.unwrap()
 		};
 
@@ -213,25 +232,29 @@ impl Runtime {
 				let (new_state, action_kind) =
 					state.transition_from_initiator_completed(event_transfer_id);
 				state = new_state;
-				//transfer done remove the state.
-				if state.state == TransferStateType::Done {
-					self.swap_state_map.remove(&event_transfer_id);
-				}
+
 				(action_kind, state.init_chain)
 			}
 			BridgeContractEvent::Cancelled(_) => {
-				todo!()
+				let (new_state, action_kind) = state.transition_from_cancelled(event_transfer_id);
+				state = new_state;
+
+				(action_kind, state.init_chain)
 			}
 			BridgeContractEvent::Refunded(_) => {
-				todo!()
+				let (new_state, action_kind) = state.transition_from_refunded(event_transfer_id);
+				state = new_state;
+
+				(action_kind, state.init_chain)
 			}
 		};
 
 		let action =
 			TransferAction { chain: chain_id, transfer_id: state.transfer_id, kind: action_kind };
 
-		self.swap_state_map.insert(state.transfer_id, state);
-
+		if state.state != TransferStateType::Done {
+			self.swap_state_map.insert(state.transfer_id, state);
+		}
 		Ok(action)
 	}
 

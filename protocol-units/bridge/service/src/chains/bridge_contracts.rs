@@ -1,4 +1,4 @@
-use crate::types::LockDetails;
+use crate::types::{BridgeTransferDetailsCounterparty, LockDetails};
 use std::fmt;
 use thiserror::Error;
 use tokio_stream::Stream;
@@ -9,6 +9,12 @@ use crate::types::{
 
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
 pub enum BridgeContractError {
+	#[error("Account balance error")]
+	AccountBalanceError,
+	#[error("Funding error")]
+	FundingError,
+	#[error("Invalid Url")]
+	InvalidUrl,
 	#[error("Failed to extract transfer Id")]
 	TransferIdExtractionError,
 	#[error("Failed to mint")]
@@ -49,6 +55,8 @@ pub enum BridgeContractError {
 	OnChainUnknownEvent,
 	#[error("Error during onchain call:{0}")]
 	OnChainError(String),
+	#[error("Error during decoding address:{0}")]
+	BadAddressEncoding(String),
 	#[error("Error during deserializing an event :{1:?} : {0}")]
 	EventDeserializingFail(String, BridgeContractEventType),
 }
@@ -173,7 +181,7 @@ pub trait BridgeContract<A>: Clone + Unpin + Send + Sync {
 	async fn get_bridge_transfer_details_counterparty(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
-	) -> BridgeContractResult<Option<BridgeTransferDetails<A>>>;
+	) -> BridgeContractResult<Option<BridgeTransferDetailsCounterparty<A>>>;
 
 	async fn lock_bridge_transfer(
 		&mut self,

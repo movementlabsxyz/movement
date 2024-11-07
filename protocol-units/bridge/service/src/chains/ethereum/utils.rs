@@ -1,17 +1,18 @@
-use std::str::FromStr;
-
 use crate::chains::ethereum::types::EthAddress;
-use alloy::contract::{CallBuilder, CallDecoder};
-use alloy::network::Ethereum;
-use alloy::primitives::U256;
-use alloy::providers::Provider;
-use alloy::rlp::{Encodable, RlpEncodable};
-use alloy::rpc::types::TransactionReceipt;
-use alloy::transports::Transport;
+use alloy::{
+	contract::{CallBuilder, CallDecoder},
+	network::Ethereum,
+	primitives::{Address, U256},
+	providers::Provider,
+	rlp::{Encodable, RlpEncodable},
+	rpc::types::TransactionReceipt,
+	transports::Transport,
+};
 use keccak_hash::keccak;
 use mcr_settlement_client::send_eth_transaction::{
 	InsufficentFunds, SendTransactionErrorRule, UnderPriced, VerifyRule,
 };
+use std::str::FromStr;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -41,7 +42,7 @@ impl FromStr for EthAddress {
 			return Err(EthUtilError::LengthError);
 		}
 		// Try to convert the Vec<u8> to EthAddress
-		Ok(vec.into())
+		Ok(vec.try_into().map_err(|_| EthUtilError::HexDecodeError)?)
 	}
 }
 
@@ -73,12 +74,17 @@ pub async fn send_transaction<
 	D: CallDecoder + Clone,
 >(
 	base_call_builder: CallBuilder<T, &P, D, Ethereum>,
+	signer_address: Address,
 	send_transaction_error_rules: &[Box<dyn VerifyRule>],
 	number_retry: u32,
 	gas_limit: u128,
 ) -> Result<TransactionReceipt, anyhow::Error> {
 	println!("base_call_builder: {:?}", base_call_builder);
 	println!("Sending transaction with gas limit: {}", gas_limit);
+
+	// set signer address as from for gas_estimation.
+	// The gas estimate need to set teh from before calling.
+	let base_call_builder = base_call_builder.from(signer_address);
 	//validate gas price.
 	println!(" ICI before estimate_gas",);
 	let mut estimate_gas = base_call_builder.estimate_gas().await?;
@@ -94,6 +100,8 @@ pub async fn send_transaction<
 	// I define a first one but other should be added depending on the test with mainnet.
 	for _ in 0..number_retry {
 		let call_builder = base_call_builder.clone().gas(estimate_gas);
+
+		tracing::info!("Call: {:?}", call_builder);
 
 		//detect if the gas price doesn't execeed the limit.
 		let gas_price = call_builder.provider.get_gas_price().await?;
