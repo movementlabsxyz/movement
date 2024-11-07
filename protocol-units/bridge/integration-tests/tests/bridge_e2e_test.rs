@@ -17,7 +17,8 @@ use bridge_service::chains::ethereum::utils::send_transaction_rules;
 use bridge_service::chains::{
 	ethereum::types::EthAddress,
 	movement::{
-		client_framework::MovementClientFramework, event_monitoring::MovementMonitoring, utils::MovementAddress,
+		client_framework::MovementClientFramework, event_monitoring::MovementMonitoring,
+		utils::MovementAddress,
 	},
 };
 use bridge_service::types::Amount;
@@ -62,7 +63,7 @@ async fn initiate_eth_bridge_transfer(
 
 	let _ = send_transaction(
 		call,
-		initiator_address.0.0,
+		initiator_address.0 .0,
 		&send_transaction_rules(),
 		config.eth.transaction_send_retries,
 		config.eth.gas_limit as u128,
@@ -114,7 +115,9 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 
 	//Wait for the tx to be executed
 	tracing::info!("Wait for the MVT Locked event.");
-	let mut mvt_monitoring = MovementMonitoring::build(&config.movement).await.unwrap();
+	let (_, mvt_health_rx) = tokio::sync::mpsc::channel(10);
+	let mut mvt_monitoring =
+		MovementMonitoring::build(&config.movement, mvt_health_rx).await.unwrap();
 	let event =
 		tokio::time::timeout(std::time::Duration::from_secs(30), mvt_monitoring.next()).await?;
 	let bridge_tranfer_id = if let Some(Ok(BridgeContractEvent::Locked(detail))) = event {
@@ -136,7 +139,8 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 		)
 		.await?;
 
-	let mut eth_monitoring = EthMonitoring::build(&config.eth).await.unwrap();
+	let (_, eth_health_rx) = tokio::sync::mpsc::channel(10);
+	let mut eth_monitoring = EthMonitoring::build(&config.eth, eth_health_rx).await.unwrap();
 	// Wait for InitialtorCompleted event
 	tracing::info!("Wait for InitialtorCompleted event.");
 	loop {

@@ -43,10 +43,13 @@ async fn main() -> Result<()> {
 
 	tracing::info!("Bridge config loaded: {bridge_config:?}");
 
-	let one_stream = EthMonitoring::build(&bridge_config.eth).await.unwrap();
+	let (eth_health_tx, eth_health_rx) = tokio::sync::mpsc::channel(10);
+	let one_stream = EthMonitoring::build(&bridge_config.eth, eth_health_rx).await.unwrap();
 	let one_client = EthClient::new(&bridge_config.eth).await.unwrap();
 	let two_client = MovementClientFramework::new(&bridge_config.movement).await.unwrap();
-	let two_stream = MovementMonitoring::build(&bridge_config.movement).await.unwrap();
+	let (mvt_health_tx, mvt_health_rx) = tokio::sync::mpsc::channel(10);
+	let two_stream =
+		MovementMonitoring::build(&bridge_config.movement, mvt_health_rx).await.unwrap();
 
 	let one_client_for_grpc = one_client.clone();
 
@@ -98,6 +101,8 @@ async fn main() -> Result<()> {
 			two_stream,
 			health_rx,
 			indexer_db_client,
+			eth_health_tx,
+			mvt_health_tx,
 		)
 		.await
 	});
