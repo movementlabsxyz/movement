@@ -206,6 +206,7 @@ impl Runtime {
 						InvalidEventError::BadEvent
 					},
 				)?;
+				tracing::info!("Index event:{event.contract_event:?}");
 				Ok(())
 			}
 			None => {
@@ -225,6 +226,7 @@ impl Runtime {
 					tracing::warn!("Fail to index action");
 					InvalidEventError::BadEvent
 				})?;
+				tracing::info!("Index action:{action:?}");
 				Ok(())
 			}
 			None => {
