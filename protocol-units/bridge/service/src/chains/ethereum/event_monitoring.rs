@@ -79,7 +79,7 @@ impl EthMonitoring {
 
 					//Get block number.
 					let block_number = match tokio::time::timeout(
-						tokio::time::Duration::from_secs(5),
+						tokio::time::Duration::from_secs(config.rest_connection_timeout_secs),
 						rpc_provider.get_block_number(),
 					)
 					.await
@@ -140,7 +140,7 @@ impl EthMonitoring {
 
 						//Initiator event stream
 						match tokio::time::timeout(
-							tokio::time::Duration::from_secs(5),
+							tokio::time::Duration::from_secs(config.rest_connection_timeout_secs),
 							initiator_initiate_event_filter.query(),
 						)
 						.await
@@ -195,7 +195,7 @@ impl EthMonitoring {
 							}
 						}
 						match tokio::time::timeout(
-							tokio::time::Duration::from_secs(5),initiator_trcompleted_event_filter.query()).await {
+							tokio::time::Duration::from_secs(config.rest_connection_timeout_secs),initiator_trcompleted_event_filter.query()).await {
 							Ok(Ok(events)) => {
 								for (completed, _log) in events {
 									if sender
@@ -232,7 +232,7 @@ impl EthMonitoring {
 							}
 						}
 						match tokio::time::timeout(
-							tokio::time::Duration::from_secs(5),
+							tokio::time::Duration::from_secs(config.rest_connection_timeout_secs),
 							initiator_trrefund_event_filter.query(),
 						)
 						.await
@@ -273,7 +273,7 @@ impl EthMonitoring {
 							}
 						}
 						match tokio::time::timeout(
-							tokio::time::Duration::from_secs(5),
+							tokio::time::Duration::from_secs(config.rest_connection_timeout_secs),
 							counterpart_trlocked_event_filter.query(),
 						)
 						.await
@@ -324,7 +324,7 @@ impl EthMonitoring {
 							}
 						}
 						match tokio::time::timeout(
-							tokio::time::Duration::from_secs(5),
+							tokio::time::Duration::from_secs(config.rest_connection_timeout_secs),
 							counterpart_trcompleted_event_filter.query(),
 						)
 						.await
@@ -366,7 +366,7 @@ impl EthMonitoring {
 							}
 						}
 						match tokio::time::timeout(
-							tokio::time::Duration::from_secs(5),
+							tokio::time::Duration::from_secs(config.rest_connection_timeout_secs),
 							counterpart_trcaborted_event_filter.query(),
 						)
 						.await

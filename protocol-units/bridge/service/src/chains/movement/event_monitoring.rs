@@ -179,6 +179,7 @@ impl MovementMonitoring {
 						FRAMEWORK_ADDRESS,
 						&config.mvt_rpc_connection_url(),
 						&pull_state,
+						config.rest_connection_timeout_secs,
 					)
 					.await
 					{
@@ -189,6 +190,7 @@ impl MovementMonitoring {
 						FRAMEWORK_ADDRESS,
 						&config.mvt_rpc_connection_url(),
 						&pull_state,
+						config.rest_connection_timeout_secs,
 					)
 					.await
 					{
@@ -258,6 +260,7 @@ async fn pool_initiator_contract(
 	framework_address: AccountAddress,
 	rest_url: &str,
 	pull_state: &MvtPullingState,
+	timeout_sec: u64,
 ) -> BridgeContractResult<Vec<(BridgeContractEvent<MovementAddress>, u64)>> {
 	let struct_tag = format!(
 		"{}::atomic_bridge_initiator::BridgeInitiatorEvents",
@@ -270,6 +273,7 @@ async fn pool_initiator_contract(
 		&struct_tag,
 		"bridge_transfer_initiated_events",
 		pull_state.initiator_init,
+		timeout_sec,
 	)
 	.await?
 	.into_iter()
@@ -294,6 +298,7 @@ async fn pool_initiator_contract(
 		&struct_tag,
 		"bridge_transfer_completed_events",
 		pull_state.initiator_complete,
+		timeout_sec,
 	)
 	.await?
 	.into_iter()
@@ -325,6 +330,7 @@ async fn pool_initiator_contract(
 		&struct_tag,
 		"bridge_transfer_refunded_events",
 		pull_state.initiator_refund,
+		timeout_sec,
 	)
 	.await?
 	.into_iter()
@@ -359,6 +365,7 @@ async fn pool_counterparty_contract(
 	framework_address: AccountAddress,
 	rest_url: &str,
 	pull_state: &MvtPullingState,
+	timeout_sec: u64,
 ) -> BridgeContractResult<Vec<(BridgeContractEvent<MovementAddress>, u64)>> {
 	let struct_tag = format!(
 		"{}::atomic_bridge_counterparty::BridgeCounterpartyEvents",
@@ -372,6 +379,7 @@ async fn pool_counterparty_contract(
 		&struct_tag,
 		"bridge_transfer_locked_events",
 		pull_state.counterpart_lock,
+		timeout_sec,
 	)
 	.await?
 	.into_iter()
@@ -396,6 +404,7 @@ async fn pool_counterparty_contract(
 		&struct_tag,
 		"bridge_transfer_completed_events",
 		pull_state.counterpart_complete,
+		timeout_sec,
 	)
 	.await?
 	.into_iter()
@@ -439,6 +448,7 @@ async fn pool_counterparty_contract(
 		&struct_tag,
 		"bridge_transfer_cancelled_events",
 		pull_state.counterpart_cancel,
+		timeout_sec,
 	)
 	.await?
 	.into_iter()
@@ -610,6 +620,7 @@ async fn get_account_events(
 	event_type: &str,
 	field_name: &str,
 	start_version: u64,
+	timeout_sec: u64,
 ) -> Result<Vec<VersionedEvent>, BridgeContractError> {
 	let url = format!(
 		"{}/v1/accounts/{}/events/{}/{}",
@@ -620,7 +631,7 @@ async fn get_account_events(
 
 	// Send the GET request
 	let response = match tokio::time::timeout(
-		tokio::time::Duration::from_secs(5),
+		tokio::time::Duration::from_secs(timeout_sec),
 		client
 			.get(&url)
 			.query(&[("start", &start_version.to_string()[..]), ("limit", "10")])
