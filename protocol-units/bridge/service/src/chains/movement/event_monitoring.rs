@@ -1,22 +1,17 @@
-use super::{
-	client_framework::{MovementClientFramework, FRAMEWORK_ADDRESS},
-	utils::MovementAddress,
-};
-use crate::{
-	chains::bridge_contracts::{
-		BridgeContractError, BridgeContractEvent, BridgeContractEventType,
-		BridgeContractMonitoring, BridgeContractResult,
-	},
-	types::{
-		Amount, BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage,
-		LockDetails, TimeLock,
-	},
+use super::{client_framework::FRAMEWORK_ADDRESS, utils::MovementAddress};
+use crate::types::{
+	Amount, BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage,
+	LockDetails, TimeLock,
 };
 use anyhow::Result;
 use aptos_sdk::{
 	rest_client::aptos_api_types::VersionedEvent, types::account_address::AccountAddress,
 };
 use bridge_config::common::movement::MovementConfig;
+use bridge_util::chains::bridge_contracts::{
+	BridgeContractError, BridgeContractEvent, BridgeContractEventType, BridgeContractMonitoring,
+	BridgeContractResult,
+};
 use futures::{
 	channel::mpsc::{self as futurempsc},
 	SinkExt, Stream, StreamExt,

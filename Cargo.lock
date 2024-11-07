@@ -4106,6 +4106,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "bridge-indexer-db"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "bigdecimal",
+ "bridge-util",
+ "diesel",
+ "diesel_migrations",
+ "hex",
+ "serde",
+ "tokio",
+]
+
+[[package]]
 name = "bridge-integration-tests"
 version = "0.0.2"
 dependencies = [
@@ -4159,6 +4173,8 @@ dependencies = [
  "bcs 0.1.4",
  "bridge-config",
  "bridge-grpc",
+ "bridge-indexer-db",
+ "bridge-util",
  "delegate",
  "derive-new",
  "derive_more 0.99.18",
@@ -4197,6 +4213,7 @@ dependencies = [
  "aptos-sdk",
  "bridge-config",
  "bridge-service",
+ "bridge-util",
  "commander",
  "dot-movement",
  "godfig",
@@ -4209,6 +4226,20 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.18",
+]
+
+[[package]]
+name = "bridge-util"
+version = "0.0.2"
+dependencies = [
+ "alloy",
+ "async-trait",
+ "derive_more 0.99.18",
+ "hex",
+ "rand 0.7.3",
+ "serde",
+ "thiserror",
+ "tokio-stream",
 ]
 
 [[package]]

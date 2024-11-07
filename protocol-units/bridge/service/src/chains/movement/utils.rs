@@ -1,7 +1,3 @@
-use crate::{
-	chains::bridge_contracts::BridgeContractError,
-	types::{AddressError, BridgeAddress, HashLockPreImage},
-};
 use anyhow::{Context, Result};
 use aptos_sdk::{
 	crypto::ed25519::{Ed25519PrivateKey, Ed25519Signature},
@@ -25,16 +21,20 @@ use aptos_sdk::{
 		AccountKey, LocalAccount,
 	},
 };
+use bridge_util::{
+	chains::bridge_contracts::BridgeContractError,
+	types::{AddressError, BridgeAddress, HashLockPreImage},
+};
 use derive_new::new;
 use rand::{rngs::StdRng, Rng, RngCore, SeedableRng};
 use rand_chacha::ChaChaRng;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use url::Url;
 use std::str::FromStr;
 use thiserror::Error;
 use tiny_keccak::{Hasher, Keccak};
 use tracing::log::{error, info};
+use url::Url;
 
 use super::client_framework::MovementClientFramework;
 pub type TestRng = StdRng;
@@ -119,7 +119,6 @@ impl TryFrom<Vec<u8>> for MovementAddress {
 		})
 	}
 }
-
 
 impl TryFrom<&str> for MovementAddress {
 	type Error = AddressError;

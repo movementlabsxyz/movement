@@ -3,6 +3,7 @@ use bridge_config::Config;
 use bridge_grpc::{
 	bridge_server::BridgeServer, health_check_response::ServingStatus, health_server::HealthServer,
 };
+use bridge_indexer_db::client::Client;
 use bridge_service::{
 	chains::{
 		ethereum::{client::EthClient, event_monitoring::EthMonitoring},
@@ -81,6 +82,17 @@ async fn main() -> Result<()> {
 	let rest_jh = tokio::spawn(rest_service_future);
 
 	tracing::info!("Bridge Eth and Movement Inited. Starting bridge loop.");
+	let indexer_db_client = match Client::from_env() {
+		Ok(mut client) => {
+			client.run_migrations()?;
+			Some(client)
+		}
+		Err(e) => {
+			tracing::warn!("Failed to create indexer db client: {e:?}");
+			None
+		}
+	};
+
 	let loop_jh = tokio::spawn(async move {
 		bridge_service::run_bridge(
 			one_client,
@@ -88,6 +100,7 @@ async fn main() -> Result<()> {
 			two_client,
 			two_stream,
 			health_rx,
+			indexer_db_client,
 			eth_health_tx,
 			mvt_health_tx,
 		)

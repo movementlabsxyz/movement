@@ -1,0 +1,20 @@
+[package]
+name = "bridge-util"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+thiserror = { workspace = true }
+tokio-stream = { workspace = true }
+async-trait = { workspace = true }
+rand = { workspace = true }
+serde = { workspace = true }
+hex = { workspace = true }
+derive_more = { workspace = true }
+alloy = { workspace = true, features = ["serde"]}

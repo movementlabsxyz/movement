@@ -45,6 +45,7 @@
           tesseract4
           ansible
           zlib
+          fixDarwinDylibNames
         ];
         
         sysDependencies = with pkgs; [] 

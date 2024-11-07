@@ -1,5 +1,8 @@
-use crate::{
-	actions::{process_action, ActionExecError, TransferAction, TransferActionType},
+use crate::actions::process_action;
+use aptos_types::indexer;
+use bridge_indexer_db::client::Client;
+use bridge_util::{
+	actions::{ActionExecError, TransferAction, TransferActionType},
 	chains::bridge_contracts::{BridgeContract, BridgeContractEvent, BridgeContractMonitoring},
 	events::{InvalidEventError, TransferEvent},
 	states::{TransferState, TransferStateType},
@@ -12,13 +15,12 @@ use tokio::sync::oneshot;
 use tokio::{select, sync::Mutex};
 use tokio_stream::StreamExt;
 
+pub use bridge_util::types;
+
 mod actions;
 pub mod chains;
-mod events;
 pub mod grpc;
 pub mod rest;
-mod states;
-pub mod types;
 
 #[derive(Debug)]
 struct HeathCheckStatus {
@@ -51,6 +53,7 @@ pub async fn run_bridge<
 	client_two: impl BridgeContract<A2> + 'static,
 	mut stream_two: impl BridgeContractMonitoring<Address = A2>,
 	mut healthcheck_request_rx: mpsc::Receiver<oneshot::Sender<String>>,
+	indexer_db_client: Option<Client>,
 	healthcheck_tx_one: mpsc::Sender<oneshot::Sender<bool>>,
 	healthcheck_tx_two: mpsc::Sender<oneshot::Sender<bool>>,
 ) -> Result<(), anyhow::Error>
@@ -58,7 +61,7 @@ where
 	Vec<u8>: From<A1>,
 	Vec<u8>: From<A2>,
 {
-	let mut state_runtime = Runtime::new();
+	let mut state_runtime = Runtime::new(indexer_db_client);
 
 	let mut client_exec_result_futures_one = FuturesUnordered::new();
 	let mut client_exec_result_futures_two = FuturesUnordered::new();
@@ -272,15 +275,59 @@ async fn check_monitoring_loop_heath(
 
 struct Runtime {
 	swap_state_map: HashMap<BridgeTransferId, TransferState>,
+	indexer_db_client: Option<Client>,
 }
 
 impl Runtime {
-	pub fn new() -> Self {
-		Runtime { swap_state_map: HashMap::new() }
+	pub fn new(indexer_db_client: Option<Client>) -> Self {
+		Runtime { swap_state_map: HashMap::new(), indexer_db_client }
 	}
 
 	pub fn iter_state(&self) -> impl Iterator<Item = &TransferState> {
 		self.swap_state_map.values()
+	}
+
+	fn index_event<A>(&mut self, event: TransferEvent<A>) -> Result<(), InvalidEventError>
+	where
+		A: Into<Vec<u8>> + std::clone::Clone + std::fmt::Debug,
+	{
+		match self.indexer_db_client {
+			Some(ref mut client) => {
+				let event = event.contract_event;
+
+				client.insert_bridge_contract_event(event.clone()).map_err(|_| {
+					tracing::warn!("Fail to index event");
+					InvalidEventError::BadEvent
+				})?;
+				tracing::info!("Index event:{event:?}");
+				Ok(())
+			}
+			None => {
+				tracing::warn!("No indexer db client found. Event not indexed");
+				Ok(())
+			}
+		}
+	}
+
+	pub fn index_transfer_action(
+		&mut self,
+		action: TransferAction,
+	) -> Result<(), InvalidEventError> {
+		match self.indexer_db_client {
+			Some(ref mut client) => {
+				let action = action.kind;
+				client.insert_transfer_action(action.clone()).map_err(|_| {
+					tracing::warn!("Fail to index action");
+					InvalidEventError::BadEvent
+				})?;
+				tracing::info!("Index action:{action:?}");
+				Ok(())
+			}
+			None => {
+				tracing::warn!("No indexer db client found. Action not indexed");
+				Ok(())
+			}
+		}
 	}
 
 	pub fn process_event<A>(
@@ -288,9 +335,10 @@ impl Runtime {
 		event: TransferEvent<A>,
 	) -> Result<TransferAction, InvalidEventError>
 	where
-		A: Into<Vec<u8>> + std::clone::Clone,
+		A: Into<Vec<u8>> + std::clone::Clone + std::fmt::Debug,
 	{
 		self.validate_state(&event)?;
+		let indexer_event = event.clone();
 		let event_transfer_id = event.contract_event.bridge_transfer_id();
 		let state_opt = self.swap_state_map.remove(&event_transfer_id);
 		//create swap state if need
@@ -340,8 +388,15 @@ impl Runtime {
 			}
 		};
 
+		//index event
+		self.index_event(indexer_event)?;
+
 		let action =
 			TransferAction { chain: chain_id, transfer_id: state.transfer_id, kind: action_kind };
+
+		// index action
+		// todo: really this should come after process_action completion, but the current use of process_action is hacky
+		self.index_transfer_action(action.clone())?;
 
 		if state.state != TransferStateType::Done {
 			self.swap_state_map.insert(state.transfer_id, state);
