@@ -80,7 +80,10 @@ async fn main() -> Result<()> {
 
 	tracing::info!("Bridge Eth and Movement Inited. Starting bridge loop.");
 	let indexer_db_client = match Client::from_env() {
-		Ok(client) => Some(client),
+		Ok(mut client) => {
+			client.run_migrations()?;
+			Some(client)
+		}
 		Err(e) => {
 			tracing::warn!("Failed to create indexer db client: {e:?}");
 			None

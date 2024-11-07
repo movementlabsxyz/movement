@@ -1,3 +1,4 @@
+use crate::migrations::run_migrations;
 use crate::models::*;
 use crate::schema::*;
 use bridge_util::chains::bridge_contracts::BridgeContractEvent;
@@ -31,6 +32,12 @@ impl Client {
 		let conn = PgConnection::establish(&url)
 			.map_err(|e| anyhow::anyhow!("Failed to connect to postgresql instance: {}", e))?;
 		Ok(Self::new(conn))
+	}
+
+	/// Run migrations on the database.
+	pub fn run_migrations(&mut self) -> Result<(), anyhow::Error> {
+		run_migrations(&mut self.conn)?;
+		Ok(())
 	}
 
 	/// Inserts a new transfer action into the database.
