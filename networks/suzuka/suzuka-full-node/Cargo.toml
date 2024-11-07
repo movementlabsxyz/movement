@@ -37,6 +37,10 @@ tracing = { workspace = true }
 bcs = { workspace = true }
 zstd = { workspace = true }
 hex = { workspace = true }
+tower = { workspace = true }
+hyper = { workspace = true }
+hyper-util = { workspace = true }
+tonic-web = { workspace = true }
 
 [features]
 default = []
