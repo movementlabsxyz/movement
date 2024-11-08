@@ -359,7 +359,7 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 		)
 		.map_err(|_| BridgeContractError::SerializationError)?;
 
-		let recipient_address_bytes = hex::decode(
+		let recipient_bytes = hex::decode(
 			&value["addresses"]["recipient"]["inner"]
 				.as_str()
 				.ok_or(BridgeContractError::SerializationError)?[2..],
@@ -389,8 +389,8 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 
 		let details = BridgeTransferDetails {
 			bridge_transfer_id,
-			initiator_address: BridgeAddress(MovementAddress(originator_address)),
-			recipient_address: BridgeAddress(recipient_address_bytes),
+			initiator: BridgeAddress(MovementAddress(originator_address)),
+			recipient: BridgeAddress(recipient_bytes),
 			amount: Amount(amount),
 			hash_lock: HashLock(hash_lock_array),
 			time_lock: TimeLock(time_lock),
@@ -445,7 +445,7 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 		)
 		.map_err(|_| BridgeContractError::SerializationError)?;
 
-		let recipient_address = AccountAddress::from_hex_literal(
+		let recipient = AccountAddress::from_hex_literal(
 			value["addresses"]["recipient"]
 				.as_str()
 				.ok_or(BridgeContractError::SerializationError)?,
@@ -475,8 +475,8 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 
 		let details = BridgeTransferDetailsCounterparty {
 			bridge_transfer_id,
-			initiator_address: BridgeAddress(originator_address_bytes),
-			recipient_address: BridgeAddress(MovementAddress(recipient_address)),
+			initiator: BridgeAddress(originator_address_bytes),
+			recipient: BridgeAddress(MovementAddress(recipient)),
 			amount: Amount(amount),
 			hash_lock: HashLock(hash_lock_array),
 			time_lock: TimeLock(time_lock),

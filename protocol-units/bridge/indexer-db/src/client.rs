@@ -15,7 +15,7 @@ pub struct BridgeEventPackage {
 	pub initiated_events: Vec<InitiatedEvent>,
 	pub locked_events: Vec<LockedEvent>,
 	pub initiator_completed_events: Vec<InitiatorCompletedEvent>,
-	pub counter_part_completed_events: Vec<CounterPartCompletedEvent>,
+	pub counter_party_completed_events: Vec<CounterPartyCompletedEvent>,
 	pub cancelled_events: Vec<CancelledEvent>,
 	pub refunded_events: Vec<RefundedEvent>,
 }
@@ -111,12 +111,8 @@ impl Client {
 						bridge_transfer_id: hex::encode(
 							bridge_transfer_details.bridge_transfer_id.0.to_vec(),
 						),
-						initiator_address: hex::encode(
-							bridge_transfer_details.initiator_address.0.into(),
-						),
-						recipient_address: hex::encode(
-							bridge_transfer_details.recipient_address.0.to_vec(),
-						),
+						initiator: hex::encode(bridge_transfer_details.initiator.0.into()),
+						recipient: hex::encode(bridge_transfer_details.recipient.0.to_vec()),
 						hash_lock: hex::encode(bridge_transfer_details.hash_lock.0.to_vec()),
 						time_lock: bridge_transfer_details.time_lock.0 as i64,
 						amount: bridge_transfer_details.amount.0.into(),
@@ -136,16 +132,16 @@ impl Client {
 					})
 					.execute(&mut self.conn)?;
 			}
-			BridgeContractEvent::InitialtorCompleted(initiator_completed_events) => {
+			BridgeContractEvent::InitiatorCompleted(initiator_completed_events) => {
 				diesel::insert_into(initiator_completed_events::table)
 					.values(NewInitiatorCompletedEvent {
 						bridge_transfer_id: hex::encode(initiator_completed_events.0.to_vec()),
 					})
 					.execute(&mut self.conn)?;
 			}
-			BridgeContractEvent::CounterPartCompleted(bridge_transfer_id, hash_lock_pre_image) => {
-				diesel::insert_into(counter_part_completed_events::table)
-					.values(NewCounterPartCompletedEvent {
+			BridgeContractEvent::CounterPartyCompleted(bridge_transfer_id, hash_lock_pre_image) => {
+				diesel::insert_into(counter_party_completed_events::table)
+					.values(NewCounterPartyCompletedEvent {
 						bridge_transfer_id: hex::encode(bridge_transfer_id.0.to_vec()),
 						pre_image: hex::encode(hash_lock_pre_image.0.to_vec()),
 					})
@@ -189,11 +185,11 @@ impl Client {
 			.filter(initiator_completed_events::bridge_transfer_id.eq(bridge_transfer_id.clone()))
 			.load::<InitiatorCompletedEvent>(&mut self.conn)?;
 
-		let counter_part_completed_events = counter_part_completed_events::table
+		let counter_party_completed_events = counter_party_completed_events::table
 			.filter(
-				counter_part_completed_events::bridge_transfer_id.eq(bridge_transfer_id.clone()),
+				counter_party_completed_events::bridge_transfer_id.eq(bridge_transfer_id.clone()),
 			)
-			.load::<CounterPartCompletedEvent>(&mut self.conn)?;
+			.load::<CounterPartyCompletedEvent>(&mut self.conn)?;
 
 		let cancelled_events = cancelled_events::table
 			.filter(cancelled_events::bridge_transfer_id.eq(bridge_transfer_id.clone()))
@@ -207,7 +203,7 @@ impl Client {
 			initiated_events,
 			locked_events,
 			initiator_completed_events,
-			counter_part_completed_events,
+			counter_party_completed_events,
 			cancelled_events,
 			refunded_events,
 		})

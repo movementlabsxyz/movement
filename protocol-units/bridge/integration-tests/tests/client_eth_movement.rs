@@ -118,11 +118,8 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 
 		assert_eq!(details.bridge_transfer_id.0, args.bridge_transfer_id.0);
 		assert_eq!(details.hash_lock.0, args.hash_lock.0);
-		assert_eq!(
-			&details.initiator_address.0, &args.initiator,
-			"Initiator address does not match"
-		);
-		assert_eq!(details.recipient_address.0, args.recipient);
+		assert_eq!(&details.initiator.0, &args.initiator, "Initiator address does not match");
+		assert_eq!(details.recipient.0, args.recipient);
 		assert_eq!(details.amount.0, args.amount);
 		assert_eq!(details.state, 1, "Bridge transfer is supposed to be locked but it's not.");
 
@@ -148,11 +145,8 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 
 		assert_eq!(details.bridge_transfer_id.0, args.bridge_transfer_id.0);
 		assert_eq!(details.hash_lock.0, args.hash_lock.0);
-		assert_eq!(
-			&details.initiator_address.0, &args.initiator,
-			"Initiator address does not match"
-		);
-		assert_eq!(details.recipient_address.0, args.recipient);
+		assert_eq!(&details.initiator.0, &args.initiator, "Initiator address does not match");
+		assert_eq!(details.recipient.0, args.recipient);
 		assert_eq!(details.amount.0, args.amount);
 		assert_eq!(details.state, 2, "Bridge transfer is supposed to be completed but it's not.");
 
@@ -226,11 +220,8 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 
 		assert_eq!(details.bridge_transfer_id.0, args.bridge_transfer_id.0);
 		assert_eq!(details.hash_lock.0, args.hash_lock.0);
-		assert_eq!(
-			&details.initiator_address.0, &args.initiator,
-			"Initiator address does not match"
-		);
-		assert_eq!(details.recipient_address.0, args.recipient);
+		assert_eq!(&details.initiator.0, &args.initiator, "Initiator address does not match");
+		assert_eq!(details.recipient.0, args.recipient);
 		assert_eq!(details.amount.0, args.amount);
 		assert_eq!(details.state, 1, "Bridge transfer is supposed to be locked but it's not.");
 
@@ -252,11 +243,8 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 
 		assert_eq!(abort_details.bridge_transfer_id.0, args.bridge_transfer_id.0);
 		assert_eq!(abort_details.hash_lock.0, args.hash_lock.0);
-		assert_eq!(
-			&abort_details.initiator_address.0, &args.initiator,
-			"Initiator address does not match"
-		);
-		assert_eq!(abort_details.recipient_address.0, args.recipient);
+		assert_eq!(&abort_details.initiator.0, &args.initiator, "Initiator address does not match");
+		assert_eq!(abort_details.recipient.0, args.recipient);
 		assert_eq!(abort_details.amount.0, args.amount);
 
 		Ok(())
@@ -462,8 +450,8 @@ async fn test_eth_client_lock_then_complete_transfer() -> Result<(), anyhow::Err
 	let signer_address: alloy::primitives::Address = eth_client_harness.signer_address();
 
 	let recipient_privkey = LocalAccount::generate(&mut rand::rngs::OsRng);
-	let recipient_address = MovementAddress(recipient_privkey.address());
-	let recipient_bytes: Vec<u8> = recipient_address.into();
+	let recipient = MovementAddress(recipient_privkey.address());
+	let recipient_bytes: Vec<u8> = recipient.into();
 
 	let secret = "secret".to_string();
 	let hash_lock = keccak256(secret.as_bytes());
@@ -482,7 +470,7 @@ async fn test_eth_client_lock_then_complete_transfer() -> Result<(), anyhow::Err
 		.await
 		.expect("Failed to initiate bridge transfer");
 
-	// Wait for InitialtorCompleted event
+	// Wait for InitiatorCompleted event
 	tracing::info!("Wait for Bridge Initiated event.");
 	let bridge_transfer_id;
 	loop {

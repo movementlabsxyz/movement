@@ -23,8 +23,8 @@ table! {
 	initiated_events (id) {
 		id -> Int4,
 		bridge_transfer_id -> Text,
-		initiator_address -> Text,
-		recipient_address -> Text,
+		initiator -> Text,
+		recipient -> Text,
 		hash_lock -> Text,
 		time_lock -> BigInt,
 		amount -> Numeric,
@@ -52,7 +52,7 @@ table! {
 }
 
 table! {
-	counter_part_completed_events (id) {
+	counter_party_completed_events (id) {
 		id -> Int4,
 		bridge_transfer_id -> Text,
 		pre_image -> Text,

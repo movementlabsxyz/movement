@@ -362,13 +362,13 @@ impl Runtime {
 				state = new_state;
 				(action_kind, state.init_chain)
 			}
-			BridgeContractEvent::CounterPartCompleted(_, preimage) => {
+			BridgeContractEvent::CounterPartyCompleted(_, preimage) => {
 				let (new_state, action_kind) =
 					state.transition_from_counterpart_completed(event_transfer_id, preimage);
 				state = new_state;
 				(action_kind, state.init_chain)
 			}
-			BridgeContractEvent::InitialtorCompleted(_) => {
+			BridgeContractEvent::InitiatorCompleted(_) => {
 				let (new_state, action_kind) =
 					state.transition_from_initiator_completed(event_transfer_id);
 				state = new_state;

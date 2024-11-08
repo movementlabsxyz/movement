@@ -89,8 +89,8 @@ pub type BridgeContractWETH9Result<T> = Result<T, BridgeContractWETH9Error>;
 pub enum BridgeContractEventType {
 	Initiated,
 	Locked,
-	InitialtorCompleted,
-	CounterPartCompleted,
+	InitiatorCompleted,
+	CounterPartyCompleted,
 	Cancelled,
 	Refunded,
 }
@@ -99,8 +99,8 @@ pub enum BridgeContractEventType {
 pub enum BridgeContractEvent<A> {
 	Initiated(BridgeTransferDetails<A>),
 	Locked(LockDetails<A>),
-	InitialtorCompleted(BridgeTransferId),
-	CounterPartCompleted(BridgeTransferId, HashLockPreImage),
+	InitiatorCompleted(BridgeTransferId),
+	CounterPartyCompleted(BridgeTransferId, HashLockPreImage),
 	Cancelled(BridgeTransferId),
 	Refunded(BridgeTransferId),
 }
@@ -110,8 +110,8 @@ impl<A> BridgeContractEvent<A> {
 		match self {
 			Self::Initiated(details) => details.bridge_transfer_id,
 			Self::Locked(details) => details.bridge_transfer_id,
-			Self::InitialtorCompleted(id)
-			| Self::CounterPartCompleted(id, _)
+			Self::InitiatorCompleted(id)
+			| Self::CounterPartyCompleted(id, _)
 			| Self::Cancelled(id)
 			| Self::Refunded(id) => *id,
 		}
@@ -131,8 +131,8 @@ impl<A> fmt::Display for BridgeContractEvent<A> {
 		let kind = match self {
 			Self::Initiated(_) => "Initiated",
 			Self::Locked(_) => "Locked",
-			Self::InitialtorCompleted(_) => "InitialtorCompleted",
-			Self::CounterPartCompleted(_, _) => "CounterPartCompleted",
+			Self::InitiatorCompleted(_) => "InitiatorCompleted",
+			Self::CounterPartyCompleted(_, _) => "CounterPartyCompleted",
 			Self::Cancelled(_) => "Cancelled",
 			Self::Refunded(_) => "Refunded",
 		};
@@ -150,8 +150,8 @@ pub trait BridgeContractMonitoring:
 pub trait BridgeContract<A>: Clone + Unpin + Send + Sync {
 	async fn initiate_bridge_transfer(
 		&mut self,
-		initiator_address: BridgeAddress<A>,
-		recipient_address: BridgeAddress<Vec<u8>>,
+		initiator: BridgeAddress<A>,
+		recipient: BridgeAddress<Vec<u8>>,
 		hash_lock: HashLock,
 		amount: Amount,
 	) -> BridgeContractResult<()>;

@@ -53,8 +53,8 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 
 		test_utils::assert_counterparty_bridge_transfer_details_framework(
 			&details,
-			details.initiator_address.to_string(),
-			details.recipient_address.to_vec(),
+			details.initiator.to_string(),
+			details.recipient.to_vec(),
 			details.amount.0,
 			details.hash_lock.0,
 			details.time_lock.0,
@@ -128,8 +128,8 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 
 		test_utils::assert_counterparty_bridge_transfer_details_framework(
 			&details,
-			details.initiator_address.to_string(),
-			details.recipient_address.to_vec(),
+			details.initiator.to_string(),
+			details.recipient.to_vec(),
 			details.amount.0,
 			details.hash_lock.0,
 			details.time_lock.0,

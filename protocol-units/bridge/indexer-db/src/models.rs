@@ -45,8 +45,8 @@ pub struct WaitAndCompleteInitiator {
 #[table_name = "initiated_events"]
 pub struct NewInitiatedEvent {
 	pub bridge_transfer_id: String,
-	pub initiator_address: String,
-	pub recipient_address: String,
+	pub initiator: String,
+	pub recipient: String,
 	pub hash_lock: String,
 	pub time_lock: i64,
 	pub amount: BigDecimal,
@@ -58,8 +58,8 @@ pub struct NewInitiatedEvent {
 pub struct InitiatedEvent {
 	pub id: i32,
 	pub bridge_transfer_id: String,
-	pub initiator_address: String,
-	pub recipient_address: String,
+	pub initiator: String,
+	pub recipient: String,
 	pub hash_lock: String,
 	pub time_lock: i64,
 	pub amount: BigDecimal,
@@ -104,17 +104,17 @@ pub struct InitiatorCompletedEvent {
 	pub bridge_transfer_id: String,
 }
 
-// CounterPartCompletedEvent mapping
+// CounterPartyCompletedEvent mapping
 #[derive(Debug, Insertable)]
-#[table_name = "counter_part_completed_events"]
-pub struct NewCounterPartCompletedEvent {
+#[table_name = "counter_party_completed_events"]
+pub struct NewCounterPartyCompletedEvent {
 	pub bridge_transfer_id: String,
 	pub pre_image: String,
 }
 
 #[derive(Debug, Queryable, Insertable)]
-#[table_name = "counter_part_completed_events"]
-pub struct CounterPartCompletedEvent {
+#[table_name = "counter_party_completed_events"]
+pub struct CounterPartyCompletedEvent {
 	pub id: i32,
 	pub bridge_transfer_id: String,
 	pub pre_image: String,
