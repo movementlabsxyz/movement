@@ -1,4 +1,5 @@
 use alloy::primitives::Uint;
+use alloy::serde::quantity::vec;
 use derive_more::{Deref, DerefMut};
 use hex::{self, FromHexError};
 use rand::Rng;
@@ -62,6 +63,11 @@ impl BridgeTransferId {
 		rng.fill(&mut random_bytes);
 		BridgeTransferId(random_bytes)
 	}
+
+	pub fn test() -> Self {
+		let array = [0u8; 32];
+		BridgeTransferId(array)
+	}
 }
 
 impl TryFrom<Vec<u8>> for BridgeTransferId {
@@ -81,6 +87,13 @@ impl fmt::Display for BridgeTransferId {
 #[derive(Deref, Debug, Clone, Copy, PartialEq, Eq, Hash, Deserialize)]
 pub struct BridgeAddress<A>(pub A);
 
+impl BridgeAddress<Vec<u8>> {
+	pub fn test() -> Self {
+		let array = [0u8; 32];
+		BridgeAddress(array.to_vec())
+	}
+}
+
 impl From<&str> for BridgeAddress<Vec<u8>> {
 	fn from(value: &str) -> Self {
 		Self(value.as_bytes().to_vec())
@@ -92,11 +105,27 @@ impl From<String> for BridgeAddress<Vec<u8>> {
 		Self(value.as_bytes().to_vec())
 	}
 }
-// impl<A: Into<Vec<u8>>> Into<BridgeAddress<Vec<u8>>> for BridgeAddress<A> {
-// 	fn into(self) -> BridgeAddress<Vec<u8>> {
-// 		BridgeAddress(self.0.into())
-// 	}
-// }
+
+#[derive(Error, Debug)]
+pub enum BridgeAddressError {
+	#[error("Invalid conversion from BridgeAddress to Vec<u8>")]
+	InvalidConversion,
+}
+
+pub trait ToCommonAddress: Sized {
+	fn to_common_address(self) -> Result<BridgeAddress<Vec<u8>>, BridgeAddressError> {
+		Err(BridgeAddressError::InvalidConversion)
+	}
+}
+
+impl<A> ToCommonAddress for BridgeAddress<A>
+where
+	A: Into<Vec<u8>>,
+{
+	fn to_common_address(self) -> Result<BridgeAddress<Vec<u8>>, BridgeAddressError> {
+		Ok(BridgeAddress(self.0.into()))
+	}
+}
 
 #[derive(Deref, Debug, Clone, Copy, PartialEq, Eq, Hash, Deserialize)]
 pub struct HashLock(pub [u8; 32]);
@@ -114,6 +143,11 @@ impl HashLock {
 		let mut secret = [0u8; 32];
 		rng.fill(&mut secret);
 		HashLock(secret)
+	}
+
+	pub fn test() -> Self {
+		let array = [0u8; 32];
+		HashLock(array)
 	}
 }
 

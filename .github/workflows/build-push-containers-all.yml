@@ -468,6 +468,7 @@ jobs:
           ./scripts/movement/manifest suzuka-faucet-service
 
   suzuka-client-e2e-simple-interaction-build:
+    if: github.event.label.name == 'cicd:suzuka-containers' ||  github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write
@@ -502,7 +503,6 @@ jobs:
         ./scripts/movement/build-push-image suzuka-client-e2e-simple-interaction
 
   suzuka-client-e2e-simple-interaction-manifest:
-    if: github.event.label.name == 'cicd:suzuka-containers' ||  github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write
@@ -533,6 +533,7 @@ jobs:
           ./scripts/movement/manifest suzuka-client-e2e-simple-interaction
 
   suzuka-indexer-build:
+    if: github.event.label.name == 'cicd:suzuka-containers' ||  github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write
@@ -597,6 +598,7 @@ jobs:
           ./scripts/movement/manifest suzuka-indexer
 
   suzuka-client-e2e-followers-consistent-build:
+    if: github.event.label.name == 'cicd:suzuka-containers' ||  github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write
@@ -631,7 +633,6 @@ jobs:
         ./scripts/movement/build-push-image suzuka-client-e2e-followers-consistent
 
   suzuka-client-e2e-followers-consistent-manifest:
-    if: github.event.label.name == 'cicd:suzuka-containers' ||  github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write
@@ -718,7 +719,7 @@ jobs:
 ### Unchecked containers
 
   bridge-service-build:
-    if: github.event.label.name == 'cicd:bridge-containers' ||  github.ref == 'refs/heads/main'
+    # if: github.event.label.name == 'cicd:bridge-containers' ||  github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write
@@ -777,7 +778,7 @@ jobs:
           ./scripts/movement/manifest bridge-service
 
   bridge-setup-build:
-    if: github.event.label.name == 'cicd:bridge-containers' ||  github.ref == 'refs/heads/main'
+    # if: github.event.label.name == 'cicd:bridge-containers' ||  github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write

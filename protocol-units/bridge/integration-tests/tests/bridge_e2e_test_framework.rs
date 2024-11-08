@@ -39,11 +39,12 @@ async fn initiate_eth_bridge_transfer(
 		.wallet(EthereumWallet::from(initiator_privatekey))
 		.on_builtin(&config.eth.eth_rpc_connection_url())
 		.await?;
-	
-	let mock_move_token = MockMOVEToken::new(Address::from_str(&config.eth.eth_move_token_contract)?, &rpc_provider);
-	
+
+	let mock_move_token =
+		MockMOVEToken::new(Address::from_str(&config.eth.eth_move_token_contract)?, &rpc_provider);
+
 	let multisig_address = Address::from_str("0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc")?;
-	
+
 	//let initialize_call = mock_move_token.initialize(multisig_address);
 	//let initialize_send = initialize_call.send().await;
 	//let initialize_result = initialize_send.expect("Failed to initialize MockMOVEToken contract");
@@ -54,10 +55,7 @@ async fn initiate_eth_bridge_transfer(
 	info!("Initiator address: {:?}", initiator_address);
 	info!("Initiator contract address: {}", config.eth.eth_initiator_contract);
 
-	let token_balance = mock_move_token
-		.balanceOf(initiator_address)
-		.call()
-		.await?;
+	let token_balance = mock_move_token.balanceOf(initiator_address).call().await?;
 	info!("MockMOVEToken balance: {:?}", token_balance._0);
 
 	// Get the ETH balance for the initiator address
@@ -65,8 +63,8 @@ async fn initiate_eth_bridge_transfer(
 	let eth_value = U256::from(amount.0.clone());
 	info!("Eth value: {}", eth_value);
 	let approve_call = mock_move_token
-        .approve(Address::from_str(&config.eth.eth_initiator_contract)?, eth_value)
-        .from(initiator_address);
+		.approve(Address::from_str(&config.eth.eth_initiator_contract)?, eth_value)
+		.from(initiator_address);
 
 	let signer_address = initiator_address;
 	let number_retry = config.eth.transaction_send_retries;
@@ -80,10 +78,11 @@ async fn initiate_eth_bridge_transfer(
 		gas_limit,
 	)
 	.await
-	.map_err(|e| BridgeContractError::GenericError(format!("Failed to send approve transaction: {}", e)))?;
+	.map_err(|e| {
+		BridgeContractError::GenericError(format!("Failed to send approve transaction: {}", e))
+	})?;
 
 	info!("After token approval, transaction receipt: {:?}", transaction_receipt);
-
 
 	let contract =
 		AtomicBridgeInitiatorMOVE::new(config.eth.eth_initiator_contract.parse()?, &rpc_provider);
@@ -160,7 +159,9 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 
 	//Wait for the tx to be executed
 	tracing::info!("Wait for the MVT Locked event.");
-	let mut mvt_monitoring = MovementMonitoring::build(&config.movement).await.unwrap();
+	let (_, mvt_health_rx) = tokio::sync::mpsc::channel(10);
+	let mut mvt_monitoring =
+		MovementMonitoring::build(&config.movement, mvt_health_rx).await.unwrap();
 	let event =
 		tokio::time::timeout(std::time::Duration::from_secs(30), mvt_monitoring.next()).await?;
 	let bridge_tranfer_id = if let Some(Ok(BridgeContractEvent::Locked(detail))) = event {
@@ -182,7 +183,8 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 		)
 		.await?;
 
-	let mut eth_monitoring = EthMonitoring::build(&config.eth).await.unwrap();
+	let (_, eth_health_rx) = tokio::sync::mpsc::channel(10);
+	let mut eth_monitoring = EthMonitoring::build(&config.eth, eth_health_rx).await.unwrap();
 	// Wait for InitialtorCompleted event
 	tracing::info!("Wait for InitialtorCompleted event.");
 	loop {

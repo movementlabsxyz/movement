@@ -1,13 +1,5 @@
 use super::client_framework::FRAMEWORK_ADDRESS;
 use super::utils::{self, MovementAddress};
-use crate::chains::bridge_contracts::BridgeContract;
-use crate::chains::bridge_contracts::BridgeContractError;
-use crate::chains::bridge_contracts::BridgeContractResult;
-use crate::types::BridgeTransferDetailsCounterparty;
-use crate::types::{
-	Amount, BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage,
-	TimeLock,
-};
 use anyhow::Result;
 use aptos_api_types::{EntryFunctionId, MoveModuleId, ViewRequest};
 use aptos_sdk::{
@@ -17,6 +9,14 @@ use aptos_sdk::{
 };
 use aptos_types::account_address::AccountAddress;
 use bridge_config::common::movement::MovementConfig;
+use bridge_util::chains::bridge_contracts::BridgeContract;
+use bridge_util::chains::bridge_contracts::BridgeContractError;
+use bridge_util::chains::bridge_contracts::BridgeContractResult;
+use bridge_util::types::BridgeTransferDetailsCounterparty;
+use bridge_util::types::{
+	Amount, AssetType, BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock,
+	HashLockPreImage, TimeLock,
+};
 use rand::prelude::*;
 use std::str::FromStr;
 use std::sync::Arc;
