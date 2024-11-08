@@ -28,7 +28,7 @@ impl Client {
 
 	/// Gets the client from an environment variable containing the postgresql url.
 	pub fn from_env() -> Result<Self, anyhow::Error> {
-		let url = std::env::var("BRIDGE_INDEXER_DATABASE_URL").expect("DATABASE_URL must be set");
+		let url = std::env::var("BRIDGE_INDEXER_DATABASE_URL")?;
 		let conn = PgConnection::establish(&url)
 			.map_err(|e| anyhow::anyhow!("Failed to connect to postgresql instance: {}", e))?;
 		Ok(Self::new(conn))
