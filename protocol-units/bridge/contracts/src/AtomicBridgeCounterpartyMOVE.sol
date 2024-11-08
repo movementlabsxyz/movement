@@ -50,13 +50,15 @@ contract AtomicBridgeCounterpartyMOVE is IAtomicBridgeCounterpartyMOVE, OwnableU
         bytes32 bridgeTransferId,
         bytes32 hashLock,
         address recipient,
-        uint256 amount
+        uint256 amount,
+        uint256 initiateTimestamp,
+        uint256 nonce
     ) external onlyOwner returns (bool) {
         if (amount == 0) revert ZeroAmount();
         if (atomicBridgeInitiatorMOVE.poolBalance() < amount) revert InsufficientMOVEBalance();
+        if (bridgeTransferId != keccak256(abi.encodePacked(originator, recipient, amount, hashLock, initiateTimestamp, nonce))) revert BridgeTransferInvalid();
 
-        // The time lock is now based on the configurable duration
-        uint256 timeLock = block.timestamp + counterpartyTimeLockDuration;
+        uint256 timeLock = initiateTimestamp + counterpartyTimeLockDuration;
 
         bridgeTransfers[bridgeTransferId] = BridgeTransferDetails({
             recipient: recipient,
@@ -67,7 +69,7 @@ contract AtomicBridgeCounterpartyMOVE is IAtomicBridgeCounterpartyMOVE, OwnableU
             state: MessageState.PENDING
         });
 
-        emit BridgeTransferLocked(bridgeTransferId, recipient, amount, hashLock, counterpartyTimeLockDuration);
+        emit BridgeTransferLocked(bridgeTransferId, recipient, amount, hashLock, timeLock);
         return true;
     }
 

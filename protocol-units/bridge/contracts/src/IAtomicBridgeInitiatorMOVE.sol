@@ -9,7 +9,8 @@ interface IAtomicBridgeInitiatorMOVE {
         bytes32 indexed _recipient,
         uint256 amount,
         bytes32 _hashLock,
-        uint256 _timeLock
+        uint256 _initiateTimestamp,
+        uint256 _nonce
     );
     // Event emitted when a BridgeTransfer is completed (withdrawn)
     event BridgeTransferCompleted(bytes32 indexed _bridgeTransferId, bytes32 pre_image);

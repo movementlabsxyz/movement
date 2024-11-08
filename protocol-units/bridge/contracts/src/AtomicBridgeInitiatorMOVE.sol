@@ -18,7 +18,7 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         address originator;
         bytes32 recipient;
         bytes32 hashLock;
-        uint256 timeLock; // in seconds (timestamp)
+        uint256 timeLock;
         MessageState state;
     }
 
@@ -80,7 +80,7 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         poolBalance += moveAmount;
 
         // Generate a unique nonce to prevent replay attacks, and generate a transfer ID
-        bridgeTransferId = keccak256(abi.encodePacked(originator, recipient, hashLock, initiatorTimeLockDuration, block.timestamp, nonce++));
+        bridgeTransferId = keccak256(abi.encodePacked(originator, recipient, amount, hashLock, block.timestamp, ++nonce));
 
         bridgeTransfers[bridgeTransferId] = BridgeTransfer({
             amount: moveAmount,
@@ -91,7 +91,7 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
             state: MessageState.INITIALIZED
         });
 
-        emit BridgeTransferInitiated(bridgeTransferId, originator, recipient, moveAmount, hashLock, initiatorTimeLockDuration);
+        emit BridgeTransferInitiated(bridgeTransferId, originator, recipient, moveAmount, hashLock, block.timestamp, nonce);
         return bridgeTransferId;
     }
 
