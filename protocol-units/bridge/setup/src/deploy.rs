@@ -16,12 +16,9 @@ use bridge_service::{
 	types::TimeLock,
 };
 use hex::ToHex;
-use rand::Rng;
-use serde_json::{from_str, Value};
+use std::io::BufRead;
 use std::{
-	env, fs,
 	io::Write,
-	path::PathBuf,
 	process::{Command, Stdio},
 };
 
@@ -43,11 +40,13 @@ alloy::sol!(
 pub async fn setup(mut config: BridgeConfig) -> Result<BridgeConfig, anyhow::Error> {
 	//Setup Eth config
 	setup_local_ethereum(&mut config).await?;
+	init_movement_node(&mut config.movement)?;
 	deploy_local_movement_node(&mut config.movement)?;
 	Ok(config)
 }
 
 pub async fn setup_local_ethereum(config: &mut BridgeConfig) -> Result<(), anyhow::Error> {
+	println!("ICI setup_local_ethereum {:?}", config.eth.eth_rpc_connection_url());
 	let signer_private_key = config.eth.signer_private_key.parse::<PrivateKeySigner>()?;
 	let rpc_url = config.eth.eth_rpc_connection_url();
 
@@ -82,6 +81,7 @@ async fn deploy_eth_initiator_contract(
 	config: &mut BridgeConfig,
 ) -> Result<Address, anyhow::Error> {
 	let signer_private_key = config.eth.signer_private_key.parse::<PrivateKeySigner>()?;
+	println!("ICI {:?}", config.eth.eth_rpc_connection_url());
 	let rpc_url = config.eth.eth_rpc_connection_url();
 
 	let rpc_provider = ProviderBuilder::new()
@@ -152,10 +152,14 @@ async fn initialize_eth_contracts(
 		.await
 		.expect("Error during provider creation");
 	let initiator_contract =
-		AtomicBridgeInitiatorMOVE::new(initiator_contract_address.parse()?, rpc_provider);
+		AtomicBridgeInitiatorMOVE::new(initiator_contract_address.parse()?, rpc_provider.clone());
 
-	let call =
-		initiator_contract.initialize(move_token.0, owner.0, U256::from(timelock), U256::from(100));
+	let call = initiator_contract.initialize(
+		move_token.0,
+		owner.0,
+		U256::from(timelock),
+		U256::from(100 as u128 * 100_000_000 as u128),
+	);
 	send_transaction(
 		call,
 		signer_address,
@@ -165,11 +169,37 @@ async fn initialize_eth_contracts(
 	)
 	.await
 	.expect("Failed to send transaction");
+
+	let counterpart_contract = AtomicBridgeCounterpartyMOVE::deploy(rpc_provider.clone())
+		.await
+		.expect("Failed to deploy AtomicBridgeCounterpartyMOVE");
+	let call = counterpart_contract.initialize(
+		initiator_contract_address.parse()?,
+		owner.0,
+		U256::from(timelock),
+	);
+	send_transaction(
+		call,
+		signer_address,
+		&send_transaction_rules(),
+		transaction_send_retries,
+		gas_limit.into(),
+	)
+	.await
+	.expect("Failed to send transaction");
+
 	Ok(())
 }
 
 pub fn deploy_local_movement_node(config: &mut MovementConfig) -> Result<(), anyhow::Error> {
-	println!("Start deploy_local_movement_node");
+	//init_movement_node(config)?;
+	deploy_on_movement_framework(config)?;
+	update_mvt_account_address()?;
+	Ok(())
+}
+
+pub fn init_movement_node(config: &mut MovementConfig) -> Result<(), anyhow::Error> {
+	tracing::info!("Start deploy_local_movement_node rpc url:{}", config.mvt_rpc_connection_url());
 	let mut process = Command::new("movement") //--network
 		.args(&[
 			"init",
@@ -198,11 +228,17 @@ pub fn deploy_local_movement_node(config: &mut MovementConfig) -> Result<(), any
 
 	let addr_output = process.wait_with_output().expect("Failed to read command output");
 	if !addr_output.stdout.is_empty() {
-		println!("Move init Publish stdout: {}", String::from_utf8_lossy(&addr_output.stdout));
+		tracing::info!(
+			"Move init Publish stdout: {}",
+			String::from_utf8_lossy(&addr_output.stdout)
+		);
 	}
 
 	if !addr_output.stderr.is_empty() {
-		eprintln!("Move init Publish stderr: {}", String::from_utf8_lossy(&addr_output.stderr));
+		tracing::info!(
+			"Move init Publish stderr: {}",
+			String::from_utf8_lossy(&addr_output.stderr)
+		);
 	}
 
 	let addr_output_str = String::from_utf8_lossy(&addr_output.stderr);
@@ -211,7 +247,167 @@ pub fn deploy_local_movement_node(config: &mut MovementConfig) -> Result<(), any
 		.find(|word| word.starts_with("0x"))
 		.expect("Failed to extract the Movement account address");
 
-	println!("Publish Extracted address: {}", address);
+	tracing::info!("Publish Extracted address: {}", address);
+
+	Ok(())
+}
+
+pub fn deploy_on_movement_framework(config: &mut MovementConfig) -> Result<(), anyhow::Error> {
+	tracing::info!("Before compile move modules");
+	let compile_output = Command::new("movement")
+		.args(&["move", "compile", "--package-dir", "protocol-units/bridge/move-modules/"])
+		.stdout(Stdio::piped())
+		.stderr(Stdio::piped())
+		.output()?;
+
+	if !compile_output.stdout.is_empty() {
+		tracing::info!("move compile stdout: {}", String::from_utf8_lossy(&compile_output.stdout));
+	}
+	if !compile_output.stderr.is_empty() {
+		tracing::info!("move compile stderr: {}", String::from_utf8_lossy(&compile_output.stderr));
+	}
+	let enable_bridge_feature_output = Command::new("movement")
+			.args(&[
+				"move",
+				"run-script",
+				"--compiled-script-path",
+				"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/enable_bridge_feature.mv",
+				"--profile",
+				"default",
+				"--assume-yes",
+			])
+			.stdout(Stdio::piped())
+			.stderr(Stdio::piped())
+			.output()?;
+
+	if !enable_bridge_feature_output.stdout.is_empty() {
+		println!("stdout: {}", String::from_utf8_lossy(&enable_bridge_feature_output.stdout));
+	}
+	if !enable_bridge_feature_output.stderr.is_empty() {
+		eprintln!("stderr: {}", String::from_utf8_lossy(&enable_bridge_feature_output.stderr));
+	}
+
+	let store_mint_burn_caps_output = Command::new("movement")
+			.args(&[
+				"move",
+				"run-script",
+				"--compiled-script-path",
+				"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/store_mint_burn_caps.mv",
+				"--profile",
+				"default",
+				"--assume-yes",
+			])
+			.stdout(Stdio::piped())
+			.stderr(Stdio::piped())
+			.output()?;
+
+	if !store_mint_burn_caps_output.stdout.is_empty() {
+		println!("stdout: {}", String::from_utf8_lossy(&store_mint_burn_caps_output.stdout));
+	}
+	if !store_mint_burn_caps_output.stderr.is_empty() {
+		eprintln!("stderr: {}", String::from_utf8_lossy(&store_mint_burn_caps_output.stderr));
+	}
+
+	let update_bridge_operator_output = Command::new("movement")
+			.args(&[
+				"move",
+				"run-script",
+				"--compiled-script-path",
+				"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/update_bridge_operator.mv",
+				"--args",
+				"address:0xf90391c81027f03cdea491ed8b36ffaced26b6df208a9b569e5baf2590eb9b16",
+				"--profile",
+				"default",
+				"--assume-yes",
+			])
+			.stdout(Stdio::piped())
+			.stderr(Stdio::piped())
+			.output()?;
+
+	if !update_bridge_operator_output.stdout.is_empty() {
+		println!("stdout: {}", String::from_utf8_lossy(&update_bridge_operator_output.stdout));
+	}
+	if !update_bridge_operator_output.stderr.is_empty() {
+		eprintln!("stderr: {}", String::from_utf8_lossy(&update_bridge_operator_output.stderr));
+	}
+
+	let set_initiator_time_lock_script_output = Command::new("movement")
+		.args(&[
+			"move",
+			"run-script",
+			"--compiled-script-path",
+			"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/set_initiator_time_lock_duration.mv",
+			"--args",
+			"u64: 11",
+			"--profile",
+			"default",
+			"--assume-yes",
+		])
+		.stdout(Stdio::piped())
+		.stderr(Stdio::piped())
+		.output()?;
+
+	if !set_initiator_time_lock_script_output.stdout.is_empty() {
+		println!("stdout: {}", String::from_utf8_lossy(&update_bridge_operator_output.stdout));
+	}
+	if !set_initiator_time_lock_script_output.stderr.is_empty() {
+		eprintln!("stderr: {}", String::from_utf8_lossy(&update_bridge_operator_output.stderr));
+	}
+
+	let set_counterparty_time_lock_script_output = Command::new("movement")
+		.args(&[
+			"move",
+			"run-script",
+			"--compiled-script-path",
+			"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/set_counterparty_time_lock_duration.mv",
+			"--args",
+			"u64: 5",
+			"--profile",
+			"default",
+			"--assume-yes",
+		])
+		.stdout(Stdio::piped())
+		.stderr(Stdio::piped())
+		.output()?;
+
+	if !set_counterparty_time_lock_script_output.stdout.is_empty() {
+		println!("stdout: {}", String::from_utf8_lossy(&update_bridge_operator_output.stdout));
+	}
+	if !set_counterparty_time_lock_script_output.stderr.is_empty() {
+		eprintln!("stderr: {}", String::from_utf8_lossy(&update_bridge_operator_output.stderr));
+	}
+
+	Ok(())
+}
+
+fn update_mvt_account_address() -> Result<(), anyhow::Error> {
+	let config_file_path = std::env::current_dir()?.join(".movement/config.yaml");
+	let new_address = "0xA550C18";
+	let mut tmp_lines: Vec<String> = Vec::new();
+
+	// Read the contents of the file
+	{
+		let file = std::fs::File::open(&config_file_path)?;
+		let reader = std::io::BufReader::new(file);
+
+		let mut lines_iterator = reader.lines();
+		while let Some(line) = lines_iterator.next() {
+			let line = line?;
+			if line.contains("account:") {
+				// Replace the line with the new address value
+				tmp_lines.push(format!("    account: {}", new_address));
+			} else {
+				// Keep the original line
+				tmp_lines.push(line);
+			}
+		}
+	}
+
+	let mut output_file = std::fs::File::create(&config_file_path)?;
+	for line in tmp_lines {
+		output_file.write_all(line.as_bytes())?;
+		output_file.write_all(b"\n")?; // Add newline character
+	}
 
 	Ok(())
 }

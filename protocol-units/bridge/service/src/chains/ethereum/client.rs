@@ -194,7 +194,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 				FixedBytes(recipient_bytes),
 				FixedBytes(hash_lock.0),
 			)
-			.value(U256::from(amount.0))
+			//			.value(U256::from(amount.0))
 			.from(*initiator_address.0);
 		let _ = send_transaction(
 			call,
