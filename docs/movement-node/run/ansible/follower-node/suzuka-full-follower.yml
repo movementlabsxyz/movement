@@ -8,6 +8,7 @@
     repo_url: "https://github.com/movementlabsxyz/movement"
     destination_path: "/home/{{ user }}/movement"
     movement_sync: "follower::mtnet-l-sync-bucket-sync<=>{maptos,maptos-storage,suzuka-da-db}/**"
+    chain_id: "250"
 
     m1_da_light_node_connection_protocol: "https"
     m1_da_light_node_connection_hostname: "m1-da-light-node.testnet.bardock.movementlabs.xyz"
