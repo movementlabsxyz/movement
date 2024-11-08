@@ -45,6 +45,7 @@
           tesseract4
           ansible
           zlib
+          fixDarwinDylibNames
         ];
         
         sysDependencies = with pkgs; [] 
@@ -153,6 +154,12 @@
               mkdir -p $DOT_MOVEMENT_PATH
 
               # export PKG_CONFIG_PATH=$PKG_CONFIG_PATH_FOR_TARGET
+
+              # Export linker flags if on Darwin (macOS)
+              if [[ "$(${pkgs.stdenv.hostPlatform.system})" =~ "darwin" ]]; then
+                export LDFLAGS="-L/opt/homebrew/opt/zlib/lib"
+                export CPPFLAGS="-I/opt/homebrew/opt/zlib/include"
+              fi
 
               echo "Monza Aptos path: $MONZA_APTOS_PATH"
               cat <<'EOF'

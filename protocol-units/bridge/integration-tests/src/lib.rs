@@ -446,9 +446,9 @@ impl TestHarness {
 	}
 
 	pub async fn new_with_movement(config: Config) -> (HarnessMvtClient, Config) {
-		let config = bridge_setup::test_mvt_setup(config)
-			.await
-			.expect("Failed to setup Movement config");
+		// let config = bridge_setup::test_mvt_setup(config)
+		// 	.await
+		// 	.expect("Failed to setup Movement config");
 
 		let test_harness = HarnessMvtClient::build(&config).await;
 
@@ -456,9 +456,9 @@ impl TestHarness {
 	}
 
 	pub async fn new_only_eth(config: Config) -> (HarnessEthClient, Config) {
-		let config = bridge_setup::test_eth_setup(config)
-			.await
-			.expect("Test eth config setup failed.");
+		// let config = bridge_setup::test_eth_setup(config)
+		// 	.await
+		// 	.expect("Test eth config setup failed.");
 		let test_hadness = HarnessEthClient::build(&config).await;
 		(test_hadness, config)
 	}

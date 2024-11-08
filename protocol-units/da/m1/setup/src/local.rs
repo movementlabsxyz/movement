@@ -125,7 +125,15 @@ impl Local {
 		info!("Getting the auth token.");
 		let auth_token = run_command(
 			"celestia",
-			&["bridge", "auth", "admin", "--node.store", &celestia_node_path],
+			&[
+				"bridge",
+				"auth",
+				"admin",
+				"--node.store",
+				&celestia_node_path,
+				"--keyring.backend",
+				"test",
+			],
 		)
 		.await?
 		.trim()

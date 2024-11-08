@@ -17,17 +17,18 @@ use aptos_sdk::{
 	rest_client::aptos_api_types::VersionedEvent, types::account_address::AccountAddress,
 };
 use bridge_config::common::movement::MovementConfig;
+
 use futures::{
-	channel::mpsc::{self},
+	channel::mpsc::{self as futurempsc},
 	SinkExt, Stream, StreamExt,
 };
 use hex::FromHex;
 use serde::{Deserialize, Deserializer, Serialize};
 use std::{pin::Pin, task::Poll};
-use tokio::{
-	fs::{self, File},
-	io::{self, AsyncReadExt, AsyncWriteExt},
-};
+use tokio::fs::{self, File};
+use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
+use tokio::sync::mpsc;
+use tokio::sync::oneshot;
 
 const PULL_STATE_FILE_NAME: &str = "pullstate.store";
 
@@ -135,7 +136,8 @@ impl MvtPullingState {
 }
 
 pub struct MovementMonitoring {
-	listener: mpsc::UnboundedReceiver<BridgeContractResult<BridgeContractEvent<MovementAddress>>>,
+	listener:
+		futurempsc::UnboundedReceiver<BridgeContractResult<BridgeContractEvent<MovementAddress>>>,
 }
 
 impl BridgeContractMonitoring for MovementMonitoring {
@@ -143,7 +145,10 @@ impl BridgeContractMonitoring for MovementMonitoring {
 }
 
 impl MovementMonitoring {
-	pub async fn build(config: &MovementConfig) -> Result<Self, anyhow::Error> {
+	pub async fn build(
+		config: &MovementConfig,
+		mut health_check_rx: mpsc::Receiver<oneshot::Sender<bool>>,
+	) -> Result<Self, anyhow::Error> {
 		// Spawn a task to forward events to the listener channel
 		let (mut sender, listener) = futures::channel::mpsc::unbounded::<
 			BridgeContractResult<BridgeContractEvent<MovementAddress>>,
@@ -156,10 +161,26 @@ impl MovementMonitoring {
 			let config = config.clone();
 			async move {
 				loop {
+					//Check if there's a health check request
+					match health_check_rx.try_recv() {
+						Ok(tx) => {
+							if let Err(err) = tx.send(true) {
+								tracing::warn!(
+									"Mvt Heath check send on oneshot channel failed:{err}"
+								);
+							}
+						}
+						Err(mpsc::error::TryRecvError::Empty) => (), //nothing
+						Err(err) => {
+							tracing::warn!("Check Mvt monitoring loop health channel error: {err}");
+						}
+					}
+
 					let mut init_event_list = match pool_initiator_contract(
 						FRAMEWORK_ADDRESS,
 						&config.mvt_rpc_connection_url(),
 						&pull_state,
+						config.rest_connection_timeout_secs,
 					)
 					.await
 					{
@@ -170,6 +191,7 @@ impl MovementMonitoring {
 						FRAMEWORK_ADDRESS,
 						&config.mvt_rpc_connection_url(),
 						&pull_state,
+						config.rest_connection_timeout_secs,
 					)
 					.await
 					{
@@ -239,6 +261,7 @@ async fn pool_initiator_contract(
 	framework_address: AccountAddress,
 	rest_url: &str,
 	pull_state: &MvtPullingState,
+	timeout_sec: u64,
 ) -> BridgeContractResult<Vec<(BridgeContractEvent<MovementAddress>, u64)>> {
 	let struct_tag = format!(
 		"{}::atomic_bridge_initiator::BridgeInitiatorEvents",
@@ -251,6 +274,7 @@ async fn pool_initiator_contract(
 		&struct_tag,
 		"bridge_transfer_initiated_events",
 		pull_state.initiator_init,
+		timeout_sec,
 	)
 	.await?
 	.into_iter()
@@ -276,6 +300,7 @@ async fn pool_initiator_contract(
 		&struct_tag,
 		"bridge_transfer_completed_events",
 		pull_state.initiator_complete,
+		timeout_sec,
 	)
 	.await?
 	.into_iter()
@@ -307,6 +332,7 @@ async fn pool_initiator_contract(
 		&struct_tag,
 		"bridge_transfer_refunded_events",
 		pull_state.initiator_refund,
+		timeout_sec,
 	)
 	.await?
 	.into_iter()
@@ -341,6 +367,7 @@ async fn pool_counterparty_contract(
 	framework_address: AccountAddress,
 	rest_url: &str,
 	pull_state: &MvtPullingState,
+	timeout_sec: u64,
 ) -> BridgeContractResult<Vec<(BridgeContractEvent<MovementAddress>, u64)>> {
 	let struct_tag = format!(
 		"{}::atomic_bridge_counterparty::BridgeCounterpartyEvents",
@@ -354,6 +381,7 @@ async fn pool_counterparty_contract(
 		&struct_tag,
 		"bridge_transfer_locked_events",
 		pull_state.counterpart_lock,
+		timeout_sec,
 	)
 	.await?
 	.into_iter()
@@ -378,6 +406,7 @@ async fn pool_counterparty_contract(
 		&struct_tag,
 		"bridge_transfer_completed_events",
 		pull_state.counterpart_complete,
+		timeout_sec,
 	)
 	.await?
 	.into_iter()
@@ -421,6 +450,7 @@ async fn pool_counterparty_contract(
 		&struct_tag,
 		"bridge_transfer_cancelled_events",
 		pull_state.counterpart_cancel,
+		timeout_sec,
 	)
 	.await?
 	.into_iter()
@@ -592,6 +622,7 @@ async fn get_account_events(
 	event_type: &str,
 	field_name: &str,
 	start_version: u64,
+	timeout_sec: u64,
 ) -> Result<Vec<VersionedEvent>, BridgeContractError> {
 	let url = format!(
 		"{}/v1/accounts/{}/events/{}/{}",
@@ -601,17 +632,29 @@ async fn get_account_events(
 	let client = reqwest::Client::new();
 
 	// Send the GET request
-	let response = client
-		.get(&url)
-		.query(&[("start", &start_version.to_string()[..]), ("limit", "10")])
-		.send()
-		.await
-		.map_err(|e| {
+	let response = match tokio::time::timeout(
+		tokio::time::Duration::from_secs(timeout_sec),
+		client
+			.get(&url)
+			.query(&[("start", &start_version.to_string()[..]), ("limit", "10")])
+			.send(),
+	)
+	.await
+	{
+		Ok(res) => res.map_err(|e| {
 			BridgeContractError::OnChainError(format!(
 				"MVT get_account_events get request error:{}",
 				e
 			))
-		})?;
+		})?,
+		Err(err) => {
+			//sleep a few second before retesting.
+			tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+			Err(BridgeContractError::OnChainError(format!(
+				"MVT get_account_events Rpc entry point timeout:{err}",
+			)))?
+		}
+	};
 
 	if response.status().is_success() {
 		let body = response.text().await.map_err(|e| {

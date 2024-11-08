@@ -3,11 +3,6 @@ use super::types::{
 	CounterpartyContract, EthAddress, InitiatorContract,
 };
 use super::utils::{calculate_storage_slot, send_transaction, send_transaction_rules};
-use crate::chains::bridge_contracts::{BridgeContractError, BridgeContractResult};
-use crate::types::{
-	Amount, BridgeAddress, BridgeTransferDetails, BridgeTransferDetailsCounterparty,
-	BridgeTransferId, HashLock, HashLockPreImage, TimeLock,
-};
 use alloy::{
 	network::EthereumWallet,
 	primitives::{Address, FixedBytes, U256},
@@ -18,6 +13,11 @@ use alloy::{
 use alloy_rlp::Decodable;
 use bridge_config::common::eth::EthConfig;
 use bridge_grpc::bridge_server::BridgeServer;
+use bridge_util::chains::bridge_contracts::{BridgeContractError, BridgeContractResult};
+use bridge_util::types::{
+	Amount, BridgeAddress, BridgeTransferDetails, BridgeTransferDetailsCounterparty,
+	BridgeTransferId, HashLock, HashLockPreImage, TimeLock,
+};
 use std::{fmt::Debug, net::SocketAddr};
 use tonic::transport::Server;
 use tracing::info;
@@ -171,7 +171,10 @@ impl EthClient {
 }
 
 #[async_trait::async_trait]
-impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
+impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
+	// `_initiator_address`, or in the contract, `originator` is set
+	// via the `msg.sender`, which is stored in the `rpc_provider`.
+	// So `initiator_address` arg is not used here.
 	async fn initiate_bridge_transfer(
 		&mut self,
 		initiator_address: BridgeAddress<EthAddress>,

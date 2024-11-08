@@ -318,3 +318,4 @@ module atomic_bridge::move_fa {
         init_module(move_fa_signer);
     }
 }
+
