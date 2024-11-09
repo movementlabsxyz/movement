@@ -1,6 +1,7 @@
 use crate::migrations::run_migrations;
 use crate::models::*;
 use crate::schema::*;
+use bridge_config::Config;
 use bridge_util::chains::bridge_contracts::BridgeContractEvent;
 use bridge_util::types::BridgeTransferId;
 use bridge_util::TransferActionType;
@@ -26,10 +27,8 @@ impl Client {
 		Self { conn }
 	}
 
-	/// Gets the client from an environment variable containing the postgresql url.
-	pub fn from_env() -> Result<Self, anyhow::Error> {
-		let url = std::env::var("BRIDGE_INDEXER_DATABASE_URL")?;
-		let conn = PgConnection::establish(&url)
+	pub fn from_bridge_config(config: &Config) -> Result<Self, anyhow::Error> {
+		let conn = PgConnection::establish(&config.database.indexer_url)
 			.map_err(|e| anyhow::anyhow!("Failed to connect to postgresql instance: {}", e))?;
 		Ok(Self::new(conn))
 	}
