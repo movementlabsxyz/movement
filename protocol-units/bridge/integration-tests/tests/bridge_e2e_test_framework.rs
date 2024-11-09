@@ -43,7 +43,7 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 	let recipient_privkey = mvt_client_harness.fund_account().await;
 	let recipient_address = MovementAddress(recipient_privkey.address());
 
-	// initialize Eth transfer
+	// initiate Eth transfer
 	tracing::info!("Call initiate_transfer on Eth");
 	let hash_lock_pre_image = HashLockPreImage::random();
 	let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
@@ -210,11 +210,39 @@ async fn test_bridge_transfer_movement_eth_happy_path() -> Result<(), anyhow::Er
 		)
 		.init();
 
+	MovementClientFramework::bridge_setup_scripts().await?;
+
 	let (mut eth_client_harness, mut mvt_client_harness, config) =
 		TestHarness::new_with_eth_and_movement().await?;
 
 	let (_, eth_health_rx) = tokio::sync::mpsc::channel(10);
 	let mut eth_monitoring = EthMonitoring::build(&config.eth, eth_health_rx).await.unwrap();
+
+	// Init mvt addresses
+	let movement_client_signer_address = mvt_client_harness.movement_client.signer().address();
+
+	{
+		let faucet_client = mvt_client_harness.faucet_client.write().unwrap();
+		faucet_client.fund(movement_client_signer_address, 100_000_000).await?;
+	}
+
+	let recipient_privkey = mvt_client_harness.fund_account().await;
+	let recipient_address = MovementAddress(recipient_privkey.address());
+
+	// initiate Eth transfer
+	tracing::info!("Call initiate_transfer on Eth");
+	let hash_lock_pre_image = HashLockPreImage::random();
+	let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
+	let amount = Amount(1);
+	HarnessEthClient::initiate_eth_bridge_transfer(
+		&config,
+		HarnessEthClient::get_initiator_private_key(&config),
+		recipient_address,
+		hash_lock,
+		amount,
+	)
+	.await
+	.expect("Failed to initiate bridge transfer");
 
 	tracing::info!("Before init_set_timelock");
 
@@ -230,8 +258,7 @@ async fn test_bridge_transfer_movement_eth_happy_path() -> Result<(), anyhow::Er
 		faucet_client.fund(movement_client_signer_address, 100_000_000_000).await?;
 	}
 
-	let recipient_privkey = mvt_client_harness.fund_account().await;
-	let recipient_address = MovementAddress(recipient_privkey.address());
+	let initiator_account = mvt_client_harness.fund_account().await;
 
 	let counterpart_privekey = HarnessEthClient::get_initiator_private_key(&config);
 	let counter_party_address = EthAddress(counterpart_privekey.address());
@@ -241,7 +268,7 @@ async fn test_bridge_transfer_movement_eth_happy_path() -> Result<(), anyhow::Er
 	let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
 	let amount = 1;
 	mvt_client_harness
-		.initiate_bridge_transfer(&recipient_privkey, counter_party_address, hash_lock, amount)
+		.initiate_bridge_transfer(&initiator_account, counter_party_address, hash_lock, amount)
 		.await?;
 
 	// Wait for the Eth-side lock event

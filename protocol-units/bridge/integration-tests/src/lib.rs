@@ -10,7 +10,7 @@ use aptos_sdk::{
 	types::{account_address::AccountAddress, LocalAccount},
 };
 use bridge_config::Config;
-use bridge_service::chains::ethereum::types::AtomicBridgeInitiatorMOVE;
+use bridge_service::chains::ethereum::types::{AtomicBridgeCounterpartyMOVE, AtomicBridgeInitiatorMOVE};
 use bridge_service::chains::ethereum::types::MockMOVEToken;
 use bridge_service::chains::ethereum::utils::send_transaction;
 use bridge_service::chains::ethereum::utils::send_transaction_rules;
@@ -185,7 +185,7 @@ impl HarnessEthClient {
 			&rpc_provider,
 		);
 
-		tracing::info!("Initializing AtomicBridgeInitiatorMOVE contract");
+		tracing::info!("Initializing MockMOVEToken contract");
 		let initialize_call = mock_move_token.initialize(initiator_address).from(initiator_address);
 		let _ = send_transaction(
 			initialize_call,
@@ -243,6 +243,20 @@ impl HarnessEthClient {
 			config.eth.eth_initiator_contract.parse()?,
 			&rpc_provider,
 		);
+
+		let owner_address: Address = contract.owner().call().await?._0; 
+		
+		println!("Initiator contract owner address: {:?}", owner_address);
+
+		let counterparty_contract = AtomicBridgeCounterpartyMOVE::new(
+			config.eth.eth_counterparty_contract.parse()?,
+			&rpc_provider,
+		);
+
+		let counterparty_owner_address: Address = counterparty_contract.owner().call().await?._0;
+		
+		println!("Counterparty contract owner address: {:?}", counterparty_owner_address);
+
 
 		let recipient_address = BridgeAddress(Into::<Vec<u8>>::into(recipient));
 
