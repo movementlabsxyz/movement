@@ -382,6 +382,7 @@ async fn pool_counterparty_contract(
 		println!("Lock event data: {:?} sequence_number:{}", e.data, e.sequence_number);
 		let data: BridgeInitEventData = serde_json::from_str(&e.data.to_string())?;
 		let transfer_details = LockDetails::try_from(data)?;
+		println!("Transfer details: {:?}", transfer_details);
 		Ok((BridgeContractEvent::Locked(transfer_details), e.sequence_number.into()))
 	})
 	.collect::<Result<Vec<_>>>()
@@ -560,9 +561,9 @@ impl TryFrom<BridgeInitEventData> for LockDetails<MovementAddress> {
 				))
 				},
 			)?),
-			initiator: BridgeAddress(data.recipient),
+			initiator: BridgeAddress(data.initiator),
 			recipient: BridgeAddress(
-				MovementAddress::try_from(data.initiator)
+				MovementAddress::try_from(data.recipient)
 					.map_err(|err| BridgeContractError::OnChainError(err.to_string()))?,
 			),
 			hash_lock: HashLock(data.hash_lock.try_into().map_err(|e| {
