@@ -123,9 +123,11 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 	) -> BridgeContractResult<()> {
 		debug!("Amount value: {:?}", amount);
 
+		let serialized_hash_lock = utils::serialize_vec_initiator(&hash_lock.0[..])?;
+
 		let args = vec![
 			utils::serialize_vec_initiator(&recipient.0)?,
-			utils::serialize_vec_initiator(&hash_lock.0[..])?,
+			serialized_hash_lock,
 			utils::serialize_u64_initiator(&amount)?,
 		];
 

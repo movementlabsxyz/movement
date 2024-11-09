@@ -198,7 +198,7 @@ impl HarnessEthClient {
 		.map_err(|e| {
 			BridgeContractError::GenericError(format!("Failed to send initialize transaction: {}", e))
 		});
-	
+
 		tracing::info!("Initialization completed.");
 
 		tracing::info!(
@@ -255,24 +255,38 @@ impl HarnessEthClient {
 
 		let counterparty_owner_address: Address = counterparty_contract.owner().call().await?._0;
 		
+		tracing::info!("Before setAtomicBridgeInitiator");
+		let set_initiator_call = counterparty_contract.setAtomicBridgeInitiator(initiator_address).from(owner_address);
+		let _ = send_transaction(
+			set_initiator_call,
+			owner_address,
+			&send_transaction_rules(),
+			config.eth.transaction_send_retries,
+			config.eth.gas_limit as u128,
+		)
+		.await
+		.map_err(|e| {
+			BridgeContractError::GenericError(format!("Failed to execute setAtomicBridgeInitiator: {}", e))
+		});
+		tracing::info!("After setAtomicBridgeInitiator");
+
 		println!("Counterparty contract owner address: {:?}", counterparty_owner_address);
 
-		// tracing::info!("Initializing counterparty contract");
-		// let initialize_call = counterparty_contract.initialize(config.eth.// eth_counterparty_contract.parse()?, initiator_address, Uint::from(86400)).from(initiator_address);
-		// let _ = send_transaction(
-		// 	initialize_call,
-		// 	initiator_address,
-		// 	&send_transaction_rules(),
-		// 	config.eth.transaction_send_retries,
-		// 	config.eth.gas_limit as u128,
-		// )
-		// .await
-		// .map_err(|e| {
-		// 	BridgeContractError::GenericError(format!("Failed to send initialize transaction: {}", e))
-		// });
-	// 
-		// tracing::info!("Counterparty contract initialization completed.");
-		
+		tracing::info!("Initializing counterparty contract");
+		let initialize_call = counterparty_contract.initialize(config.eth.eth_counterparty_contract.parse()?, owner_address, Uint::from(86400)).from(initiator_address);
+		let _ = send_transaction(
+			initialize_call,
+			initiator_address,
+			&send_transaction_rules(),
+			config.eth.transaction_send_retries,
+			config.eth.gas_limit as u128,
+		)
+		.await
+		.map_err(|e| {
+			BridgeContractError::GenericError(format!("Failed to send initialize transaction: {}", e))
+		});
+		tracing::info!("Counterparty contract initialization completed.");
+
 		let recipient_address = BridgeAddress(Into::<Vec<u8>>::into(recipient));
 
 		let recipient_bytes: [u8; 32] =

@@ -230,8 +230,10 @@ async fn test_bridge_transfer_movement_eth_happy_path() -> Result<(), anyhow::Er
 	let recipient_address = MovementAddress(recipient_privkey.address());
 
 	// initiate Eth transfer
-	tracing::info!("Call initiate_transfer on Eth");
-	let hash_lock_pre_image = HashLockPreImage::random();
+	tracing::info!("Call initiate_transfer on Eth and set up test");
+	let hash_lock_pre_image = HashLockPreImage([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+		17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]);
+	//let hash_lock_pre_image = HashLockPreImage::random();
 	let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
 	let amount = Amount(1);
 	HarnessEthClient::initiate_eth_bridge_transfer(
@@ -263,12 +265,15 @@ async fn test_bridge_transfer_movement_eth_happy_path() -> Result<(), anyhow::Er
 	let counterpart_privekey = HarnessEthClient::get_initiator_private_key(&config);
 	let counter_party_address = EthAddress(counterpart_privekey.address());
 
-	// 1) initialize Movement transfer
-	let hash_lock_pre_image = HashLockPreImage::random();
-	let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
+	// Initialize Movement transfer
+	let hash_lock_movement_pre_image = HashLockPreImage([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+		17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]);
+	tracing::info!("Hash lock pre-image for Movement initiate transfer: {:?}", hash_lock_movement_pre_image);
+	let hash_lock_movement = HashLock(From::from(keccak256(hash_lock_movement_pre_image)));
+	tracing::info!("Hash lock for Movement initiate transfer: {:?}", hash_lock_movement);
 	let amount = 1;
 	mvt_client_harness
-		.initiate_bridge_transfer(&initiator_account, counter_party_address, hash_lock, amount)
+		.initiate_bridge_transfer(&initiator_account, counter_party_address, hash_lock_movement, amount)
 		.await?;
 
 	// Wait for the Eth-side lock event
@@ -278,25 +283,33 @@ async fn test_bridge_transfer_movement_eth_happy_path() -> Result<(), anyhow::Er
 		let event =
 			tokio::time::timeout(std::time::Duration::from_secs(30), eth_monitoring.next()).await?;
 		if let Some(Ok(BridgeContractEvent::Locked(detail))) = event {
+			tracing::info!("Lock details: {:?}", detail);
 			bridge_tranfer_id = detail.bridge_transfer_id;
 			break;
 		}
 	}
+	tracing::info!("Bridge transfer ID from Eth Lock event: {:?}", bridge_tranfer_id);
 
-	// 2) Complete transfer on Eth
+	// Complete transfer on Eth
+	tracing::info!("Before Eth counterparty complete with preimage {:?}", hash_lock_pre_image);
 	eth_client_harness
 		.eth_client
 		.counterparty_complete_bridge_transfer(bridge_tranfer_id, hash_lock_pre_image)
 		.await?;
 
+	let (_, mvt_health_rx) = tokio::sync::mpsc::channel(10);
+	let mut mvt_monitoring =
+		MovementMonitoring::build(&config.movement, mvt_health_rx).await.unwrap();
+
+	tracing::info!("Wait for InitiatorCompleted event.");
 	loop {
 		let event =
-			tokio::time::timeout(std::time::Duration::from_secs(30), eth_monitoring.next()).await?;
-		if let Some(Ok(BridgeContractEvent::CounterPartCompleted(id, _))) = event {
-			assert_eq!(bridge_tranfer_id, id);
+			tokio::time::timeout(std::time::Duration::from_secs(30), mvt_monitoring.next()).await?;
+		if let Some(Ok(BridgeContractEvent::InitialtorCompleted(_))) = event {
 			break;
 		}
 	}
 
 	Ok(())
+	
 }

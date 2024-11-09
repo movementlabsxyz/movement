@@ -337,6 +337,7 @@ impl Runtime {
 	where
 		A: Into<Vec<u8>> + std::clone::Clone + std::fmt::Debug,
 	{
+		tracing::info!("Event received: {:?}", event);
 		self.validate_state(&event)?;
 		let indexer_event = event.clone();
 		let event_transfer_id = event.contract_event.bridge_transfer_id();
@@ -406,7 +407,15 @@ impl Runtime {
 
 	fn validate_state<A>(&mut self, event: &TransferEvent<A>) -> Result<(), InvalidEventError> {
 		let event_transfer_id = event.contract_event.bridge_transfer_id();
+		tracing::info!("Validating event with transfer ID: {:?}", event_transfer_id);
 		let swap_state_opt = self.swap_state_map.get(&event_transfer_id);
+
+		// Log the current state if it exists in the swap state map
+		if let Some(state) = swap_state_opt {
+			tracing::info!("Found existing state for transfer ID {:?}: {:?}", event_transfer_id, state.state);
+		} else {
+			tracing::info!("No existing state found for transfer ID {:?}", event_transfer_id);
+		}
 		//validate the associated swap_state.
 		swap_state_opt
 			.as_ref()
