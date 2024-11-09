@@ -185,9 +185,22 @@ impl HarnessEthClient {
 			&rpc_provider,
 		);
 
-		let multisig_address = Address::from_str("0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc")?;
+		tracing::info!("Initializing AtomicBridgeInitiatorMOVE contract");
+		let initialize_call = mock_move_token.initialize(initiator_address).from(initiator_address);
+		let _ = send_transaction(
+			initialize_call,
+			initiator_address,
+			&send_transaction_rules(),
+			config.eth.transaction_send_retries,
+			config.eth.gas_limit as u128,
+		)
+		.await
+		.map_err(|e| {
+			BridgeContractError::GenericError(format!("Failed to send initialize transaction: {}", e))
+		});
+	
+		tracing::info!("Initialization completed.");
 
-		tracing::info!("Before token approval");
 		tracing::info!(
 			"Mock MOVE token address: {:?}",
 			Address::from_str(&config.eth.eth_move_token_contract)?
@@ -196,10 +209,10 @@ impl HarnessEthClient {
 		tracing::info!("Initiator contract address: {}", config.eth.eth_initiator_contract);
 
 		let token_balance = mock_move_token.balanceOf(initiator_address).call().await?;
-		tracing::info!("MockMOVEToken balance: {:?}", token_balance._0);
+		tracing::info!("Before token approval, MockMOVEToken balance: {:?}", token_balance._0);
 
 		// Get the ETH balance for the initiator address
-
+		
 		let eth_value = U256::from(amount.0.clone());
 		tracing::info!("Eth value: {}", eth_value);
 		let approve_call = mock_move_token
@@ -224,7 +237,7 @@ impl HarnessEthClient {
 
 		tracing::info!("After token approval, transaction receipt: {:?}", transaction_receipt);
 		let token_balance = mock_move_token.balanceOf(initiator_address).call().await?;
-		tracing::info!("MockMOVEToken balance: {:?}", token_balance._0);
+		tracing::info!("After token approval, MockMOVEToken balance: {:?}", token_balance._0);
 
 		let contract = AtomicBridgeInitiatorMOVE::new(
 			config.eth.eth_initiator_contract.parse()?,
