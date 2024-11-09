@@ -14,6 +14,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
+/// The `Memseq` module is responsible for managing a mempool and sequencing transactions into blocks.
 #[derive(Clone)]
 pub struct Memseq<T: MempoolTransactionOperations> {
 	mempool: T,
@@ -50,6 +51,7 @@ impl<T: MempoolTransactionOperations> Memseq<T> {
 }
 
 impl Memseq<RocksdbMempool> {
+	/// Attempts to create a new Memseq instance with a RocksDB mempool, given a path, block size, and building time.
 	pub fn try_move_rocks(
 		path: PathBuf,
 		block_size: u32,
@@ -78,6 +80,7 @@ impl<T: MempoolTransactionOperations> Sequencer for Memseq<T> {
 		Ok(())
 	}
 
+	/// Waits for the next block to be built, either when the block size is reached or the building time expires.
 	async fn wait_for_next_block(&self) -> Result<Option<Block>, anyhow::Error> {
 		let mut transactions = Vec::with_capacity(self.block_size as usize);
 
@@ -146,6 +149,7 @@ pub mod test {
 	use mempool_util::MempoolTransaction;
 	use tempfile::tempdir;
 
+	/// Tests that the block is built when the building time expires, even if the block size is not reached.
 	#[tokio::test]
 	async fn test_wait_for_next_block_building_time_expires() -> Result<(), anyhow::Error> {
 		let dir = tempdir()?;
@@ -171,6 +175,7 @@ pub mod test {
 		Ok(())
 	}
 
+	/// Tests error propagation when publishing transactions to the mempool.
 	#[tokio::test]
 	async fn test_publish_error_propagation() -> Result<(), anyhow::Error> {
 		let mempool = MockMempool;
@@ -189,6 +194,7 @@ pub mod test {
 		Ok(())
 	}
 
+	/// Tests concurrent access to the Memseq instance using spawned tasks.
 	#[tokio::test]
 	async fn test_concurrent_access_spawn() -> Result<(), anyhow::Error> {
 		let dir = tempdir()?;
@@ -213,6 +219,7 @@ pub mod test {
 		Ok(())
 	}
 
+	/// Tests concurrent access to the Memseq instance using futures.
 	#[tokio::test]
 	async fn test_concurrent_access_futures() -> Result<(), anyhow::Error> {
 		let dir = tempdir()?;
@@ -239,6 +246,7 @@ pub mod test {
 		Ok(())
 	}
 
+	/// Tests the creation of a Memseq instance with a RocksDB mempool and verifies the block size and building time.
 	#[tokio::test]
 	async fn test_try_move_rocks() -> Result<(), anyhow::Error> {
 		let dir = tempdir()?;
@@ -256,6 +264,7 @@ pub mod test {
 		Ok(())
 	}
 
+	/// Tests the initialization of the Memseq instance and verifies its fields.
 	#[tokio::test]
 	async fn test_memseq_initialization() -> Result<(), anyhow::Error> {
 		let dir = tempdir()?;
@@ -277,6 +286,7 @@ pub mod test {
 		Ok(())
 	}
 
+	/// Tests the with_block_size and with_building_time_ms methods.
 	#[tokio::test]
 	async fn test_memseq_with_methods() -> Result<(), anyhow::Error> {
 		let dir = tempdir()?;
@@ -304,6 +314,7 @@ pub mod test {
 		Ok(())
 	}
 
+	/// Tests that no block is built when there are no transactions in the mempool.
 	#[tokio::test]
 	async fn test_wait_for_next_block_no_transactions() -> Result<(), anyhow::Error> {
 		let dir = tempdir()?;
@@ -318,6 +329,7 @@ pub mod test {
 		Ok(())
 	}
 
+	/// Tests the basic functionality of the Memseq instance, including publishing transactions and waiting for the next block.
 	#[tokio::test]
 	async fn test_memseq() -> Result<(), anyhow::Error> {
 		let dir = tempdir()?;
@@ -339,6 +351,7 @@ pub mod test {
 		Ok(())
 	}
 
+	/// Tests that the Memseq instance respects the block size limit when building blocks.
 	#[tokio::test]
 	async fn test_respects_size() -> Result<(), anyhow::Error> {
 		let dir = tempdir()?;
@@ -372,6 +385,7 @@ pub mod test {
 		Ok(())
 	}
 
+	/// Tests that the Memseq instance respects the building time limit when waiting for the next block.
 	#[tokio::test]
 	async fn test_wait_next_block_respects_time() -> Result<(), anyhow::Error> {
 		let dir = tempdir()?;
