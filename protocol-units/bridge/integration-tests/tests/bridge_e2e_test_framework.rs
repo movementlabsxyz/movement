@@ -87,7 +87,7 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 	let (_, eth_health_rx) = tokio::sync::mpsc::channel(10);
 	let mut eth_monitoring = EthMonitoring::build(&config.eth, eth_health_rx).await.unwrap();
 	// Wait for InitialtorCompleted event
-	tracing::info!("Wait for InitialtorCompleted event.");
+	tracing::info!("Wait for InitiatorCompleted event.");
 	loop {
 		let event =
 			tokio::time::timeout(std::time::Duration::from_secs(30), eth_monitoring.next()).await?;
@@ -216,7 +216,9 @@ async fn test_bridge_transfer_movement_eth_happy_path() -> Result<(), anyhow::Er
 	let (_, eth_health_rx) = tokio::sync::mpsc::channel(10);
 	let mut eth_monitoring = EthMonitoring::build(&config.eth, eth_health_rx).await.unwrap();
 
-	mvt_client_harness.init_set_timelock(60).await?; //Set to 1mn
+	tracing::info!("Before init_set_timelock");
+
+	//mvt_client_harness.init_set_timelock(60).await?; //Set to 1mn
 
 	tracing::info!("Init initiator and counter part test account.");
 
@@ -234,9 +236,6 @@ async fn test_bridge_transfer_movement_eth_happy_path() -> Result<(), anyhow::Er
 	let counterpart_privekey = HarnessEthClient::get_initiator_private_key(&config);
 	let counter_party_address = EthAddress(counterpart_privekey.address());
 
-	//mint initiator to have enough moveeth to do the transfer
-	mvt_client_harness.mint_moveeth(&recipient_address, 1).await?;
-
 	// 1) initialize Movement transfer
 	let hash_lock_pre_image = HashLockPreImage::random();
 	let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
@@ -245,8 +244,8 @@ async fn test_bridge_transfer_movement_eth_happy_path() -> Result<(), anyhow::Er
 		.initiate_bridge_transfer(&recipient_privkey, counter_party_address, hash_lock, amount)
 		.await?;
 
-	// Wait for InitialtorCompleted event
-	tracing::info!("Wait for Bridge Lock event.");
+	// Wait for the Eth-side lock event
+	tracing::info!("Wait for Eth-side Lock event.");
 	let bridge_tranfer_id;
 	loop {
 		let event =

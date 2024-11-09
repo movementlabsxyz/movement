@@ -332,39 +332,6 @@ impl HarnessMvtClient {
 		Ok(())
 	}
 
-	//Mint the specified amount in MovEth.
-	pub async fn mint_moveeth(
-		&self,
-		address: &MovementAddress,
-		amount: u64,
-	) -> Result<(), BridgeContractError> {
-		// Mint MovETH to the initiator's address
-		let mint_amount = amount; // Assuming 8 decimals for MovETH
-
-		let mint_args = vec![
-			movement_utils::serialize_address_initiator(&address.0)?, // Mint to initiator's address
-			movement_utils::serialize_u64_initiator(&mint_amount)?,   // Amount to mint
-		];
-
-		let mint_payload = movement_utils::make_aptos_payload(
-			self.movement_client.native_address, // Address where moveth module is published
-			"moveth",
-			"mint",
-			Vec::new(),
-			mint_args,
-		);
-
-		// Send transaction to mint MovETH
-		movement_utils::send_and_confirm_aptos_transaction(
-			&self.movement_client.rest_client(),
-			self.movement_client.signer(),
-			mint_payload,
-		)
-		.await
-		.map_err(|_| BridgeContractError::MintError)?;
-		Ok(())
-	}
-
 	pub async fn initiate_bridge_transfer(
 		&mut self,
 		initiator: &LocalAccount,
@@ -380,7 +347,7 @@ impl HarnessMvtClient {
 		];
 
 		let payload = movement_utils::make_aptos_payload(
-			self.movement_client.native_address,
+			FRAMEWORK_ADDRESS,
 			"atomic_bridge_initiator",
 			"initiate_bridge_transfer",
 			Vec::new(),
