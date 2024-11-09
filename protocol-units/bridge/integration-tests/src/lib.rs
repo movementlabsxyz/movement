@@ -1,4 +1,4 @@
-use alloy::primitives::{FixedBytes, U256};
+use alloy::primitives::{FixedBytes, Uint, U256};
 use alloy::{
 	primitives::{keccak256, Address},
 	providers::ProviderBuilder,
@@ -257,7 +257,22 @@ impl HarnessEthClient {
 		
 		println!("Counterparty contract owner address: {:?}", counterparty_owner_address);
 
-
+		// tracing::info!("Initializing counterparty contract");
+		// let initialize_call = counterparty_contract.initialize(config.eth.// eth_counterparty_contract.parse()?, initiator_address, Uint::from(86400)).from(initiator_address);
+		// let _ = send_transaction(
+		// 	initialize_call,
+		// 	initiator_address,
+		// 	&send_transaction_rules(),
+		// 	config.eth.transaction_send_retries,
+		// 	config.eth.gas_limit as u128,
+		// )
+		// .await
+		// .map_err(|e| {
+		// 	BridgeContractError::GenericError(format!("Failed to send initialize transaction: {}", e))
+		// });
+	// 
+		// tracing::info!("Counterparty contract initialization completed.");
+		
 		let recipient_address = BridgeAddress(Into::<Vec<u8>>::into(recipient));
 
 		let recipient_bytes: [u8; 32] =

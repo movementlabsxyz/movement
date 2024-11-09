@@ -29,7 +29,7 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 
 	MovementClientFramework::bridge_setup_scripts().await?;
 
-	tracing::info!("Init initiator and counter part test account.");
+	tracing::info!("Init initiator and counterparty test accounts.");
 	tracing::info!("Use client signer for Mvt and index 2 of config.eth.eth_well_known_account_private_keys array for Eth");
 
 	// Init mvt addresses
@@ -248,7 +248,7 @@ async fn test_bridge_transfer_movement_eth_happy_path() -> Result<(), anyhow::Er
 
 	//mvt_client_harness.init_set_timelock(60).await?; //Set to 1mn
 
-	tracing::info!("Init initiator and counter part test account.");
+	tracing::info!("Init initiator and counterparty test accounts.");
 
 	// Init mvt addresses
 	let movement_client_signer_address = mvt_client_harness.movement_client.signer().address();

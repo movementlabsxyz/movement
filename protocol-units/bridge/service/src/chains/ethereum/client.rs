@@ -326,6 +326,7 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 		recipient: BridgeAddress<EthAddress>,
 		amount: Amount,
 	) -> BridgeContractResult<()> {
+		tracing::info!("Begin lockBridgeTransfer");
 		let initiator: [u8; 32] = initiator.0.try_into().map_err(|_| {
 			BridgeContractError::ConversionFailed("lock_bridge_transfer initiator".to_string())
 		})?;
@@ -336,7 +337,11 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 			*recipient.0,
 			U256::try_from(amount.0)
 				.map_err(|_| BridgeContractError::ConversionFailed("U256".to_string()))?,
-		);
+		)
+		.from(self.signer_address); 
+
+		tracing::info!("Attempting lockBridgeTransfer with sender address: {:?}", self.signer_address);
+	    
 		let receipt = send_transaction(
 			call,
 			self.signer_address,
