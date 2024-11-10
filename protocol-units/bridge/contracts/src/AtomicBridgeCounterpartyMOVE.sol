@@ -52,8 +52,8 @@ contract AtomicBridgeCounterpartyMOVE is IAtomicBridgeCounterpartyMOVE, OwnableU
         address recipient,
         uint256 amount
     ) external onlyOwner returns (bool) {
-        //if (amount == 0) revert ZeroAmount();
-        //if (atomicBridgeInitiatorMOVE.poolBalance() < amount) revert InsufficientMOVEBalance();
+        if (amount == 0) revert ZeroAmount();
+        // if (atomicBridgeInitiatorMOVE.poolBalance() < amount) revert InsufficientMOVEBalance();
 
         // The time lock is now based on the configurable duration
         uint256 timeLock = block.timestamp + counterpartyTimeLockDuration;
