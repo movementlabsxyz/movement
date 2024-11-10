@@ -147,7 +147,7 @@ impl Executor {
 				&self.config.mempool,
 				Arc::clone(&self.transactions_in_flight),
 				maptos_config.load_shedding.max_transactions_in_flight,
-			)
+			)?
 		};
 
 		let cx = Context::new(self.db().clone(), mempool_client_sender, maptos_config, node_config);

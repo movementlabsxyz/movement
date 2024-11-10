@@ -34,8 +34,8 @@ impl BackgroundTask {
 		mempool_config: &MempoolConfig,
 		transactions_in_flight: Arc<AtomicU64>,
 		transactions_in_flight_limit: u64,
-	) -> Self {
-		Self {
+	) -> Result<Self, anyhow::Error> {
+		Ok(Self {
 			inner: BackgroundInner::Full(TransactionPipe::new(
 				mempool_client_receiver,
 				transaction_sender,
@@ -44,8 +44,8 @@ impl BackgroundTask {
 				mempool_config,
 				transactions_in_flight,
 				transactions_in_flight_limit,
-			)),
-		}
+			)?),
+		})
 	}
 
 	pub(crate) fn read_only(

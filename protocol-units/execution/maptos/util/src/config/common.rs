@@ -2,7 +2,8 @@ use std::str::FromStr;
 
 use aptos_crypto::{ed25519::Ed25519PrivateKey, Genesis, ValidCryptoMaterialStringExt};
 use aptos_types::chain_id::ChainId;
-use godfig::env_default;
+use godfig::{env_default, env_or_none};
+use std::collections::HashSet;
 
 // The default Maptos API listen hostname
 env_default!(
@@ -167,3 +168,5 @@ env_default!(default_max_transactions_in_flight, "MAPTOS_MAX_TRANSACTIONS_IN_FLI
 env_default!(default_sequence_number_ttl_ms, "MAPTOS_SEQUENCE_NUMBER_TTL_MS", u64, 1000 * 60 * 3);
 
 env_default!(default_gc_slot_duration_ms, "MAPTOS_GC_SLOT_DURATION_MS", u64, 1000 * 2);
+
+env_default!(default_ingress_account_whitelist, "MAPTOS_INGRESS_ACCOUNT_WHITELIST", String);
