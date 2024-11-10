@@ -28,7 +28,7 @@ impl Client {
 	}
 
 	pub fn from_bridge_config(config: &Config) -> Result<Self, anyhow::Error> {
-		let conn = PgConnection::establish(&config.database.indexer_url)
+		let conn = PgConnection::establish(&config.indexer.indexer_url)
 			.map_err(|e| anyhow::anyhow!("Failed to connect to postgresql instance: {}", e))?;
 		Ok(Self::new(conn))
 	}
