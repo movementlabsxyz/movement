@@ -5,10 +5,7 @@ resolver = "2"
 members = [
     "protocol-units/bridge/config",
     "protocol-units/bridge/setup",
-    "protocol-units/execution/dof",
-    "protocol-units/execution/opt-executor",
-    "protocol-units/execution/fin-view",
-    "protocol-units/execution/util",
+    "protocol-units/execution/maptos/*",
     "protocol-units/da/m1/*",
     "protocol-units/sequencing/memseq/*",
     "protocol-units/mempool/*",
@@ -73,10 +70,10 @@ m1-da-light-node-util = { path = "protocol-units/da/m1/util" }
 m1-da-light-node-setup = { path = "protocol-units/da/m1/setup" }
 m1-da-light-node-verifier = { path = "protocol-units/da/m1/light-node-verifier" }
 ## execution
-maptos-dof-execution = { path = "protocol-units/execution/dof" }
-maptos-opt-executor = { path = "protocol-units/execution/opt-executor" }
-maptos-fin-view = { path = "protocol-units/execution/fin-view" }
-maptos-execution-util = { path = "protocol-units/execution/util" }
+maptos-dof-execution = { path = "protocol-units/execution/maptos/dof" }
+maptos-opt-executor = { path = "protocol-units/execution/maptos/opt-executor" }
+maptos-fin-view = { path = "protocol-units/execution/maptos/fin-view" }
+maptos-execution-util = { path = "protocol-units/execution/maptos/util" }
 ## infra
 movement-rest = { path = "protocol-units/movement-rest" }
 ## mempool
