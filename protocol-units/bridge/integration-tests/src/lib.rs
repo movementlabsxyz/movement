@@ -245,8 +245,12 @@ impl HarnessEthClient {
 		);
 
 		let owner_address: Address = contract.owner().call().await?._0; 
+
+		let pool_balance = contract.poolBalance().call().await?._0;
 		
 		println!("Initiator contract owner address: {:?}", owner_address);
+
+		println!("Initiator contract pool balance: {:?}", pool_balance);
 
 		let counterparty_contract = AtomicBridgeCounterpartyMOVE::new(
 			config.eth.eth_counterparty_contract.parse()?,
