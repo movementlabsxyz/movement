@@ -60,6 +60,7 @@ impl Client {
 						initiator: hex::encode(initiator.0.to_vec()),
 						recipient: hex::encode(recipient.0.to_vec()),
 						amount: amount.0.into(),
+						..Default::default()
 					})
 					.execute(&mut self.conn)?;
 			}
@@ -68,6 +69,7 @@ impl Client {
 					.values(NewWaitAndCompleteInitiator {
 						wait_time_secs: wait_time_secs as i64,
 						pre_image: hex::encode(hash_lock_pre_image.0.to_vec()),
+						..Default::default()
 					})
 					.execute(&mut self.conn)?;
 			}
@@ -117,6 +119,7 @@ impl Client {
 						time_lock: bridge_transfer_details.time_lock.0 as i64,
 						amount: bridge_transfer_details.amount.0.into(),
 						state: 0,
+						..Default::default()
 					})
 					.execute(&mut self.conn)?;
 			}
@@ -129,6 +132,7 @@ impl Client {
 						hash_lock: hex::encode(lock_details.hash_lock.0.to_vec()),
 						time_lock: lock_details.time_lock.0 as i64,
 						amount: lock_details.amount.0.into(),
+						..Default::default()
 					})
 					.execute(&mut self.conn)?;
 			}
@@ -136,6 +140,7 @@ impl Client {
 				diesel::insert_into(initiator_completed_events::table)
 					.values(NewInitiatorCompletedEvent {
 						bridge_transfer_id: hex::encode(initiator_completed_events.0.to_vec()),
+						..Default::default()
 					})
 					.execute(&mut self.conn)?;
 			}
@@ -144,6 +149,7 @@ impl Client {
 					.values(NewCounterPartyCompletedEvent {
 						bridge_transfer_id: hex::encode(bridge_transfer_id.0.to_vec()),
 						pre_image: hex::encode(hash_lock_pre_image.0.to_vec()),
+						..Default::default()
 					})
 					.execute(&mut self.conn)?;
 			}
@@ -151,6 +157,7 @@ impl Client {
 				diesel::insert_into(cancelled_events::table)
 					.values(NewCancelledEvent {
 						bridge_transfer_id: hex::encode(bridge_transfer_id.0.to_vec()),
+						..Default::default()
 					})
 					.execute(&mut self.conn)?;
 			}
@@ -158,6 +165,7 @@ impl Client {
 				diesel::insert_into(refunded_events::table)
 					.values(NewRefundedEvent {
 						bridge_transfer_id: hex::encode(bridge_transfer_id.0.to_vec()),
+						..Default::default()
 					})
 					.execute(&mut self.conn)?;
 			}
