@@ -443,7 +443,7 @@ impl Runtime {
 	fn process_action_exec_error(&mut self, action_err: ActionExecError) -> Option<TransferAction> {
 		// Manage Tx execution error
 		let (action, err) = action_err.inner();
-		tracing::warn!("Client execution error for action:{action:?} err:{err:?}");
+		tracing::warn!("Client execution error for action:{action} err:{err}");
 		// retry 5 time an action in error then abort.
 		match self.swap_state_map.get_mut(&action.transfer_id) {
 			Some(state) => {
