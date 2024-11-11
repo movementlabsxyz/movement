@@ -184,7 +184,7 @@ where
 				match event_res_two {
 					Ok(event_two) => {
 						let event : TransferEvent<A2> = (event_two, ChainId::TWO).into();
-						tracing::info!("Receive event from chain TWO id:{}", event.contract_event.bridge_transfer_id());
+						tracing::info!("Receive event from chain TWO :{}", event.contract_event);
 						match state_runtime.process_event(event) {
 							Ok(action) => {
 								//Execute action
@@ -295,9 +295,9 @@ impl Runtime {
 			Some(ref mut client) => {
 				let event = event.contract_event;
 
-				client.insert_bridge_contract_event(event.clone()).map_err(|_| {
+				client.insert_bridge_contract_event(event.clone()).map_err(|err| {
 					tracing::warn!("Fail to index event");
-					InvalidEventError::BadEvent
+					InvalidEventError::IndexingFailed(err.to_string())
 				})?;
 				tracing::info!("Index event:{event:?}");
 				Ok(())
@@ -316,9 +316,9 @@ impl Runtime {
 		match self.indexer_db_client {
 			Some(ref mut client) => {
 				let action = action.kind;
-				client.insert_transfer_action(action.clone()).map_err(|_| {
+				client.insert_transfer_action(action.clone()).map_err(|err| {
 					tracing::warn!("Fail to index action");
-					InvalidEventError::BadEvent
+					InvalidEventError::BadEvent(err.to_string())
 				})?;
 				tracing::info!("Index action:{action:?}");
 				Ok(())
@@ -405,14 +405,21 @@ impl Runtime {
 		Ok(action)
 	}
 
-	fn validate_state<A>(&mut self, event: &TransferEvent<A>) -> Result<(), InvalidEventError> {
+	fn validate_state<A: std::fmt::Debug>(
+		&mut self,
+		event: &TransferEvent<A>,
+	) -> Result<(), InvalidEventError> {
 		let event_transfer_id = event.contract_event.bridge_transfer_id();
 		tracing::info!("Validating event with transfer ID: {:?}", event_transfer_id);
 		let swap_state_opt = self.swap_state_map.get(&event_transfer_id);
 
 		// Log the current state if it exists in the swap state map
 		if let Some(state) = swap_state_opt {
-			tracing::info!("Found existing state for transfer ID {:?}: {:?}", event_transfer_id, state.state);
+			tracing::info!(
+				"Found existing state for transfer ID {:?}: {:?}",
+				event_transfer_id,
+				state.state
+			);
 		} else {
 			tracing::info!("No existing state found for transfer ID {:?}", event_transfer_id);
 		}

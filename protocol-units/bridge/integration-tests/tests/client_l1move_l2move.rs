@@ -314,6 +314,33 @@ async fn test_eth_client_should_successfully_call_initiate_transfer() {
 }
 
 #[tokio::test]
+async fn test_eth_client_should_successfully_call_lock_transfer() {
+	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::INFO).try_init();
+	let config = TestHarnessFramework::read_bridge_config().await.unwrap();
+	let (mut eth_client_harness, config) = TestHarness::new_only_eth(config.clone()).await;
+
+	// Call lock transfer Eth
+	tracing::info!("Call initiate_transfer on Eth");
+	let hash_lock_pre_image = HashLockPreImage::random();
+	let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
+	let amount = Amount(1);
+
+	let res = eth_client_harness
+		.eth_client
+		.lock_bridge_transfer(
+			BridgeTransferId([2; 32]),
+			hash_lock,
+			BridgeAddress(vec![3; 32]),
+			BridgeAddress(EthAddress(HarnessEthClient::get_recipeint_address(&config))),
+			amount,
+		)
+		.await;
+
+	println!("lock res{res:?}",);
+	assert!(res.is_ok());
+}
+
+#[tokio::test]
 #[ignore] // To be tested after this is merged in https://github.com/movementlabsxyz/movement/pull/209
 async fn test_client_should_successfully_get_bridge_transfer_id() {
 	let config = Config::default();
