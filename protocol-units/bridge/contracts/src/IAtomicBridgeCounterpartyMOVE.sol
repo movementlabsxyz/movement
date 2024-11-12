@@ -2,11 +2,6 @@ pragma solidity ^0.8.22;
 
 interface IAtomicBridgeCounterpartyMOVE {
 
-    bytes32 constant DEFAULT_ADMIN_ROLE = 0x00;
-    bytes32 constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
-    bytes32 constant RELAYER_ROLE = keccak256("RELAYER_ROLE");
-    bytes32 constant REFUNDER_ROLE = keccak256("REFUNDER_ROLE");
-
     // Event emitted when a new atomic bridge transfer is locked
     event BridgeTransferLocked(
         bytes32 indexed bridgeTransferId, address indexed recipient, uint256 amount, bytes32 hashLock, uint256 timeLock

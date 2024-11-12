@@ -1,4 +1,4 @@
-// To Deploy 
+// To Deploy
 // forge script AtomicBridgeInitiatorMOVEDeployer --fork-url https://holesky.infura.io/v3/YOUR_INFURA_PROJECT_ID --broadcast --verify --etherscan-api-key YOUR_ETHERSCAN_API_KEY
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.22;
@@ -9,28 +9,27 @@ import {AtomicBridgeInitiatorMOVE} from "../src/AtomicBridgeInitiatorMOVE.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Vm} from "forge-std/Vm.sol";
 
 contract AtomicBridgeInitiatorMOVEDeployer is Script {
     TransparentUpgradeableProxy public atomicBridgeInitiatorProxy;
     TransparentUpgradeableProxy public atomicBridgeCounterpartyProxy;
     TimelockController public timelock;
-    string public atomicBridgeInitiatorSignature = "initialize(address,address,uint256,uint256)";
-    string public atomicBridgeCounterpartySignature = "initialize(address,address,uint256)";
+    string public atomicBridgeInitiatorSignature = "initialize(address,address,address,address,uint256)";
+    string public atomicBridgeCounterpartySignature = "initialize(address,address,address,address,address,uint256)";
     address public proxyAdminInitiator;
     address public proxyAdminCounterparty;
 
-
     // TODO: all params are hardcoded for testnet deployment for now
     // Parameters
-    address public moveTokenAddress = 0xC36ba8B8fD9EcbF36288b9B9B0ae9FC3E0645227; 
-    address public ownerAddress = 0x5b97cdf756f6363A88706c376464180E008Bd88b; 
-    address public relayerAddress = 0x5b97cdf756f6363A88706c376464180E008Bd88b; 
+    address public moveTokenAddress = 0xC36ba8B8fD9EcbF36288b9B9B0ae9FC3E0645227;
+    address public ownerAddress = 0x5b97cdf756f6363A88706c376464180E008Bd88b; // Replace with your .env PRIVATE_KEY address for testing
     uint256 public timeLockInitiatorDuration = 2 days; // 48 hours in seconds
     uint256 public timeLockCounterpartyDuration = 1 days; // 24 hours in seconds (half that of the initiators)
     uint256 public minDelay = 2 days; // 2-day delay for governance timelock
 
     // Safe addresses (replace these with actual safe addresses)
-    address public movementLabsSafe = 0x493516F6dB02c9b7f649E650c5de244646022Aa0; 
+    address public movementLabsSafe = 0x493516F6dB02c9b7f649E650c5de244646022Aa0;
     address public movementFoundationSafe = 0x00db70A9e12537495C359581b7b3Bc3a69379A00;
 
     bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
@@ -56,8 +55,12 @@ contract AtomicBridgeInitiatorMOVEDeployer is Script {
         _deployAtomicBridgeInitiator();
         _deployAtomicBridgeCounterparty();
 
-        AtomicBridgeInitiatorMOVE(address(atomicBridgeInitiatorProxy)).setCounterpartyAddress(address(atomicBridgeCounterpartyProxy));
-        AtomicBridgeCounterpartyMOVE(address(atomicBridgeCounterpartyProxy)).setInitiatorAddress(address(atomicBridgeInitiatorProxy));
+        AtomicBridgeInitiatorMOVE(address(atomicBridgeInitiatorProxy)).setCounterpartyAddress(
+            address(atomicBridgeCounterpartyProxy)
+        );
+        AtomicBridgeCounterpartyMOVE(address(atomicBridgeCounterpartyProxy)).setAtomicBridgeInitiator(
+            address(atomicBridgeInitiatorProxy)
+        );
 
         vm.stopBroadcast();
     }
@@ -67,16 +70,19 @@ contract AtomicBridgeInitiatorMOVEDeployer is Script {
 
         // Instantiate the implementation contract
         AtomicBridgeInitiatorMOVE atomicBridgeImplementation = new AtomicBridgeInitiatorMOVE();
-
+        
+        vm.recordLogs();
         // Deploy the TransparentUpgradeableProxy
         atomicBridgeInitiatorProxy = new TransparentUpgradeableProxy(
             address(atomicBridgeImplementation),
             address(timelock), // Admin is the timelock
             abi.encodeWithSignature(
-                atomicBridgeSignature,
-                moveTokenAddress,  // MOVE token address
-                ownerAddress,      // Owner of the contract
-                timeLockInitiatorDuration  // Timelock duration (24 hours)
+                atomicBridgeInitiatorSignature,
+                moveTokenAddress, // MOVE token address
+                ownerAddress, // Owner of the contract
+                ownerAddress, // Owner of the contract
+                ownerAddress, // Owner of the contract
+                timeLockInitiatorDuration // Timelock duration (24 hours)
             )
         );
 
@@ -84,7 +90,7 @@ contract AtomicBridgeInitiatorMOVEDeployer is Script {
         proxyAdminInitiator = logs[logs.length - 2].emitter;
         console.log("proxy admin initiator:", proxyAdminInitiator);
 
-        console.log("AtomicBridgeInitiatorMOVE deployed at proxy address:", address(atomicBridgeProxy));
+        console.log("AtomicBridgeInitiatorMOVE deployed at proxy address:", address(atomicBridgeInitiatorProxy));
         console.log("Implementation address:", address(atomicBridgeImplementation));
     }
 
@@ -93,18 +99,20 @@ contract AtomicBridgeInitiatorMOVEDeployer is Script {
 
         // Instantiate the implementation contract
         AtomicBridgeCounterpartyMOVE atomicBridgeCounterpartyImplementation = new AtomicBridgeCounterpartyMOVE();
-        
-         vm.recordLogs();
+
+        vm.recordLogs();
         // Deploy the TransparentUpgradeableProxy
         atomicBridgeCounterpartyProxy = new TransparentUpgradeableProxy(
             address(atomicBridgeCounterpartyImplementation),
             address(timelock), // Admin is the timelock
             abi.encodeWithSignature(
                 atomicBridgeCounterpartySignature,
-                atomicBridgeInitiatorAddress,  // AtomicBridgeInitiatorMOVE address
-                ownerAddress,                  // Owner of the contract
-                relayerAddress,                // relayer of the contract
-                timeLockCounterpartyDuration   // Timelock duration (48 hours)
+                address(atomicBridgeInitiatorProxy), // AtomicBridgeInitiatorMOVE address
+                ownerAddress, // Owner of the contract
+                ownerAddress, // Owner of the contract
+                ownerAddress, // Owner of the contract
+                ownerAddress, // Owner of the contract
+                timeLockCounterpartyDuration // Timelock duration (48 hours)
             )
         );
         Vm.Log[] memory logs = vm.getRecordedLogs();
@@ -124,13 +132,10 @@ contract AtomicBridgeInitiatorMOVEDeployer is Script {
             0,
             abi.encodeWithSignature(
                 "upgradeAndCall(address,address,bytes)",
-                address(atomicBridgeProxy),
+                address(atomicBridgeInitiatorProxy),
                 address(newBridgeImplementation),
                 abi.encodeWithSignature(
-                    atomicBridgeSignature,
-                    moveTokenAddress, 
-                    ownerAddress, 
-                    timeLockDuration
+                    atomicBridgeInitiatorSignature, moveTokenAddress, ownerAddress, timeLockCounterpartyDuration
                 )
             ),
             bytes32(0),
@@ -152,9 +157,9 @@ contract AtomicBridgeInitiatorMOVEDeployer is Script {
                 address(newCounterpartyImplementation),
                 abi.encodeWithSignature(
                     atomicBridgeCounterpartySignature,
-                    atomicBridgeInitiatorAddress, 
-                    ownerAddress, 
-                    timeLockDuration
+                    address(atomicBridgeInitiatorProxy),
+                    ownerAddress,
+                    timeLockCounterpartyDuration
                 )
             ),
             bytes32(0),

@@ -6,6 +6,7 @@ import {IAtomicBridgeCounterpartyMOVE} from "./IAtomicBridgeCounterpartyMOVE.sol
 import {AtomicBridgeInitiatorMOVE} from "./AtomicBridgeInitiatorMOVE.sol";
 
 contract AtomicBridgeCounterpartyMOVE is IAtomicBridgeCounterpartyMOVE, AccessControlUpgradeable {
+
     enum MessageState {
         PENDING,
         COMPLETED,
@@ -23,21 +24,36 @@ contract AtomicBridgeCounterpartyMOVE is IAtomicBridgeCounterpartyMOVE, AccessCo
 
     AtomicBridgeInitiatorMOVE public atomicBridgeInitiatorMOVE;
     mapping(bytes32 => BridgeTransferDetails) public bridgeTransfers;
+    bytes32 constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    bytes32 constant RELAYER_ROLE = keccak256("RELAYER_ROLE");
+    bytes32 constant REFUNDER_ROLE = keccak256("REFUNDER_ROLE");
 
     // Configurable time lock duration
     uint256 public counterpartyTimeLockDuration;
 
     // Prevents initialization of implementation contract exploits
-    constructor(){_disableInitializers();}
+    constructor() {
+        _disableInitializers();
+    }
 
-    function initialize(address _atomicBridgeInitiator, address _owner, address _admin, address _relayer, address _refunder, uint256 _timeLockDuration) public initializer {
-        if (_atomicBridgeInitiator == address(0) && _owner == address(0)) revert ZeroAddress();
+    function initialize(
+        address _atomicBridgeInitiator,
+        address _owner,
+        address _admin,
+        address _relayer,
+        address _refunder,
+        uint256 _timeLockDuration
+    ) public initializer {
+        if (
+            _atomicBridgeInitiator == address(0) && _owner == address(0) && _admin == address(0)
+                && _relayer == address(0) && _refunder == address(0)
+        ) revert ZeroAddress();
         if (_timeLockDuration == 0) revert ZeroValue();
         _grantRole(DEFAULT_ADMIN_ROLE, _owner);
         _grantRole(ADMIN_ROLE, _admin);
         _grantRole(RELAYER_ROLE, _relayer);
         _grantRole(REFUNDER_ROLE, _refunder);
-        
+
         atomicBridgeInitiatorMOVE = AtomicBridgeInitiatorMOVE(_atomicBridgeInitiator);
         // Set the configurable time lock duration
         counterpartyTimeLockDuration = _timeLockDuration;

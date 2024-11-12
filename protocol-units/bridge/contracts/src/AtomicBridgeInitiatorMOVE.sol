@@ -31,8 +31,14 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, AccessControlU
     // Configurable time lock duration
     uint256 public initiatorTimeLockDuration;
 
+    bytes32 constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    bytes32 constant RELAYER_ROLE = keccak256("RELAYER_ROLE");
+    bytes32 constant REFUNDER_ROLE = keccak256("REFUNDER_ROLE");
+
     // Prevents initialization of implementation contract exploits
-    constructor(){_disableInitializers();}
+    constructor() {
+        _disableInitializers();
+    }
 
     // Initialize the contract with MOVE token address, owner, and custom time lock duration
     function initialize(
@@ -42,7 +48,7 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, AccessControlU
         address _refunder,
         uint256 _timeLockDuration
     ) public initializer {
-        if (_moveToken == address(0) && owner == address(0)) {
+        if (_moveToken == address(0) && _owner == address(0) && _admin == address(0) && _refunder == address(0)) {
             revert ZeroAddress();
         }
         if (_timeLockDuration == 0) {
@@ -83,7 +89,9 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, AccessControlU
         }
 
         // Generate a unique nonce to prevent replay attacks, and generate a transfer ID
-        bridgeTransferId = keccak256(abi.encodePacked(originator, recipient, hashLock, initiatorTimeLockDuration, block.timestamp, nonce++));
+        bridgeTransferId = keccak256(
+            abi.encodePacked(originator, recipient, hashLock, initiatorTimeLockDuration, block.timestamp, nonce++)
+        );
 
         bridgeTransfers[bridgeTransferId] = BridgeTransfer({
             originator: originator,
@@ -94,7 +102,9 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, AccessControlU
             state: MessageState.INITIALIZED
         });
 
-        emit BridgeTransferInitiated(bridgeTransferId, originator, recipient, moveAmount, hashLock, initiatorTimeLockDuration);
+        emit BridgeTransferInitiated(
+            bridgeTransferId, originator, recipient, moveAmount, hashLock, initiatorTimeLockDuration
+        );
         return bridgeTransferId;
     }
 
@@ -124,4 +134,3 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, AccessControlU
         if (!moveToken.transfer(recipient, amount)) revert MOVETransferFailed();
     }
 }
-
