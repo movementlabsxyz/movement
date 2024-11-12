@@ -55,7 +55,67 @@ contract MCRTest is Test, IMCR {
         custodians[0] = address(moveToken);
         // Attempt to initialize again should fail
         vm.expectRevert(0xf92ee8a9);
-        mcr.initialize(staking, 0, 5, 10 seconds, custodians);
+        mcr.initialize(staking, 0, 5, 10 seconds, custodians,120 seconds);
+    }
+
+    // A acceptor that is in place for acceptorTerm time should be replaced by a new acceptor after their term ended.
+    function testAcceptorRotation() public {
+        // funded signers
+        address payable alice = payable(vm.addr(1));
+        staking.whitelistAddress(alice);
+        moveToken.mint(alice, 100);
+        address payable bob = payable(vm.addr(2));
+        staking.whitelistAddress(bob);
+        moveToken.mint(bob, 100);
+
+        // have them participate in the genesis ceremony
+        vm.prank(alice);
+        moveToken.approve(address(staking), 100);
+        vm.prank(alice);
+        staking.stake(address(mcr), moveToken, 34);
+        vm.prank(bob);
+        moveToken.approve(address(staking), 100);
+        vm.prank(bob);
+        staking.stake(address(mcr), moveToken, 33);
+        // end the genesis ceremony
+        mcr.acceptGenesisCeremony();
+
+        // get the current acceptor
+        assertEq(mcr.getCurrentAcceptor(), alice);
+        // assert that bob is NOT the acceptor
+        assertNotEq(mcr.getCurrentAcceptor(), bob);
+        
+        // make a block commitment
+        MCRStorage.BlockCommitment memory bc1 = MCRStorage.BlockCommitment({
+            height: 1,
+            commitment: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3))),
+            blockId: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)))
+        });
+        vm.prank(alice);
+        mcr.submitBlockCommitment(bc1);
+        vm.prank(bob);
+        mcr.submitBlockCommitment(bc1);
+
+        // TODO these tests need to be split up into different test functions (happy / unhappy path)
+        // bob should not be the current acceptor
+        vm.prank(bob);
+        vm.expectRevert("NotAcceptor");  // Expect the "NotAcceptor" revert message
+        mcr.attestBlocks();
+        // alice can confirm the block comittment
+        vm.prank(alice);
+        mcr.attestBlocks();
+
+        // now check the block is L1-confirmed
+        // assertEq(mcr.getCurrentEpoch(), mcr.getEpochByL1BlockTime());
+
+
+        // get to next Acceptor
+
+        // make a block commitment with Bob
+
+        // check that Bob is the current acceptor
+
+
     }
 
     function testSimpleStaking() public {
@@ -235,7 +295,7 @@ contract MCRTest is Test, IMCR {
         mcr.submitBlockCommitment(bc2);
 
         // check that roll over happened
-        assertEq(mcr.getCurrentEpoch(), mcr.getEpochByBlockTime());
+        assertEq(mcr.getCurrentEpoch(), mcr.getEpochByL1BlockTime());
         assertEq(mcr.getCurrentEpochStake(address(moveToken), alice), 34);
         assertEq(mcr.getCurrentEpochStake(address(moveToken), bob), 33);
         assertEq(mcr.getCurrentEpochStake(address(moveToken), carol), 33);

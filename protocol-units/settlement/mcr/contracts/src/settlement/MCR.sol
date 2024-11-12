@@ -15,21 +15,19 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         uint256 _lastAcceptedBlockHeight,
         uint256 _leadingBlockTolerance,
         uint256 _epochDuration,
-        address[] memory _custodians
+        address[] memory _custodians,
+        uint256 _acceptorTerm 
     ) public initializer {
         __BaseSettlement_init_unchained();
         stakingContract = _stakingContract;
         leadingBlockTolerance = _leadingBlockTolerance;
         lastAcceptedBlockHeight = _lastAcceptedBlockHeight;
         stakingContract.registerDomain(_epochDuration, _custodians);
+        acceptorTerm = _acceptorTerm;
     }
 
     // creates a commitment
-    function createBlockCommitment(uint256 height, bytes32 commitment, bytes32 blockId)
-        public
-        pure
-        returns (BlockCommitment memory)
-    {
+    function createBlockCommitment(uint256 height, bytes32 commitment, bytes32 blockId) public pure returns (BlockCommitment memory) {
         return BlockCommitment(height, commitment, blockId);
     }
 
@@ -38,11 +36,12 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         return lastAcceptedBlockHeight + leadingBlockTolerance;
     }
 
-    // gets the would be epoch for the current block time
-    function getEpochByBlockTime() public view returns (uint256) {
-        return stakingContract.getEpochByBlockTime(address(this));
+    // gets the would be epoch for the current L1-block time
+    function getEpochByL1BlockTime() public view returns (uint256) {
+        return stakingContract.getEpochByL1BlockTime(address(this));
     }
 
+    // TODO is this not mixing up the L1-block time with the L2-blocks?
     // gets the current epoch up to which blocks have been accepted
     function getCurrentEpoch() public view returns (uint256) {
         return stakingContract.getCurrentEpoch(address(this));
@@ -123,21 +122,34 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         return stakingContract.getAttestersByDomain(address(this));
     }
 
+    function submitBlockCommitment(BlockCommitment memory blockCommitment) public {
+        submitBlockCommitmentForAttester(msg.sender, blockCommitment);
+    }
+
+    function submitBatchBlockCommitment(BlockCommitment[] memory blockCommitments) public {
+        for (uint256 i = 0; i < blockCommitments.length; i++) {
+            submitBlockCommitment(blockCommitments[i]);
+        }
+    }
+
     // commits a attester to a particular block
     function submitBlockCommitmentForAttester(address attester, BlockCommitment memory blockCommitment) internal {
         // Attester has already committed to a block at this height
+        // TODO consider that if the block commitment is not the same we might want to record this equivocation.
         if (commitments[blockCommitment.height][attester].height != 0) revert AttesterAlreadyCommitted();
 
         // note: do no uncomment the below, we want to allow this in case we have lagging attesters
         // Attester has committed to an already accepted block
         // if ( lastAcceptedBlockHeight > blockCommitment.height) revert AlreadyAcceptedBlock();
         // Attester has committed to a block too far ahead of the last accepted block
+        // TODO we need to ensure the attester checks the lastAcceptedBlockHeight before submitting a commitment.
         if (lastAcceptedBlockHeight + leadingBlockTolerance < blockCommitment.height) revert AttesterAlreadyCommitted();
 
         // assign the block height to the current epoch if it hasn't been assigned yet
+        // TODO since any attester can submit a comittment for a block height, the assignment could be off by leadingBlockTolerance
         if (blockHeightEpochAssignments[blockCommitment.height] == 0) {
-            // note: this is an intended race condition, but it is benign because of the tolerance
-            blockHeightEpochAssignments[blockCommitment.height] = getEpochByBlockTime();
+            // TODO not clear where does this tolerance comes in ???
+            blockHeightEpochAssignments[blockCommitment.height] = getEpochByL1BlockTime();
         }
 
         // register the attester's commitment
@@ -149,15 +161,47 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
         emit BlockCommitmentSubmitted(blockCommitment.blockId, blockCommitment.commitment, allCurrentEpochStake);
 
+    }
+
+    function attestBlocks() public {
+        attestBlocksForAttester(msg.sender);
+    }
+
+    /// @notice The current acceptor can attest to a block height, given there is a supermajority of stake on the block
+    function attestBlocksForAttester(address attester) internal {
+        // check if the address is the current acceptor
+        if (attester != getCurrentAcceptor()) revert("NotAcceptor");
+
         // keep ticking through to find accepted blocks
         // note: this is what allows for batching to be successful
         // we can commit to blocks out to the tolerance point
         // then we can accept them in order
-        // ! however, this does potentially become very costly for whomever submits this last block
-        // ! rewards need to be managed accordingly
+        // ! rewards need to be 
+        // ! - at least proportional to attested blocks to account for consumed gas
+        // ! - reward the acceptor well to incentivize frequent block attestation (close to comitted block frequency)
+        //     rather than incentivizing the acceptor to batch attesting blocks
         while (tickOnBlockHeight(lastAcceptedBlockHeight + 1)) {}
     }
 
+    /// The Acceptor is determined by L1.
+    function getCurrentAcceptor() public view returns (address) {
+        uint256 currentL1BlockHeight = block.number;
+        uint256 relevantL1BlockHeight = currentL1BlockHeight - currentL1BlockHeight % acceptorTerm - 1 ; // -1 because we do not want to consider the current block.
+        if (relevantL1BlockHeight < 0) {
+            relevantL1BlockHeight = 0;
+        }
+        bytes32 blockHash = blockhash(relevantL1BlockHeight);
+
+        address[] memory attesters = getAttesters();
+        // map the blockhash to the attesters
+        uint256 acceptorIndex = uint256(blockHash) % attesters.length;
+        return attesters[acceptorIndex];        
+    }
+
+    // TODO : liveness. if the accepting epoch is behind the presentEpoch and does not have enough votes for a given block height 
+    // TODO : but the current epoch has enough votes, what should we do?? 
+    // TODO : Should we move to the next epoch and ignore all votes on blocks of that epoch? 
+    // TODO : What if none of the epochs have enough votes for a given block height.
     function tickOnBlockHeight(uint256 blockHeight) internal returns (bool) {
         // get the epoch assigned to the block height
         uint256 blockEpoch = blockHeightEpochAssignments[blockHeight];
@@ -166,11 +210,14 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         // so long as we ensure that we go through the blocks in order and that the block to epoch assignment is non-decreasing, we're good
         // so, we'll just keep rolling over the epoch until we catch up
         while (getCurrentEpoch() < blockEpoch) {
+            // TODO: we should check the implication of this for the acceptor. But it also may be an issue for any attester. 
             rollOverEpoch();
         }
 
         // note: we could keep track of seen commitments in a set
         // but since the operations we're doing are very cheap, the set actually adds overhead
+
+        // TODO the supermajority is 2f+1 from 3f+1 nodes. Not 2f from 3f. 
         uint256 supermajority = (2 * computeAllTotalStakeForEpoch(blockEpoch)) / 3;
         address[] memory attesters = getAttesters();
 
@@ -196,16 +243,6 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         return false;
     }
 
-    function submitBlockCommitment(BlockCommitment memory blockCommitment) public {
-        submitBlockCommitmentForAttester(msg.sender, blockCommitment);
-    }
-
-    function submitBatchBlockCommitment(BlockCommitment[] memory blockCommitments) public {
-        for (uint256 i = 0; i < blockCommitments.length; i++) {
-            submitBlockCommitment(blockCommitments[i]);
-        }
-    }
-
     function _acceptBlockCommitment(BlockCommitment memory blockCommitment) internal {
         uint256 currentEpoch = getCurrentEpoch();
         // get the epoch for the block commitment
@@ -225,7 +262,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         emit BlockAccepted(blockCommitment.blockId, blockCommitment.commitment, blockCommitment.height);
 
         // if the timestamp epoch is greater than the current epoch, roll over the epoch
-        if (getEpochByBlockTime() > currentEpoch) {
+        if (getEpochByL1BlockTime() > currentEpoch) {
             rollOverEpoch();
         }
     }
