@@ -227,10 +227,7 @@ async fn test_bridge_transfer_movement_eth_happy_path() -> Result<(), anyhow::Er
 
 	// initiate Eth transfer
 	tracing::info!("Call initiate_transfer on Eth and set up test");
-	let hash_lock_pre_image = HashLockPreImage([
-		1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
-		26, 27, 28, 29, 30, 31, 32,
-	]);
+	let hash_lock_pre_image = HashLockPreImage::random();
 	//let hash_lock_pre_image = HashLockPreImage::random();
 	let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
 	let amount = Amount(1);
@@ -264,10 +261,7 @@ async fn test_bridge_transfer_movement_eth_happy_path() -> Result<(), anyhow::Er
 	let counter_party_address = EthAddress(counterpart_privekey.address());
 
 	// Initialize Movement transfer
-	let hash_lock_movement_pre_image = HashLockPreImage([
-		1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
-		26, 27, 28, 29, 30, 31, 32,
-	]);
+	let hash_lock_movement_pre_image = HashLockPreImage::random();
 	tracing::info!(
 		"Hash lock pre-image for Movement initiate transfer: {:?}",
 		hash_lock_movement_pre_image

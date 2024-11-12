@@ -244,7 +244,6 @@ impl HarnessEthClient {
 		tracing::info!("Before token approval, MockMOVEToken balance: {:?}", token_balance._0);
 
 		// Get the ETH balance for the initiator address
-
 		let eth_value = U256::from(amount.0.clone());
 		tracing::info!("Eth value: {}", eth_value);
 		let approve_call = mock_move_token
@@ -268,55 +267,10 @@ impl HarnessEthClient {
 		let token_balance = mock_move_token.balanceOf(initiator_address).call().await?;
 		tracing::info!("After token approval, MockMOVEToken balance: {:?}", token_balance._0);
 
-		let contract = AtomicBridgeInitiatorMOVE::new(
-			config.eth.eth_initiator_contract.parse()?,
-			&rpc_provider,
-		);
-
-		let owner_address: Address = contract.owner().call().await?._0;
-
-		println!("Initiator contract owner address: {:?}", owner_address);
-
-		// let counterparty_contract = AtomicBridgeCounterpartyMOVE::new(
-		// 	config.eth.eth_counterparty_contract.parse()?,
-		// 	&rpc_provider,
-		// );
-
-		// let counterparty_owner_address: Address = counterparty_contract.owner().call().await?._0;
-
-		// tracing::info!("Before setAtomicBridgeInitiator");
-		// let set_initiator_call = counterparty_contract
-		// 	.setAtomicBridgeInitiator(initiator_address)
-		// 	.from(owner_address);
-		// let _ = send_transaction(
-		// 	set_initiator_call,
-		// 	owner_address,
-		// 	&send_transaction_rules(),
-		// 	config.eth.transaction_send_retries,
-		// 	config.eth.gas_limit as u128,
-		// )
-		// .await?;
-		// tracing::info!("After setAtomicBridgeInitiator");
-
-		// println!("Counterparty contract owner address: {:?}", counterparty_owner_address);
-
-		// tracing::info!("Initializing counterparty contract");
-		// let initialize_call = counterparty_contract
-		// 	.initialize(
-		// 		config.eth.eth_counterparty_contract.parse()?,
-		// 		owner_address,
-		// 		Uint::from(86400),
-		// 	)
-		// 	.from(initiator_address);
-		// let _ = send_transaction(
-		// 	initialize_call,
-		// 	initiator_address,
-		// 	&send_transaction_rules(),
-		// 	config.eth.transaction_send_retries,
-		// 	config.eth.gas_limit as u128,
-		// )
-		// .await?;
-		// tracing::info!("Counterparty contract initialization completed.");
+		// Instantiate AtomicBridgeInitiatorMOVE
+		let initiator_contract_address = config.eth.eth_initiator_contract.parse()?;
+		let initiator_contract =
+			AtomicBridgeInitiatorMOVE::new(initiator_contract_address, &rpc_provider);
 
 		let recipient_address = BridgeAddress(Into::<Vec<u8>>::into(recipient));
 		let recipient_bytes: [u8; 32] =
@@ -327,7 +281,7 @@ impl HarnessEthClient {
 		tracing::info!("Recipient: {}", FixedBytes(recipient_bytes));
 		tracing::info!("hashLock: {}", FixedBytes(hash_lock.0));
 
-		let call = contract
+		let call = initiator_contract
 			.initiateBridgeTransfer(
 				U256::from(amount.0),
 				FixedBytes(recipient_bytes),

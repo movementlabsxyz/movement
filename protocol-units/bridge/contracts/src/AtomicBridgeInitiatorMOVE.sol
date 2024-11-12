@@ -107,6 +107,7 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
 
     function withdrawMOVE(address recipient, uint256 amount) external {
         if (msg.sender != counterpartyAddress) revert Unauthorized();
+
         if (!moveToken.transfer(recipient, amount)) revert MOVETransferFailed();
     }
 }
