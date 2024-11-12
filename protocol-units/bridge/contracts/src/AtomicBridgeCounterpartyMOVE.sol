@@ -30,13 +30,15 @@ contract AtomicBridgeCounterpartyMOVE is IAtomicBridgeCounterpartyMOVE, AccessCo
     // Prevents initialization of implementation contract exploits
     constructor(){_disableInitializers();}
 
-    function initialize(address _atomicBridgeInitiator, address _owner, address _relayer, uint256 _timeLockDuration) public initializer {
+    function initialize(address _atomicBridgeInitiator, address _owner, address _admin, address _relayer, address _refunder, uint256 _timeLockDuration) public initializer {
         if (_atomicBridgeInitiator == address(0) && _owner == address(0)) revert ZeroAddress();
         if (_timeLockDuration == 0) revert ZeroValue();
+        _grantRole(DEFAULT_ADMIN_ROLE, _owner);
+        _grantRole(ADMIN_ROLE, _admin);
+        _grantRole(RELAYER_ROLE, _relayer);
+        _grantRole(REFUNDER_ROLE, _refunder);
+        
         atomicBridgeInitiatorMOVE = AtomicBridgeInitiatorMOVE(_atomicBridgeInitiator);
-        grantRole(DEFAULT_ADMIN_ROLE, _owner);
-        grantRole(RELAYER_ROLE, _relayer);
-
         // Set the configurable time lock duration
         counterpartyTimeLockDuration = _timeLockDuration;
     }

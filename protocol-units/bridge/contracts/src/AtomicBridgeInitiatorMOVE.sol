@@ -38,6 +38,8 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, AccessControlU
     function initialize(
         address _moveToken,
         address _owner,
+        address _admin,
+        address _refunder,
         uint256 _timeLockDuration
     ) public initializer {
         if (_moveToken == address(0) && owner == address(0)) {
@@ -47,7 +49,9 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, AccessControlU
             revert ZeroValue();
         }
         moveToken = ERC20Upgradeable(_moveToken);
-        grantRole(DEFAULT_ADMIN_ROLE, _owner);
+        _grantRole(DEFAULT_ADMIN_ROLE, _owner);
+        _grantRole(ADMIN_ROLE, _admin);
+        _grantRole(REFUNDER_ROLE, _refunder);
 
         // Set the custom time lock duration
         initiatorTimeLockDuration = _timeLockDuration;
