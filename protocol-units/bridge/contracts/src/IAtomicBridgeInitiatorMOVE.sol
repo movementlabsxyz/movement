@@ -2,6 +2,12 @@
 pragma solidity ^0.8.22;
 
 interface IAtomicBridgeInitiatorMOVE {
+
+    bytes32 constant DEFAULT_ADMIN_ROLE = 0x00;
+    bytes32 constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    bytes32 constant RELAYER_ROLE = keccak256("RELAYER_ROLE");
+    bytes32 constant REFUNDER_ROLE = keccak256("REFUNDER_ROLE");
+    
     // Event emitted when a new atomic bridge transfer is created
     event BridgeTransferInitiated(
         bytes32 indexed _bridgeTransferId,
