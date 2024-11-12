@@ -1,19 +1,14 @@
-use alloy::primitives::{address, keccak256};
+use alloy::primitives::keccak256;
 use anyhow::Result;
 use aptos_sdk::coin_client::CoinClient;
 use aptos_sdk::types::account_address::AccountAddress;
-use bridge_config::Config;
 use bridge_integration_tests::utils as test_utils;
 use bridge_integration_tests::EthToMovementCallArgs;
 use bridge_integration_tests::HarnessEthClient;
 use bridge_integration_tests::HarnessMvtClient;
-use bridge_integration_tests::MovementToEthCallArgs;
-use bridge_integration_tests::{TestHarness, TestHarnessFramework};
-use bridge_service::chains::movement::utils::MovementAddress;
-use bridge_service::chains::{bridge_contracts::BridgeContract, ethereum::types::EthHash};
-use bridge_service::chains::{
-	ethereum::types::EthAddress, movement::client_framework::MovementClientFramework,
-};
+use bridge_integration_tests::TestHarness;
+use bridge_service::chains::bridge_contracts::BridgeContract;
+use bridge_service::chains::ethereum::types::EthAddress;
 use bridge_service::types::{Amount, BridgeAddress, BridgeTransferId, HashLock, HashLockPreImage};
 use tokio::time::{sleep, Duration};
 use tokio::{self};
@@ -22,9 +17,8 @@ use tracing::info;
 #[tokio::test]
 async fn test_movement_client_initiate_transfer() {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
-	let (mut mvt_client_harness, config) = TestHarnessFramework::new_with_movement()
-		.await
-		.expect("Bridge config file not set");
+	let (mut mvt_client_harness, config) =
+		TestHarness::new_with_movement().await.expect("Bridge config file not set");
 	// let args = MovementToEthCallArgs::default();
 
 	test_utils::fund_and_check_balance_framework(&mut mvt_client_harness, 100_000_000_000)
@@ -74,9 +68,8 @@ async fn test_movement_client_initiate_transfer() {
 #[tokio::test]
 async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
-	let (mut mvt_client_harness, _config) = TestHarnessFramework::new_with_movement()
-		.await
-		.expect("Bridge config file not set");
+	let (mut mvt_client_harness, _config) =
+		TestHarness::new_with_movement().await.expect("Bridge config file not set");
 	let args = EthToMovementCallArgs::default();
 	let test_result = async {
 		let coin_client = CoinClient::new(&mvt_client_harness.rest_client);
@@ -172,8 +165,9 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 #[tokio::test]
 async fn test_eth_client_complete_transfer() {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::INFO).try_init();
-	let config = TestHarnessFramework::read_bridge_config().await.unwrap();
-	let (mut eth_client_harness, _config) = TestHarness::new_only_eth(config.clone()).await;
+	let config = TestHarness::read_bridge_config().await.unwrap();
+	let (mut eth_client_harness, _config) =
+		TestHarness::new_only_eth().await.expect("Bridge config file not set");
 
 	// initialize Eth transfer
 	tracing::info!("Call initiate_transfer on Eth");
@@ -208,9 +202,8 @@ async fn test_eth_client_complete_transfer() {
 #[tokio::test]
 async fn test_movement_client_abort_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
-	let (mut mvt_client_harness, _config) = TestHarnessFramework::new_with_movement()
-		.await
-		.expect("Bridge config file not set");
+	let (mut mvt_client_harness, _config) =
+		TestHarness::new_with_movement().await.expect("Bridge config file not set");
 	let args = EthToMovementCallArgs::default();
 	let test_result = async {
 		let coin_client = CoinClient::new(&mvt_client_harness.rest_client);
@@ -292,20 +285,21 @@ async fn test_movement_client_abort_transfer() -> Result<(), anyhow::Error> {
 
 #[tokio::test]
 async fn test_eth_client_should_successfully_call_lock_transfer() {
-	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::INFO).try_init();
-	let config = TestHarnessFramework::read_bridge_config().await.unwrap();
-	let (mut eth_client_harness, config) = TestHarness::new_only_eth(config.clone()).await;
+	let config = TestHarness::read_bridge_config().await.unwrap();
+	let (mut eth_client_harness, config) =
+		TestHarness::new_only_eth().await.expect("Bridge config file not set");
 
 	// Call lock transfer Eth
 	tracing::info!("Call initiate_transfer on Eth");
 	let hash_lock_pre_image = HashLockPreImage::random();
 	let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
 	let amount = Amount(1);
+	let transfer_id = BridgeTransferId::gen_unique_hash(&mut rand::rngs::OsRng);
 
 	let res = eth_client_harness
 		.eth_client
 		.lock_bridge_transfer(
-			BridgeTransferId([2; 32]),
+			transfer_id,
 			hash_lock,
 			BridgeAddress(vec![3; 32]),
 			BridgeAddress(EthAddress(HarnessEthClient::get_recipeint_address(&config))),
@@ -313,31 +307,26 @@ async fn test_eth_client_should_successfully_call_lock_transfer() {
 		)
 		.await;
 
-	println!("lock res{res:?}",);
-	assert!(res.is_ok());
+	assert!(res.is_ok(), "lock_bridge_transfer failed because: {res:?}");
 }
 
 #[tokio::test]
-#[ignore] // To be tested after this is merged in https://github.com/movementlabsxyz/movement/pull/209
 async fn test_client_should_successfully_call_initiate_transfer() {
-	let config = Config::default();
-	let (mut eth_client_harness, _config) = TestHarness::new_only_eth(config).await;
+	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::INFO).try_init();
+	let (_eth_client_harness, config) =
+		TestHarness::new_only_eth().await.expect("Bridge config file not set");
 
-	let signer_address: alloy::primitives::Address = eth_client_harness.signer_address();
+	let recipient = HarnessMvtClient::gen_aptos_account();
+	let hash_lock_pre_image = HashLockPreImage::random();
+	let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
 
-	let recipient = HarnessMvtClient::gen_aptos_account_bytes();
-	let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
-
-	eth_client_harness
-		.eth_client
-		.initiate_bridge_transfer(
-			BridgeAddress(EthAddress(signer_address)),
-			BridgeAddress(recipient),
-			HashLock(EthHash(hash_lock).0),
-			Amount(1000),
-		)
-		.await
-		.expect("Failed to initiate bridge transfer");
-
-	//TODO: Here call get details with the captured event
+	let res = HarnessEthClient::initiate_eth_bridge_transfer(
+		&config,
+		HarnessEthClient::get_initiator_private_key(&config),
+		bridge_service::chains::movement::utils::MovementAddress(recipient.address()),
+		hash_lock,
+		Amount(1),
+	)
+	.await;
+	assert!(res.is_ok(), "initiate_bridge_transfer failed because: {res:?}");
 }

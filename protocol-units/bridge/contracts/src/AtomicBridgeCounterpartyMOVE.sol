@@ -52,8 +52,7 @@ contract AtomicBridgeCounterpartyMOVE is IAtomicBridgeCounterpartyMOVE, OwnableU
         bytes32 hashLock,
         address recipient,
         uint256 amount
-    ) external onlyOwner {
-        console.log("ICI LOCK amount:%d", amount);
+    ) external {
         if (amount == 0) revert ZeroAmount();
 
         // The time lock is now based on the configurable duration

@@ -220,29 +220,6 @@ impl HarnessEthClient {
 			&rpc_provider,
 		);
 
-		tracing::info!("Initializing MockMOVEToken contract");
-		let initialize_call = mock_move_token.initialize(initiator_address).from(initiator_address);
-		send_transaction(
-			initialize_call,
-			initiator_address,
-			&send_transaction_rules(),
-			config.eth.transaction_send_retries,
-			config.eth.gas_limit as u128,
-		)
-		.await?;
-
-		tracing::info!("Initialization completed.");
-
-		tracing::info!(
-			"Mock MOVE token address: {:?}",
-			Address::from_str(&config.eth.eth_move_token_contract)?
-		);
-		tracing::info!("Initiator address: {:?}", initiator_address);
-		tracing::info!("Initiator contract address: {}", config.eth.eth_initiator_contract);
-
-		let token_balance = mock_move_token.balanceOf(initiator_address).call().await?;
-		tracing::info!("Before token approval, MockMOVEToken balance: {:?}", token_balance._0);
-
 		// Get the ETH balance for the initiator address
 		let eth_value = U256::from(amount.0.clone());
 		tracing::info!("Eth value: {}", eth_value);
@@ -449,54 +426,15 @@ impl TestHarness {
 		Ok((test_eth_harness, test_mvt_harness, config))
 	}
 
-	pub async fn new_with_movement(config: Config) -> (HarnessMvtClient, Config) {
-		let test_harness = HarnessMvtClient::build(&config).await;
-
-		(test_harness, config)
-	}
-
-	pub async fn new_only_eth(config: Config) -> (HarnessEthClient, Config) {
-		// let config = bridge_setup::test_eth_setup(config)
-		// 	.await
-		// 	.expect("Test eth config setup failed.");
-		let test_hadness = HarnessEthClient::build(&config).await;
-		(test_hadness, config)
-	}
-}
-
-pub struct TestHarnessFramework;
-impl TestHarnessFramework {
-	pub async fn read_bridge_config() -> Result<Config, anyhow::Error> {
-		let mut dot_movement = dot_movement::DotMovement::try_from_env()?;
-		let pathbuff = bridge_config::get_config_path(&dot_movement);
-		dot_movement.set_path(pathbuff);
-		let config_file = dot_movement.try_get_or_create_config_file().await?;
-
-		// get a matching godfig object
-		let godfig: Godfig<Config, ConfigFile> = Godfig::new(ConfigFile::new(config_file), vec![]);
-		let bridge_config: Config = godfig.try_wait_for_ready().await?;
-		Ok(bridge_config)
-	}
-
-	pub async fn new_with_eth_and_movement(
-	) -> Result<(HarnessEthClient, HarnessMvtClient, Config), anyhow::Error> {
-		let config = TestHarnessFramework::read_bridge_config().await?;
-
-		let test_mvt_harness = HarnessMvtClient::build(&config).await;
-		let test_eth_harness = HarnessEthClient::build(&config).await;
-
-		Ok((test_eth_harness, test_mvt_harness, config))
-	}
-
 	pub async fn new_with_movement() -> Result<(HarnessMvtClient, Config), anyhow::Error> {
-		let config = TestHarnessFramework::read_bridge_config().await?;
+		let config = TestHarness::read_bridge_config().await?;
 		let test_harness = HarnessMvtClient::build(&config).await;
 
 		Ok((test_harness, config))
 	}
 
-	pub async fn new_only_eth(config: Config) -> Result<(HarnessEthClient, Config), anyhow::Error> {
-		let config = TestHarnessFramework::read_bridge_config().await?;
+	pub async fn new_only_eth() -> Result<(HarnessEthClient, Config), anyhow::Error> {
+		let config = TestHarness::read_bridge_config().await?;
 		let test_harness = HarnessEthClient::build(&config).await;
 		Ok((test_harness, config))
 	}

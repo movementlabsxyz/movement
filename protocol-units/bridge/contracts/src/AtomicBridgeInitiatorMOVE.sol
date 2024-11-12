@@ -5,6 +5,7 @@ import {IAtomicBridgeInitiatorMOVE} from "./IAtomicBridgeInitiatorMOVE.sol";
 import {MockMOVEToken} from "./MockMOVEToken.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {console} from "forge-std/console.sol";
 
 contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgradeable {
     enum MessageState {
@@ -58,15 +59,19 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         returns (bytes32 bridgeTransferId)
     {
         address originator = msg.sender;
+        console.log("ICI initiateBridgeTransfer amount:%d", moveAmount);
         // Ensure there is a valid amount
         if (moveAmount == 0) {
             revert ZeroAmount();
         }
+        console.log("ICI initiateBridgeTransfer amount ok");
 
         // Transfer the MOVE tokens from the user to the contract
         if (!moveToken.transferFrom(originator, address(this), moveAmount)) {
+            console.log("ICI initiateBridgeTransfer transfer failed");
             revert MOVETransferFailed();
         }
+        console.log("ICI initiateBridgeTransfer transfer done");
 
         // Generate a unique nonce to prevent replay attacks, and generate a transfer ID
         bridgeTransferId = keccak256(abi.encodePacked(originator, recipient, hashLock, initiatorTimeLockDuration, block.timestamp, nonce++));

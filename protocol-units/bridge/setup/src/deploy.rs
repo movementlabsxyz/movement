@@ -188,8 +188,8 @@ async fn initialize_eth_contracts(
 
 pub fn deploy_local_movement_node(config: &mut MovementConfig) -> Result<(), anyhow::Error> {
 	//init_movement_node(config)?;
-	deploy_on_movement_framework(config)?;
 	update_mvt_account_address()?;
+	deploy_on_movement_framework(config)?;
 	Ok(())
 }
 
