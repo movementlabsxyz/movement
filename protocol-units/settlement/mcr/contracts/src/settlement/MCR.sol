@@ -198,9 +198,9 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         return attesters[acceptorIndex];        
     }
 
-    // TODO : liveness. if the accepting epoch is behind and does not have enough for a given block height 
+    // TODO : liveness. if the accepting epoch is behind the presentEpoch and does not have enough votes for a given block height 
     // TODO : but the current epoch has enough votes, what should we do?? 
-    // TODO : Should we move to the next epoch and ignore all following votes of that epoch? 
+    // TODO : Should we move to the next epoch and ignore all votes on blocks of that epoch? 
     // TODO : What if none of the epochs have enough votes for a given block height.
     function tickOnBlockHeight(uint256 blockHeight) internal returns (bool) {
         // get the epoch assigned to the block height
