@@ -80,7 +80,7 @@ contract AtomicBridgeCounterpartyMOVE is IAtomicBridgeCounterpartyMOVE, OwnableU
 
         details.state = MessageState.COMPLETED;
 
-        //atomicBridgeInitiatorMOVE.withdrawMOVE(details.recipient, details.amount);
+        atomicBridgeInitiatorMOVE.withdrawMOVE(details.recipient, details.amount);
 
         emit BridgeTransferCompleted(bridgeTransferId, preImage);
     }

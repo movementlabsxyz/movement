@@ -212,7 +212,6 @@ impl HarnessEthClient {
 		tracing::info!("Before token approval, MockMOVEToken balance: {:?}", token_balance._0);
 
 		// Get the ETH balance for the initiator address
-		
 		let eth_value = U256::from(amount.0.clone());
 		tracing::info!("Eth value: {}", eth_value);
 		let approve_call = mock_move_token
@@ -239,28 +238,47 @@ impl HarnessEthClient {
 		let token_balance = mock_move_token.balanceOf(initiator_address).call().await?;
 		tracing::info!("After token approval, MockMOVEToken balance: {:?}", token_balance._0);
 
-		let contract = AtomicBridgeInitiatorMOVE::new(
-			config.eth.eth_initiator_contract.parse()?,
+		// Instantiate AtomicBridgeInitiatorMOVE
+		let initiator_contract_address = config.eth.eth_initiator_contract.parse()?;
+		let initiator_contract = AtomicBridgeInitiatorMOVE::new(
+			initiator_contract_address,
 			&rpc_provider,
 		);
 
-		let owner_address: Address = contract.owner().call().await?._0; 
+		let owner_address: Address = initiator_contract.owner().call().await?._0; 
 
-		let pool_balance = contract.poolBalance().call().await?._0;
+		let pool_balance = initiator_contract.poolBalance().call().await?._0;
 		
 		println!("Initiator contract owner address: {:?}", owner_address);
 
 		println!("Initiator contract pool balance: {:?}", pool_balance);
 
+		// Instantiate AtomicBridgeCounterpartyMOVE
+		let counterparty_contract_address = config.eth.eth_counterparty_contract.parse()?;
 		let counterparty_contract = AtomicBridgeCounterpartyMOVE::new(
-			config.eth.eth_counterparty_contract.parse()?,
+			counterparty_contract_address,
 			&rpc_provider,
 		);
 
 		let counterparty_owner_address: Address = counterparty_contract.owner().call().await?._0;
-		
+
+		tracing::info!("Before setCounterpartyAddress");
+		let set_counterparty_call = initiator_contract.setCounterpartyAddress(counterparty_contract_address).from(owner_address);
+		let _ = send_transaction(
+			set_counterparty_call,
+			owner_address,
+			&send_transaction_rules(),
+			config.eth.transaction_send_retries,
+			config.eth.gas_limit as u128,
+		)
+		.await
+		.map_err(|e| {
+			BridgeContractError::GenericError(format!("Failed to execute setCounterparty: {}", e))
+		});
+		tracing::info!("After setCounterparty");
+
 		tracing::info!("Before setAtomicBridgeInitiator");
-		let set_initiator_call = counterparty_contract.setAtomicBridgeInitiator(initiator_address).from(owner_address);
+		let set_initiator_call = counterparty_contract.setAtomicBridgeInitiator(initiator_contract_address).from(owner_address);
 		let _ = send_transaction(
 			set_initiator_call,
 			owner_address,
@@ -276,8 +294,26 @@ impl HarnessEthClient {
 
 		println!("Counterparty contract owner address: {:?}", counterparty_owner_address);
 
+
+		tracing::info!("Initializing initiator contract");
+		let initiator_contract_address = config.eth.eth_initiator_contract.parse()?;
+		let initialize_call = counterparty_contract.initialize(initiator_contract_address, owner_address, Uint::from(86400)).from(initiator_address);
+		let _ = send_transaction(
+			initialize_call,
+			initiator_address,
+			&send_transaction_rules(),
+			config.eth.transaction_send_retries,
+			config.eth.gas_limit as u128,
+		)
+		.await
+		.map_err(|e| {
+			BridgeContractError::GenericError(format!("Failed to send initialize transaction: {}", e))
+		});
+		tracing::info!("Initiator contract initialization completed.");
+
 		tracing::info!("Initializing counterparty contract");
-		let initialize_call = counterparty_contract.initialize(config.eth.eth_counterparty_contract.parse()?, owner_address, Uint::from(86400)).from(initiator_address);
+		let counterparty_contract_address = config.eth.eth_counterparty_contract.parse()?;
+		let initialize_call = counterparty_contract.initialize(counterparty_contract_address, owner_address, Uint::from(86400)).from(initiator_address);
 		let _ = send_transaction(
 			initialize_call,
 			initiator_address,
@@ -301,7 +337,7 @@ impl HarnessEthClient {
 		tracing::info!("Recipient: {}", FixedBytes(recipient_bytes));
 		tracing::info!("hashLock: {}", FixedBytes(hash_lock.0));
 
-		let call = contract
+		let call = initiator_contract
 			.initiateBridgeTransfer(
 				U256::from(amount.0),
 				FixedBytes(recipient_bytes),
