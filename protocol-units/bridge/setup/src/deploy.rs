@@ -154,12 +154,7 @@ async fn initialize_eth_contracts(
 	let initiator_contract =
 		AtomicBridgeInitiatorMOVE::new(initiator_contract_address.parse()?, rpc_provider.clone());
 
-	let call = initiator_contract.initialize(
-		move_token.0,
-		owner.0,
-		U256::from(timelock),
-		U256::from(100 as u128 * 100_000_000 as u128),
-	);
+	let call = initiator_contract.initialize(move_token.0, owner.0, U256::from(timelock));
 	send_transaction(
 		call,
 		signer_address,
@@ -281,10 +276,16 @@ pub fn deploy_on_movement_framework(config: &mut MovementConfig) -> Result<(), a
 			.output()?;
 
 	if !enable_bridge_feature_output.stdout.is_empty() {
-		println!("stdout: {}", String::from_utf8_lossy(&enable_bridge_feature_output.stdout));
+		println!(
+			"run-script enable_bridge_feature stdout: {}",
+			String::from_utf8_lossy(&enable_bridge_feature_output.stdout)
+		);
 	}
 	if !enable_bridge_feature_output.stderr.is_empty() {
-		eprintln!("stderr: {}", String::from_utf8_lossy(&enable_bridge_feature_output.stderr));
+		eprintln!(
+			"run-script enable_bridge_feature stderr: {}",
+			String::from_utf8_lossy(&enable_bridge_feature_output.stderr)
+		);
 	}
 
 	let store_mint_burn_caps_output = Command::new("movement")
@@ -302,10 +303,16 @@ pub fn deploy_on_movement_framework(config: &mut MovementConfig) -> Result<(), a
 			.output()?;
 
 	if !store_mint_burn_caps_output.stdout.is_empty() {
-		println!("stdout: {}", String::from_utf8_lossy(&store_mint_burn_caps_output.stdout));
+		println!(
+			"run-script store_mint_burn_caps stdout: {}",
+			String::from_utf8_lossy(&store_mint_burn_caps_output.stdout)
+		);
 	}
 	if !store_mint_burn_caps_output.stderr.is_empty() {
-		eprintln!("stderr: {}", String::from_utf8_lossy(&store_mint_burn_caps_output.stderr));
+		eprintln!(
+			"run-script store_mint_burn_caps stderr: {}",
+			String::from_utf8_lossy(&store_mint_burn_caps_output.stderr)
+		);
 	}
 
 	let update_bridge_operator_output = Command::new("movement")
@@ -325,10 +332,16 @@ pub fn deploy_on_movement_framework(config: &mut MovementConfig) -> Result<(), a
 			.output()?;
 
 	if !update_bridge_operator_output.stdout.is_empty() {
-		println!("stdout: {}", String::from_utf8_lossy(&update_bridge_operator_output.stdout));
+		println!(
+			"run-script update_bridge_operatorstdout: {}",
+			String::from_utf8_lossy(&update_bridge_operator_output.stdout)
+		);
 	}
 	if !update_bridge_operator_output.stderr.is_empty() {
-		eprintln!("stderr: {}", String::from_utf8_lossy(&update_bridge_operator_output.stderr));
+		eprintln!(
+			"run-script update_bridge_operator supdate_bridge_operator tderr: {}",
+			String::from_utf8_lossy(&update_bridge_operator_output.stderr)
+		);
 	}
 
 	let set_initiator_time_lock_script_output = Command::new("movement")
@@ -348,10 +361,16 @@ pub fn deploy_on_movement_framework(config: &mut MovementConfig) -> Result<(), a
 		.output()?;
 
 	if !set_initiator_time_lock_script_output.stdout.is_empty() {
-		println!("stdout: {}", String::from_utf8_lossy(&update_bridge_operator_output.stdout));
+		println!(
+			"run-script set_initiator_time_lock_duration stdout: {}",
+			String::from_utf8_lossy(&update_bridge_operator_output.stdout)
+		);
 	}
 	if !set_initiator_time_lock_script_output.stderr.is_empty() {
-		eprintln!("stderr: {}", String::from_utf8_lossy(&update_bridge_operator_output.stderr));
+		eprintln!(
+			"run-script set_initiator_time_lock_duration stderr: {}",
+			String::from_utf8_lossy(&update_bridge_operator_output.stderr)
+		);
 	}
 
 	let set_counterparty_time_lock_script_output = Command::new("movement")
@@ -371,11 +390,19 @@ pub fn deploy_on_movement_framework(config: &mut MovementConfig) -> Result<(), a
 		.output()?;
 
 	if !set_counterparty_time_lock_script_output.stdout.is_empty() {
-		println!("stdout: {}", String::from_utf8_lossy(&update_bridge_operator_output.stdout));
+		println!(
+			"run-script set_counterparty_time_lock_duration stdout: {}",
+			String::from_utf8_lossy(&update_bridge_operator_output.stdout)
+		);
 	}
 	if !set_counterparty_time_lock_script_output.stderr.is_empty() {
-		eprintln!("stderr: {}", String::from_utf8_lossy(&update_bridge_operator_output.stderr));
+		eprintln!(
+			"run-script set_counterparty_time_lock_duration stderr: {}",
+			String::from_utf8_lossy(&update_bridge_operator_output.stderr)
+		);
 	}
+
+	println!("Mvt framework deployed.");
 
 	Ok(())
 }

@@ -133,7 +133,7 @@ impl EthClient {
 			self.config.initiator_contract,
 			self.rpc_provider.clone(),
 		);
-		let call = contract.initialize(weth.0, owner.0, U256::from(timelock.0), U256::from(100));
+		let call = contract.initialize(weth.0, owner.0, U256::from(timelock.0));
 		send_transaction(
 			call.to_owned(),
 			self.signer_address,
@@ -330,18 +330,23 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 		let initiator: [u8; 32] = initiator.0.try_into().map_err(|_| {
 			BridgeContractError::ConversionFailed("lock_bridge_transfer initiator".to_string())
 		})?;
-		let call = self.counterparty_contract.lockBridgeTransfer(
-			FixedBytes(initiator),
-			FixedBytes(bridge_transfer_id.0),
-			FixedBytes(hash_lock.0),
-			*recipient.0,
-			U256::try_from(amount.0)
-				.map_err(|_| BridgeContractError::ConversionFailed("U256".to_string()))?,
-		)
-		.from(self.signer_address); 
+		let call = self
+			.counterparty_contract
+			.lockBridgeTransfer(
+				FixedBytes(initiator),
+				FixedBytes(bridge_transfer_id.0),
+				FixedBytes(hash_lock.0),
+				*recipient.0,
+				U256::try_from(amount.0)
+					.map_err(|_| BridgeContractError::ConversionFailed("U256".to_string()))?,
+			)
+			.from(self.signer_address);
 
-		tracing::info!("Attempting lockBridgeTransfer with sender address: {:?}", self.signer_address);
-	    
+		tracing::info!(
+			"Attempting lockBridgeTransfer with sender address: {:?}",
+			self.signer_address
+		);
+
 		let receipt = send_transaction(
 			call,
 			self.signer_address,

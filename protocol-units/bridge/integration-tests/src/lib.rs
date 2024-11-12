@@ -10,8 +10,10 @@ use aptos_sdk::{
 	types::{account_address::AccountAddress, LocalAccount},
 };
 use bridge_config::Config;
-use bridge_service::chains::ethereum::types::{AtomicBridgeCounterpartyMOVE, AtomicBridgeInitiatorMOVE};
 use bridge_service::chains::ethereum::types::MockMOVEToken;
+use bridge_service::chains::ethereum::types::{
+	AtomicBridgeCounterpartyMOVE, AtomicBridgeInitiatorMOVE,
+};
 use bridge_service::chains::ethereum::utils::send_transaction;
 use bridge_service::chains::ethereum::utils::send_transaction_rules;
 use bridge_service::types::Amount;
@@ -166,6 +168,39 @@ impl HarnessEthClient {
 		HarnessEthClient::get_recipient_private_key(config).address()
 	}
 
+	pub async fn initiator_complete_bridge_transfer(
+		&self,
+		config: &Config,
+		initiator_privatekey: PrivateKeySigner,
+		transfer_id: BridgeTransferId,
+		pre_image: HashLockPreImage,
+	) -> Result<(), anyhow::Error> {
+		let initiator_address = initiator_privatekey.address();
+		let rpc_provider = ProviderBuilder::new()
+			.with_recommended_fillers()
+			.wallet(EthereumWallet::from(initiator_privatekey))
+			.on_builtin(&config.eth.eth_rpc_connection_url())
+			.await?;
+
+		let contract = AtomicBridgeInitiatorMOVE::new(
+			Address::from_str(&config.eth.eth_initiator_contract)?,
+			rpc_provider.clone(),
+		);
+
+		let call =
+			contract.completeBridgeTransfer(FixedBytes(transfer_id.0), FixedBytes(*pre_image));
+
+		let _ = send_transaction(
+			call,
+			initiator_address,
+			&send_transaction_rules(),
+			config.eth.transaction_send_retries,
+			config.eth.gas_limit as u128,
+		)
+		.await?;
+		Ok(())
+	}
+
 	pub async fn initiate_eth_bridge_transfer(
 		config: &Config,
 		initiator_privatekey: PrivateKeySigner,
@@ -187,17 +222,14 @@ impl HarnessEthClient {
 
 		tracing::info!("Initializing MockMOVEToken contract");
 		let initialize_call = mock_move_token.initialize(initiator_address).from(initiator_address);
-		let _ = send_transaction(
+		send_transaction(
 			initialize_call,
 			initiator_address,
 			&send_transaction_rules(),
 			config.eth.transaction_send_retries,
 			config.eth.gas_limit as u128,
 		)
-		.await
-		.map_err(|e| {
-			BridgeContractError::GenericError(format!("Failed to send initialize transaction: {}", e))
-		});
+		.await?;
 
 		tracing::info!("Initialization completed.");
 
@@ -212,7 +244,7 @@ impl HarnessEthClient {
 		tracing::info!("Before token approval, MockMOVEToken balance: {:?}", token_balance._0);
 
 		// Get the ETH balance for the initiator address
-		
+
 		let eth_value = U256::from(amount.0.clone());
 		tracing::info!("Eth value: {}", eth_value);
 		let approve_call = mock_move_token
@@ -230,10 +262,7 @@ impl HarnessEthClient {
 			number_retry,
 			gas_limit,
 		)
-		.await
-		.map_err(|e| {
-			BridgeContractError::GenericError(format!("Failed to send approve transaction: {}", e))
-		})?;
+		.await?;
 
 		tracing::info!("After token approval, transaction receipt: {:?}", transaction_receipt);
 		let token_balance = mock_move_token.balanceOf(initiator_address).call().await?;
@@ -244,55 +273,52 @@ impl HarnessEthClient {
 			&rpc_provider,
 		);
 
-		let owner_address: Address = contract.owner().call().await?._0; 
+		let owner_address: Address = contract.owner().call().await?._0;
 
-		let pool_balance = contract.poolBalance().call().await?._0;
-		
 		println!("Initiator contract owner address: {:?}", owner_address);
 
-		println!("Initiator contract pool balance: {:?}", pool_balance);
+		// let counterparty_contract = AtomicBridgeCounterpartyMOVE::new(
+		// 	config.eth.eth_counterparty_contract.parse()?,
+		// 	&rpc_provider,
+		// );
 
-		let counterparty_contract = AtomicBridgeCounterpartyMOVE::new(
-			config.eth.eth_counterparty_contract.parse()?,
-			&rpc_provider,
-		);
+		// let counterparty_owner_address: Address = counterparty_contract.owner().call().await?._0;
 
-		let counterparty_owner_address: Address = counterparty_contract.owner().call().await?._0;
-		
-		tracing::info!("Before setAtomicBridgeInitiator");
-		let set_initiator_call = counterparty_contract.setAtomicBridgeInitiator(initiator_address).from(owner_address);
-		let _ = send_transaction(
-			set_initiator_call,
-			owner_address,
-			&send_transaction_rules(),
-			config.eth.transaction_send_retries,
-			config.eth.gas_limit as u128,
-		)
-		.await
-		.map_err(|e| {
-			BridgeContractError::GenericError(format!("Failed to execute setAtomicBridgeInitiator: {}", e))
-		});
-		tracing::info!("After setAtomicBridgeInitiator");
+		// tracing::info!("Before setAtomicBridgeInitiator");
+		// let set_initiator_call = counterparty_contract
+		// 	.setAtomicBridgeInitiator(initiator_address)
+		// 	.from(owner_address);
+		// let _ = send_transaction(
+		// 	set_initiator_call,
+		// 	owner_address,
+		// 	&send_transaction_rules(),
+		// 	config.eth.transaction_send_retries,
+		// 	config.eth.gas_limit as u128,
+		// )
+		// .await?;
+		// tracing::info!("After setAtomicBridgeInitiator");
 
-		println!("Counterparty contract owner address: {:?}", counterparty_owner_address);
+		// println!("Counterparty contract owner address: {:?}", counterparty_owner_address);
 
-		tracing::info!("Initializing counterparty contract");
-		let initialize_call = counterparty_contract.initialize(config.eth.eth_counterparty_contract.parse()?, owner_address, Uint::from(86400)).from(initiator_address);
-		let _ = send_transaction(
-			initialize_call,
-			initiator_address,
-			&send_transaction_rules(),
-			config.eth.transaction_send_retries,
-			config.eth.gas_limit as u128,
-		)
-		.await
-		.map_err(|e| {
-			BridgeContractError::GenericError(format!("Failed to send initialize transaction: {}", e))
-		});
-		tracing::info!("Counterparty contract initialization completed.");
+		// tracing::info!("Initializing counterparty contract");
+		// let initialize_call = counterparty_contract
+		// 	.initialize(
+		// 		config.eth.eth_counterparty_contract.parse()?,
+		// 		owner_address,
+		// 		Uint::from(86400),
+		// 	)
+		// 	.from(initiator_address);
+		// let _ = send_transaction(
+		// 	initialize_call,
+		// 	initiator_address,
+		// 	&send_transaction_rules(),
+		// 	config.eth.transaction_send_retries,
+		// 	config.eth.gas_limit as u128,
+		// )
+		// .await?;
+		// tracing::info!("Counterparty contract initialization completed.");
 
 		let recipient_address = BridgeAddress(Into::<Vec<u8>>::into(recipient));
-
 		let recipient_bytes: [u8; 32] =
 			recipient_address.0.try_into().expect("Recipient address must be 32 bytes");
 
@@ -315,10 +341,7 @@ impl HarnessEthClient {
 			config.eth.transaction_send_retries,
 			config.eth.gas_limit as u128,
 		)
-		.await
-		.map_err(|e| {
-			BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
-		})?;
+		.await?;
 
 		Ok(())
 	}
@@ -473,10 +496,6 @@ impl TestHarness {
 	}
 
 	pub async fn new_with_movement(config: Config) -> (HarnessMvtClient, Config) {
-		// let config = bridge_setup::test_mvt_setup(config)
-		// 	.await
-		// 	.expect("Failed to setup Movement config");
-
 		let test_harness = HarnessMvtClient::build(&config).await;
 
 		(test_harness, config)
@@ -488,41 +507,6 @@ impl TestHarness {
 		// 	.expect("Test eth config setup failed.");
 		let test_hadness = HarnessEthClient::build(&config).await;
 		(test_hadness, config)
-	}
-}
-
-pub struct HarnessMvtClientFramework {
-	pub movement_client: MovementClientFramework,
-	///The Apotos Rest Client
-	pub rest_client: Client,
-	///The Apotos Rest Client
-	pub faucet_client: Arc<RwLock<FaucetClient>>,
-}
-
-impl HarnessMvtClientFramework {
-	pub fn gen_aptos_account() -> Vec<u8> {
-		let mut rng = ::rand::rngs::StdRng::from_seed([3u8; 32]);
-		let movement_recipient = LocalAccount::generate(&mut rng);
-		movement_recipient.public_key().to_bytes().to_vec()
-	}
-
-	pub async fn build(config: &Config) -> Self {
-		let movement_client = MovementClientFramework::new(&config.movement)
-			.await
-			.expect("Failed to create MovementClient");
-
-		let node_connection_url = Url::from_str(&config.movement.mvt_rpc_connection_url())
-			.expect("Bad movement rpc url in config");
-		let rest_client = Client::new(node_connection_url.clone());
-
-		let faucet_url = Url::from_str(&config.movement.mvt_faucet_connection_url())
-			.expect("Bad movement faucet url in config");
-		let faucet_client = Arc::new(RwLock::new(FaucetClient::new(
-			faucet_url.clone(),
-			node_connection_url.clone(),
-		)));
-
-		HarnessMvtClientFramework { movement_client, rest_client, faucet_client }
 	}
 }
 
@@ -541,35 +525,25 @@ impl TestHarnessFramework {
 	}
 
 	pub async fn new_with_eth_and_movement(
-	) -> Result<(HarnessEthClient, HarnessMvtClientFramework, Config), anyhow::Error> {
+	) -> Result<(HarnessEthClient, HarnessMvtClient, Config), anyhow::Error> {
 		let config = TestHarnessFramework::read_bridge_config().await?;
 
-		let test_mvt_harness = HarnessMvtClientFramework::build(&config).await;
+		let test_mvt_harness = HarnessMvtClient::build(&config).await;
 		let test_eth_harness = HarnessEthClient::build(&config).await;
 
 		Ok((test_eth_harness, test_mvt_harness, config))
 	}
 
-	pub async fn new_with_movement(config: Config) -> (HarnessMvtClientFramework, Config) {
-		let config = bridge_setup::test_mvt_setup(config)
-			.await
-			.expect("Failed to setup Movement config");
+	pub async fn new_with_movement() -> Result<(HarnessMvtClient, Config), anyhow::Error> {
+		let config = TestHarnessFramework::read_bridge_config().await?;
+		let test_harness = HarnessMvtClient::build(&config).await;
 
-		let test_harness = HarnessMvtClientFramework::build(&config).await;
-
-		(test_harness, config)
+		Ok((test_harness, config))
 	}
 
-	pub async fn new_with_suzuka(config: Config) -> (HarnessMvtClientFramework, Config) {
-		let test_harness = HarnessMvtClientFramework::build(&config).await;
-		(test_harness, config)
-	}
-
-	pub async fn new_only_eth(config: Config) -> (HarnessEthClient, Config) {
-		let config = bridge_setup::test_eth_setup(config)
-			.await
-			.expect("Test eth config setup failed.");
+	pub async fn new_only_eth(config: Config) -> Result<(HarnessEthClient, Config), anyhow::Error> {
+		let config = TestHarnessFramework::read_bridge_config().await?;
 		let test_harness = HarnessEthClient::build(&config).await;
-		(test_harness, config)
+		Ok((test_harness, config))
 	}
 }

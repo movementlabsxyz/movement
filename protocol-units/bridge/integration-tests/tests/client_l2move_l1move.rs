@@ -15,8 +15,9 @@ use tracing::info;
 #[tokio::test]
 async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
-	let config: Config = Config::suzuka();
-	let (mut mvt_client_harness, _config) = TestHarnessFramework::new_with_movement(config).await;
+	let (mut mvt_client_harness, _config) = TestHarnessFramework::new_with_movement()
+		.await
+		.expect("Bridge config file not set");
 	let args = MovementToEthCallArgs::default();
 
 	let test_result = async {
@@ -70,8 +71,9 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 #[tokio::test]
 async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
-	let config: Config = Config::suzuka();
-	let (mut mvt_client_harness, _config) = TestHarnessFramework::new_with_movement(config).await;
+	let (mut mvt_client_harness, _config) = TestHarnessFramework::new_with_movement()
+		.await
+		.expect("Bridge config file not set");
 	let args = MovementToEthCallArgs::default();
 	async {
 		test_utils::fund_and_check_balance_framework(&mut mvt_client_harness, 100_000_000_000)
@@ -144,8 +146,9 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 async fn test_movement_client_refund_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 
-	let config: Config = Config::suzuka();
-	let (mut mvt_client_harness, _config) = TestHarnessFramework::new_with_movement(config).await;
+	let (mut mvt_client_harness, _config) = TestHarnessFramework::new_with_movement()
+		.await
+		.expect("Bridge config file not set");
 	let args = MovementToEthCallArgs::default();
 
 	let test_result = async {

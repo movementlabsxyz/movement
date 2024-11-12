@@ -4,12 +4,8 @@ use aptos_types::account_address::AccountAddress;
 use bridge_integration_tests::{HarnessEthClient, TestHarness};
 use bridge_service::{
 	chains::{
-		bridge_contracts::{BridgeContract, BridgeContractError, BridgeContractEvent},
-		ethereum::{
-			event_monitoring::EthMonitoring,
-			types::{AtomicBridgeInitiatorMOVE, EthAddress, MockMOVEToken},
-			utils::{send_transaction, send_transaction_rules},
-		},
+		bridge_contracts::{BridgeContract, BridgeContractEvent},
+		ethereum::{event_monitoring::EthMonitoring, types::EthAddress},
 		movement::{
 			client_framework::MovementClientFramework, event_monitoring::MovementMonitoring,
 			utils::MovementAddress,

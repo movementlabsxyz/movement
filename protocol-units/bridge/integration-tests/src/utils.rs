@@ -1,14 +1,14 @@
-use crate::{HarnessMvtClient, HarnessMvtClientFramework};
+use crate::HarnessMvtClient;
 use alloy::hex;
 use anyhow::Result;
 use aptos_sdk::{
 	coin_client::CoinClient, rest_client::Transaction, types::account_address::AccountAddress,
 };
 use bridge_service::chains::bridge_contracts::{BridgeContract, BridgeContractError};
+use bridge_service::chains::movement::client_framework::MovementClientFramework;
 use bridge_service::chains::movement::utils::{
 	self as movement_utils, MovementAddress, MovementHash,
 };
-use bridge_service::chains::movement::client_framework::MovementClientFramework;
 use bridge_service::types::{Amount, BridgeAddress, BridgeTransferDetails, HashLock};
 use serde_json::Value;
 use tracing::debug;
@@ -202,7 +202,7 @@ pub async fn fund_and_check_balance(
 }
 
 pub async fn fund_and_check_balance_framework(
-	movement_harness: &mut HarnessMvtClientFramework,
+	movement_harness: &mut HarnessMvtClient,
 	expected_balance: u64,
 ) -> Result<()> {
 	let movement_client_signer = movement_harness.movement_client.signer();
