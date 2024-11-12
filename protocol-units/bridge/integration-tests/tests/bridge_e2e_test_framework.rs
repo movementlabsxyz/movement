@@ -12,7 +12,7 @@ use bridge_service::{
 		bridge_contracts::{BridgeContractError, BridgeContractEvent},
 		ethereum::{
 			event_monitoring::EthMonitoring,
-			types::{AtomicBridgeInitiatorMOVE, EthAddress, MockMOVEToken},
+			types::{NativeBridgeInitiatorMOVE, EthAddress, MockMOVEToken},
 			utils::{send_transaction, send_transaction_rules},
 		},
 		movement::{
@@ -85,7 +85,7 @@ async fn initiate_eth_bridge_transfer(
 	info!("After token approval, transaction receipt: {:?}", transaction_receipt);
 
 	let contract =
-		AtomicBridgeInitiatorMOVE::new(config.eth.eth_initiator_contract.parse()?, &rpc_provider);
+		NativeBridgeInitiatorMOVE::new(config.eth.eth_initiator_contract.parse()?, &rpc_provider);
 
 	let initiator_address = BridgeAddress(EthAddress(initiator_address));
 
@@ -230,7 +230,7 @@ async fn test_movement_event() -> Result<(), anyhow::Error> {
 	//Wait for the tx to be executed
 	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(2000)).await;
 	let event_type = format!(
-		"{}::atomic_bridge_initiator::BridgeTransferStore",
+		"{}::native_bridge_initiator::BridgeTransferStore",
 		config.movement.movement_native_address
 	);
 

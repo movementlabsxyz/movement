@@ -2,10 +2,10 @@
 pragma solidity ^0.8.22;
 
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import {IAtomicBridgeCounterpartyMOVE} from "./IAtomicBridgeCounterpartyMOVE.sol";
-import {AtomicBridgeInitiatorMOVE} from "./AtomicBridgeInitiatorMOVE.sol";
+import {INativeBridgeCounterpartyMOVE} from "./INativeBridgeCounterpartyMOVE.sol";
+import {NativeBridgeInitiatorMOVE} from "./NativeBridgeInitiatorMOVE.sol";
 
-contract AtomicBridgeCounterpartyMOVE is IAtomicBridgeCounterpartyMOVE, OwnableUpgradeable {
+contract NativeBridgeCounterpartyMOVE is INativeBridgeCounterpartyMOVE, OwnableUpgradeable {
     enum MessageState {
         PENDING,
         COMPLETED,
@@ -21,24 +21,24 @@ contract AtomicBridgeCounterpartyMOVE is IAtomicBridgeCounterpartyMOVE, OwnableU
         MessageState state;
     }
 
-    AtomicBridgeInitiatorMOVE public atomicBridgeInitiatorMOVE;
+    NativeBridgeInitiatorMOVE public nativeBridgeInitiatorMOVE;
     mapping(bytes32 => BridgeTransferDetails) public bridgeTransfers;
 
     // Configurable time lock duration
     uint256 public counterpartyTimeLockDuration;
 
-    function initialize(address _atomicBridgeInitiator, address owner, uint256 _timeLockDuration) public initializer {
-        if (_atomicBridgeInitiator == address(0)) revert ZeroAddress();
-        atomicBridgeInitiatorMOVE = AtomicBridgeInitiatorMOVE(_atomicBridgeInitiator);
+    function initialize(address _nativeBridgeInitiator, address owner, uint256 _timeLockDuration) public initializer {
+        if (_nativeBridgeInitiator == address(0)) revert ZeroAddress();
+        nativeBridgeInitiatorMOVE = NativeBridgeInitiatorMOVE(_nativeBridgeInitiator);
         __Ownable_init(owner);
 
         // Set the configurable time lock duration
         counterpartyTimeLockDuration = _timeLockDuration;
     }
 
-    function setAtomicBridgeInitiator(address _atomicBridgeInitiator) external onlyOwner {
-        if (_atomicBridgeInitiator == address(0)) revert ZeroAddress();
-        atomicBridgeInitiatorMOVE = AtomicBridgeInitiatorMOVE(_atomicBridgeInitiator);
+    function setNativeBridgeInitiator(address _nativeBridgeInitiator) external onlyOwner {
+        if (_nativeBridgeInitiator == address(0)) revert ZeroAddress();
+        nativeBridgeInitiatorMOVE = NativeBridgeInitiatorMOVE(_nativeBridgeInitiator);
     }
 
     function setTimeLockDuration(uint256 _timeLockDuration) external onlyOwner {
@@ -53,7 +53,7 @@ contract AtomicBridgeCounterpartyMOVE is IAtomicBridgeCounterpartyMOVE, OwnableU
         uint256 amount
     ) external onlyOwner returns (bool) {
         if (amount == 0) revert ZeroAmount();
-        if (atomicBridgeInitiatorMOVE.poolBalance() < amount) revert InsufficientMOVEBalance();
+        if (nativeBridgeInitiatorMOVE.poolBalance() < amount) revert InsufficientMOVEBalance();
 
         // The time lock is now based on the configurable duration
         uint256 timeLock = block.timestamp + counterpartyTimeLockDuration;
@@ -80,7 +80,7 @@ contract AtomicBridgeCounterpartyMOVE is IAtomicBridgeCounterpartyMOVE, OwnableU
 
         details.state = MessageState.COMPLETED;
 
-        atomicBridgeInitiatorMOVE.withdrawMOVE(details.recipient, details.amount);
+        nativeBridgeInitiatorMOVE.withdrawMOVE(details.recipient, details.amount);
 
         emit BridgeTransferCompleted(bridgeTransferId, preImage);
     }

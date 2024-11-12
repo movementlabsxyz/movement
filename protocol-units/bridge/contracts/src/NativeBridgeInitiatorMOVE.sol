@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.22;
 
-import {IAtomicBridgeInitiatorMOVE} from "./IAtomicBridgeInitiatorMOVE.sol";
+import {INativeBridgeInitiatorMOVE} from "./INativeBridgeInitiatorMOVE.sol";
 import {MockMOVEToken} from "./MockMOVEToken.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
-contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgradeable {
+contract NativeBridgeInitiatorMOVE is INativeBridgeInitiatorMOVE, OwnableUpgradeable {
     enum MessageState {
         INITIALIZED,
         COMPLETED,
@@ -36,12 +36,10 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
     uint256 public initiatorTimeLockDuration;
 
     // Initialize the contract with MOVE token address, owner, custom time lock duration, and initial pool balance
-    function initialize(
-        address _moveToken,
-        address owner,
-        uint256 _timeLockDuration,
-        uint256 _initialPoolBalance
-    ) public initializer {
+    function initialize(address _moveToken, address owner, uint256 _timeLockDuration, uint256 _initialPoolBalance)
+        public
+        initializer
+    {
         if (_moveToken == address(0)) {
             revert ZeroAddress();
         }
@@ -80,7 +78,9 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         poolBalance += moveAmount;
 
         // Generate a unique nonce to prevent replay attacks, and generate a transfer ID
-        bridgeTransferId = keccak256(abi.encodePacked(originator, recipient, hashLock, initiatorTimeLockDuration, block.timestamp, nonce++));
+        bridgeTransferId = keccak256(
+            abi.encodePacked(originator, recipient, hashLock, initiatorTimeLockDuration, block.timestamp, nonce++)
+        );
 
         bridgeTransfers[bridgeTransferId] = BridgeTransfer({
             amount: moveAmount,
@@ -91,7 +91,9 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
             state: MessageState.INITIALIZED
         });
 
-        emit BridgeTransferInitiated(bridgeTransferId, originator, recipient, moveAmount, hashLock, initiatorTimeLockDuration);
+        emit BridgeTransferInitiated(
+            bridgeTransferId, originator, recipient, moveAmount, hashLock, initiatorTimeLockDuration
+        );
         return bridgeTransferId;
     }
 
@@ -110,7 +112,7 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         if (bridgeTransfer.state != MessageState.INITIALIZED) revert BridgeTransferStateNotInitialized();
         if (block.timestamp < bridgeTransfer.timeLock) revert TimeLockNotExpired();
         bridgeTransfer.state = MessageState.REFUNDED;
-        
+
         // Decrease pool balance and transfer MOVE tokens back to the originator
         poolBalance -= bridgeTransfer.amount;
         if (!moveToken.transfer(bridgeTransfer.originator, bridgeTransfer.amount)) revert MOVETransferFailed();
@@ -125,4 +127,3 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         if (!moveToken.transfer(recipient, amount)) revert MOVETransferFailed();
     }
 }
-

@@ -5,10 +5,10 @@ use aptos_sdk::{
 	coin_client::CoinClient, rest_client::Transaction, types::account_address::AccountAddress,
 };
 use bridge_service::chains::bridge_contracts::{BridgeContract, BridgeContractError};
+use bridge_service::chains::movement::client_framework::MovementClientFramework;
 use bridge_service::chains::movement::utils::{
 	self as movement_utils, MovementAddress, MovementHash,
 };
-use bridge_service::chains::movement::client_framework::MovementClientFramework;
 use bridge_service::types::{Amount, BridgeAddress, BridgeTransferDetails, HashLock};
 use serde_json::Value;
 use tracing::debug;
@@ -146,7 +146,7 @@ pub async fn fetch_bridge_transfer_details(
 ) -> Result<BridgeTransferDetails<AccountAddress>, anyhow::Error> {
 	let rest_client = movement_client.rest_client();
 	let account_address = FRAMEWORK_ADDRESS;
-	let resource_tag = "0x1::atomic_bridge_store::SmartTableWrapper<vector<u8>, 0x1::atomic_bridge_store::BridgeTransferDetails<address, 0x1::ethereum::EthereumAddress>>";
+	let resource_tag = "0x1::native_bridge_store::SmartTableWrapper<vector<u8>, 0x1::native_bridge_store::BridgeTransferDetails<address, 0x1::ethereum::EthereumAddress>>";
 
 	let resource_response =
 		rest_client

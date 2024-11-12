@@ -1,7 +1,7 @@
 pragma solidity ^0.8.22;
 
-interface IAtomicBridgeCounterpartyMOVE {
-    // Event emitted when a new atomic bridge transfer is locked
+interface INativeBridgeCounterpartyMOVE {
+    // Event emitted when a new native bridge transfer is locked
     event BridgeTransferLocked(
         bytes32 indexed bridgeTransferId, address indexed recipient, uint256 amount, bytes32 hashLock, uint256 timeLock
     );
@@ -26,7 +26,7 @@ interface IAtomicBridgeCounterpartyMOVE {
     error Unauthorized();
 
     /**
-     * @dev Locks the assets for a new atomic bridge transfer
+     * @dev Locks the assets for a new native bridge transfer
      * @param initiator The address of the initiator of the BridgeTransfer
      * @param bridgeTransferId A unique id representing this BridgeTransfer
      * @param hashLock The hash of the secret (HASH) that will unlock the funds

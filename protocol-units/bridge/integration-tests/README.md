@@ -1,4 +1,4 @@
-# Running client integration tests against the atomic bridge
+# Running client integration tests against the native bridge
 
 The client integration tests for the framework bridge modules are in `tests`:
 

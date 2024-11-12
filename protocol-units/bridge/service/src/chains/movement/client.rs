@@ -23,8 +23,8 @@ use std::sync::Arc;
 use tracing::{debug, info};
 use url::Url;
 
-pub const INITIATOR_MODULE_NAME: &str = "atomic_bridge_initiator";
-pub const COUNTERPARTY_MODULE_NAME: &str = "atomic_bridge_counterparty";
+pub const INITIATOR_MODULE_NAME: &str = "native_bridge_initiator";
+pub const COUNTERPARTY_MODULE_NAME: &str = "native_bridge_counterparty";
 const DUMMY_ADDRESS: AccountAddress = AccountAddress::new([0; 32]);
 
 #[allow(dead_code)]
@@ -82,7 +82,7 @@ impl MovementClient {
 
 		let payload = utils::make_aptos_payload(
 			self.native_address,
-			"atomic_bridge_initiator",
+			"native_bridge_initiator",
 			"set_time_lock_duration",
 			Vec::new(),
 			args,
@@ -103,7 +103,7 @@ impl MovementClient {
 
 		let payload = utils::make_aptos_payload(
 			self.native_address,
-			"atomic_bridge_counterparty",
+			"native_bridge_counterparty",
 			"set_time_lock_duration",
 			Vec::new(),
 			args,
@@ -136,7 +136,7 @@ impl BridgeContract<MovementAddress> for MovementClient {
 
 		let payload = utils::make_aptos_payload(
 			self.native_address,
-			"atomic_bridge_initiator",
+			"native_bridge_initiator",
 			"initiate_bridge_transfer",
 			Vec::new(),
 			args,
@@ -277,7 +277,7 @@ impl BridgeContract<MovementAddress> for MovementClient {
 
 		let payload = utils::make_aptos_payload(
 			self.native_address,
-			"atomic_bridge_initiator",
+			"native_bridge_initiator",
 			"refund_bridge_transfer",
 			Vec::new(),
 			args,
@@ -326,7 +326,7 @@ impl BridgeContract<MovementAddress> for MovementClient {
 				module: MoveModuleId {
 					address: self.native_address.clone().into(),
 					name: aptos_api_types::IdentifierWrapper(
-						Identifier::new("atomic_bridge_initiator")
+						Identifier::new("native_bridge_initiator")
 							.map_err(|_| BridgeContractError::FunctionViewError)?,
 					),
 				},
@@ -397,7 +397,7 @@ impl BridgeContract<MovementAddress> for MovementClient {
 				module: MoveModuleId {
 					address: self.native_address.clone().into(),
 					name: aptos_api_types::IdentifierWrapper(
-						Identifier::new("atomic_bridge_counterparty")
+						Identifier::new("native_bridge_counterparty")
 							.map_err(|_| BridgeContractError::FunctionViewError)?,
 					),
 				},

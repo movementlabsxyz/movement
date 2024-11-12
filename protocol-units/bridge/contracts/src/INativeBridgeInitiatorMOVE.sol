@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.22;
 
-interface IAtomicBridgeInitiatorMOVE {
-    // Event emitted when a new atomic bridge transfer is created
+interface INativeBridgeInitiatorMOVE {
+    // Event emitted when a new native bridge transfer is created
     event BridgeTransferInitiated(
         bytes32 indexed _bridgeTransferId,
         address indexed _originator,
@@ -28,9 +28,8 @@ interface IAtomicBridgeInitiatorMOVE {
     error ZeroAddress();
     error Unauthorized();
 
-
     /**
-     * @dev Creates a new atomic bridge transfer using native ETH
+     * @dev Creates a new native bridge transfer using native ETH
      * @param _wethAmount The amount of WETH to send
      * @param _recipient The address on the other chain to which to transfer the funds
      * @param _hashLock The hash of the secret (HASH) that will unlock the funds
