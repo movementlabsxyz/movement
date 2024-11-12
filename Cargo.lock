@@ -9774,6 +9774,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "movement-collections"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+]
+
+[[package]]
 name = "movement-rest"
 version = "0.0.2"
 dependencies = [

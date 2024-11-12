@@ -30,6 +30,7 @@ members = [
     "util/movement-types",
     "util/tracing",
     "util/syncador",
+    "util/collections",
     "networks/suzuka/*",
     "protocol-units/settlement/mcr/setup",
     "protocol-units/settlement/mcr/runner",
