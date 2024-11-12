@@ -94,7 +94,7 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         return bridgeTransferId;
     }
 
-    function completeBridgeTransfer(bytes32 bridgeTransferId, bytes32 preImage) external {
+    function completeBridgeTransfer(bytes32 bridgeTransferId, bytes32 preImage) external onlyOwner {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
         if (bridgeTransfer.state != MessageState.INITIALIZED) revert BridgeTransferHasBeenCompleted();
         if (keccak256(abi.encodePacked(preImage)) != bridgeTransfer.hashLock) revert InvalidSecret();
