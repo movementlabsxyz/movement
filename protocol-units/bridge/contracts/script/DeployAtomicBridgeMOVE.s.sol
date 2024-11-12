@@ -11,7 +11,7 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Vm} from "forge-std/Vm.sol";
 
-contract AtomicBridgeInitiatorMOVEDeployer is Script {
+contract AtomicBridgeMOVEDeployer is Script {
     TransparentUpgradeableProxy public atomicBridgeInitiatorProxy;
     TransparentUpgradeableProxy public atomicBridgeCounterpartyProxy;
     TimelockController public timelock;
