@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.27;
 
 import {IAtomicBridgeInitiatorMOVE} from "./IAtomicBridgeInitiatorMOVE.sol";
 import {MockMOVEToken} from "./MockMOVEToken.sol";
@@ -42,9 +42,8 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         uint256 _timeLockDuration,
         uint256 _initialPoolBalance
     ) public initializer {
-        if (_moveToken == address(0)) {
-            revert ZeroAddress();
-        }
+        require(_moveToken != address(0), ZeroAddress());
+
         moveToken = ERC20Upgradeable(_moveToken);
         __Ownable_init(owner);
 
@@ -56,7 +55,7 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
     }
 
     function setCounterpartyAddress(address _counterpartyAddress) external onlyOwner {
-        if (_counterpartyAddress == address(0)) revert ZeroAddress();
+        require(_counterpartyAddress != address(0), ZeroAddress());
         counterpartyAddress = _counterpartyAddress;
     }
 
@@ -67,14 +66,10 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         address originator = msg.sender;
 
         // Ensure there is a valid amount
-        if (moveAmount == 0) {
-            revert ZeroAmount();
-        }
+        require(moveAmount > 0, ZeroAmount());
 
         // Transfer the MOVE tokens from the user to the contract
-        if (!moveToken.transferFrom(originator, address(this), moveAmount)) {
-            revert MOVETransferFailed();
-        }
+        require(moveToken.transferFrom(originator, address(this), moveAmount), MOVETransferFailed());
 
         // Update the pool balance
         poolBalance += moveAmount;
@@ -97,9 +92,10 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
 
     function completeBridgeTransfer(bytes32 bridgeTransferId, bytes32 preImage) external onlyOwner {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
-        if (bridgeTransfer.state != MessageState.INITIALIZED) revert BridgeTransferHasBeenCompleted();
-        if (keccak256(abi.encodePacked(preImage)) != bridgeTransfer.hashLock) revert InvalidSecret();
-        if (block.timestamp > bridgeTransfer.timeLock) revert TimelockExpired();
+        require(bridgeTransfer.state == MessageState.INITIALIZED, BridgeTransferHasBeenCompleted());
+        require(keccak256(abi.encodePacked(preImage)) == bridgeTransfer.hashLock, InvalidSecret());
+        require(block.timestamp <= bridgeTransfer.timeLock, TimelockExpired());
+
         bridgeTransfer.state = MessageState.COMPLETED;
 
         emit BridgeTransferCompleted(bridgeTransferId, preImage);
@@ -107,22 +103,24 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
 
     function refundBridgeTransfer(bytes32 bridgeTransferId) external onlyOwner {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
-        if (bridgeTransfer.state != MessageState.INITIALIZED) revert BridgeTransferStateNotInitialized();
-        if (block.timestamp < bridgeTransfer.timeLock) revert TimeLockNotExpired();
+        require(bridgeTransfer.state == MessageState.INITIALIZED, BridgeTransferStateNotInitialized());
+        require(block.timestamp >= bridgeTransfer.timeLock, TimeLockNotExpired());
+
         bridgeTransfer.state = MessageState.REFUNDED;
         
         // Decrease pool balance and transfer MOVE tokens back to the originator
         poolBalance -= bridgeTransfer.amount;
-        if (!moveToken.transfer(bridgeTransfer.originator, bridgeTransfer.amount)) revert MOVETransferFailed();
+        require(moveToken.transfer(bridgeTransfer.originator, bridgeTransfer.amount), MOVETransferFailed());
 
         emit BridgeTransferRefunded(bridgeTransferId);
     }
 
     function withdrawMOVE(address recipient, uint256 amount) external {
-        if (msg.sender != counterpartyAddress) revert Unauthorized();
-        if (poolBalance < amount) revert InsufficientMOVEBalance();
+        require(msg.sender == counterpartyAddress, Unauthorized());
+        require(poolBalance >= amount, InsufficientMOVEBalance());
+
         poolBalance -= amount;
-        if (!moveToken.transfer(recipient, amount)) revert MOVETransferFailed();
+        require(moveToken.transfer(recipient, amount), MOVETransferFailed());
     }
 }
 

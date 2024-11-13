@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.27;
 
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {IAtomicBridgeCounterpartyMOVE} from "./IAtomicBridgeCounterpartyMOVE.sol";
@@ -28,7 +28,7 @@ contract AtomicBridgeCounterpartyMOVE is IAtomicBridgeCounterpartyMOVE, OwnableU
     uint256 public counterpartyTimeLockDuration;
 
     function initialize(address _atomicBridgeInitiator, address owner, uint256 _timeLockDuration) public initializer {
-        if (_atomicBridgeInitiator == address(0)) revert ZeroAddress();
+        require(_atomicBridgeInitiator != address(0), ZeroAddress());
         atomicBridgeInitiatorMOVE = AtomicBridgeInitiatorMOVE(_atomicBridgeInitiator);
         __Ownable_init(owner);
 
@@ -37,7 +37,7 @@ contract AtomicBridgeCounterpartyMOVE is IAtomicBridgeCounterpartyMOVE, OwnableU
     }
 
     function setAtomicBridgeInitiator(address _atomicBridgeInitiator) external onlyOwner {
-        if (_atomicBridgeInitiator == address(0)) revert ZeroAddress();
+        require(_atomicBridgeInitiator != address(0), ZeroAddress());
         atomicBridgeInitiatorMOVE = AtomicBridgeInitiatorMOVE(_atomicBridgeInitiator);
     }
 
@@ -52,8 +52,8 @@ contract AtomicBridgeCounterpartyMOVE is IAtomicBridgeCounterpartyMOVE, OwnableU
         address recipient,
         uint256 amount
     ) external onlyOwner returns (bool) {
-        if (amount == 0) revert ZeroAmount();
-        if (atomicBridgeInitiatorMOVE.poolBalance() < amount) revert InsufficientMOVEBalance();
+        require(amount > 0, ZeroAmount());
+        require(atomicBridgeInitiatorMOVE.poolBalance() >= amount, InsufficientMOVEBalance());
 
         // The time lock is now based on the configurable duration
         uint256 timeLock = block.timestamp + counterpartyTimeLockDuration;
@@ -73,10 +73,10 @@ contract AtomicBridgeCounterpartyMOVE is IAtomicBridgeCounterpartyMOVE, OwnableU
 
     function completeBridgeTransfer(bytes32 bridgeTransferId, bytes32 preImage) external {
         BridgeTransferDetails storage details = bridgeTransfers[bridgeTransferId];
-        if (details.state != MessageState.PENDING) revert BridgeTransferStateNotPending();
+        require(details.state == MessageState.PENDING, BridgeTransferStateNotPending());
         bytes32 computedHash = keccak256(abi.encodePacked(preImage));
-        if (computedHash != details.hashLock) revert InvalidSecret();
-        if (block.timestamp > details.timeLock) revert TimeLockExpired();
+        require(computedHash == details.hashLock, InvalidSecret());
+        require(block.timestamp <= details.timeLock, TimeLockExpired());
 
         details.state = MessageState.COMPLETED;
 
@@ -87,8 +87,8 @@ contract AtomicBridgeCounterpartyMOVE is IAtomicBridgeCounterpartyMOVE, OwnableU
 
     function abortBridgeTransfer(bytes32 bridgeTransferId) external onlyOwner {
         BridgeTransferDetails storage details = bridgeTransfers[bridgeTransferId];
-        if (details.state != MessageState.PENDING) revert BridgeTransferStateNotPending();
-        if (block.timestamp <= details.timeLock) revert TimeLockNotExpired();
+        require(details.state == MessageState.PENDING, BridgeTransferStateNotPending());
+        require(block.timestamp > details.timeLock, TimeLockNotExpired());
 
         details.state = MessageState.REFUNDED;
 
