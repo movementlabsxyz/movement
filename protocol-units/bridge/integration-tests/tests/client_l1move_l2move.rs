@@ -1,4 +1,9 @@
 use alloy::primitives::keccak256;
+use alloy::primitives::Address;
+use alloy::primitives::Uint;
+use alloy::providers::ProviderBuilder;
+use alloy_network::EthereumWallet;
+use anyhow::Context;
 use anyhow::Result;
 use aptos_sdk::coin_client::CoinClient;
 use aptos_sdk::types::account_address::AccountAddress;
@@ -8,8 +13,10 @@ use bridge_integration_tests::HarnessEthClient;
 use bridge_integration_tests::HarnessMvtClient;
 use bridge_integration_tests::TestHarness;
 use bridge_service::chains::bridge_contracts::BridgeContract;
-use bridge_service::chains::ethereum::types::EthAddress;
+use bridge_service::chains::ethereum::types::{AtomicBridgeCounterpartyMOVE, EthAddress};
+use bridge_service::types::TimeLock;
 use bridge_service::types::{Amount, BridgeAddress, BridgeTransferId, HashLock, HashLockPreImage};
+use std::str::FromStr;
 use tokio::time::{sleep, Duration};
 use tokio::{self};
 use tracing::info;
@@ -233,31 +240,49 @@ async fn test_movement_client_abort_transfer() -> Result<(), anyhow::Error> {
 }
 
 #[tokio::test]
-async fn test_eth_client_lock_transfer() {
-	let config = TestHarness::read_bridge_config().await.unwrap();
-	let (mut eth_client_harness, config) =
-		TestHarness::new_only_eth().await.expect("Bridge config file not set");
+async fn test_eth_client_lock_transfer() -> Result<(), anyhow::Error> {
+        let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::INFO).try_init();
+        let config = TestHarness::read_bridge_config().await.unwrap();
+        let (mut eth_client_harness, config) =
+                TestHarness::new_only_eth().await.expect("Bridge config file not set");
 
-	// Call lock transfer Eth
-	tracing::info!("Call lockBridgeTransfer on Eth");
-	let hash_lock_pre_image = HashLockPreImage::random();
-	let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
-	let amount = Amount(1);
-	let transfer_id = BridgeTransferId::gen_unique_hash(&mut rand::rngs::OsRng);
+        let initiator_private_key = HarnessEthClient::get_initiator_private_key(&config);
+        let initiator_address = initiator_private_key.address();
 
-	let res = eth_client_harness
-		.eth_client
-		.lock_bridge_transfer(
-			transfer_id,
-			hash_lock,
-			BridgeAddress(vec![3; 32]),
-			BridgeAddress(EthAddress(HarnessEthClient::get_recipeint_address(&config))),
-			amount,
-		)
-		.await;
+        let counterparty_contract_address = Address::from_str(&config.eth.eth_counterparty_contract)?;
 
-	assert!(res.is_ok(), "lock_bridge_transfer failed because: {res:?}");
+	if let Err(e) = eth_client_harness.eth_client
+		.initialize_counterparty_contract(initiator_address, counterparty_contract_address, TimeLock(60))
+		.await
+	{
+		tracing::error!("Failed to initialize counterparty contract: {:?}", e);
+	} else {
+		tracing::info!("Counterparty contract initialized successfully");
+	}
+
+        // Call lock transfer Eth
+        tracing::info!("Call lockBridgeTransfer on Eth");
+        let hash_lock_pre_image = HashLockPreImage::random();
+        let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
+        let amount = Amount(1);
+        let transfer_id = BridgeTransferId::gen_unique_hash(&mut rand::rngs::OsRng);
+
+        let res = eth_client_harness
+                .eth_client
+                .lock_bridge_transfer(
+                        transfer_id,
+                        hash_lock,
+                        BridgeAddress(vec![3; 32]),
+                        BridgeAddress(EthAddress(HarnessEthClient::get_recipeint_address(&config))),
+                        amount,
+                )
+                .await;
+
+        assert!(res.is_ok(), "lock_bridge_transfer failed because: {res:?}");
+
+        Ok(())
 }
+
 
 #[tokio::test]
 async fn test_eth_client_initiate_transfer() {

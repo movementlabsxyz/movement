@@ -123,6 +123,35 @@ impl EthClient {
 		Ok(())
 	}
 
+	pub async fn initialize_counterparty_contract(
+		&self,
+		initiator_address: Address,
+		contract_address: Address,
+		timelock: TimeLock,
+	) -> Result<(), anyhow::Error> {
+		// Create the counterparty contract instance
+		let contract = AtomicBridgeCounterpartyMOVE::new(
+			contract_address,
+			self.rpc_provider.clone(),
+		);
+	
+		// Prepare the initialize transaction
+		let call = contract.initialize(self.signer_address, initiator_address, U256::from(timelock.0));
+	
+		// Send the transaction
+		send_transaction(
+			call.to_owned(),
+			self.signer_address,
+			&send_transaction_rules(),
+			self.config.transaction_send_retries,
+			self.config.gas_limit,
+		)
+		.await?;
+	
+		Ok(())
+	}
+	
+
 	pub async fn initialize_initiator_contract(
 		&self,
 		weth: EthAddress,
@@ -311,13 +340,6 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 		Ok(())
 	}
 
-	// function lockBridgeTransfer(
-	//     bytes32 originator,
-	//     bytes32 bridgeTransferId,
-	//     bytes32 hashLock,
-	//     address recipient,
-	//     uint256 amount
-	// ) external onlyOwner returns (bool) {
 	async fn lock_bridge_transfer(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
@@ -330,6 +352,12 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 		let initiator: [u8; 32] = initiator.0.try_into().map_err(|_| {
 			BridgeContractError::ConversionFailed("lock_bridge_transfer initiator".to_string())
 		})?;
+	
+		// Retrieve the owner address
+		let counterparty_owner = self.signer_address;
+		tracing::info!("Counterparty owner: {:?}", counterparty_owner);
+		tracing::info!("Eth Client signer address: {:?}", self.signer_address);
+	
 		let call = self
 			.counterparty_contract
 			.lockBridgeTransfer(
@@ -340,16 +368,16 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 				U256::try_from(amount.0)
 					.map_err(|_| BridgeContractError::ConversionFailed("U256".to_string()))?,
 			)
-			.from(self.signer_address);
-
+			.from(counterparty_owner);
+	
 		tracing::info!(
 			"Attempting lockBridgeTransfer with sender address: {:?}",
-			self.signer_address
+			counterparty_owner
 		);
-
+	
 		let receipt = send_transaction(
 			call,
-			self.signer_address,
+			counterparty_owner,
 			&send_transaction_rules(),
 			self.config.transaction_send_retries,
 			self.config.gas_limit,
@@ -358,11 +386,12 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 		.map_err(|e| {
 			BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
 		})?;
-
+	
 		tracing::info!("LockBridgeTransfer receipt: {:?}", receipt);
-
+	
 		Ok(())
 	}
+	
 
 	async fn abort_bridge_transfer(
 		&mut self,
