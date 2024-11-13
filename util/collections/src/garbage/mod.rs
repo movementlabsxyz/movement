@@ -5,7 +5,7 @@ pub mod set;
 use std::num::NonZeroU64;
 
 #[derive(Debug, Clone)]
-pub struct Duration(pub NonZeroU64);
+pub struct Duration(NonZeroU64);
 
 impl Duration {
 	pub fn try_new(value: u64) -> Result<Self, anyhow::Error> {
