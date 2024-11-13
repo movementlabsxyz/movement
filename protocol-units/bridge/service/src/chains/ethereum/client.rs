@@ -10,6 +10,7 @@ use alloy::{
 	rlp::{RlpDecodable, RlpEncodable},
 	signers::local::PrivateKeySigner,
 };
+use alloy_primitives::Uint;
 use alloy_rlp::Decodable;
 use bridge_config::common::eth::EthConfig;
 use bridge_grpc::bridge_server::BridgeServer;
@@ -352,12 +353,6 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 		let initiator: [u8; 32] = initiator.0.try_into().map_err(|_| {
 			BridgeContractError::ConversionFailed("lock_bridge_transfer initiator".to_string())
 		})?;
-	
-		// Retrieve the owner address
-		let counterparty_owner = self.signer_address;
-		tracing::info!("Counterparty owner: {:?}", counterparty_owner);
-		tracing::info!("Eth Client signer address: {:?}", self.signer_address);
-	
 		let call = self
 			.counterparty_contract
 			.lockBridgeTransfer(
@@ -368,16 +363,16 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 				U256::try_from(amount.0)
 					.map_err(|_| BridgeContractError::ConversionFailed("U256".to_string()))?,
 			)
-			.from(counterparty_owner);
-	
+			.from(self.signer_address);
+
 		tracing::info!(
 			"Attempting lockBridgeTransfer with sender address: {:?}",
-			counterparty_owner
+			self.signer_address
 		);
-	
+
 		let receipt = send_transaction(
 			call,
-			counterparty_owner,
+			self.signer_address,
 			&send_transaction_rules(),
 			self.config.transaction_send_retries,
 			self.config.gas_limit,
@@ -386,12 +381,11 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 		.map_err(|e| {
 			BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
 		})?;
-	
+
 		tracing::info!("LockBridgeTransfer receipt: {:?}", receipt);
-	
+
 		Ok(())
 	}
-	
 
 	async fn abort_bridge_transfer(
 		&mut self,
