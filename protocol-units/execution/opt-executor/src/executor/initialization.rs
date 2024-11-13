@@ -13,6 +13,7 @@ use maptos_execution_util::config::Config;
 
 use anyhow::Context as _;
 use futures::channel::mpsc as futures_mpsc;
+use movement_collections::garbage::{atomic::counted::GcCounter, Duration};
 use tokio::sync::mpsc;
 
 #[cfg(test)]
@@ -95,7 +96,10 @@ impl Executor {
 		Ok(Self {
 			block_executor: Arc::new(BlockExecutor::new(db.clone())),
 			signer,
-			transactions_in_flight: Arc::new(AtomicU64::new(0)),
+			transactions_in_flight: GcCounter::new(
+				Duration::try_new(maptos_config.mempool.sequence_number_ttl_ms)?,
+				Duration::try_new(maptos_config.mempool.gc_slot_duration_ms)?,
+			),
 			config: maptos_config.clone(),
 			node_config: node_config.clone(),
 		})
@@ -145,7 +149,7 @@ impl Executor {
 				self.db().reader.clone(),
 				&node_config,
 				&self.config.mempool,
-				Arc::clone(&self.transactions_in_flight),
+				self.transactions_in_flight.clone(),
 				maptos_config.load_shedding.max_transactions_in_flight,
 			)
 		};

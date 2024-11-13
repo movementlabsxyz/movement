@@ -8754,6 +8754,7 @@ dependencies = [
  "hex",
  "lazy_static",
  "maptos-execution-util",
+ "movement-collections",
  "movement-rest",
  "movement-types",
  "poem",

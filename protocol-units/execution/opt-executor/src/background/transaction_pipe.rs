@@ -17,6 +17,7 @@ use aptos_vm_validator::vm_validator::{self, TransactionValidation, VMValidator}
 use crate::gc_account_sequence_number::UsedSequenceNumberPool;
 use futures::channel::mpsc as futures_mpsc;
 use futures::StreamExt;
+use movement_collections::garbage::atomic::counted::GcCounter;
 use std::sync::{atomic::AtomicU64, Arc};
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
@@ -35,7 +36,7 @@ pub struct TransactionPipe {
 	// State of the Aptos mempool
 	core_mempool: CoreMempool,
 	// Shared reference on the counter of transactions in flight.
-	transactions_in_flight: Arc<AtomicU64>,
+	transactions_in_flight: GcCounter,
 	// The configured limit on transactions in flight
 	in_flight_limit: u64,
 	// Timestamp of the last garbage collection
@@ -56,7 +57,7 @@ impl TransactionPipe {
 		db_reader: Arc<dyn DbReader>,
 		node_config: &NodeConfig,
 		mempool_config: &MempoolConfig,
-		transactions_in_flight: Arc<AtomicU64>,
+		transactions_in_flight: GcCounter,
 		transactions_in_flight_limit: u64,
 	) -> Self {
 		TransactionPipe {
@@ -183,7 +184,7 @@ impl TransactionPipe {
 		transaction: SignedTransaction,
 	) -> Result<SubmissionStatus, Error> {
 		// For now, we are going to consider a transaction in flight until it exits the mempool and is sent to the DA as is indicated by WriteBatch.
-		let in_flight = self.transactions_in_flight.load(std::sync::atomic::Ordering::Relaxed);
+		let in_flight = self.transactions_in_flight.get_count();
 		info!(
 			target: "movement_timing",
 			in_flight = %in_flight,
@@ -232,6 +233,7 @@ impl TransactionPipe {
 
 		match status.code {
 			MempoolStatusCode::Accepted => {
+				let now = chrono::Utc::now().timestamp_millis() as u64;
 				debug!("Transaction accepted: {:?}", transaction);
 				let sender = transaction.sender();
 				let transaction_sequence_number = transaction.sequence_number();
@@ -240,7 +242,7 @@ impl TransactionPipe {
 					.await
 					.map_err(|e| anyhow::anyhow!("Error sending transaction: {:?}", e))?;
 				// increment transactions in flight
-				self.transactions_in_flight.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+				self.transactions_in_flight.increment(now);
 				self.core_mempool.commit_transaction(&sender, sequence_number);
 
 				// update the used sequence number pool
@@ -251,7 +253,7 @@ impl TransactionPipe {
 				self.used_sequence_number_pool.set_sequence_number(
 					&sender,
 					transaction_sequence_number,
-					chrono::Utc::now().timestamp_millis() as u64,
+					now,
 				);
 			}
 			_ => {
