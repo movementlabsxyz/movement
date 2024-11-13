@@ -33,7 +33,7 @@ impl BackgroundTask {
 		node_config: &NodeConfig,
 		mempool_config: &MempoolConfig,
 		transactions_in_flight: Arc<AtomicU64>,
-		transactions_in_flight_limit: u64,
+		transactions_in_flight_limit: Option<u64>,
 	) -> Self {
 		Self {
 			inner: BackgroundInner::Full(TransactionPipe::new(

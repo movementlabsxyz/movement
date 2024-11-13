@@ -162,7 +162,7 @@ env_default!(
 	"auth_token".to_string()
 );
 
-env_default!(default_max_transactions_in_flight, "MAPTOS_MAX_TRANSACTIONS_IN_FLIGHT", u64, 12000);
+env_default!(default_max_transactions_in_flight, "MAPTOS_MAX_TRANSACTIONS_IN_FLIGHT", u64);
 
 env_default!(default_sequence_number_ttl_ms, "MAPTOS_SEQUENCE_NUMBER_TTL_MS", u64, 1000 * 60 * 3);
 
