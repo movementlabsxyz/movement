@@ -40,13 +40,21 @@ impl Executor {
 		}
 
 		// pruning config
+		node_config.storage.storage_pruner_config.ledger_pruner_config.enable =
+			maptos_config.chain.enabled_pruning;
 		node_config.storage.storage_pruner_config.ledger_pruner_config.prune_window =
 			maptos_config.chain.maptos_ledger_prune_window;
+
+		node_config.storage.storage_pruner_config.state_merkle_pruner_config.enable =
+			maptos_config.chain.enabled_pruning;
 		node_config
 			.storage
 			.storage_pruner_config
 			.state_merkle_pruner_config
 			.prune_window = maptos_config.chain.maptos_state_merkle_prune_window;
+
+		node_config.storage.storage_pruner_config.epoch_snapshot_pruner_config.enable =
+			maptos_config.chain.enabled_pruning;
 		node_config
 			.storage
 			.storage_pruner_config

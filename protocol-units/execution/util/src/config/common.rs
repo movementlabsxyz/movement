@@ -132,6 +132,8 @@ env_default!(
 	10
 );
 
+env_default!(default_enable_pruning, "MAPTOS_ENABLE_PRUNING", bool, false);
+
 env_default!(default_maptos_ledger_prune_window, "MAPTOS_LEDGER_PRUNING_WINDOW", u64, 50_000_000);
 
 env_default!(
