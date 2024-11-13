@@ -8,11 +8,11 @@ where
 	K: Eq + Hash + Debug,
 	V: Eq + Hash + Debug,
 {
-	/// The number of milliseconds a value is valid for.
-	value_ttl_ms: Duration,
-	/// The duration of a garbage collection slot in milliseconds.
-	/// This is used to bin values into slots for O(value_ttl_ms/gc_slot_duration_ms * log value_ttl_ms/gc_slot_duration_ms) garbage collection.
-	gc_slot_duration_ms: Duration,
+	/// The number of some unit time a value is valid for.
+	value_ttl: Duration,
+	/// The duration of a garbage collection slot in some unit time.
+	/// This is used to bin values into slots for O(value_ttl/gc_slot_duration * log value_ttl/gc_slot_duration) garbage collection.
+	gc_slot_duration: Duration,
 	/// The value lifetimes, indexed by slot.
 	value_lifetimes: BTreeMap<u64, HashMap<K, V>>,
 }
@@ -23,8 +23,8 @@ where
 	V: Eq + Hash + Debug,
 {
 	/// Creates a new GcMap with a specified garbage collection slot duration.
-	pub fn new(value_ttl_ms: Duration, gc_slot_duration_ms: Duration) -> Self {
-		GcMap { value_ttl_ms, gc_slot_duration_ms, value_lifetimes: BTreeMap::new() }
+	pub fn new(value_ttl: Duration, gc_slot_duration: Duration) -> Self {
+		GcMap { value_ttl, gc_slot_duration, value_lifetimes: BTreeMap::new() }
 	}
 
 	/// Gets a value for a key
@@ -55,12 +55,12 @@ where
 	}
 
 	/// Sets the value for for a key
-	pub fn set_value(&mut self, key: K, value: V, current_time_ms: u64) {
+	pub fn set_value(&mut self, key: K, value: V, current_time: u64) {
 		// remove the old key
 		self.remove_value(&key);
 
 		// compute the slot for the new lifetime and add accordingly
-		let slot = current_time_ms / self.gc_slot_duration_ms.get();
+		let slot = current_time / self.gc_slot_duration.get();
 
 		// add the new value
 		self.value_lifetimes.entry(slot).or_insert_with(HashMap::new).insert(key, value);
@@ -68,12 +68,12 @@ where
 
 	/// Garbage collects values that have expired.
 	/// This should be called periodically.
-	pub fn gc(&mut self, current_time_ms: u64) {
-		let gc_slot = current_time_ms / self.gc_slot_duration_ms.get();
+	pub fn gc(&mut self, current_time: u64) {
+		let gc_slot = current_time / self.gc_slot_duration.get();
 
 		// Calculate the cutoff slot
 		let slot_cutoff =
-			gc_slot.saturating_sub(self.value_ttl_ms.get() / self.gc_slot_duration_ms.get());
+			gc_slot.saturating_sub(self.value_ttl.get() / self.gc_slot_duration.get());
 
 		let to_keep = self.value_lifetimes.split_off(&(slot_cutoff + 1));
 
@@ -96,29 +96,29 @@ pub mod test {
 
 	#[test]
 	fn test_gc_map() -> Result<(), anyhow::Error> {
-		let value_ttl_ms = Duration::try_new(100)?;
-		let gc_slot_duration_ms = Duration::try_new(10)?;
-		let mut gc_map = GcMap::new(value_ttl_ms, gc_slot_duration_ms);
+		let value_ttl = Duration::try_new(100)?;
+		let gc_slot_duration = Duration::try_new(10)?;
+		let mut gc_map = GcMap::new(value_ttl, gc_slot_duration);
 
-		let current_time_ms = 0;
+		let current_time = 0;
 
 		// set the value for key 1
-		gc_map.set_value(Key(1), Value(1), current_time_ms);
+		gc_map.set_value(Key(1), Value(1), current_time);
 		assert_eq!(gc_map.get_value(&Key(1)), Some(&Value(1)));
 
 		// overwrite the value for key 1 at the same time
-		gc_map.set_value(Key(1), Value(2), current_time_ms);
+		gc_map.set_value(Key(1), Value(2), current_time);
 		assert_eq!(gc_map.get_value(&Key(1)), Some(&Value(2)));
 
 		// overwrite the value for key 1 at a later time
-		gc_map.set_value(Key(1), Value(3), current_time_ms + 10);
+		gc_map.set_value(Key(1), Value(3), current_time + 10);
 		assert_eq!(gc_map.get_value(&Key(1)), Some(&Value(3)));
 
 		// add another key back at the original time
-		gc_map.set_value(Key(2), Value(4), current_time_ms);
+		gc_map.set_value(Key(2), Value(4), current_time);
 
 		// garbage collect
-		gc_map.gc(current_time_ms + 100);
+		gc_map.gc(current_time + 100);
 
 		// assert the key 1 is still there
 		assert_eq!(gc_map.get_value(&Key(1)), Some(&Value(3)));

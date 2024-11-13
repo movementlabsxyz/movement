@@ -8,23 +8,23 @@ use std::sync::Arc;
 /// The reusage of slots does not remove the need to call `gc` periodically, as slots which are not reused would not be garbage collected, causing the count to drift.
 #[derive(Debug, Clone)]
 pub struct GcCounter {
-	/// The number of milliseconds a value is valid for.
-	value_ttl_ms: Duration,
-	/// The duration of a garbage collection slot in milliseconds.
-	gc_slot_duration_ms: Duration,
+	/// The number of some unit time a value is valid for.
+	value_ttl: Duration,
+	/// The duration of a garbage collection slot in some unit time.
+	gc_slot_duration: Duration,
 	/// The array of atomic counters for value lifetimes, where each entry represents a slot with a timestamp and count.
 	value_lifetimes: Arc<Vec<(AtomicU64, AtomicU64)>>,
-	/// The number of slots calculated as value_ttl_ms / gc_slot_duration_ms.
+	/// The number of slots calculated as value_ttl / gc_slot_duration.
 	num_slots: u64,
 }
 
 impl GcCounter {
 	/// Creates a new GcCounter with a specified garbage collection slot duration.
-	pub fn new(value_ttl_ms: Duration, gc_slot_duration_ms: Duration) -> Self {
-		let num_slots = value_ttl_ms.get() / gc_slot_duration_ms.get();
+	pub fn new(value_ttl: Duration, gc_slot_duration: Duration) -> Self {
+		let num_slots = value_ttl.get() / gc_slot_duration.get();
 		let value_lifetimes =
 			Arc::new((0..num_slots).map(|_| (AtomicU64::new(0), AtomicU64::new(0))).collect());
-		GcCounter { value_ttl_ms, gc_slot_duration_ms, value_lifetimes, num_slots }
+		GcCounter { value_ttl, gc_slot_duration, value_lifetimes, num_slots }
 	}
 
 	/// Decrements the value, saturating over non-zero slots.
@@ -56,12 +56,12 @@ impl GcCounter {
 	}
 
 	/// Increments the value in a specific slot.
-	pub fn increment(&self, current_time_ms: u64, amount: u64) {
-		let slot_timestamp = current_time_ms / self.gc_slot_duration_ms.get();
+	pub fn increment(&self, current_time: u64, amount: u64) {
+		let slot_timestamp = current_time / self.gc_slot_duration.get();
 		let slot = slot_timestamp % self.num_slots;
 		let (active_slot_timestamp, count) = &self.value_lifetimes[slot as usize];
 
-		// Atomically check and set the timestamp if it doesn't match current_time_ms
+		// Atomically check and set the timestamp if it doesn't match current_time
 		let active_slot = active_slot_timestamp.load(Ordering::Relaxed);
 		if active_slot == slot {
 			// Same timestamp, increment count
@@ -83,8 +83,8 @@ impl GcCounter {
 
 	/// Garbage collects values that have expired.
 	/// This should be called periodically.
-	pub fn gc(&self, current_time_ms: u64) {
-		let cutoff_time = current_time_ms - self.value_ttl_ms.get();
+	pub fn gc(&self, current_time: u64) {
+		let cutoff_time = current_time - self.value_ttl.get();
 
 		for (slot_timestamp, count) in self.value_lifetimes.iter() {
 			// If the timestamp is older than the cutoff, reset the slot
@@ -102,16 +102,16 @@ pub mod tests {
 
 	#[test]
 	fn test_gc_counter() -> Result<(), anyhow::Error> {
-		let value_ttl_ms = Duration::try_new(100)?;
-		let gc_slot_duration_ms = Duration::try_new(10)?;
-		let gc_counter = GcCounter::new(value_ttl_ms, gc_slot_duration_ms);
+		let value_ttl = Duration::try_new(100)?;
+		let gc_slot_duration = Duration::try_new(10)?;
+		let gc_counter = GcCounter::new(value_ttl, gc_slot_duration);
 
-		let current_time_ms = 0;
+		let current_time = 0;
 
 		// add three
-		gc_counter.increment(current_time_ms, 1);
-		gc_counter.increment(current_time_ms, 1);
-		gc_counter.increment(current_time_ms, 1);
+		gc_counter.increment(current_time, 1);
+		gc_counter.increment(current_time, 1);
+		gc_counter.increment(current_time, 1);
 		assert_eq!(gc_counter.get_count(), 3);
 
 		// decrement one
@@ -119,8 +119,8 @@ pub mod tests {
 		assert_eq!(gc_counter.get_count(), 2);
 
 		// add one garbage collect the rest
-		gc_counter.increment(current_time_ms + 10, 1);
-		gc_counter.gc(current_time_ms + 100);
+		gc_counter.increment(current_time + 10, 1);
+		gc_counter.gc(current_time + 100);
 
 		// check that the count is 1
 		assert_eq!(gc_counter.get_count(), 1);
@@ -130,17 +130,17 @@ pub mod tests {
 
 	#[test]
 	fn test_multiple_references() -> Result<(), anyhow::Error> {
-		let value_ttl_ms = Duration::try_new(100)?;
-		let gc_slot_duration_ms = Duration::try_new(10)?;
-		let gc_counter = GcCounter::new(value_ttl_ms, gc_slot_duration_ms);
+		let value_ttl = Duration::try_new(100)?;
+		let gc_slot_duration = Duration::try_new(10)?;
+		let gc_counter = GcCounter::new(value_ttl, gc_slot_duration);
 		let gc_counter_clone = gc_counter.clone();
 
-		let current_time_ms = 0;
+		let current_time = 0;
 
 		// add three
-		gc_counter.increment(current_time_ms, 1);
-		gc_counter_clone.increment(current_time_ms, 1);
-		gc_counter.increment(current_time_ms, 1);
+		gc_counter.increment(current_time, 1);
+		gc_counter_clone.increment(current_time, 1);
+		gc_counter.increment(current_time, 1);
 		assert_eq!(gc_counter.get_count(), 3);
 
 		// decrement one
@@ -148,8 +148,8 @@ pub mod tests {
 		assert_eq!(gc_counter.get_count(), 2);
 
 		// add one garbage collect the rest
-		gc_counter_clone.increment(current_time_ms + 10, 1);
-		gc_counter.gc(current_time_ms + 100);
+		gc_counter_clone.increment(current_time + 10, 1);
+		gc_counter.gc(current_time + 100);
 
 		// check that the count is 1
 		assert_eq!(gc_counter_clone.get_count(), 1);
