@@ -17,7 +17,7 @@ impl GcCounter {
 		GcCounter { value_ttl_ms, gc_slot_duration_ms, value_lifetimes: BTreeMap::new() }
 	}
 
-	/// Removes the value for an key.
+	/// Decrements from the first slot that has a value thereby decrementing the overall count
 	pub fn decrement(&mut self) {
 		// check each slot for the key
 		for lifetime in self.value_lifetimes.values_mut() {
@@ -44,6 +44,12 @@ impl GcCounter {
 		}
 	}
 
+	/// Gets the current count
+	pub fn get_count(&self) -> u64 {
+		// sum up all the slots
+		self.value_lifetimes.values().sum()
+	}
+
 	/// Garbage collects values that have expired.
 	/// This should be called periodically.
 	pub fn gc(&mut self, current_time_ms: u64) {
@@ -54,11 +60,44 @@ impl GcCounter {
 		let slots_to_remove: Vec<u64> = self
 			.value_lifetimes
 			.keys()
-			.take_while(|slot| **slot < slot_cutoff)
+			.take_while(|slot| **slot <= slot_cutoff)
 			.cloned()
 			.collect();
 		for slot in slots_to_remove {
 			self.value_lifetimes.remove(&slot);
 		}
+	}
+}
+
+#[cfg(test)]
+pub mod tests {
+	use super::*;
+
+	#[test]
+	fn test_gc_counter() -> Result<(), anyhow::Error> {
+		let value_ttl_ms = Duration::try_new(100)?;
+		let gc_slot_duration_ms = Duration::try_new(10)?;
+		let mut gc_counter = GcCounter::new(value_ttl_ms, gc_slot_duration_ms);
+
+		let current_time_ms = 0;
+
+		// add three
+		gc_counter.increment(current_time_ms);
+		gc_counter.increment(current_time_ms);
+		gc_counter.increment(current_time_ms);
+		assert_eq!(gc_counter.get_count(), 3);
+
+		// decrement one
+		gc_counter.decrement();
+		assert_eq!(gc_counter.get_count(), 2);
+
+		// add one garbage collect the rest
+		gc_counter.increment(current_time_ms + 10);
+		gc_counter.gc(current_time_ms + 100);
+
+		// check that the count is 1
+		assert_eq!(gc_counter.get_count(), 1);
+
+		Ok(())
 	}
 }

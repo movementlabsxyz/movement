@@ -46,6 +46,11 @@ where
 		self.value_lifetimes.entry(slot).or_insert_with(HashSet::new).insert(value);
 	}
 
+	/// Checks if the value is in the set.
+	pub fn contains(&self, value: &V) -> bool {
+		self.value_lifetimes.values().any(|lifetimes| lifetimes.contains(value))
+	}
+
 	/// Garbage collects values that have expired.
 	/// This should be called periodically.
 	pub fn gc(&mut self, current_time_ms: u64) {
@@ -56,11 +61,51 @@ where
 		let slots_to_remove: Vec<u64> = self
 			.value_lifetimes
 			.keys()
-			.take_while(|slot| **slot < slot_cutoff)
+			.take_while(|slot| **slot <= slot_cutoff)
 			.cloned()
 			.collect();
 		for slot in slots_to_remove {
 			self.value_lifetimes.remove(&slot);
 		}
+	}
+}
+
+#[cfg(test)]
+pub mod test {
+
+	use super::*;
+
+	#[derive(Debug, Eq, PartialEq, Hash)]
+	pub struct Value(u64);
+
+	#[test]
+	fn test_gc_set() -> Result<(), anyhow::Error> {
+		let value_ttl_ms = Duration::try_new(100)?;
+		let gc_slot_duration_ms = Duration::try_new(10)?;
+		let mut gc_set = GcSet::new(value_ttl_ms, gc_slot_duration_ms);
+
+		let current_time_ms = 0;
+
+		// set the value for key 1
+		gc_set.insert(Value(1), current_time_ms);
+		assert_eq!(gc_set.contains(&Value(1)), true);
+
+		// write the value for key 1 again at later time
+		gc_set.insert(Value(1), current_time_ms + 100);
+		assert_eq!(gc_set.contains(&Value(1)), true);
+
+		// add another value back at the original time
+		gc_set.insert(Value(2), current_time_ms);
+
+		// garbage collect
+		gc_set.gc(current_time_ms + 100);
+
+		// assert the value 1 is still there
+		assert_eq!(gc_set.contains(&Value(1)), true);
+
+		// assert the value 2 is gone
+		assert_eq!(gc_set.contains(&Value(2)), false);
+
+		Ok(())
 	}
 }

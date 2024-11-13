@@ -75,11 +75,58 @@ where
 		let slots_to_remove: Vec<u64> = self
 			.value_lifetimes
 			.keys()
-			.take_while(|slot| **slot < slot_cutoff)
+			.take_while(|slot| **slot <= slot_cutoff)
 			.cloned()
 			.collect();
 		for slot in slots_to_remove {
 			self.value_lifetimes.remove(&slot);
 		}
+	}
+}
+
+#[cfg(test)]
+pub mod test {
+
+	use super::*;
+
+	#[derive(Debug, Eq, PartialEq, Hash)]
+	pub struct Key(u64);
+
+	#[derive(Debug, Eq, PartialEq, Hash)]
+	pub struct Value(u64);
+
+	#[test]
+	fn test_gc_map() -> Result<(), anyhow::Error> {
+		let value_ttl_ms = Duration::try_new(100)?;
+		let gc_slot_duration_ms = Duration::try_new(10)?;
+		let mut gc_map = GcMap::new(value_ttl_ms, gc_slot_duration_ms);
+
+		let current_time_ms = 0;
+
+		// set the value for key 1
+		gc_map.set_value(Key(1), Value(1), current_time_ms);
+		assert_eq!(gc_map.get_value(&Key(1)), Some(&Value(1)));
+
+		// overwrite the value for key 1 at the same time
+		gc_map.set_value(Key(1), Value(2), current_time_ms);
+		assert_eq!(gc_map.get_value(&Key(1)), Some(&Value(2)));
+
+		// overwrite the value for key 1 at a later time
+		gc_map.set_value(Key(1), Value(3), current_time_ms + 10);
+		assert_eq!(gc_map.get_value(&Key(1)), Some(&Value(3)));
+
+		// add another key back at the original time
+		gc_map.set_value(Key(2), Value(4), current_time_ms);
+
+		// garbage collect
+		gc_map.gc(current_time_ms + 100);
+
+		// assert the key 1 is still there
+		assert_eq!(gc_map.get_value(&Key(1)), Some(&Value(3)));
+
+		// assert the key 2 is gone
+		assert_eq!(gc_map.get_value(&Key(2)), None);
+
+		Ok(())
 	}
 }

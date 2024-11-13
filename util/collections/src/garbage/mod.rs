@@ -1,8 +1,10 @@
+pub mod atomic;
 pub mod counted;
 pub mod map;
 pub mod set;
 use std::num::NonZeroU64;
 
+#[derive(Debug, Clone)]
 pub struct Duration(pub NonZeroU64);
 
 impl Duration {
