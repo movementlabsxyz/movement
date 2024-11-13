@@ -17,7 +17,7 @@ use tokio::{self};
 use tracing::info;
 
 #[tokio::test]
-async fn test_movement_client_counterpart_calls() -> Result<(), anyhow::Error> {
+async fn test_movement_client_counterparty_complete_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::INFO).try_init();
 	let (mut mvt_client_harness, _config) =
 		TestHarness::new_with_movement().await.expect("Bridge config file not set");
@@ -223,7 +223,7 @@ async fn test_movement_client_abort_transfer() -> Result<(), anyhow::Error> {
 
 // Failing with EINVALID_PRE_IMAGE(0x1). Client and unit tests for modules used in client_movement_eth pass.
 #[tokio::test]
-async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
+async fn test_movement_client_initiator_complete_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::INFO).try_init();
 	let (mut mvt_client_harness, _config) =
 		TestHarness::new_with_movement().await.expect("Bridge config file not set");

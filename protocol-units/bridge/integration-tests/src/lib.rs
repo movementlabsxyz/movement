@@ -98,16 +98,33 @@ impl Default for EthToMovementCallArgs {
 }
 
 impl Default for MovementToEthCallArgs {
-	fn default() -> Self {
-		Self {
-			initiator: MovementAddress(AccountAddress::new(*b"0x000000000000000000000000A55018")),
-			recipient: b"32Be343B94f860124dC4fEe278FDCBD38C102D88".to_vec(),
-			bridge_transfer_id: EthHash(*b"00000000000000000000000transfer1"),
-			hash_lock: EthHash(*keccak256(b"secret")),
-			time_lock: 3600,
-			amount: 100,
-		}
-	}
+        fn default() -> Self {
+                // Generate a 6-character random alphanumeric suffix
+                let random_suffix: String = thread_rng()
+                        .sample_iter(&Alphanumeric)
+                        .take(6)
+                        .map(char::from)
+                        .collect();
+
+                // Construct the bridge_transfer_id with the random suffix
+		// Construct the bridge_transfer_id with the random suffix
+		let mut bridge_transfer_id = b"00000000000000000000000tra".to_vec();
+		bridge_transfer_id.extend_from_slice(random_suffix.as_bytes());
+
+                Self {
+                        initiator: MovementAddress(AccountAddress::new(*b"0x000000000000000000000000A55018")),
+                        recipient: b"32Be343B94f860124dC4fEe278FDCBD38C102D88".to_vec(),
+                        bridge_transfer_id: EthHash(
+                                bridge_transfer_id
+                                        .as_slice()
+                                        .try_into()
+                                        .expect("Expected bridge_transfer_id to be 32 bytes"),
+                        ),
+                        hash_lock: EthHash(*keccak256(b"secret")),
+                        time_lock: 3600,
+                        amount: 100,
+                }
+        }
 }
 
 pub struct HarnessEthClient {
