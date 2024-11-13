@@ -28,10 +28,10 @@ contract RateLimiter is OwnableUpgradeable {
     event SecurityFundUpdated(uint256 newSecurityFund);
 
     // Initialize the contract with initial rate limits and risk period
-    function initialize(uint256 _riskPeriod, uint256 _securityFund) public initializer {
+    function initialize(address owner, uint256 _riskPeriod, uint256 _securityFund) public initializer {
         riskPeriod = _riskPeriod;
         securityFund = _securityFund;
-        __Ownable_init();
+        __Ownable_init(owner);
         _updateRateLimits();
     }
 
