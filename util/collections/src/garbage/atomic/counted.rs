@@ -23,18 +23,36 @@ impl GcCounter {
 		GcCounter { value_ttl_ms, gc_slot_duration_ms, value_lifetimes, num_slots }
 	}
 
-	/// Decrements the value from the first non-zero slot.
-	pub fn decrement(&self) {
-		for (slot_timestamp, count) in self.value_lifetimes.iter() {
-			if count.load(Ordering::Relaxed) > 0 {
-				count.fetch_sub(1, Ordering::SeqCst);
+	/// Decrements the value, saturating over non-zero slots.
+	pub fn decrement(&self, mut amount: u64) {
+		for (_, count) in self.value_lifetimes.iter() {
+			// Use `fetch_update` to perform a safe, atomic update
+			let result = count.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |current_count| {
+				if current_count == 0 {
+					None // Stop if the count is already zero
+				} else if current_count >= amount {
+					Some(current_count - amount) // Deduct the full amount
+				} else {
+					// Otherwise, subtract what we can and let `amount` carry the rest
+					amount -= current_count;
+					Some(0)
+				}
+			});
+
+			// If the update was successful or if the slot is zero, we can move on
+			if result.is_ok() || amount == 0 {
+				break;
+			}
+
+			// Stop early if the remaining amount has been fully decremented
+			if amount == 0 {
 				break;
 			}
 		}
 	}
 
 	/// Increments the value in a specific slot.
-	pub fn increment(&self, current_time_ms: u64) {
+	pub fn increment(&self, current_time_ms: u64, amount: u64) {
 		let slot_timestamp = current_time_ms / self.gc_slot_duration_ms.get();
 		let slot = slot_timestamp % self.num_slots;
 		let (active_slot_timestamp, count) = &self.value_lifetimes[slot as usize];
@@ -43,11 +61,11 @@ impl GcCounter {
 		let active_slot = active_slot_timestamp.load(Ordering::Relaxed);
 		if active_slot == slot {
 			// Same timestamp, increment count
-			count.fetch_add(1, Ordering::SeqCst);
+			count.fetch_add(amount, Ordering::SeqCst);
 		} else {
 			// Different timestamp, reset slot for new period
 			active_slot_timestamp.store(slot_timestamp, Ordering::SeqCst);
-			count.store(1, Ordering::SeqCst);
+			count.store(amount, Ordering::SeqCst);
 		}
 	}
 
@@ -87,17 +105,17 @@ pub mod tests {
 		let current_time_ms = 0;
 
 		// add three
-		gc_counter.increment(current_time_ms);
-		gc_counter.increment(current_time_ms);
-		gc_counter.increment(current_time_ms);
+		gc_counter.increment(current_time_ms, 1);
+		gc_counter.increment(current_time_ms, 1);
+		gc_counter.increment(current_time_ms, 1);
 		assert_eq!(gc_counter.get_count(), 3);
 
 		// decrement one
-		gc_counter.decrement();
+		gc_counter.decrement(1);
 		assert_eq!(gc_counter.get_count(), 2);
 
 		// add one garbage collect the rest
-		gc_counter.increment(current_time_ms + 10);
+		gc_counter.increment(current_time_ms + 10, 1);
 		gc_counter.gc(current_time_ms + 100);
 
 		// check that the count is 1
@@ -116,17 +134,17 @@ pub mod tests {
 		let current_time_ms = 0;
 
 		// add three
-		gc_counter.increment(current_time_ms);
-		gc_counter_clone.increment(current_time_ms);
-		gc_counter.increment(current_time_ms);
+		gc_counter.increment(current_time_ms, 1);
+		gc_counter_clone.increment(current_time_ms, 1);
+		gc_counter.increment(current_time_ms, 1);
 		assert_eq!(gc_counter.get_count(), 3);
 
 		// decrement one
-		gc_counter.decrement();
+		gc_counter.decrement(1);
 		assert_eq!(gc_counter.get_count(), 2);
 
 		// add one garbage collect the rest
-		gc_counter_clone.increment(current_time_ms + 10);
+		gc_counter_clone.increment(current_time_ms + 10, 1);
 		gc_counter.gc(current_time_ms + 100);
 
 		// check that the count is 1

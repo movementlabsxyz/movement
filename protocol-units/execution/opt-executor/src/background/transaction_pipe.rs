@@ -115,8 +115,16 @@ impl TransactionPipe {
 			// todo: these will be slightly off, but gc does not need to be exact
 			let now = Instant::now();
 			let epoch_ms_now = chrono::Utc::now().timestamp_millis() as u64;
+
+			// garbage collect the used sequence number pool
 			self.used_sequence_number_pool.gc(epoch_ms_now);
+
+			// garbage collect the transactions in flight
+			self.transactions_in_flight.gc(epoch_ms_now);
+
+			// garbage collect the core mempool
 			self.core_mempool.gc();
+
 			self.last_gc = now;
 		}
 
@@ -242,7 +250,7 @@ impl TransactionPipe {
 					.await
 					.map_err(|e| anyhow::anyhow!("Error sending transaction: {:?}", e))?;
 				// increment transactions in flight
-				self.transactions_in_flight.increment(now);
+				self.transactions_in_flight.increment(now, 1);
 				self.core_mempool.commit_transaction(&sender, sequence_number);
 
 				// update the used sequence number pool

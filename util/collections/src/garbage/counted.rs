@@ -17,29 +17,37 @@ impl GcCounter {
 		GcCounter { value_ttl_ms, gc_slot_duration_ms, value_lifetimes: BTreeMap::new() }
 	}
 
-	/// Decrements from the first slot that has a value thereby decrementing the overall count
-	pub fn decrement(&mut self) {
-		// check each slot for the key
+	/// Decrements from the first slot that has a non-zero value, saturating at zero.
+	pub fn decrement(&mut self, mut value: u64) {
+		// Iterate over each slot
 		for lifetime in self.value_lifetimes.values_mut() {
-			if lifetime > &mut 0 {
-				*lifetime -= 1;
-				break;
+			if *lifetime > 0 {
+				// Determine how much to decrement, without going below zero
+				let decrement_amount = value.min(*lifetime);
+				*lifetime -= decrement_amount;
+				// Reduce the remaining amount by what was actually decremented
+				value -= decrement_amount;
+
+				// If there's no residual value to decrement, we are done
+				if value == 0 {
+					break;
+				}
 			}
 		}
 	}
 
 	/// Sets the value for an key.
-	pub fn increment(&mut self, current_time_ms: u64) {
+	pub fn increment(&mut self, current_time_ms: u64, value: u64) {
 		// compute the slot for the new lifetime and add accordingly
 		let slot = current_time_ms / self.gc_slot_duration_ms.get();
 
 		// increment the slot
 		match self.value_lifetimes.get_mut(&slot) {
 			Some(lifetime) => {
-				*lifetime += 1;
+				*lifetime += value;
 			}
 			None => {
-				self.value_lifetimes.insert(slot, 1);
+				self.value_lifetimes.insert(slot, value);
 			}
 		}
 	}
@@ -82,17 +90,17 @@ pub mod tests {
 		let current_time_ms = 0;
 
 		// add three
-		gc_counter.increment(current_time_ms);
-		gc_counter.increment(current_time_ms);
-		gc_counter.increment(current_time_ms);
+		gc_counter.increment(current_time_ms, 1);
+		gc_counter.increment(current_time_ms, 1);
+		gc_counter.increment(current_time_ms, 1);
 		assert_eq!(gc_counter.get_count(), 3);
 
 		// decrement one
-		gc_counter.decrement();
+		gc_counter.decrement(1);
 		assert_eq!(gc_counter.get_count(), 2);
 
 		// add one garbage collect the rest
-		gc_counter.increment(current_time_ms + 10);
+		gc_counter.increment(current_time_ms + 10, 1);
 		gc_counter.gc(current_time_ms + 100);
 
 		// check that the count is 1

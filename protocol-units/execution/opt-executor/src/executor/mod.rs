@@ -49,9 +49,7 @@ impl Executor {
 			current,
 			"decrementing_transactions_in_flight",
 		);
-		for _ in 0..count {
-			self.transactions_in_flight.decrement();
-		}
+		self.transactions_in_flight.decrement(count);
 	}
 
 	pub fn config(&self) -> &Config {
