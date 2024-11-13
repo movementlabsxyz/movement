@@ -1,6 +1,9 @@
 use crate::garbage::Duration;
 use std::collections::BTreeMap;
 
+/// A garbage collected count, represented as a u64 sum.
+/// As slots exit the active window and `gc` is called, they will no longer be included in the count.
+/// Note: in the current implementation, the total sum returned by `get_count` is allowed to overflow.
 pub struct GcCounter {
 	/// The number of some unit time a value is valid for.
 	value_ttl: Duration,

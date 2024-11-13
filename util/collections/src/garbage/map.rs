@@ -3,6 +3,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::fmt::Debug;
 use std::hash::Hash;
 
+/// A garbage collected map (associative array).
 pub struct GcMap<K, V>
 where
 	K: Eq + Hash + Debug,
@@ -32,12 +33,8 @@ where
 		// check each slot for the key
 		for lifetimes in self.value_lifetimes.values().rev() {
 			// reverse order is better average case because highly-used values will be moved up more often
-			match lifetimes.get(key) {
-				Some(value) => {
-					// check if the value is still valid
-					return Some(value);
-				}
-				None => {}
+			if let Some(value) = lifetimes.get(key) {
+				return Some(value);
 			}
 		}
 
@@ -45,13 +42,15 @@ where
 	}
 
 	/// Removes the value for an key.
-	pub fn remove_value(&mut self, key: &K) {
+	/// Returns whether the value was removed.
+	pub fn remove_value(&mut self, key: &K) -> bool {
 		// check each slot for the key
 		for lifetimes in self.value_lifetimes.values_mut().rev() {
 			if lifetimes.remove(key).is_some() {
-				break;
+				return true;
 			}
 		}
+		false
 	}
 
 	/// Sets the value for for a key

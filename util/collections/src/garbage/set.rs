@@ -2,6 +2,7 @@ use crate::garbage::Duration;
 use std::collections::{BTreeMap, HashSet};
 use std::hash::Hash;
 
+/// A Garbage collected set (unique array).
 pub struct GcSet<V>
 where
 	V: Eq + Hash,
