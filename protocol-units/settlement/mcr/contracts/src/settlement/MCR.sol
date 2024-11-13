@@ -10,6 +10,13 @@ import {BaseSettlement} from "./settlement/BaseSettlement.sol";
 import {IMCR} from "./interfaces/IMCR.sol";
 
 contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
+
+    // A role for setting commitments
+    bytes32 public constant COMMITMENT_ADMIN = keccak256("COMMITMENT_ADMIN");
+
+    // Trusted attesters admin
+    bytes32 public constant TRUSTED_ATTESTER = keccak256("TRUSTED_ATTESTER");
+
     function initialize(
         IMovementStaking _stakingContract,
         uint256 _lastAcceptedBlockHeight,
@@ -115,6 +122,12 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         return commitments[height][attester];
     }
 
+    function setAcceptedCommitmentAtBlockHeight(BlockCommitment memory blockCommitment) public onlyRole(COMMITMENT_ADMIN) {
+
+      acceptedBlocks[blockCommitment.height] = blockCommitment;  
+      
+    }
+
     function getAcceptedCommitmentAtBlockHeight(uint256 height) public view returns (BlockCommitment memory) {
         return acceptedBlocks[height];
     }
@@ -196,7 +209,22 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         return false;
     }
 
+    function addTrustedAttester(address attester) public onlyRole(COMMITMENT_ADMIN) {
+        grantRole(TRUSTED_ATTESTER, attester);
+    }
+
+    function batchAddTrustedAttester(address[] attesters) public onlyRole(COMMITMENT_ADMIN) {
+        for (uint256 i = 0; i < attesters.length; i++) {
+            grantRole(TRUSTED_ATTESTER, attesters[i]);
+        }
+
+    }
+
     function submitBlockCommitment(BlockCommitment memory blockCommitment) public {
+        require(
+            openAttestationEnabled || hasRole(TRUSTED_ATTESTER, msg.sender),
+            "Access denied: not authorized"
+        );
         submitBlockCommitmentForAttester(msg.sender, blockCommitment);
     }
 

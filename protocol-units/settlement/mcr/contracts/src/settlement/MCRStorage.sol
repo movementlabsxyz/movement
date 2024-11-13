@@ -42,4 +42,7 @@ contract MCRStorage {
 
     uint256[50] internal __gap;
 
+    // whether we allow open attestation
+    bool public openAttestationEnabled;
+
 }
