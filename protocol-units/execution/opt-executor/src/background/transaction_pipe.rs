@@ -37,7 +37,7 @@ pub struct TransactionPipe {
 	// Shared reference on the counter of transactions in flight.
 	transactions_in_flight: Arc<AtomicU64>,
 	// The configured limit on transactions in flight
-	in_flight_limit: u64,
+	in_flight_limit: Option<u64>,
 	// Timestamp of the last garbage collection
 	last_gc: Instant,
 	// The pool of used sequence numbers
@@ -57,7 +57,7 @@ impl TransactionPipe {
 		node_config: &NodeConfig,
 		mempool_config: &MempoolConfig,
 		transactions_in_flight: Arc<AtomicU64>,
-		transactions_in_flight_limit: u64,
+		transactions_in_flight_limit: Option<u64>,
 	) -> Self {
 		TransactionPipe {
 			mempool_client_receiver,
@@ -189,13 +189,15 @@ impl TransactionPipe {
 			in_flight = %in_flight,
 			"transactions_in_flight"
 		);
-		if in_flight > self.in_flight_limit {
-			info!(
-				target: "movement_timing",
-				"shedding_load"
-			);
-			let status = MempoolStatus::new(MempoolStatusCode::MempoolIsFull);
-			return Ok((status, None));
+		if let Some(inflight_limit) = self.in_flight_limit {
+			if in_flight >= inflight_limit {
+				info!(
+					target: "movement_timing",
+					"shedding_load"
+				);
+				let status = MempoolStatus::new(MempoolStatusCode::MempoolIsFull);
+				return Ok((status, None));
+			}
 		}
 
 		// Pre-execute Tx to validate its content.
