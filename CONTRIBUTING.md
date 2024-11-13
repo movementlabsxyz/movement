@@ -163,27 +163,8 @@ Documentation improvements are always appreciated and highly valuable to the pro
 When making documentation updates, remember to follow the **Styleguides** below.
 
 ### Styleguides
-#### Code Style
 
-For Rust, we follow the standard Rust style guidelines, which include the following:
-
-- **Indentation**: Use 4 spaces for indentation, no tabs.
-- **Naming Conventions**: 
-  - Use `snake_case` for variables, functions, and file names.
-  - Use `PascalCase` for structs, enums, and traits.
-  - Use `ALL_CAPS` with underscores for constants.
-- **Module Organization**: Keep modules organized logically, typically grouping related structs, enums, and functions together.
-- **Error Handling**: Prefer `Result` and `Option` types over panics where possible.
-- **Documentation Comments**: Use `///` for public-facing functions and modules, and `//` for inline comments.
-- **Linting and Formatting**: Ensure your code passes `cargo fmt` and `cargo clippy` checks.
-
-#### Documentation Style
-
-When documenting Rust code, follow these conventions:
-
-- **Doc Comments**: Use `///` for public API documentation, describing the purpose, parameters, and return values.
-- **Examples**: Provide usage examples within the documentation, especially for public-facing functions and modules.
-- **Consistency**: Follow Rust’s documentation guidelines and maintain a clear and consistent tone.
+We build with Rust.  Please follow [Rust Style Guide](https://doc.rust-lang.org/style-guide/index.html) for further information.
 
 ### Commit Messages
 
