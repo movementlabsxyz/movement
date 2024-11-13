@@ -44,15 +44,16 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 	let hash_lock_pre_image = HashLockPreImage::random();
 	let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
 	let amount = Amount(1);
-	HarnessEthClient::initiate_eth_bridge_transfer(
-		&config,
-		HarnessEthClient::get_initiator_private_key(&config),
-		recipient_address,
-		hash_lock,
-		amount,
-	)
-	.await
-	.expect("Failed to initiate bridge transfer");
+	eth_client_harness
+		.initiate_eth_bridge_transfer(
+			&config,
+			HarnessEthClient::get_initiator_private_key(&config),
+			recipient_address,
+			hash_lock,
+			amount,
+		)
+		.await
+		.expect("Failed to initiate bridge transfer");
 
 	//Wait for the tx to be executed
 	tracing::info!("Wait for the MVT Locked event.");
@@ -231,15 +232,16 @@ async fn test_bridge_transfer_movement_eth_happy_path() -> Result<(), anyhow::Er
 	//let hash_lock_pre_image = HashLockPreImage::random();
 	let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
 	let amount = Amount(1);
-	HarnessEthClient::initiate_eth_bridge_transfer(
-		&config,
-		HarnessEthClient::get_initiator_private_key(&config),
-		recipient_address,
-		hash_lock,
-		amount,
-	)
-	.await
-	.expect("Failed to initiate bridge transfer");
+	eth_client_harness
+		.initiate_eth_bridge_transfer(
+			&config,
+			HarnessEthClient::get_initiator_private_key(&config),
+			recipient_address,
+			hash_lock,
+			amount,
+		)
+		.await
+		.expect("Failed to initiate bridge transfer");
 
 	tracing::info!("Before init_set_timelock");
 

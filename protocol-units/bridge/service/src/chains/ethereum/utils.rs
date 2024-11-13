@@ -80,14 +80,13 @@ pub async fn send_transaction<
 	gas_limit: u128,
 ) -> Result<TransactionReceipt, anyhow::Error> {
 	println!("base_call_builder: {:?}", base_call_builder);
-	println!("Sending transaction with gas limit: {}", gas_limit);
 
 	// set signer address as from for gas_estimation.
 	// The gas estimate need to set teh from before calling.
 	let base_call_builder = base_call_builder.from(signer_address);
 	//validate gas price.
-	let mut estimate_gas = base_call_builder.estimate_gas().await?;
-	// Add 20% because initial gas estimate are too low.
+	let mut estimate_gas = 300000; //base_call_builder.estimate_gas().await?;
+							   // Add 20% because initial gas estimate are too low.
 	estimate_gas += (estimate_gas * 20) / 100;
 	estimate_gas *= 2;
 

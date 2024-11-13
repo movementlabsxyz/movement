@@ -303,16 +303,9 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 			Vec::new(),
 			args3,
 		);
-		let result = utils::send_and_confirm_aptos_transaction(
-			&self.rest_client,
-			self.signer.as_ref(),
-			payload,
-		)
-		.await
-		.map_err(|_| BridgeContractError::AbortTransferError);
-
-		info!("Abort bridge transfer result: {:?}", &result);
-
+		utils::send_and_confirm_aptos_transaction(&self.rest_client, self.signer.as_ref(), payload)
+			.await
+			.map_err(|_| BridgeContractError::AbortTransferError)?;
 		Ok(())
 	}
 

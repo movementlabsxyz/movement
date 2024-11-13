@@ -7,7 +7,6 @@ import {AtomicBridgeInitiatorMOVE, IAtomicBridgeInitiatorMOVE, OwnableUpgradeabl
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {MockMOVEToken} from "../src/MockMOVEToken.sol";  
-import {console} from "forge-std/console.sol";
 
 contract AtomicBridgeInitiatorMOVETest is Test {
     AtomicBridgeInitiatorMOVE public atomicBridgeInitiatorImplementation;
