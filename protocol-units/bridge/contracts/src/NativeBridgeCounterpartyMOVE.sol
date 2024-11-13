@@ -12,17 +12,8 @@ contract NativeBridgeCounterpartyMOVE is INativeBridgeCounterpartyMOVE, OwnableU
         REFUNDED
     }
 
-    struct BridgeTransferDetails {
-        bytes32 originator;
-        address recipient;
-        uint256 amount;
-        bytes32 hashLock;
-        uint256 timeLock;
-        MessageState state;
-    }
-
     NativeBridgeInitiatorMOVE public nativeBridgeInitiatorMOVE;
-    mapping(bytes32 => BridgeTransferDetails) public bridgeTransfers;
+    mapping(bytes32 => MessageState) public bridgeTransfers;
 
     // Configurable time lock duration
     uint256 public counterpartyTimeLockDuration;
@@ -46,51 +37,60 @@ contract NativeBridgeCounterpartyMOVE is INativeBridgeCounterpartyMOVE, OwnableU
     }
 
     function lockBridgeTransfer(
-        bytes32 originator,
         bytes32 bridgeTransferId,
-        bytes32 hashLock,
+        bytes32 originator,
         address recipient,
-        uint256 amount
-    ) external onlyOwner returns (bool) {
-        if (amount == 0) revert ZeroAmount();
-        if (nativeBridgeInitiatorMOVE.poolBalance() < amount) revert InsufficientMOVEBalance();
+        uint256 amount,
+        bytes32 hashLock,
+        uint256 initialTimestamp,
+        uint256 nonce
+    ) external onlyOwner {
 
         // The time lock is now based on the configurable duration
         uint256 timeLock = block.timestamp + counterpartyTimeLockDuration;
 
-        bridgeTransfers[bridgeTransferId] = BridgeTransferDetails({
-            recipient: recipient,
-            originator: originator,
-            amount: amount,
-            hashLock: hashLock,
-            timeLock: timeLock,
-            state: MessageState.PENDING
-        });
+        require(bridgeTransferId == keccak256(abi.encodePacked(originator, recipient, amount, hashLock, initialTimestamp, nonce)), InvalidBridgeTransferId());
 
-        emit BridgeTransferLocked(bridgeTransferId, recipient, amount, hashLock, counterpartyTimeLockDuration);
-        return true;
+        bridgeTransfers[bridgeTransferId] = MessageState.PENDING;
+
+        emit BridgeTransferLocked(bridgeTransferId, originator, recipient, amount, hashLock, block.timestamp, nonce);
     }
 
-    function completeBridgeTransfer(bytes32 bridgeTransferId, bytes32 preImage) external {
-        BridgeTransferDetails storage details = bridgeTransfers[bridgeTransferId];
-        if (details.state != MessageState.PENDING) revert BridgeTransferStateNotPending();
-        bytes32 computedHash = keccak256(abi.encodePacked(preImage));
-        if (computedHash != details.hashLock) revert InvalidSecret();
-        if (block.timestamp > details.timeLock) revert TimeLockExpired();
+    function completeBridgeTransfer(
+        bytes32 bridgeTransferId,
+        bytes32 originator,
+        address recipient,
+        uint256 amount,
+        bytes32 hashLock,
+        uint256 initialTimestamp,
+        uint256 nonce, bytes32 preImage) external {
+        
+        require(keccak256(abi.encodePacked(preImage)) == details.hashLock, InvalidSecret());
+        require(bridgeTransferId == keccak256(abi.encodePacked(originator, recipient, amount, hashLock, initialTimestamp, nonce)), InvalidBridgeTransferId());
 
-        details.state = MessageState.COMPLETED;
+        require(bridgeTransfers[bridgeTransferId] == MessageState.PENDING BridgeTransferStateNotPending());
+        
+        if (block.timestamp > timeLock) revert TimeLockExpired();
 
-        nativeBridgeInitiatorMOVE.withdrawMOVE(details.recipient, details.amount);
+        bridgeTransfers[bridgeTransferId] = MessageState.COMPLETED;
 
-        emit BridgeTransferCompleted(bridgeTransferId, preImage);
+        nativeBridgeInitiatorMOVE.withdrawMOVE(recipient, amount);
+
+        emit BridgeTransferCompleted(bridgeTransferId, originator, recipient, amount, hashLock, initialTimestamp, nonce, preImage);
     }
 
-    function abortBridgeTransfer(bytes32 bridgeTransferId) external onlyOwner {
-        BridgeTransferDetails storage details = bridgeTransfers[bridgeTransferId];
-        if (details.state != MessageState.PENDING) revert BridgeTransferStateNotPending();
-        if (block.timestamp <= details.timeLock) revert TimeLockNotExpired();
+    function abortBridgeTransfer(bytes32 bridgeTransferId,
+    bytes32 originator,
+        address recipient,
+        uint256 amount,
+        bytes32 hashLock,
+        uint256 initialTimestamp,
+        uint256 nonce) external onlyOwner {
+        require(bridgeTransferId == keccak256(abi.encodePacked(originator, recipient, amount, hashLock, initialTimestamp, nonce)), InvalidBridgeTransferId());
+        require(bridgeTransfers[bridgeTransferId] == MessageState.PENDING BridgeTransferStateNotPending());
+        if (block.timestamp <= initialTimestamp + counterpartyTimeLockDuration) revert TimeLockNotExpired();
 
-        details.state = MessageState.REFUNDED;
+        bridgeTransfers[bridgeTransferId] = MessageState.REFUNDED;
 
         emit BridgeTransferAborted(bridgeTransferId);
     }

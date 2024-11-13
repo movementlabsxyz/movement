@@ -15,6 +15,7 @@ interface INativeBridgeCounterpartyMOVE {
     error ZeroAmount();
     error MOVETransferFailed();
     error BridgeTransferInvalid();
+    error InvalidBridgeTransferId();
     error InvalidSecret();
     error BridgeTransferHasBeenCompleted();
     error BridgeTransferStateNotInitialized();
@@ -27,7 +28,7 @@ interface INativeBridgeCounterpartyMOVE {
 
     /**
      * @dev Locks the assets for a new native bridge transfer
-     * @param initiator The address of the initiator of the BridgeTransfer
+     * @param originator The address of the originator of the BridgeTransfer
      * @param bridgeTransferId A unique id representing this BridgeTransfer
      * @param hashLock The hash of the secret (HASH) that will unlock the funds
      * @param recipient The address to which to transfer the funds
@@ -36,7 +37,7 @@ interface INativeBridgeCounterpartyMOVE {
      *
      */
     function lockBridgeTransfer(
-        bytes32 initiator,
+        bytes32 originator,
         bytes32 bridgeTransferId,
         bytes32 hashLock,
         address recipient,
