@@ -57,7 +57,8 @@ where
 		let gc_slot = current_time_ms / self.gc_slot_duration_ms.get();
 
 		// remove all slots that are too old
-		let slot_cutoff = gc_slot - self.value_ttl_ms.get() / self.gc_slot_duration_ms.get();
+		let slot_cutoff =
+			gc_slot.saturating_sub(self.value_ttl_ms.get() / self.gc_slot_duration_ms.get());
 		let to_keep = self.value_lifetimes.split_off(&(slot_cutoff + 1));
 
 		// Now, `self.value_lifetimes` contains only entries with keys < `slot_cutoff`.
