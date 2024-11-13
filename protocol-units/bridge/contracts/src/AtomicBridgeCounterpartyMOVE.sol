@@ -4,6 +4,7 @@ pragma solidity ^0.8.22;
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {IAtomicBridgeCounterpartyMOVE} from "./IAtomicBridgeCounterpartyMOVE.sol";
 import {AtomicBridgeInitiatorMOVE} from "./AtomicBridgeInitiatorMOVE.sol";
+import {RateLimiter} from "./RateLimiter.sol";
 
 contract AtomicBridgeCounterpartyMOVE is IAtomicBridgeCounterpartyMOVE, OwnableUpgradeable {
     enum MessageState {
@@ -22,23 +23,37 @@ contract AtomicBridgeCounterpartyMOVE is IAtomicBridgeCounterpartyMOVE, OwnableU
     }
 
     AtomicBridgeInitiatorMOVE public atomicBridgeInitiatorMOVE;
+    RateLimiter public rateLimiter;
     mapping(bytes32 => BridgeTransferDetails) public bridgeTransfers;
 
     // Configurable time lock duration
     uint256 public counterpartyTimeLockDuration;
 
-    function initialize(address _atomicBridgeInitiator, address owner, uint256 _timeLockDuration) public initializer {
+    // Initialize with initiator, RateLimiter, owner, and time lock duration
+    function initialize(
+        address _atomicBridgeInitiator,
+        address _rateLimiter,
+        address owner,
+        uint256 _timeLockDuration
+    ) public initializer {
         if (_atomicBridgeInitiator == address(0)) revert ZeroAddress();
+        if (_rateLimiter == address(0)) revert ZeroAddress();
+        
         atomicBridgeInitiatorMOVE = AtomicBridgeInitiatorMOVE(_atomicBridgeInitiator);
+        rateLimiter = RateLimiter(_rateLimiter);
         __Ownable_init(owner);
 
-        // Set the configurable time lock duration
         counterpartyTimeLockDuration = _timeLockDuration;
     }
 
     function setAtomicBridgeInitiator(address _atomicBridgeInitiator) external onlyOwner {
         if (_atomicBridgeInitiator == address(0)) revert ZeroAddress();
         atomicBridgeInitiatorMOVE = AtomicBridgeInitiatorMOVE(_atomicBridgeInitiator);
+    }
+
+    function setRateLimiter(address _rateLimiter) external onlyOwner {
+        if (_rateLimiter == address(0)) revert ZeroAddress();
+        rateLimiter = RateLimiter(_rateLimiter);
     }
 
     function setTimeLockDuration(uint256 _timeLockDuration) external onlyOwner {
@@ -55,7 +70,12 @@ contract AtomicBridgeCounterpartyMOVE is IAtomicBridgeCounterpartyMOVE, OwnableU
         if (amount == 0) revert ZeroAmount();
         if (atomicBridgeInitiatorMOVE.poolBalance() < amount) revert InsufficientMOVEBalance();
 
-        // The time lock is now based on the configurable duration
+        bool isWithinRateLimit = rateLimiter.initiateTransfer(amount, RateLimiter.TransferDirection.L2_TO_L1);
+        if (!isWithinRateLimit) {
+            revert("RATE_LIMIT_EXCEEDED");
+        }
+
+        // The time lock is based on the configurable duration
         uint256 timeLock = block.timestamp + counterpartyTimeLockDuration;
 
         bridgeTransfers[bridgeTransferId] = BridgeTransferDetails({
