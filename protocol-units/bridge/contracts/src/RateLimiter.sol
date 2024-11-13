@@ -44,13 +44,23 @@ contract RateLimiter is OwnableUpgradeable {
         _;
     }
 
-    // Public function to initiate a transfer and check against the rate limit
-    function initiateTransfer(uint256 amount, TransferDirection direction) external withinRateLimit(amount, direction) {
+    function initiateTransfer(uint256 amount, TransferDirection direction) external returns (bool) {
+        uint256 currentBudget = (direction == TransferDirection.L1_TO_L2) ? budgetL1L2 : budgetL2L1;
+        uint256 rateLimit = (direction == TransferDirection.L1_TO_L2) ? rateLimitL1L2 : rateLimitL2L1;
+
+        if (currentBudget + amount > rateLimit) {
+            emit RateLimitExceeded(direction);
+            return false;
+        }
+
+        // Update the budget for the specified direction
         if (direction == TransferDirection.L1_TO_L2) {
             budgetL1L2 += amount;
         } else {
             budgetL2L1 += amount;
         }
+
+        return true;
     }
 
     // Update the security fund and recalculate rate limits

@@ -5,6 +5,7 @@ import {IAtomicBridgeInitiatorMOVE} from "./IAtomicBridgeInitiatorMOVE.sol";
 import {MockMOVEToken} from "./MockMOVEToken.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {RateLimiter} from "./RateLimiter.sol";
 
 contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgradeable {
     enum MessageState {
@@ -35,23 +36,25 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
     // Configurable time lock duration
     uint256 public initiatorTimeLockDuration;
 
-    // Initialize the contract with MOVE token address, owner, custom time lock duration, and initial pool balance
+    // RateLimiter contract instance
+    RateLimiter public rateLimiter;
+
+    // Initialize the contract with MOVE token address, owner, custom time lock duration, initial pool balance, and RateLimiter contract address
     function initialize(
         address _moveToken,
         address owner,
         uint256 _timeLockDuration,
-        uint256 _initialPoolBalance
+        uint256 _initialPoolBalance,
+        address _rateLimiter
     ) public initializer {
-        if (_moveToken == address(0)) {
-            revert ZeroAddress();
-        }
+        if (_moveToken == address(0)) revert ZeroAddress();
+        if (_rateLimiter == address(0)) revert ZeroAddress();
+
         moveToken = ERC20Upgradeable(_moveToken);
+        rateLimiter = RateLimiter(_rateLimiter);
         __Ownable_init(owner);
 
-        // Set the custom time lock duration
         initiatorTimeLockDuration = _timeLockDuration;
-
-        // Set the initial pool balance
         poolBalance = _initialPoolBalance;
     }
 
@@ -67,8 +70,11 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         address originator = msg.sender;
 
         // Ensure there is a valid amount
-        if (moveAmount == 0) {
-            revert ZeroAmount();
+        if (moveAmount == 0) revert ZeroAmount();
+
+        // Check the rate limit before proceeding with the transfer
+        if (!rateLimiter.initiateTransfer(moveAmount, RateLimiter.TransferDirection.L1_TO_L2)) {
+            revert("RATE_LIMIT_EXCEEDED");
         }
 
         // Transfer the MOVE tokens from the user to the contract
