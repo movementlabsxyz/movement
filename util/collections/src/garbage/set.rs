@@ -58,15 +58,11 @@ where
 
 		// remove all slots that are too old
 		let slot_cutoff = gc_slot - self.value_ttl_ms.get() / self.gc_slot_duration_ms.get();
-		let slots_to_remove: Vec<u64> = self
-			.value_lifetimes
-			.keys()
-			.take_while(|slot| **slot <= slot_cutoff)
-			.cloned()
-			.collect();
-		for slot in slots_to_remove {
-			self.value_lifetimes.remove(&slot);
-		}
+		let to_keep = self.value_lifetimes.split_off(&(slot_cutoff + 1));
+
+		// Now, `self.value_lifetimes` contains only entries with keys < `slot_cutoff`.
+		// Reassign `self.value_lifetimes` to `to_keep` to keep only entries >= `slot_cutoff`.
+		self.value_lifetimes = to_keep;
 	}
 }
 

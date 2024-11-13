@@ -1,11 +1,12 @@
 use crate::garbage::Duration;
 use std::collections::{BTreeMap, HashMap};
+use std::fmt::Debug;
 use std::hash::Hash;
 
 pub struct GcMap<K, V>
 where
-	K: Eq + Hash,
-	V: Eq + Hash,
+	K: Eq + Hash + Debug,
+	V: Eq + Hash + Debug,
 {
 	/// The number of milliseconds a value is valid for.
 	value_ttl_ms: Duration,
@@ -18,8 +19,8 @@ where
 
 impl<K, V> GcMap<K, V>
 where
-	K: Eq + Hash,
-	V: Eq + Hash,
+	K: Eq + Hash + Debug,
+	V: Eq + Hash + Debug,
 {
 	/// Creates a new GcMap with a specified garbage collection slot duration.
 	pub fn new(value_ttl_ms: Duration, gc_slot_duration_ms: Duration) -> Self {
@@ -70,17 +71,14 @@ where
 	pub fn gc(&mut self, current_time_ms: u64) {
 		let gc_slot = current_time_ms / self.gc_slot_duration_ms.get();
 
-		// remove all slots that are too old
+		// Calculate the cutoff slot
 		let slot_cutoff = gc_slot - self.value_ttl_ms.get() / self.gc_slot_duration_ms.get();
-		let slots_to_remove: Vec<u64> = self
-			.value_lifetimes
-			.keys()
-			.take_while(|slot| **slot <= slot_cutoff)
-			.cloned()
-			.collect();
-		for slot in slots_to_remove {
-			self.value_lifetimes.remove(&slot);
-		}
+
+		let to_keep = self.value_lifetimes.split_off(&(slot_cutoff + 1));
+
+		// Now, `self.value_lifetimes` contains only entries with keys < `slot_cutoff`.
+		// Reassign `self.value_lifetimes` to `to_keep` to keep only entries >= `slot_cutoff`.
+		self.value_lifetimes = to_keep;
 	}
 }
 
