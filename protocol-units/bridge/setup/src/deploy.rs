@@ -333,7 +333,7 @@ pub fn deploy_on_movement_framework(config: &mut MovementConfig) -> Result<(), a
 
 	if !update_bridge_operator_output.stdout.is_empty() {
 		println!(
-			"run-script update_bridge_operatorstdout: {}",
+			"run-script update_bridge_operator_stdout: {}",
 			String::from_utf8_lossy(&update_bridge_operator_output.stdout)
 		);
 	}
@@ -341,6 +341,35 @@ pub fn deploy_on_movement_framework(config: &mut MovementConfig) -> Result<(), a
 		eprintln!(
 			"run-script update_bridge_operator supdate_bridge_operator tderr: {}",
 			String::from_utf8_lossy(&update_bridge_operator_output.stderr)
+		);
+	}
+
+	let update_refunder_output = Command::new("movement")
+			.args(&[
+				"move",
+				"run-script",
+				"--compiled-script-path",
+				"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/update_refunder.mv",
+				"--args",
+				"address:0xf90391c81027f03cdea491ed8b36ffaced26b6df208a9b569e5baf2590eb9b16",
+				"--profile",
+				"default",
+				"--assume-yes",
+			])
+			.stdout(Stdio::piped())
+			.stderr(Stdio::piped())
+			.output()?;
+
+	if !update_refunder_output.stdout.is_empty() {
+		println!(
+			"run-script update_refunder_stdout: {}",
+			String::from_utf8_lossy(&update_refunder_output.stdout)
+		);
+	}
+	if !update_refunder_output.stderr.is_empty() {
+		eprintln!(
+			"run-script update_refunder supdate_refunder tderr: {}",
+			String::from_utf8_lossy(&update_refunder_output.stderr)
 		);
 	}
 
