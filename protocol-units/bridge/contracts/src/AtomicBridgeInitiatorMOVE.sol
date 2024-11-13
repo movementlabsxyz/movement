@@ -69,7 +69,9 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         require(moveAmount > 0, ZeroAmount());
 
         // Transfer the MOVE tokens from the user to the contract
-        require(moveToken.transferFrom(originator, address(this), moveAmount), MOVETransferFailed());
+        if (!moveToken.transferFrom(originator, address(this), moveAmount)) {
+            revert MOVETransferFailed();
+        }
 
         // Update the pool balance
         poolBalance += moveAmount;
@@ -110,7 +112,7 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         
         // Decrease pool balance and transfer MOVE tokens back to the originator
         poolBalance -= bridgeTransfer.amount;
-        require(moveToken.transfer(bridgeTransfer.originator, bridgeTransfer.amount), MOVETransferFailed());
+        if (!moveToken.transfer(bridgeTransfer.originator, bridgeTransfer.amount)) revert MOVETransferFailed();
 
         emit BridgeTransferRefunded(bridgeTransferId);
     }
@@ -120,7 +122,7 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         require(poolBalance >= amount, InsufficientMOVEBalance());
 
         poolBalance -= amount;
-        require(moveToken.transfer(recipient, amount), MOVETransferFailed());
+        if (!moveToken.transfer(recipient, amount)) revert MOVETransferFailed();
     }
 }
 
