@@ -220,20 +220,31 @@ impl HarnessEthClient {
 			&rpc_provider,
 		);
 
-		// Get the ETH balance for the initiator address
-		let eth_value = U256::from(amount.0.clone());
-		tracing::info!("Eth value: {}", eth_value);
+		// Initialize the MockMOVEToken contract with the initiator address as the initial fund recipient
+		let initialize_call = mock_move_token.initialize(initiator_address).from(initiator_address);
+
+		let _ = send_transaction(
+			initialize_call,
+			initiator_address,
+			&send_transaction_rules(),
+			config.eth.transaction_send_retries,
+			config.eth.gas_limit as u128,
+		)
+		.await;
+
+		// Approve the ETH initiator contract to spend Amount of MOVE
+		let move_value = U256::from(amount.0.clone());
+		tracing::info!("MOVE value: {}", move_value);
 		let approve_call = mock_move_token
-			.approve(Address::from_str(&config.eth.eth_initiator_contract)?, eth_value)
+			.approve(Address::from_str(&config.eth.eth_initiator_contract)?, move_value)
 			.from(initiator_address);
 
-		let signer_address = initiator_address;
 		let number_retry = config.eth.transaction_send_retries;
 		let gas_limit = config.eth.gas_limit as u128;
 
 		let transaction_receipt = send_transaction(
 			approve_call,
-			signer_address,
+			initiator_address,
 			&send_transaction_rules(),
 			number_retry,
 			gas_limit,

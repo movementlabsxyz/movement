@@ -15,57 +15,6 @@ use tokio::{self};
 use tracing::info;
 
 #[tokio::test]
-async fn test_movement_client_initiate_transfer() {
-	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
-	let (mut mvt_client_harness, config) =
-		TestHarness::new_with_movement().await.expect("Bridge config file not set");
-	// let args = MovementToEthCallArgs::default();
-
-	test_utils::fund_and_check_balance_framework(&mut mvt_client_harness, 100_000_000_000)
-		.await
-		.expect("Mvt signer funding failed.");
-
-	let hash_lock_pre_image = HashLockPreImage::random();
-	//let hash_lock_pre_image = HashLockPreImage::random();
-	let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
-	let initiator_account = mvt_client_harness.fund_account().await;
-	let recipient_privekey = HarnessEthClient::get_initiator_private_key(&config);
-	let recipient_address = EthAddress(recipient_privekey.address());
-	let res = mvt_client_harness
-		.initiate_bridge_transfer(&initiator_account, recipient_address, hash_lock, 1)
-		.await;
-
-	assert!(res.is_ok(), "Movement initiate_bridge_transfer_helper_framework failed:{res:?}");
-
-	let bridge_transfer_id: [u8; 32] =
-		test_utils::extract_bridge_transfer_id_framework(&mut mvt_client_harness.movement_client)
-			.await
-			.expect("extract_bridge_transfer_id_framework fail");
-	info!("Bridge transfer ID: {:?}", bridge_transfer_id);
-
-	let details = BridgeContract::get_bridge_transfer_details_initiator(
-		&mut mvt_client_harness.movement_client,
-		BridgeTransferId(bridge_transfer_id),
-	)
-	.await
-	.expect("Failed to get bridge transfer details")
-	.expect("Expected to find bridge transfer details, but got None");
-
-	info!("Bridge transfer details: {:?}", details);
-
-	assert_eq!(details.state, 1, "Bridge transfer should be initiated.");
-
-	test_utils::assert_counterparty_bridge_transfer_details_framework(
-		&details,
-		details.initiator_address.to_string(),
-		details.recipient_address.to_vec(),
-		details.amount.0,
-		details.hash_lock.0,
-		details.time_lock.0,
-	);
-}
-
-#[tokio::test]
 async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 	let (mut mvt_client_harness, _config) =
@@ -284,13 +233,13 @@ async fn test_movement_client_abort_transfer() -> Result<(), anyhow::Error> {
 }
 
 #[tokio::test]
-async fn test_eth_client_should_successfully_call_lock_transfer() {
+async fn test_eth_client_lock_transfer() {
 	let config = TestHarness::read_bridge_config().await.unwrap();
 	let (mut eth_client_harness, config) =
 		TestHarness::new_only_eth().await.expect("Bridge config file not set");
 
 	// Call lock transfer Eth
-	tracing::info!("Call initiate_transfer on Eth");
+	tracing::info!("Call lockBridgeTransfer on Eth");
 	let hash_lock_pre_image = HashLockPreImage::random();
 	let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
 	let amount = Amount(1);
@@ -311,7 +260,7 @@ async fn test_eth_client_should_successfully_call_lock_transfer() {
 }
 
 #[tokio::test]
-async fn test_client_should_successfully_call_initiate_transfer() {
+async fn test_eth_client_initiate_transfer() {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::INFO).try_init();
 	let (_eth_client_harness, config) =
 		TestHarness::new_only_eth().await.expect("Bridge config file not set");
