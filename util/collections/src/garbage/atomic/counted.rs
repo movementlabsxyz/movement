@@ -2,6 +2,10 @@ use crate::garbage::Duration;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
+/// An atomic Garbage Collected counter.
+/// The total count accumulated can be garbage collected periodically using the `gc` method.
+/// Counts by slot are stored in a ring buffer. So, reused slots will also be garbage collected when they are reassigned.
+/// The reusage of slots does not remove the need to call `gc` periodically, as slots which are not reused would not be garbage collected, causing the count to drift.
 #[derive(Debug, Clone)]
 pub struct GcCounter {
 	/// The number of milliseconds a value is valid for.
