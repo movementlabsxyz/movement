@@ -131,14 +131,13 @@ impl EthClient {
 		timelock: TimeLock,
 	) -> Result<(), anyhow::Error> {
 		// Create the counterparty contract instance
-		let contract = AtomicBridgeCounterpartyMOVE::new(
-			contract_address,
-			self.rpc_provider.clone(),
-		);
-	
+		let contract =
+			AtomicBridgeCounterpartyMOVE::new(contract_address, self.rpc_provider.clone());
+
 		// Prepare the initialize transaction
-		let call = contract.initialize(self.signer_address, initiator_address, U256::from(timelock.0));
-	
+		let call =
+			contract.initialize(self.signer_address, initiator_address, U256::from(timelock.0));
+
 		// Send the transaction
 		send_transaction(
 			call.to_owned(),
@@ -148,10 +147,9 @@ impl EthClient {
 			self.config.gas_limit,
 		)
 		.await?;
-	
+
 		Ok(())
 	}
-	
 
 	pub async fn initialize_initiator_contract(
 		&self,
@@ -322,21 +320,24 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 		bridge_transfer_id: BridgeTransferId,
 	) -> BridgeContractResult<()> {
 		let contract = AtomicBridgeInitiatorMOVE::new(
-			self.config.counterparty_contract,
+			self.config.initiator_contract,
 			self.rpc_provider.clone(),
 		);
 		let call = contract.refundBridgeTransfer(FixedBytes(bridge_transfer_id.0));
-		send_transaction(
-			call,
-			self.signer_address,
-			&send_transaction_rules(),
-			self.config.transaction_send_retries,
-			self.config.gas_limit,
-		)
-		.await
-		.map_err(|e| {
-			BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
-		})?;
+
+		call.send().await.unwrap().get_receipt().await.unwrap();
+
+		// send_transaction(
+		// 	call,
+		// 	self.signer_address,
+		// 	&send_transaction_rules(),
+		// 	self.config.transaction_send_retries,
+		// 	self.config.gas_limit,
+		// )
+		// .await
+		// .map_err(|e| {
+		// 	BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
+		// })?;
 
 		Ok(())
 	}

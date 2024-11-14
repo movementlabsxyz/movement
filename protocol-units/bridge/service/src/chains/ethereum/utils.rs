@@ -79,8 +79,6 @@ pub async fn send_transaction<
 	number_retry: u32,
 	gas_limit: u128,
 ) -> Result<TransactionReceipt, anyhow::Error> {
-	println!("base_call_builder: {:?}", base_call_builder);
-
 	// set signer address as from for gas_estimation.
 	// The gas estimate need to set teh from before calling.
 	let base_call_builder = base_call_builder.from(signer_address);
@@ -89,8 +87,6 @@ pub async fn send_transaction<
 							   // Add 20% because initial gas estimate are too low.
 	estimate_gas += (estimate_gas * 20) / 100;
 	estimate_gas *= 2;
-
-	println!("estimated_gas: {}", estimate_gas);
 
 	// Sending Transaction automatically can lead to errors that depend on the state for Eth.
 	// It's convenient to manage some of them automatically to avoid to fail commitment Transaction.

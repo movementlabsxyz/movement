@@ -98,33 +98,30 @@ impl Default for EthToMovementCallArgs {
 }
 
 impl Default for MovementToEthCallArgs {
-        fn default() -> Self {
-                // Generate a 6-character random alphanumeric suffix
-                let random_suffix: String = thread_rng()
-                        .sample_iter(&Alphanumeric)
-                        .take(6)
-                        .map(char::from)
-                        .collect();
+	fn default() -> Self {
+		// Generate a 6-character random alphanumeric suffix
+		let random_suffix: String =
+			thread_rng().sample_iter(&Alphanumeric).take(6).map(char::from).collect();
 
-                // Construct the bridge_transfer_id with the random suffix
+		// Construct the bridge_transfer_id with the random suffix
 		// Construct the bridge_transfer_id with the random suffix
 		let mut bridge_transfer_id = b"00000000000000000000000tra".to_vec();
 		bridge_transfer_id.extend_from_slice(random_suffix.as_bytes());
 
-                Self {
-                        initiator: MovementAddress(AccountAddress::new(*b"0x000000000000000000000000A55018")),
-                        recipient: b"32Be343B94f860124dC4fEe278FDCBD38C102D88".to_vec(),
-                        bridge_transfer_id: EthHash(
-                                bridge_transfer_id
-                                        .as_slice()
-                                        .try_into()
-                                        .expect("Expected bridge_transfer_id to be 32 bytes"),
-                        ),
-                        hash_lock: EthHash(*keccak256(b"secret")),
-                        time_lock: 3600,
-                        amount: 100,
-                }
-        }
+		Self {
+			initiator: MovementAddress(AccountAddress::new(*b"0x000000000000000000000000A55018")),
+			recipient: b"32Be343B94f860124dC4fEe278FDCBD38C102D88".to_vec(),
+			bridge_transfer_id: EthHash(
+				bridge_transfer_id
+					.as_slice()
+					.try_into()
+					.expect("Expected bridge_transfer_id to be 32 bytes"),
+			),
+			hash_lock: EthHash(*keccak256(b"secret")),
+			time_lock: 3600,
+			amount: 100,
+		}
+	}
 }
 
 pub struct HarnessEthClient {
@@ -183,39 +180,6 @@ impl HarnessEthClient {
 
 	pub fn get_recipeint_address(config: &Config) -> Address {
 		HarnessEthClient::get_recipient_private_key(config).address()
-	}
-
-	pub async fn initiator_complete_bridge_transfer(
-		&self,
-		config: &Config,
-		initiator_privatekey: PrivateKeySigner,
-		transfer_id: BridgeTransferId,
-		pre_image: HashLockPreImage,
-	) -> Result<(), anyhow::Error> {
-		let initiator_address = initiator_privatekey.address();
-		let rpc_provider = ProviderBuilder::new()
-			.with_recommended_fillers()
-			.wallet(EthereumWallet::from(initiator_privatekey))
-			.on_builtin(&config.eth.eth_rpc_connection_url())
-			.await?;
-
-		let contract = AtomicBridgeInitiatorMOVE::new(
-			Address::from_str(&config.eth.eth_initiator_contract)?,
-			rpc_provider.clone(),
-		);
-
-		let call =
-			contract.completeBridgeTransfer(FixedBytes(transfer_id.0), FixedBytes(*pre_image));
-
-		let _ = send_transaction(
-			call,
-			initiator_address,
-			&send_transaction_rules(),
-			config.eth.transaction_send_retries,
-			config.eth.gas_limit as u128,
-		)
-		.await?;
-		Ok(())
 	}
 
 	pub async fn initiate_eth_bridge_transfer(
