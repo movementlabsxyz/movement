@@ -9,7 +9,7 @@ import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.s
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {MockMOVEToken} from "../src/MockMOVEToken.sol";
 
-contract NativeBridgeCounterpartyMOVETest is Test {
+contract NativeBridgeMOVETest is Test {
     NativeBridgeCounterpartyMOVE public nativeBridgeCounterpartyMOVEImplementation;
     NativeBridgeCounterpartyMOVE public nativeBridgeCounterpartyMOVE;
     NativeBridgeInitiatorMOVE public nativeBridgeInitiatorMOVEImplementation;
