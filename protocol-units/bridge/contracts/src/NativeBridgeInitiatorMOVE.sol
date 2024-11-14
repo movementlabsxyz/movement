@@ -78,7 +78,7 @@ contract NativeBridgeInitiatorMOVE is INativeBridgeInitiatorMOVE, OwnableUpgrade
         uint256 initialTimestamp,
         uint256 nonce,
         bytes32 preImage
-    ) external onlyOwner {
+    ) external {
         require(bridgeTransfers[bridgeTransferId] == MessageState.INITIALIZED, BridgeTransferHasBeenCompleted());
         require(
             bridgeTransferId
