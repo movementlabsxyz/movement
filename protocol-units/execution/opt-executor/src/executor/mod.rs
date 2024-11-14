@@ -14,8 +14,7 @@ use tracing::info;
 
 use maptos_execution_util::config::Config;
 use movement_collections::garbage::counted::GcCounter;
-use std::sync::Arc;
-use tokio::sync::RwLock;
+use std::sync::{Arc, RwLock};
 
 /// The `Executor` is responsible for executing blocks and managing the state of the execution
 /// against the `AptosVM`.
@@ -42,7 +41,8 @@ impl Executor {
 	}
 
 	pub async fn decrement_transactions_in_flight(&self, count: u64) {
-		let mut transactions_in_flight = self.transactions_in_flight.write().await;
+		// unwrap because lock is poisoned
+		let mut transactions_in_flight = self.transactions_in_flight.write().unwrap();
 		let current = transactions_in_flight.get_count();
 		info!(
 			target: "movement_timing",

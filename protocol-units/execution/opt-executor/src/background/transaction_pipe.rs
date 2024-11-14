@@ -18,10 +18,9 @@ use crate::gc_account_sequence_number::UsedSequenceNumberPool;
 use futures::channel::mpsc as futures_mpsc;
 use futures::StreamExt;
 use movement_collections::garbage::counted::GcCounter;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
-use tokio::sync::RwLock;
 use tracing::{debug, info, info_span, warn, Instrument};
 
 const GC_INTERVAL: Duration = Duration::from_secs(30);
@@ -121,8 +120,11 @@ impl TransactionPipe {
 			self.used_sequence_number_pool.gc(epoch_ms_now);
 
 			// garbage collect the transactions in flight
-			let mut transactions_in_flight = self.transactions_in_flight.write().await;
-			transactions_in_flight.gc(epoch_ms_now);
+			{
+				// unwrap because failure indicates poisoned lock
+				let mut transactions_in_flight = self.transactions_in_flight.write().unwrap();
+				transactions_in_flight.gc(epoch_ms_now);
+			}
 
 			// garbage collect the core mempool
 			self.core_mempool.gc();
@@ -195,7 +197,7 @@ impl TransactionPipe {
 	) -> Result<SubmissionStatus, Error> {
 		// For now, we are going to consider a transaction in flight until it exits the mempool and is sent to the DA as is indicated by WriteBatch.
 		let in_flight = {
-			let transactions_in_flight = self.transactions_in_flight.read().await;
+			let transactions_in_flight = self.transactions_in_flight.read().unwrap();
 			transactions_in_flight.get_count()
 		};
 		info!(
@@ -258,7 +260,7 @@ impl TransactionPipe {
 					.map_err(|e| anyhow::anyhow!("Error sending transaction: {:?}", e))?;
 				// increment transactions in flight
 				{
-					let mut transactions_in_flight = self.transactions_in_flight.write().await;
+					let mut transactions_in_flight = self.transactions_in_flight.write().unwrap();
 					transactions_in_flight.increment(now, 1);
 				}
 				self.core_mempool.commit_transaction(&sender, sequence_number);

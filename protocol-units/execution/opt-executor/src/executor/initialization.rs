@@ -20,8 +20,7 @@ use tokio::sync::mpsc;
 use tempfile::TempDir;
 
 use std::net::ToSocketAddrs;
-use std::sync::Arc;
-use tokio::sync::RwLock;
+use std::sync::{Arc, RwLock};
 
 // Executor channel size.
 // Allow 2^16 transactions before appling backpressure given theoretical maximum TPS of 170k.

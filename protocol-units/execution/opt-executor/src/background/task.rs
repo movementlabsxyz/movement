@@ -9,8 +9,8 @@ use aptos_types::transaction::SignedTransaction;
 
 use futures::channel::mpsc as futures_mpsc;
 use movement_collections::garbage::counted::GcCounter;
-use std::sync::Arc;
-use tokio::sync::{mpsc, RwLock};
+use std::sync::{Arc, RwLock};
+use tokio::sync::mpsc;
 
 /// The background task for the executor, processing the incoming transactions
 /// in a mempool. If the executor is configured in the read-only mode,
