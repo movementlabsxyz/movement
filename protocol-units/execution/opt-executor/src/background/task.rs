@@ -28,7 +28,7 @@ impl BackgroundTask {
 	/// Constructs the full background tasks for transaction processing.
 	pub(crate) fn transaction_pipe(
 		mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
-		transaction_sender: mpsc::Sender<SignedTransaction>,
+		transaction_sender: mpsc::Sender<(u64, SignedTransaction)>,
 		db_reader: Arc<dyn DbReader>,
 		node_config: &NodeConfig,
 		mempool_config: &MempoolConfig,

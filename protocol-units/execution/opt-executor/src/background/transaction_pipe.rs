@@ -29,7 +29,7 @@ pub struct TransactionPipe {
 	// The receiver for the mempool client.
 	mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
 	// Sender for the channel with accepted transactions.
-	transaction_sender: mpsc::Sender<SignedTransaction>,
+	transaction_sender: mpsc::Sender<(u64, SignedTransaction)>,
 	// Access to the ledger DB. TODO: reuse an instance of VMValidator
 	db_reader: Arc<dyn DbReader>,
 	// State of the Aptos mempool
@@ -52,7 +52,7 @@ enum SequenceNumberValidity {
 impl TransactionPipe {
 	pub(crate) fn new(
 		mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
-		transaction_sender: mpsc::Sender<SignedTransaction>,
+		transaction_sender: mpsc::Sender<(u64, SignedTransaction)>,
 		db_reader: Arc<dyn DbReader>,
 		node_config: &NodeConfig,
 		mempool_config: &MempoolConfig,
@@ -204,6 +204,8 @@ impl TransactionPipe {
 		// Re-create the validator for each Tx because it uses a frozen version of the ledger.
 		let vm_validator = VMValidator::new(Arc::clone(&self.db_reader));
 		let tx_result = vm_validator.validate_transaction(transaction.clone())?;
+		// invert the application priority with the u64 max minus the score from aptos (which is high to low)
+		let application_priority = u64::MAX - tx_result.score();
 		match tx_result.status() {
 			Some(_) => {
 				let ms = MempoolStatus::new(MempoolStatusCode::VmError);
@@ -238,7 +240,7 @@ impl TransactionPipe {
 				let sender = transaction.sender();
 				let transaction_sequence_number = transaction.sequence_number();
 				self.transaction_sender
-					.send(transaction)
+					.send((application_priority, transaction))
 					.await
 					.map_err(|e| anyhow::anyhow!("Error sending transaction: {:?}", e))?;
 				// increment transactions in flight
@@ -291,7 +293,7 @@ mod tests {
 	use maptos_execution_util::config::chain::Config;
 	use tempfile::TempDir;
 
-	fn setup() -> (Context, TransactionPipe, mpsc::Receiver<SignedTransaction>, TempDir) {
+	fn setup() -> (Context, TransactionPipe, mpsc::Receiver<(u64, SignedTransaction)>, TempDir) {
 		let (tx_sender, tx_receiver) = mpsc::channel(16);
 		let (executor, tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone()).unwrap();
 		let (context, background) = executor.background(tx_sender).unwrap();
@@ -333,7 +335,7 @@ mod tests {
 
 		// receive the transaction
 		let received_transaction = tx_receiver.recv().await.unwrap();
-		assert_eq!(received_transaction, user_transaction);
+		assert_eq!(received_transaction.1, user_transaction);
 
 		Ok(())
 	}
@@ -385,7 +387,7 @@ mod tests {
 		// receive the transaction
 		let received_transaction =
 			tx_receiver.recv().await.ok_or(anyhow::anyhow!("No transaction received"))?;
-		assert_eq!(received_transaction, user_transaction);
+		assert_eq!(received_transaction.1, user_transaction);
 
 		// send the same transaction again
 		let (req_sender, callback) = oneshot::channel();
@@ -424,7 +426,7 @@ mod tests {
 		let request = SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
 		api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
 		let received_transaction = tx_receiver.recv().await.unwrap();
-		assert_eq!(received_transaction, comparison_user_transaction);
+		assert_eq!(received_transaction.1, comparison_user_transaction);
 
 		mempool_handle.abort();
 
@@ -457,7 +459,7 @@ mod tests {
 			api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
 
 			let received_transaction = tx_receiver.recv().await.unwrap();
-			let bcs_received_transaction = bcs::to_bytes(&received_transaction)?;
+			let bcs_received_transaction = bcs::to_bytes(&received_transaction.1)?;
 			comparison_user_transactions.insert(bcs_received_transaction.clone());
 		}
 
