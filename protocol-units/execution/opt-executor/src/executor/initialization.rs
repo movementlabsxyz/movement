@@ -13,14 +13,15 @@ use maptos_execution_util::config::Config;
 
 use anyhow::Context as _;
 use futures::channel::mpsc as futures_mpsc;
-use movement_collections::garbage::{atomic::counted::GcCounter, Duration};
+use movement_collections::garbage::{counted::GcCounter, Duration};
 use tokio::sync::mpsc;
 
 #[cfg(test)]
 use tempfile::TempDir;
 
 use std::net::ToSocketAddrs;
-use std::sync::{atomic::AtomicU64, Arc};
+use std::sync::Arc;
+use tokio::sync::RwLock;
 
 // Executor channel size.
 // Allow 2^16 transactions before appling backpressure given theoretical maximum TPS of 170k.
@@ -41,13 +42,21 @@ impl Executor {
 		}
 
 		// pruning config
+		node_config.storage.storage_pruner_config.ledger_pruner_config.enable =
+			maptos_config.chain.enabled_pruning;
 		node_config.storage.storage_pruner_config.ledger_pruner_config.prune_window =
 			maptos_config.chain.maptos_ledger_prune_window;
+
+		node_config.storage.storage_pruner_config.state_merkle_pruner_config.enable =
+			maptos_config.chain.enabled_pruning;
 		node_config
 			.storage
 			.storage_pruner_config
 			.state_merkle_pruner_config
 			.prune_window = maptos_config.chain.maptos_state_merkle_prune_window;
+
+		node_config.storage.storage_pruner_config.epoch_snapshot_pruner_config.enable =
+			maptos_config.chain.enabled_pruning;
 		node_config
 			.storage
 			.storage_pruner_config
@@ -96,10 +105,10 @@ impl Executor {
 		Ok(Self {
 			block_executor: Arc::new(BlockExecutor::new(db.clone())),
 			signer,
-			transactions_in_flight: GcCounter::new(
+			transactions_in_flight: Arc::new(RwLock::new(GcCounter::new(
 				Duration::try_new(maptos_config.mempool.sequence_number_ttl_ms)?,
 				Duration::try_new(maptos_config.mempool.gc_slot_duration_ms)?,
-			),
+			))),
 			config: maptos_config.clone(),
 			node_config: node_config.clone(),
 		})

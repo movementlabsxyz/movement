@@ -17,10 +17,11 @@ use aptos_vm_validator::vm_validator::{self, TransactionValidation, VMValidator}
 use crate::gc_account_sequence_number::UsedSequenceNumberPool;
 use futures::channel::mpsc as futures_mpsc;
 use futures::StreamExt;
-use movement_collections::garbage::atomic::counted::GcCounter;
-use std::sync::{atomic::AtomicU64, Arc};
+use movement_collections::garbage::counted::GcCounter;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
+use tokio::sync::RwLock;
 use tracing::{debug, info, info_span, warn, Instrument};
 
 const GC_INTERVAL: Duration = Duration::from_secs(30);
@@ -36,9 +37,9 @@ pub struct TransactionPipe {
 	// State of the Aptos mempool
 	core_mempool: CoreMempool,
 	// Shared reference on the counter of transactions in flight.
-	transactions_in_flight: GcCounter,
+	transactions_in_flight: Arc<RwLock<GcCounter>>,
 	// The configured limit on transactions in flight
-	in_flight_limit: u64,
+	in_flight_limit: Option<u64>,
 	// Timestamp of the last garbage collection
 	last_gc: Instant,
 	// The pool of used sequence numbers
@@ -57,8 +58,8 @@ impl TransactionPipe {
 		db_reader: Arc<dyn DbReader>,
 		node_config: &NodeConfig,
 		mempool_config: &MempoolConfig,
-		transactions_in_flight: GcCounter,
-		transactions_in_flight_limit: u64,
+		transactions_in_flight: Arc<RwLock<GcCounter>>,
+		transactions_in_flight_limit: Option<u64>,
 	) -> Self {
 		TransactionPipe {
 			mempool_client_receiver,
@@ -120,7 +121,8 @@ impl TransactionPipe {
 			self.used_sequence_number_pool.gc(epoch_ms_now);
 
 			// garbage collect the transactions in flight
-			self.transactions_in_flight.gc(epoch_ms_now);
+			let mut transactions_in_flight = self.transactions_in_flight.write().await;
+			transactions_in_flight.gc(epoch_ms_now);
 
 			// garbage collect the core mempool
 			self.core_mempool.gc();
@@ -192,19 +194,24 @@ impl TransactionPipe {
 		transaction: SignedTransaction,
 	) -> Result<SubmissionStatus, Error> {
 		// For now, we are going to consider a transaction in flight until it exits the mempool and is sent to the DA as is indicated by WriteBatch.
-		let in_flight = self.transactions_in_flight.get_count();
+		let in_flight = {
+			let transactions_in_flight = self.transactions_in_flight.read().await;
+			transactions_in_flight.get_count()
+		};
 		info!(
 			target: "movement_timing",
 			in_flight = %in_flight,
 			"transactions_in_flight"
 		);
-		if in_flight > self.in_flight_limit {
-			info!(
-				target: "movement_timing",
-				"shedding_load"
-			);
-			let status = MempoolStatus::new(MempoolStatusCode::MempoolIsFull);
-			return Ok((status, None));
+		if let Some(inflight_limit) = self.in_flight_limit {
+			if in_flight >= inflight_limit {
+				info!(
+					target: "movement_timing",
+					"shedding_load"
+				);
+				let status = MempoolStatus::new(MempoolStatusCode::MempoolIsFull);
+				return Ok((status, None));
+			}
 		}
 
 		// Pre-execute Tx to validate its content.
@@ -250,7 +257,10 @@ impl TransactionPipe {
 					.await
 					.map_err(|e| anyhow::anyhow!("Error sending transaction: {:?}", e))?;
 				// increment transactions in flight
-				self.transactions_in_flight.increment(now, 1);
+				{
+					let mut transactions_in_flight = self.transactions_in_flight.write().await;
+					transactions_in_flight.increment(now, 1);
+				}
 				self.core_mempool.commit_transaction(&sender, sequence_number);
 
 				// update the used sequence number pool

@@ -13,9 +13,9 @@ use aptos_vm::AptosVM;
 use tracing::info;
 
 use maptos_execution_util::config::Config;
-use movement_collections::garbage::atomic::counted::GcCounter;
-use std::sync::atomic::Ordering;
+use movement_collections::garbage::counted::GcCounter;
 use std::sync::Arc;
+use tokio::sync::RwLock;
 
 /// The `Executor` is responsible for executing blocks and managing the state of the execution
 /// against the `AptosVM`.
@@ -25,7 +25,7 @@ pub struct Executor {
 	/// The signer of the executor's transactions.
 	pub signer: ValidatorSigner,
 	// Shared reference on the counter of transactions in flight.
-	transactions_in_flight: GcCounter,
+	transactions_in_flight: Arc<RwLock<GcCounter>>,
 	// The config for the executor.
 	pub(crate) config: Config,
 	/// The node config derived from the maptos config.
@@ -41,15 +41,16 @@ impl Executor {
 		Arc::clone(&self.db().reader)
 	}
 
-	pub fn decrement_transactions_in_flight(&self, count: u64) {
-		let current = self.transactions_in_flight.get_count();
+	pub async fn decrement_transactions_in_flight(&self, count: u64) {
+		let mut transactions_in_flight = self.transactions_in_flight.write().await;
+		let current = transactions_in_flight.get_count();
 		info!(
 			target: "movement_timing",
 			count,
 			current,
 			"decrementing_transactions_in_flight",
 		);
-		self.transactions_in_flight.decrement(count);
+		transactions_in_flight.decrement(count);
 	}
 
 	pub fn config(&self) -> &Config {

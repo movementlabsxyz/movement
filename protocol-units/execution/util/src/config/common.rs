@@ -132,6 +132,8 @@ env_default!(
 	10
 );
 
+env_default!(default_enable_pruning, "MAPTOS_ENABLE_PRUNING", bool, false);
+
 env_default!(default_maptos_ledger_prune_window, "MAPTOS_LEDGER_PRUNING_WINDOW", u64, 50_000_000);
 
 env_default!(
@@ -162,7 +164,7 @@ env_default!(
 	"auth_token".to_string()
 );
 
-env_default!(default_max_transactions_in_flight, "MAPTOS_MAX_TRANSACTIONS_IN_FLIGHT", u64, 12000);
+env_default!(default_max_transactions_in_flight, "MAPTOS_MAX_TRANSACTIONS_IN_FLIGHT", u64);
 
 env_default!(default_sequence_number_ttl_ms, "MAPTOS_SEQUENCE_NUMBER_TTL_MS", u64, 1000 * 60 * 3);
 

@@ -79,7 +79,8 @@ impl GcCounter {
 				.is_ok()
 			{
 				// Successfully updated the timestamp, now set the count only if the active_amount is unchanged (no one trying to push to the slot)
-				// This creates a condition wherein someone will win the race to set the first value and then everyone else will just add to it
+				// This creates a condition wherein someone will win the race to set the first value and then everyone else will just add to it.
+				// If a slot is being actively used without a sufficient gap for the reset to occur, then this can potentially lead to the sum continuing to increase.
 				if !count
 					.compare_exchange(active_amount, amount, Ordering::SeqCst, Ordering::Relaxed)
 					.is_ok()
@@ -109,6 +110,7 @@ impl GcCounter {
 
 		for (slot_timestamp, count) in self.value_lifetimes.iter() {
 			// If the timestamp is older than the cutoff, reset the slot
+			// We don't use compare exchange here because `gc` should be called more often than the slot would loop back around. `gc` should roughly be called on the period of the slot duration
 			if slot_timestamp.load(Ordering::Relaxed) <= cutoff_time {
 				slot_timestamp.store(0, Ordering::SeqCst);
 				count.store(0, Ordering::SeqCst);
