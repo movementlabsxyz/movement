@@ -31,6 +31,14 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         stakingContract.registerDomain(_epochDuration, _custodians);
     }
 
+    function addCommitmentAdmin(address account) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        grantRole(COMMITMENT_ADMIN, account);
+    }
+
+    function batchAddCommitmentAdmin(address[] memory account) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        for
+    }
+
     // creates a commitment
     function createBlockCommitment(uint256 height, bytes32 commitment, bytes32 blockId)
         public
@@ -213,7 +221,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         grantRole(TRUSTED_ATTESTER, attester);
     }
 
-    function batchAddTrustedAttester(address[] attesters) public onlyRole(COMMITMENT_ADMIN) {
+    function batchAddTrustedAttester(address[] memory attesters) public onlyRole(COMMITMENT_ADMIN) {
         for (uint256 i = 0; i < attesters.length; i++) {
             grantRole(TRUSTED_ATTESTER, attesters[i]);
         }
