@@ -25,22 +25,32 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
     // Mapping of bridge transfer ids to BridgeTransfer structs
     mapping(bytes32 => BridgeTransfer) public bridgeTransfers;
 
+    // Total MOVE token pool balance
+    uint256 public poolBalance;
+
     address public counterpartyAddress;
     ERC20Upgradeable public moveToken;
     uint256 private nonce;
 
+    // Configurable time lock duration
     uint256 public initiatorTimeLockDuration;
 
+    // Initialize the contract with MOVE token address, owner, custom time lock duration, and initial pool balance
     function initialize(
         address _moveToken,
         address owner,
-        uint256 _timeLockDuration
+        uint256 _timeLockDuration,
+        uint256 _initialPoolBalance
     ) public initializer {
         require(_moveToken != address(0) && owner != address(0), "ZeroAddress");
         moveToken = ERC20Upgradeable(_moveToken);
         __Ownable_init(owner);
 
+        // Set the custom time lock duration
         initiatorTimeLockDuration = _timeLockDuration;
+
+        // Set the initial pool balance
+        poolBalance = _initialPoolBalance;
     }
 
     function setCounterpartyAddress(address _counterpartyAddress) external onlyOwner {
@@ -56,11 +66,22 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
             
         require(moveAmount > 0, "ZeroAmount");
 
-        if (!moveToken.transferFrom(originator, address(this), moveAmount)) {
-            revert("MOVETransferFailed");
+        // Ensure there is a valid amount
+        if (moveAmount == 0) {
+            revert ZeroAmount();
         }
 
+        // Transfer the MOVE tokens from the user to the contract
+        if (!moveToken.transferFrom(originator, address(this), moveAmount)) {
+            revert MOVETransferFailed();
+        }
+
+        // Update the pool balance
+        poolBalance += moveAmount;
+
+        // Generate a unique nonce to prevent replay attacks, and generate a transfer ID
         bridgeTransferId = keccak256(abi.encodePacked(originator, recipient, hashLock, initiatorTimeLockDuration, block.timestamp, nonce++));
+
         bridgeTransfers[bridgeTransferId] = BridgeTransfer({
             amount: moveAmount,
             originator: originator,
@@ -86,7 +107,7 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         emit BridgeTransferCompleted(bridgeTransferId, preImage);
     }
 
-    function refundBridgeTransfer(bytes32 bridgeTransferId) external onlyOwner {
+    function refundBridgeTransfer(bytes32 bridgeTransferId) external {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
         require(bridgeTransfer.state == MessageState.INITIALIZED, "BridgeTransferStateNotInitialized");
         require(block.timestamp >= bridgeTransfer.timeLock, "TimeLockNotExpired");
@@ -96,5 +117,12 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         if (!moveToken.transfer(bridgeTransfer.originator, bridgeTransfer.amount)) revert("MOVETransferFailed");
 
         emit BridgeTransferRefunded(bridgeTransferId);
+    }
+
+    function withdrawMOVE(address recipient, uint256 amount) external {
+        if (msg.sender != counterpartyAddress) revert Unauthorized();
+        if (poolBalance < amount) revert InsufficientMOVEBalance();
+        poolBalance -= amount;
+        if (!moveToken.transfer(recipient, amount)) revert MOVETransferFailed();
     }
 }

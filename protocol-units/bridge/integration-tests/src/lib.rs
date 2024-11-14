@@ -62,6 +62,7 @@ pub struct MovementToEthCallArgs {
 	pub hash_lock: EthHash,
 	pub time_lock: u64,
 	pub amount: u64,
+	pub pre_image: [u8; 32],
 }
 
 impl Default for EthToMovementCallArgs {
@@ -104,9 +105,11 @@ impl Default for MovementToEthCallArgs {
 			thread_rng().sample_iter(&Alphanumeric).take(6).map(char::from).collect();
 
 		// Construct the bridge_transfer_id with the random suffix
-		// Construct the bridge_transfer_id with the random suffix
 		let mut bridge_transfer_id = b"00000000000000000000000tra".to_vec();
 		bridge_transfer_id.extend_from_slice(random_suffix.as_bytes());
+
+		// Generate a random 32-byte secret
+		let pre_image: [u8; 32] = thread_rng().gen();
 
 		Self {
 			initiator: MovementAddress(AccountAddress::new(*b"0x000000000000000000000000A55018")),
@@ -117,9 +120,10 @@ impl Default for MovementToEthCallArgs {
 					.try_into()
 					.expect("Expected bridge_transfer_id to be 32 bytes"),
 			),
-			hash_lock: EthHash(*keccak256(b"secret")),
+			hash_lock: EthHash(*keccak256(&pre_image)), // Hash the secret for the hash lock
 			time_lock: 3600,
 			amount: 100,
+			pre_image, // Store the generated secret in the struct
 		}
 	}
 }

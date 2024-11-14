@@ -11,7 +11,7 @@ use bridge_service::{
 			utils::MovementAddress,
 		},
 	},
-	types::{Amount, HashLock, HashLockPreImage},
+	types::{Amount, BridgeAddress, HashLock, HashLockPreImage},
 };
 use futures::StreamExt;
 use tracing_subscriber::EnvFilter;
@@ -115,15 +115,19 @@ async fn test_movement_event() -> Result<(), anyhow::Error> {
 
 	let args = MovementToEthCallArgs::default();
 
-	bridge_integration_tests::utils::initiate_bridge_transfer_helper_framework(
+
+	{
+	let res = BridgeContract::initiate_bridge_transfer(
 		&mut movement_client,
-		args.initiator.0,
-		args.recipient.clone(),
-		args.hash_lock.0,
-		args.amount,
+		BridgeAddress(MovementAddress(args.initiator.0)),
+		BridgeAddress(args.recipient.clone()),
+		HashLock(args.hash_lock.0),
+		Amount(args.amount),
 	)
-	.await
-	.expect("Failed to initiate bridge transfer");
+	.await?;
+
+	tracing::info!("Initiate result: {:?}", res);
+	}
 
 	//Wait for the tx to be executed
 	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(2000)).await;

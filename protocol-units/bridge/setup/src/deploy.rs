@@ -171,7 +171,7 @@ async fn initialize_eth_contracts(
 		AtomicBridgeInitiatorMOVE::new(initiator_contract_address.parse()?, rpc_provider.clone());
 
 	let call = initiator_contract
-		.initialize(move_token.0, owner.0, U256::from(timelock))
+		.initialize(move_token.0, owner.0, U256::from(timelock), U256::from(1000000))
 		.from(owner.0);
 	send_transaction(
 		call,
