@@ -8,12 +8,14 @@ import {AtomicBridgeInitiatorMOVE} from "../src/AtomicBridgeInitiatorMOVE.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {MockMOVEToken} from "../src/MockMOVEToken.sol";
+import {RateLimiter} from "../src/RateLimiter.sol";
 
 contract AtomicBridgeCounterpartyMOVETest is Test {
     AtomicBridgeCounterpartyMOVE public atomicBridgeCounterpartyMOVEImplementation;
     AtomicBridgeCounterpartyMOVE public atomicBridgeCounterpartyMOVE;
     AtomicBridgeInitiatorMOVE public atomicBridgeInitiatorMOVEImplementation;
     AtomicBridgeInitiatorMOVE public atomicBridgeInitiatorMOVE;
+    RateLimiter public rateLimiter;
     MockMOVEToken public moveToken;
     ProxyAdmin public proxyAdmin;
     TransparentUpgradeableProxy public proxy;
@@ -23,7 +25,7 @@ contract AtomicBridgeCounterpartyMOVETest is Test {
     address public recipient = address(0x2);
     address public otherUser = address(0x3);
     bytes32 public hashLock = keccak256(abi.encodePacked("secret"));
-    uint256 public amount = 100 * 10 ** 8; // 100 MOVEToken (assuming 8 decimals)
+    uint256 public amount = 100 * 10 ** 8; 
     uint256 public timeLock = 100;
     bytes32 public initiator = keccak256(abi.encodePacked(deployer));
     bytes32 public bridgeTransferId =
@@ -51,43 +53,52 @@ contract AtomicBridgeCounterpartyMOVETest is Test {
 
         originator = vm.addr(uint256(keccak256(abi.encodePacked(block.timestamp, block.prevrandao))));
 
-        // Deploy the AtomicBridgeInitiator contract with a 48-hour time lock
+        // Deploy and initialize the RateLimiter contract
+        rateLimiter = new RateLimiter();
+        uint256 riskPeriod = 24 * 60 * 60; // 24 hours in seconds
+        uint256 securityFund = 10 ether; // Example security fund
+        rateLimiter.initialize(address(this), riskPeriod, securityFund);
+
+        // Deploy the AtomicBridgeInitiatorMOVE contract with a 48-hour time lock and RateLimiter instance
         atomicBridgeInitiatorMOVEImplementation = new AtomicBridgeInitiatorMOVE();
         proxyAdmin = new ProxyAdmin(deployer);
         proxy = new TransparentUpgradeableProxy(
             address(atomicBridgeInitiatorMOVEImplementation),
             address(proxyAdmin),
             abi.encodeWithSignature(
-                "initialize(address,address,uint256,uint256)",
+                "initialize(address,address,uint256,uint256,address)",
                 address(moveToken),
-                deployer, 
+                deployer,
                 initiatorTimeLockDuration,
-                0 ether // Initial pool balance
+                0 ether, // Initial pool balance
+                address(rateLimiter)
             )
         );
         atomicBridgeInitiatorMOVE = AtomicBridgeInitiatorMOVE(address(proxy));
 
-        // Deploy the AtomicBridgeCounterparty contract with a 24-hour time lock
+        // Deploy the AtomicBridgeCounterpartyMOVE contract with a 24-hour time lock and RateLimiter instance
         atomicBridgeCounterpartyMOVEImplementation = new AtomicBridgeCounterpartyMOVE();
         proxy = new TransparentUpgradeableProxy(
             address(atomicBridgeCounterpartyMOVEImplementation),
             address(proxyAdmin),
             abi.encodeWithSignature(
-                "initialize(address,address,uint256)",
+                "initialize(address,address,address,uint256)",
                 address(atomicBridgeInitiatorMOVE),
+                address(rateLimiter),
                 deployer,
                 counterpartyTimeLockDuration
             )
         );
         atomicBridgeCounterpartyMOVE = AtomicBridgeCounterpartyMOVE(address(proxy));
 
-        // Set the counterparty contract in the AtomicBridgeInitiator contract
+        // Set the counterparty contract in the AtomicBridgeInitiatorMOVE contract
         vm.startPrank(deployer);
         atomicBridgeInitiatorMOVE.setCounterpartyAddress(
             address(atomicBridgeCounterpartyMOVE)
         );
         vm.stopPrank();
     }
+
 
     function testLockBridgeTransfer() public {
         uint256 moveAmount = 100 * 10**8;

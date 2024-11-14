@@ -35,7 +35,7 @@ contract AtomicBridgeInitiatorMOVETest is Test {
         // Deploy and initialize the RateLimiter contract
         rateLimiter = new RateLimiter();
         uint256 riskPeriod = 24 * 60 * 60; // 24 hours in seconds
-        uint256 securityFund = 10 ether; // Example security fund
+        uint256 securityFund = 5 ether; // Example security fund
         rateLimiter.initialize(address(this), riskPeriod, securityFund);
 
         // Deploy the AtomicBridgeInitiatorMOVE contract with the RateLimiter instance
@@ -186,10 +186,8 @@ contract AtomicBridgeInitiatorMOVETest is Test {
     }
 
     function testRateLimitExceeded() public {
-        uint256 moveAmount = 6 ether; // An amount designed to exceed the rate limit in the second transfer.
+        uint256 moveAmount = 100 * 10**8; // 100 MOVEToken
 
-        // Transfer tokens to the originator and set up their approval
-        moveToken.transfer(originator, 10 ether); // Ensure originator has enough tokens for multiple transfers
         vm.startPrank(originator);
         moveToken.approve(address(atomicBridgeInitiatorMOVE), 10 ether);
 
@@ -210,16 +208,18 @@ contract AtomicBridgeInitiatorMOVETest is Test {
             ,
             AtomicBridgeInitiatorMOVE.MessageState transferState1
         ) = atomicBridgeInitiatorMOVE.bridgeTransfers(bridgeTransferId1);
+        console.log("initiated");
         assertEq(transferAmount1, moveAmount / 2);
         assertEq(uint8(transferState1), uint8(AtomicBridgeInitiatorMOVE.MessageState.INITIALIZED));
 
         // Second transfer: attempt to exceed the rate limit
         vm.expectRevert("RATE_LIMIT_EXCEEDED");
         atomicBridgeInitiatorMOVE.initiateBridgeTransfer(
-            moveAmount, // This second transfer will exceed the rate limit
+            5 ether, 
             recipient,
             hashLock
         );
+
 
         // Verify that the originator’s balance reflects only the first transfer
         uint256 finalBalance = moveToken.balanceOf(originator);
