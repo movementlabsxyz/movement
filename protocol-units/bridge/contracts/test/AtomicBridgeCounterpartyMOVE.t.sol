@@ -56,7 +56,7 @@ contract AtomicBridgeCounterpartyMOVETest is Test {
         // Deploy and initialize the RateLimiter contract
         rateLimiter = new RateLimiter();
         uint256 riskPeriod = 24 * 60 * 60; // 24 hours in seconds
-        uint256 securityFund = 10 ether; // Example security fund
+        uint256 securityFund = 5 ether; 
         rateLimiter.initialize(address(this), riskPeriod, securityFund);
 
         // Deploy the AtomicBridgeInitiatorMOVE contract with a 48-hour time lock and RateLimiter instance
@@ -191,89 +191,152 @@ contract AtomicBridgeCounterpartyMOVETest is Test {
             uint256 completedAmount,
             bytes32 completedHashLock,
             uint256 completedTimeLock,
-            AtomicBridgeCounterpartyMOVE.MessageState completedState
+                AtomicBridgeCounterpartyMOVE.MessageState completedState
+            ) = atomicBridgeCounterpartyMOVE.bridgeTransfers(bridgeTransferId);
+
+            assertEq(completedInitiator, initiator);
+            assertEq(completedRecipient, recipient);
+            assertEq(completedAmount, amount);
+            assertEq(completedHashLock, testHashLock);
+            assertGt(completedTimeLock, block.timestamp);
+            assertEq(
+                uint8(completedState),
+                uint8(AtomicBridgeCounterpartyMOVE.MessageState.COMPLETED)
+            );
+
+            vm.stopPrank();
+        }
+
+    function testAbortBridgeTransfer() public {
+        uint256 moveAmount = 100 * 10**8;
+        moveToken.transfer(originator, moveAmount); 
+        vm.startPrank(originator);
+
+        // Approve the AtomicBridgeInitiatorMOVE contract to spend MOVEToken
+        moveToken.approve(address(atomicBridgeInitiatorMOVE), amount);
+
+        // Initiate the bridge transfer
+        atomicBridgeInitiatorMOVE.initiateBridgeTransfer(
+            amount,
+            initiator,
+            hashLock
+        );
+
+        vm.stopPrank();
+
+        vm.startPrank(deployer);
+
+        atomicBridgeCounterpartyMOVE.lockBridgeTransfer(
+            initiator,
+            bridgeTransferId,
+            hashLock,
+            recipient,
+            amount
+        );
+
+        vm.stopPrank();
+
+        // Advance the block number to beyond the timelock period
+        vm.warp(block.timestamp + COUNTERPARTY_TIME_LOCK_DURATION + 1);
+
+        // Try to abort as a malicious user (this should fail)
+        //vm.startPrank(otherUser);
+        //vm.expectRevert("Ownable: caller is not the owner");
+        //atomicBridgeCounterpartyMOVE.abortBridgeTransfer(bridgeTransferId);
+        //vm.stopPrank();
+
+        // Abort as the owner (this should pass)
+        vm.startPrank(deployer); // The deployer is the owner
+        atomicBridgeCounterpartyMOVE.abortBridgeTransfer(bridgeTransferId);
+
+        (
+            bytes32 abortedInitiator,
+            address abortedRecipient,
+            uint256 abortedAmount,
+            bytes32 abortedHashLock,
+            uint256 abortedTimeLock,
+            AtomicBridgeCounterpartyMOVE.MessageState abortedState
         ) = atomicBridgeCounterpartyMOVE.bridgeTransfers(bridgeTransferId);
 
-        assertEq(completedInitiator, initiator);
-        assertEq(completedRecipient, recipient);
-        assertEq(completedAmount, amount);
-        assertEq(completedHashLock, testHashLock);
-        assertGt(completedTimeLock, block.timestamp);
+        assertEq(abortedInitiator, initiator);
+        assertEq(abortedRecipient, recipient);
+        assertEq(abortedAmount, amount);
+        assertEq(abortedHashLock, hashLock);
+        assertLe(
+            abortedTimeLock,
+            block.timestamp,
+            "Timelock is not less than or equal to current timestamp"
+        );
         assertEq(
-            uint8(completedState),
-            uint8(AtomicBridgeCounterpartyMOVE.MessageState.COMPLETED)
+            uint8(abortedState),
+            uint8(AtomicBridgeCounterpartyMOVE.MessageState.REFUNDED)
         );
 
         vm.stopPrank();
     }
 
-function testAbortBridgeTransfer() public {
-    uint256 moveAmount = 100 * 10**8;
-    moveToken.transfer(originator, moveAmount); 
-    vm.startPrank(originator);
+    function testRateLimitExceeded() public {
+        uint256 moveAmount = 100 * 10**8; // 100 MOVEToken
+        moveToken.transfer(originator, moveAmount); 
 
-    // Approve the AtomicBridgeInitiatorMOVE contract to spend MOVEToken
-    moveToken.approve(address(atomicBridgeInitiatorMOVE), amount);
+        vm.startPrank(originator);
+        moveToken.approve(address(atomicBridgeInitiatorMOVE), moveAmount);
 
-    // Initiate the bridge transfer
-    atomicBridgeInitiatorMOVE.initiateBridgeTransfer(
-        amount,
-        initiator,
-        hashLock
-    );
+        // Initiate the first bridge transfer through the initiator
+        atomicBridgeInitiatorMOVE.initiateBridgeTransfer(
+            moveAmount / 2,
+            initiator,
+            hashLock
+        );
 
-    vm.stopPrank();
+        vm.stopPrank();
 
-    vm.startPrank(deployer);
+        // Start locking the transfer on the counterparty side
+        vm.startPrank(deployer);
 
-    atomicBridgeCounterpartyMOVE.lockBridgeTransfer(
-        initiator,
-        bridgeTransferId,
-        hashLock,
-        recipient,
-        amount
-    );
+        // Lock the first transfer (within rate limit)
+        atomicBridgeCounterpartyMOVE.lockBridgeTransfer(
+            initiator,
+            bridgeTransferId,
+            hashLock,
+            recipient,
+            moveAmount / 2
+        );
 
-    vm.stopPrank();
+        // Verify the first transfer was locked successfully
+        (
+            bytes32 lockedInitiator,
+            address lockedRecipient,
+            uint256 lockedAmount,
+            bytes32 lockedHashLock,
+            uint256 lockedTimeLock,
+            AtomicBridgeCounterpartyMOVE.MessageState lockedState
+        ) = atomicBridgeCounterpartyMOVE.bridgeTransfers(bridgeTransferId);
+        assertEq(lockedInitiator, initiator);
+        assertEq(lockedRecipient, recipient);
+        assertEq(lockedAmount, moveAmount / 2);
+        assertEq(lockedHashLock, hashLock);
+        assertGt(lockedTimeLock, block.timestamp);
+        assertEq(
+            uint8(lockedState),
+            uint8(AtomicBridgeCounterpartyMOVE.MessageState.PENDING)
+        );
 
-    // Advance the block number to beyond the timelock period
-    vm.warp(block.timestamp + COUNTERPARTY_TIME_LOCK_DURATION + 1);
+        // Attempt a second transfer to exceed the rate limit
+        bytes32 secondBridgeTransferId = keccak256(
+            abi.encodePacked(block.timestamp, initiator, recipient, moveAmount, hashLock, timeLock)
+        );
 
-    // Try to abort as a malicious user (this should fail)
-    //vm.startPrank(otherUser);
-    //vm.expectRevert("Ownable: caller is not the owner");
-    //atomicBridgeCounterpartyMOVE.abortBridgeTransfer(bridgeTransferId);
-    //vm.stopPrank();
+        // Expect the second transfer to exceed the rate limit and revert
+        vm.expectRevert("RATE_LIMIT_EXCEEDED");
+        atomicBridgeCounterpartyMOVE.lockBridgeTransfer(
+            initiator,
+            secondBridgeTransferId,
+            hashLock,
+            recipient,
+            moveAmount
+        );
 
-    // Abort as the owner (this should pass)
-    vm.startPrank(deployer); // The deployer is the owner
-    atomicBridgeCounterpartyMOVE.abortBridgeTransfer(bridgeTransferId);
-
-    (
-        bytes32 abortedInitiator,
-        address abortedRecipient,
-        uint256 abortedAmount,
-        bytes32 abortedHashLock,
-        uint256 abortedTimeLock,
-        AtomicBridgeCounterpartyMOVE.MessageState abortedState
-    ) = atomicBridgeCounterpartyMOVE.bridgeTransfers(bridgeTransferId);
-
-    assertEq(abortedInitiator, initiator);
-    assertEq(abortedRecipient, recipient);
-    assertEq(abortedAmount, amount);
-    assertEq(abortedHashLock, hashLock);
-    assertLe(
-        abortedTimeLock,
-        block.timestamp,
-        "Timelock is not less than or equal to current timestamp"
-    );
-    assertEq(
-        uint8(abortedState),
-        uint8(AtomicBridgeCounterpartyMOVE.MessageState.REFUNDED)
-    );
-
-    vm.stopPrank();
-}
-
-
+        vm.stopPrank();
+    }
 }

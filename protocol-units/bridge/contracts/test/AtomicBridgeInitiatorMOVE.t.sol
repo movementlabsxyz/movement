@@ -35,7 +35,7 @@ contract AtomicBridgeInitiatorMOVETest is Test {
         // Deploy and initialize the RateLimiter contract
         rateLimiter = new RateLimiter();
         uint256 riskPeriod = 24 * 60 * 60; // 24 hours in seconds
-        uint256 securityFund = 5 ether; // Example security fund
+        uint256 securityFund = 5 ether; 
         rateLimiter.initialize(address(this), riskPeriod, securityFund);
 
         // Deploy the AtomicBridgeInitiatorMOVE contract with the RateLimiter instance
@@ -189,7 +189,7 @@ contract AtomicBridgeInitiatorMOVETest is Test {
         uint256 moveAmount = 100 * 10**8; // 100 MOVEToken
 
         vm.startPrank(originator);
-        moveToken.approve(address(atomicBridgeInitiatorMOVE), 10 ether);
+        moveToken.approve(address(atomicBridgeInitiatorMOVE), moveAmount);
 
         // First transfer: within the rate limit
         uint256 initialBalance = moveToken.balanceOf(originator);
