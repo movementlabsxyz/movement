@@ -5,6 +5,7 @@ import {IAtomicBridgeInitiatorMOVE} from "./IAtomicBridgeInitiatorMOVE.sol";
 import {MockMOVEToken} from "./MockMOVEToken.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "forge-std/console.sol"; // Import forge-std console
 
 contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgradeable {
     enum MessageState {
@@ -97,23 +98,37 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
 
     function completeBridgeTransfer(bytes32 bridgeTransferId, bytes32 preImage) external onlyOwner {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
-        if (bridgeTransfer.state != MessageState.INITIALIZED) revert BridgeTransferHasBeenCompleted();
-        if (keccak256(abi.encodePacked(preImage)) != bridgeTransfer.hashLock) revert InvalidSecret();
-        if (block.timestamp > bridgeTransfer.timeLock) revert TimelockExpired();
+        
+        console.log("Attempting to complete transfer with ID:", bridgeTransferId);
+        console.log("Transfer state:", uint256(bridgeTransfer.state));
+        console.log("Hash lock for transfer:", bridgeTransfer.hashLock);
+        console.log("Pre-image provided:", preImage);
+
+        if (bridgeTransfer.state != MessageState.INITIALIZED) {
+            console.log("Transfer already completed or refunded, aborting.");
+            revert BridgeTransferHasBeenCompleted();
+        }
+        
+        if (keccak256(abi.encodePacked(preImage)) != bridgeTransfer.hashLock) {
+            console.log("Invalid pre-image, aborting.");
+            revert InvalidSecret();
+        }
+        
+        if (block.timestamp > bridgeTransfer.timeLock) {
+            console.log("Timelock expired, aborting.");
+            revert TimelockExpired();
+        }
+
         bridgeTransfer.state = MessageState.COMPLETED;
+        
+        console.log("Bridge transfer completed successfully with ID:", bridgeTransferId);
 
         emit BridgeTransferCompleted(bridgeTransferId, preImage);
     }
 
     function refundBridgeTransfer(bytes32 bridgeTransferId) external {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
-        // if (bridgeTransfer.state != MessageState.INITIALIZED) revert BridgeTransferStateNotInitialized();
-        // if (block.timestamp < bridgeTransfer.timeLock) revert TimeLockNotExpired();
         bridgeTransfer.state = MessageState.REFUNDED;
-        
-        // Decrease pool balance and transfer MOVE tokens back to the originator
-        // poolBalance -= bridgeTransfer.amount;
-        // if (!moveToken.transfer(bridgeTransfer.originator, bridgeTransfer.amount)) revert MOVETransferFailed();
 
         emit BridgeTransferRefunded(bridgeTransferId);
     }
