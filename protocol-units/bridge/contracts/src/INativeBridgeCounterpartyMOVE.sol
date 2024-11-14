@@ -1,61 +1,70 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.22;
 
 interface INativeBridgeCounterpartyMOVE {
-    // Event emitted when a new native bridge transfer is locked
+    
+    function initialize(address _nativeBridgeInitiator, address owner, uint256 _timeLockDuration) external;
+    function setNativeBridgeInitiator(address _nativeBridgeInitiator) external;
+    function setTimeLockDuration(uint256 _timeLockDuration) external;
+
+    function lockBridgeTransfer(
+        bytes32 bridgeTransferId,
+        bytes32 originator,
+        address recipient,
+        uint256 amount,
+        bytes32 hashLock,
+        uint256 initialTimestamp,
+        uint256 nonce
+    ) external;
+
+    function completeBridgeTransfer(
+        bytes32 bridgeTransferId,
+        bytes32 originator,
+        address recipient,
+        uint256 amount,
+        bytes32 hashLock,
+        uint256 initialTimestamp,
+        uint256 nonce,
+        bytes32 preImage
+    ) external;
+
+    function abortBridgeTransfer(
+        bytes32 bridgeTransferId,
+        bytes32 originator,
+        address recipient,
+        uint256 amount,
+        bytes32 hashLock,
+        uint256 initialTimestamp,
+        uint256 nonce
+    ) external;
+
     event BridgeTransferLocked(
-        bytes32 indexed bridgeTransferId, address indexed recipient, uint256 amount, bytes32 hashLock, uint256 timeLock
+        bytes32 indexed bridgeTransferId,
+        bytes32 indexed originator,
+        address indexed recipient,
+        uint256 amount,
+        bytes32 hashLock,
+        uint256 initialTimestamp,
+        uint256 nonce
     );
 
-    // Event emitted when a BridgeTransfer is completed
-    event BridgeTransferCompleted(bytes32 indexed bridgeTransferId, bytes32 pre_image);
+    event BridgeTransferCompleted(
+        bytes32 indexed bridgeTransferId,
+        bytes32 indexed originator,
+        address indexed recipient,
+        uint256 amount,
+        bytes32 hashLock,
+        uint256 initialTimestamp,
+        uint256 nonce,
+        bytes32 preImage
+    );
 
-    // Event emitted when a BridgeTransfer is aborted
     event BridgeTransferAborted(bytes32 indexed bridgeTransferId);
 
-    error ZeroAmount();
-    error MOVETransferFailed();
-    error BridgeTransferInvalid();
+    error ZeroAddress();
     error InvalidBridgeTransferId();
     error InvalidSecret();
-    error BridgeTransferHasBeenCompleted();
-    error BridgeTransferStateNotInitialized();
     error BridgeTransferStateNotPending();
-    error InsufficientMOVEBalance();
     error TimeLockExpired();
     error TimeLockNotExpired();
-    error ZeroAddress();
-    error Unauthorized();
-
-    /**
-     * @dev Locks the assets for a new native bridge transfer
-     * @param originator The address of the originator of the BridgeTransfer
-     * @param bridgeTransferId A unique id representing this BridgeTransfer
-     * @param hashLock The hash of the secret (HASH) that will unlock the funds
-     * @param recipient The address to which to transfer the funds
-     * @param amount The amount of WETH to lock
-     * @return bool indicating successful lock
-     *
-     */
-    function lockBridgeTransfer(
-        bytes32 originator,
-        bytes32 bridgeTransferId,
-        bytes32 hashLock,
-        address recipient,
-        uint256 amount
-    ) external returns (bool);
-
-    /**
-     * @dev Completes the bridge transfer and withdraws WETH to the recipient
-     * @param bridgeTransferId Unique identifier for the BridgeTransfer
-     * @param preImage The secret that unlocks the funds
-     *
-     */
-    function completeBridgeTransfer(bytes32 bridgeTransferId, bytes32 preImage) external;
-
-    /**
-     * @dev Cancels the bridge transfer and refunds the initiator if the timelock has expired
-     * @param bridgeTransferId Unique identifier for the BridgeTransfer
-     *
-     */
-    function abortBridgeTransfer(bytes32 bridgeTransferId) external;
 }

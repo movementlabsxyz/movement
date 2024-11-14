@@ -6,12 +6,12 @@ import {INativeBridgeCounterpartyMOVE} from "./INativeBridgeCounterpartyMOVE.sol
 import {NativeBridgeInitiatorMOVE} from "./NativeBridgeInitiatorMOVE.sol";
 
 contract NativeBridgeCounterpartyMOVE is INativeBridgeCounterpartyMOVE, OwnableUpgradeable {
+
     enum MessageState {
         PENDING,
         COMPLETED,
         REFUNDED
     }
-
     NativeBridgeInitiatorMOVE public nativeBridgeInitiatorMOVE;
     mapping(bytes32 => MessageState) public bridgeTransfers;
 
@@ -65,12 +65,12 @@ contract NativeBridgeCounterpartyMOVE is INativeBridgeCounterpartyMOVE, OwnableU
         uint256 initialTimestamp,
         uint256 nonce, bytes32 preImage) external {
         
-        require(keccak256(abi.encodePacked(preImage)) == details.hashLock, InvalidSecret());
         require(bridgeTransferId == keccak256(abi.encodePacked(originator, recipient, amount, hashLock, initialTimestamp, nonce)), InvalidBridgeTransferId());
+        require(keccak256(abi.encodePacked(preImage)) == hashLock, InvalidSecret());
 
-        require(bridgeTransfers[bridgeTransferId] == MessageState.PENDING BridgeTransferStateNotPending());
+        require(bridgeTransfers[bridgeTransferId] == MessageState.PENDING, BridgeTransferStateNotPending());
         
-        if (block.timestamp > timeLock) revert TimeLockExpired();
+        if (block.timestamp > initialTimestamp + counterpartyTimeLockDuration) revert TimeLockExpired();
 
         bridgeTransfers[bridgeTransferId] = MessageState.COMPLETED;
 
@@ -87,7 +87,7 @@ contract NativeBridgeCounterpartyMOVE is INativeBridgeCounterpartyMOVE, OwnableU
         uint256 initialTimestamp,
         uint256 nonce) external onlyOwner {
         require(bridgeTransferId == keccak256(abi.encodePacked(originator, recipient, amount, hashLock, initialTimestamp, nonce)), InvalidBridgeTransferId());
-        require(bridgeTransfers[bridgeTransferId] == MessageState.PENDING BridgeTransferStateNotPending());
+        require(bridgeTransfers[bridgeTransferId] == MessageState.PENDING, BridgeTransferStateNotPending());
         if (block.timestamp <= initialTimestamp + counterpartyTimeLockDuration) revert TimeLockNotExpired();
 
         bridgeTransfers[bridgeTransferId] = MessageState.REFUNDED;

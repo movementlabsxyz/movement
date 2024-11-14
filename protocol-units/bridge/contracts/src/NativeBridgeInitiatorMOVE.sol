@@ -7,18 +7,18 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
 contract NativeBridgeInitiatorMOVE is INativeBridgeInitiatorMOVE, OwnableUpgradeable {
+
     enum MessageState {
         INITIALIZED,
         COMPLETED,
         REFUNDED
     }
-
     // Mapping of bridge transfer ids to BridgeTransfer structs
     mapping(bytes32 => MessageState) public bridgeTransfers;
 
     address public counterpartyAddress;
     ERC20Upgradeable public moveToken;
-    uint256 private nonce;
+    uint256 private _nonce;
 
     // Configurable time lock duration
     uint256 public initiatorTimeLockDuration;
@@ -43,7 +43,7 @@ contract NativeBridgeInitiatorMOVE is INativeBridgeInitiatorMOVE, OwnableUpgrade
         counterpartyAddress = _counterpartyAddress;
     }
 
-    function initiateBridgeTransfer(uint256 amount, bytes32 recipient, bytes32 hashLock)
+    function initiateBridgeTransfer(bytes32 recipient, uint256 amount, bytes32 hashLock)
         external
         returns (bytes32 bridgeTransferId)
     {
@@ -61,18 +61,18 @@ contract NativeBridgeInitiatorMOVE is INativeBridgeInitiatorMOVE, OwnableUpgrade
 
         // Generate a unique nonce to prevent replay attacks, and generate a transfer ID
         bridgeTransferId =
-            keccak256(abi.encodePacked(originator, recipient, amount, hashLock, block.timestamp, ++nonce));
+            keccak256(abi.encodePacked(originator, recipient, amount, hashLock, block.timestamp, ++_nonce));
 
         bridgeTransfers[bridgeTransferId] = MessageState.INITIALIZED;
 
-        emit BridgeTransferInitiated(bridgeTransferId, originator, recipient, amount, hashLock, block.timestamp, nonce);
+        emit BridgeTransferInitiated(bridgeTransferId, originator, recipient, amount, hashLock, block.timestamp, _nonce);
         return bridgeTransferId;
     }
 
     function completeBridgeTransfer(
         bytes32 bridgeTransferId,
-        bytes32 originator,
-        address recipient,
+        address originator,
+        bytes32 recipient,
         uint256 amount,
         bytes32 hashLock,
         uint256 initialTimestamp,
@@ -85,7 +85,7 @@ contract NativeBridgeInitiatorMOVE is INativeBridgeInitiatorMOVE, OwnableUpgrade
                 == keccak256(abi.encodePacked(originator, recipient, amount, hashLock, initialTimestamp, nonce)),
             InvalidBridgeTransferId()
         );
-        if (keccak256(abi.encodePacked(preImage)) != bridgeTransfer.hashLock) revert InvalidSecret();
+        if (keccak256(abi.encodePacked(preImage)) != hashLock) revert InvalidSecret();
         if (block.timestamp > initialTimestamp + initiatorTimeLockDuration) revert TimelockExpired();
         bridgeTransfers[bridgeTransferId] = MessageState.COMPLETED;
 
@@ -96,8 +96,8 @@ contract NativeBridgeInitiatorMOVE is INativeBridgeInitiatorMOVE, OwnableUpgrade
 
     function refundBridgeTransfer(
         bytes32 bridgeTransferId,
-        bytes32 originator,
-        address recipient,
+        address originator,
+        bytes32 recipient,
         uint256 amount,
         bytes32 hashLock,
         uint256 initialTimestamp,
