@@ -221,9 +221,9 @@ mod tests {
 		let private_key = Ed25519PrivateKey::generate_for_testing();
 		let mut config = Config::default();
 		config.chain.maptos_private_key = private_key.clone();
-		let (executor, _tempdir) = setup(config)?;
+		let (executor, _tempdir) = setup(config.clone())?;
 		let (tx_sender, mut tx_receiver) = mpsc::channel(16);
-		let (context, background) = executor.background(tx_sender)?;
+		let (context, background) = executor.background(tx_sender, &config)?;
 		let services = context.services();
 		let api = services.get_opt_apis();
 
@@ -253,8 +253,8 @@ mod tests {
 		config.chain.maptos_private_key = private_key.clone();
 		config.chain.maptos_read_only = true;
 		let (tx_sender, _tx_receiver) = mpsc::channel(16);
-		let (executor, _tempdir) = setup(config)?;
-		let (context, background) = executor.background(tx_sender)?;
+		let (executor, _tempdir) = setup(config.clone())?;
+		let (context, background) = executor.background(tx_sender, &config)?;
 		let services = context.services();
 		let api = services.get_opt_apis();
 
@@ -281,9 +281,9 @@ mod tests {
 		let private_key = Ed25519PrivateKey::generate_for_testing();
 		let mut config = Config::default();
 		config.chain.maptos_private_key = private_key.clone();
-		let (executor, _tempdir) = setup(config)?;
+		let (executor, _tempdir) = setup(config.clone())?;
 		let (tx_sender, mut tx_receiver) = mpsc::channel(16);
-		let (context, background) = executor.background(tx_sender)?;
+		let (context, background) = executor.background(tx_sender, &config)?;
 		let services = context.services();
 		let api = services.get_opt_apis();
 
@@ -340,9 +340,9 @@ mod tests {
 		let private_key = Ed25519PrivateKey::generate_for_testing();
 		let mut config = Config::default();
 		config.chain.maptos_private_key = private_key.clone();
-		let (executor, _tempdir) = setup(config)?;
+		let (executor, _tempdir) = setup(config.clone())?;
 		let (tx_sender, mut tx_receiver) = mpsc::channel(16);
-		let (context, background) = executor.background(tx_sender)?;
+		let (context, background) = executor.background(tx_sender, &config)?;
 		let services = context.services();
 		let api = services.get_opt_apis();
 
@@ -422,8 +422,8 @@ mod tests {
 		// Create an executor instance from the environment configuration.
 		let config = Config::default();
 		let (tx_sender, _tx_receiver) = mpsc::channel(16);
-		let executor = Executor::try_from_config(config)?;
-		let (context, background) = executor.background(tx_sender)?;
+		let executor = Executor::try_from_config(config.clone())?;
+		let (context, background) = executor.background(tx_sender, &config)?;
 		let config = executor.config();
 		let services = context.services();
 		let apis = services.get_opt_apis();
@@ -495,8 +495,8 @@ mod tests {
 		// Create an executor instance from the environment configuration.
 		let config = Config::default();
 		let (tx_sender, _tx_receiver) = mpsc::channel(16);
-		let executor = Executor::try_from_config(config)?;
-		let (context, background) = executor.background(tx_sender)?;
+		let executor = Executor::try_from_config(config.clone())?;
+		let (context, background) = executor.background(tx_sender, &config)?;
 		let config = executor.config();
 		let services = context.services();
 
