@@ -8,17 +8,15 @@ User={{ user }}
 WorkingDirectory=/home/{{ user }}/movement
 Environment="DOT_MOVEMENT_PATH=/home/{{ user }}/.movement"
 Environment="CONTAINER_REV={{ rev }}"
+Environment="MAPTOS_CHAIN_ID={{ chain_id }}"
 Environment="MOVEMENT_SYNC={{ movement_sync }}"
 
 Environment="M1_DA_LIGHT_NODE_CONNECTION_PROTOCOL={{ m1_da_light_node_connection_protocol }}"
 Environment="M1_DA_LIGHT_NODE_CONNECTION_HOSTNAME={{ m1_da_light_node_connection_hostname }}"
 Environment="M1_DA_LIGHT_NODE_CONNECTION_PORT={{ m1_da_light_node_connection_port }}"
 
-Environment="AWS_ACCESS_KEY_ID={{ aws_access_key_id }}"
-Environment="AWS_SECRET_ACCESS_KEY={{ aws_secret_access_key }}"
-Environment="AWS_DEFAULT_REGION={{ aws_default_region }}"
-Environment="AWS_REGION={{ aws_default_region }}"
-ExecStart=/usr/bin/docker compose --env-file .env -f /home/{{ user }}/movement/docker/compose/suzuka-full-node/docker-compose.yml -f /home/{{ user }}/movement/docker/compose/suzuka-full-node/docker-compose.local.yml up --force-recreate --remove-orphans
+Environment="AWS_REGION={{ aws_region }}"
+ExecStart=/usr/bin/docker compose --env-file .env -f /home/{{ user }}/movement/docker/compose/suzuka-full-node/docker-compose.yml -f /home/{{ user }}/movement/docker/compose/suzuka-full-node/docker-compose.follower.yml up --force-recreate --remove-orphans
 Restart=on-failure
 
 [Install]

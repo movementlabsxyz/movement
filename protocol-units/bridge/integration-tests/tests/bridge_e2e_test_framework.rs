@@ -1,4 +1,4 @@
-use alloy::primitives::keccak256;
+use alloy::primitives::{keccak256, Address};
 use alloy::primitives::{FixedBytes, U256};
 use alloy::providers::ProviderBuilder;
 use alloy::signers::local::PrivateKeySigner;
@@ -12,18 +12,18 @@ use bridge_service::{
 		bridge_contracts::{BridgeContractError, BridgeContractEvent},
 		ethereum::{
 			event_monitoring::EthMonitoring,
-			types::{EthAddress, AtomicBridgeInitiator},
+			types::{AtomicBridgeInitiatorMOVE, EthAddress, MockMOVEToken},
 			utils::{send_transaction, send_transaction_rules},
 		},
 		movement::{
-			client_framework::MovementClientFramework, 
-			event_monitoring::MovementMonitoring, 
+			client_framework::MovementClientFramework, event_monitoring::MovementMonitoring,
 			utils::MovementAddress,
 		},
 	},
-	types::{Amount, AssetType, BridgeAddress, HashLock, HashLockPreImage}
+	types::{Amount, BridgeAddress, HashLock, HashLockPreImage},
 };
 use futures::StreamExt;
+use tracing::info;
 use tracing_subscriber::EnvFilter;
 
 async fn initiate_eth_bridge_transfer(
@@ -40,8 +40,52 @@ async fn initiate_eth_bridge_transfer(
 		.on_builtin(&config.eth.eth_rpc_connection_url())
 		.await?;
 
+	let mock_move_token =
+		MockMOVEToken::new(Address::from_str(&config.eth.eth_move_token_contract)?, &rpc_provider);
+
+	let multisig_address = Address::from_str("0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc")?;
+
+	//let initialize_call = mock_move_token.initialize(multisig_address);
+	//let initialize_send = initialize_call.send().await;
+	//let initialize_result = initialize_send.expect("Failed to initialize MockMOVEToken contract");
+	// info!("Initialize result: {:?}", initialize_result);
+
+	info!("Before token approval");
+	info!("Mock MOVE token address: {:?}", Address::from_str(&config.eth.eth_move_token_contract)?);
+	info!("Initiator address: {:?}", initiator_address);
+	info!("Initiator contract address: {}", config.eth.eth_initiator_contract);
+
+	let token_balance = mock_move_token.balanceOf(initiator_address).call().await?;
+	info!("MockMOVEToken balance: {:?}", token_balance._0);
+
+	// Get the ETH balance for the initiator address
+
+	let eth_value = U256::from(amount.0.clone());
+	info!("Eth value: {}", eth_value);
+	let approve_call = mock_move_token
+		.approve(Address::from_str(&config.eth.eth_initiator_contract)?, eth_value)
+		.from(initiator_address);
+
+	let signer_address = initiator_address;
+	let number_retry = config.eth.transaction_send_retries;
+	let gas_limit = config.eth.gas_limit as u128;
+
+	let transaction_receipt = send_transaction(
+		approve_call,
+		signer_address,
+		&send_transaction_rules(),
+		number_retry,
+		gas_limit,
+	)
+	.await
+	.map_err(|e| {
+		BridgeContractError::GenericError(format!("Failed to send approve transaction: {}", e))
+	})?;
+
+	info!("After token approval, transaction receipt: {:?}", transaction_receipt);
+
 	let contract =
-		AtomicBridgeInitiator::new(config.eth.eth_initiator_contract.parse()?, &rpc_provider);
+		AtomicBridgeInitiatorMOVE::new(config.eth.eth_initiator_contract.parse()?, &rpc_provider);
 
 	let initiator_address = BridgeAddress(EthAddress(initiator_address));
 
@@ -49,16 +93,23 @@ async fn initiate_eth_bridge_transfer(
 
 	let recipient_bytes: [u8; 32] =
 		recipient_address.0.try_into().expect("Recipient address must be 32 bytes");
+
+	info!("Before initiate");
+	info!("Amount: {}", U256::from(amount.0));
+	info!("Recipient: {}", FixedBytes(recipient_bytes));
+	info!("hashLock: {}", FixedBytes(hash_lock.0));
+
 	let call = contract
 		.initiateBridgeTransfer(
-			U256::from(amount.weth_value()),
+			U256::from(amount.0),
 			FixedBytes(recipient_bytes),
 			FixedBytes(hash_lock.0),
 		)
-		.value(U256::from(amount.eth_value()))
+		.value(U256::from(amount.0))
 		.from(*initiator_address.0);
 	let _ = send_transaction(
 		call,
+		**initiator_address,
 		&send_transaction_rules(),
 		config.eth.transaction_send_retries,
 		config.eth.gas_limit as u128,
@@ -70,11 +121,9 @@ async fn initiate_eth_bridge_transfer(
 
 #[tokio::test]
 async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Error> {
-	tracing_subscriber::fmt()
-	.with_env_filter(EnvFilter::new("info"))
-	.init();
+	tracing_subscriber::fmt().with_env_filter(EnvFilter::new("info")).init();
 
-	let (_eth_client_harness, mut mvt_client_harness, config) =
+	let (eth_client_harness, mut mvt_client_harness, config) =
 		TestHarness::new_with_eth_and_movement().await?;
 
 	MovementClientFramework::bridge_setup_scripts().await?;
@@ -97,7 +146,7 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 	tracing::info!("Call initiate_transfer on Eth");
 	let hash_lock_pre_image = HashLockPreImage::random();
 	let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
-	let amount = Amount(AssetType::EthAndWeth((1, 0)));
+	let amount = Amount(1);
 	initiate_eth_bridge_transfer(
 		&config,
 		HarnessEthClient::get_initiator_private_key(&config),
@@ -110,7 +159,9 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 
 	//Wait for the tx to be executed
 	tracing::info!("Wait for the MVT Locked event.");
-	let mut mvt_monitoring = MovementMonitoring::build(&config.movement).await.unwrap();
+	let (_, mvt_health_rx) = tokio::sync::mpsc::channel(10);
+	let mut mvt_monitoring =
+		MovementMonitoring::build(&config.movement, mvt_health_rx).await.unwrap();
 	let event =
 		tokio::time::timeout(std::time::Duration::from_secs(30), mvt_monitoring.next()).await?;
 	let bridge_tranfer_id = if let Some(Ok(BridgeContractEvent::Locked(detail))) = event {
@@ -132,7 +183,8 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 		)
 		.await?;
 
-	let mut eth_monitoring = EthMonitoring::build(&config.eth).await.unwrap();
+	let (_, eth_health_rx) = tokio::sync::mpsc::channel(10);
+	let mut eth_monitoring = EthMonitoring::build(&config.eth, eth_health_rx).await.unwrap();
 	// Wait for InitialtorCompleted event
 	tracing::info!("Wait for InitialtorCompleted event.");
 	loop {
@@ -170,7 +222,7 @@ async fn test_movement_event() -> Result<(), anyhow::Error> {
 		args.initiator.0,
 		args.recipient.clone(),
 		args.hash_lock.0,
-		args.amount
+		args.amount,
 	)
 	.await
 	.expect("Failed to initiate bridge transfer");

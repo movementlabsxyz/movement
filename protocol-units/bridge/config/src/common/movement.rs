@@ -1,3 +1,4 @@
+use crate::common::DEFAULT_REST_CONNECTION_TIMEOUT;
 use aptos_crypto::{ed25519::Ed25519PrivateKey, Uniform, ValidCryptoMaterialStringExt};
 use godfig::env_default;
 use serde::{Deserialize, Serialize};
@@ -7,9 +8,10 @@ const DEFAULT_MVT_RPC_CONNECTION_HOSTNAME: &str = "127.0.0.1";
 const DEFAULT_MVT_RPC_CONNECTION_PORT: u16 = 8080;
 const DEFAULT_MVT_FAUCET_CONNECTION_HOSTNAME: &str = "127.0.0.1";
 const DEFAULT_MVT_FAUCET_CONNECTION_PORT: u16 = 8081;
-const DEFAULT_REST_CONNECTION_HOSTNAME: &str = "127.0.0.1";
-const DEFAULT_GRPC_CONNECTION_HOSTNAME: &str = "127.0.0.1";
-const DEFAULT_GRPC_CONNECTION_PORT: u16 = 50051;
+const DEFAULT_REST_LISTENER_HOSTNAME: &str = "0.0.0.0";
+const DEFAULT_GRPC_LISTENER_HOSTNAME: &str = "0.0.0.0";
+const DEFAULT_GRPC_LISTENER_PORT: u16 = 50051;
+const DEFAULT_REST_LISTENER_PORT: u16 = 30883;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MovementConfig {
@@ -36,19 +38,28 @@ pub struct MovementConfig {
 	pub mvt_init_network: String,
 
 	/// Endpoint for the REST service
-	#[serde(default = "default_rest_connection_hostname")]
-	pub rest_hostname: String,
-	#[serde(default = "default_rest_connection_port")]
-	pub rest_port: u32,
+	#[serde(default = "default_rest_listener_hostname")]
+	pub rest_listener_hostname: String,
+	#[serde(default = "default_rest_listener_port")]
+	pub rest_port: u16,
 
 	// gRPC service connection details
 	#[serde(default = "default_grpc_connection_protocol")]
 	pub grpc_protocol: String,
-	#[serde(default = "default_grpc_connection_hostname")]
-	pub grpc_hostname: String,
-	#[serde(default = "default_grpc_connection_port")]
+	#[serde(default = "default_grpc_listener_hostname")]
+	pub grpc_listener_hostname: String,
+	#[serde(default = "default_grpc_listener_port")]
 	pub grpc_port: u16,
+	#[serde(default = "rest_connection_timeout_secs")]
+	pub rest_connection_timeout_secs: u64,
 }
+
+env_default!(
+	rest_connection_timeout_secs,
+	"MVT_REST_CONNECTION_TIMEOUT",
+	u64,
+	DEFAULT_REST_CONNECTION_TIMEOUT
+);
 
 // The default private key
 pub fn default_movement_signer_key() -> Ed25519PrivateKey {
@@ -66,27 +77,22 @@ env_default!(
 );
 
 env_default!(
-	default_grpc_connection_hostname,
-	"GRPC_CONNECTION_HOSTNAME",
+	default_grpc_listener_hostname,
+	"GRPC_LISTENER_HOSTNAME",
 	String,
-	DEFAULT_GRPC_CONNECTION_HOSTNAME.to_string()
+	DEFAULT_GRPC_LISTENER_HOSTNAME.to_string()
 );
+
+env_default!(default_grpc_listener_port, "GRPC_LISTENER_PORT", u16, DEFAULT_GRPC_LISTENER_PORT);
 
 env_default!(
-	default_grpc_connection_port,
-	"GRPC_CONNECTION_PORT",
-	u16,
-	DEFAULT_GRPC_CONNECTION_PORT
-);
-
-env_default!(
-	default_rest_connection_hostname,
-	"REST_CONNECTION_HOSTNAME",
+	default_rest_listener_hostname,
+	"REST_LISTENER_HOSTNAME",
 	String,
-	DEFAULT_REST_CONNECTION_HOSTNAME.to_string()
+	DEFAULT_REST_LISTENER_HOSTNAME.to_string()
 );
 
-env_default!(default_rest_connection_port, "REST_CONNECTION_PORT", u32, 308833);
+env_default!(default_rest_listener_port, "REST_LISTENER_PORT", u16, DEFAULT_REST_LISTENER_PORT);
 
 env_default!(
 	default_movement_native_address,
@@ -173,11 +179,12 @@ impl MovementConfig {
 			mvt_faucet_connection_hostname: default_mvt_rpc_connection_hostname(),
 			mvt_faucet_connection_port: 30732,
 			mvt_init_network: default_mvt_init_network(),
-			rest_hostname: default_rest_connection_hostname(),
-			rest_port: default_rest_connection_port(),
+			rest_listener_hostname: default_rest_listener_hostname(),
+			rest_port: default_rest_listener_port(),
 			grpc_protocol: default_grpc_connection_protocol(),
-			grpc_hostname: default_grpc_connection_hostname(),
-			grpc_port: default_grpc_connection_port(),
+			grpc_listener_hostname: default_grpc_listener_hostname(),
+			grpc_port: default_grpc_listener_port(),
+			rest_connection_timeout_secs: rest_connection_timeout_secs(),
 		}
 	}
 }
@@ -194,11 +201,12 @@ impl Default for MovementConfig {
 			mvt_faucet_connection_hostname: default_mvt_rpc_connection_hostname(),
 			mvt_faucet_connection_port: default_mvt_faucet_connection_port(),
 			mvt_init_network: default_mvt_init_network(),
-			rest_hostname: default_rest_connection_hostname(),
-			rest_port: default_rest_connection_port(),
+			rest_listener_hostname: default_rest_listener_hostname(),
+			rest_port: default_rest_listener_port(),
 			grpc_protocol: default_grpc_connection_protocol(),
-			grpc_hostname: default_grpc_connection_hostname(),
-			grpc_port: default_grpc_connection_port(),
+			grpc_listener_hostname: default_grpc_listener_hostname(),
+			grpc_port: default_grpc_listener_port(),
+			rest_connection_timeout_secs: rest_connection_timeout_secs(),
 		}
 	}
 }

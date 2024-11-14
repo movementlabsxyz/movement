@@ -1,6 +1,6 @@
 use super::common::{
-	default_maptos_chain_id, default_maptos_epoch_snapshot_prune_window,
-	default_maptos_ledger_prune_window, default_maptos_private_key,
+	default_enable_pruning, default_maptos_chain_id, default_maptos_epoch_snapshot_prune_window,
+	default_maptos_ledger_prune_window, default_maptos_private_key, default_maptos_read_only,
 	default_maptos_rest_listen_hostname, default_maptos_rest_listen_port,
 	default_maptos_state_merkle_prune_window,
 };
@@ -27,6 +27,13 @@ pub struct Config {
 	#[serde(default = "default_maptos_private_key")]
 	pub maptos_private_key: Ed25519PrivateKey,
 
+	#[serde(default = "default_maptos_read_only")]
+	pub maptos_read_only: bool,
+
+	/// Whether or not to prune
+	#[serde(default = "default_enable_pruning")]
+	pub enabled_pruning: bool,
+
 	/// Ledger prune window
 	#[serde(default = "default_maptos_ledger_prune_window")]
 	pub maptos_ledger_prune_window: u64,
@@ -50,6 +57,8 @@ impl Default for Config {
 			maptos_rest_listen_hostname: default_maptos_rest_listen_hostname(),
 			maptos_rest_listen_port: default_maptos_rest_listen_port(),
 			maptos_private_key: default_maptos_private_key(),
+			maptos_read_only: default_maptos_read_only(),
+			enabled_pruning: default_enable_pruning(),
 			maptos_ledger_prune_window: default_maptos_ledger_prune_window(),
 			maptos_epoch_snapshot_prune_window: default_maptos_epoch_snapshot_prune_window(),
 			maptos_state_merkle_prune_window: default_maptos_state_merkle_prune_window(),

@@ -38,9 +38,9 @@ ansible-playbook --inventory <your-inventory> \
 
 This will set up the Movement Node to connect to sync with the `l-monninger/open-network` environment.
 
-For a basic check on syncing, assert that there is a `0.tgz` file in the `~/.movement` directory. This file is unarchived into the same directory when syncing. If you see it, that indicates that the syncing resource was fetched. It is not rearchived itself.
+For a basic check on syncing, assert that there is a `0.tar.gz` file in the `~/.movement` directory. This file is unarchived into the same directory when syncing. If you see it, that indicates that the syncing resource was fetched. It is not rearchived itself.
 
-If you do not see the `0.tgz` that could indicate an issue with sync. See the troubleshooting steps below.
+If you do not see the `0.tar.gz` that could indicate an issue with sync. See the troubleshooting steps below.
 
 ## Troubleshooting 
 

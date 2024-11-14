@@ -1,3 +1,4 @@
+use crate::common::DEFAULT_REST_CONNECTION_TIMEOUT;
 use alloy::signers::local::PrivateKeySigner;
 use godfig::env_default;
 use godfig::env_short_default;
@@ -11,6 +12,7 @@ const DEFAULT_ETH_WS_CONNECTION_PORT: u16 = 8545; // same as RPC
 const DEFAULT_ETH_INITIATOR_CONTRACT: &str = "Oxeee";
 const DEFAULT_ETH_COUNTERPARTY_CONTRACT: &str = "0xccc";
 const DEFAULT_ETH_WETH_CONTRACT: &str = "0xe3e3";
+const DEFAULT_ETH_MOVETOKEN_CONTRACT: &str = "0xe3e2";
 const DEFAULT_ASSET: &str = "MOVE";
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -38,6 +40,8 @@ pub struct EthConfig {
 	pub eth_counterparty_contract: String,
 	#[serde(default = "default_eth_weth_contract")]
 	pub eth_weth_contract: String,
+	#[serde(default = "default_eth_move_token_contract")]
+	pub eth_move_token_contract: String,
 
 	#[serde(default = "default_signer_private_key")]
 	pub signer_private_key: String,
@@ -52,7 +56,17 @@ pub struct EthConfig {
 
 	#[serde(default = "default_asset")]
 	pub asset: String,
+
+	#[serde(default = "rest_connection_timeout_secs")]
+	pub rest_connection_timeout_secs: u64,
 }
+
+env_default!(
+	rest_connection_timeout_secs,
+	"ETH_REST_CONNECTION_TIMEOUT",
+	u64,
+	DEFAULT_REST_CONNECTION_TIMEOUT
+);
 
 env_default!(
 	default_eth_initiator_contract,
@@ -73,6 +87,12 @@ env_default!(
 	"ETH_WETH_CONTRACT",
 	String,
 	DEFAULT_ETH_WETH_CONTRACT.to_string()
+);
+env_default!(
+	default_eth_move_token_contract,
+	"ETH_MOVE_TOKEN_CONTRACT",
+	String,
+	DEFAULT_ETH_MOVETOKEN_CONTRACT.to_string()
 );
 
 env_default!(default_asset, "ASSET", String, DEFAULT_ASSET.to_string());
@@ -182,6 +202,7 @@ impl Default for EthConfig {
 			eth_initiator_contract: default_eth_initiator_contract(),
 			eth_counterparty_contract: default_eth_counterparty_contract(),
 			eth_weth_contract: default_eth_weth_contract(),
+			eth_move_token_contract: default_eth_move_token_contract(),
 
 			time_lock_secs: default_time_lock_secs(),
 
@@ -190,6 +211,8 @@ impl Default for EthConfig {
 			transaction_send_retries: default_transaction_send_retries(),
 
 			asset: default_asset(),
+
+			rest_connection_timeout_secs: rest_connection_timeout_secs(),
 		}
 	}
 }

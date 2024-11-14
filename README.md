@@ -26,7 +26,7 @@ Unless otherwise specified assume all commands below are run after entering a ni
 - [`proto`](./proto): Protocol buffer definitions for the Movement Network. These definitions are used to generate code for interacting with the Movement Network. See the [proto README](./proto/README.md) for more information about the organization of protocol buffer definitions.
 
 ## Prerequisites (Development)
-- Nix package manager. Use nix to run and build Movement developer environments.  https://nix.dev/install-nix
+- Nix package manager. Use nix to run and build Movement developer environments.  https://nix.dev/install-nix or https://determinate.systems/posts/determinate-nix-installer/.
 
 ## Prerequisites (Running Node)
 - Docker and Docker Compose
