@@ -4112,6 +4112,7 @@ dependencies = [
  "anyhow",
  "bigdecimal",
  "bridge-util",
+ "chrono",
  "diesel",
  "diesel_migrations",
  "hex",
