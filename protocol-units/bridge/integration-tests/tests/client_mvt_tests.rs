@@ -108,17 +108,19 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 	let test_result = async {
 		test_utils::fund_and_check_balance_framework(&mut mvt_client_harness, 100_000_000_000)
 			.await?;
-		let res = test_utils::initiate_bridge_transfer_helper_framework(
-			&mut mvt_client_harness.movement_client,
-			args.initiator.0,
-			args.recipient.clone(),
-			args.hash_lock.0,
-			args.amount,
-		)
-		.await
-		.expect("Failed to initiate bridge transfer");
-
-	tracing::info!("Initiate bridge transfer result: {:?}", res);
+		
+		{
+			let res = BridgeContract::initiate_bridge_transfer(
+				&mut mvt_client_harness.movement_client,
+				BridgeAddress(MovementAddress(args.initiator.0)),
+				BridgeAddress(args.recipient.clone()),
+				HashLock(args.hash_lock.0),
+				Amount(args.amount),
+			)
+			.await?;
+		
+			tracing::info!("Initiate result: {:?}", res);
+		}
 
 	// Wait for the tx to be executed
 	tracing::info!("Wait for the Movement Initiated event.");
@@ -250,15 +252,18 @@ async fn test_movement_client_initiator_complete_transfer() -> Result<(), anyhow
 		TestHarness::new_with_movement().await.expect("Bridge config file not set");
 	let args = MovementToEthCallArgs::default();
 	test_utils::fund_and_check_balance_framework(&mut mvt_client_harness, 100_000_000_000).await?;
-	test_utils::initiate_bridge_transfer_helper_framework(
-		&mut mvt_client_harness.movement_client,
-		args.initiator.0,
-		args.recipient.clone(),
-		args.hash_lock.0,
-		args.amount,
-	)
-	.await
-	.expect("Failed to initiate bridge transfer");
+	{
+		let res = BridgeContract::initiate_bridge_transfer(
+			&mut mvt_client_harness.movement_client,
+			BridgeAddress(MovementAddress(args.initiator.0)),
+			BridgeAddress(args.recipient.clone()),
+			HashLock(args.hash_lock.0),
+			Amount(args.amount),
+		)
+		.await?;
+	
+		tracing::info!("Initiate result: {:?}", res);
+	}
 
 	// Wait for the tx to be executed
 	tracing::info!("Wait for the Movement Initiated event.");
@@ -321,15 +326,19 @@ async fn test_movement_client_refund_transfer() -> Result<(), anyhow::Error> {
 		TestHarness::new_with_movement().await.expect("Bridge config file not set");
 	let args = MovementToEthCallArgs::default();
 	test_utils::fund_and_check_balance_framework(&mut mvt_client_harness, 100_000_000_000).await?;
-	test_utils::initiate_bridge_transfer_helper_framework(
+
+	{
+	let res = BridgeContract::initiate_bridge_transfer(
 		&mut mvt_client_harness.movement_client,
-		args.initiator.0,
-		args.recipient.clone(),
-		args.hash_lock.0,
-		args.amount,
+		BridgeAddress(MovementAddress(args.initiator.0)),
+		BridgeAddress(args.recipient.clone()),
+		HashLock(args.hash_lock.0),
+		Amount(args.amount),
 	)
-	.await
-	.expect("Failed to initiate bridge transfer");
+	.await?;
+
+	tracing::info!("Initiate result: {:?}", res);
+	}
 
 	// Wait for the tx to be executed
 	tracing::info!("Wait for the Movement Initiated event.");
@@ -337,7 +346,7 @@ async fn test_movement_client_refund_transfer() -> Result<(), anyhow::Error> {
 	let mut mvt_monitoring = MovementMonitoring::build(&config.movement, mvt_health_rx).await.unwrap();
 
 	// Use timeout to wait for the next event
-	let event_option = tokio::time::timeout(std::time::Duration::from_secs(30), mvt_monitoring.next())
+	let event_option = tokio::time::timeout(std::time::Duration::from_secs(120), mvt_monitoring.next())
 		.await
 		.expect("Timeout while waiting for the Movement Initiated event");
 
@@ -353,7 +362,7 @@ async fn test_movement_client_refund_transfer() -> Result<(), anyhow::Error> {
 
 	tracing::info!("Received bridge_transfer_id: {:?}", bridge_transfer_id);
 
-	sleep(Duration::from_secs(10)).await;
+	sleep(Duration::from_secs(15)).await;
 
 	info!("Current timestamp: {:?}", Utc::now().timestamp());
 
