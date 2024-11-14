@@ -23,19 +23,22 @@ contract AtomicBridgeInitiatorMOVETest is Test {
     bytes32 public hashLock = keccak256(abi.encodePacked("secret"));
     uint256 public amount = 1 ether;
     uint256 public constant timeLockDuration = 48 * 60 * 60; // 48 hours in seconds
-    uint256 public constant riskPeriod = 24 * 60 * 60; // 24 hours in seconds
-    uint256 public constant securityFund = 10 ether; // Example security fund
 
     function setUp() public {
         // Deploy the MOVEToken contract and mint some tokens to the deployer
         moveToken = new MockMOVEToken();
-        moveToken.initialize(address(this));
+        moveToken.initialize(address(this)); // Contract will hold initial MOVE tokens
 
-        // Deploy the RateLimiter contract with owner, riskPeriod, and securityFund
+        // Set up the originator with an address derived from a hash
+        originator = vm.addr(uint256(keccak256(abi.encodePacked(block.timestamp, block.prevrandao))));
+
+        // Deploy and initialize the RateLimiter contract
         rateLimiter = new RateLimiter();
+        uint256 riskPeriod = 24 * 60 * 60; // 24 hours in seconds
+        uint256 securityFund = 10 ether; // Example security fund
         rateLimiter.initialize(address(this), riskPeriod, securityFund);
 
-        // Deploy the AtomicBridgeInitiatorMOVE contract with RateLimiter integration
+        // Deploy the AtomicBridgeInitiatorMOVE contract with the RateLimiter instance
         atomicBridgeInitiatorImplementation = new AtomicBridgeInitiatorMOVE();
         proxyAdmin = new ProxyAdmin(msg.sender);
         proxy = new TransparentUpgradeableProxy(
@@ -53,12 +56,54 @@ contract AtomicBridgeInitiatorMOVETest is Test {
 
         atomicBridgeInitiatorMOVE = AtomicBridgeInitiatorMOVE(address(proxy));
 
-        // Set up the originator with initial MOVE balance
-        originator = vm.addr(uint256(keccak256(abi.encodePacked(block.timestamp, block.prevrandao))));
-        moveToken.transfer(originator, 10 ether); // Fund originator for testing
+        // Fund the originator for testing with initial MOVE balance
+        uint256 moveAmount = 100 * 10**8; // 100 MOVEToken
+        moveToken.transfer(originator, moveAmount);
     }
 
-function testCompleteBridgeTransfer() public {
+
+    function testInitiateBridgeTransferWithMove() public {
+        uint256 moveAmount = 100 * 10**8;
+
+        // Transfer moveAmount tokens to the originator and check initial balance
+        moveToken.transfer(originator, moveAmount); 
+        uint256 initialBalance = moveToken.balanceOf(originator);
+
+        vm.startPrank(originator);
+        moveToken.approve(address(atomicBridgeInitiatorMOVE), moveAmount);
+
+        // Initiate the bridge transfer
+        bytes32 bridgeTransferId = atomicBridgeInitiatorMOVE.initiateBridgeTransfer(
+            moveAmount, 
+            recipient, 
+            hashLock 
+        );
+
+        // Verify the bridge transfer details
+        (
+            uint256 transferAmount,
+            address transferOriginator,
+            bytes32 transferRecipient,
+            bytes32 transferHashLock,
+            uint256 transferTimeLock,
+            AtomicBridgeInitiatorMOVE.MessageState transferState
+        ) = atomicBridgeInitiatorMOVE.bridgeTransfers(bridgeTransferId);
+
+        assertEq(transferAmount, moveAmount);
+        assertEq(transferOriginator, originator);
+        assertEq(transferRecipient, recipient);
+        assertEq(transferHashLock, hashLock);
+        assertGt(transferTimeLock, block.timestamp);
+        assertEq(uint8(transferState), uint8(AtomicBridgeInitiatorMOVE.MessageState.INITIALIZED));
+
+        // Check the originator's MOVE balance after initiating the transfer
+        uint256 finalBalance = moveToken.balanceOf(originator);
+        assertEq(finalBalance, initialBalance - moveAmount);
+
+        vm.stopPrank();
+    }
+
+    function testCompleteBridgeTransfer() public {
         bytes32 secret = "secret";
         bytes32 testHashLock = keccak256(abi.encodePacked(secret));
         uint256 moveAmount = 100 * 10**8; // 100 MOVEToken
@@ -140,52 +185,46 @@ function testCompleteBridgeTransfer() public {
         assertEq(finalBalance, initialBalance, "MOVE balance mismatch");
     }
 
-
     function testRateLimitExceeded() public {
-        uint256 moveAmount = 6 ether; // Set to exceed the rate limit based on security fund and risk period
+        uint256 moveAmount = 6 ether; // An amount designed to exceed the rate limit in the second transfer.
 
-        // Transfer MOVE tokens to originator and approve the bridge contract
+        // Transfer tokens to the originator and set up their approval
+        moveToken.transfer(originator, 10 ether); // Ensure originator has enough tokens for multiple transfers
         vm.startPrank(originator);
-        moveToken.approve(address(atomicBridgeInitiatorMOVE), moveAmount);
+        moveToken.approve(address(atomicBridgeInitiatorMOVE), 10 ether);
 
-        // First transfer should succeed if under rate limit
-        bytes32 bridgeTransferId1 = atomicBridgeInitiatorMOVE.initiateBridgeTransfer(moveAmount / 2, recipient, hashLock);
-        
-        // Second transfer should trigger the rate limit if it exceeds the allowed amount
-        vm.expectRevert("RATE_LIMIT_EXCEEDED");
-        atomicBridgeInitiatorMOVE.initiateBridgeTransfer(moveAmount, recipient, hashLock);
+        // First transfer: within the rate limit
+        uint256 initialBalance = moveToken.balanceOf(originator);
+        bytes32 bridgeTransferId1 = atomicBridgeInitiatorMOVE.initiateBridgeTransfer(
+            moveAmount / 2, 
+            recipient, 
+            hashLock
+        );
 
-        vm.stopPrank();
-    }
-
-    function testWithinRateLimit() public {
-        uint256 moveAmount = 2 ether; // Within rate limit
-
-        // Transfer MOVE tokens to originator and approve the bridge contract
-        vm.startPrank(originator);
-        moveToken.approve(address(atomicBridgeInitiatorMOVE), moveAmount);
-
-        // First transfer within limit
-        bytes32 bridgeTransferId1 = atomicBridgeInitiatorMOVE.initiateBridgeTransfer(moveAmount, recipient, hashLock);
-
-        // Verify transfer details
+        // Verify that the first transfer succeeded
         (
-            uint256 transferAmount,
-            address transferOriginator,
-            bytes32 transferRecipient,
-            bytes32 transferHashLock,
-            uint256 transferTimeLock,
-            AtomicBridgeInitiatorMOVE.MessageState transferState
+            uint256 transferAmount1,
+            ,
+            ,
+            ,
+            ,
+            AtomicBridgeInitiatorMOVE.MessageState transferState1
         ) = atomicBridgeInitiatorMOVE.bridgeTransfers(bridgeTransferId1);
+        assertEq(transferAmount1, moveAmount / 2);
+        assertEq(uint8(transferState1), uint8(AtomicBridgeInitiatorMOVE.MessageState.INITIALIZED));
 
-        assertEq(transferAmount, moveAmount);
-        assertEq(transferOriginator, originator);
-        assertEq(transferRecipient, recipient);
-        assertEq(transferHashLock, hashLock);
-        assertGt(transferTimeLock, block.timestamp);
-        assertEq(uint8(transferState), uint8(AtomicBridgeInitiatorMOVE.MessageState.INITIALIZED));
+        // Second transfer: attempt to exceed the rate limit
+        vm.expectRevert("RATE_LIMIT_EXCEEDED");
+        atomicBridgeInitiatorMOVE.initiateBridgeTransfer(
+            moveAmount, // This second transfer will exceed the rate limit
+            recipient,
+            hashLock
+        );
+
+        // Verify that the originator’s balance reflects only the first transfer
+        uint256 finalBalance = moveToken.balanceOf(originator);
+        assertEq(finalBalance, initialBalance - (moveAmount / 2));
 
         vm.stopPrank();
     }
 }
-
