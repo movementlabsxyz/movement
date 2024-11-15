@@ -11,18 +11,24 @@ use syncup::SyncupOperations;
 pub struct ForceCommitment {
 	#[clap(flatten)]
 	pub movement_args: MovementArgs,
+	pub height: Option<u64>,
 }
 
 impl ForceCommitment {
 	pub async fn execute(&self) -> Result<(), anyhow::Error> {
 		let config = self.movement_args.config().await?;
-
 		let node = SuzukaPartialNode::try_from_config(config)
 			.await
 			.context("Failed to create the executor")?;
-		node.executor.revert_block_head_to(height);
-		commit = node.executor.get_latest_commitment();
-		node.settlement_manager().forceAttestation(commitment);
+
+		let height = match self.height {
+			Some(height) => height,
+			None => node.executor.get_latest_height().await,
+		};
+
+		node.executor.revert_block_head_to(height).await?;
+		let commitment = node.executor.get_commitment_for_height(height).await?;
+		node.settlement_manager().force_attestation(commitment).await?;
 
 		Ok(())
 	}

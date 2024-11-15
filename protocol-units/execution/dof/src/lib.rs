@@ -48,6 +48,18 @@ pub trait DynOptFinExecutor {
 	/// Update the height of the latest finalized block
 	fn set_finalized_block_height(&self, block_height: u64) -> Result<(), anyhow::Error>;
 
+	/// Gets the block commitment for a given height
+	async fn get_block_commitment_by_height(
+		&self,
+		block_height: u64,
+	) -> Result<BlockCommitment, anyhow::Error>;
+
+	/// Gets the block commitment for a given version.
+	async fn get_block_commitment_by_version(
+		&self,
+		block_height: u64,
+	) -> Result<BlockCommitment, anyhow::Error>;
+
 	/// Revert the chain to the specified height
 	async fn revert_block_head_to(&self, block_height: u64) -> Result<(), anyhow::Error>;
 

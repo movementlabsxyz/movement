@@ -93,6 +93,20 @@ impl DynOptFinExecutor for Executor {
 		self.finality_view.set_finalized_block_height(height)
 	}
 
+	async fn get_block_commitment_by_height(
+		&self,
+		block_height: u64,
+	) -> Result<BlockCommitment, anyhow::Error> {
+		self.executor.get_commitment_for_height(block_height)
+	}
+
+	async fn get_block_commitment_by_version(
+		&self,
+		version: u64,
+	) -> Result<BlockCommitment, anyhow::Error> {
+		self.executor.get_commitment_for_version(version)
+	}
+
 	async fn revert_block_head_to(&self, block_height: u64) -> Result<(), anyhow::Error> {
 		if let Some(final_height) = self.finality_view.finalized_block_height() {
 			if block_height < final_height {
