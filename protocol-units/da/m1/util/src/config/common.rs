@@ -77,6 +77,14 @@ env_default!(
 // The default M1 DA Light Node listen port
 env_default!(default_m1_da_light_node_listen_port, "M1_DA_LIGHT_NODE_LISTEN_PORT", u16, 30730);
 
+// The default M1 DA Light Node connection protocol
+env_default!(
+	default_m1_da_light_node_connection_protocol,
+	"M1_DA_LIGHT_NODE_CONNECTION_PROTOCOL",
+	String,
+	"http".to_string()
+);
+
 // The default M1 DA Light Node connection hostname
 env_default!(
 	default_m1_da_light_node_connection_hostname,

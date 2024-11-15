@@ -24,9 +24,9 @@ processes:
     command: |
       suzuka-indexer-service
     readiness_probe:
-      initial_delay_seconds: 5
+      initial_delay_seconds: 10
       exec:
-        command: echo "true"
+        command: curl http://0.0.0.0:8084
     depends_on:
       build_indexer:
         condition: process_completed_successfully

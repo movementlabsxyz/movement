@@ -26,7 +26,7 @@ pub trait DynOptFinExecutor {
 	/// Initialize the background task responsible for transaction processing.
 	fn background(
 		&self,
-		transaction_sender: Sender<SignedTransaction>,
+		transaction_sender: Sender<(u64, SignedTransaction)>,
 		config: &Config,
 	) -> Result<
 		(Self::Context, impl Future<Output = Result<(), anyhow::Error>> + Send + 'static),

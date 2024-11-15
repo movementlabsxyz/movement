@@ -119,6 +119,10 @@ pub struct Config {
 	#[serde(default = "default_m1_da_light_node_listen_port")]
 	pub m1_da_light_node_listen_port: u16,
 
+	/// The protocol for m1-da-light-node connection
+	#[serde(default = "default_celestia_rpc_connection_protocol")]
+	pub m1_da_light_node_connection_protocol: String,
+
 	/// The hostname for m1-da-light-node connection
 	#[serde(default = "default_m1_da_light_node_connection_hostname")]
 	pub m1_da_light_node_connection_hostname: String,
@@ -135,6 +139,7 @@ pub struct Config {
 impl Default for Config {
 	fn default() -> Self {
 		Self {
+			m1_da_light_node_connection_protocol: default_celestia_rpc_connection_protocol(),
 			celestia_rpc_connection_protocol: default_celestia_rpc_connection_protocol(),
 			celestia_rpc_connection_hostname: default_celestia_rpc_connection_hostname(),
 			celestia_rpc_connection_port: default_celestia_rpc_connection_port(),

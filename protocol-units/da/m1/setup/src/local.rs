@@ -97,6 +97,8 @@ impl Local {
 				"gentx",
 				"validator",
 				"5000000000utia",
+				"--fees",
+				"1utia",
 				"--keyring-backend=test",
 				"--chain-id",
 				&celestia_chain_id,
@@ -123,7 +125,15 @@ impl Local {
 		info!("Getting the auth token.");
 		let auth_token = run_command(
 			"celestia",
-			&["bridge", "auth", "admin", "--node.store", &celestia_node_path],
+			&[
+				"bridge",
+				"auth",
+				"admin",
+				"--node.store",
+				&celestia_node_path,
+				"--keyring.backend",
+				"test",
+			],
 		)
 		.await?
 		.trim()

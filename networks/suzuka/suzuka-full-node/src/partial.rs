@@ -73,6 +73,11 @@ where
 
 impl SuzukaPartialNode<Executor> {
 	pub async fn try_from_config(config: Config) -> Result<Self, anyhow::Error> {
+		let light_node_connection_protocol = config
+			.m1_da_light_node
+			.m1_da_light_node_config
+			.m1_da_light_node_connection_protocol();
+
 		// todo: extract into getter
 		let light_node_connection_hostname = config
 			.m1_da_light_node
@@ -90,14 +95,16 @@ impl SuzukaPartialNode<Executor> {
 			light_node_connection_hostname, light_node_connection_port
 		);
 		let light_node_client = LightNodeServiceClient::connect(format!(
-			"http://{}:{}",
-			light_node_connection_hostname, light_node_connection_port
+			"{}://{}:{}",
+			light_node_connection_protocol,
+			light_node_connection_hostname,
+			light_node_connection_port
 		))
 		.await
 		.context("Failed to connect to light node")?;
 
 		debug!("Creating the executor");
-		let executor = Executor::try_from_config(&config.execution_config.maptos_config)
+		let executor = Executor::try_from_config(config.execution_config.maptos_config.clone())
 			.context("Failed to create the inner executor")?;
 
 		debug!("Creating the settlement client");

@@ -32,7 +32,7 @@ impl Executor {
 		Self { executor, finality_view }
 	}
 
-	pub fn try_from_config(config: &Config) -> Result<Self, anyhow::Error> {
+	pub fn try_from_config(config: Config) -> Result<Self, anyhow::Error> {
 		let executor = OptExecutor::try_from_config(config)?;
 		Ok(Self::new(executor))
 	}
@@ -52,23 +52,23 @@ impl DynOptFinExecutor for Executor {
 
 	fn background(
 		&self,
-		transaction_sender: Sender<SignedTransaction>,
+		transaction_sender: Sender<(u64, SignedTransaction)>,
 		config: &Config,
 	) -> Result<
 		(Context, impl Future<Output = Result<(), anyhow::Error>> + Send + 'static),
 		anyhow::Error,
 	> {
-		let (opt_context, transaction_pipe) = self.executor.background(transaction_sender)?;
+		let (opt_context, background) = self.executor.background(transaction_sender)?;
 		let fin_service = self.finality_view.service(
 			opt_context.mempool_client_sender(),
-			config,
+			self.config(),
 			opt_context.node_config().clone(),
 		);
 		let indexer_runtime = opt_context.run_indexer_grpc_service()?;
 		let background = async move {
 			// The indexer runtime should live as long as the Tx pipe.
 			let _indexer_runtime = indexer_runtime;
-			transaction_pipe.run().await?;
+			background.run().await?;
 			Ok(())
 		};
 		Ok((Context { opt_context, fin_service }, background))
@@ -141,7 +141,8 @@ impl DynOptFinExecutor for Executor {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use aptos_api::{accept_type::AcceptType, transactions::SubmitTransactionPost};
+	use aptos_api::accept_type::AcceptType;
+	use aptos_api::transactions::{SubmitTransactionError, SubmitTransactionPost};
 	use aptos_crypto::{
 		ed25519::{Ed25519PrivateKey, Ed25519Signature},
 		HashValue, PrivateKey, Uniform,
@@ -164,12 +165,20 @@ mod tests {
 	use maptos_execution_util::config::Config;
 
 	use rand::SeedableRng;
+	use tempfile::TempDir;
 	use tokio::sync::mpsc;
 
 	use std::collections::HashMap;
 
-	fn create_signed_transaction(gas_unit_price: u64) -> SignedTransaction {
-		let private_key = Ed25519PrivateKey::generate_for_testing();
+	fn setup(mut maptos_config: Config) -> Result<(Executor, TempDir), anyhow::Error> {
+		let tempdir = tempfile::tempdir()?;
+		// replace the db path with the temporary directory
+		maptos_config.chain.maptos_db_path.replace(tempdir.path().to_path_buf());
+		let executor = Executor::try_from_config(maptos_config)?;
+		Ok((executor, tempdir))
+	}
+
+	fn create_signed_transaction(private_key: &Ed25519PrivateKey) -> SignedTransaction {
 		let public_key = private_key.public_key();
 		let transaction_payload = TransactionPayload::Script(Script::new(vec![0], vec![], vec![]));
 		let raw_transaction = RawTransaction::new(
@@ -177,17 +186,20 @@ mod tests {
 			0,
 			transaction_payload,
 			0,
-			gas_unit_price,
+			0,
 			0,
 			ChainId::test(), // This is the value used in aptos testing code.
 		);
+		// TODO: actually sign
 		SignedTransaction::new(raw_transaction, public_key, Ed25519Signature::dummy_signature())
 	}
 
 	#[tokio::test]
 	async fn test_execute_opt_block() -> Result<(), anyhow::Error> {
-		let config = Config::default();
-		let executor = Executor::try_from_config(&config)?;
+		let private_key = Ed25519PrivateKey::generate_for_testing();
+		let mut config = Config::default();
+		config.chain.maptos_private_key = private_key.clone();
+		let (executor, _tempdir) = setup(config)?;
 		let block_id = HashValue::random();
 		let block_metadata = executor
 			.build_block_metadata(block_id.clone(), chrono::Utc::now().timestamp_micros() as u64)
@@ -195,7 +207,7 @@ mod tests {
 		let txs = ExecutableTransactions::Unsharded(
 			[
 				Transaction::BlockMetadata(block_metadata),
-				Transaction::UserTransaction(create_signed_transaction(0)),
+				Transaction::UserTransaction(create_signed_transaction(&private_key)),
 			]
 			.into_iter()
 			.map(SignatureVerifiedTransaction::Valid)
@@ -208,9 +220,11 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_pipe_transactions_from_api() -> Result<(), anyhow::Error> {
-		let config = Config::default();
+		let private_key = Ed25519PrivateKey::generate_for_testing();
+		let mut config = Config::default();
+		config.chain.maptos_private_key = private_key.clone();
+		let (executor, _tempdir) = setup(config.clone())?;
 		let (tx_sender, mut tx_receiver) = mpsc::channel(16);
-		let executor = Executor::try_from_config(&config)?;
 		let (context, background) = executor.background(tx_sender, &config)?;
 		let services = context.services();
 		let api = services.get_opt_apis();
@@ -219,7 +233,7 @@ mod tests {
 		let background_handle = tokio::spawn(background);
 
 		// Start the background tasks
-		let user_transaction = create_signed_transaction(0);
+		let user_transaction = create_signed_transaction(&private_key);
 		let comparison_user_transaction = user_transaction.clone();
 		let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
 
@@ -228,17 +242,20 @@ mod tests {
 
 		services_handle.abort();
 		background_handle.abort();
-		let received_transaction = tx_receiver.recv().await.unwrap();
+		let (_application_priority, received_transaction) = tx_receiver.recv().await.unwrap();
 		assert_eq!(received_transaction, comparison_user_transaction);
 
 		Ok(())
 	}
 
 	#[tokio::test]
-	async fn test_pipe_transactions_from_api_and_execute() -> Result<(), anyhow::Error> {
-		let config = Config::default();
-		let (tx_sender, mut tx_receiver) = mpsc::channel(16);
-		let executor = Executor::try_from_config(&config)?;
+	async fn test_submit_transaction_api_disabled_in_read_only() -> Result<(), anyhow::Error> {
+		let private_key = Ed25519PrivateKey::generate_for_testing();
+		let mut config = Config::default();
+		config.chain.maptos_private_key = private_key.clone();
+		config.chain.maptos_read_only = true;
+		let (tx_sender, _tx_receiver) = mpsc::channel(16);
+		let (executor, _tempdir) = setup(config.clone())?;
 		let (context, background) = executor.background(tx_sender, &config)?;
 		let services = context.services();
 		let api = services.get_opt_apis();
@@ -247,14 +264,43 @@ mod tests {
 		let background_handle = tokio::spawn(background);
 
 		// Start the background tasks
-		let user_transaction = create_signed_transaction(0);
+		let user_transaction = create_signed_transaction(&private_key);
+		let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
+
+		let request = SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
+		let res = api.transactions.submit_transaction(AcceptType::Bcs, request).await;
+		let err = res.err().expect("submit_transaction should not succeed");
+		assert!(matches!(err, SubmitTransactionError::Forbidden(..)));
+
+		services_handle.abort();
+		background_handle.abort();
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_pipe_transactions_from_api_and_execute() -> Result<(), anyhow::Error> {
+		let private_key = Ed25519PrivateKey::generate_for_testing();
+		let mut config = Config::default();
+		config.chain.maptos_private_key = private_key.clone();
+		let (executor, _tempdir) = setup(config.clone())?;
+		let (tx_sender, mut tx_receiver) = mpsc::channel(16);
+		let (context, background) = executor.background(tx_sender, &config)?;
+		let services = context.services();
+		let api = services.get_opt_apis();
+
+		let services_handle = tokio::spawn(services.run());
+		let background_handle = tokio::spawn(background);
+
+		// Start the background tasks
+		let user_transaction = create_signed_transaction(&private_key);
 		let comparison_user_transaction = user_transaction.clone();
 		let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
 
 		let request = SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
 		api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
 
-		let received_transaction = tx_receiver.recv().await.unwrap();
+		let (_application_priority, received_transaction) = tx_receiver.recv().await.unwrap();
 		assert_eq!(received_transaction, comparison_user_transaction);
 
 		// Now execute the block
@@ -293,9 +339,11 @@ mod tests {
 			current_version: Version,
 		}
 
-		let config = Config::default();
+		let private_key = Ed25519PrivateKey::generate_for_testing();
+		let mut config = Config::default();
+		config.chain.maptos_private_key = private_key.clone();
+		let (executor, _tempdir) = setup(config.clone())?;
 		let (tx_sender, mut tx_receiver) = mpsc::channel(16);
-		let executor = Executor::try_from_config(&config)?;
 		let (context, background) = executor.background(tx_sender, &config)?;
 		let services = context.services();
 		let api = services.get_opt_apis();
@@ -313,7 +361,7 @@ mod tests {
 		let mut commit_versions = vec![];
 
 		for (txns_to_commit, _ledger_info_with_sigs) in &blocks {
-			let user_transaction = create_signed_transaction(0);
+			let user_transaction = create_signed_transaction(&private_key);
 			let comparison_user_transaction = user_transaction.clone();
 			let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
 
@@ -321,7 +369,7 @@ mod tests {
 				SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
 			api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
 
-			let received_transaction = tx_receiver.recv().await.unwrap();
+			let (_application_priority, received_transaction) = tx_receiver.recv().await.unwrap();
 			assert_eq!(received_transaction, comparison_user_transaction);
 
 			// Now execute the block
@@ -376,8 +424,9 @@ mod tests {
 		// Create an executor instance from the environment configuration.
 		let config = Config::default();
 		let (tx_sender, _tx_receiver) = mpsc::channel(16);
-		let executor = Executor::try_from_config(&config)?;
+		let executor = Executor::try_from_config(config.clone())?;
 		let (context, background) = executor.background(tx_sender, &config)?;
+		let config = executor.config();
 		let services = context.services();
 		let apis = services.get_opt_apis();
 
@@ -386,7 +435,7 @@ mod tests {
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
 			aptos_test_root_address(),
-			AccountKey::from_private_key(config.chain.maptos_private_key),
+			AccountKey::from_private_key(config.chain.maptos_private_key.clone()),
 			0,
 		);
 
@@ -448,8 +497,9 @@ mod tests {
 		// Create an executor instance from the environment configuration.
 		let config = Config::default();
 		let (tx_sender, _tx_receiver) = mpsc::channel(16);
-		let executor = Executor::try_from_config(&config)?;
+		let executor = Executor::try_from_config(config.clone())?;
 		let (context, background) = executor.background(tx_sender, &config)?;
+		let config = executor.config();
 		let services = context.services();
 
 		// Retrieve the executor's fin API instance
@@ -460,7 +510,7 @@ mod tests {
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
 			aptos_test_root_address(),
-			AccountKey::from_private_key(config.chain.maptos_private_key),
+			AccountKey::from_private_key(config.chain.maptos_private_key.clone()),
 			0,
 		);
 
@@ -469,7 +519,7 @@ mod tests {
 		let mut rng = ::rand::rngs::StdRng::from_seed(seed);
 
 		// Create a transaction factory with the chain ID of the executor.
-		let tx_factory = TransactionFactory::new(config.chain.maptos_chain_id);
+		let tx_factory = TransactionFactory::new(config.chain.maptos_chain_id.clone());
 		let mut transaction_hashes = Vec::new();
 
 		// Simulate the execution of multiple blocks.

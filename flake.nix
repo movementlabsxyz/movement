@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/2ac40064487f7dfae54f188705e8ed9173993e79";
+    nixpkgs.url = "github:NixOS/nixpkgs/8dedccea6cea1e65bf74fc6c7f35e0aadf832a14";
     rust-overlay.url = "github:oxalica/rust-overlay/db12d0c6ef002f16998723b5dd619fa7b8997086";
     flake-utils.url = "github:numtide/flake-utils";
     foundry.url = "github:shazow/foundry.nix/f533e2c70e520adb695c9917be21d514c15b1c4d"; 
@@ -45,6 +45,7 @@
           tesseract4
           ansible
           zlib
+          fixDarwinDylibNames
         ];
         
         sysDependencies = with pkgs; [] 
@@ -87,29 +88,29 @@
 
         celestia-app = pkgs.buildGoModule {
           pname = "celestia-app";
-          version = "1.8.0";
+          version = "2.3.1";
 
           src = pkgs.fetchgit {
             url = "https://github.com/celestiaorg/celestia-app";
-            rev = "e75a1fdc8f2386d9f389cb596c88ca7cc19563af";
-            hash = "sha256-EE9r1sybbm4Hyh57/nC8utMx/uFdMsIdPecxBtDqAbk=";
+            rev = "v2.3.1";
+            hash = "sha256-ui67KRaabQyZiV5QD4Qyaqobky++rAe9ppJ2yveoXOs=";
           };
 
-          vendorHash = "sha256-2vU1liAm0us7Nk1eawgMvarhq77+IUS0VE61FuvQbuQ=";
+          vendorHash = "sha256-zL3G+ml2bIcQlthHY6rovr2ykCGHqV51rQBkS3J9tGo=";
           subPackages = [ "cmd/celestia-appd" ];
         };
 
         celestia-node = pkgs.buildGoModule {
           pname = "celestia-node";
-          version = "0.13.3";
+          version = "0.17.2";
 
           src = pkgs.fetchgit {
             url = "https://github.com/celestiaorg/celestia-node";
-            rev = "05238b3e087eb9ecd3b9684cd0125f2400f6f0c7";
-            hash = "sha256-bmFcJrC4ocbCw1pew2HKEdLj6+1D/0VuWtdoTs1S2sU=";
+            rev = "v0.17.2";
+            hash = "sha256-7Ame5xxLbLgD8LGNNWWqI0uUFO5K6MXvCo9TK9V5Sls=";
           };
 
-          vendorHash = "sha256-8RC/9KiFOsEJDpt7d8WtzRLn0HzYrZ1LIHo6lOKSQxU=";
+          vendorHash = "sha256-RoydbcJ4A2KTW20ihybnUkROwKlrT69qhl8E+NRgOpk=";
           subPackages = [ "cmd/celestia" "cmd/cel-key" ];
         };
     
@@ -153,6 +154,12 @@
               mkdir -p $DOT_MOVEMENT_PATH
 
               # export PKG_CONFIG_PATH=$PKG_CONFIG_PATH_FOR_TARGET
+
+              # Export linker flags if on Darwin (macOS)
+              if [[ "$(${pkgs.stdenv.hostPlatform.system})" =~ "darwin" ]]; then
+                export LDFLAGS="-L/opt/homebrew/opt/zlib/lib"
+                export CPPFLAGS="-I/opt/homebrew/opt/zlib/include"
+              fi
 
               echo "Monza Aptos path: $MONZA_APTOS_PATH"
               cat <<'EOF'
