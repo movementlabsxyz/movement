@@ -35,7 +35,7 @@ async fn initiate_eth_bridge_transfer(
 	hash_lock: HashLock,
 	amount: Amount,
 ) -> Result<(), anyhow::Error> {
-	let initiator_address = initiator_privatekey.address();
+	let initiator = initiator_privatekey.address();
 	let rpc_provider = ProviderBuilder::new()
 		.with_recommended_fillers()
 		.wallet(EthereumWallet::from(initiator_privatekey))
@@ -45,12 +45,12 @@ async fn initiate_eth_bridge_transfer(
 	let contract =
 		AtomicBridgeInitiatorMOVE::new(config.eth.eth_initiator_contract.parse()?, &rpc_provider);
 
-	let initiator_address = BridgeAddress(EthAddress(initiator_address));
+	let initiator = BridgeAddress(EthAddress(initiator));
 
-	let recipient_address = BridgeAddress(Into::<Vec<u8>>::into(recipient));
+	let recipient = BridgeAddress(Into::<Vec<u8>>::into(recipient));
 
 	let recipient_bytes: [u8; 32] =
-		recipient_address.0.try_into().expect("Recipient address must be 32 bytes");
+		recipient.0.try_into().expect("Recipient address must be 32 bytes");
 
 	let call = contract
 		.initiateBridgeTransfer(
@@ -59,11 +59,11 @@ async fn initiate_eth_bridge_transfer(
 			FixedBytes(hash_lock.0),
 		)
 		.value(U256::from(amount.0))
-		.from(*initiator_address.0);
+		.from(*initiator.0);
 
 	let _ = send_transaction(
 		call,
-		initiator_address.0 .0,
+		initiator.0 .0,
 		&send_transaction_rules(),
 		config.eth.transaction_send_retries,
 		config.eth.gas_limit as u128,
@@ -96,7 +96,7 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 	}
 
 	let recipient_privkey = mvt_client_harness.fund_account().await;
-	let recipient_address = MovementAddress(recipient_privkey.address());
+	let recipient = MovementAddress(recipient_privkey.address());
 
 	// 1) initialize Eth transfer
 	tracing::info!("Call initiate_transfer on Eth");
@@ -106,7 +106,7 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 	initiate_eth_bridge_transfer(
 		&config,
 		HarnessEthClient::get_initiator_private_key(&config),
-		recipient_address,
+		recipient,
 		hash_lock,
 		amount,
 	)
@@ -141,12 +141,12 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 
 	let (_, eth_health_rx) = tokio::sync::mpsc::channel(10);
 	let mut eth_monitoring = EthMonitoring::build(&config.eth, eth_health_rx).await.unwrap();
-	// Wait for InitialtorCompleted event
-	tracing::info!("Wait for InitialtorCompleted event.");
+	// Wait for InitiatorCompleted event
+	tracing::info!("Wait for InitiatorCompleted event.");
 	loop {
 		let event =
 			tokio::time::timeout(std::time::Duration::from_secs(30), eth_monitoring.next()).await?;
-		if let Some(Ok(BridgeContractEvent::InitialtorCompleted(_))) = event {
+		if let Some(Ok(BridgeContractEvent::InitiatorCompleted(_))) = event {
 			break;
 		}
 	}
