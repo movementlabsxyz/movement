@@ -263,6 +263,11 @@ where
 				if height > current_head_height {
 					// Nothing to revert
 					Ok(())
+				} else if self.settlement_config.settle.settlement_admin_mode {
+					// Settlement admin assumes it's right.
+					// It does not try to correct settled value on the L1.
+					// Nor does it try to recompute its ledger.
+					Ok(())
 				} else {
 					self.executor
 						.revert_block_head_to(height - 1)
