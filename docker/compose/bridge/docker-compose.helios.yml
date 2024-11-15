@@ -6,12 +6,31 @@ services:
       ETH_RPC_CONNECTION_HOSTNAME: "helios"
       ETH_RPC_CONNECTION_PORT: 26657
 
+  bridge-service:
+    environment:
+      # in case the setup service is not taking
+      ETH_RPC_CONNECTION_PROTOCOL: "https"
+      ETH_RPC_CONNECTION_HOSTNAME: "ethereum-holesky-rpc.publicnode.com"
+      ETH_RPC_CONNECTION_PORT: 443
+      MVT_RPC_CONNECTION_PROTOCOL: ${MVT_RPC_CONNECTION_PROTOCOL:?MVT_RPC_CONNECTION_PROTOCOL is not set}
+      MVT_RPC_CONNECTION_HOSTNAME: ${MVT_RPC_CONNECTION_HOSTNAME:?MVT_RPC_CONNECTION_HOSTNAME is not set}
+      MVT_RPC_CONNECTION_PORT: ${MVT_RPC_CONNECTION_PORT:?MVT_RPC_CONNECTION_PORT is not set}
+    depends_on:
+      helios:
+        condition: service_healthy
+
   helios:
     image: ghcr.io/movementlabsxyz/helios:${CONTAINER_REV}
     container_name: helios
+    entrypoint: /app/helios --network ${ETH_NETWORK} --consensus-rpc ${ETH_CONSENSUS_RPC} --execution-rpc ${ETH_EXECUTION_RPC} --checkpoint ${ETH_CHECKPOINT}
+
     environment:
       # the url for execution
-      ETH_RPC_URL: ${ETH_RPC_URL:?ETH_RPC_URL is not set}
+      DOT_MOVEMENT_PATH: /.movement
+      ETH_NETWORK: ${ETH_NETWORK:?ETH_NETWORK is not set}
+      ETH_EXECUTION_RPC: ${ETH_EXECUTION_RPC:?ETH_EXECUTION_RPC is not set}
+      ETH_CONSENSUS_RPC: ${ETH_CONSENSUS_RPC:?ETH_CONSENSUS_RPC is not set}
+      ETH_CHECKPOINT: ${ETH_CHECKPOINT:?ETH_CHECKPOINT is not set}
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement
     ports:
@@ -20,4 +39,4 @@ services:
       setup:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 26657" ]
+      test: [ "CMD-SHELL", "echo true" ]

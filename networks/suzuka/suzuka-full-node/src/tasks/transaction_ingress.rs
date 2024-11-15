@@ -15,14 +15,14 @@ use std::time::{Duration, Instant};
 const LOGGING_UID: AtomicU64 = AtomicU64::new(0);
 
 pub struct Task {
-	transaction_receiver: mpsc::Receiver<SignedTransaction>,
+	transaction_receiver: mpsc::Receiver<(u64, SignedTransaction)>,
 	da_light_node_client: LightNodeServiceClient<tonic::transport::Channel>,
 	da_light_node_config: LightNodeConfig,
 }
 
 impl Task {
 	pub(crate) fn new(
-		transaction_receiver: mpsc::Receiver<SignedTransaction>,
+		transaction_receiver: mpsc::Receiver<(u64, SignedTransaction)>,
 		da_light_node_client: LightNodeServiceClient<tonic::transport::Channel>,
 		da_light_node_config: LightNodeConfig,
 	) -> Self {
@@ -64,7 +64,7 @@ impl Task {
 			.await
 			{
 				Ok(transaction) => match transaction {
-					Some(transaction) => {
+					Some((application_priority, transaction)) => {
 						info!(
 							target : "movement_timing",
 							batch_id = %batch_id,
@@ -76,6 +76,7 @@ impl Task {
 						let serialized_aptos_transaction = serde_json::to_vec(&transaction)?;
 						let movement_transaction = movement_types::transaction::Transaction::new(
 							serialized_aptos_transaction,
+							application_priority,
 							transaction.sequence_number(),
 						);
 						let serialized_transaction = serde_json::to_vec(&movement_transaction)?;

@@ -104,7 +104,7 @@ impl SuzukaPartialNode<Executor> {
 		.context("Failed to connect to light node")?;
 
 		debug!("Creating the executor");
-		let executor = Executor::try_from_config(&config.execution_config.maptos_config)
+		let executor = Executor::try_from_config(config.execution_config.maptos_config.clone())
 			.context("Failed to create the inner executor")?;
 
 		debug!("Creating the settlement client");

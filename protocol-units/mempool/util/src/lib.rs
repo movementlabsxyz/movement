@@ -59,10 +59,14 @@ pub trait MempoolTransactionOperations {
 		Ok(mempool_transactions)
 	}
 
+	/// Garbage-collects transactions that have been submitted before the
+	/// given timestamp.
+	///
+	/// Returns the number of removed transaction.
 	fn gc_mempool_transactions(
 		&self,
 		timestamp_threshold: u64,
-	) -> impl Future<Output = Result<(), anyhow::Error>> + Send + '_;
+	) -> impl Future<Output = Result<u64, anyhow::Error>> + Send + '_;
 
 	/// Checks whether the mempool has the transaction.
 	async fn has_transaction(
@@ -72,6 +76,7 @@ pub trait MempoolTransactionOperations {
 		self.has_mempool_transaction(transaction_id).await
 	}
 
+	/// Adds transactions to the mempool.
 	async fn add_transactions(&self, transactions: Vec<Transaction>) -> Result<(), anyhow::Error> {
 		let mempool_transactions =
 			transactions.into_iter().map(MempoolTransaction::slot_now).collect();
@@ -154,7 +159,18 @@ impl PartialOrd for MempoolTransaction {
 /// This allows us to use a BTreeSet to order transactions by slot_seconds, and then by transaction and pop them off in order.
 impl Ord for MempoolTransaction {
 	fn cmp(&self, other: &Self) -> Ordering {
-		// First, compare by timestamps
+		// First, compare the application priority
+		// Note: this also happens again in the inner transaction comparison, but the priority should come first both in the [MempoolTransaction] and in the [Transaction] by itself.
+		match self
+			.transaction
+			.application_priority()
+			.cmp(&other.transaction.application_priority())
+		{
+			Ordering::Equal => {}
+			non_equal => return non_equal,
+		}
+
+		// Then, compare by timestamps
 		match self.timestamp.cmp(&other.timestamp) {
 			Ordering::Equal => {}
 			non_equal => return non_equal,

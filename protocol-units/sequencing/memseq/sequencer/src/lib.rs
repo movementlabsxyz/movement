@@ -7,6 +7,7 @@ pub use movement_types::{
 pub use sequencing_util::Sequencer;
 
 use tokio::sync::RwLock;
+use tracing::{debug, info};
 
 use std::collections::BTreeSet;
 use std::path::PathBuf;
@@ -125,7 +126,12 @@ impl<T: MempoolTransactionOperations> Sequencer for Memseq<T> {
 			.unwrap()
 			.as_secs()
 			.saturating_sub(gc_interval);
-		self.mempool.gc_mempool_transactions(timestamp_threshold).await?;
+		let gc_count = self.mempool.gc_mempool_transactions(timestamp_threshold).await?;
+		if gc_count != 0 {
+			info!("pruned {gc_count} transactions");
+		} else {
+			debug!("no transactions to prune")
+		}
 		tokio::time::sleep(Duration::from_secs(gc_interval)).await;
 		Ok(())
 	}
@@ -150,7 +156,7 @@ pub mod test {
 
 		// Add some transactions
 		for i in 0..5 {
-			let transaction = Transaction::new(vec![i as u8], 0);
+			let transaction = Transaction::new(vec![i as u8], 0, 0);
 			memseq.publish(transaction).await?;
 		}
 
@@ -171,7 +177,7 @@ pub mod test {
 		let parent_block = Arc::new(RwLock::new(block::Id::default()));
 		let memseq = Memseq::new(mempool, 10, parent_block, 1000);
 
-		let transaction = Transaction::new(vec![1, 2, 3], 0);
+		let transaction = Transaction::new(vec![1, 2, 3], 0, 0);
 		let result = memseq.publish(transaction).await;
 		assert!(result.is_err());
 		assert_eq!(result.unwrap_err().to_string(), "Mock add_transaction");
@@ -194,7 +200,7 @@ pub mod test {
 		for i in 0..100 {
 			let memseq_clone = Arc::clone(&memseq);
 			let handle = tokio::spawn(async move {
-				let transaction = Transaction::new(vec![i as u8], 0);
+				let transaction = Transaction::new(vec![i as u8], 0, 0);
 				memseq_clone.publish(transaction).await.unwrap();
 			});
 			handles.push(handle);
@@ -219,7 +225,7 @@ pub mod test {
 			let memseq_clone = Arc::clone(&memseq);
 			let handle = async move {
 				for n in 0..10 {
-					let transaction = Transaction::new(vec![i * 10 + n as u8], 0);
+					let transaction = Transaction::new(vec![i * 10 + n as u8], 0, 0);
 					memseq_clone.publish(transaction).await?;
 				}
 				Ok::<_, anyhow::Error>(())
@@ -318,7 +324,7 @@ pub mod test {
 		let path = dir.path().to_path_buf();
 		let memseq = Memseq::try_move_rocks(path, 128, 250)?;
 
-		let transaction: Transaction = Transaction::new(vec![1, 2, 3], 0);
+		let transaction: Transaction = Transaction::new(vec![1, 2, 3], 0, 0);
 		memseq.publish(transaction.clone()).await?;
 
 		let block = memseq.wait_for_next_block().await?;
@@ -342,7 +348,7 @@ pub mod test {
 
 		let mut transactions = Vec::new();
 		for i in 0..block_size * 2 {
-			let transaction: Transaction = Transaction::new(vec![i as u8], 0);
+			let transaction: Transaction = Transaction::new(vec![i as u8], 0, 0);
 			memseq.publish(transaction.clone()).await?;
 			transactions.push(transaction);
 		}
@@ -383,7 +389,7 @@ pub mod test {
 
 			// add half of the transactions
 			for i in 0..block_size / 2 {
-				let transaction: Transaction = Transaction::new(vec![i as u8], 0);
+				let transaction: Transaction = Transaction::new(vec![i as u8], 0, 0);
 				memseq.publish(transaction.clone()).await?;
 			}
 
@@ -391,7 +397,7 @@ pub mod test {
 
 			// add the rest of the transactions
 			for i in block_size / 2..block_size - 2 {
-				let transaction: Transaction = Transaction::new(vec![i as u8], 0);
+				let transaction: Transaction = Transaction::new(vec![i as u8], 0, 0);
 				memseq.publish(transaction.clone()).await?;
 			}
 
@@ -463,7 +469,7 @@ pub mod test {
 		async fn gc_mempool_transactions(
 			&self,
 			_timestamp_threshold: u64,
-		) -> Result<(), anyhow::Error> {
+		) -> Result<u64, anyhow::Error> {
 			Err(anyhow::anyhow!("Mock gc_mempool_transaction"))
 		}
 

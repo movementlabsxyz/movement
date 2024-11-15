@@ -38,6 +38,7 @@ tracing = { workspace = true }
 bcs = { workspace = true }
 zstd = { workspace = true }
 hyper = { workspace = true }
+hex = { workspace = true }
 
 [features]
 default = []

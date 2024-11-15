@@ -69,6 +69,7 @@ aptos-logger = { workspace = true }
 tonic = { workspace = true }
 movement-rest = { workspace = true }
 dot-movement = { workspace = true }
+movement-collections = { workspace = true }
 
 [dev-dependencies]
 dirs = { workspace = true }

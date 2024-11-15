@@ -1,5 +1,18 @@
+use block::WrappedBlock;
+use ecdsa::{
+	elliptic_curve::{
+		generic_array::ArrayLength,
+		ops::Invert,
+		point::PointCompression,
+		sec1::{FromEncodedPoint, ModulusSize, ToEncodedPoint},
+		subtle::CtOption,
+		AffinePoint, CurveArithmetic, FieldBytesSize, PrimeCurve, Scalar,
+	},
+	hazmat::{DigestPrimitive, SignPrimitive, VerifyPrimitive},
+	SignatureSize,
+};
 use std::boxed::Box;
-use std::fmt;
+use std::fmt::Debug;
 use std::path::PathBuf;
 use std::pin::Pin;
 use std::sync::{atomic::AtomicU64, Arc};
@@ -29,18 +42,39 @@ use crate::v1::{passthrough::LightNodeV1 as LightNodeV1PassThrough, LightNodeV1O
 const LOGGING_UID: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Clone)]
-pub struct LightNodeV1 {
-	pub pass_through: LightNodeV1PassThrough,
+pub struct LightNodeV1<C>
+where
+	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
+	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
+	SignatureSize<C>: ArrayLength<u8>,
+	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
+	FieldBytesSize<C>: ModulusSize,
+{
+	pub pass_through: LightNodeV1PassThrough<C>,
 	pub memseq: Arc<memseq::Memseq<memseq::RocksdbMempool>>,
 }
 
-impl fmt::Debug for LightNodeV1 {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl<C> Debug for LightNodeV1<C>
+where
+	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
+	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
+	SignatureSize<C>: ArrayLength<u8>,
+	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
+	FieldBytesSize<C>: ModulusSize,
+{
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		f.debug_struct("LightNodeV1").field("pass_through", &self.pass_through).finish()
 	}
 }
 
-impl LightNodeV1Operations for LightNodeV1 {
+impl<C> LightNodeV1Operations for LightNodeV1<C>
+where
+	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
+	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
+	SignatureSize<C>: ArrayLength<u8>,
+	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
+	FieldBytesSize<C>: ModulusSize,
+{
 	async fn try_from_config(config: Config) -> Result<Self, anyhow::Error> {
 		info!("Initializing LightNodeV1 in sequencer mode from environment.");
 
@@ -72,7 +106,14 @@ impl LightNodeV1Operations for LightNodeV1 {
 	}
 }
 
-impl LightNodeV1 {
+impl<C> LightNodeV1<C>
+where
+	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
+	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
+	SignatureSize<C>: ArrayLength<u8>,
+	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
+	FieldBytesSize<C>: ModulusSize,
+{
 	async fn tick_build_blocks(&self, sender: Sender<Block>) -> Result<(), anyhow::Error> {
 		let memseq = self.memseq.clone();
 
@@ -120,12 +161,16 @@ impl LightNodeV1 {
 
 		// wrap the blocks in a struct that can be split and compressed
 		// spawn blocking because the compression is blocking and could be slow
-		let namespace = self.pass_through.celestia_namespace.clone();
+		let pass_through = self.pass_through.clone();
 		let blocks = tokio::task::spawn_blocking(move || {
-			blocks
-				.into_iter()
-				.map(|block| block::WrappedBlock::try_new(block, namespace))
-				.collect::<Result<Vec<_>, anyhow::Error>>()
+			let mut wrapped_blocks = Vec::new();
+			for block in blocks {
+				let block_bytes = bcs::to_bytes(&block)?;
+				let celestia_blob = pass_through.create_new_celestia_blob(block_bytes)?;
+				let wrapped_block = block::WrappedBlock::new(block, celestia_blob);
+				wrapped_blocks.push(wrapped_block);
+			}
+			Ok::<Vec<WrappedBlock>, anyhow::Error>(wrapped_blocks)
 		})
 		.await??;
 
@@ -306,8 +351,11 @@ impl LightNodeV1 {
 		Ok(grpc::BlobResponse {
 			blob_type: Some(BlobType::SequencedBlobIntent(grpc::Blob {
 				data,
-				blob_id: "".to_string(),
+				blob_id: vec![],
 				height,
+				// todo: at some point it would be good to sign these intents, as they can then be used as pre-confirmations against which we can slash
+				signature: vec![],
+				signer: vec![],
 				timestamp: 0,
 			})),
 		})
@@ -315,7 +363,14 @@ impl LightNodeV1 {
 }
 
 #[tonic::async_trait]
-impl LightNodeService for LightNodeV1 {
+impl<C> LightNodeService for LightNodeV1<C>
+where
+	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
+	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
+	SignatureSize<C>: ArrayLength<u8>,
+	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
+	FieldBytesSize<C>: ModulusSize,
+{
 	/// Server streaming response type for the StreamReadFromHeight method.
 	type StreamReadFromHeightStream = Pin<
 		Box<
@@ -420,24 +475,15 @@ impl LightNodeService for LightNodeV1 {
 
 		Ok(tonic::Response::new(grpc::BatchWriteResponse { blobs: intents }))
 	}
-	/// Update and manage verification parameters.
-	async fn update_verification_parameters(
-		&self,
-		request: tonic::Request<grpc::UpdateVerificationParametersRequest>,
-	) -> std::result::Result<
-		tonic::Response<grpc::UpdateVerificationParametersResponse>,
-		tonic::Status,
-	> {
-		self.pass_through.update_verification_parameters(request).await
-	}
 }
 
-mod block {
+pub mod block {
 
-	use celestia_types::{nmt::Namespace, Blob};
+	use celestia_types::{consts::appconsts::AppVersion, nmt::Namespace, Blob};
 	use movement_algs::grouping_heuristic::{binpacking::BinpackingWeighted, splitting::Splitable};
 	use movement_types::block::Block;
 
+	/// A wrapped block that can be used with the binpacking heuristic
 	#[derive(Debug)]
 	pub struct WrappedBlock {
 		pub block: Block,
@@ -445,6 +491,12 @@ mod block {
 	}
 
 	impl WrappedBlock {
+		/// Create a new wrapped block from a blob and block
+		pub fn new(block: Block, blob: Blob) -> Self {
+			Self { block, blob }
+		}
+
+		/// Create a new wrapped block from a block and a namespace
 		pub fn try_new(block: Block, namespace: Namespace) -> Result<Self, anyhow::Error> {
 			// first serialize the block
 			let block_bytes = bcs::to_bytes(&block)?;
@@ -453,7 +505,7 @@ mod block {
 			let compressed_block_bytes = zstd::encode_all(block_bytes.as_slice(), 0)?;
 
 			// then create a blob from the compressed block bytes
-			let blob = Blob::new(namespace, compressed_block_bytes)?;
+			let blob = Blob::new(namespace, compressed_block_bytes, AppVersion::V2)?;
 
 			Ok(Self { block, blob })
 		}

@@ -1,4 +1,4 @@
-use alloy::primitives::keccak256;
+use alloy::primitives::{keccak256, Address};
 use alloy::primitives::{FixedBytes, U256};
 use alloy::providers::ProviderBuilder;
 use alloy::signers::local::PrivateKeySigner;
@@ -11,17 +11,17 @@ use bridge_integration_tests::TestHarness;
 use bridge_service::chains::bridge_contracts::BridgeContractError;
 use bridge_service::chains::bridge_contracts::BridgeContractEvent;
 use bridge_service::chains::ethereum::event_monitoring::EthMonitoring;
-use bridge_service::chains::ethereum::types::AtomicBridgeInitiator;
+use bridge_service::chains::ethereum::types::AtomicBridgeInitiatorMOVE;
 use bridge_service::chains::ethereum::utils::send_transaction;
 use bridge_service::chains::ethereum::utils::send_transaction_rules;
 use bridge_service::chains::{
 	ethereum::types::EthAddress,
 	movement::{
-		client::MovementClient, event_monitoring::MovementMonitoring, utils::MovementAddress,
+		client_framework::MovementClientFramework, event_monitoring::MovementMonitoring,
+		utils::MovementAddress,
 	},
 };
 use bridge_service::types::Amount;
-use bridge_service::types::AssetType;
 use bridge_service::types::BridgeAddress;
 use bridge_service::types::HashLock;
 use bridge_service::types::HashLockPreImage;
@@ -35,7 +35,7 @@ async fn initiate_eth_bridge_transfer(
 	hash_lock: HashLock,
 	amount: Amount,
 ) -> Result<(), anyhow::Error> {
-	let initiator_address = initiator_privatekey.address();
+	let initiator = initiator_privatekey.address();
 	let rpc_provider = ProviderBuilder::new()
 		.with_recommended_fillers()
 		.wallet(EthereumWallet::from(initiator_privatekey))
@@ -43,24 +43,27 @@ async fn initiate_eth_bridge_transfer(
 		.await?;
 
 	let contract =
-		AtomicBridgeInitiator::new(config.eth.eth_initiator_contract.parse()?, &rpc_provider);
+		AtomicBridgeInitiatorMOVE::new(config.eth.eth_initiator_contract.parse()?, &rpc_provider);
 
-	let initiator_address = BridgeAddress(EthAddress(initiator_address));
+	let initiator = BridgeAddress(EthAddress(initiator));
 
-	let recipient_address = BridgeAddress(Into::<Vec<u8>>::into(recipient));
+	let recipient = BridgeAddress(Into::<Vec<u8>>::into(recipient));
 
 	let recipient_bytes: [u8; 32] =
-		recipient_address.0.try_into().expect("Recipient address must be 32 bytes");
+		recipient.0.try_into().expect("Recipient address must be 32 bytes");
+
 	let call = contract
 		.initiateBridgeTransfer(
-			U256::from(amount.weth_value()),
+			U256::from(amount.0),
 			FixedBytes(recipient_bytes),
 			FixedBytes(hash_lock.0),
 		)
-		.value(U256::from(amount.eth_value()))
-		.from(*initiator_address.0);
+		.value(U256::from(amount.0))
+		.from(*initiator.0);
+
 	let _ = send_transaction(
 		call,
+		initiator.0 .0,
 		&send_transaction_rules(),
 		config.eth.transaction_send_retries,
 		config.eth.gas_limit as u128,
@@ -78,7 +81,7 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 		)
 		.init();
 
-	let (eth_client_harness, mut mvt_client_harness, config) =
+	let (_eth_client_harness, mut mvt_client_harness, config) =
 		TestHarness::new_with_eth_and_movement().await?;
 
 	tracing::info!("Init initiator and counter part test account.");
@@ -93,17 +96,17 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 	}
 
 	let recipient_privkey = mvt_client_harness.fund_account().await;
-	let recipient_address = MovementAddress(recipient_privkey.address());
+	let recipient = MovementAddress(recipient_privkey.address());
 
 	// 1) initialize Eth transfer
 	tracing::info!("Call initiate_transfer on Eth");
 	let hash_lock_pre_image = HashLockPreImage::random();
 	let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
-	let amount = Amount(AssetType::EthAndWeth((1, 0)));
+	let amount = Amount(1);
 	initiate_eth_bridge_transfer(
 		&config,
 		HarnessEthClient::get_initiator_private_key(&config),
-		recipient_address,
+		recipient,
 		hash_lock,
 		amount,
 	)
@@ -112,7 +115,9 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 
 	//Wait for the tx to be executed
 	tracing::info!("Wait for the MVT Locked event.");
-	let mut mvt_monitoring = MovementMonitoring::build(&config.movement).await.unwrap();
+	let (_, mvt_health_rx) = tokio::sync::mpsc::channel(10);
+	let mut mvt_monitoring =
+		MovementMonitoring::build(&config.movement, mvt_health_rx).await.unwrap();
 	let event =
 		tokio::time::timeout(std::time::Duration::from_secs(30), mvt_monitoring.next()).await?;
 	let bridge_tranfer_id = if let Some(Ok(BridgeContractEvent::Locked(detail))) = event {
@@ -126,7 +131,7 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 
 	//send counter complete event.
 	tracing::info!("Call counterparty_complete_bridge_transfer on MVT.");
-	let tx = mvt_client_harness
+	mvt_client_harness
 		.counterparty_complete_bridge_transfer(
 			recipient_privkey,
 			bridge_tranfer_id,
@@ -134,13 +139,14 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 		)
 		.await?;
 
-	let mut eth_monitoring = EthMonitoring::build(&config.eth).await.unwrap();
-	// Wait for InitialtorCompleted event
-	tracing::info!("Wait for InitialtorCompleted event.");
+	let (_, eth_health_rx) = tokio::sync::mpsc::channel(10);
+	let mut eth_monitoring = EthMonitoring::build(&config.eth, eth_health_rx).await.unwrap();
+	// Wait for InitiatorCompleted event
+	tracing::info!("Wait for InitiatorCompleted event.");
 	loop {
 		let event =
 			tokio::time::timeout(std::time::Duration::from_secs(30), eth_monitoring.next()).await?;
-		if let Some(Ok(BridgeContractEvent::InitialtorCompleted(_))) = event {
+		if let Some(Ok(BridgeContractEvent::InitiatorCompleted(_))) = event {
 			break;
 		}
 	}
@@ -148,7 +154,6 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 	Ok(())
 }
 
-use aptos_sdk::crypto::ed25519::Ed25519PublicKey;
 #[tokio::test]
 async fn test_movement_event() -> Result<(), anyhow::Error> {
 	tracing_subscriber::fmt()
@@ -162,31 +167,11 @@ async fn test_movement_event() -> Result<(), anyhow::Error> {
 	let config = TestHarness::read_bridge_config().await?;
 	println!("after test_movement_event",);
 
-	//	1) initialize transfer
-	// let hash_lock_pre_image = HashLockPreImage::random();
-	// let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
-	// let mov_recipient = MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face"));
-
-	// let amount = Amount(AssetType::EthAndWeth((1, 0)));
-	// initiate_eth_bridge_transfer(
-	// 	&config,
-	// 	HarnessEthClient::get_initiator_private_key(&config),
-	// 	mov_recipient,
-	// 	hash_lock,
-	// 	amount,
-	// )
-	// .await
-	// .expect("Failed to initiate bridge transfer");
-
 	use bridge_integration_tests::MovementToEthCallArgs;
 
-	let mut movement_client = MovementClient::new(&config.movement).await.unwrap();
+	let mut movement_client = MovementClientFramework::new(&config.movement).await.unwrap();
 
 	let args = MovementToEthCallArgs::default();
-	// let signer_privkey = config.movement.movement_signer_address.clone();
-	// let sender_address = format!("0x{}", Ed25519PublicKey::from(&signer_privkey).to_string());
-	// let sender_address = movement_client.signer().address();
-	//		test_utils::fund_and_check_balance(&mut mvt_client_harness, 100_000_000_000).await?;
 	bridge_integration_tests::utils::initiate_bridge_transfer_helper(
 		&mut movement_client,
 		args.initiator.0,
@@ -205,27 +190,6 @@ async fn test_movement_event() -> Result<(), anyhow::Error> {
 		config.movement.movement_native_address
 	);
 
-	// let signer_privkey = config.movement.movement_signer_address.clone();
-	// let signer_public_key = format!("0x{}", Ed25519PublicKey::from(&signer_privkey).to_string());
-
-	// println!("signer_public_key {signer_public_key}",);
-
-	// let res = fetch_account_events(
-	// 	&config.movement.mvt_rpc_connection_url(),
-	// 	&signer_public_key,
-	// 	&event_type,
-	// )
-	// .await;
-	// println!("res: {res:?}",);
-
-	// let res = test_get_events_by_account_event_handle(
-	// 	&config.movement.mvt_rpc_connection_url(),
-	// 	"0xf90391c81027f03cdea491ed8b36ffaced26b6df208a9b569e5baf2590eb9b16",
-	// 	&event_type,
-	// )
-	// .await;
-	// println!("res: {res:?}",);
-
 	let res = test_get_events_by_account_event_handle(
 		&config.movement.mvt_rpc_connection_url(),
 		&config.movement.movement_native_address,
@@ -242,30 +206,6 @@ async fn test_movement_event() -> Result<(), anyhow::Error> {
 	.await;
 	println!("res: {res:?}",);
 
-	// let mut one_stream = MovementMonitoring::build(&config.movement).await?;
-
-	// //listen to event.
-	// let mut error_counter = 0;
-	// loop {
-	// 	tokio::select! {
-	// 		// Wait on chain one events.
-	// 		Some(one_event_res) = one_stream.next() =>{
-	// 			match one_event_res {
-	// 				Ok(one_event) => {
-	// 					println!("Receive event {:?}", one_event);
-	// 				}
-	// 				Err(err) => {
-	// 					println!("Receive error {:?}", err);
-	// 					error_counter +=1;
-	// 					if error_counter > 5 {
-	// 						break;
-	// 					}
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// }
-
 	Ok(())
 }
 
@@ -274,8 +214,6 @@ async fn test_get_events_by_account_event_handle(
 	account_address: &str,
 	event_type: &str,
 ) {
-	// let url =
-	// 	format!("{}/v1/accounts/{}/events?event_type={}", rest_url, account_address, event_type);
 	let url = format!(
 		"{}/v1/accounts/{}/events/{}/bridge_transfer_initiated_events",
 		rest_url, account_address, event_type
@@ -293,6 +231,7 @@ async fn test_get_events_by_account_event_handle(
 		.unwrap()
 		.text()
 		.await;
+
 	println!("Account direct response: {response:?}",);
 }
 
@@ -317,16 +256,4 @@ async fn fetch_account_events(rest_url: &str, account_address: &str, event_type:
 		.await;
 
 	println!("response{response:?}",);
-
-	// let core_code_address: AccountAddress = AccountAddress::from_hex_literal("0x1").unwrap();
-	// let response = client
-	// 	.get_account_events_bcs(
-	// 		core_code_address,
-	// 		"0x1::block::BlockResource",
-	// 		"new_block_events",
-	// 		Some(1),
-	// 		None,
-	// 	)
-	// 	.await;
-	// println!("new_block_events response: {response:?}",);
 }

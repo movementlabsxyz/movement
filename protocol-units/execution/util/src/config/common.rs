@@ -70,6 +70,9 @@ env_default!(
 // The default chain id
 env_default!(default_maptos_chain_id, "MAPTOS_CHAIN_ID", ChainId, ChainId::from_str("27").unwrap());
 
+// The default read-only mode
+env_default!(default_maptos_read_only, "MAPTOS_READ_ONLY", bool, false);
+
 // The default private key
 pub fn default_maptos_private_key() -> Ed25519PrivateKey {
 	match std::env::var("MAPTOS_PRIVATE_KEY") {
@@ -107,6 +110,15 @@ env_default!(
 );
 
 env_default!(
+	default_maptos_indexer_healthcheck_hostname,
+	"MAPTOS_INDEXER_HEALTHCHECK_HOSTNAME",
+	String,
+	"0.0.0.0".to_string()
+);
+
+env_default!(default_maptos_indexer_healthcheck_port, "MAPTOS_INDEXER_HEALTHCHECK_PORT", u16, 8084);
+
+env_default!(
 	default_maptos_indexer_grpc_inactivity_timeout,
 	"MAPTOS_INDEXER_GRPC_INACTIVITY_TIMEOUT_SEC",
 	u64,
@@ -119,6 +131,8 @@ env_default!(
 	u64,
 	10
 );
+
+env_default!(default_enable_pruning, "MAPTOS_ENABLE_PRUNING", bool, false);
 
 env_default!(default_maptos_ledger_prune_window, "MAPTOS_LEDGER_PRUNING_WINDOW", u64, 50_000_000);
 
@@ -150,4 +164,8 @@ env_default!(
 	"auth_token".to_string()
 );
 
-env_default!(default_max_transactions_in_flight, "MAPTOS_MAX_TRANSACTIONS_IN_FLIGHT", u64, 12000);
+env_default!(default_max_transactions_in_flight, "MAPTOS_MAX_TRANSACTIONS_IN_FLIGHT", u64);
+
+env_default!(default_sequence_number_ttl_ms, "MAPTOS_SEQUENCE_NUMBER_TTL_MS", u64, 1000 * 60 * 3);
+
+env_default!(default_gc_slot_duration_ms, "MAPTOS_GC_SLOT_DURATION_MS", u64, 1000 * 2);

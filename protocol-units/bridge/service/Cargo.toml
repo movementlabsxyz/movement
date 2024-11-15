@@ -11,6 +11,9 @@ rust-version.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
+bridge-util = { workspace = true }
+bridge-indexer-db = { workspace = true }
+alloy-primitives = { workspace = true }
 anyhow = { workspace = true }
 async-trait = "0.1.80"
 delegate = "0.12.0"
@@ -19,7 +22,7 @@ futures.workspace = true
 futures-timer = "3.0.3"
 hex = { workspace = true }
 thiserror.workspace = true
-tokio = { workspace = true, version = "1.0.1", features = ["full"] }
+tokio = { workspace = true, features = ["full"] }
 tokio-stream = "0.1.16"
 tracing.workspace = true
 rand.workspace = true
@@ -41,8 +44,10 @@ reqwest = { workspace = true }
 serde = { workspace = true }
 serde_with.workspace = true
 url = { workspace = true, features = ["serde"] }
+tonic = { workspace = true }
 tracing-subscriber = { workspace = true }
-
+tiny-keccak = { workspace = true }
+poem = { workspace = true }
 aptos-sdk = { workspace = true }
 aptos-api-types = { workspace = true }
 aptos-types = { workspace = true }
@@ -53,6 +58,7 @@ derive-new = { workspace = true }
 async-stream = { workspace = true }
 
 #To be removed after send_transaction refactor
+bridge-grpc = { workspace = true, features = ["server"] }
 mcr-settlement-client = { workspace = true }
 bridge-config = { workspace = true }
 godfig = { workspace = true }

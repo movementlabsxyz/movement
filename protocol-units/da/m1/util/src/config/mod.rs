@@ -2,6 +2,7 @@ use anyhow::Context;
 use celestia_rpc::Client;
 use celestia_types::nmt::Namespace;
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 
 pub mod common;
 pub mod local;
@@ -191,6 +192,24 @@ impl Config {
 			Config::Mocha(local) => local.memseq.sequencer_database_path.clone().context(
 				"Failed to get memseq path from config. This is required for initializing the memseq database.",
 			),
+		}
+	}
+
+	/// Gets the da signing key as a string
+	pub fn da_signing_key(&self) -> String {
+		match self {
+			Config::Local(local) => local.m1_da_light_node.da_signers.private_key_hex.clone(),
+			Config::Arabica(local) => local.m1_da_light_node.da_signers.private_key_hex.clone(),
+			Config::Mocha(local) => local.m1_da_light_node.da_signers.private_key_hex.clone(),
+		}
+	}
+
+	/// Gets the da signers sec1 keys
+	pub fn da_signers_sec1_keys(&self) -> HashSet<String> {
+		match self {
+			Config::Local(local) => local.m1_da_light_node.da_signers.public_keys_hex.clone(),
+			Config::Arabica(local) => local.m1_da_light_node.da_signers.public_keys_hex.clone(),
+			Config::Mocha(local) => local.m1_da_light_node.da_signers.public_keys_hex.clone(),
 		}
 	}
 
