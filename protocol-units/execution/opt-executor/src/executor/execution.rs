@@ -104,6 +104,32 @@ impl Executor {
 		Ok(new_block_event.height)
 	}
 
+	pub fn get_commitment_for_height(&self, height: u64) -> Result<BlockCommitment, anyhow::Error> {
+		let (_block_start_version, block_end_version, _block_event) =
+			self.db().reader.get_block_info_by_height(height)?;
+		let proof = self.db().reader.get_state_proof(block_end_version)?;
+
+		let block_id = proof.latest_ledger_info().consensus_block_id();
+
+		let commitment = Commitment::digest_state_proof(&proof);
+		Ok(BlockCommitment::new(height.into(), Id::new(*block_id.clone()), commitment))
+	}
+
+	pub fn get_commitment_for_version(
+		&self,
+		version: u64,
+	) -> Result<BlockCommitment, anyhow::Error> {
+		let (_block_start_version, block_end_version, block_event) =
+			self.db().reader.get_block_info_by_version(version)?;
+		let height = block_event.height;
+		let proof = self.db().reader.get_state_proof(block_end_version)?;
+
+		let block_id = proof.latest_ledger_info().consensus_block_id();
+
+		let commitment = Commitment::digest_state_proof(&proof);
+		Ok(BlockCommitment::new(height.into(), Id::new(*block_id.clone()), commitment))
+	}
+
 	pub async fn revert_block_head_to(&self, block_height: u64) -> Result<(), anyhow::Error> {
 		let (_start_ver, end_ver, block_event) =
 			self.db().reader.get_block_info_by_height(block_height)?;
