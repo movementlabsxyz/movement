@@ -377,16 +377,32 @@ contract MCRTest is Test, IMCR {
 
         vm.warp(blockTime);
 
-        // three well-funded signers
-        address payable alice = payable(vm.addr(1));
-
-        // default signer should be able to force attestation
+        // default signer should be able to force commitment
         MCRStorage.BlockCommitment memory forcedCommitment = MCRStorage.BlockCommitment({
             height: 1,
             commitment: keccak256(abi.encodePacked(uint256(3), uint256(2), uint256(1))),
             blockId: keccak256(abi.encodePacked(uint256(3), uint256(2), uint256(1)))
         });
-        mcr.setAcceptedCommitmentAtBlockHeight(forcedCommitment);
+        mcr.forceLatestCommitment(forcedCommitment);
+
+        // get the latest commitment
+        MCRStorage.BlockCommitment memory retrievedCommitment = mcr.getAcceptedCommitmentAtBlockHeight(1);
+        assertEq(retrievedCommitment.blockId, forcedCommitment.blockId);
+        assertEq(retrievedCommitment.commitment, forcedCommitment.commitment);
+        assertEq(retrievedCommitment.height, forcedCommitment.height);
+
+        // create an unauthorized signer
+        address payable alice = payable(vm.addr(1));
+
+        // try to force a different commitment
+        MCRStorage.BlockCommitment memory badForcedCommitment = MCRStorage.BlockCommitment({
+            height: 1,
+            commitment: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3))),
+            blockId: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)))
+        });
+        vm.prank(alice);
+        vm.expectRevert("FORCE_LATEST_COMMITMENT_IS_COMMITMENT_ADMIN_ONLY");
+        mcr.forceLatestCommitment(badForcedCommitment);
 
     }
 }

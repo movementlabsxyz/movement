@@ -33,12 +33,20 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         addTrustedAttester(msg.sender);
     }
 
-    function addCommitmentAdmin(address account) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function addCommitmentAdmin(address account) public {
+        require(
+            hasRole(DEFAULT_ADMIN_ROLE, msg.sender),
+            "ADD_COMMITMENT_ADMIN_IS_ADMIN_ONLY"
+        );
         grantRole(COMMITMENT_ADMIN, account);
     }
 
-    function batchAddCommitmentAdmin(address[] memory accounts) public onlyRole(DEFAULT_ADMIN_ROLE) {
-         for (uint256 i = 0; i < accounts.length; i++) {
+    function batchAddCommitmentAdmin(address[] memory accounts) public {
+        require(
+            hasRole(DEFAULT_ADMIN_ROLE, msg.sender),
+            "ADD_COMMITMENT_ADMIN_IS_ADMIN_ONLY"
+        );
+        for (uint256 i = 0; i < accounts.length; i++) {
             grantRole(TRUSTED_ATTESTER, accounts[i]);
         }
     }
@@ -102,8 +110,11 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         return stakingContract.getTotalStakeForEpoch(address(this), epoch, custodian);
     }
 
-    function acceptGenesisCeremony() public onlyRole(DEFAULT_ADMIN_ROLE) {
-        
+    function acceptGenesisCeremony() public {
+        require(
+            hasRole(DEFAULT_ADMIN_ROLE, msg.sender),
+            "ACCEPT_GENESIS_CEREMONY_IS_ADMIN_ONLY"
+        );
         stakingContract.acceptGenesisCeremony();
     }
 
@@ -135,20 +146,30 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     }
 
     // Sets the accepted commitment at a give block height
-    function setAcceptedCommitmentAtBlockHeight(BlockCommitment memory blockCommitment) public onlyRole(COMMITMENT_ADMIN) {
-
-      acceptedBlocks[blockCommitment.height] = blockCommitment;  
-      
+    function setAcceptedCommitmentAtBlockHeight(BlockCommitment memory blockCommitment) public {
+        require(
+            hasRole(COMMITMENT_ADMIN, msg.sender),
+            "SET_LAST_ACCEPTED_COMMITMENT_AT_HEIGHT_IS_COMMITMENT_ADMIN_ONLY"
+        );
+        acceptedBlocks[blockCommitment.height] = blockCommitment;  
     }
 
     // Sets the last accepted block height. 
-    function setLastAcceptedBlockHeight(uint256 height) public onlyRole(COMMITMENT_ADMIN) {
+    function setLastAcceptedBlockHeight(uint256 height) public {
+        require(
+            hasRole(COMMITMENT_ADMIN, msg.sender),
+            "SET_LAST_ACCEPTED_BLOCK_HEIGHT_IS_COMMITMENT_ADMIN_ONLY"
+        );
         lastAcceptedBlockHeight = height;
     }
 
     // Forces the latest attestation by setting the block height
     // Note: this only safe when we are running with a single validator as it does not zero out follow-on commitments.
-    function forceLatestCommitment(BlockCommitment memory blockCommitment) public onlyRole(COMMITMENT_ADMIN) {
+    function forceLatestCommitment(BlockCommitment memory blockCommitment) public {
+        require(
+            hasRole(DEFAULT_ADMIN_ROLE, msg.sender),
+            "FORCE_LATEST_COMMITMENT_IS_COMMITMENT_ADMIN_ONLY"
+        );
         acceptedBlocks[blockCommitment.height] = blockCommitment;
         lastAcceptedBlockHeight = blockCommitment.height; 
     }
