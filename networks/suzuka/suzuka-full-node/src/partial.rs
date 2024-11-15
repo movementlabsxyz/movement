@@ -31,9 +31,7 @@ where
 	/// Runs the executor until crash or shutdown.
 	pub async fn run(self) -> Result<(), anyhow::Error> {
 		let (transaction_sender, transaction_receiver) = mpsc::channel(16);
-		let (context, exec_background) = self
-			.executor
-			.background(transaction_sender, &self.config.execution_config.maptos_config)?;
+		let (context, exec_background) = self.executor.background(transaction_sender)?;
 		let services = context.services();
 		let mut movement_rest = self.movement_rest;
 		movement_rest.set_context(services.opt_api_context());
@@ -97,7 +95,7 @@ impl SuzukaPartialNode<Executor> {
 		.context("Failed to connect to light node")?;
 
 		debug!("Creating the executor");
-		let executor = Executor::try_from_config(&config.execution_config.maptos_config)
+		let executor = Executor::try_from_config(config.execution_config.maptos_config.clone())
 			.context("Failed to create the inner executor")?;
 
 		debug!("Creating the settlement client");

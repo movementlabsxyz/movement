@@ -4,7 +4,7 @@ use diesel::prelude::*;
 
 // LockBridgeTransfer mapping
 #[derive(Debug, Insertable, Default)]
-#[table_name = "lock_bridge_transfers"]
+#[diesel(table_name = lock_bridge_transfers)]
 pub struct NewLockBridgeTransfer {
 	pub bridge_transfer_id: String,
 	pub hash_lock: String,
@@ -15,7 +15,7 @@ pub struct NewLockBridgeTransfer {
 }
 
 #[derive(Debug, Queryable, Insertable)]
-#[table_name = "lock_bridge_transfers"]
+#[diesel(table_name = lock_bridge_transfers)]
 pub struct LockBridgeTransfer {
 	pub id: i32,
 	pub bridge_transfer_id: String,
@@ -28,7 +28,7 @@ pub struct LockBridgeTransfer {
 
 // WaitAndCompleteInitiator mapping
 #[derive(Debug, Insertable, Default)]
-#[table_name = "wait_and_complete_initiators"]
+#[diesel(table_name = wait_and_complete_initiators)]
 pub struct NewWaitAndCompleteInitiator {
 	pub wait_time_secs: i64,
 	pub pre_image: String,
@@ -36,7 +36,7 @@ pub struct NewWaitAndCompleteInitiator {
 }
 
 #[derive(Debug, Queryable, Insertable)]
-#[table_name = "wait_and_complete_initiators"]
+#[diesel(table_name = wait_and_complete_initiators)]
 pub struct WaitAndCompleteInitiator {
 	pub id: i32,
 	pub wait_time_secs: i64,
@@ -46,7 +46,7 @@ pub struct WaitAndCompleteInitiator {
 
 // InitiatedEvent mapping
 #[derive(Debug, Insertable, Default)]
-#[table_name = "initiated_events"]
+#[diesel(table_name = initiated_events)]
 pub struct NewInitiatedEvent {
 	pub bridge_transfer_id: String,
 	pub initiator: String,
@@ -59,7 +59,7 @@ pub struct NewInitiatedEvent {
 }
 
 #[derive(Debug, Queryable, Insertable)]
-#[table_name = "initiated_events"]
+#[diesel(table_name = initiated_events)]
 pub struct InitiatedEvent {
 	pub id: i32,
 	pub bridge_transfer_id: String,
@@ -74,7 +74,7 @@ pub struct InitiatedEvent {
 
 // LockedEvent mapping
 #[derive(Debug, Insertable, Default)]
-#[table_name = "locked_events"]
+#[diesel(table_name = locked_events)]
 pub struct NewLockedEvent {
 	pub bridge_transfer_id: String,
 	pub initiator: String,
@@ -86,7 +86,7 @@ pub struct NewLockedEvent {
 }
 
 #[derive(Debug, Queryable, Insertable)]
-#[table_name = "locked_events"]
+#[diesel(table_name = locked_events)]
 pub struct LockedEvent {
 	pub id: i32,
 	pub bridge_transfer_id: String,
@@ -100,23 +100,23 @@ pub struct LockedEvent {
 
 // InitiatorCompletedEvent mapping
 #[derive(Debug, Insertable, Default)]
-#[table_name = "initiator_completed_events"]
+#[diesel(table_name = initiator_completed_events)]
 pub struct NewInitiatorCompletedEvent {
 	pub bridge_transfer_id: String,
 	pub created_at: chrono::NaiveDateTime,
 }
 
 #[derive(Debug, Queryable, Insertable)]
-#[table_name = "initiator_completed_events"]
+#[diesel(table_name = initiator_completed_events)]
 pub struct InitiatorCompletedEvent {
 	pub id: i32,
 	pub bridge_transfer_id: String,
 	pub created_at: chrono::NaiveDateTime,
 }
 
-// CounterPartyCompletedEvent mapping
+// CounterPartCompletedEvent mapping
 #[derive(Debug, Insertable, Default)]
-#[table_name = "counter_party_completed_events"]
+#[diesel(table_name = counter_party_completed_events)]
 pub struct NewCounterPartyCompletedEvent {
 	pub bridge_transfer_id: String,
 	pub pre_image: String,
@@ -124,7 +124,7 @@ pub struct NewCounterPartyCompletedEvent {
 }
 
 #[derive(Debug, Queryable, Insertable)]
-#[table_name = "counter_party_completed_events"]
+#[diesel(table_name = counter_party_completed_events)]
 pub struct CounterPartyCompletedEvent {
 	pub id: i32,
 	pub bridge_transfer_id: String,
@@ -134,14 +134,14 @@ pub struct CounterPartyCompletedEvent {
 
 // CancelledEvent mapping
 #[derive(Debug, Insertable, Default)]
-#[table_name = "cancelled_events"]
+#[diesel(table_name = cancelled_events)]
 pub struct NewCancelledEvent {
 	pub bridge_transfer_id: String,
 	pub created_at: chrono::NaiveDateTime,
 }
 
 #[derive(Debug, Queryable, Insertable)]
-#[table_name = "cancelled_events"]
+#[diesel(table_name = cancelled_events)]
 pub struct CancelledEvent {
 	pub id: i32,
 	pub bridge_transfer_id: String,
@@ -150,14 +150,14 @@ pub struct CancelledEvent {
 
 // RefundedEvent mapping
 #[derive(Debug, Insertable, Default)]
-#[table_name = "refunded_events"]
+#[diesel(table_name = refunded_events)]
 pub struct NewRefundedEvent {
 	pub bridge_transfer_id: String,
 	pub created_at: chrono::NaiveDateTime,
 }
 
 #[derive(Debug, Queryable, Insertable)]
-#[table_name = "refunded_events"]
+#[diesel(table_name = refunded_events)]
 pub struct RefundedEvent {
 	pub id: i32,
 	pub bridge_transfer_id: String,
