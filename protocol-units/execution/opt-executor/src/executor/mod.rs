@@ -13,8 +13,8 @@ use aptos_vm::AptosVM;
 use tracing::info;
 
 use maptos_execution_util::config::Config;
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Arc;
+use movement_collections::garbage::counted::GcCounter;
+use std::sync::{Arc, RwLock};
 
 /// The `Executor` is responsible for executing blocks and managing the state of the execution
 /// against the `AptosVM`.
@@ -24,7 +24,7 @@ pub struct Executor {
 	/// The signer of the executor's transactions.
 	pub signer: ValidatorSigner,
 	// Shared reference on the counter of transactions in flight.
-	transactions_in_flight: Arc<AtomicU64>,
+	transactions_in_flight: Arc<RwLock<GcCounter>>,
 	// The config for the executor.
 	pub(crate) config: Config,
 	/// The node config derived from the maptos config.
@@ -41,19 +41,16 @@ impl Executor {
 	}
 
 	pub fn decrement_transactions_in_flight(&self, count: u64) {
-		// fetch sub mind the underflow
-		// a semaphore might be better here as this will rerun until the value does not change during the operation
-		self.transactions_in_flight
-			.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
-				info!(
-					target: "movement_timing",
-					count,
-					current,
-					"decrementing_transactions_in_flight",
-				);
-				Some(current.saturating_sub(count))
-			})
-			.unwrap_or_else(|_| 0);
+		// unwrap because lock is poisoned
+		let mut transactions_in_flight = self.transactions_in_flight.write().unwrap();
+		let current = transactions_in_flight.get_count();
+		info!(
+			target: "movement_timing",
+			count,
+			current,
+			"decrementing_transactions_in_flight",
+		);
+		transactions_in_flight.decrement(count);
 	}
 
 	pub fn config(&self) -> &Config {
