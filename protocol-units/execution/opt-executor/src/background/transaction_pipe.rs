@@ -17,7 +17,8 @@ use aptos_vm_validator::vm_validator::{self, TransactionValidation, VMValidator}
 use crate::gc_account_sequence_number::UsedSequenceNumberPool;
 use futures::channel::mpsc as futures_mpsc;
 use futures::StreamExt;
-use std::sync::{atomic::AtomicU64, Arc};
+use movement_collections::garbage::counted::GcCounter;
+use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
 use tracing::{debug, info, info_span, warn, Instrument};
@@ -29,15 +30,15 @@ pub struct TransactionPipe {
 	// The receiver for the mempool client.
 	mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
 	// Sender for the channel with accepted transactions.
-	transaction_sender: mpsc::Sender<SignedTransaction>,
+	transaction_sender: mpsc::Sender<(u64, SignedTransaction)>,
 	// Access to the ledger DB. TODO: reuse an instance of VMValidator
 	db_reader: Arc<dyn DbReader>,
 	// State of the Aptos mempool
 	core_mempool: CoreMempool,
 	// Shared reference on the counter of transactions in flight.
-	transactions_in_flight: Arc<AtomicU64>,
+	transactions_in_flight: Arc<RwLock<GcCounter>>,
 	// The configured limit on transactions in flight
-	in_flight_limit: u64,
+	in_flight_limit: Option<u64>,
 	// Timestamp of the last garbage collection
 	last_gc: Instant,
 	// The pool of used sequence numbers
@@ -52,12 +53,12 @@ enum SequenceNumberValidity {
 impl TransactionPipe {
 	pub(crate) fn new(
 		mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
-		transaction_sender: mpsc::Sender<SignedTransaction>,
+		transaction_sender: mpsc::Sender<(u64, SignedTransaction)>,
 		db_reader: Arc<dyn DbReader>,
 		node_config: &NodeConfig,
 		mempool_config: &MempoolConfig,
-		transactions_in_flight: Arc<AtomicU64>,
-		transactions_in_flight_limit: u64,
+		transactions_in_flight: Arc<RwLock<GcCounter>>,
+		transactions_in_flight_limit: Option<u64>,
 	) -> Self {
 		TransactionPipe {
 			mempool_client_receiver,
@@ -114,8 +115,20 @@ impl TransactionPipe {
 			// todo: these will be slightly off, but gc does not need to be exact
 			let now = Instant::now();
 			let epoch_ms_now = chrono::Utc::now().timestamp_millis() as u64;
+
+			// garbage collect the used sequence number pool
 			self.used_sequence_number_pool.gc(epoch_ms_now);
+
+			// garbage collect the transactions in flight
+			{
+				// unwrap because failure indicates poisoned lock
+				let mut transactions_in_flight = self.transactions_in_flight.write().unwrap();
+				transactions_in_flight.gc(epoch_ms_now);
+			}
+
+			// garbage collect the core mempool
 			self.core_mempool.gc();
+
 			self.last_gc = now;
 		}
 
@@ -183,25 +196,32 @@ impl TransactionPipe {
 		transaction: SignedTransaction,
 	) -> Result<SubmissionStatus, Error> {
 		// For now, we are going to consider a transaction in flight until it exits the mempool and is sent to the DA as is indicated by WriteBatch.
-		let in_flight = self.transactions_in_flight.load(std::sync::atomic::Ordering::Relaxed);
+		let in_flight = {
+			let transactions_in_flight = self.transactions_in_flight.read().unwrap();
+			transactions_in_flight.get_count()
+		};
 		info!(
 			target: "movement_timing",
 			in_flight = %in_flight,
 			"transactions_in_flight"
 		);
-		if in_flight > self.in_flight_limit {
-			info!(
-				target: "movement_timing",
-				"shedding_load"
-			);
-			let status = MempoolStatus::new(MempoolStatusCode::MempoolIsFull);
-			return Ok((status, None));
+		if let Some(inflight_limit) = self.in_flight_limit {
+			if in_flight >= inflight_limit {
+				info!(
+					target: "movement_timing",
+					"shedding_load"
+				);
+				let status = MempoolStatus::new(MempoolStatusCode::MempoolIsFull);
+				return Ok((status, None));
+			}
 		}
 
 		// Pre-execute Tx to validate its content.
 		// Re-create the validator for each Tx because it uses a frozen version of the ledger.
 		let vm_validator = VMValidator::new(Arc::clone(&self.db_reader));
 		let tx_result = vm_validator.validate_transaction(transaction.clone())?;
+		// invert the application priority with the u64 max minus the score from aptos (which is high to low)
+		let application_priority = u64::MAX - tx_result.score();
 		match tx_result.status() {
 			Some(_) => {
 				let ms = MempoolStatus::new(MempoolStatusCode::VmError);
@@ -232,15 +252,19 @@ impl TransactionPipe {
 
 		match status.code {
 			MempoolStatusCode::Accepted => {
+				let now = chrono::Utc::now().timestamp_millis() as u64;
 				debug!("Transaction accepted: {:?}", transaction);
 				let sender = transaction.sender();
 				let transaction_sequence_number = transaction.sequence_number();
 				self.transaction_sender
-					.send(transaction)
+					.send((application_priority, transaction))
 					.await
 					.map_err(|e| anyhow::anyhow!("Error sending transaction: {:?}", e))?;
 				// increment transactions in flight
-				self.transactions_in_flight.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+				{
+					let mut transactions_in_flight = self.transactions_in_flight.write().unwrap();
+					transactions_in_flight.increment(now, 1);
+				}
 				self.core_mempool.commit_transaction(&sender, sequence_number);
 
 				// update the used sequence number pool
@@ -251,7 +275,7 @@ impl TransactionPipe {
 				self.used_sequence_number_pool.set_sequence_number(
 					&sender,
 					transaction_sequence_number,
-					chrono::Utc::now().timestamp_millis() as u64,
+					now,
 				);
 			}
 			_ => {
@@ -289,7 +313,7 @@ mod tests {
 	use maptos_execution_util::config::chain::Config;
 	use tempfile::TempDir;
 
-	fn setup() -> (Context, TransactionPipe, mpsc::Receiver<SignedTransaction>, TempDir) {
+	fn setup() -> (Context, TransactionPipe, mpsc::Receiver<(u64, SignedTransaction)>, TempDir) {
 		let (tx_sender, tx_receiver) = mpsc::channel(16);
 		let (executor, tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone()).unwrap();
 		let (context, background) = executor.background(tx_sender).unwrap();
@@ -331,7 +355,7 @@ mod tests {
 
 		// receive the transaction
 		let received_transaction = tx_receiver.recv().await.unwrap();
-		assert_eq!(received_transaction, user_transaction);
+		assert_eq!(received_transaction.1, user_transaction);
 
 		Ok(())
 	}
@@ -383,7 +407,7 @@ mod tests {
 		// receive the transaction
 		let received_transaction =
 			tx_receiver.recv().await.ok_or(anyhow::anyhow!("No transaction received"))?;
-		assert_eq!(received_transaction, user_transaction);
+		assert_eq!(received_transaction.1, user_transaction);
 
 		// send the same transaction again
 		let (req_sender, callback) = oneshot::channel();
@@ -422,7 +446,7 @@ mod tests {
 		let request = SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
 		api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
 		let received_transaction = tx_receiver.recv().await.unwrap();
-		assert_eq!(received_transaction, comparison_user_transaction);
+		assert_eq!(received_transaction.1, comparison_user_transaction);
 
 		mempool_handle.abort();
 
@@ -455,7 +479,7 @@ mod tests {
 			api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
 
 			let received_transaction = tx_receiver.recv().await.unwrap();
-			let bcs_received_transaction = bcs::to_bytes(&received_transaction)?;
+			let bcs_received_transaction = bcs::to_bytes(&received_transaction.1)?;
 			comparison_user_transactions.insert(bcs_received_transaction.clone());
 		}
 

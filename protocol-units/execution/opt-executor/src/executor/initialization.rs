@@ -13,13 +13,14 @@ use maptos_execution_util::config::Config;
 
 use anyhow::Context as _;
 use futures::channel::mpsc as futures_mpsc;
+use movement_collections::garbage::{counted::GcCounter, Duration};
 use tokio::sync::mpsc;
 
 #[cfg(test)]
 use tempfile::TempDir;
 
 use std::net::ToSocketAddrs;
-use std::sync::{atomic::AtomicU64, Arc};
+use std::sync::{Arc, RwLock};
 
 // Executor channel size.
 // Allow 2^16 transactions before appling backpressure given theoretical maximum TPS of 170k.
@@ -40,13 +41,21 @@ impl Executor {
 		}
 
 		// pruning config
+		node_config.storage.storage_pruner_config.ledger_pruner_config.enable =
+			maptos_config.chain.enabled_pruning;
 		node_config.storage.storage_pruner_config.ledger_pruner_config.prune_window =
 			maptos_config.chain.maptos_ledger_prune_window;
+
+		node_config.storage.storage_pruner_config.state_merkle_pruner_config.enable =
+			maptos_config.chain.enabled_pruning;
 		node_config
 			.storage
 			.storage_pruner_config
 			.state_merkle_pruner_config
 			.prune_window = maptos_config.chain.maptos_state_merkle_prune_window;
+
+		node_config.storage.storage_pruner_config.epoch_snapshot_pruner_config.enable =
+			maptos_config.chain.enabled_pruning;
 		node_config
 			.storage
 			.storage_pruner_config
@@ -95,7 +104,10 @@ impl Executor {
 		Ok(Self {
 			block_executor: Arc::new(BlockExecutor::new(db.clone())),
 			signer,
-			transactions_in_flight: Arc::new(AtomicU64::new(0)),
+			transactions_in_flight: Arc::new(RwLock::new(GcCounter::new(
+				Duration::try_new(maptos_config.mempool.sequence_number_ttl_ms)?,
+				Duration::try_new(maptos_config.mempool.gc_slot_duration_ms)?,
+			))),
 			config: maptos_config.clone(),
 			node_config: node_config.clone(),
 		})
@@ -127,7 +139,7 @@ impl Executor {
 	/// task needs to be running.
 	pub fn background(
 		&self,
-		transaction_sender: mpsc::Sender<SignedTransaction>,
+		transaction_sender: mpsc::Sender<(u64, SignedTransaction)>,
 	) -> anyhow::Result<(Context, BackgroundTask)> {
 		let node_config = self.node_config.clone();
 		let maptos_config = self.config.clone();
@@ -145,7 +157,7 @@ impl Executor {
 				self.db().reader.clone(),
 				&node_config,
 				&self.config.mempool,
-				Arc::clone(&self.transactions_in_flight),
+				self.transactions_in_flight.clone(),
 				maptos_config.load_shedding.max_transactions_in_flight,
 			)
 		};

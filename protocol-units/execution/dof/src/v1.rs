@@ -52,7 +52,8 @@ impl DynOptFinExecutor for Executor {
 
 	fn background(
 		&self,
-		transaction_sender: Sender<SignedTransaction>,
+		transaction_sender: Sender<(u64, SignedTransaction)>,
+		config: &Config,
 	) -> Result<
 		(Context, impl Future<Output = Result<(), anyhow::Error>> + Send + 'static),
 		anyhow::Error,
@@ -220,9 +221,9 @@ mod tests {
 		let private_key = Ed25519PrivateKey::generate_for_testing();
 		let mut config = Config::default();
 		config.chain.maptos_private_key = private_key.clone();
-		let (executor, _tempdir) = setup(config)?;
+		let (executor, _tempdir) = setup(config.clone())?;
 		let (tx_sender, mut tx_receiver) = mpsc::channel(16);
-		let (context, background) = executor.background(tx_sender)?;
+		let (context, background) = executor.background(tx_sender, &config)?;
 		let services = context.services();
 		let api = services.get_opt_apis();
 
@@ -239,7 +240,7 @@ mod tests {
 
 		services_handle.abort();
 		background_handle.abort();
-		let received_transaction = tx_receiver.recv().await.unwrap();
+		let (_application_priority, received_transaction) = tx_receiver.recv().await.unwrap();
 		assert_eq!(received_transaction, comparison_user_transaction);
 
 		Ok(())
@@ -252,8 +253,8 @@ mod tests {
 		config.chain.maptos_private_key = private_key.clone();
 		config.chain.maptos_read_only = true;
 		let (tx_sender, _tx_receiver) = mpsc::channel(16);
-		let (executor, _tempdir) = setup(config)?;
-		let (context, background) = executor.background(tx_sender)?;
+		let (executor, _tempdir) = setup(config.clone())?;
+		let (context, background) = executor.background(tx_sender, &config)?;
 		let services = context.services();
 		let api = services.get_opt_apis();
 
@@ -280,9 +281,9 @@ mod tests {
 		let private_key = Ed25519PrivateKey::generate_for_testing();
 		let mut config = Config::default();
 		config.chain.maptos_private_key = private_key.clone();
-		let (executor, _tempdir) = setup(config)?;
+		let (executor, _tempdir) = setup(config.clone())?;
 		let (tx_sender, mut tx_receiver) = mpsc::channel(16);
-		let (context, background) = executor.background(tx_sender)?;
+		let (context, background) = executor.background(tx_sender, &config)?;
 		let services = context.services();
 		let api = services.get_opt_apis();
 
@@ -297,7 +298,7 @@ mod tests {
 		let request = SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
 		api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
 
-		let received_transaction = tx_receiver.recv().await.unwrap();
+		let (_application_priority, received_transaction) = tx_receiver.recv().await.unwrap();
 		assert_eq!(received_transaction, comparison_user_transaction);
 
 		// Now execute the block
@@ -339,9 +340,9 @@ mod tests {
 		let private_key = Ed25519PrivateKey::generate_for_testing();
 		let mut config = Config::default();
 		config.chain.maptos_private_key = private_key.clone();
-		let (executor, _tempdir) = setup(config)?;
+		let (executor, _tempdir) = setup(config.clone())?;
 		let (tx_sender, mut tx_receiver) = mpsc::channel(16);
-		let (context, background) = executor.background(tx_sender)?;
+		let (context, background) = executor.background(tx_sender, &config)?;
 		let services = context.services();
 		let api = services.get_opt_apis();
 
@@ -366,7 +367,7 @@ mod tests {
 				SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
 			api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
 
-			let received_transaction = tx_receiver.recv().await.unwrap();
+			let (_application_priority, received_transaction) = tx_receiver.recv().await.unwrap();
 			assert_eq!(received_transaction, comparison_user_transaction);
 
 			// Now execute the block
@@ -421,8 +422,8 @@ mod tests {
 		// Create an executor instance from the environment configuration.
 		let config = Config::default();
 		let (tx_sender, _tx_receiver) = mpsc::channel(16);
-		let executor = Executor::try_from_config(config)?;
-		let (context, background) = executor.background(tx_sender)?;
+		let executor = Executor::try_from_config(config.clone())?;
+		let (context, background) = executor.background(tx_sender, &config)?;
 		let config = executor.config();
 		let services = context.services();
 		let apis = services.get_opt_apis();
@@ -494,8 +495,8 @@ mod tests {
 		// Create an executor instance from the environment configuration.
 		let config = Config::default();
 		let (tx_sender, _tx_receiver) = mpsc::channel(16);
-		let executor = Executor::try_from_config(config)?;
-		let (context, background) = executor.background(tx_sender)?;
+		let executor = Executor::try_from_config(config.clone())?;
+		let (context, background) = executor.background(tx_sender, &config)?;
 		let config = executor.config();
 		let services = context.services();
 

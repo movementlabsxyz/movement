@@ -31,7 +31,9 @@ where
 	/// Runs the executor until crash or shutdown.
 	pub async fn run(self) -> Result<(), anyhow::Error> {
 		let (transaction_sender, transaction_receiver) = mpsc::channel(16);
-		let (context, exec_background) = self.executor.background(transaction_sender)?;
+		let (context, exec_background) = self
+			.executor
+			.background(transaction_sender, &self.config.execution_config.maptos_config)?;
 		let services = context.services();
 		let mut movement_rest = self.movement_rest;
 		movement_rest.set_context(services.opt_api_context());
