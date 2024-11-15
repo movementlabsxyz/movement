@@ -89,23 +89,23 @@ impl TransferState {
 				.ok_or(InvalidEventError::BadChain),
 			// Lock event is only applied on Initialized swap state
 			(BridgeContractEvent::Locked(_), _) => Err(InvalidEventError::BadEvent),
-			// CounterPartCompleted event must on on the counter part chain.
-			(BridgeContractEvent::CounterPartCompleted(_, _), TransferStateType::Locked) => {
+			// CounterPartyCompleted event must on on the counter part chain.
+			(BridgeContractEvent::CounterPartyCompleted(_, _), TransferStateType::Locked) => {
 				(event.chain != self.init_chain)
 					.then_some(())
 					.ok_or(InvalidEventError::BadChain)
 			}
-			// CounterPartCompleted event is only applied on Locked swap state
-			(BridgeContractEvent::CounterPartCompleted(_, _), _) => {
+			// CounterPartyCompleted event is only applied on Locked swap state
+			(BridgeContractEvent::CounterPartyCompleted(_, _), _) => {
 				Err(InvalidEventError::BadEvent)
 			}
-			// InitialtorCompleted event must on on the init chain.
-			(BridgeContractEvent::InitialtorCompleted(_), TransferStateType::SecretReceived) => {
+			// InitiatorCompleted event must on on the init chain.
+			(BridgeContractEvent::InitiatorCompleted(_), TransferStateType::SecretReceived) => {
 				(event.chain == self.init_chain)
 					.then_some(())
 					.ok_or(InvalidEventError::BadChain)
 			}
-			(BridgeContractEvent::InitialtorCompleted(_), _) => Err(InvalidEventError::BadEvent),
+			(BridgeContractEvent::InitiatorCompleted(_), _) => Err(InvalidEventError::BadEvent),
 			(BridgeContractEvent::Refunded(_), _) => Ok(()),
 			(&BridgeContractEvent::Cancelled(_), _) => Ok(()),
 		}
@@ -120,8 +120,8 @@ impl TransferState {
 			state: TransferStateType::Initialized,
 			init_chain: chain_id,
 			transfer_id,
-			intiator_address: detail.initiator_address.clone().into(),
-			counter_part_address: detail.recipient_address.clone().into(),
+			intiator_address: detail.initiator.clone().into(),
+			counter_part_address: detail.recipient.clone().into(),
 			hash_lock: detail.hash_lock,
 			time_lock: detail.time_lock,
 			amount: detail.amount,
@@ -132,8 +132,8 @@ impl TransferState {
 		let action_type = TransferActionType::LockBridgeTransfer {
 			bridge_transfer_id: transfer_id,
 			hash_lock: detail.hash_lock,
-			initiator: BridgeAddress(detail.initiator_address.0.into()),
-			recipient: BridgeAddress(detail.recipient_address.0.into()),
+			initiator: BridgeAddress(detail.initiator.0.into()),
+			recipient: BridgeAddress(detail.recipient.0.into()),
 			amount: detail.amount,
 		};
 		let action = TransferAction { chain: chain_id, transfer_id, kind: action_type };

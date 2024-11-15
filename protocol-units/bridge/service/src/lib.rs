@@ -1,5 +1,4 @@
 use crate::actions::process_action;
-use aptos_types::indexer;
 use bridge_indexer_db::client::Client;
 use bridge_util::{
 	actions::{ActionExecError, TransferAction, TransferActionType},
@@ -294,12 +293,12 @@ impl Runtime {
 		match self.indexer_db_client {
 			Some(ref mut client) => {
 				let event = event.contract_event;
-
+				tracing::info!("index_event(start):{event:?}");
 				client.insert_bridge_contract_event(event.clone()).map_err(|_| {
 					tracing::warn!("Fail to index event");
 					InvalidEventError::BadEvent
 				})?;
-				tracing::info!("Index event:{event:?}");
+				tracing::info!("index_event(success):{event:?}");
 				Ok(())
 			}
 			None => {
@@ -339,6 +338,7 @@ impl Runtime {
 	{
 		self.validate_state(&event)?;
 		let indexer_event = event.clone();
+		self.index_event(indexer_event)?;
 		let event_transfer_id = event.contract_event.bridge_transfer_id();
 		let state_opt = self.swap_state_map.remove(&event_transfer_id);
 		//create swap state if need
@@ -347,6 +347,7 @@ impl Runtime {
 				TransferState::transition_from_initiated(event.chain, event_transfer_id, detail);
 			action.chain = state.init_chain.other();
 			self.swap_state_map.insert(state.transfer_id, state);
+			self.index_transfer_action(action.clone())?;
 			return Ok(action);
 		} else {
 			//tested before in validate_state() state can be unwrap
@@ -361,13 +362,13 @@ impl Runtime {
 				state = new_state;
 				(action_kind, state.init_chain)
 			}
-			BridgeContractEvent::CounterPartCompleted(_, preimage) => {
+			BridgeContractEvent::CounterPartyCompleted(_, preimage) => {
 				let (new_state, action_kind) =
 					state.transition_from_counterpart_completed(event_transfer_id, preimage);
 				state = new_state;
 				(action_kind, state.init_chain)
 			}
-			BridgeContractEvent::InitialtorCompleted(_) => {
+			BridgeContractEvent::InitiatorCompleted(_) => {
 				let (new_state, action_kind) =
 					state.transition_from_initiator_completed(event_transfer_id);
 				state = new_state;
@@ -387,9 +388,6 @@ impl Runtime {
 				(action_kind, state.init_chain)
 			}
 		};
-
-		//index event
-		self.index_event(indexer_event)?;
 
 		let action =
 			TransferAction { chain: chain_id, transfer_id: state.transfer_id, kind: action_kind };

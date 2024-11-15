@@ -154,10 +154,10 @@ impl EthMonitoring {
 												bridge_transfer_id: BridgeTransferId(
 													*initiated._bridgeTransferId,
 												),
-												initiator_address: BridgeAddress(EthAddress(
+												initiator: BridgeAddress(EthAddress(
 													Address::from(initiated._originator),
 												)),
-												recipient_address: BridgeAddress(
+												recipient: BridgeAddress(
 													initiated._recipient.to_vec(),
 												),
 												hash_lock: HashLock(*initiated._hashLock),
@@ -199,7 +199,7 @@ impl EthMonitoring {
 							Ok(Ok(events)) => {
 								for (completed, _log) in events {
 									if sender
-										.send(Ok(BridgeContractEvent::InitialtorCompleted(
+										.send(Ok(BridgeContractEvent::InitiatorCompleted(
 											BridgeTransferId(*completed._bridgeTransferId),
 										)))
 										.await
@@ -332,7 +332,7 @@ impl EthMonitoring {
 							Ok(Ok(events)) => {
 								for (completed, _log) in events {
 									if sender
-										.send(Ok(BridgeContractEvent::CounterPartCompleted(
+										.send(Ok(BridgeContractEvent::CounterPartyCompleted(
 											BridgeTransferId(*completed.bridgeTransferId),
 											HashLockPreImage(*completed.pre_image),
 										)))

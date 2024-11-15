@@ -143,7 +143,7 @@ impl HarnessEthClient {
 		signer_private_key
 	}
 
-	pub fn get_initiator_address(config: &Config) -> Address {
+	pub fn get_initiator(config: &Config) -> Address {
 		HarnessEthClient::get_initiator_private_key(config).address()
 	}
 

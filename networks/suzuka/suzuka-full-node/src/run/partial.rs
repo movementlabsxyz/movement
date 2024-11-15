@@ -31,7 +31,9 @@ where
 	/// Runs the executor until crash or shutdown.
 	pub async fn run(self) -> Result<(), anyhow::Error> {
 		let (transaction_sender, transaction_receiver) = mpsc::channel(16);
-		let (context, exec_background) = self.executor.background(transaction_sender)?;
+		let (context, exec_background) = self
+			.executor
+			.background(transaction_sender, &self.config.execution_config.maptos_config)?;
 		let services = context.services();
 		let mut movement_rest = self.movement_rest;
 		movement_rest.set_context(services.opt_api_context());
@@ -72,6 +74,11 @@ where
 
 impl SuzukaPartialNode<Executor> {
 	pub async fn try_from_config(config: Config) -> Result<Self, anyhow::Error> {
+		let light_node_connection_protocol = config
+			.m1_da_light_node
+			.m1_da_light_node_config
+			.m1_da_light_node_connection_protocol();
+
 		// todo: extract into getter
 		let light_node_connection_hostname = config
 			.m1_da_light_node
@@ -89,8 +96,10 @@ impl SuzukaPartialNode<Executor> {
 			light_node_connection_hostname, light_node_connection_port
 		);
 		let light_node_client = LightNodeServiceClient::connect(format!(
-			"http://{}:{}",
-			light_node_connection_hostname, light_node_connection_port
+			"{}://{}:{}",
+			light_node_connection_protocol,
+			light_node_connection_hostname,
+			light_node_connection_port
 		))
 		.await
 		.context("Failed to connect to light node")?;

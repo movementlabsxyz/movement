@@ -10,13 +10,14 @@ publish = { workspace = true }
 rust-version = { workspace = true }
 
 [dependencies]
-diesel = { workspace = true, features = ["postgres", "numeric", "r2d2"]}
+diesel = { workspace = true, features = ["postgres", "numeric", "r2d2", "chrono"] }
 diesel_migrations = { workspace = true }
 bigdecimal = { workspace = true }
 serde = { workspace = true }
 bridge-util = { workspace = true }
 anyhow = { workspace = true }
 hex = { workspace = true }
+chrono = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true }

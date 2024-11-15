@@ -366,7 +366,7 @@ impl BridgeContract<MovementAddress> for MovementClient {
 
 		let originator_address = AccountAddress::from_hex_literal(originator)
 			.map_err(|_| BridgeContractError::SerializationError)?;
-		let recipient_address_bytes =
+		let recipient_bytes =
 			hex::decode(&recipient[2..]).map_err(|_| BridgeContractError::SerializationError)?;
 		let hash_lock_array: [u8; 32] = hex::decode(&hash_lock[2..])
 			.map_err(|_| BridgeContractError::SerializationError)?
@@ -375,8 +375,8 @@ impl BridgeContract<MovementAddress> for MovementClient {
 
 		let details = BridgeTransferDetails {
 			bridge_transfer_id,
-			initiator_address: BridgeAddress(MovementAddress(originator_address)),
-			recipient_address: BridgeAddress(recipient_address_bytes),
+			initiator: BridgeAddress(MovementAddress(originator_address)),
+			recipient: BridgeAddress(recipient_bytes),
 			amount: Amount(amount),
 			hash_lock: HashLock(hash_lock_array),
 			time_lock: TimeLock(time_lock),
@@ -436,7 +436,7 @@ impl BridgeContract<MovementAddress> for MovementClient {
 		let state = utils::val_as_u64_initiator(values.get(5))? as u8;
 		let originator_address_bytes =
 			hex::decode(&originator[2..]).map_err(|_| BridgeContractError::SerializationError)?;
-		let recipient_address = AccountAddress::from_hex_literal(recipient)
+		let recipient = AccountAddress::from_hex_literal(recipient)
 			.map_err(|_| BridgeContractError::SerializationError)?;
 		let hash_lock_array: [u8; 32] = hex::decode(&hash_lock[2..])
 			.map_err(|_| BridgeContractError::SerializationError)?
@@ -445,8 +445,8 @@ impl BridgeContract<MovementAddress> for MovementClient {
 
 		let details = BridgeTransferDetailsCounterparty {
 			bridge_transfer_id,
-			initiator_address: BridgeAddress(originator_address_bytes),
-			recipient_address: BridgeAddress(MovementAddress(recipient_address)),
+			initiator: BridgeAddress(originator_address_bytes),
+			recipient: BridgeAddress(MovementAddress(recipient)),
 			amount: Amount(amount),
 			hash_lock: HashLock(hash_lock_array),
 			time_lock: TimeLock(time_lock),

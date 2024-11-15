@@ -123,7 +123,7 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 		.expect("Failed to get bridge transfer details")
 		.expect("Expected to find bridge transfer details, but got None");
 
-		info!("Recipient: {:?}", details.recipient_address);
+		info!("Recipient: {:?}", details.recipient);
 
 		assert_eq!(details.state, 1, "Bridge transfer should be pending.");
 		info!("Bridge transfer details: {:?}", details);
@@ -150,11 +150,8 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 
 		assert_eq!(details.bridge_transfer_id.0, args.bridge_transfer_id.0);
 		assert_eq!(details.hash_lock.0, args.hash_lock.0);
-		assert_eq!(
-			&details.initiator_address.0, &args.initiator,
-			"Initiator address does not match"
-		);
-		assert_eq!(details.recipient_address.0, args.recipient);
+		assert_eq!(&details.initiator.0, &args.initiator, "Initiator address does not match");
+		assert_eq!(details.recipient.0, args.recipient);
 		assert_eq!(details.amount.0, args.amount);
 		assert_eq!(details.state, 2, "Bridge transfer is supposed to be completed but it's not.");
 
@@ -235,11 +232,8 @@ async fn test_movement_client_abort_transfer() -> Result<(), anyhow::Error> {
 
 		assert_eq!(details.bridge_transfer_id.0, args.bridge_transfer_id.0);
 		assert_eq!(details.hash_lock.0, args.hash_lock.0);
-		assert_eq!(
-			&details.initiator_address.0, &args.initiator,
-			"Initiator address does not match"
-		);
-		assert_eq!(details.recipient_address.0, args.recipient);
+		assert_eq!(&details.initiator.0, &args.initiator, "Initiator address does not match");
+		assert_eq!(details.recipient.0, args.recipient);
 		assert_eq!(details.amount.0, args.amount);
 		assert_eq!(details.state, 3, "Bridge transfer is supposed to be cancelled but it's not.");
 

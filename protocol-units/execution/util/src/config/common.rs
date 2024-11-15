@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use aptos_crypto::{ed25519::Ed25519PrivateKey, Genesis, ValidCryptoMaterialStringExt};
+use aptos_crypto::{ed25519::Ed25519PrivateKey, Genesis, HashValue, ValidCryptoMaterialStringExt};
 use aptos_types::chain_id::ChainId;
 use godfig::env_default;
 
@@ -132,6 +132,8 @@ env_default!(
 	10
 );
 
+env_default!(default_enable_pruning, "MAPTOS_ENABLE_PRUNING", bool, false);
+
 env_default!(default_maptos_ledger_prune_window, "MAPTOS_LEDGER_PRUNING_WINDOW", u64, 50_000_000);
 
 env_default!(
@@ -160,6 +162,20 @@ env_default!(
 	"INDEXER_PROCESSOR_AUTH_TOKEN",
 	String,
 	"auth_token".to_string()
+);
+
+env_default!(
+	default_genesis_timestamp_microseconds,
+	"MAPTOS_GENESIS_TIMESTAMP_MICROSECONDS",
+	u64,
+	1_600_000_000_000
+);
+
+env_default!(
+	default_genesis_block_hash_hex,
+	"MAPTOS_GENESIS_BLOCK_HASH",
+	String,
+	HashValue::sha3_256_of(b"maptos").to_hex()
 );
 
 env_default!(default_max_transactions_in_flight, "MAPTOS_MAX_TRANSACTIONS_IN_FLIGHT", u64);
