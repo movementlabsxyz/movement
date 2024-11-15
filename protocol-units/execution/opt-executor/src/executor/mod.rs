@@ -40,7 +40,7 @@ impl Executor {
 		Arc::clone(&self.db().reader)
 	}
 
-	pub async fn decrement_transactions_in_flight(&self, count: u64) {
+	pub fn decrement_transactions_in_flight(&self, count: u64) {
 		// unwrap because lock is poisoned
 		let mut transactions_in_flight = self.transactions_in_flight.write().unwrap();
 		let current = transactions_in_flight.get_count();

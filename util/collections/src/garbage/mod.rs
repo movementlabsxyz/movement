@@ -1,3 +1,4 @@
+#[cfg(feature = "unstable")]
 pub mod atomic;
 pub mod counted;
 pub mod map;

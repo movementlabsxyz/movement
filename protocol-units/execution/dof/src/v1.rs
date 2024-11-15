@@ -126,8 +126,8 @@ impl DynOptFinExecutor for Executor {
 		self.executor.rollover_genesis_now().await
 	}
 
-	async fn decrement_transactions_in_flight(&self, count: u64) {
-		self.executor.decrement_transactions_in_flight(count).await
+	fn decrement_transactions_in_flight(&self, count: u64) {
+		self.executor.decrement_transactions_in_flight(count)
 	}
 
 	fn config(&self) -> &Config {
