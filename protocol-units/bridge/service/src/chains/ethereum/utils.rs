@@ -94,7 +94,7 @@ pub async fn send_transaction<
 	for _ in 0..number_retry {
 		let call_builder = base_call_builder.clone().gas(estimate_gas);
 
-		tracing::info!("Call: {:?}", call_builder);
+		tracing::info!("Eth send_transaction: {:?}", call_builder);
 
 		//detect if the gas price doesn't execeed the limit.
 		let gas_price = call_builder.provider.get_gas_price().await?;
@@ -102,8 +102,6 @@ pub async fn send_transaction<
 		if transaction_fee_wei > gas_limit {
 			return Err(EthUtilError::GasLimitExceed(transaction_fee_wei, gas_limit).into());
 		}
-
-		println!("Sending transaction with gas: {}", estimate_gas);
 
 		//send the Transaction and detect send error.
 		let pending_transaction = match call_builder.send().await {

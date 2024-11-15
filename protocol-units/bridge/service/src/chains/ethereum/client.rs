@@ -249,7 +249,7 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 		)
 		.await
 		.map_err(|e| {
-			BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
+			BridgeContractError::OnChainError(format!("Failed to send transaction: {}", e))
 		})?;
 
 		Ok(())
@@ -286,7 +286,7 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 		)
 		.await
 		.map_err(|e| {
-			BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
+			BridgeContractError::OnChainError(format!("Failed to send transaction: {}", e))
 		})?;
 
 		Ok(())
@@ -312,7 +312,7 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 		)
 		.await
 		.map_err(|e| {
-			BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
+			BridgeContractError::OnChainError(format!("Failed to send transaction: {}", e))
 		})?;
 
 		Ok(())
@@ -356,7 +356,7 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 		)
 		.await
 		.map_err(|e| {
-			BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
+			BridgeContractError::OnChainError(format!("Failed to send transaction: {}", e))
 		})?;
 
 		tracing::info!("LockBridgeTransfer receipt: {:?}", receipt);
@@ -382,7 +382,7 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 		)
 		.await
 		.map_err(|e| {
-			BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
+			BridgeContractError::OnChainError(format!("Failed to send transaction: {}", e))
 		})?;
 		let call = contract.abortBridgeTransfer(FixedBytes(bridge_transfer_id.0));
 		send_transaction(
@@ -394,7 +394,7 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 		)
 		.await
 		.map_err(|e| {
-			BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
+			BridgeContractError::OnChainError(format!("Failed to send transaction: {}", e))
 		})?;
 
 		Ok(())
