@@ -1,0 +1,19 @@
+[Unit]
+Description=Suzuka Full Node
+After=network.target
+
+[Service]
+Type=simple
+User={{ user }}
+WorkingDirectory=/home/{{ user }}/movement
+Environment="DOT_MOVEMENT_PATH=/home/{{ user }}/.movement"
+Environment="CONTAINER_REV={{ movement_container_version }}"
+ExecStart=/usr/bin/docker compose --env-file .env \
+                          -f docker/compose/suzuka-full-node/docker-compose.yml \
+                          -f docker/compose/suzuka-full-node/docker-compose.setup-local.yml \
+                          -f docker/compose/suzuka-full-node/docker-compose.celestia-local.yml \
+                          up
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

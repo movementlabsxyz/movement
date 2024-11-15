@@ -12,7 +12,15 @@ rust-version = { workspace = true }
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-serde = { version = "1.0", features = ["derive"] }
+serde = { workspace = true, features = ["derive"] }
+anyhow = { workspace = true }
+tokio = { workspace = true }
+futures = { workspace = true }
+flocks = { workspace = true }
+async-stream = { workspace = true }
+serde_json = { workspace = true }
+tempfile = { workspace = true }
+thiserror = { workspace = true }
 
 [lints]
 workspace = true

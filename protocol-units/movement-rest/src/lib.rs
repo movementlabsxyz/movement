@@ -1,5 +1,6 @@
 use anyhow::Error;
 use aptos_api::Context;
+use futures::prelude::*;
 use poem::listener::TcpListener;
 use poem::{
 	get, handler,
@@ -7,9 +8,11 @@ use poem::{
 	web::{Data, Path},
 	EndpointExt, IntoResponse, Response, Route, Server,
 };
-use std::env;
-use std::sync::Arc;
 use tracing::info;
+
+use std::env;
+use std::future::Future;
+use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct MovementRest {
@@ -22,24 +25,28 @@ pub struct MovementRest {
 impl MovementRest {
 	pub const MOVEMENT_REST_ENV_VAR: &'static str = "MOVEMENT_REST_URL";
 
-	pub fn try_from_env(context: Option<Arc<Context>>) -> Result<Self, Error> {
+	pub fn try_from_env() -> Result<Self, Error> {
 		let url = env::var(Self::MOVEMENT_REST_ENV_VAR)
 			.unwrap_or_else(|_| "http://0.0.0.0:30832".to_string());
-		Ok(Self { url, context })
+		Ok(Self { url, context: None })
 	}
 
-	pub async fn run_service(&self) -> Result<(), Error> {
+	pub fn set_context(&mut self, context: Arc<Context>) {
+		self.context = Some(context);
+	}
+
+	pub fn run_service(&self) -> impl Future<Output = Result<(), Error>> + Send {
 		info!("Starting movement rest service at {}", self.url);
 		let movement_rest = self.create_routes();
-		Server::new(TcpListener::bind(&self.url)).run(movement_rest).await?;
-		Ok(())
+		Server::new(TcpListener::bind(self.url.clone()))
+			.run(movement_rest)
+			.map_err(Into::into)
 	}
 
 	pub fn create_routes(&self) -> impl EndpointExt {
 		Route::new()
 			.at("/health", get(health))
 			.at("/movement/v1/state-root-hash/:blockheight", get(state_root_hash))
-			.at("movement/v1/richard", get(richard))
 			.data(self.context.clone())
 			.with(Tracing)
 	}
@@ -48,11 +55,6 @@ impl MovementRest {
 #[handler]
 pub async fn health() -> Response {
 	"OK".into_response()
-}
-
-#[handler]
-pub async fn richard() -> Response {
-	"Well Done".into_response()
 }
 
 #[handler]
@@ -84,7 +86,7 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_health_endpoint() {
-		let rest_service = MovementRest::try_from_env(None).expect("Failed to create MovementRest");
+		let rest_service = MovementRest::try_from_env().expect("Failed to create MovementRest");
 		assert_eq!(rest_service.url, "http://0.0.0.0:30832");
 		// Create a test client
 		let client = TestClient::new(rest_service.create_routes());

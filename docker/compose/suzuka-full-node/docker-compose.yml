@@ -5,9 +5,11 @@ services:
     container_name: setup
     command: sh -c 'echo "No setup type specified."'
     environment:
-      - DOT_MOVEMENT_PATH=/.movement
+      DOT_MOVEMENT_PATH: /.movement
+      MAPTOS_CHAIN_ID: ${MAPTOS_CHAIN_ID:-27}
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement
+
 
   celestia-light-node:
     image: busybox
@@ -20,11 +22,12 @@ services:
       - ${DOT_MOVEMENT_PATH}:/.movement
     depends_on:
       setup:
-        condition: service_completed_successfully
+        condition: service_healthy
     healthcheck:
       test: [ "CMD-SHELL", "echo 'health check'" ]
       retries: 3
       start_period: 3s
+    restart: on-failure:3
 
   celestia-light-node-synced:
     image: ghcr.io/movementlabsxyz/wait-for-celestia-light-node:${CONTAINER_REV}
@@ -42,6 +45,9 @@ services:
     container_name: m1-da-light-node
     environment:
       - DOT_MOVEMENT_PATH=/.movement
+      - MOVEMENT_TIMING=info
+      - M1_DA_LIGHT_NODE_TIMING_LOG=/.movement/m1-da-light-node-timing.log
+      - RUST_BACKTRACE=1
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement
     depends_on:
@@ -49,31 +55,34 @@ services:
         condition: service_completed_successfully
     ports:
       - "30730:30730"
+    healthcheck:
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 30730" ]
+      retries: 10
+      interval: 10s
+      timeout: 5s
+    restart: on-failure:3
 
   suzuka-full-node:
     image: ghcr.io/movementlabsxyz/suzuka-full-node:${CONTAINER_REV}
     container_name: suzuka-full-node
     environment:
       - DOT_MOVEMENT_PATH=/.movement
+      - MOVEMENT_TIMING=info
+      - SUZUKA_TIMING_LOG=/.movement/suzuka-timing.log
+      - RUST_BACKTRACE=1
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement
     depends_on:
       - m1-da-light-node
     ports:
       - "30731:30731"
-
-  wait-for-suzuka-full-node:
-    image: busybox
-    container_name: wait-for-suzuka-full-node
-    depends_on:
-      - suzuka-full-node
-    entrypoint: 
-      - /bin/sh
-      - -c
-      - |
-        echo "Waiting for suzuka-full-node to be ready..."
-        sleep 5
-        echo "suzuka-full-node is ready"
+      - "30734:30734"
+    healthcheck:
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 30731" ]
+      retries: 10
+      interval: 10s
+      timeout: 5s
+    restart: on-failure:5
 
   suzuka-faucet-service:
     image: ghcr.io/movementlabsxyz/suzuka-faucet-service:${CONTAINER_REV}
@@ -81,15 +90,21 @@ services:
     command: run-simple
     environment:
       - DOT_MOVEMENT_PATH=/.movement
+      - RUST_BACKTRACE=1
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement
     ports:
       - "30732:30732"
     depends_on:
-      wait-for-suzuka-full-node:
-        condition: service_completed_successfully
+      suzuka-full-node:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 30732" ]
+      retries: 10
+      interval: 10s
+      timeout: 5s
+    restart: on-failure:10
 
 volumes:
   dot-movement:
-
 

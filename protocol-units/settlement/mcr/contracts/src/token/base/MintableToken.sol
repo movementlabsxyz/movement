@@ -55,6 +55,27 @@ contract MintableToken is IMintableToken, BaseToken {
     }
 
     /**
+     * @dev Check if an account has minter role
+     * @param account The address to check
+     * @return True if the account has minter role
+     */
+    function hasMinterRole(
+        address account
+    ) public view returns (bool) {
+        return hasRole(MINTER_ROLE, account);
+    }
+
+    /**
+     * @dev Revoke minter admin role
+     * @param account The address to revoke minter admin role from
+     */
+    function revokeMinterAdminRole(
+        address account
+    ) public onlyRole(MINTER_ADMIN_ROLE) {
+        _revokeRole(MINTER_ADMIN_ROLE, account);
+    }
+
+    /**
      * @dev Revoke minter role
      * @param account The address to revoke minter role from
      */

@@ -23,11 +23,13 @@ impl Local {
 		let max_attempts = 30;
 
 		// get the required connection details from the config
+		let connection_protocol = config.bridge.celestia_rpc_connection_protocol.clone();
 		let connection_hostname = config.bridge.celestia_rpc_connection_hostname.clone();
 		let connection_port = config.bridge.celestia_rpc_connection_port.clone();
-		let celestia_rpc_address = format!("{}:{}", connection_hostname, connection_port);
+		let celestia_rpc_address =
+			format!("{}://{}:{}", connection_protocol, connection_hostname, connection_port);
 
-		let first_block_request_url = format!("http://{}/block?height=1", celestia_rpc_address);
+		let first_block_request_url = format!("{}/block?height=1", celestia_rpc_address);
 		while genesis.len() <= 4 && cnt < max_attempts {
 			info!("Waiting for genesis block.");
 			let response = client
@@ -56,7 +58,7 @@ impl Local {
 
 	pub async fn run(
 		&self,
-		dot_movement: dot_movement::DotMovement,
+		_dot_movement: dot_movement::DotMovement,
 		config: m1_da_light_node_util::config::local::Config,
 	) -> Result<()> {
 		let genesis = self.get_genesis_block(&config).await?;
@@ -106,7 +108,7 @@ impl Local {
 				"--gateway",
 				"--core.ip",
 				&config.bridge.celestia_rpc_connection_hostname,
-				"--keyring.accname",
+				"--keyring.keyname",
 				"validator",
 				"--gateway.addr",
 				&config.bridge.celestia_websocket_listen_hostname,

@@ -247,7 +247,7 @@ impl KeyHash {
         let key_hash = Self(H::hash(key.as_ref()));
         // Adding a tracing event here allows cross-referencing the key hash
         // with the original key bytes when looking through logs.
-        tracing::debug!(key = ?EscapedByteSlice(key.as_ref()), ?key_hash, "hashed jmt key");
+        tracing::debug!(key = %EscapedByteSlice(key.as_ref()), ?key_hash, "hashed jmt key");
         key_hash
     }
 }

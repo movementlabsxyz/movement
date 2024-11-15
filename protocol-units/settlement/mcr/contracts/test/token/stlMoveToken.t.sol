@@ -3,15 +3,31 @@ pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
 import "../../src/token/stlMoveToken.sol";
-import "../../src/token/MOVEToken.sol";
+import "../../src/token/MOVETokenDev.sol";
+import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 contract stlMoveTokenTest is Test {
-    function testInitialize() public {
-        MOVEToken underlyingToken = new MOVEToken();
-        underlyingToken.initialize();
+    address public multisig = address(this);
+    MOVETokenDev public underlyingToken;
+    stlMoveToken public token;
 
-        stlMoveToken token = new stlMoveToken();
-        token.initialize(underlyingToken);
+    function setUp() public {
+        MOVETokenDev underlyingTokenImpl = new MOVETokenDev();
+        TransparentUpgradeableProxy underlyingTokenProxy = new TransparentUpgradeableProxy(
+            address(underlyingTokenImpl),
+            address(this),
+            abi.encodeWithSignature("initialize(address)", multisig)
+        );
+
+
+        stlMoveToken tokenImpl = new stlMoveToken();
+        TransparentUpgradeableProxy tokenProxy = new TransparentUpgradeableProxy(
+            address(tokenImpl),
+            address(this),
+            abi.encodeWithSignature("initialize(address)", address(underlyingTokenProxy))
+        );
+        underlyingToken = MOVETokenDev(address(underlyingTokenProxy));
+        token = stlMoveToken(address(tokenProxy));
 
         // Check the token details
         assertEq(token.name(), "Stakable Locked Move Token");
@@ -19,11 +35,7 @@ contract stlMoveTokenTest is Test {
     }
 
     function testCannotInitializeTwice() public {
-        MOVEToken underlyingToken = new MOVEToken();
-        underlyingToken.initialize();
-
-        stlMoveToken token = new stlMoveToken();
-        token.initialize(underlyingToken);
+       
 
         // Expect reversion
         vm.expectRevert(0xf92ee8a9);
@@ -31,12 +43,8 @@ contract stlMoveTokenTest is Test {
     }
 
     function testSimulateStaking() public {
-        MOVEToken underlyingToken = new MOVEToken();
-        underlyingToken.initialize();
-
-        stlMoveToken token = new stlMoveToken();
-        token.initialize(underlyingToken);
-
+       
+        vm.prank(multisig);
         underlyingToken.grantMinterRole(address(token));
         assert(underlyingToken.hasRole(underlyingToken.MINTER_ROLE(), address(token)));
 
@@ -139,7 +147,7 @@ contract stlMoveTokenTest is Test {
         vm.prank(stakingPool);
         underlyingToken.approve(address(token), 110);
         vm.prank(stakingPool);
-        token.buyCustodialTokenFor(alice, 110);
+        token.buyCustodialToken(alice, 110);
         assertEq(token.balanceOf(alice), 110);
         assertEq(underlyingToken.balanceOf(stakingPool), 290);
         assertEq(underlyingToken.balanceOf(address(token)), 210);
@@ -153,7 +161,7 @@ contract stlMoveTokenTest is Test {
         vm.prank(stakingPool);
         underlyingToken.approve(address(token), 100);
         vm.prank(stakingPool);
-        token.buyCustodialTokenFor(bob, 100);
+        token.buyCustodialToken(bob, 100);
         assertEq(token.balanceOf(bob), 100);
         assertEq(underlyingToken.balanceOf(stakingPool), 190);
         assertEq(underlyingToken.balanceOf(address(token)), 310);
@@ -191,7 +199,7 @@ contract stlMoveTokenTest is Test {
         vm.prank(stakingPool);
         underlyingToken.approve(address(token), 110);
         vm.prank(stakingPool);
-        token.buyCustodialTokenFor(carol, 110);
+        token.buyCustodialToken(carol, 110);
         assertEq(token.balanceOf(carol), 110);
         assertEq(underlyingToken.balanceOf(stakingPool), 80); // spent 20 in total on rewards
         assertEq(underlyingToken.balanceOf(address(token)), 220);

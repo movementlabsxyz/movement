@@ -10,7 +10,6 @@ interface IMovementStaking {
     ) external;
     function acceptGenesisCeremony() external;
     function setGenesisCeremony(
-        address,
         address[] calldata,
         address[] calldata,
         uint256[] calldata
@@ -70,6 +69,9 @@ interface IMovementStaking {
         uint256[] calldata refundAmounts
     ) external;
 
+    function whitelistAddress(address addr) external;
+    function removeAddressFromWhitelist(address addr) external;
+
     event AttesterStaked(
         address indexed domain,
         uint256 indexed epoch,
@@ -95,6 +97,8 @@ interface IMovementStaking {
     );
 
     event EpochRolledOver(address indexed domain, uint256 epoch);
+    
     error StakeExceedsGenesisStake();
     error CustodianTransferAmountMismatch();
+    error GenesisAlreadyAccepted();
 }

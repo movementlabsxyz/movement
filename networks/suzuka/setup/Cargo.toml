@@ -16,6 +16,7 @@ dot-movement = { workspace = true }
 m1-da-light-node-util = { workspace = true }
 m1-da-light-node-setup = { workspace = true }
 mcr-settlement-setup = { workspace = true }
+mcr-settlement-config = { workspace = true }
 suzuka-config = { workspace = true }
 
 anyhow = { workspace = true }
@@ -31,6 +32,10 @@ celestia-rpc = { workspace = true }
 celestia-types = { workspace = true }
 async-recursion = { workspace = true }
 tracing-subscriber = { workspace = true }
+godfig = { workspace = true }
+syncup = { workspace = true }
+futures = { workspace = true }
+movement-types = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
