@@ -13,6 +13,8 @@ pub struct Config {
 	pub signer_private_key: String,
 	#[serde(default = "default_mcr_contract_address")]
 	pub mcr_contract_address: String,
+	#[serde(default = "default_settlement_admin_mode")]
+	pub settlement_admin_mode: bool,
 }
 
 pub fn default_signer_private_key() -> String {
@@ -28,6 +30,8 @@ env_default!(
 	DEFAULT_MCR_CONTRACT_ADDRESS.to_string()
 );
 
+env_default!(default_settlement_admin_mode, "MCR_SETTLEMENT_ADMIN_MODE", bool, false);
+
 pub fn default_should_settle() -> bool {
 	env::var("ETH_SIGNER_PRIVATE_KEY").is_ok()
 }
@@ -38,6 +42,7 @@ impl Default for Config {
 			should_settle: default_should_settle(),
 			signer_private_key: default_signer_private_key(),
 			mcr_contract_address: default_mcr_contract_address(),
+			settlement_admin_mode: default_settlement_admin_mode(),
 		}
 	}
 }

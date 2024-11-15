@@ -72,6 +72,7 @@ sol!(
 );
 
 pub struct Client<P> {
+	run_commitment_admin_mode: bool,
 	rpc_provider: P,
 	ws_provider: RootProvider<PubSubFrontend>,
 	pub signer_address: Address,
@@ -112,6 +113,7 @@ impl
 			.context("Failed to create the RPC provider for the MCR settlement client")?;
 
 		let client = Client::build_with_provider(
+			config.settle.settlement_admin_mode,
 			rpc_provider,
 			ws_url,
 			signer_address,
@@ -126,6 +128,7 @@ impl
 
 impl<P> Client<P> {
 	async fn build_with_provider<S>(
+		run_commitment_admin_mode: bool,
 		rpc_provider: P,
 		ws_url: S,
 		signer_address: Address,
@@ -147,6 +150,7 @@ impl<P> Client<P> {
 		let send_transaction_error_rules = vec![rule1, rule2];
 
 		Ok(Client {
+			run_commitment_admin_mode,
 			rpc_provider,
 			ws_provider,
 			signer_address,
@@ -178,15 +182,25 @@ where
 			blockId: alloy_primitives::FixedBytes(block_commitment.block_id().as_bytes().clone()),
 		};
 
-		let call_builder = contract.submitBlockCommitment(eth_block_commitment);
-
-		crate::send_eth_transaction::send_transaction(
-			call_builder,
-			&self.send_transaction_error_rules,
-			self.send_transaction_retries,
-			self.gas_limit as u128,
-		)
-		.await
+		if self.run_commitment_admin_mode {
+			let call_builder = contract.setAcceptedCommitmentAtBlockHeight(eth_block_commitment);
+			crate::send_eth_transaction::send_transaction(
+				call_builder,
+				&self.send_transaction_error_rules,
+				self.send_transaction_retries,
+				self.gas_limit as u128,
+			)
+			.await
+		} else {
+			let call_builder = contract.submitBlockCommitment(eth_block_commitment);
+			crate::send_eth_transaction::send_transaction(
+				call_builder,
+				&self.send_transaction_error_rules,
+				self.send_transaction_retries,
+				self.gas_limit as u128,
+			)
+			.await
+		}
 	}
 
 	async fn post_block_commitment_batch(
