@@ -29,6 +29,8 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         leadingBlockTolerance = _leadingBlockTolerance;
         lastAcceptedBlockHeight = _lastAcceptedBlockHeight;
         stakingContract.registerDomain(_epochDuration, _custodians);
+        addCommitmentAdmin(msg.sender);
+        addTrustedAttester(msg.sender);
     }
 
     function addCommitmentAdmin(address account) public onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -230,17 +232,25 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
     }
 
+    function setOpenAttestationEnabled(bool enabled) public onlyRole(COMMITMENT_ADMIN) {
+        openAttestationEnabled = enabled;
+    }
+
     function submitBlockCommitment(BlockCommitment memory blockCommitment) public {
         require(
             openAttestationEnabled || hasRole(TRUSTED_ATTESTER, msg.sender),
-            "Access denied: not authorized"
+            "UNAUTHORIZED_BLOCK_COMMITMENT"
         );
         submitBlockCommitmentForAttester(msg.sender, blockCommitment);
     }
 
     function submitBatchBlockCommitment(BlockCommitment[] memory blockCommitments) public {
+        require(
+            openAttestationEnabled || hasRole(TRUSTED_ATTESTER, msg.sender),
+            "UNAUTHORIZED_BLOCK_COMMITMENT"
+        );
         for (uint256 i = 0; i < blockCommitments.length; i++) {
-            submitBlockCommitment(blockCommitments[i]);
+            submitBlockCommitmentForAttester(msg.sender, blockCommitments[i]);
         }
     }
 
@@ -273,7 +283,6 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     }
 
     function rollOverEpoch() internal {
-        console.log("Rolling over epoch %s", getCurrentEpoch());
         stakingContract.rollOverEpoch();
     }
 }

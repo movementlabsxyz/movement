@@ -48,6 +48,7 @@ contract MCRTest is Test, IMCR {
         moveToken = MOVETokenDev(address(moveProxy));
         staking = MovementStaking(address(stakingProxy));
         mcr = MCR(address(mcrProxy));
+        mcr.setOpenAttestationEnabled(true);
     }
 
     function testCannotInitializeTwice() public {
