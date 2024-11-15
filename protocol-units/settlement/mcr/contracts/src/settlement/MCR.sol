@@ -35,8 +35,10 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         grantRole(COMMITMENT_ADMIN, account);
     }
 
-    function batchAddCommitmentAdmin(address[] memory account) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        for
+    function batchAddCommitmentAdmin(address[] memory accounts) public onlyRole(DEFAULT_ADMIN_ROLE) {
+         for (uint256 i = 0; i < accounts.length; i++) {
+            grantRole(TRUSTED_ATTESTER, accounts[i]);
+        }
     }
 
     // creates a commitment
