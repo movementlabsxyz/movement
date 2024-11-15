@@ -151,7 +151,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
             hasRole(COMMITMENT_ADMIN, msg.sender),
             "SET_LAST_ACCEPTED_COMMITMENT_AT_HEIGHT_IS_COMMITMENT_ADMIN_ONLY"
         );
-        acceptedBlocks[blockCommitment.height] = blockCommitment;  
+        versionedAcceptedBlocks[acceptedBlocksVersion][blockCommitment.height] = blockCommitment;  
     }
 
     // Sets the last accepted block height. 
@@ -170,12 +170,15 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
             hasRole(DEFAULT_ADMIN_ROLE, msg.sender),
             "FORCE_LATEST_COMMITMENT_IS_COMMITMENT_ADMIN_ONLY"
         );
-        acceptedBlocks[blockCommitment.height] = blockCommitment;
+
+        // increment the acceptedBlocksVersion (effectively removing all other accepted blocks)
+        acceptedBlocksVersion += 1;
+        versionedAcceptedBlocks[acceptedBlocksVersion][blockCommitment.height] = blockCommitment;
         lastAcceptedBlockHeight = blockCommitment.height; 
     }
 
     function getAcceptedCommitmentAtBlockHeight(uint256 height) public view returns (BlockCommitment memory) {
-        return acceptedBlocks[height];
+        return versionedAcceptedBlocks[acceptedBlocksVersion][height];
     }
 
     function getAttesters() public view returns (address[] memory) {
@@ -295,7 +298,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         if (blockHeightEpochAssignments[blockCommitment.height] != currentEpoch) revert UnacceptableBlockCommitment();
 
         // set accepted block commitment
-        acceptedBlocks[blockCommitment.height] = blockCommitment;
+        versionedAcceptedBlocks[acceptedBlocksVersion][blockCommitment.height] = blockCommitment;
 
         // set last accepted block height
         lastAcceptedBlockHeight = blockCommitment.height;
