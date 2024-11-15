@@ -183,7 +183,7 @@ where
 		};
 
 		if self.run_commitment_admin_mode {
-			let call_builder = contract.setAcceptedCommitmentAtBlockHeight(eth_block_commitment);
+			let call_builder = contract.forceLatestCommitment(eth_block_commitment);
 			crate::send_eth_transaction::send_transaction(
 				call_builder,
 				&self.send_transaction_error_rules,

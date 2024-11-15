@@ -13517,6 +13517,7 @@ dependencies = [
  "m1-da-light-node-util",
  "maptos-dof-execution",
  "mcr-settlement-client",
+ "mcr-settlement-config",
  "mcr-settlement-manager",
  "movement-rest",
  "movement-tracing",

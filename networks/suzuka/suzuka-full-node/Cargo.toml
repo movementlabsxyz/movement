@@ -37,6 +37,7 @@ tracing = { workspace = true }
 bcs = { workspace = true }
 zstd = { workspace = true }
 hex = { workspace = true }
+mcr-settlement-config = { workspace = true }
 
 [features]
 default = []

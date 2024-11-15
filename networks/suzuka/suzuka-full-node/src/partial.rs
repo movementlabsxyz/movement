@@ -42,6 +42,7 @@ where
 			self.light_node_client.clone(),
 			self.commitment_events,
 			self.config.execution_extension.clone(),
+			self.config.mcr.clone(),
 		);
 		let transaction_ingress_task = tasks::transaction_ingress::Task::new(
 			transaction_receiver,

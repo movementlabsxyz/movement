@@ -29,6 +29,7 @@ pub struct Task<E, S> {
 	commitment_events:
 		Either<CommitmentEventStream, stream::Pending<<CommitmentEventStream as Stream>::Item>>,
 	execution_extension: execution_extension::Config,
+	settlement_config: mcr_settlement_config::Config,
 }
 
 impl<E, S> Task<E, S> {
@@ -39,6 +40,7 @@ impl<E, S> Task<E, S> {
 		da_light_node_client: LightNodeServiceClient<tonic::transport::Channel>,
 		commitment_events: Option<CommitmentEventStream>,
 		execution_extension: execution_extension::Config,
+		settlement_config: mcr_settlement_config::Config,
 	) -> Self {
 		let commitment_events = match commitment_events {
 			Some(stream) => Either::Left(stream),
@@ -51,6 +53,7 @@ impl<E, S> Task<E, S> {
 			da_light_node_client,
 			commitment_events,
 			execution_extension,
+			settlement_config,
 		}
 	}
 
@@ -149,8 +152,11 @@ where
 		// set the block as executed
 		self.da_db.add_executed_block(block_id.clone()).await?;
 
-		// todo: this needs defaults
-		if self.settlement_enabled() {
+		if self.settlement_enabled()
+			// only settle every super_block_size_heights 
+			// todo: replace with timeslot tolerance
+			&& da_height % self.settlement_config.settle.settlement_super_block_size == 0
+		{
 			info!("Posting block commitment via settlement manager");
 			match self.settlement_manager.post_block_commitment(commitment).await {
 				Ok(_) => {}
