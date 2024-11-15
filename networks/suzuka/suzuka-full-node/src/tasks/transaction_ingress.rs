@@ -7,6 +7,7 @@ use maptos_dof_execution::SignedTransaction;
 use tokio::sync::mpsc;
 use tracing::{info, warn};
 
+use prost::Message;
 use std::ops::ControlFlow;
 use std::sync::atomic::AtomicU64;
 use std::time::{Duration, Instant};
@@ -100,11 +101,24 @@ impl Task {
 				"built_batch_write"
 			);
 			let batch_write = BatchWriteRequest { blobs: transactions };
+			let mut buf = Vec::new();
+			batch_write.encode_raw(&mut buf);
+			info!("batch_write size: {}", buf.len());
 			// spawn the actual batch write request in the background
 			let mut da_light_node_client = self.da_light_node_client.clone();
 			tokio::spawn(async move {
-				if let Err(e) = da_light_node_client.batch_write(batch_write).await {
-					warn!("failed to write batch to DA: {:?}", e);
+				match da_light_node_client.batch_write(batch_write.clone()).await {
+					Ok(_) => {
+						info!(
+							target: "movement_timing",
+							batch_id = %batch_id,
+							"batch_write_success"
+						);
+						return;
+					}
+					Err(e) => {
+						warn!("failed to write batch to DA: {:?} {:?}", e, batch_id);
+					}
 				}
 			});
 		}

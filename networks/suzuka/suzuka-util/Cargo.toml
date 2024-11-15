@@ -1,5 +1,5 @@
 [package]
-name = "suzuka-full-node"
+name = "suzuka-util"
 version = { workspace = true }
 edition = { workspace = true }
 license = { workspace = true }
@@ -13,7 +13,6 @@ rust-version = { workspace = true }
 
 [dependencies]
 maptos-dof-execution = { workspace = true }
-prost = { workspace = true }
 m1-da-light-node-client = { workspace = true }
 m1-da-light-node-util = { workspace = true }
 mcr-settlement-client = { workspace = true, features = ["mock"] }
@@ -37,8 +36,8 @@ rocksdb = { workspace = true }
 tracing = { workspace = true }
 bcs = { workspace = true }
 zstd = { workspace = true }
-hyper = { workspace = true }
-hex = { workspace = true }
+clap = { workspace = true }
+syncup = { workspace = true }
 
 [features]
 default = []
