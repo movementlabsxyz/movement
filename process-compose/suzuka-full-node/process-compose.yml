@@ -44,8 +44,6 @@ processes:
   suzuka-full-node:
     command: |
       suzuka-full-node
-    environment:
-      - RUST_LOG=info
     depends_on:
       m1-da-light-node:
         condition: process_healthy
