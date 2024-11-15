@@ -42,11 +42,10 @@ contract NativeBridgeMOVETest is Test {
             address(nativeBridgeInitiatorMOVEImplementation),
             address(proxyAdmin),
             abi.encodeWithSignature(
-                "initialize(address,address,uint256,uint256)",
+                "initialize(address,address,uint256)",
                 address(moveToken),
                 deployer,
-                initiatorTimeLockDuration,
-                0 ether
+                initiatorTimeLockDuration
             )
         );
         nativeBridgeInitiatorMOVE = NativeBridgeInitiatorMOVE(address(proxyInitiator));
@@ -91,6 +90,11 @@ contract NativeBridgeMOVETest is Test {
     }
 
     function testCompleteInitiatorBridgeTransfer() public {
+        uint256 _initialTimestamp = block.timestamp;
+        bytes32 _bridgeTransferId = keccak256(abi.encodePacked(ethAddress, moveAddress, _amount, keccak256(abi.encodePacked(keccak256(abi.encodePacked("secret")))), _initialTimestamp, uint256(0), keccak256(abi.encodePacked("secret"))));
+        console.log("attempting to complete inexistent transaction");
+        vm.expectRevert(INativeBridgeInitiatorMOVE.BridgeTransferNotInitialized.selector);
+        nativeBridgeInitiatorMOVE.completeBridgeTransfer(_bridgeTransferId, ethAddress, moveAddress, _amount, keccak256(abi.encodePacked(keccak256(abi.encodePacked("secret")))), _initialTimestamp, uint256(0), keccak256(abi.encodePacked("secret")));
         (
             bytes32 bridgeTransferId,
             address originator,
@@ -142,6 +146,18 @@ contract NativeBridgeMOVETest is Test {
     }
 
     function testRefundInitiatorBridgeTransfer() public {
+        // testing non initialized states
+        uint256 snapshot = vm.snapshot();
+        moveToken.transfer(address(nativeBridgeInitiatorMOVE), _amount);
+        vm.startPrank(deployer);
+        uint256 _initialTimestamp = block.timestamp;
+        vm.warp(2 days + 1);
+        bytes32 _bridgeTransferId = keccak256(abi.encodePacked(ethAddress, moveAddress, _amount, keccak256(abi.encodePacked(keccak256(abi.encodePacked("secret")))), _initialTimestamp, uint256(0)));
+        console.log("attempting to refund inexistent transaction");
+        vm.expectRevert(INativeBridgeInitiatorMOVE.BridgeTransferNotInitialized.selector);
+        nativeBridgeInitiatorMOVE.refundBridgeTransfer(_bridgeTransferId, ethAddress, moveAddress, _amount, keccak256(abi.encodePacked(keccak256(abi.encodePacked("secret")))), _initialTimestamp, uint256(0));
+        vm.revertTo(snapshot);
+        vm.stopPrank();
         (
             bytes32 bridgeTransferId,
             address originator,
@@ -283,6 +299,16 @@ contract NativeBridgeMOVETest is Test {
     }
 
     function testCompleteCounterpartyBridgeTransfer() public {
+        uint256 snapshot = vm.snapshot();
+        vm.startPrank(deployer);
+        uint256 _initialTimestamp = block.timestamp;
+        vm.warp(2 days + 1);
+        bytes32 _bridgeTransferId = keccak256(abi.encodePacked(moveAddress, ethAddress, _amount, keccak256(abi.encodePacked(keccak256(abi.encodePacked("secret")))), _initialTimestamp, uint256(0)));
+        console.log("attempting to complete inexistent transaction");
+        vm.expectRevert(INativeBridgeCounterpartyMOVE.BridgeTransferStateNotPending.selector);
+        nativeBridgeCounterpartyMOVE.completeBridgeTransfer(_bridgeTransferId, moveAddress, ethAddress, _amount, keccak256(abi.encodePacked(keccak256(abi.encodePacked("secret")))), _initialTimestamp, uint256(0), keccak256(abi.encodePacked("secret")));
+        vm.revertTo(snapshot);
+        vm.stopPrank();
         (
             bytes32 bridgeTransferId,
             bytes32 originator,
@@ -334,6 +360,17 @@ contract NativeBridgeMOVETest is Test {
     }
 
     function testAbortCounterpartyBridgeTransfer() public {
+        uint256 _initialTimestamp = block.timestamp;
+        bytes32 _bridgeTransferId = keccak256(abi.encodePacked(moveAddress, ethAddress, _amount, keccak256(abi.encodePacked(keccak256(abi.encodePacked("secret")))), _initialTimestamp, uint256(0)));
+
+        uint256 snapshot = vm.snapshot();
+        vm.warp(2 days + 1);
+        console.log("attempting to abort inexistent transaction");
+        vm.startPrank(deployer);
+        vm.expectRevert(INativeBridgeCounterpartyMOVE.BridgeTransferStateNotPending.selector);
+        nativeBridgeCounterpartyMOVE.abortBridgeTransfer(_bridgeTransferId, moveAddress, ethAddress, _amount, keccak256(abi.encodePacked(keccak256(abi.encodePacked("secret")))), _initialTimestamp, uint256(0));
+        vm.stopPrank();
+        vm.revertTo(snapshot);
         (
             bytes32 bridgeTransferId,
             bytes32 originator,

@@ -4,10 +4,12 @@ pragma solidity ^0.8.22;
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {INativeBridgeCounterpartyMOVE} from "./INativeBridgeCounterpartyMOVE.sol";
 import {NativeBridgeInitiatorMOVE} from "./NativeBridgeInitiatorMOVE.sol";
+import {console} from "forge-std/Console.sol";
 
 contract NativeBridgeCounterpartyMOVE is INativeBridgeCounterpartyMOVE, OwnableUpgradeable {
 
     enum MessageState {
+        NOT_INITIALIZED,
         PENDING,
         COMPLETED,
         REFUNDED
@@ -45,14 +47,8 @@ contract NativeBridgeCounterpartyMOVE is INativeBridgeCounterpartyMOVE, OwnableU
         uint256 initialTimestamp,
         uint256 nonce
     ) external onlyOwner {
-
-        // The time lock is now based on the configurable duration
-        uint256 timeLock = block.timestamp + counterpartyTimeLockDuration;
-
-        require(bridgeTransferId == keccak256(abi.encodePacked(originator, recipient, amount, hashLock, initialTimestamp, nonce)), InvalidBridgeTransferId());
-
+        _verifyHash(bridgeTransferId, originator, recipient, amount, hashLock, initialTimestamp, nonce);
         bridgeTransfers[bridgeTransferId] = MessageState.PENDING;
-
         emit BridgeTransferLocked(bridgeTransferId, originator, recipient, amount, hashLock, block.timestamp, nonce);
     }
 
@@ -63,14 +59,12 @@ contract NativeBridgeCounterpartyMOVE is INativeBridgeCounterpartyMOVE, OwnableU
         uint256 amount,
         bytes32 hashLock,
         uint256 initialTimestamp,
-        uint256 nonce, bytes32 preImage) external {
-        
-        require(bridgeTransferId == keccak256(abi.encodePacked(originator, recipient, amount, hashLock, initialTimestamp, nonce)), InvalidBridgeTransferId());
+        uint256 nonce,
+        bytes32 preImage) external {
+        _verifyHash(bridgeTransferId, originator, recipient, amount, hashLock, initialTimestamp, nonce);
         require(keccak256(abi.encodePacked(preImage)) == hashLock, InvalidSecret());
-
         require(bridgeTransfers[bridgeTransferId] == MessageState.PENDING, BridgeTransferStateNotPending());
-        
-        if (block.timestamp > initialTimestamp + counterpartyTimeLockDuration) revert TimeLockExpired();
+        require(block.timestamp < initialTimestamp + counterpartyTimeLockDuration, TimeLockExpired());
 
         bridgeTransfers[bridgeTransferId] = MessageState.COMPLETED;
 
@@ -79,19 +73,31 @@ contract NativeBridgeCounterpartyMOVE is INativeBridgeCounterpartyMOVE, OwnableU
         emit BridgeTransferCompleted(bridgeTransferId, originator, recipient, amount, hashLock, initialTimestamp, nonce, preImage);
     }
 
-    function abortBridgeTransfer(bytes32 bridgeTransferId,
-    bytes32 originator,
+    function abortBridgeTransfer(
+        bytes32 bridgeTransferId,
+        bytes32 originator,
         address recipient,
         uint256 amount,
         bytes32 hashLock,
         uint256 initialTimestamp,
         uint256 nonce) external onlyOwner {
-        require(bridgeTransferId == keccak256(abi.encodePacked(originator, recipient, amount, hashLock, initialTimestamp, nonce)), InvalidBridgeTransferId());
+        _verifyHash(bridgeTransferId, originator, recipient, amount, hashLock, initialTimestamp, nonce);
         require(bridgeTransfers[bridgeTransferId] == MessageState.PENDING, BridgeTransferStateNotPending());
-        if (block.timestamp <= initialTimestamp + counterpartyTimeLockDuration) revert TimeLockNotExpired();
+        require(block.timestamp > initialTimestamp + counterpartyTimeLockDuration, TimeLockNotExpired());
 
         bridgeTransfers[bridgeTransferId] = MessageState.REFUNDED;
 
         emit BridgeTransferAborted(bridgeTransferId);
     }
+
+    function _verifyHash(bytes32 bridgeTransferId,
+        bytes32 originator,
+        address recipient,
+        uint256 amount,
+        bytes32 hashLock,
+        uint256 initialTimestamp,
+        uint256 nonce) internal {
+            console.logBytes32(keccak256(abi.encodePacked(originator, recipient, amount, hashLock, initialTimestamp, nonce)));
+            require(bridgeTransferId == keccak256(abi.encodePacked(originator, recipient, amount, hashLock, initialTimestamp, nonce)), InvalidBridgeTransferId());
+        }
 }

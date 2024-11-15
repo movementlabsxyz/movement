@@ -6,7 +6,7 @@ interface INativeBridgeInitiatorMOVE {
 
     function initiatorTimeLockDuration() external view returns (uint256);
 
-    function initialize(address _moveToken, address owner, uint256 _timeLockDuration, uint256 _initialPoolBalance) external;
+    function initialize(address _moveToken, address owner, uint256 _timeLockDuration) external;
     function setCounterpartyAddress(address _counterpartyAddress) external;
 
     function initiateBridgeTransfer(bytes32 recipient, uint256 amount, bytes32 hashLock)
@@ -62,7 +62,7 @@ interface INativeBridgeInitiatorMOVE {
     error ZeroAddress();
     error ZeroAmount();
     error MOVETransferFailed();
-    error BridgeTransferHasBeenCompleted();
+    error BridgeTransferNotInitialized();
     error InvalidBridgeTransferId();
     error InvalidSecret();
     error TimelockExpired();

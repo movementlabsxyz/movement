@@ -5,10 +5,12 @@ import {INativeBridgeInitiatorMOVE} from "./INativeBridgeInitiatorMOVE.sol";
 import {MockMOVEToken} from "./MockMOVEToken.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {console} from "forge-std/Console.sol";
 
 contract NativeBridgeInitiatorMOVE is INativeBridgeInitiatorMOVE, OwnableUpgradeable {
 
     enum MessageState {
+        NOT_INITIALIZED,
         INITIALIZED,
         COMPLETED,
         REFUNDED
@@ -24,22 +26,20 @@ contract NativeBridgeInitiatorMOVE is INativeBridgeInitiatorMOVE, OwnableUpgrade
     uint256 public initiatorTimeLockDuration;
 
     // Initialize the contract with MOVE token address, owner, custom time lock duration, and initial pool balance
-    function initialize(address _moveToken, address owner, uint256 _timeLockDuration, uint256 _initialPoolBalance)
+    function initialize(address _moveToken, address _owner, uint256 _timeLockDuration)
         public
         initializer
     {
-        if (_moveToken == address(0)) {
-            revert ZeroAddress();
-        }
+        require(_moveToken != address(0) && _owner != address(0), ZeroAddress());
         moveToken = ERC20Upgradeable(_moveToken);
-        __Ownable_init(owner);
+        __Ownable_init(_owner);
 
         // Set the custom time lock duration
         initiatorTimeLockDuration = _timeLockDuration;
     }
 
     function setCounterpartyAddress(address _counterpartyAddress) external onlyOwner {
-        if (_counterpartyAddress == address(0)) revert ZeroAddress();
+        require(_counterpartyAddress != address(0), ZeroAddress());
         counterpartyAddress = _counterpartyAddress;
     }
 
@@ -50,14 +50,10 @@ contract NativeBridgeInitiatorMOVE is INativeBridgeInitiatorMOVE, OwnableUpgrade
         address originator = msg.sender;
 
         // Ensure there is a valid amount
-        if (amount == 0) {
-            revert ZeroAmount();
-        }
+        require(amount != 0, ZeroAmount());
 
         // Transfer the MOVE tokens from the user to the contract
-        if (!moveToken.transferFrom(originator, address(this), amount)) {
-            revert MOVETransferFailed();
-        }
+        require(moveToken.transferFrom(originator, address(this), amount),MOVETransferFailed());
 
         // Generate a unique nonce to prevent replay attacks, and generate a transfer ID
         bridgeTransferId =
@@ -79,14 +75,10 @@ contract NativeBridgeInitiatorMOVE is INativeBridgeInitiatorMOVE, OwnableUpgrade
         uint256 nonce,
         bytes32 preImage
     ) external {
-        require(bridgeTransfers[bridgeTransferId] == MessageState.INITIALIZED, BridgeTransferHasBeenCompleted());
-        require(
-            bridgeTransferId
-                == keccak256(abi.encodePacked(originator, recipient, amount, hashLock, initialTimestamp, nonce)),
-            InvalidBridgeTransferId()
-        );
-        if (keccak256(abi.encodePacked(preImage)) != hashLock) revert InvalidSecret();
-        if (block.timestamp > initialTimestamp + initiatorTimeLockDuration) revert TimelockExpired();
+        _verifyHash(bridgeTransferId, originator, recipient, amount, hashLock, initialTimestamp, nonce);
+        require(bridgeTransfers[bridgeTransferId] == MessageState.INITIALIZED, BridgeTransferNotInitialized());
+        require(keccak256(abi.encodePacked(preImage)) == hashLock,InvalidSecret());
+        require(block.timestamp < initialTimestamp + initiatorTimeLockDuration, TimelockExpired());
         bridgeTransfers[bridgeTransferId] = MessageState.COMPLETED;
 
         emit BridgeTransferCompleted(
@@ -103,23 +95,28 @@ contract NativeBridgeInitiatorMOVE is INativeBridgeInitiatorMOVE, OwnableUpgrade
         uint256 initialTimestamp,
         uint256 nonce
     ) external onlyOwner {
-        require(
-            bridgeTransferId
-                == keccak256(abi.encodePacked(originator, recipient, amount, hashLock, initialTimestamp, nonce)),
-            InvalidBridgeTransferId()
-        );
-
-        require(bridgeTransfers[bridgeTransferId] == MessageState.INITIALIZED, BridgeTransferHasBeenCompleted());
-
-        if (block.timestamp < initialTimestamp + initiatorTimeLockDuration) revert TimeLockNotExpired();
+        _verifyHash(bridgeTransferId, originator, recipient, amount, hashLock, initialTimestamp, nonce);
+        require(bridgeTransfers[bridgeTransferId] == MessageState.INITIALIZED, BridgeTransferNotInitialized());
+        require(block.timestamp > initialTimestamp + initiatorTimeLockDuration, TimeLockNotExpired());
         bridgeTransfers[bridgeTransferId] = MessageState.REFUNDED;
-        if (!moveToken.transfer(originator, amount)) revert MOVETransferFailed();
+        require(moveToken.transfer(originator, amount), MOVETransferFailed());
 
         emit BridgeTransferRefunded(bridgeTransferId);
     }
 
     function withdrawMOVE(address recipient, uint256 amount) external {
-        if (msg.sender != counterpartyAddress) revert Unauthorized();
-        if (!moveToken.transfer(recipient, amount)) revert MOVETransferFailed();
+        require(msg.sender == counterpartyAddress, Unauthorized());
+        require(moveToken.transfer(recipient, amount), MOVETransferFailed());
+    }
+
+    function _verifyHash(bytes32 bridgeTransferId,
+        address originator,
+        bytes32 recipient,
+        uint256 amount,
+        bytes32 hashLock,
+        uint256 initialTimestamp,
+        uint256 nonce) internal {
+            console.logBytes32(keccak256(abi.encodePacked(originator, recipient, amount, hashLock, initialTimestamp, nonce)));
+            require(bridgeTransferId == keccak256(abi.encodePacked(originator, recipient, amount, hashLock, initialTimestamp, nonce)), InvalidBridgeTransferId());
     }
 }
