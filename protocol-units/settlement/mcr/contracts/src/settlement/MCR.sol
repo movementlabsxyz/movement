@@ -134,10 +134,23 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         return commitments[height][attester];
     }
 
+    // Sets the accepted commitment at a give block height
     function setAcceptedCommitmentAtBlockHeight(BlockCommitment memory blockCommitment) public onlyRole(COMMITMENT_ADMIN) {
 
       acceptedBlocks[blockCommitment.height] = blockCommitment;  
       
+    }
+
+    // Sets the last accepted block height. 
+    function setLastAcceptedBlockHeight(uint256 height) public onlyRole(COMMITMENT_ADMIN) {
+        lastAcceptedBlockHeight = height;
+    }
+
+    // Forces the latest attestation by setting the block height
+    // Note: this only safe when we are running with a single validator as it does not zero out follow-on commitments.
+    function forceLatestCommitment(BlockCommitment memory blockCommitment) public onlyRole(COMMITMENT_ADMIN) {
+        acceptedBlocks[blockCommitment.height] = blockCommitment;
+        lastAcceptedBlockHeight = blockCommitment.height; 
     }
 
     function getAcceptedCommitmentAtBlockHeight(uint256 height) public view returns (BlockCommitment memory) {
