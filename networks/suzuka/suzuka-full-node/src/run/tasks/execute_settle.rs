@@ -1,6 +1,6 @@
 //! Task module to execute blocks from the DA and process settlement.
 
-use crate::da_db::DaDB;
+use crate::run::da_db::DaDB;
 
 use m1_da_light_node_client::{
 	blob_response, LightNodeServiceClient, StreamReadFromHeightRequest,

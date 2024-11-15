@@ -38,6 +38,7 @@ bcs = { workspace = true }
 zstd = { workspace = true }
 hex = { workspace = true }
 mcr-settlement-config = { workspace = true }
+clap = { workspace =  true }
 
 [features]
 default = []

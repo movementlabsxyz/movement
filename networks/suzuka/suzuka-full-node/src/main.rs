@@ -1,4 +1,4 @@
-use suzuka_full_node::manager::Manager;
+use suzuka_full_node::run::manager::Manager;
 
 use std::env;
 use std::process::ExitCode;
