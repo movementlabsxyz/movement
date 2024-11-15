@@ -369,4 +369,24 @@ contract MCRTest is Test, IMCR {
             vm.warp(blockTime);
         }
     }
+
+    function testForcedAttestation() public {
+        vm.pauseGasMetering();
+
+        uint256 blockTime = 300;
+
+        vm.warp(blockTime);
+
+        // three well-funded signers
+        address payable alice = payable(vm.addr(1));
+
+        // default signer should be able to force attestation
+        MCRStorage.BlockCommitment memory forcedCommitment = MCRStorage.BlockCommitment({
+            height: 1,
+            commitment: keccak256(abi.encodePacked(uint256(3), uint256(2), uint256(1))),
+            blockId: keccak256(abi.encodePacked(uint256(3), uint256(2), uint256(1)))
+        });
+        mcr.setAcceptedCommitmentAtBlockHeight(forcedCommitment);
+
+    }
 }
