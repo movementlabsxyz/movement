@@ -8770,6 +8770,7 @@ dependencies = [
  "hex",
  "lazy_static",
  "maptos-execution-util",
+ "movement-collections",
  "movement-rest",
  "movement-types",
  "poem",
@@ -9787,6 +9788,14 @@ dependencies = [
  "itertools 0.12.1",
  "movement-types",
  "tokio",
+]
+
+[[package]]
+name = "movement-collections"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "uuid",
 ]
 
 [[package]]

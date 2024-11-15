@@ -17,7 +17,8 @@ use aptos_vm_validator::vm_validator::{self, TransactionValidation, VMValidator}
 use crate::gc_account_sequence_number::UsedSequenceNumberPool;
 use futures::channel::mpsc as futures_mpsc;
 use futures::StreamExt;
-use std::sync::{atomic::AtomicU64, Arc};
+use movement_collections::garbage::counted::GcCounter;
+use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
 use tracing::{debug, info, info_span, warn, Instrument};
@@ -35,7 +36,7 @@ pub struct TransactionPipe {
 	// State of the Aptos mempool
 	core_mempool: CoreMempool,
 	// Shared reference on the counter of transactions in flight.
-	transactions_in_flight: Arc<AtomicU64>,
+	transactions_in_flight: Arc<RwLock<GcCounter>>,
 	// The configured limit on transactions in flight
 	in_flight_limit: Option<u64>,
 	// Timestamp of the last garbage collection
@@ -56,7 +57,7 @@ impl TransactionPipe {
 		db_reader: Arc<dyn DbReader>,
 		node_config: &NodeConfig,
 		mempool_config: &MempoolConfig,
-		transactions_in_flight: Arc<AtomicU64>,
+		transactions_in_flight: Arc<RwLock<GcCounter>>,
 		transactions_in_flight_limit: Option<u64>,
 	) -> Self {
 		TransactionPipe {
@@ -114,8 +115,20 @@ impl TransactionPipe {
 			// todo: these will be slightly off, but gc does not need to be exact
 			let now = Instant::now();
 			let epoch_ms_now = chrono::Utc::now().timestamp_millis() as u64;
+
+			// garbage collect the used sequence number pool
 			self.used_sequence_number_pool.gc(epoch_ms_now);
+
+			// garbage collect the transactions in flight
+			{
+				// unwrap because failure indicates poisoned lock
+				let mut transactions_in_flight = self.transactions_in_flight.write().unwrap();
+				transactions_in_flight.gc(epoch_ms_now);
+			}
+
+			// garbage collect the core mempool
 			self.core_mempool.gc();
+
 			self.last_gc = now;
 		}
 
@@ -183,7 +196,10 @@ impl TransactionPipe {
 		transaction: SignedTransaction,
 	) -> Result<SubmissionStatus, Error> {
 		// For now, we are going to consider a transaction in flight until it exits the mempool and is sent to the DA as is indicated by WriteBatch.
-		let in_flight = self.transactions_in_flight.load(std::sync::atomic::Ordering::Relaxed);
+		let in_flight = {
+			let transactions_in_flight = self.transactions_in_flight.read().unwrap();
+			transactions_in_flight.get_count()
+		};
 		info!(
 			target: "movement_timing",
 			in_flight = %in_flight,
@@ -236,6 +252,7 @@ impl TransactionPipe {
 
 		match status.code {
 			MempoolStatusCode::Accepted => {
+				let now = chrono::Utc::now().timestamp_millis() as u64;
 				debug!("Transaction accepted: {:?}", transaction);
 				let sender = transaction.sender();
 				let transaction_sequence_number = transaction.sequence_number();
@@ -244,7 +261,10 @@ impl TransactionPipe {
 					.await
 					.map_err(|e| anyhow::anyhow!("Error sending transaction: {:?}", e))?;
 				// increment transactions in flight
-				self.transactions_in_flight.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+				{
+					let mut transactions_in_flight = self.transactions_in_flight.write().unwrap();
+					transactions_in_flight.increment(now, 1);
+				}
 				self.core_mempool.commit_transaction(&sender, sequence_number);
 
 				// update the used sequence number pool
@@ -255,7 +275,7 @@ impl TransactionPipe {
 				self.used_sequence_number_pool.set_sequence_number(
 					&sender,
 					transaction_sequence_number,
-					chrono::Utc::now().timestamp_millis() as u64,
+					now,
 				);
 			}
 			_ => {
