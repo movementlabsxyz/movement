@@ -29,6 +29,13 @@ pub trait McrSettlementClientOperations {
 		block_commitment: Vec<BlockCommitment>,
 	) -> Result<(), anyhow::Error>;
 
+	/// Forces a block commitment
+	/// This will only work in admin mode
+	async fn force_block_commitment(
+		&self,
+		block_commitment: BlockCommitment,
+	) -> Result<(), anyhow::Error>;
+
 	/// Streams block commitments from the settlement client.
 	async fn stream_block_commitments(&self) -> Result<CommitmentStream, anyhow::Error>;
 

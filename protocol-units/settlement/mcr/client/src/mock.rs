@@ -110,6 +110,13 @@ impl McrSettlementClientOperations for McrSettlementClient {
 		Ok(())
 	}
 
+	async fn force_block_commitment(
+		&self,
+		_block_commitment: BlockCommitment,
+	) -> Result<(), anyhow::Error> {
+		unimplemented!()
+	}
+
 	async fn stream_block_commitments(&self) -> Result<CommitmentStream, anyhow::Error> {
 		let receiver = self
 			.stream_receiver

@@ -11,12 +11,14 @@ use clap::Parser;
 pub enum SuzukaFullNode {
 	#[clap(subcommand)]
 	Admin(admin::Admin),
+	Run(run::Run),
 }
 
 impl SuzukaFullNode {
 	pub async fn execute(&self) -> Result<(), anyhow::Error> {
 		match self {
-			SuzukaFullNode::Syncing(syncing) => syncing.execute().await,
+			Self::Admin(admin) => admin.execute().await,
+			Self::Run(run) => run.execute().await,
 		}
 	}
 }

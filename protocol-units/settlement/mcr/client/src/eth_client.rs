@@ -236,6 +236,31 @@ where
 		.await
 	}
 
+	async fn force_block_commitment(
+		&self,
+		block_commitment: BlockCommitment,
+	) -> Result<(), anyhow::Error> {
+		let contract = MCR::new(self.contract_address, &self.rpc_provider);
+
+		let eth_block_commitment = MCR::BlockCommitment {
+			// Currently, to simplify the API, we'll say 0 is uncommitted all other numbers are legitimate heights
+			height: U256::from(block_commitment.height()),
+			commitment: alloy_primitives::FixedBytes(
+				block_commitment.commitment().as_bytes().clone(),
+			),
+			blockId: alloy_primitives::FixedBytes(block_commitment.block_id().as_bytes().clone()),
+		};
+
+		let call_builder = contract.forceLatestCommitment(eth_block_commitment);
+		crate::send_eth_transaction::send_transaction(
+			call_builder,
+			&self.send_transaction_error_rules,
+			self.send_transaction_retries,
+			self.gas_limit as u128,
+		)
+		.await
+	}
+
 	async fn stream_block_commitments(&self) -> Result<CommitmentStream, anyhow::Error> {
 		// Register to contract BlockCommitmentSubmitted event
 

@@ -31,6 +31,10 @@ where
 		&self.settlement_manager
 	}
 
+	pub fn executor(&self) -> &T {
+		&self.executor
+	}
+
 	// ! Currently this only implements opt.
 	/// Runs the executor until crash or shutdown.
 	pub async fn run(self) -> Result<(), anyhow::Error> {
