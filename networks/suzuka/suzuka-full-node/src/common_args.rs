@@ -21,8 +21,9 @@ impl MovementArgs {
 	/// Get the DotMovement struct from the args.
 	pub fn dot_movement(&self) -> Result<DotMovement, anyhow::Error> {
 		let movement_path = self.movement_path.clone().unwrap_or_else(|| {
-			std::env::var("DOT_MOVEMENT_PATH").unwrap_or_else(|_| ".".to_string())
+			std::env::var("DOT_MOVEMENT_PATH").unwrap_or_else(|_| "./.movement".to_string())
 		});
+		std::env::set_var("DOT_MOVEMENT_PATH", movement_path.clone());
 		Ok(DotMovement::new(movement_path.as_str()))
 	}
 

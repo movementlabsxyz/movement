@@ -5,6 +5,7 @@ use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 use tokio::sync::{mpsc, RwLock};
 use tokio_stream::wrappers::ReceiverStream;
+use tracing::info;
 
 #[derive(Clone)]
 pub struct McrSettlementClient {
@@ -30,6 +31,7 @@ impl McrSettlementClient {
 	}
 
 	pub async fn build_with_config(_config: &Config) -> Result<Self, anyhow::Error> {
+		info!("Building with config.");
 		Ok(Self::new())
 	}
 

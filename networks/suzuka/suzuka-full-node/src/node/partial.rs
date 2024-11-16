@@ -81,6 +81,12 @@ where
 }
 
 impl SuzukaPartialNode<Executor> {
+	pub async fn try_executor_from_config(config: Config) -> Result<Executor, anyhow::Error> {
+		let executor = Executor::try_from_config(config.execution_config.maptos_config.clone())
+			.context("Failed to create the inner executor")?;
+		Ok(executor)
+	}
+
 	pub async fn try_from_config(config: Config) -> Result<Self, anyhow::Error> {
 		let light_node_connection_protocol = config
 			.m1_da_light_node
