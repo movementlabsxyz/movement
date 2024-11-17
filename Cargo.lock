@@ -4489,22 +4489,20 @@ dependencies = [
 [[package]]
 name = "celestia-proto"
 version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ab6f922c6488623dc5f78e602e0cea658d41c40825033ecbd810a83b73636e1"
+source = "git+https://github.com/movementlabsxyz/lumina?rev=2d16e6733949f6bf70849eb60c14114e6d8ea63e#2d16e6733949f6bf70849eb60c14114e6d8ea63e"
 dependencies = [
  "celestia-tendermint-proto",
- "prost 0.12.6",
+ "prost 0.13.3",
  "prost-build",
- "prost-types 0.12.6",
+ "prost-types 0.13.3",
  "protox",
  "serde",
 ]
 
 [[package]]
 name = "celestia-rpc"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "677fc8e51b4f53987fcd18bb0f3234ebe938155539cb272d5c771e22ce2ed6d1"
+version = "0.7.1"
+source = "git+https://github.com/movementlabsxyz/lumina?rev=2d16e6733949f6bf70849eb60c14114e6d8ea63e#2d16e6733949f6bf70849eb60c14114e6d8ea63e"
 dependencies = [
  "async-trait",
  "celestia-types",
@@ -4565,9 +4563,8 @@ dependencies = [
 
 [[package]]
 name = "celestia-types"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ab143eba97ed0c957769fa16baecac8e88e479b8d7eae9a71bd084bb2ca80eca"
+version = "0.8.0"
+source = "git+https://github.com/movementlabsxyz/lumina?rev=2d16e6733949f6bf70849eb60c14114e6d8ea63e#2d16e6733949f6bf70849eb60c14114e6d8ea63e"
 dependencies = [
  "base64 0.22.1",
  "bech32",
@@ -4584,7 +4581,7 @@ dependencies = [
  "multiaddr",
  "multihash",
  "nmt-rs",
- "prost 0.12.6",
+ "prost 0.13.3",
  "ruint",
  "serde",
  "serde_repr",
