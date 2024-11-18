@@ -41,6 +41,7 @@ members = [
     "protocol-units/bridge/util",
     "protocol-units/settlement/mcr/runner",
     "benches/*",
+    "protocol-units/storage/hot-cold-set",
 ]
 
 [workspace.package]
