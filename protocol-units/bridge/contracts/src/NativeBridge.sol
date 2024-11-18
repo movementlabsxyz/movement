@@ -1,4 +1,8 @@
 
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.22;
+pragma abicoder v2;
+
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {RateLimiter} from "./RateLimiter.sol";
 import {INativeBridge} from "./INativeBridge.sol";
@@ -21,6 +25,7 @@ contract NativeBridgeMOVE is RateLimiter, AccessControlUpgradeable, INativeBridg
    }
    mapping(bytes32 bridgeTransferId => IncomingBridgeTransfer) incomingBridgeTransfers;
 
+    ERC20Upgradeable public moveToken;
    bytes32 public constant RELAYER_ROLE = keccak256(abi.encodePacked("RELAYER_ROLE"));
    uint256 private _nonce;
 
@@ -28,9 +33,10 @@ contract NativeBridgeMOVE is RateLimiter, AccessControlUpgradeable, INativeBridg
     constructor() {
         _disableInitializers();
     }
-
-    function initialize(address _admin, address _relayer, address _maintainer) public initializer {
-        require(_admin != address(0) && _relayer != address(0), ZeroAddress());
+    // TODO: include rate limit
+    function initialize(address _moveToken, address _admin, address _relayer, address _maintainer) public initializer {
+        require(_moveToken != address(0) && _admin != address(0) && _relayer != address(0), ZeroAddress());
+        moveToken = ERC20Upgradeable(_moveToken);
         _grantRole(_admin, DEFAULT_ADMIN_ROLE);
         _grantRole(_relayer, RELAYER_ROLE);
         _grantRole(_maintainer, RELAYER_ROLE);
