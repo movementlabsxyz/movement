@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.22;
 
-import {INativeBridgeInitiatorMOVE} from "./INativeBridgeInitiatorMOVE.sol";
-import {MockMOVEToken} from "./MockMOVEToken.sol";
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import {IAtomicBridgeInitiatorMOVE} from "./IAtomicBridgeInitiatorMOVE.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
-contract NativeBridgeInitiatorMOVE is INativeBridgeInitiatorMOVE, OwnableUpgradeable {
+contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, AccessControlUpgradeable {
     enum MessageState {
         INITIALIZED,
         COMPLETED,
@@ -14,19 +13,16 @@ contract NativeBridgeInitiatorMOVE is INativeBridgeInitiatorMOVE, OwnableUpgrade
     }
 
     struct BridgeTransfer {
-        uint256 amount;
         address originator;
         bytes32 recipient;
+        uint256 amount;
         bytes32 hashLock;
-        uint256 timeLock; // in seconds (timestamp)
+        uint256 timeLock;
         MessageState state;
     }
 
     // Mapping of bridge transfer ids to BridgeTransfer structs
     mapping(bytes32 => BridgeTransfer) public bridgeTransfers;
-
-    // Total MOVE token pool balance
-    uint256 public poolBalance;
 
     address public counterpartyAddress;
     ERC20Upgradeable public moveToken;
@@ -35,27 +31,45 @@ contract NativeBridgeInitiatorMOVE is INativeBridgeInitiatorMOVE, OwnableUpgrade
     // Configurable time lock duration
     uint256 public initiatorTimeLockDuration;
 
-    // Initialize the contract with MOVE token address, owner, custom time lock duration, and initial pool balance
-    function initialize(address _moveToken, address owner, uint256 _timeLockDuration, uint256 _initialPoolBalance)
-        public
-        initializer
-    {
-        if (_moveToken == address(0)) {
+    bytes32 constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    bytes32 constant RELAYER_ROLE = keccak256("RELAYER_ROLE");
+    bytes32 constant REFUNDER_ROLE = keccak256("REFUNDER_ROLE");
+
+    // Prevents initialization of implementation contract exploits
+    constructor() {
+        _disableInitializers();
+    }
+
+    // Initialize the contract with MOVE token address, owner, and custom time lock duration
+    function initialize(
+        address _moveToken,
+        address _owner,
+        address _admin,
+        address _refunder,
+        uint256 _timeLockDuration
+    ) public initializer {
+        if (_moveToken == address(0) && _owner == address(0) && _admin == address(0) && _refunder == address(0)) {
             revert ZeroAddress();
         }
+        if (_timeLockDuration == 0) {
+            revert ZeroValue();
+        }
         moveToken = ERC20Upgradeable(_moveToken);
-        __Ownable_init(owner);
+        _grantRole(DEFAULT_ADMIN_ROLE, _owner);
+        _grantRole(ADMIN_ROLE, _admin);
+        _grantRole(REFUNDER_ROLE, _refunder);
 
         // Set the custom time lock duration
         initiatorTimeLockDuration = _timeLockDuration;
-
-        // Set the initial pool balance
-        poolBalance = _initialPoolBalance;
     }
 
-    function setCounterpartyAddress(address _counterpartyAddress) external onlyOwner {
+    function setCounterpartyAddress(address _counterpartyAddress) external onlyRole(ADMIN_ROLE) {
         if (_counterpartyAddress == address(0)) revert ZeroAddress();
         counterpartyAddress = _counterpartyAddress;
+    }
+
+    function setTimeLockDuration(uint256 _timeLockDuration) external onlyRole(ADMIN_ROLE) {
+        initiatorTimeLockDuration = _timeLockDuration;
     }
 
     function initiateBridgeTransfer(uint256 moveAmount, bytes32 recipient, bytes32 hashLock)
@@ -74,18 +88,15 @@ contract NativeBridgeInitiatorMOVE is INativeBridgeInitiatorMOVE, OwnableUpgrade
             revert MOVETransferFailed();
         }
 
-        // Update the pool balance
-        poolBalance += moveAmount;
-
         // Generate a unique nonce to prevent replay attacks, and generate a transfer ID
         bridgeTransferId = keccak256(
             abi.encodePacked(originator, recipient, hashLock, initiatorTimeLockDuration, block.timestamp, nonce++)
         );
 
         bridgeTransfers[bridgeTransferId] = BridgeTransfer({
-            amount: moveAmount,
             originator: originator,
             recipient: recipient,
+            amount: moveAmount,
             hashLock: hashLock,
             timeLock: block.timestamp + initiatorTimeLockDuration,
             state: MessageState.INITIALIZED
@@ -107,14 +118,12 @@ contract NativeBridgeInitiatorMOVE is INativeBridgeInitiatorMOVE, OwnableUpgrade
         emit BridgeTransferCompleted(bridgeTransferId, preImage);
     }
 
-    function refundBridgeTransfer(bytes32 bridgeTransferId) external onlyOwner {
+    function refundBridgeTransfer(bytes32 bridgeTransferId) external onlyRole(REFUNDER_ROLE) {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
         if (bridgeTransfer.state != MessageState.INITIALIZED) revert BridgeTransferStateNotInitialized();
         if (block.timestamp < bridgeTransfer.timeLock) revert TimeLockNotExpired();
         bridgeTransfer.state = MessageState.REFUNDED;
 
-        // Decrease pool balance and transfer MOVE tokens back to the originator
-        poolBalance -= bridgeTransfer.amount;
         if (!moveToken.transfer(bridgeTransfer.originator, bridgeTransfer.amount)) revert MOVETransferFailed();
 
         emit BridgeTransferRefunded(bridgeTransferId);
@@ -122,8 +131,6 @@ contract NativeBridgeInitiatorMOVE is INativeBridgeInitiatorMOVE, OwnableUpgrade
 
     function withdrawMOVE(address recipient, uint256 amount) external {
         if (msg.sender != counterpartyAddress) revert Unauthorized();
-        if (poolBalance < amount) revert InsufficientMOVEBalance();
-        poolBalance -= amount;
         if (!moveToken.transfer(recipient, amount)) revert MOVETransferFailed();
     }
 }

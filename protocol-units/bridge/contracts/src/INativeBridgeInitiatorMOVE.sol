@@ -27,6 +27,7 @@ interface INativeBridgeInitiatorMOVE {
     error TimelockExpired();
     error ZeroAddress();
     error Unauthorized();
+    error ZeroValue();
 
     /**
      * @dev Creates a new native bridge transfer using native ETH
