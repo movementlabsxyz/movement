@@ -1,0 +1,18 @@
+version: "3"
+
+environment:
+
+processes:
+
+  hey-partners-load:
+    env:
+      MOVEMENT_SWAP_PATH: ${MOVEMENT_SWAP_PATH}
+    command: |
+      LOADTEST_NUMBER_SCENARIO=1 LOADTEST_NUMBER_SCENARIO_PER_CLIENT=1 cargo test -p movement-tests hey_partners_load -- --nocapture
+    depends_on:
+      movement-full-node:
+        condition: process_healthy
+      movement-faucet:
+        condition: process_healthy
+    availability:
+      exit_on_end: false # todo: revert

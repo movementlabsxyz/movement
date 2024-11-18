@@ -1,0 +1,20 @@
+version: "3"
+
+processes:
+
+  m1-da-light-node:
+    command: |
+      samply record $(which m1-da-light-node)
+
+  movement-full-node:
+    command: |
+      samply record $(which movement-full-node)
+    depends_on:
+      m1-da-light-node:
+        condition: process_healthy
+      postgres:
+        condition: process_healthy
+    readiness_probe:
+      initial_delay_seconds: 10
+      exec:
+        command: curl http://0.0.0.0:30731

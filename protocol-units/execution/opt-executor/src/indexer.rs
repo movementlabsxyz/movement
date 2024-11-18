@@ -39,7 +39,7 @@ impl Context {
 		.ok_or(anyhow::anyhow!("Failed to bootstrap indexer grpc runtime"))?;
 
 		// Grpc stream works without the indexer.
-		// By default indexer is not started on Suzuka node.
+		// By default indexer is not started on Movement node.
 		// bootstrap indexer stream
 		// Commented because not needed. Done the external indexer.
 		// let _indexer_stream = bootstrap_indexer_stream(

@@ -1,0 +1,156 @@
+services:
+  setup:
+    environment:
+      MOVEMENT_SYNC: leader::follower-test-$MOVEMENT_SHARED_RANDOM_1<=>{maptos,maptos-storage,movement-da-db}/**
+      AWS_REGION: us-west-2
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+    volumes:
+      - ~/.aws/:/root/.aws:ro
+
+  allow-syncing-delay:
+    image: busybox
+    container_name: allow-syncing-delay
+    command: sh -c 'sleep 180'
+
+  setup-follower-1:
+    image: ghcr.io/movementlabsxyz/movement-full-node-setup:${CONTAINER_REV}
+    container_name: setup-follower-1
+    environment:
+      DOT_MOVEMENT_PATH: /.movement
+      CELESTIA_RPC_CONNECTION_HOSTNAME: m1-da-light-node-celestia-appd
+      CELESTIA_WEBSOCKET_CONNECTION_HOSTNAME: m1-da-light-node-celestia-bridge
+      M1_DA_LIGHT_NODE_CONNECTION_HOSTNAME: m1-da-light-node
+      MAPTOS_API_CONNECTION_HOSTNAME: movement-full-follower-1 # this is for the follower test
+      FAUCET_API_CONNECTION_HOSTNAME: movement-faucet-service
+      ETH_RPC_CONNECTION_HOSTNAME: setup
+      ETH_RPC_CONNECTION_PROTOCOL: http
+      ETH_RPC_CONNECTION_PORT: 8090
+      INDEXER_PROCESSOR_POSTGRES_CONNECTION_STRING: postgres://postgres:password@postgres:5432/postgres
+      AWS_REGION: us-west-2
+      MOVEMENT_SYNC: follower::follower-test-$MOVEMENT_SHARED_RANDOM_1<=>{maptos,maptos-storage,movement-da-db}/**
+      MAYBE_RUN_LOCAL: "false"
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+    volumes:
+      - ${DOT_MOVEMENT_PATH}-follower-1:/.movement
+      - ~/.aws/:/root/.aws:ro
+    healthcheck:
+      test: [ "CMD-SHELL", "ls" ]
+      retries: 10
+      interval: 10s
+      timeout: 5s
+    depends_on:
+      movement-full-node:
+        condition: service_healthy
+      allow-syncing-delay:
+        condition: service_completed_successfully
+
+  movement-full-follower-1:
+    image: ghcr.io/movementlabsxyz/movement-full-node:${CONTAINER_REV}
+    container_name: movement-full-follower-1
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+      - MOVEMENT_TIMING=info
+      - SUZUKA_TIMING_LOG=/.movement/movement-timing.log
+      - RUST_BACKTRACE=1
+    volumes:
+      - ${DOT_MOVEMENT_PATH}-follower-1:/.movement
+      - ~/.aws/:/root/.aws:ro
+    depends_on:
+      - m1-da-light-node
+      - movement-full-node
+      - setup-follower-1
+    ports:
+      - "31731:30731"
+      - "31734:30734"
+    healthcheck:
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 30731" ]
+      retries: 10
+      interval: 10s
+      timeout: 5s
+    restart: on-failure:5
+
+  setup-follower-2:
+    image: ghcr.io/movementlabsxyz/movement-full-node-setup:${CONTAINER_REV}
+    container_name: setup-follower-2
+    environment:
+      DOT_MOVEMENT_PATH: /.movement
+      CELESTIA_RPC_CONNECTION_HOSTNAME: m1-da-light-node-celestia-appd
+      CELESTIA_WEBSOCKET_CONNECTION_HOSTNAME: m1-da-light-node-celestia-bridge
+      M1_DA_LIGHT_NODE_CONNECTION_HOSTNAME: m1-da-light-node
+      MAPTOS_API_CONNECTION_HOSTNAME: movement-full-follower-2 # this is for the follower test
+      FAUCET_API_CONNECTION_HOSTNAME: movement-faucet-service
+      ETH_RPC_CONNECTION_HOSTNAME: setup
+      ETH_RPC_CONNECTION_PROTOCOL: http
+      ETH_RPC_CONNECTION_PORT: 8090
+      INDEXER_PROCESSOR_POSTGRES_CONNECTION_STRING: postgres://postgres:password@postgres:5432/postgres
+      AWS_REGION: us-west-2
+      MOVEMENT_SYNC: follower::follower-test-$MOVEMENT_SHARED_RANDOM_1<=>{maptos,maptos-storage,movement-da-db}/**
+      MAYBE_RUN_LOCAL: "false"
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+    volumes:
+      - ${DOT_MOVEMENT_PATH}-follower-2:/.movement
+      - ~/.aws/:/root/.aws:ro
+    healthcheck:
+      test: [ "CMD-SHELL", "ls" ]
+      retries: 10
+      interval: 10s
+      timeout: 5s
+    depends_on:
+      movement-full-node:
+        condition: service_healthy
+      allow-syncing-delay:
+        condition: service_completed_successfully
+
+  movement-full-follower-2:
+    image: ghcr.io/movementlabsxyz/movement-full-node:${CONTAINER_REV}
+    container_name: movement-full-follower-2
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+      - MOVEMENT_TIMING=info
+      - SUZUKA_TIMING_LOG=/.movement/movement-timing.log
+      - RUST_BACKTRACE=1
+    volumes:
+      - ${DOT_MOVEMENT_PATH}-follower-2:/.movement
+      - ~/.aws/:/root/.aws:ro
+    depends_on:
+      - m1-da-light-node
+      - movement-full-node
+      - setup-follower-2
+    ports:
+      - "32731:30731"
+      - "32734:30734"
+    healthcheck:
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 30731" ]
+      retries: 10
+      interval: 10s
+      timeout: 5s
+    restart: on-failure:5
+
+  movement-tests-e2e-followers-consistent:
+    image: ghcr.io/movementlabsxyz/movement-tests-e2e-followers-consistent:${CONTAINER_REV}
+    container_name: movement-tests-e2e-followers-consistent
+    entrypoint: /app/movement-tests-e2e-followers-consistent 2
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+      - ${DOT_MOVEMENT_PATH}-follower-1:/.movement-follower-1
+      - ${DOT_MOVEMENT_PATH}-follower-2:/.movement-follower-2
+    depends_on:
+      - movement-full-follower-1
+      - movement-full-follower-2
+
+  delete-syncing-bucket:
+    image: ghcr.io/movementlabsxyz/movement-util:${CONTAINER_REV}
+    container_name: movement-util
+    entrypoint: /app/movement-util syncing delete-reource
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+    depends_on:
+      movement-tests-e2e-followers-consistent:
+        condition: service_completed_successfully
