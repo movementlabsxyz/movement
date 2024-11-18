@@ -1,5 +1,6 @@
 use super::common::{
-	default_enable_pruning, default_maptos_chain_id, default_maptos_epoch_snapshot_prune_window,
+	default_enable_pruning, default_genesis_block_hash_hex, default_genesis_timestamp_microseconds,
+	default_maptos_chain_id, default_maptos_epoch_snapshot_prune_window,
 	default_maptos_ledger_prune_window, default_maptos_private_key, default_maptos_read_only,
 	default_maptos_rest_listen_hostname, default_maptos_rest_listen_port,
 	default_maptos_state_merkle_prune_window,
@@ -48,6 +49,14 @@ pub struct Config {
 
 	/// The path to the Aptos database
 	pub maptos_db_path: Option<PathBuf>,
+
+	/// The genesis timestamp in microseconds
+	#[serde(default = "default_genesis_timestamp_microseconds")]
+	pub genesis_timestamp_microseconds: u64,
+
+	/// The genesis block hash
+	#[serde(default = "default_genesis_block_hash_hex")]
+	pub genesis_block_hash_hex: String,
 }
 
 impl Default for Config {
@@ -62,6 +71,8 @@ impl Default for Config {
 			maptos_ledger_prune_window: default_maptos_ledger_prune_window(),
 			maptos_epoch_snapshot_prune_window: default_maptos_epoch_snapshot_prune_window(),
 			maptos_state_merkle_prune_window: default_maptos_state_merkle_prune_window(),
+			genesis_timestamp_microseconds: default_genesis_timestamp_microseconds(),
+			genesis_block_hash_hex: default_genesis_block_hash_hex(),
 			maptos_db_path: None,
 		}
 	}

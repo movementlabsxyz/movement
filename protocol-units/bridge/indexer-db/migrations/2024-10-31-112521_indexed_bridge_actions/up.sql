@@ -16,8 +16,8 @@ CREATE TABLE wait_and_complete_initiators (
 CREATE TABLE initiated_events (
     id SERIAL PRIMARY KEY,
     bridge_transfer_id VARCHAR(64) NOT NULL,
-    initiator_address VARCHAR(64) NOT NULL,
-    recipient_address VARCHAR(64) NOT NULL,
+    initiator VARCHAR(64) NOT NULL,
+    recipient VARCHAR(64) NOT NULL,
     hash_lock VARCHAR(64) NOT NULL,
     time_lock BIGINT NOT NULL,
     amount NUMERIC NOT NULL,
@@ -39,7 +39,7 @@ CREATE TABLE initiator_completed_events (
     bridge_transfer_id VARCHAR(64) NOT NULL
 );
 
-CREATE TABLE counter_part_completed_events (
+CREATE TABLE counter_party_completed_events (
     id SERIAL PRIMARY KEY,
     bridge_transfer_id VARCHAR(64) NOT NULL,
     pre_image VARCHAR(64) NOT NULL          -- Pre-image of the hash lock

@@ -90,8 +90,8 @@ async fn test_movement_client_counterparty_complete_transfer() -> Result<(), any
 
 	assert_eq!(details.bridge_transfer_id.0, transfer_id.0);
 	assert_eq!(details.hash_lock.0, hash_lock.0);
-	assert_eq!(&details.initiator_address.0, &initiator, "Initiator address does not match");
-	assert_eq!(details.recipient_address.0, MovementAddress(recipient));
+	assert_eq!(&details.initiator.0, &initiator, "Initiator address does not match");
+	assert_eq!(details.recipient.0, MovementAddress(recipient));
 	assert_eq!(details.amount.0, *amount);
 	assert_eq!(details.state, 2, "Bridge transfer is supposed to be completed but it's not.");
 
@@ -108,7 +108,7 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 	let test_result = async {
 		test_utils::fund_and_check_balance_framework(&mut mvt_client_harness, 100_000_000_000)
 			.await?;
-		
+
 		{
 			let res = BridgeContract::initiate_bridge_transfer(
 				&mut mvt_client_harness.movement_client,
@@ -118,31 +118,31 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 				Amount(args.amount),
 			)
 			.await?;
-		
+
 			tracing::info!("Initiate result: {:?}", res);
 		}
 
-	// Wait for the tx to be executed
-	tracing::info!("Wait for the Movement Initiated event.");
-	let (_, mvt_health_rx) = tokio::sync::mpsc::channel(10);
-	let mut mvt_monitoring = MovementMonitoring::build(&config.movement, mvt_health_rx).await.unwrap();
+		// Wait for the tx to be executed
+		tracing::info!("Wait for the Movement Initiated event.");
+		let (_, mvt_health_rx) = tokio::sync::mpsc::channel(10);
+		let mut mvt_monitoring =
+			MovementMonitoring::build(&config.movement, mvt_health_rx).await.unwrap();
 
-	// Use timeout to wait for the next event
-	let event_option = tokio::time::timeout(std::time::Duration::from_secs(30), mvt_monitoring.next())
-		.await
-		.expect("Timeout while waiting for the Movement Initiated event");
+		// Use timeout to wait for the next event
+		let event_option =
+			tokio::time::timeout(std::time::Duration::from_secs(30), mvt_monitoring.next())
+				.await
+				.expect("Timeout while waiting for the Movement Initiated event");
 
-	// Check if we received an event (Option) and handle the Result inside it
-	let bridge_transfer_id = match event_option {
-		Some(Ok(BridgeContractEvent::Initiated(detail))) => {
-		detail.bridge_transfer_id
-		},
-		Some(Err(e)) => panic!("Error in bridge contract event: {:?}", e),
-		None => panic!("No event received"),
-		_ => panic!("Not a an Initiated event: {:?}", event_option),
-	};
+		// Check if we received an event (Option) and handle the Result inside it
+		let bridge_transfer_id = match event_option {
+			Some(Ok(BridgeContractEvent::Initiated(detail))) => detail.bridge_transfer_id,
+			Some(Err(e)) => panic!("Error in bridge contract event: {:?}", e),
+			None => panic!("No event received"),
+			_ => panic!("Not a an Initiated event: {:?}", event_option),
+		};
 
-	tracing::info!("Received bridge_transfer_id: {:?}", bridge_transfer_id);
+		tracing::info!("Received bridge_transfer_id: {:?}", bridge_transfer_id);
 
 		let details = BridgeContract::get_bridge_transfer_details_initiator(
 			&mut mvt_client_harness.movement_client,
@@ -156,8 +156,8 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 
 		test_utils::assert_counterparty_bridge_transfer_details_framework(
 			&details,
-			details.initiator_address.to_string(),
-			details.recipient_address.to_vec(),
+			details.initiator.to_string(),
+			details.recipient.to_vec(),
 			details.amount.0,
 			details.hash_lock.0,
 			details.time_lock.0,
@@ -236,8 +236,8 @@ async fn test_movement_client_abort_transfer() -> Result<(), anyhow::Error> {
 
 	assert_eq!(details.bridge_transfer_id.0, args.bridge_transfer_id.0);
 	assert_eq!(details.hash_lock.0, args.hash_lock.0);
-	assert_eq!(&details.initiator_address.0, &args.initiator, "Initiator address does not match");
-	assert_eq!(details.recipient_address.0, args.recipient);
+	assert_eq!(&details.initiator.0, &args.initiator, "Initiator address does not match");
+	assert_eq!(details.recipient.0, args.recipient);
 	assert_eq!(details.amount.0, args.amount);
 	assert_eq!(details.state, 3, "Bridge transfer is supposed to be cancelled but it's not.");
 
@@ -261,25 +261,25 @@ async fn test_movement_client_initiator_complete_transfer() -> Result<(), anyhow
 			Amount(args.amount),
 		)
 		.await?;
-	
+
 		tracing::info!("Initiate result: {:?}", res);
 	}
 
 	// Wait for the tx to be executed
 	tracing::info!("Wait for the Movement Initiated event.");
 	let (_, mvt_health_rx) = tokio::sync::mpsc::channel(10);
-	let mut mvt_monitoring = MovementMonitoring::build(&config.movement, mvt_health_rx).await.unwrap();
+	let mut mvt_monitoring =
+		MovementMonitoring::build(&config.movement, mvt_health_rx).await.unwrap();
 
 	// Use timeout to wait for the next event
-	let event_option = tokio::time::timeout(std::time::Duration::from_secs(30), mvt_monitoring.next())
-		.await
-		.expect("Timeout while waiting for the Movement Initiated event");
+	let event_option =
+		tokio::time::timeout(std::time::Duration::from_secs(30), mvt_monitoring.next())
+			.await
+			.expect("Timeout while waiting for the Movement Initiated event");
 
 	// Check if we received an event (Option) and handle the Result inside it
 	let bridge_transfer_id = match event_option {
-		Some(Ok(BridgeContractEvent::Initiated(detail))) => {
-		detail.bridge_transfer_id
-		},
+		Some(Ok(BridgeContractEvent::Initiated(detail))) => detail.bridge_transfer_id,
 		Some(Err(e)) => panic!("Error in bridge contract event: {:?}", e),
 		None => panic!("No event received"),
 		_ => panic!("Not a an Initiated event: {:?}", event_option),
@@ -307,8 +307,8 @@ async fn test_movement_client_initiator_complete_transfer() -> Result<(), anyhow
 
 	test_utils::assert_counterparty_bridge_transfer_details_framework(
 		&details,
-		details.initiator_address.to_string(),
-		details.recipient_address.to_vec(),
+		details.initiator.to_string(),
+		details.recipient.to_vec(),
 		details.amount.0,
 		details.hash_lock.0,
 		details.time_lock.0,
@@ -328,33 +328,33 @@ async fn test_movement_client_refund_transfer() -> Result<(), anyhow::Error> {
 	test_utils::fund_and_check_balance_framework(&mut mvt_client_harness, 100_000_000_000).await?;
 
 	{
-	let res = BridgeContract::initiate_bridge_transfer(
-		&mut mvt_client_harness.movement_client,
-		BridgeAddress(MovementAddress(args.initiator.0)),
-		BridgeAddress(args.recipient.clone()),
-		HashLock(args.hash_lock.0),
-		Amount(args.amount),
-	)
-	.await?;
+		let res = BridgeContract::initiate_bridge_transfer(
+			&mut mvt_client_harness.movement_client,
+			BridgeAddress(MovementAddress(args.initiator.0)),
+			BridgeAddress(args.recipient.clone()),
+			HashLock(args.hash_lock.0),
+			Amount(args.amount),
+		)
+		.await?;
 
-	tracing::info!("Initiate result: {:?}", res);
+		tracing::info!("Initiate result: {:?}", res);
 	}
 
 	// Wait for the tx to be executed
 	tracing::info!("Wait for the Movement Initiated event.");
 	let (_, mvt_health_rx) = tokio::sync::mpsc::channel(10);
-	let mut mvt_monitoring = MovementMonitoring::build(&config.movement, mvt_health_rx).await.unwrap();
+	let mut mvt_monitoring =
+		MovementMonitoring::build(&config.movement, mvt_health_rx).await.unwrap();
 
 	// Use timeout to wait for the next event
-	let event_option = tokio::time::timeout(std::time::Duration::from_secs(120), mvt_monitoring.next())
-		.await
-		.expect("Timeout while waiting for the Movement Initiated event");
+	let event_option =
+		tokio::time::timeout(std::time::Duration::from_secs(120), mvt_monitoring.next())
+			.await
+			.expect("Timeout while waiting for the Movement Initiated event");
 
 	// Check if we received an event (Option) and handle the Result inside it
 	let bridge_transfer_id = match event_option {
-		Some(Ok(BridgeContractEvent::Initiated(detail))) => {
-		detail.bridge_transfer_id
-		},
+		Some(Ok(BridgeContractEvent::Initiated(detail))) => detail.bridge_transfer_id,
 		Some(Err(e)) => panic!("Error in bridge contract event: {:?}", e),
 		None => panic!("No event received"),
 		_ => panic!("Not a an Initiated event: {:?}", event_option),

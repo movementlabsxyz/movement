@@ -1,8 +1,38 @@
-use movement_types::application;
+use movement_types::{actor, application};
 use std::path::PathBuf;
 use syncador::backend::{archive, clear, glob, pipeline, s3, PullOperations, PushOperations};
 use tokio::time::interval;
 use tracing::{info, warn};
+
+pub trait SyncupOperations {
+	/// Syncs up the files in the glob to the target.
+	async fn syncup(
+		self,
+	) -> Result<impl std::future::Future<Output = Result<(), anyhow::Error>>, anyhow::Error>;
+
+	/// Removes the syncing resources.
+	async fn remove_syncup_resources(self) -> Result<(), anyhow::Error>;
+}
+
+pub trait Syncupable {
+	/// Returns whether the current actor is the leader.
+	fn try_leader(&self) -> Result<bool, anyhow::Error>;
+
+	/// Returns the application id.
+	fn try_application_id(&self) -> Result<application::Id, anyhow::Error>;
+
+	/// Returns the syncer id.
+	fn try_syncer_id(&self) -> Result<actor::Id, anyhow::Error>;
+
+	/// Returns the root directory.
+	fn try_root_dir(&self) -> Result<PathBuf, anyhow::Error>;
+
+	/// Returns the glob pattern.
+	fn try_glob(&self) -> Result<String, anyhow::Error>;
+
+	/// Returns the target.
+	fn try_target(&self) -> Result<Target, anyhow::Error>;
+}
 
 #[derive(Debug, Clone)]
 pub enum Target {
@@ -15,13 +45,17 @@ impl Target {
 		root_dir: PathBuf,
 		glob: &str,
 		application_id: application::Id,
+		syncer_id: actor::Id,
 	) -> Result<(pipeline::push::Pipeline, pipeline::pull::Pipeline), anyhow::Error> {
+		info!("Creating pipelines for target {:?}", self);
 		match self {
 			Target::S3(bucket) => {
-				let (s3_push, s3_pull) = s3::shared_bucket::create_random_with_application_id(
+				let (s3_push, s3_pull) = s3::shared_bucket::create_with_load_from_env(
 					bucket.clone(),
-					application_id,
 					root_dir.clone(),
+					s3::shared_bucket::metadata::Metadata::default()
+						.with_application_id(application_id)
+						.with_syncer_id(syncer_id),
 				)
 				.await?;
 
@@ -51,12 +85,15 @@ pub async fn syncup(
 	glob: &str,
 	target: Target,
 	application_id: application::Id,
+	syncer_id: actor::Id,
 ) -> Result<impl std::future::Future<Output = Result<(), anyhow::Error>>, anyhow::Error> {
 	info!("Running syncup with root {:?}, glob {}, and target {:?}", root_dir, glob, target);
 
 	// create the pipelines for the target
-	let (push_pipeline, pull_pipeline) =
-		target.create_pipelines(root_dir.clone(), glob, application_id).await?;
+	let (push_pipeline, pull_pipeline) = target
+		.create_pipelines(root_dir.clone(), glob, application_id, syncer_id)
+		.await?;
+	info!("Created pipelines");
 
 	// run the pull pipeline once
 	if !is_leader {
@@ -77,7 +114,7 @@ pub async fn syncup(
 	// Create the upsync task using tokio::time::interval
 	let upsync_task = async move {
 		let mut interval = interval(std::time::Duration::from_millis(
-			s3::shared_bucket::metadata::DEFAULT_SYNC_EPOCH_DURATION,
+			s3::shared_bucket::metadata::Metadata::DEFAULT_SYNC_EPOCH_DURATION,
 		));
 		loop {
 			info!("waiting for next push");
@@ -104,4 +141,37 @@ pub async fn syncup(
 	};
 
 	Ok(upsync_task)
+}
+
+pub async fn remove_syncup_resources(target: Target) -> Result<(), anyhow::Error> {
+	match target {
+		Target::S3(bucket) => {
+			s3::shared_bucket::destroy_with_load_from_env(bucket).await?;
+		}
+	}
+
+	Ok(())
+}
+
+impl<T> SyncupOperations for T
+where
+	T: Syncupable,
+{
+	async fn syncup(
+		self,
+	) -> Result<impl std::future::Future<Output = Result<(), anyhow::Error>>, anyhow::Error> {
+		let is_leader = self.try_leader()?;
+		let root_dir = self.try_root_dir()?;
+		let glob = self.try_glob()?;
+		let target = self.try_target()?;
+		let application_id = self.try_application_id()?;
+		let syncer_id = self.try_syncer_id()?;
+
+		syncup(is_leader, root_dir, &glob, target, application_id, syncer_id).await
+	}
+
+	async fn remove_syncup_resources(self) -> Result<(), anyhow::Error> {
+		let target = self.try_target()?;
+		remove_syncup_resources(target).await
+	}
 }

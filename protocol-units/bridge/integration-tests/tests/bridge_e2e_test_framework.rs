@@ -37,7 +37,7 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 	}
 
 	let recipient_privkey = mvt_client_harness.fund_account().await;
-	let recipient_address = MovementAddress(recipient_privkey.address());
+	let recipient = MovementAddress(recipient_privkey.address());
 
 	// initiate Eth transfer
 	tracing::info!("Call initiate_transfer on Eth");
@@ -48,7 +48,7 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 		.initiate_eth_bridge_transfer(
 			&config,
 			HarnessEthClient::get_initiator_private_key(&config),
-			recipient_address,
+			recipient,
 			hash_lock,
 			amount,
 		)
@@ -83,12 +83,13 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 
 	let (_, eth_health_rx) = tokio::sync::mpsc::channel(10);
 	let mut eth_monitoring = EthMonitoring::build(&config.eth, eth_health_rx).await.unwrap();
-	// Wait for InitialtorCompleted event
+
+	// Wait for InitiatorCompleted event
 	tracing::info!("Wait for InitiatorCompleted event.");
 	loop {
 		let event =
 			tokio::time::timeout(std::time::Duration::from_secs(30), eth_monitoring.next()).await?;
-		if let Some(Ok(BridgeContractEvent::InitialtorCompleted(_))) = event {
+		if let Some(Ok(BridgeContractEvent::InitiatorCompleted(_))) = event {
 			break;
 		}
 	}
@@ -115,18 +116,17 @@ async fn test_movement_event() -> Result<(), anyhow::Error> {
 
 	let args = MovementToEthCallArgs::default();
 
-
 	{
-	let res = BridgeContract::initiate_bridge_transfer(
-		&mut movement_client,
-		BridgeAddress(MovementAddress(args.initiator.0)),
-		BridgeAddress(args.recipient.clone()),
-		HashLock(args.hash_lock.0),
-		Amount(args.amount),
-	)
-	.await?;
+		let res = BridgeContract::initiate_bridge_transfer(
+			&mut movement_client,
+			BridgeAddress(MovementAddress(args.initiator.0)),
+			BridgeAddress(args.recipient.clone()),
+			HashLock(args.hash_lock.0),
+			Amount(args.amount),
+		)
+		.await?;
 
-	tracing::info!("Initiate result: {:?}", res);
+		tracing::info!("Initiate result: {:?}", res);
 	}
 
 	//Wait for the tx to be executed
@@ -313,7 +313,7 @@ async fn test_bridge_transfer_movement_eth_happy_path() -> Result<(), anyhow::Er
 	loop {
 		let event =
 			tokio::time::timeout(std::time::Duration::from_secs(30), mvt_monitoring.next()).await?;
-		if let Some(Ok(BridgeContractEvent::InitialtorCompleted(_))) = event {
+		if let Some(Ok(BridgeContractEvent::InitiatorCompleted(_))) = event {
 			break;
 		}
 	}

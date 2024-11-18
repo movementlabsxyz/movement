@@ -201,8 +201,8 @@ pub enum ConversionError {
 #[derive(Debug, PartialEq, Eq, Clone, Deserialize)]
 pub struct BridgeTransferDetails<A> {
 	pub bridge_transfer_id: BridgeTransferId,
-	pub initiator_address: BridgeAddress<A>,
-	pub recipient_address: BridgeAddress<Vec<u8>>,
+	pub initiator: BridgeAddress<A>,
+	pub recipient: BridgeAddress<Vec<u8>>,
 	pub hash_lock: HashLock,
 	pub time_lock: TimeLock,
 	pub amount: Amount,
@@ -212,8 +212,8 @@ pub struct BridgeTransferDetails<A> {
 #[derive(Debug, PartialEq, Eq, Clone, Deserialize)]
 pub struct BridgeTransferDetailsCounterparty<A> {
 	pub bridge_transfer_id: BridgeTransferId,
-	pub initiator_address: BridgeAddress<Vec<u8>>,
-	pub recipient_address: BridgeAddress<A>,
+	pub initiator: BridgeAddress<Vec<u8>>,
+	pub recipient: BridgeAddress<A>,
 	pub hash_lock: HashLock,
 	pub time_lock: TimeLock,
 	pub amount: Amount,

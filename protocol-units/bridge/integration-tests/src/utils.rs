@@ -22,14 +22,14 @@ pub fn assert_bridge_transfer_details(
 	expected_bridge_transfer_id: [u8; 32],
 	expected_hash_lock: [u8; 32],
 	expected_sender_address: AccountAddress,
-	expected_recipient_address: Vec<u8>,
+	expected_recipient: Vec<u8>,
 	expected_amount: u64,
 	expected_state: u8,
 ) {
 	assert_eq!(details.bridge_transfer_id.0, expected_bridge_transfer_id);
 	assert_eq!(details.hash_lock.0, expected_hash_lock);
-	assert_eq!(details.initiator_address.0 .0, expected_sender_address);
-	assert_eq!(details.recipient_address.0, expected_recipient_address);
+	assert_eq!(details.initiator.0 .0, expected_sender_address);
+	assert_eq!(details.recipient.0, expected_recipient);
 	assert_eq!(details.amount.0, expected_amount);
 	assert_eq!(details.state, expected_state, "Bridge transfer state mismatch.");
 }
@@ -37,13 +37,13 @@ pub fn assert_bridge_transfer_details(
 pub fn assert_counterparty_bridge_transfer_details_framework(
 	details: &BridgeTransferDetails<MovementAddress>,
 	expected_sender_address: String,
-	expected_recipient_address: Vec<u8>,
+	expected_recipient: Vec<u8>,
 	expected_amount: u64,
 	expected_hash_lock: [u8; 32],
 	expected_time_lock: u64,
 ) {
-	assert_eq!(details.initiator_address.to_string(), expected_sender_address);
-	assert_eq!(details.recipient_address, BridgeAddress(expected_recipient_address));
+	assert_eq!(details.initiator.to_string(), expected_sender_address);
+	assert_eq!(details.recipient, BridgeAddress(expected_recipient));
 	assert_eq!(details.amount, Amount(expected_amount));
 	assert_eq!(details.hash_lock.0, expected_hash_lock);
 	assert_eq!(details.time_lock.0, expected_time_lock);
@@ -130,3 +130,82 @@ pub async fn fund_and_check_balance_framework(
 
 	Ok(())
 }
+// <<<<<<< HEAD
+// =======
+
+// pub async fn initiate_bridge_transfer_helper(
+// 	movement_client: &mut MovementClientFramework,
+// 	initiator: AccountAddress,
+// 	recipient: Vec<u8>,
+// 	hash_lock: [u8; 32],
+// 	amount: u64,
+// 	timelock_modify: bool,
+// ) -> Result<(), BridgeContractError> {
+// 	// Publish for test
+
+// 	if timelock_modify {
+// 		// Set the timelock to 1 second for testing
+// 		movement_client.initiator_set_timelock(1).await.expect("Failed to set timelock");
+// 	}
+
+// 	// Mint MovETH to the initiator's address
+// 	let mint_amount = 200 * 100_000_000; // Assuming 8 decimals for MovETH
+
+// 	let mint_args = vec![
+// 		movement_utils::serialize_address_initiator(&movement_client.signer().address())?, // Mint to initiator's address
+// 		movement_utils::serialize_u64_initiator(&mint_amount)?, // Amount to mint (200 MovETH)
+// 	];
+
+// 	let mint_payload = movement_utils::make_aptos_payload(
+// 		movement_client.native_address, // Address where moveth module is published
+// 		"moveth",
+// 		"mint",
+// 		Vec::new(),
+// 		mint_args,
+// 	);
+
+// 	// Send transaction to mint MovETH
+// 	movement_utils::send_and_confirm_aptos_transaction(
+// 		&movement_client.rest_client(),
+// 		movement_client.signer(),
+// 		mint_payload,
+// 	)
+// 	.await
+// 	.map_err(|_| BridgeContractError::MintError)?;
+
+// 	debug!("Successfully minted 200 MovETH to the initiator");
+
+// 	// Initiate the bridge transfer
+// 	movement_client
+// 		.initiate_bridge_transfer(
+// 			BridgeAddress(MovementAddress(initiator)),
+// 			BridgeAddress(recipient),
+// 			HashLock(MovementHash(hash_lock).0),
+// 			Amount(amount),
+// 		)
+// 		.await
+// 		.expect("Failed to initiate bridge transfer");
+
+// 	Ok(())
+// }
+
+// pub async fn initiate_bridge_transfer_helper_framework(
+// 	movement_client: &mut MovementClientFramework,
+// 	initiator: AccountAddress,
+// 	recipient: Vec<u8>,
+// 	hash_lock: [u8; 32],
+// 	amount: u64,
+// ) -> Result<(), BridgeContractError> {
+// 	movement_client
+// 		.initiate_bridge_transfer(
+// 			BridgeAddress(MovementAddress(initiator)),
+// 			BridgeAddress(recipient),
+// 			HashLock(MovementHash(hash_lock).0),
+// 			Amount(amount),
+// 		)
+// 		.await
+// 		.expect("Failed to initiate bridge transfer");
+
+// 	Ok(())
+// }
+// >>>>>>> main

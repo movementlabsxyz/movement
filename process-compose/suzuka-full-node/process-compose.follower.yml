@@ -34,8 +34,6 @@ processes:
   suzuka-full-node:
     command: |
       suzuka-full-node
-    env:
-      RUST_LOG: info,aptos-indexer=debug
     depends_on:
       m1-da-light-node:
         condition: process_healthy

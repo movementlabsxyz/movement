@@ -95,12 +95,12 @@ impl MvtPullingState {
 					self.counterpart_lock = sequence_number + 1
 				}
 			}
-			BridgeContractEvent::InitialtorCompleted(_) => {
+			BridgeContractEvent::InitiatorCompleted(_) => {
 				if self.initiator_complete <= sequence_number {
 					self.initiator_complete = sequence_number + 1
 				}
 			}
-			BridgeContractEvent::CounterPartCompleted(_, _) => {
+			BridgeContractEvent::CounterPartyCompleted(_, _) => {
 				if self.counterpart_complete <= sequence_number {
 					self.counterpart_complete = sequence_number + 1
 				}
@@ -125,8 +125,8 @@ impl MvtPullingState {
 			BridgeContractError::EventDeserializingFail(_, event_type) => match event_type {
 				BridgeContractEventType::Initiated => self.initiator_init += 1,
 				BridgeContractEventType::Locked => self.counterpart_lock += 1,
-				BridgeContractEventType::InitialtorCompleted => self.initiator_complete += 1,
-				BridgeContractEventType::CounterPartCompleted => self.counterpart_complete += 1,
+				BridgeContractEventType::InitiatorCompleted => self.initiator_complete += 1,
+				BridgeContractEventType::CounterPartyCompleted => self.counterpart_complete += 1,
 				BridgeContractEventType::Cancelled => self.counterpart_cancel += 1,
 				BridgeContractEventType::Refunded => self.initiator_refund += 1,
 			},
@@ -250,8 +250,8 @@ impl Stream for MovementMonitoring {
 #[derive(Debug, PartialEq, Eq, Clone, Deserialize)]
 struct CounterpartyCompletedDetails {
 	pub bridge_transfer_id: BridgeTransferId,
-	pub initiator_address: BridgeAddress<Vec<u8>>,
-	pub recipient_address: BridgeAddress<MovementAddress>,
+	pub initiator: BridgeAddress<Vec<u8>>,
+	pub recipient: BridgeAddress<MovementAddress>,
 	pub hash_lock: HashLock,
 	pub secret: HashLockPreImage,
 	pub amount: Amount,
@@ -304,7 +304,7 @@ async fn pool_initiator_contract(
 	.into_iter()
 	.map(|e| {
 		let data: BridgeCompletEventData = serde_json::from_str(&e.data.to_string())?;
-		let event = BridgeContractEvent::InitialtorCompleted(
+		let event = BridgeContractEvent::InitiatorCompleted(
 			data.bridge_transfer_id.try_into().map_err(|err| {
 				BridgeContractError::ConversionFailed(format!(
 				"MVT initiatorbridge_transfer_completed_events bridge_transfer_id can't be reconstructed:{:?}",
@@ -318,7 +318,7 @@ async fn pool_initiator_contract(
 	.map_err(|e| {
 		BridgeContractError::EventDeserializingFail(
 			format!("MVT bridge_transfer_completed_events de-serialization error:{}", e),
-			BridgeContractEventType::InitialtorCompleted,
+			BridgeContractEventType::InitiatorCompleted,
 		)
 	})?;
 
@@ -407,7 +407,7 @@ async fn pool_counterparty_contract(
 	.into_iter()
 	.map(|e| {
 		let data: BridgeCompletEventData = serde_json::from_str(&e.data.to_string())?;
-		let event = BridgeContractEvent::CounterPartCompleted(
+		let event = BridgeContractEvent::CounterPartyCompleted(
 			data.bridge_transfer_id.try_into().map_err(|err| {
 				BridgeContractError::ConversionFailed(format!(
 				"MVT counterparty bridge_transfer_completed_events bridge_transfer_id can't be reconstructed:{:?}",
@@ -430,7 +430,7 @@ async fn pool_counterparty_contract(
 				"MVT counterpart bridge_transfer_completed_events de-serialization error:{}",
 				e
 			),
-			BridgeContractEventType::CounterPartCompleted,
+			BridgeContractEventType::CounterPartyCompleted,
 		)
 	})?;
 
@@ -526,11 +526,11 @@ impl TryFrom<BridgeInitEventData> for BridgeTransferDetails<MovementAddress> {
 				))
 				},
 			)?),
-			initiator_address: BridgeAddress(
+			initiator: BridgeAddress(
 				MovementAddress::try_from(data.initiator)
 					.map_err(|err| BridgeContractError::OnChainError(err.to_string()))?,
 			),
-			recipient_address: BridgeAddress(data.recipient),
+			recipient: BridgeAddress(data.recipient),
 			hash_lock: HashLock(data.hash_lock.try_into().map_err(|e| {
 				BridgeContractError::ConversionFailed(format!(
 					"MVT BridgeTransferDetails data onchain hash_lock conversion error error:{:?}",

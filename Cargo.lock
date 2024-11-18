@@ -420,7 +420,7 @@ dependencies = [
  "serde_json",
  "tokio",
  "tokio-stream",
- "tower",
+ "tower 0.4.13",
  "tracing",
 ]
 
@@ -465,7 +465,7 @@ dependencies = [
  "serde_json",
  "tokio",
  "tokio-stream",
- "tower",
+ "tower 0.4.13",
  "tracing",
  "url",
 ]
@@ -664,7 +664,7 @@ dependencies = [
  "serde_json",
  "thiserror",
  "tokio",
- "tower",
+ "tower 0.4.13",
  "tracing",
  "url",
 ]
@@ -678,7 +678,7 @@ dependencies = [
  "alloy-transport",
  "reqwest 0.12.9",
  "serde_json",
- "tower",
+ "tower 0.4.13",
  "tracing",
  "url",
 ]
@@ -710,7 +710,7 @@ dependencies = [
  "alloy-transport",
  "futures",
  "http 1.1.0",
- "rustls 0.23.16",
+ "rustls 0.23.17",
  "serde_json",
  "tokio",
  "tokio-tungstenite 0.23.1",
@@ -1675,7 +1675,7 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tonic 0.11.0",
- "tonic-reflection",
+ "tonic-reflection 0.11.0",
 ]
 
 [[package]]
@@ -2379,7 +2379,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tonic 0.11.0",
- "tonic-reflection",
+ "tonic-reflection 0.11.0",
 ]
 
 [[package]]
@@ -3549,7 +3549,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3b829e4e32b91e643de6eafe82b1d90675f5874230191a4ffbc1b336dec4d6bf"
 dependencies = [
  "async-trait",
- "axum-core",
+ "axum-core 0.3.4",
  "bitflags 1.3.2",
  "bytes 1.8.0",
  "futures-util",
@@ -3565,7 +3565,34 @@ dependencies = [
  "rustversion",
  "serde",
  "sync_wrapper 0.1.2",
- "tower",
+ "tower 0.4.13",
+ "tower-layer",
+ "tower-service",
+]
+
+[[package]]
+name = "axum"
+version = "0.7.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "edca88bc138befd0323b20752846e6587272d3b03b0343c8ea28a6f819e6e71f"
+dependencies = [
+ "async-trait",
+ "axum-core 0.4.5",
+ "bytes 1.8.0",
+ "futures-util",
+ "http 1.1.0",
+ "http-body 1.0.1",
+ "http-body-util",
+ "itoa",
+ "matchit",
+ "memchr",
+ "mime",
+ "percent-encoding",
+ "pin-project-lite",
+ "rustversion",
+ "serde",
+ "sync_wrapper 1.0.1",
+ "tower 0.5.1",
  "tower-layer",
  "tower-service",
 ]
@@ -3583,6 +3610,26 @@ dependencies = [
  "http-body 0.4.6",
  "mime",
  "rustversion",
+ "tower-layer",
+ "tower-service",
+]
+
+[[package]]
+name = "axum-core"
+version = "0.4.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "09f2bd6146b97ae3359fa0cc6d6b376d9539582c7b4220f041a33ec24c226199"
+dependencies = [
+ "async-trait",
+ "bytes 1.8.0",
+ "futures-util",
+ "http 1.1.0",
+ "http-body 1.0.1",
+ "http-body-util",
+ "mime",
+ "pin-project-lite",
+ "rustversion",
+ "sync_wrapper 1.0.1",
  "tower-layer",
  "tower-service",
 ]
@@ -4097,10 +4144,10 @@ name = "bridge-grpc"
 version = "0.0.2"
 dependencies = [
  "buildtime",
- "prost 0.12.6",
- "tonic 0.11.0",
+ "prost 0.13.3",
+ "tonic 0.12.3",
  "tonic-build",
- "tonic-reflection",
+ "tonic-reflection 0.12.3",
 ]
 
 [[package]]
@@ -4110,6 +4157,7 @@ dependencies = [
  "anyhow",
  "bigdecimal",
  "bridge-util",
+ "chrono",
  "diesel",
  "diesel_migrations",
  "hex",
@@ -4147,7 +4195,7 @@ dependencies = [
  "serde_json",
  "tokio",
  "tokio-stream",
- "tonic 0.11.0",
+ "tonic 0.12.3",
  "tracing",
  "tracing-subscriber 0.3.18",
  "url",
@@ -4195,7 +4243,7 @@ dependencies = [
  "tiny-keccak",
  "tokio",
  "tokio-stream",
- "tonic 0.11.0",
+ "tonic 0.12.3",
  "tracing",
  "tracing-subscriber 0.3.18",
  "url",
@@ -4493,7 +4541,7 @@ source = "git+https://github.com/movementlabsxyz/lumina?rev=2d16e6733949f6bf7084
 dependencies = [
  "celestia-tendermint-proto",
  "prost 0.13.3",
- "prost-build",
+ "prost-build 0.12.6",
  "prost-types 0.13.3",
  "protox",
  "serde",
@@ -4516,9 +4564,9 @@ dependencies = [
 
 [[package]]
 name = "celestia-tendermint"
-version = "0.32.3"
+version = "0.32.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0da8dd966aaa817ce6e320bc4037a29094354f5d2cee19758498de2f98642c64"
+checksum = "ce8c92a01145f79a0f3ac7c44a43a9b5ee58e8a4c716b56d98833a3848db1afd"
 dependencies = [
  "bytes 1.8.0",
  "celestia-tendermint-proto",
@@ -4529,8 +4577,8 @@ dependencies = [
  "futures",
  "num-traits",
  "once_cell",
- "prost 0.13.3",
- "prost-types 0.13.3",
+ "prost 0.12.6",
+ "prost-types 0.12.6",
  "serde",
  "serde_bytes",
  "serde_json",
@@ -6888,7 +6936,7 @@ dependencies = [
  "tokio",
  "tokio-retry",
  "tonic 0.9.2",
- "tower",
+ "tower 0.4.13",
  "tracing",
 ]
 
@@ -7436,6 +7484,7 @@ dependencies = [
  "http 1.1.0",
  "http-body 1.0.1",
  "httparse",
+ "httpdate",
  "itoa",
  "pin-project-lite",
  "smallvec",
@@ -7470,7 +7519,7 @@ dependencies = [
  "hyper 1.5.0",
  "hyper-util",
  "log",
- "rustls 0.23.16",
+ "rustls 0.23.17",
  "rustls-pki-types",
  "tokio",
  "tokio-rustls 0.26.0",
@@ -7487,6 +7536,19 @@ dependencies = [
  "pin-project-lite",
  "tokio",
  "tokio-io-timeout",
+]
+
+[[package]]
+name = "hyper-timeout"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2b90d566bffbce6a75bd8b09a05aa8c2cb1fabb6cb348f8840c9e4c90a0d83b0"
+dependencies = [
+ "hyper 1.5.0",
+ "hyper-util",
+ "pin-project-lite",
+ "tokio",
+ "tower-service",
 ]
 
 [[package]]
@@ -7773,7 +7835,7 @@ version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba6a270039626615617f3f36d15fc827041df3b78c439da2cadfa47455a77f2f"
 dependencies = [
- "parity-scale-codec 3.6.12",
+ "parity-scale-codec 3.7.0",
 ]
 
 [[package]]
@@ -8122,7 +8184,7 @@ dependencies = [
  "http 1.1.0",
  "jsonrpsee-core",
  "pin-project 1.1.7",
- "rustls 0.23.16",
+ "rustls 0.23.17",
  "rustls-pki-types",
  "rustls-platform-verifier",
  "soketto",
@@ -8172,13 +8234,13 @@ dependencies = [
  "hyper-util",
  "jsonrpsee-core",
  "jsonrpsee-types 0.24.7",
- "rustls 0.23.16",
+ "rustls 0.23.17",
  "rustls-platform-verifier",
  "serde",
  "serde_json",
  "thiserror",
  "tokio",
- "tower",
+ "tower 0.4.13",
  "tracing",
  "url",
 ]
@@ -8396,9 +8458,9 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.162"
+version = "0.2.164"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "18d287de67fe55fd7e1581fe933d965a5a9477b38e949cfa9f8574ef01506398"
+checksum = "433bfe06b8c75da9b2e3fbea6e5329ff87748f0b144ef75306e674c3f6f7c13f"
 
 [[package]]
 name = "libgit2-sys"
@@ -8714,14 +8776,14 @@ dependencies = [
  "movement-algs",
  "movement-tracing",
  "movement-types",
- "prost 0.12.6",
+ "prost 0.13.3",
  "serde",
  "serde_json",
  "tempfile",
  "tokio",
  "tokio-stream",
- "tonic 0.11.0",
- "tonic-reflection",
+ "tonic 0.12.3",
+ "tonic-reflection 0.12.3",
  "tracing",
  "zstd 0.13.2",
 ]
@@ -8737,7 +8799,7 @@ dependencies = [
  "serde_json",
  "tokio",
  "tokio-stream",
- "tonic 0.11.0",
+ "tonic 0.12.3",
 ]
 
 [[package]]
@@ -8745,8 +8807,8 @@ name = "m1-da-light-node-grpc"
 version = "0.0.2"
 dependencies = [
  "buildtime",
- "prost 0.12.6",
- "tonic 0.11.0",
+ "prost 0.13.3",
+ "tonic 0.12.3",
  "tonic-build",
 ]
 
@@ -8813,7 +8875,7 @@ dependencies = [
  "k256",
  "m1-da-light-node-grpc",
  "memseq-util",
- "prost 0.12.6",
+ "prost 0.13.3",
  "rand 0.8.5",
  "serde",
  "serde_derive",
@@ -8822,7 +8884,7 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "toml 0.8.19",
- "tonic 0.11.0",
+ "tonic 0.12.3",
  "tracing",
  "tracing-subscriber 0.3.18",
  "zstd 0.13.2",
@@ -8843,13 +8905,13 @@ dependencies = [
  "m1-da-light-node-grpc",
  "m1-da-light-node-setup",
  "m1-da-light-node-util",
- "prost 0.12.6",
+ "prost 0.13.3",
  "rand 0.7.3",
  "serde_json",
  "thiserror",
  "tokio",
  "tokio-stream",
- "tonic 0.11.0",
+ "tonic 0.12.3",
  "tracing",
 ]
 
@@ -8969,6 +9031,7 @@ dependencies = [
  "clap 4.5.21",
  "derive_more 0.99.18",
  "dirs",
+ "dot-movement",
  "fail",
  "futures",
  "hex",
@@ -8987,7 +9050,7 @@ dependencies = [
  "tempfile",
  "thiserror",
  "tokio",
- "tonic 0.11.0",
+ "tonic 0.12.3",
  "tracing",
  "tracing-test",
 ]
@@ -10623,15 +10686,16 @@ dependencies = [
 
 [[package]]
 name = "parity-scale-codec"
-version = "3.6.12"
+version = "3.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "306800abfa29c7f16596b5970a588435e3d5b3149683d00c12b699cc19f895ee"
+checksum = "8be4817d39f3272f69c59fe05d0535ae6456c2dc2fa1ba02910296c7e0a5c590"
 dependencies = [
  "arrayvec 0.7.6",
  "bitvec 1.0.1",
  "byte-slice-cast",
  "impl-trait-for-tuples",
- "parity-scale-codec-derive 3.6.12",
+ "parity-scale-codec-derive 3.7.0",
+ "rustversion",
  "serde",
 ]
 
@@ -10649,14 +10713,14 @@ dependencies = [
 
 [[package]]
 name = "parity-scale-codec-derive"
-version = "3.6.12"
+version = "3.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d830939c76d294956402033aee57a6da7b438f2294eb94864c37b0569053a42c"
+checksum = "8781a75c6205af67215f382092b6e0a4ff3734798523e69073d4bcd294ec767b"
 dependencies = [
  "proc-macro-crate 3.2.0",
  "proc-macro2",
  "quote",
- "syn 1.0.109",
+ "syn 2.0.87",
 ]
 
 [[package]]
@@ -11652,6 +11716,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "prost-build"
+version = "0.13.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0c1318b19085f08681016926435853bbf7858f9c082d0999b80550ff5d9abe15"
+dependencies = [
+ "bytes 1.8.0",
+ "heck 0.5.0",
+ "itertools 0.13.0",
+ "log",
+ "multimap",
+ "once_cell",
+ "petgraph 0.6.5",
+ "prettyplease",
+ "prost 0.13.3",
+ "prost-types 0.13.3",
+ "regex",
+ "syn 2.0.87",
+ "tempfile",
+]
+
+[[package]]
 name = "prost-derive"
 version = "0.11.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -12430,7 +12515,7 @@ dependencies = [
  "fastrlp",
  "num-bigint 0.4.6",
  "num-traits",
- "parity-scale-codec 3.6.12",
+ "parity-scale-codec 3.7.0",
  "primitive-types 0.12.2",
  "proptest",
  "rand 0.8.5",
@@ -12568,9 +12653,9 @@ dependencies = [
 
 [[package]]
 name = "rustls"
-version = "0.23.16"
+version = "0.23.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eee87ff5d9b36712a58574e12e9f0ea80f915a5b0ac518d322b24a465617925e"
+checksum = "7f1a745511c54ba6d4465e8d5dfbd81b45791756de28d4981af70d6dca128f1e"
 dependencies = [
  "log",
  "once_cell",
@@ -12641,7 +12726,7 @@ dependencies = [
  "jni",
  "log",
  "once_cell",
- "rustls 0.23.16",
+ "rustls 0.23.17",
  "rustls-native-certs 0.7.3",
  "rustls-platform-verifier-android",
  "rustls-webpki 0.102.8",
@@ -12993,9 +13078,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.132"
+version = "1.0.133"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d726bfaff4b320266d395898905d0eba0345aae23b54aee3a737e260fd46db03"
+checksum = "c7fceb2473b9166b2294ef05efcb65a3db80803f0b03ef86a5fc88a2b85ee377"
 dependencies = [
  "indexmap 2.6.0",
  "itoa",
@@ -13719,7 +13804,7 @@ dependencies = [
  "suzuka-config",
  "thiserror",
  "tokio",
- "tonic 0.11.0",
+ "tonic 0.12.3",
  "tracing",
  "tracing-subscriber 0.3.18",
  "url",
@@ -13730,13 +13815,16 @@ name = "suzuka-config"
 version = "0.0.2"
 dependencies = [
  "anyhow",
+ "dot-movement",
  "godfig",
  "m1-da-light-node-util",
  "maptos-execution-util",
  "mcr-settlement-client",
  "mcr-settlement-config",
+ "movement-types",
  "serde",
  "serde_derive",
+ "syncup",
  "tokio",
  "toml 0.8.19",
  "tracing",
@@ -13769,6 +13857,7 @@ dependencies = [
  "futures",
  "godfig",
  "hex",
+ "hyper 1.5.0",
  "m1-da-light-node-client",
  "m1-da-light-node-util",
  "maptos-dof-execution",
@@ -13777,13 +13866,14 @@ dependencies = [
  "movement-rest",
  "movement-tracing",
  "movement-types",
+ "prost 0.13.3",
  "rocksdb",
  "serde_json",
  "sha2 0.10.8",
  "suzuka-config",
  "tokio",
  "tokio-stream",
- "tonic 0.11.0",
+ "tonic 0.12.3",
  "tracing",
  "tracing-subscriber 0.3.18",
  "zstd 0.13.2",
@@ -13839,6 +13929,38 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.18",
+]
+
+[[package]]
+name = "suzuka-util"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "bcs 0.1.4",
+ "clap 4.5.21",
+ "console-subscriber",
+ "dot-movement",
+ "futures",
+ "godfig",
+ "m1-da-light-node-client",
+ "m1-da-light-node-util",
+ "maptos-dof-execution",
+ "mcr-settlement-client",
+ "mcr-settlement-manager",
+ "movement-rest",
+ "movement-tracing",
+ "movement-types",
+ "rocksdb",
+ "serde_json",
+ "sha2 0.10.8",
+ "suzuka-config",
+ "syncup",
+ "tokio",
+ "tokio-stream",
+ "tonic 0.12.3",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "zstd 0.13.2",
 ]
 
 [[package]]
@@ -14379,7 +14501,7 @@ version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c7bc40d0e5a97695bb96e27995cd3a08538541b0a846f65bba7a359f36700d4"
 dependencies = [
- "rustls 0.23.16",
+ "rustls 0.23.17",
  "rustls-pki-types",
  "tokio",
 ]
@@ -14416,7 +14538,7 @@ checksum = "c6989540ced10490aaf14e6bad2e3d33728a2813310a0c71d1574304c49631cd"
 dependencies = [
  "futures-util",
  "log",
- "rustls 0.23.16",
+ "rustls 0.23.17",
  "rustls-pki-types",
  "tokio",
  "tokio-rustls 0.26.0",
@@ -14511,7 +14633,7 @@ checksum = "3082666a3a6433f7f511c7192923fa1fe07c69332d3c6a2e6bb040b569199d5a"
 dependencies = [
  "async-stream",
  "async-trait",
- "axum",
+ "axum 0.6.20",
  "base64 0.21.7",
  "bytes 1.8.0",
  "flate2",
@@ -14521,7 +14643,7 @@ dependencies = [
  "http 0.2.12",
  "http-body 0.4.6",
  "hyper 0.14.31",
- "hyper-timeout",
+ "hyper-timeout 0.4.1",
  "percent-encoding",
  "pin-project 1.1.7",
  "prost 0.11.9",
@@ -14529,7 +14651,7 @@ dependencies = [
  "tokio",
  "tokio-rustls 0.24.1",
  "tokio-stream",
- "tower",
+ "tower 0.4.13",
  "tower-layer",
  "tower-service",
  "tracing",
@@ -14544,7 +14666,7 @@ checksum = "76c4eb7a4e9ef9d4763600161f12f5070b92a578e1b634db88a6887844c91a13"
 dependencies = [
  "async-stream",
  "async-trait",
- "axum",
+ "axum 0.6.20",
  "base64 0.21.7",
  "bytes 1.8.0",
  "flate2",
@@ -14552,7 +14674,7 @@ dependencies = [
  "http 0.2.12",
  "http-body 0.4.6",
  "hyper 0.14.31",
- "hyper-timeout",
+ "hyper-timeout 0.4.1",
  "percent-encoding",
  "pin-project 1.1.7",
  "prost 0.12.6",
@@ -14562,7 +14684,7 @@ dependencies = [
  "tokio",
  "tokio-rustls 0.25.0",
  "tokio-stream",
- "tower",
+ "tower 0.4.13",
  "tower-layer",
  "tower-service",
  "tracing",
@@ -14570,14 +14692,45 @@ dependencies = [
 ]
 
 [[package]]
-name = "tonic-build"
-version = "0.11.0"
+name = "tonic"
+version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be4ef6dd70a610078cb4e338a0f79d06bc759ff1b22d2120c2ff02ae264ba9c2"
+checksum = "877c5b330756d856ffcc4553ab34a5684481ade925ecc54bcd1bf02b1d0d4d52"
+dependencies = [
+ "async-stream",
+ "async-trait",
+ "axum 0.7.9",
+ "base64 0.22.1",
+ "bytes 1.8.0",
+ "h2 0.4.6",
+ "http 1.1.0",
+ "http-body 1.0.1",
+ "http-body-util",
+ "hyper 1.5.0",
+ "hyper-timeout 0.5.2",
+ "hyper-util",
+ "percent-encoding",
+ "pin-project 1.1.7",
+ "prost 0.13.3",
+ "socket2 0.5.7",
+ "tokio",
+ "tokio-stream",
+ "tower 0.4.13",
+ "tower-layer",
+ "tower-service",
+ "tracing",
+]
+
+[[package]]
+name = "tonic-build"
+version = "0.12.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9557ce109ea773b399c9b9e5dca39294110b74f1f342cb347a80d1fce8c26a11"
 dependencies = [
  "prettyplease",
  "proc-macro2",
- "prost-build",
+ "prost-build 0.13.3",
+ "prost-types 0.13.3",
  "quote",
  "syn 2.0.87",
 ]
@@ -14593,6 +14746,19 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tonic 0.11.0",
+]
+
+[[package]]
+name = "tonic-reflection"
+version = "0.12.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "878d81f52e7fcfd80026b7fdb6a9b578b3c3653ba987f87f0dce4b64043cba27"
+dependencies = [
+ "prost 0.13.3",
+ "prost-types 0.13.3",
+ "tokio",
+ "tokio-stream",
+ "tonic 0.12.3",
 ]
 
 [[package]]
@@ -14613,6 +14779,20 @@ dependencies = [
  "tower-layer",
  "tower-service",
  "tracing",
+]
+
+[[package]]
+name = "tower"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2873938d487c3cfb9aed7546dc9f2711d867c9f90c46b889989a2cb84eba6b4f"
+dependencies = [
+ "futures-core",
+ "futures-util",
+ "pin-project-lite",
+ "sync_wrapper 0.1.2",
+ "tower-layer",
+ "tower-service",
 ]
 
 [[package]]
@@ -14816,7 +14996,7 @@ dependencies = [
  "httparse",
  "log",
  "rand 0.8.5",
- "rustls 0.23.16",
+ "rustls 0.23.17",
  "rustls-pki-types",
  "sha1",
  "thiserror",
