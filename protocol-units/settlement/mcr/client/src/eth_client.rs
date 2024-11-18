@@ -28,6 +28,7 @@ use std::fs;
 use std::path::Path;
 use thiserror::Error;
 use tokio_stream::StreamExt;
+use tracing::info;
 
 #[derive(Error, Debug)]
 pub enum McrEthConnectorError {
@@ -71,7 +72,7 @@ sol!(
 	"abis/MOVEToken.json"
 );
 
-pub struct Client<P> {
+pub struct McrSettlementClient<P> {
 	run_commitment_admin_mode: bool,
 	rpc_provider: P,
 	ws_provider: RootProvider<PubSubFrontend>,
@@ -83,7 +84,7 @@ pub struct Client<P> {
 }
 
 impl
-	Client<
+	McrSettlementClient<
 		FillProvider<
 			JoinFill<
 				JoinFill<
@@ -99,7 +100,16 @@ impl
 	>
 {
 	pub async fn build_with_config(config: &Config) -> Result<Self, anyhow::Error> {
-		let signer_private_key = config.settle.signer_private_key.clone();
+		let signer_private_key = match &config.deploy {
+			Some(deployment_config) => {
+				info!("Using deployment config for signer private key");
+				deployment_config.mcr_deployment_account_private_key.clone()
+			}
+			None => {
+				info!("Using settlement config for signer private key");
+				config.settle.signer_private_key.clone()
+			}
+		};
 		let signer = signer_private_key.parse::<PrivateKeySigner>()?;
 		let signer_address = signer.address();
 		let contract_address = config.settle.mcr_contract_address.parse()?;
@@ -112,7 +122,7 @@ impl
 			.await
 			.context("Failed to create the RPC provider for the MCR settlement client")?;
 
-		let client = Client::build_with_provider(
+		let client = McrSettlementClient::build_with_provider(
 			config.settle.settlement_admin_mode,
 			rpc_provider,
 			ws_url,
@@ -126,7 +136,7 @@ impl
 	}
 }
 
-impl<P> Client<P> {
+impl<P> McrSettlementClient<P> {
 	async fn build_with_provider<S>(
 		run_commitment_admin_mode: bool,
 		rpc_provider: P,
@@ -149,7 +159,7 @@ impl<P> Client<P> {
 			Box::new(SendTransactionErrorRule::<InsufficentFunds>::new());
 		let send_transaction_error_rules = vec![rule1, rule2];
 
-		Ok(Client {
+		Ok(McrSettlementClient {
 			run_commitment_admin_mode,
 			rpc_provider,
 			ws_provider,
@@ -163,7 +173,7 @@ impl<P> Client<P> {
 }
 
 #[async_trait::async_trait]
-impl<P> McrSettlementClientOperations for Client<P>
+impl<P> McrSettlementClientOperations for McrSettlementClient<P>
 where
 	P: Provider + Clone,
 {

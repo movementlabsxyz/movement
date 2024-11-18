@@ -2,13 +2,14 @@ use movement_types::block::BlockCommitment;
 use tokio_stream::Stream;
 pub mod mock;
 
-#[cfg(feature = "mock")]
-pub use mock::*;
+// FIXME: mock exports
+// #[cfg(feature = "mock")]
+// pub use mock::*;
 
 pub mod eth_client;
 
 #[cfg(feature = "eth")]
-pub use eth_client::Client as McrEthSettlementClient;
+pub use eth_client::McrSettlementClient;
 
 pub mod send_eth_transaction;
 

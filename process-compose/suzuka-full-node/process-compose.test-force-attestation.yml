@@ -1,0 +1,49 @@
+version: "3"
+
+environment:
+
+processes:
+
+  
+  suzuka-full-node:
+    command: |
+      # catching the timeout error code is little tricky
+      # with this overlay, ultimately, the force attestation will throw if this doesn't work
+      timeout 3m suzuka-full-node run || exit 0
+    depends_on:
+      m1-da-light-node:
+        condition: process_healthy
+    readiness_probe:
+      initial_delay_seconds: 10
+      exec:
+        command: curl http://0.0.0.0:30731
+
+  suzuka-faucet: 
+    command : |
+      # catching the timeout error code is little tricky
+      # with this overlay, ultimately, the force attestation will throw if this doesn't work
+      timeout 2m suzuka-faucet-service run-simple || exit 0
+    depends_on:
+      suzuka-full-node:
+        condition: process_healthy
+    readiness_probe:
+      initial_delay_seconds: 10
+      failure_threshold: 12
+      exec:
+        command: curl http://0.0.0.0:30732
+
+  suzuka-client-tests:
+    command: |
+      cargo test -p suzuka-client test_example_
+    depends_on:
+      suzuka-full-node:
+        condition: process_healthy
+      suzuka-faucet:
+        condition: process_healthy
+
+  force-commitment: 
+    command: |
+      suzuka-full-node admin force-commitment
+    depends_on:
+      suzuka-full-node:
+        condition: process_completed_successfully

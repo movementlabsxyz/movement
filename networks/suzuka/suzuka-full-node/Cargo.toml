@@ -16,7 +16,7 @@ maptos-dof-execution = { workspace = true }
 prost = { workspace = true }
 m1-da-light-node-client = { workspace = true }
 m1-da-light-node-util = { workspace = true }
-mcr-settlement-client = { workspace = true, features = ["mock"] }
+mcr-settlement-client = { workspace = true, features = ["eth"] }
 mcr-settlement-manager = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
