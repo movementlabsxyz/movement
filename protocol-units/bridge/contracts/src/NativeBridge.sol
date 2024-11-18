@@ -103,7 +103,7 @@ contract NativeBridge is AccessControlUpgradeable, INativeBridge {
             bridgeTransferId == keccak256(abi.encodePacked(originator, recipient, amount, nonce)),
             InvalidBridgeTransferId()
         );
-        require(incomingBridgeTransfers[bridgeTransferId].amount == 0);
+        require(incomingBridgeTransfers[bridgeTransferId].amount == 0, CompletedBridgeTransferId());
         incomingBridgeTransfers[bridgeTransferId] = IncomingBridgeTransfer(originator, recipient, amount, nonce);
 
         if (!moveToken.transfer(recipient, amount)) revert MOVETransferFailed();

@@ -5,8 +5,10 @@ pragma abicoder v2;
 import {Test, console} from "forge-std/Test.sol";
 import {NativeBridge, AccessControlUpgradeable, INativeBridge} from "../src/NativeBridge.sol";
 import {IERC20Errors} from "openzeppelin-contracts/contracts/interfaces/draft-IERC6093.sol";
+import {IAccessControl} from "openzeppelin-contracts/contracts/access/IAccessControl.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+
 import {MockMOVEToken} from "../src/MockMOVEToken.sol";
 
 contract NativeBridgeTest is Test {
@@ -39,10 +41,12 @@ contract NativeBridgeTest is Test {
 
     function testInitiateBridgeFuzz(address _originator, bytes32 _recipient, uint256 _amount) public {
         excludeSender(deployer);
+        vm.assume(_originator != address(0));
+        vm.assume(_originator != deployer);
+
         _amount = bound(_amount, 1, 10000000000 * 10 ** 8);
         moveToken.transfer(_originator, _amount);
         vm.startPrank(_originator);
-
         // require approval
         vm.expectRevert(
             abi.encodeWithSelector(IERC20Errors.ERC20InsufficientAllowance.selector, address(nativeBridge), 0, _amount)
@@ -68,6 +72,9 @@ contract NativeBridgeTest is Test {
 
     function testCompleteBridgeFuzz(bytes32 _originator, address _recipient, uint256 _amount, uint256 _nonce) public {
         excludeSender(deployer);
+        vm.assume(_recipient != address(0));
+        vm.assume(relayer != address(0));
+
         _amount = bound(_amount, 1, 10000000000 * 10 ** 8);
         // nonce cannot be uint256 max because we are testing a +1 addition case to the nonce
         _nonce = bound(_nonce, 1, type(uint256).max - 1);
@@ -76,8 +83,11 @@ contract NativeBridgeTest is Test {
 
         moveToken.transfer(address(nativeBridge), _amount);
 
-        vm.startPrank(relayer);
+        console.log("Testing unathourized relayer");
+        vm.expectRevert(abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, address(this), keccak256("RELAYER_ROLE")));
+        nativeBridge.completeBridge(bridgeTransferId, _originator, _recipient, _amount, _nonce);
 
+        vm.startPrank(relayer);
         console.log("Testing with wrong originator");
         vm.expectRevert(INativeBridge.InvalidBridgeTransferId.selector);
         nativeBridge.completeBridge(
@@ -108,6 +118,47 @@ contract NativeBridgeTest is Test {
         assertEq(recipient_, _recipient);
         assertEq(amount_, _amount);
         assertEq(nonce_, _nonce);
+        vm.stopPrank();
+    }
+
+    function testBatchCompleteFuzz(uint256 length) external {
+        length = bound(length, 1, 100);
+        bytes32[] memory bridgeTransferIds = new bytes32[](length);
+        bytes32[] memory originators = new bytes32[](length);
+        address[] memory recipients = new address[](length);
+        uint256[] memory amounts = new uint256[](length);
+        uint256[] memory nonces = new uint256[](length);
+
+        
+
+        uint256 fundContract;
+        for (uint256 i; i < length; i++) {
+            originators[i] = keccak256(abi.encodePacked(i));
+            recipients[i] = address(uint160(i + 1));
+            amounts[i] = i + 1;
+            nonces[i] = i;
+            bridgeTransferIds[i] = keccak256(abi.encodePacked(originators[i], recipients[i], amounts[i], nonces[i]));
+            fundContract += amounts[i];
+        }
+
+        console.log("native bridge address:", address(nativeBridge));
+        moveToken.transfer(address(nativeBridge), fundContract);
+        vm.startPrank(relayer);
+
+        nativeBridge.batchCompleteBridge(bridgeTransferIds, originators, recipients, amounts, nonces);
+
+        for (uint256 i; i < length; i++) {
+            (bytes32 originator, address recipient_, uint256 amount, uint256 nonce) =
+                nativeBridge.incomingBridgeTransfers(bridgeTransferIds[i]);
+
+            assertEq(originator, originators[i]);
+            assertEq(recipient_, recipients[i]);
+            assertEq(amount, amounts[i]);
+            assertEq(nonce, nonces[i]);
+        }
+
+        vm.expectRevert(INativeBridge.CompletedBridgeTransferId.selector);
+        nativeBridge.batchCompleteBridge(bridgeTransferIds, originators, recipients, amounts, nonces);
         vm.stopPrank();
     }
 }
