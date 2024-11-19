@@ -1,6 +1,5 @@
 use crate::actions::process_action;
-use aptos_types::indexer;
-use bridge_indexer_db::client::Client;
+use bridge_indexer_db::client::Client as IndexerClient;
 use bridge_util::{
 	actions::{ActionExecError, TransferAction, TransferActionType},
 	chains::bridge_contracts::{BridgeContract, BridgeContractEvent, BridgeContractMonitoring},
@@ -53,7 +52,7 @@ pub async fn run_bridge<
 	client_two: impl BridgeContract<A2> + 'static,
 	mut stream_two: impl BridgeContractMonitoring<Address = A2>,
 	mut healthcheck_request_rx: mpsc::Receiver<oneshot::Sender<String>>,
-	indexer_db_client: Option<Client>,
+	indexer_db_client: Option<IndexerClient>,
 	healthcheck_tx_one: mpsc::Sender<oneshot::Sender<bool>>,
 	healthcheck_tx_two: mpsc::Sender<oneshot::Sender<bool>>,
 ) -> Result<(), anyhow::Error>
@@ -184,7 +183,7 @@ where
 				match event_res_two {
 					Ok(event_two) => {
 						let event : TransferEvent<A2> = (event_two, ChainId::TWO).into();
-						tracing::info!("Receive event from chain TWO id:{}", event.contract_event.bridge_transfer_id());
+						tracing::info!("Receive event from chain TWO :{}", event.contract_event);
 						match state_runtime.process_event(event) {
 							Ok(action) => {
 								//Execute action
@@ -275,11 +274,11 @@ async fn check_monitoring_loop_heath(
 
 struct Runtime {
 	swap_state_map: HashMap<BridgeTransferId, TransferState>,
-	indexer_db_client: Option<Client>,
+	indexer_db_client: Option<IndexerClient>,
 }
 
 impl Runtime {
-	pub fn new(indexer_db_client: Option<Client>) -> Self {
+	pub fn new(indexer_db_client: Option<IndexerClient>) -> Self {
 		Runtime { swap_state_map: HashMap::new(), indexer_db_client }
 	}
 
@@ -295,11 +294,11 @@ impl Runtime {
 			Some(ref mut client) => {
 				let event = event.contract_event;
 
-				client.insert_bridge_contract_event(event.clone()).map_err(|_| {
-					tracing::warn!("Fail to index event");
-					InvalidEventError::BadEvent
+				client.insert_bridge_contract_event(event.clone()).map_err(|err| {
+					tracing::warn!("Fail to index event :{err}");
+					InvalidEventError::IndexingFailed(err.to_string())
 				})?;
-				tracing::info!("Index event:{event:?}");
+				tracing::info!("index_event(success):{event:?}");
 				Ok(())
 			}
 			None => {
@@ -316,9 +315,9 @@ impl Runtime {
 		match self.indexer_db_client {
 			Some(ref mut client) => {
 				let action = action.kind;
-				client.insert_transfer_action(action.clone()).map_err(|_| {
+				client.insert_transfer_action(action.clone()).map_err(|err| {
 					tracing::warn!("Fail to index action");
-					InvalidEventError::BadEvent
+					InvalidEventError::BadEvent(err.to_string())
 				})?;
 				tracing::info!("Index action:{action:?}");
 				Ok(())
@@ -337,8 +336,10 @@ impl Runtime {
 	where
 		A: Into<Vec<u8>> + std::clone::Clone + std::fmt::Debug,
 	{
+		tracing::info!("Event received: {:?}", event);
 		self.validate_state(&event)?;
 		let indexer_event = event.clone();
+		self.index_event(indexer_event)?;
 		let event_transfer_id = event.contract_event.bridge_transfer_id();
 		let state_opt = self.swap_state_map.remove(&event_transfer_id);
 		//create swap state if need
@@ -347,6 +348,7 @@ impl Runtime {
 				TransferState::transition_from_initiated(event.chain, event_transfer_id, detail);
 			action.chain = state.init_chain.other();
 			self.swap_state_map.insert(state.transfer_id, state);
+			self.index_transfer_action(action.clone())?;
 			return Ok(action);
 		} else {
 			//tested before in validate_state() state can be unwrap
@@ -361,13 +363,13 @@ impl Runtime {
 				state = new_state;
 				(action_kind, state.init_chain)
 			}
-			BridgeContractEvent::CounterPartCompleted(_, preimage) => {
+			BridgeContractEvent::CounterPartyCompleted(_, preimage) => {
 				let (new_state, action_kind) =
 					state.transition_from_counterpart_completed(event_transfer_id, preimage);
 				state = new_state;
 				(action_kind, state.init_chain)
 			}
-			BridgeContractEvent::InitialtorCompleted(_) => {
+			BridgeContractEvent::InitiatorCompleted(_) => {
 				let (new_state, action_kind) =
 					state.transition_from_initiator_completed(event_transfer_id);
 				state = new_state;
@@ -388,9 +390,6 @@ impl Runtime {
 			}
 		};
 
-		//index event
-		self.index_event(indexer_event)?;
-
 		let action =
 			TransferAction { chain: chain_id, transfer_id: state.transfer_id, kind: action_kind };
 
@@ -404,9 +403,24 @@ impl Runtime {
 		Ok(action)
 	}
 
-	fn validate_state<A>(&mut self, event: &TransferEvent<A>) -> Result<(), InvalidEventError> {
+	fn validate_state<A: std::fmt::Debug>(
+		&mut self,
+		event: &TransferEvent<A>,
+	) -> Result<(), InvalidEventError> {
 		let event_transfer_id = event.contract_event.bridge_transfer_id();
+		tracing::info!("Validating event with transfer ID: {:?}", event_transfer_id);
 		let swap_state_opt = self.swap_state_map.get(&event_transfer_id);
+
+		// Log the current state if it exists in the swap state map
+		if let Some(state) = swap_state_opt {
+			tracing::info!(
+				"Found existing state for transfer ID {:?}: {:?}",
+				event_transfer_id,
+				state.state
+			);
+		} else {
+			tracing::info!("No existing state found for transfer ID {:?}", event_transfer_id);
+		}
 		//validate the associated swap_state.
 		swap_state_opt
 			.as_ref()
@@ -427,7 +441,7 @@ impl Runtime {
 	fn process_action_exec_error(&mut self, action_err: ActionExecError) -> Option<TransferAction> {
 		// Manage Tx execution error
 		let (action, err) = action_err.inner();
-		tracing::warn!("Client execution error for action:{action:?} err:{err:?}");
+		tracing::warn!("Client execution error for action:{action} err:{err}");
 		// retry 5 time an action in error then abort.
 		match self.swap_state_map.get_mut(&action.transfer_id) {
 			Some(state) => {

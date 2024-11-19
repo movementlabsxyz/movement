@@ -435,12 +435,12 @@ pub async fn fund_recipient(recipient: &BridgeAddress<Vec<u8>>) -> Result<(), Br
 	let faucet_client = FaucetClient::new(faucet_url, rest_url);
 
 	// Convert recipient to AccountAddress
-	let recipient_address: [u8; 32] = recipient
+	let recipient: [u8; 32] = recipient
 		.0
 		.clone()
 		.try_into()
 		.map_err(|_| BridgeContractError::SerializationError)?;
-	let account_address = AccountAddress::new(recipient_address);
+	let account_address = AccountAddress::new(recipient);
 
 	// Execute the funding transaction
 	faucet_client

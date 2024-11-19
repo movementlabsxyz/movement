@@ -178,7 +178,7 @@ impl From<[u8; 20]> for EthAddress {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct CompletedDetails<A> {
 	pub bridge_transfer_id: BridgeTransferId,
-	pub recipient_address: BridgeAddress<A>,
+	pub recipient: BridgeAddress<A>,
 	pub hash_lock: HashLock,
 	pub secret: HashLockPreImage,
 	pub amount: Amount,
@@ -194,7 +194,7 @@ where
 	) -> Self {
 		CompletedDetails {
 			bridge_transfer_id: bridge_transfer_details.bridge_transfer_id,
-			recipient_address: BridgeAddress(A::from(bridge_transfer_details.recipient_address.0)),
+			recipient: BridgeAddress(A::from(bridge_transfer_details.recipient.0)),
 			hash_lock: bridge_transfer_details.hash_lock,
 			secret,
 			amount: bridge_transfer_details.amount,
@@ -204,7 +204,7 @@ where
 	pub fn from_lock_details(lock_details: LockDetails<A>, secret: HashLockPreImage) -> Self {
 		CompletedDetails {
 			bridge_transfer_id: lock_details.bridge_transfer_id,
-			recipient_address: lock_details.recipient,
+			recipient: lock_details.recipient,
 			hash_lock: lock_details.hash_lock,
 			secret,
 			amount: lock_details.amount,
