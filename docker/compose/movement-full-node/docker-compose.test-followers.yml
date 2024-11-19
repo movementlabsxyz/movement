@@ -18,9 +18,9 @@ services:
     container_name: setup-follower-1
     environment:
       DOT_MOVEMENT_PATH: /.movement
-      CELESTIA_RPC_CONNECTION_HOSTNAME: m1-da-light-node-celestia-appd
-      CELESTIA_WEBSOCKET_CONNECTION_HOSTNAME: m1-da-light-node-celestia-bridge
-      M1_DA_LIGHT_NODE_CONNECTION_HOSTNAME: m1-da-light-node
+      CELESTIA_RPC_CONNECTION_HOSTNAME: movement-celestia-appd
+      CELESTIA_WEBSOCKET_CONNECTION_HOSTNAME: movement-celestia-bridge
+      MOVEMENT_DA_LIGHT_NODE_CONNECTION_HOSTNAME: movement-celestia-da-light-node
       MAPTOS_API_CONNECTION_HOSTNAME: movement-full-follower-1 # this is for the follower test
       FAUCET_API_CONNECTION_HOSTNAME: movement-faucet-service
       ETH_RPC_CONNECTION_HOSTNAME: setup
@@ -58,7 +58,7 @@ services:
       - ${DOT_MOVEMENT_PATH}-follower-1:/.movement
       - ~/.aws/:/root/.aws:ro
     depends_on:
-      - m1-da-light-node
+      - movement-celestia-da-light-node
       - movement-full-node
       - setup-follower-1
     ports:
@@ -76,9 +76,9 @@ services:
     container_name: setup-follower-2
     environment:
       DOT_MOVEMENT_PATH: /.movement
-      CELESTIA_RPC_CONNECTION_HOSTNAME: m1-da-light-node-celestia-appd
-      CELESTIA_WEBSOCKET_CONNECTION_HOSTNAME: m1-da-light-node-celestia-bridge
-      M1_DA_LIGHT_NODE_CONNECTION_HOSTNAME: m1-da-light-node
+      CELESTIA_RPC_CONNECTION_HOSTNAME: movement-celestia-appd
+      CELESTIA_WEBSOCKET_CONNECTION_HOSTNAME: movement-celestia-bridge
+      MOVEMENT_DA_LIGHT_NODE_CONNECTION_HOSTNAME: movement-celestia-da-light-node
       MAPTOS_API_CONNECTION_HOSTNAME: movement-full-follower-2 # this is for the follower test
       FAUCET_API_CONNECTION_HOSTNAME: movement-faucet-service
       ETH_RPC_CONNECTION_HOSTNAME: setup
@@ -116,7 +116,7 @@ services:
       - ${DOT_MOVEMENT_PATH}-follower-2:/.movement
       - ~/.aws/:/root/.aws:ro
     depends_on:
-      - m1-da-light-node
+      - movement-celestia-da-light-node
       - movement-full-node
       - setup-follower-2
     ports:

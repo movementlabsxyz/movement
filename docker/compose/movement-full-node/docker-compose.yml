@@ -10,7 +10,6 @@ services:
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement
 
-
   celestia-light-node:
     image: busybox
     container_name: celestia-light-node
@@ -40,13 +39,13 @@ services:
       celestia-light-node:
         condition: service_healthy
 
-  m1-da-light-node:
-    image: ghcr.io/movementlabsxyz/m1-da-light-node:${CONTAINER_REV}
-    container_name: m1-da-light-node
+  movement-celestia-da-light-node:
+    image: ghcr.io/movementlabsxyz/movement-celestia-da-light-node:${CONTAINER_REV}
+    container_name: movement-celestia-da-light-node
     environment:
       - DOT_MOVEMENT_PATH=/.movement
       - MOVEMENT_TIMING=info
-      - M1_DA_LIGHT_NODE_TIMING_LOG=/.movement/m1-da-light-node-timing.log
+      - MOVEMENT_DA_LIGHT_NODE_TIMING_LOG=/.movement/movement-celestia-da-light-node-timing.log
       - RUST_BACKTRACE=1
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement
@@ -73,7 +72,7 @@ services:
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement
     depends_on:
-      - m1-da-light-node
+      - movement-celestia-da-light-node
     ports:
       - "30731:30731"
       - "30734:30734"
@@ -107,4 +106,5 @@ services:
 
 volumes:
   dot-movement:
+
 

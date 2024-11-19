@@ -10,9 +10,9 @@
     movement_sync: "follower::mtnet-l-sync-bucket-sync<=>{maptos,maptos-storage,movement-da-db}/**"
     chain_id: "250"
 
-    m1_da_light_node_connection_protocol: "https"
-    m1_da_light_node_connection_hostname: "m1-da-light-node.testnet.bardock.movementlabs.xyz"
-    m1_da_light_node_connection_port: "443"
+    movement_da_light_node_connection_protocol: "https"
+    movement_da_light_node_connection_hostname: "movement-celestia-da-light-node.testnet.bardock.movementlabs.xyz"
+    movement_da_light_node_connection_port: "443"
 
     aws_region: "us-west-1"
     rev: "{{ movement_container_version }}"

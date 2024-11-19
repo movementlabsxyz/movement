@@ -34,18 +34,18 @@ Unless otherwise specified assume all commands below are run after entering a ni
 
 ## Running Natively (Nix required)
 
-### `m1-da-light-node`
+### `movement-celestia-da-light-node`
 
 - **Features**:
-    - `build`: Build the `m1-da-light-node` binaries.
-    - `setup`: Run setup for new `m1-da-light-node` network with single node.
+    - `build`: Build the `movement-celestia-da-light-node` binaries.
+    - `setup`: Run setup for new `movement-celestia-da-light-node` network with single node.
     - `local`: Run a local Celestia Data Availability service. (Default.)
     - `arabica`: Run an Arabica Celestia Data Availability service. (Overrides local.)
-    - `test`: Run the test suite for the `m1-da-light-node`. (Can be combined with `local` or `arabica`. Exits on completion by default.)
+    - `test`: Run the test suite for the `movement-celestia-da-light-node`. (Can be combined with `local` or `arabica`. Exits on completion by default.)
 
 ```bash
 # example test with local  Celestia Data Availability service
-just m1-da-light-node native build.setup.test.local
+just movement-celestia-da-light-node native build.setup.test.local
 ```
 
 ### `movement-full-node`

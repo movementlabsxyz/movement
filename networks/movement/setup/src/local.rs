@@ -13,7 +13,7 @@ impl Local {
 		Self { mcr_settlement_strategy: Default::default() }
 	}
 
-	async fn run_m1_da_light_node_setup(
+	async fn run_da_light_node_setup(
 		&self,
 		dot_movement: DotMovement,
 		mut config: movement_config::Config,
@@ -21,15 +21,16 @@ impl Local {
 		(movement_config::Config, tokio::task::JoinHandle<Result<String, anyhow::Error>>),
 		anyhow::Error,
 	> {
-		// Run the m1_da_light_node_setup
-		let m1_da_light_node_config = config.m1_da_light_node.clone();
+		let da_light_node_config = config.celestia_da_light_node.clone();
 
-		// Run the m1_da_light_node_setup
-		let new_m1_da_light_node_config =
-			m1_da_light_node_setup::setup(dot_movement.clone(), m1_da_light_node_config).await?;
+		let new_da_light_node_config = movement_celestia_da_light_node_setup::setup(
+			dot_movement.clone(),
+			da_light_node_config,
+		)
+		.await?;
 
-		// Update the config with the new m1_da_light_node_config
-		config.m1_da_light_node = new_m1_da_light_node_config;
+		// Update the config with the new da_light_node_config
+		config.celestia_da_light_node = new_da_light_node_config;
 
 		tracing::info!("Running mcr_settlement_setup");
 		let mcr_settlement_config: mcr_settlement_config::Config = config.mcr.clone();
@@ -82,9 +83,9 @@ impl MovementFullNodeSetupOperations for Local {
 		(movement_config::Config, tokio::task::JoinHandle<Result<String, anyhow::Error>>),
 		anyhow::Error,
 	> {
-		// Run the m1_da_light_node_setup
+		// Run the DA light node setup
 		let (config, join_handle) =
-			self.run_m1_da_light_node_setup(dot_movement.clone(), config).await?;
+			self.run_da_light_node_setup(dot_movement.clone(), config).await?;
 
 		// run the maptos execution config setup
 		let config = self.setup_maptos_execution_config(dot_movement.clone(), config).await?;

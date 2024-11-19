@@ -11,9 +11,9 @@ Environment="CONTAINER_REV={{ rev }}"
 Environment="MAPTOS_CHAIN_ID={{ chain_id }}"
 Environment="MOVEMENT_SYNC={{ movement_sync }}"
 
-Environment="M1_DA_LIGHT_NODE_CONNECTION_PROTOCOL={{ m1_da_light_node_connection_protocol }}"
-Environment="M1_DA_LIGHT_NODE_CONNECTION_HOSTNAME={{ m1_da_light_node_connection_hostname }}"
-Environment="M1_DA_LIGHT_NODE_CONNECTION_PORT={{ m1_da_light_node_connection_port }}"
+Environment="MOVEMENT_DA_LIGHT_NODE_CONNECTION_PROTOCOL={{ movement_da_light_node_connection_protocol }}"
+Environment="MOVEMENT_DA_LIGHT_NODE_CONNECTION_HOSTNAME={{ movement_da_light_node_connection_hostname }}"
+Environment="MOVEMENT_DA_LIGHT_NODE_CONNECTION_PORT={{ movement_da_light_node_connection_port }}"
 
 Environment="AWS_REGION={{ aws_region }}"
 ExecStart=/usr/bin/docker compose --env-file .env -f /home/{{ user }}/movement/docker/compose/movement-full-node/docker-compose.yml -f /home/{{ user }}/movement/docker/compose/movement-full-node/docker-compose.follower.yml up --force-recreate --remove-orphans

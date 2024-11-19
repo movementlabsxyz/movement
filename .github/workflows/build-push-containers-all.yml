@@ -12,7 +12,7 @@ on:
 
 jobs:
 
-  m1-da-light-node-build:
+  movement-celestia-da-light-node-build:
     if: github.event.label.name == 'cicd:movement-containers' ||  github.ref == 'refs/heads/main'
     permissions:
       contents: read
@@ -45,13 +45,13 @@ jobs:
 
     - name: Build and Push Docker image movement
       run: |
-        ./scripts/movement/build-push-image m1-da-light-node
+        ./scripts/movement/build-push-image movement-celestia-da-light-node
 
-  m1-da-light-node-manifest:
+  movement-celestia-da-light-node-manifest:
     permissions:
       contents: read
       packages: write
-    needs: m1-da-light-node-build
+    needs: movement-celestia-da-light-node-build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -75,9 +75,9 @@ jobs:
 
       - name: Build and Push Docker image movement
         run: |
-          ./scripts/movement/manifest m1-da-light-node
+          ./scripts/movement/manifest movement-celestia-da-light-node
 
-  m1-da-light-node-celestia-appd-build:
+  movement-celestia-appd-build:
     if: github.event.label.name == 'cicd:movement-containers' ||  github.ref == 'refs/heads/main'
     permissions:
       contents: read
@@ -110,13 +110,13 @@ jobs:
 
     - name: Build and Push Docker image movement
       run: |
-        ./scripts/movement/build-push-image m1-da-light-node-celestia-appd
+        ./scripts/movement/build-push-image movement-celestia-appd
 
-  m1-da-light-node-celestia-appd-manifest:
+  movement-celestia-appd-manifest:
     permissions:
       contents: read
       packages: write
-    needs: m1-da-light-node-celestia-appd-build
+    needs: movement-celestia-appd-build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -140,9 +140,9 @@ jobs:
 
       - name: Build and Push Docker image movement
         run: |
-          ./scripts/movement/manifest m1-da-light-node-celestia-appd
+          ./scripts/movement/manifest movement-celestia-appd
 
-  m1-da-light-node-celestia-bridge-build:
+  movement-celestia-bridge-build:
     if: github.event.label.name == 'cicd:movement-containers' ||  github.ref == 'refs/heads/main'
     permissions:
       contents: read
@@ -175,13 +175,13 @@ jobs:
 
     - name: Build and Push Docker image movement
       run: |
-        ./scripts/movement/build-push-image m1-da-light-node-celestia-bridge
+        ./scripts/movement/build-push-image movement-celestia-bridge
 
-  m1-da-light-node-celestia-bridge-manifest:
+  movement-celestia-bridge-manifest:
     permissions:
       contents: read
       packages: write
-    needs: m1-da-light-node-celestia-bridge-build
+    needs: movement-celestia-bridge-build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -205,7 +205,7 @@ jobs:
 
       - name: Build and Push Docker image movement
         run: |
-          ./scripts/movement/manifest m1-da-light-node-celestia-bridge
+          ./scripts/movement/manifest movement-celestia-bridge
 
   movement-full-node-setup-build:
     if: github.event.label.name == 'cicd:movement-containers' ||  github.ref == 'refs/heads/main'
@@ -733,9 +733,9 @@ jobs:
     if: github.event.label.name == 'cicd:movement-containers' ||  github.ref == 'refs/heads/main'
     runs-on: buildjet-8vcpu-ubuntu-2204
     needs: 
-      - m1-da-light-node-manifest
-      - m1-da-light-node-celestia-appd-manifest
-      - m1-da-light-node-celestia-bridge-manifest
+      - movement-celestia-da-light-node-manifest
+      - movement-celestia-appd-manifest
+      - movement-celestia-bridge-manifest
       - movement-full-node-setup-manifest
       - wait-for-celestia-light-node-manifest
       - movement-full-node-manifest

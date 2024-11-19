@@ -2,15 +2,15 @@ version: "3"
 
 processes:
 
-  m1-da-light-node:
+  movement-celestia-da-light-node:
     command: |
-      samply record $(which m1-da-light-node)
+      samply record $(which movement-celestia-da-light-node)
 
   movement-full-node:
     command: |
       samply record $(which movement-full-node)
     depends_on:
-      m1-da-light-node:
+      movement-celestia-da-light-node:
         condition: process_healthy
       postgres:
         condition: process_healthy

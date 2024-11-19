@@ -4,10 +4,10 @@ services:
     container_name: setup
     environment:
       DOT_MOVEMENT_PATH: /.movement
-      # needs to have a connection to the m1-da-light-node
-      M1_DA_LIGHT_NODE_CONNECTION_PROTOCOL: ${M1_DA_LIGHT_NODE_CONNECTION_PROTOCOL:?M1_DA_LIGHT_NODE_CONNECTION_PROTOCOL is not set}
-      M1_DA_LIGHT_NODE_CONNECTION_HOSTNAME: ${M1_DA_LIGHT_NODE_CONNECTION_HOSTNAME:?M1_DA_LIGHT_NODE_CONNECTION_HOSTNAME is not set}
-      M1_DA_LIGHT_NODE_CONNECTION_PORT: ${M1_DA_LIGHT_NODE_CONNECTION_PORT:?M1_DA_LIGHT_NODE_CONNECTION_PORT is not set}
+      # needs to have a connection to the movement-celestia-da-light-node
+      MOVEMENT_DA_LIGHT_NODE_CONNECTION_PROTOCOL: ${MOVEMENT_DA_LIGHT_NODE_CONNECTION_PROTOCOL:?MOVEMENT_DA_LIGHT_NODE_CONNECTION_PROTOCOL is not set}
+      MOVEMENT_DA_LIGHT_NODE_CONNECTION_HOSTNAME: ${MOVEMENT_DA_LIGHT_NODE_CONNECTION_HOSTNAME:?MOVEMENT_DA_LIGHT_NODE_CONNECTION_HOSTNAME is not set}
+      MOVEMENT_DA_LIGHT_NODE_CONNECTION_PORT: ${MOVEMENT_DA_LIGHT_NODE_CONNECTION_PORT:?MOVEMENT_DA_LIGHT_NODE_CONNECTION_PORT is not set}
       INDEXER_PROCESSOR_POSTGRES_CONNECTION_STRING: postgres://postgres:password@postgres:5432/postgres
       AWS_REGION: ${AWS_REGION:?AWS_REGION is not set}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
@@ -57,10 +57,10 @@ services:
       celestia-light-node:
         condition: service_healthy
 
-  # turn off m1-da-light-node
-  m1-da-light-node:
+  # turn off movement-celestia-da-light-node
+  movement-celestia-da-light-node:
     image: busybox
-    container_name: m1-da-light-node
+    container_name: movement-celestia-da-light-node
     command: sleep infinity
     healthcheck:
       test: [ "CMD-SHELL", "echo 'health check'" ]

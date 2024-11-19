@@ -13,8 +13,8 @@ rust-version = { workspace = true }
 
 [dependencies]
 dot-movement = { workspace = true }
-m1-da-light-node-util = { workspace = true }
-m1-da-light-node-setup = { workspace = true }
+movement-celestia-da-util = { workspace = true }
+movement-celestia-da-light-node-setup = { workspace = true }
 mcr-settlement-setup = { workspace = true }
 mcr-settlement-config = { workspace = true }
 movement-config = { workspace = true }

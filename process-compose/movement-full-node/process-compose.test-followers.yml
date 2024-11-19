@@ -42,7 +42,7 @@ processes:
       export DOT_MOVEMENT_PATH=$DOT_MOVEMENT_PATH-follower-1
       movement-full-node
     depends_on:
-      m1-da-light-node:
+      movement-celestia-da-light-node:
         condition: process_healthy
       setup-follower-1:
         condition: process_healthy
@@ -80,7 +80,7 @@ processes:
       export DOT_MOVEMENT_PATH=$DOT_MOVEMENT_PATH-follower-2
       movement-full-node
     depends_on:
-      m1-da-light-node:
+      movement-celestia-da-light-node:
         condition: process_healthy
       setup-follower-2:
         condition: process_healthy

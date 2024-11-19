@@ -1,11 +1,11 @@
 use crate::{da_db::DaDB, tasks};
-use m1_da_light_node_client::LightNodeServiceClient;
 use maptos_dof_execution::MakeOptFinServices;
 use maptos_dof_execution::{v1::Executor, DynOptFinExecutor};
 use mcr_settlement_client::McrSettlementClient;
 use mcr_settlement_manager::CommitmentEventStream;
 use mcr_settlement_manager::McrSettlementManager;
 use movement_config::Config;
+use movement_da_light_node_grpc::light_node_service_client::LightNodeServiceClient;
 use movement_rest::MovementRest;
 
 use anyhow::Context;
@@ -49,7 +49,7 @@ where
 			transaction_receiver,
 			self.light_node_client,
 			// FIXME: why are the struct member names so tautological?
-			self.config.m1_da_light_node.m1_da_light_node_config,
+			self.config.celestia_da_light_node.celestia_da_light_node_config,
 		);
 
 		let (
@@ -74,21 +74,21 @@ where
 impl MovementPartialNode<Executor> {
 	pub async fn try_from_config(config: Config) -> Result<Self, anyhow::Error> {
 		let light_node_connection_protocol = config
-			.m1_da_light_node
-			.m1_da_light_node_config
-			.m1_da_light_node_connection_protocol();
+			.celestia_da_light_node
+			.celestia_da_light_node_config
+			.movement_da_light_node_connection_protocol();
 
 		// todo: extract into getter
 		let light_node_connection_hostname = config
-			.m1_da_light_node
-			.m1_da_light_node_config
-			.m1_da_light_node_connection_hostname();
+			.celestia_da_light_node
+			.celestia_da_light_node_config
+			.movement_da_light_node_connection_hostname();
 
 		// todo: extract into getter
 		let light_node_connection_port = config
-			.m1_da_light_node
-			.m1_da_light_node_config
-			.m1_da_light_node_connection_port();
+			.celestia_da_light_node
+			.celestia_da_light_node_config
+			.movement_da_light_node_connection_port();
 		// todo: extract into getter
 		debug!(
 			"Connecting to light node at {}:{}",

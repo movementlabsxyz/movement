@@ -22,7 +22,7 @@ serde = { workspace = true }
 serde_derive = { workspace = true }
 toml = { workspace = true }
 tracing = { workspace = true }
-m1-da-light-node-util = { workspace = true }
+movement-celestia-da-util = { workspace = true }
 godfig = { workspace = true }
 syncup = { workspace = true }
 movement-types = { workspace = true }

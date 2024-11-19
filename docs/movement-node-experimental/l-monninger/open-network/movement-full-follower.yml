@@ -9,9 +9,9 @@
     destination_path: "/home/{{ user }}/movement"
     movement_sync: "follower::l-monninger-open-network-movement-devnet-l-sync<=>{maptos,maptos-storage,movement-da-db}/**"
 
-    m1_da_light_node_connection_protocol: "https"
-    m1_da_light_node_connection_hostname: "l-monninger.open-network.m1-da-light-node.suzuka.devnet.movementlabs.xyz"
-    m1_da_light_node_connection_port: "443"
+    movement_da_light_node_connection_protocol: "https"
+    movement_da_light_node_connection_hostname: "l-monninger.open-network.movement-celestia-da-light-node.suzuka.devnet.movementlabs.xyz"
+    movement_da_light_node_connection_port: "443"
 
     aws_region: "us-west-1"
     rev: "{{ movement_container_version }}"

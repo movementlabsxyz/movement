@@ -1,8 +1,10 @@
 //! Task to process incoming transactions and write to DA
 
-use m1_da_light_node_client::{BatchWriteRequest, BlobWrite, LightNodeServiceClient};
-use m1_da_light_node_util::config::Config as LightNodeConfig;
+use movement_da_light_node_grpc::{
+	light_node_service_client::LightNodeServiceClient, BatchWriteRequest, BlobWrite,
+};
 use maptos_dof_execution::SignedTransaction;
+use movement_celestia_da_util::config::Config as LightNodeConfig;
 
 use tokio::sync::mpsc;
 use tracing::{info, warn};

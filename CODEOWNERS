@@ -5,7 +5,7 @@
 protocol-units/execution/* @l-monninger @0xmovses @musitdev @mzabaluev
 
 # m1-da
-protocol-units/da/m1/* @l-monninger @mzabaluev
+protocol-units/da/celestia/* @l-monninger @mzabaluev
 
 # mempool
 protocol-units/mempool/* @l-monninger @mzabaluev

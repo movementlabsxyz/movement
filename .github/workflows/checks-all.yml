@@ -218,7 +218,7 @@ jobs:
         nix develop --command bash  -c "just movement-full-node native build.setup.eth-holesky.celestia-local.test -t=false"
         nix develop --command bash  -c "just movement-full-node native build.setup.eth-holesky.celestia-local.test -t=false"
 
-  m1-da-light-node:
+  movement-celestia-da-light-node:
     if: false # this is effectively tested by the above
     strategy:
       matrix:
@@ -241,9 +241,9 @@ jobs:
         name: movementlabs
         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
-    - name: Run M1 DA Light Node tests in nix environment
+    - name: Run Movement DA Light Node tests in nix environment
       # adjust the log level while debugging
-      run: CELESTIA_LOG_LEVEL=FATAL nix develop --command bash  -c "just m1-da-light-node native build.setup.test.local -t=false"  
+      run: CELESTIA_LOG_LEVEL=FATAL nix develop --command bash  -c "just movement-celestia-da-light-node native build.setup.test.local -t=false"  
 
     - name: Run foundry tests
       # Run the foundry solidity contracts using the WETH9 contract on sepolia

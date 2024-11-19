@@ -2,15 +2,15 @@
 
 use crate::da_db::DaDB;
 
-use m1_da_light_node_client::{
-	blob_response, LightNodeServiceClient, StreamReadFromHeightRequest,
-	StreamReadFromHeightResponse,
-};
 use maptos_dof_execution::{
 	DynOptFinExecutor, ExecutableBlock, ExecutableTransactions, HashValue,
 	SignatureVerifiedTransaction, SignedTransaction, Transaction,
 };
 use mcr_settlement_manager::{CommitmentEventStream, McrSettlementManagerOperations};
+use movement_da_light_node_grpc::{
+	blob_response, light_node_service_client::LightNodeServiceClient, StreamReadFromHeightRequest,
+	StreamReadFromHeightResponse,
+};
 use movement_types::block::{Block, BlockCommitment, BlockCommitmentEvent};
 
 use anyhow::Context;
