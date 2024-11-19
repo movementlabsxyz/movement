@@ -1,5 +1,5 @@
 syntax = "proto3";
-package movementlabs.protocol_units.da.m1.light_node.v1beta1;
+package movementlabs.protocol_units.da.light_node.v1beta1;
 
 
 // Request and response messages
