@@ -46,6 +46,12 @@ pub trait McrSettlementClientOperations {
 		height: u64,
 	) -> Result<Option<BlockCommitment>, anyhow::Error>;
 
+	/// Gets the commitment this validator has made at a given height
+	async fn get_posted_commitment_at_height(
+		&self,
+		height: u64,
+	) -> Result<Option<BlockCommitment>, anyhow::Error>;
+
 	/// Gets the max tolerable block height.
 	async fn get_max_tolerable_block_height(&self) -> Result<u64, anyhow::Error>;
 }

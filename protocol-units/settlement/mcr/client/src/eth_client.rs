@@ -319,6 +319,31 @@ where
 		)))
 	}
 
+	async fn get_posted_commitment_at_height(
+		&self,
+		height: u64,
+	) -> Result<Option<BlockCommitment>, anyhow::Error> {
+		let contract = MCR::new(self.contract_address, &self.ws_provider);
+		let MCR::getValidatorCommitmentAtBlockHeightReturn { _0: commitment } = contract
+			.getValidatorCommitmentAtBlockHeight(U256::from(height), self.signer_address)
+			.call()
+			.await?;
+
+		let return_height: u64 = commitment
+			.height
+			.try_into()
+			.context("Failed to convert the commitment height from U256 to u64")?;
+
+		Ok((return_height != 0).then_some(BlockCommitment::new(
+			commitment
+				.height
+				.try_into()
+				.context("Failed to convert the commitment height from U256 to u64")?,
+			Id::new(commitment.blockId.into()),
+			Commitment::new(commitment.commitment.into()),
+		)))
+	}
+
 	async fn get_max_tolerable_block_height(&self) -> Result<u64, anyhow::Error> {
 		let contract = MCR::new(self.contract_address, &self.ws_provider);
 		let MCR::getMaxTolerableBlockHeightReturn { _0: block_height } =

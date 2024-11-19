@@ -9,15 +9,15 @@ use tracing::info;
 #[derive(Debug, Parser, Clone)]
 #[clap(
 	rename_all = "kebab-case",
-	about = "Gets the block commitment that this validator (or another provided validator) has settled at a given height."
+	about = "Gets the last accepted commitment matching the height of this node or a provided height in the designated settlement contract."
 )]
-pub struct Commitment {
+pub struct AcceptedCommitment {
 	#[clap(flatten)]
 	pub movement_args: MovementArgs,
 	pub height: Option<u64>,
 }
 
-impl Commitment {
+impl AcceptedCommitment {
 	pub async fn execute(&self) -> Result<(), anyhow::Error> {
 		info!("Forcing commitment");
 		let config = self.movement_args.config().await?;
@@ -26,18 +26,13 @@ impl Commitment {
 			.await
 			.context("Failed to build MCR settlement client with config")?;
 		info!("Built settlement client");
-		let executor = SuzukaPartialNode::try_executor_from_config(config)
-			.await
-			.context("Failed to create the executor")?;
 
 		let height = match self.height {
 			Some(height) => height,
 			None => executor.get_block_head_height()?,
 		};
 
-		executor.revert_block_head_to(height).await?;
-		let commitment = executor.get_posted_commitment_at_height(height).await?;
-
+		let commitment = settlement_client.get_commitment_at_height(height).await?;
 		// Use println as this is standard (non-logging output)
 		println!("{:?}", commitment);
 

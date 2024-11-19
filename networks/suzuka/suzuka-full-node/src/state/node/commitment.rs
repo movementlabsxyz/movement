@@ -22,10 +22,6 @@ impl Commitment {
 		info!("Forcing commitment");
 		let config = self.movement_args.config().await?;
 		info!("Loaded config {:?}", config);
-		let settlement_client = McrSettlementClient::build_with_config(&config.mcr)
-			.await
-			.context("Failed to build MCR settlement client with config")?;
-		info!("Built settlement client");
 		let executor = SuzukaPartialNode::try_executor_from_config(config)
 			.await
 			.context("Failed to create the executor")?;
@@ -35,9 +31,7 @@ impl Commitment {
 			None => executor.get_block_head_height()?,
 		};
 
-		executor.revert_block_head_to(height).await?;
 		let commitment = executor.get_block_commitment_by_height(height).await?;
-
 		// Use println as this is standard (non-logging output)
 		println!("{:?}", commitment);
 

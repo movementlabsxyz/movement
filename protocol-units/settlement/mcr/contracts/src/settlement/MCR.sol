@@ -29,11 +29,11 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         leadingBlockTolerance = _leadingBlockTolerance;
         lastAcceptedBlockHeight = _lastAcceptedBlockHeight;
         stakingContract.registerDomain(_epochDuration, _custodians);
-        addCommitmentAdmin(msg.sender);
-        addTrustedAttester(msg.sender);
+        grantCommitmentAdmin(msg.sender);
+        grantTrustedAttester(msg.sender);
     }
 
-    function addCommitmentAdmin(address account) public {
+    function grantCommitmentAdmin(address account) public {
         require(
             hasRole(DEFAULT_ADMIN_ROLE, msg.sender),
             "ADD_COMMITMENT_ADMIN_IS_ADMIN_ONLY"
@@ -41,13 +41,13 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         grantRole(COMMITMENT_ADMIN, account);
     }
 
-    function batchAddCommitmentAdmin(address[] memory accounts) public {
+    function batchGrantCommitmentAdmin(address[] memory accounts) public {
         require(
             hasRole(DEFAULT_ADMIN_ROLE, msg.sender),
             "ADD_COMMITMENT_ADMIN_IS_ADMIN_ONLY"
         );
         for (uint256 i = 0; i < accounts.length; i++) {
-            grantRole(TRUSTED_ATTESTER, accounts[i]);
+            grantRole(COMMITMENT_ADMIN, accounts[i]);
         }
     }
 
@@ -258,11 +258,11 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         return false;
     }
 
-    function addTrustedAttester(address attester) public onlyRole(COMMITMENT_ADMIN) {
+    function grantTrustedAttester(address attester) public onlyRole(COMMITMENT_ADMIN) {
         grantRole(TRUSTED_ATTESTER, attester);
     }
 
-    function batchAddTrustedAttester(address[] memory attesters) public onlyRole(COMMITMENT_ADMIN) {
+    function batchGrantTrustedAttester(address[] memory attesters) public onlyRole(COMMITMENT_ADMIN) {
         for (uint256 i = 0; i < attesters.length; i++) {
             grantRole(TRUSTED_ATTESTER, attesters[i]);
         }

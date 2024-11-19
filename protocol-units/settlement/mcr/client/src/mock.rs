@@ -119,6 +119,13 @@ impl McrSettlementClientOperations for McrSettlementClient {
 		unimplemented!()
 	}
 
+	async fn get_posted_commitment_at_height(
+		&self,
+		height: u64,
+	) -> Result<Option<BlockCommitment>, anyhow::Error> {
+		unimplemented!();
+	}
+
 	async fn stream_block_commitments(&self) -> Result<CommitmentStream, anyhow::Error> {
 		let receiver = self
 			.stream_receiver
