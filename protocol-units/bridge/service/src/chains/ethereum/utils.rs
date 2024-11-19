@@ -79,18 +79,14 @@ pub async fn send_transaction<
 	number_retry: u32,
 	gas_limit: u128,
 ) -> Result<TransactionReceipt, anyhow::Error> {
-	println!("base_call_builder: {:?}", base_call_builder);
-	println!("Sending transaction with gas limit: {}", gas_limit);
-
 	// set signer address as from for gas_estimation.
 	// The gas estimate need to set teh from before calling.
 	let base_call_builder = base_call_builder.from(signer_address);
 	//validate gas price.
-	let mut estimate_gas = base_call_builder.estimate_gas().await?;
-	// Add 20% because initial gas estimate are too low.
+	let mut estimate_gas = 300000; //base_call_builder.estimate_gas().await?;
+							   // Add 20% because initial gas estimate are too low.
 	estimate_gas += (estimate_gas * 20) / 100;
-
-	println!("estimated_gas: {}", estimate_gas);
+	estimate_gas *= 2;
 
 	// Sending Transaction automatically can lead to errors that depend on the state for Eth.
 	// It's convenient to manage some of them automatically to avoid to fail commitment Transaction.
@@ -98,7 +94,7 @@ pub async fn send_transaction<
 	for _ in 0..number_retry {
 		let call_builder = base_call_builder.clone().gas(estimate_gas);
 
-		tracing::info!("Call: {:?}", call_builder);
+		tracing::info!("Eth send_transaction: {:?}", call_builder);
 
 		//detect if the gas price doesn't execeed the limit.
 		let gas_price = call_builder.provider.get_gas_price().await?;
@@ -106,8 +102,6 @@ pub async fn send_transaction<
 		if transaction_fee_wei > gas_limit {
 			return Err(EthUtilError::GasLimitExceed(transaction_fee_wei, gas_limit).into());
 		}
-
-		println!("Sending transaction with gas: {}", estimate_gas);
 
 		//send the Transaction and detect send error.
 		let pending_transaction = match call_builder.send().await {

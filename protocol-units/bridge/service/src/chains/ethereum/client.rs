@@ -10,6 +10,7 @@ use alloy::{
 	rlp::{RlpDecodable, RlpEncodable},
 	signers::local::PrivateKeySigner,
 };
+use alloy_primitives::Uint;
 use alloy_rlp::Decodable;
 use bridge_config::common::eth::EthConfig;
 use bridge_grpc::bridge_server::BridgeServer;
@@ -77,7 +78,7 @@ struct EthBridgeTransferDetailsCounterparty {
 
 #[derive(Clone)]
 pub struct EthClient {
-	rpc_provider: AlloyProvider,
+	pub rpc_provider: AlloyProvider,
 	initiator_contract: InitiatorContract,
 	counterparty_contract: CounterpartyContract,
 	pub config: Config,
@@ -123,17 +124,21 @@ impl EthClient {
 		Ok(())
 	}
 
-	pub async fn initialize_initiator_contract(
+	pub async fn initialize_counterparty_contract(
 		&self,
-		weth: EthAddress,
-		owner: EthAddress,
+		initiator_address: Address,
+		contract_address: Address,
 		timelock: TimeLock,
 	) -> Result<(), anyhow::Error> {
-		let contract = AtomicBridgeInitiatorMOVE::new(
-			self.config.initiator_contract,
-			self.rpc_provider.clone(),
-		);
-		let call = contract.initialize(weth.0, owner.0, U256::from(timelock.0), U256::from(100));
+		// Create the counterparty contract instance
+		let contract =
+			AtomicBridgeCounterpartyMOVE::new(contract_address, self.rpc_provider.clone());
+
+		// Prepare the initialize transaction
+		let call =
+			contract.initialize(self.signer_address, initiator_address, U256::from(timelock.0));
+
+		// Send the transaction
 		send_transaction(
 			call.to_owned(),
 			self.signer_address,
@@ -197,7 +202,6 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 				FixedBytes(recipient_bytes),
 				FixedBytes(hash_lock.0),
 			)
-			.value(U256::from(amount.0))
 			.from(*initiator.0);
 		let _ = send_transaction(
 			call,
@@ -244,7 +248,7 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 		)
 		.await
 		.map_err(|e| {
-			BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
+			BridgeContractError::OnChainError(format!("Failed to send transaction: {}", e))
 		})?;
 
 		Ok(())
@@ -281,7 +285,7 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 		)
 		.await
 		.map_err(|e| {
-			BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
+			BridgeContractError::OnChainError(format!("Failed to send transaction: {}", e))
 		})?;
 
 		Ok(())
@@ -292,10 +296,12 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 		bridge_transfer_id: BridgeTransferId,
 	) -> BridgeContractResult<()> {
 		let contract = AtomicBridgeInitiatorMOVE::new(
-			self.config.counterparty_contract,
+			self.config.initiator_contract,
 			self.rpc_provider.clone(),
 		);
+		tracing::info!("Bridge transfer ID: {:?}", bridge_transfer_id);
 		let call = contract.refundBridgeTransfer(FixedBytes(bridge_transfer_id.0));
+
 		send_transaction(
 			call,
 			self.signer_address,
@@ -305,7 +311,7 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 		)
 		.await
 		.map_err(|e| {
-			BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
+			BridgeContractError::OnChainError(format!("Failed to send transaction: {}", e))
 		})?;
 
 		Ok(())
@@ -319,17 +325,27 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 		recipient: BridgeAddress<EthAddress>,
 		amount: Amount,
 	) -> BridgeContractResult<()> {
+		tracing::info!("Begin lockBridgeTransfer");
 		let initiator: [u8; 32] = initiator.0.try_into().map_err(|_| {
 			BridgeContractError::ConversionFailed("lock_bridge_transfer initiator".to_string())
 		})?;
-		let call = self.counterparty_contract.lockBridgeTransfer(
-			FixedBytes(initiator),
-			FixedBytes(bridge_transfer_id.0),
-			FixedBytes(hash_lock.0),
-			*recipient.0,
-			U256::try_from(amount.0)
-				.map_err(|_| BridgeContractError::ConversionFailed("U256".to_string()))?,
+		let call = self
+			.counterparty_contract
+			.lockBridgeTransfer(
+				FixedBytes(initiator),
+				FixedBytes(bridge_transfer_id.0),
+				FixedBytes(hash_lock.0),
+				*recipient.0,
+				U256::try_from(amount.0)
+					.map_err(|_| BridgeContractError::ConversionFailed("U256".to_string()))?,
+			)
+			.from(self.signer_address);
+
+		tracing::info!(
+			"Attempting lockBridgeTransfer with sender address: {:?}",
+			self.signer_address
 		);
+
 		let receipt = send_transaction(
 			call,
 			self.signer_address,
@@ -339,7 +355,7 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 		)
 		.await
 		.map_err(|e| {
-			BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
+			BridgeContractError::OnChainError(format!("Failed to send transaction: {}", e))
 		})?;
 
 		tracing::info!("LockBridgeTransfer receipt: {:?}", receipt);
@@ -365,7 +381,7 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 		)
 		.await
 		.map_err(|e| {
-			BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
+			BridgeContractError::OnChainError(format!("Failed to send transaction: {}", e))
 		})?;
 		let call = contract.abortBridgeTransfer(FixedBytes(bridge_transfer_id.0));
 		send_transaction(
@@ -377,7 +393,7 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 		)
 		.await
 		.map_err(|e| {
-			BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
+			BridgeContractError::OnChainError(format!("Failed to send transaction: {}", e))
 		})?;
 
 		Ok(())
