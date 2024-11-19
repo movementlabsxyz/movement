@@ -102,16 +102,17 @@ impl
 	pub async fn build_with_config(config: &Config) -> Result<Self, anyhow::Error> {
 		let signer_private_key = match &config.deploy {
 			Some(deployment_config) => {
-				info!("Using deployment config for signer private key");
+				info!("hot: using deployment config for signer private key");
 				deployment_config.mcr_deployment_account_private_key.clone()
 			}
 			None => {
-				info!("Using settlement config for signer private key");
+				info!("hot: using settlement config for signer private key");
 				config.settle.signer_private_key.clone()
 			}
 		};
 		let signer = signer_private_key.parse::<PrivateKeySigner>()?;
 		let signer_address = signer.address();
+		info!("hot: signer address: {}", signer_address);
 		let contract_address = config.settle.mcr_contract_address.parse()?;
 		let rpc_url = config.eth_rpc_connection_url();
 		let ws_url = config.eth_ws_connection_url();

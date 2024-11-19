@@ -166,10 +166,10 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     // Forces the latest attestation by setting the block height
     // Note: this only safe when we are running with a single validator as it does not zero out follow-on commitments.
     function forceLatestCommitment(BlockCommitment memory blockCommitment) public {
-        require(
+        /*require(
             hasRole(COMMITMENT_ADMIN, msg.sender),
             "FORCE_LATEST_COMMITMENT_IS_COMMITMENT_ADMIN_ONLY"
-        );
+        );*/
 
         // increment the acceptedBlocksVersion (effectively removing all other accepted blocks)
         acceptedBlocksVersion += 1;

@@ -102,6 +102,12 @@ impl Local {
 				.ok_or(anyhow!("Failed to get Anvil address"))?
 				.private_key
 				.clone();
+			let deployer_address = anvil_addresses
+				.get(0)
+				.ok_or(anyhow!("Failed to get Anvil address"))?
+				.address
+				.clone();
+			info!("hot: deployer address: {}", deployer_address)
 		}
 		if let Some(testing) = &mut config.testing {
 			// Remove the old one if the config was existing.
