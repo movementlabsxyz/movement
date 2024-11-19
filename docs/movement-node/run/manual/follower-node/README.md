@@ -30,7 +30,7 @@ DOT_MOVEMENT_PATH=./.movement
 MAPTOS_CHAIN_ID=250 # change this to the chain id of the network you are running
 MOVEMENT_SYNC="follower::mtnet-l-sync-bucket-sync<=>{maptos,maptos-storage,movement-da-db}/**" # change to the sync bucket for the network you are running
 MOVEMENT_DA_LIGHT_NODE_CONNECTION_PROTOCOL=https
-MOVEMENT_DA_LIGHT_NODE_CONNECTION_HOSTNAME="movement-celestia-da-light-node.testnet.bardock.movementlabs.xyz" # changes this to the hostname of the m1_da_light_node_service on network you are running
+MOVEMENT_DA_LIGHT_NODE_CONNECTION_HOSTNAME="movement-celestia-da-light-node.testnet.bardock.movementlabs.xyz" # change this to the hostname of the Movement DA Light Node service on network you are running
 MOVEMENT_DA_LIGHT_NODE_CONNECTION_PORT=443
 # you may need to provide AWS credentials for the Amazon SDK to properly interact with the sync bucket
 # often this will be picked up appropriately if your environment is configured to use AWS
