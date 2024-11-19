@@ -26,6 +26,9 @@ impl AcceptedCommitment {
 			.await
 			.context("Failed to build MCR settlement client with config")?;
 		info!("Built settlement client");
+		let executor = SuzukaPartialNode::try_executor_from_config(config)
+			.await
+			.context("Failed to create the executor")?;
 
 		let height = match self.height {
 			Some(height) => height,

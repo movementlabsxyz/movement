@@ -2,6 +2,8 @@ pub mod admin;
 pub mod common_args;
 pub mod node;
 pub mod run;
+pub mod state;
+
 #[cfg(test)]
 pub mod tests;
 use clap::Parser;

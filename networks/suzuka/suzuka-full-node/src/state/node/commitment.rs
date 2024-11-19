@@ -3,7 +3,6 @@ use crate::node::partial::SuzukaPartialNode;
 use anyhow::Context;
 use clap::Parser;
 use maptos_dof_execution::DynOptFinExecutor;
-use mcr_settlement_client::{McrSettlementClient, McrSettlementClientOperations};
 use tracing::info;
 
 #[derive(Debug, Parser, Clone)]
@@ -33,7 +32,7 @@ impl Commitment {
 
 		let commitment = executor.get_block_commitment_by_height(height).await?;
 		// Use println as this is standard (non-logging output)
-		println!("{:?}", commitment);
+		println!("{:?}", Some(commitment));
 
 		Ok(())
 	}

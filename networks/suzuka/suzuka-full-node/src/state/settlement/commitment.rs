@@ -36,7 +36,7 @@ impl Commitment {
 		};
 
 		executor.revert_block_head_to(height).await?;
-		let commitment = executor.get_posted_commitment_at_height(height).await?;
+		let commitment = settlement_client.get_posted_commitment_at_height(height).await?;
 
 		// Use println as this is standard (non-logging output)
 		println!("{:?}", commitment);
