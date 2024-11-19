@@ -111,10 +111,10 @@ contract NativeBridgeTest is Test {
         console.log("Testing correct values");
         nativeBridge.completeBridgeTransfer(bridgeTransferId, _originator, _recipient, _amount, _nonce);
 
-        bool completed =
-            nativeBridge.incomingBridgeTransfers(bridgeTransferId);
+        bytes32 _bridgeTransferId =
+            nativeBridge.noncesToIncomingBridgeTransferIds(_nonce);
 
-        assertTrue(completed);
+        assertEq(_bridgeTransferId, bridgeTransferId);
         vm.stopPrank();
     }
 
@@ -143,10 +143,10 @@ contract NativeBridgeTest is Test {
         nativeBridge.batchCompleteBridgeTransfer(bridgeTransferIds, originators, recipients, amounts, nonces);
 
         for (uint256 i; i < length; i++) {
-            bool completed =
-                nativeBridge.incomingBridgeTransfers(bridgeTransferIds[i]);
+            bytes32 bridgeTransferId =
+                nativeBridge.noncesToIncomingBridgeTransferIds(nonces[i]);
 
-            assertTrue(completed);
+            assertEq(bridgeTransferId, bridgeTransferIds[i]);
         }
 
         vm.expectRevert(INativeBridge.CompletedBridgeTransferId.selector);

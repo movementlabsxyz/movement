@@ -17,8 +17,7 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
         uint256 nonce;
     }
     mapping(bytes32 bridgeTransferId => OutgoingBridgeTransfer) public outgoingBridgeTransfers;
-    mapping(bytes32 bridgeTransferId => bool completed) public incomingBridgeTransfers;
-    mapping(uint256 nonce => bytes32 bridgeTransferId) public noncesToBridgeTransferIds;
+    mapping(uint256 nonce => bytes32 incomingBridgeTransferId) public noncesToIncomingBridgeTransferIds;
 
     IERC20 public moveToken;
     bytes32 public constant RELAYER_ROLE = keccak256(abi.encodePacked("RELAYER_ROLE"));
@@ -108,13 +107,10 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
             InvalidBridgeTransferId()
         );
         // Ensure the bridge transfer has not already been completed
-        require(!incomingBridgeTransfers[bridgeTransferId], CompletedBridgeTransferId());
+        require(noncesToIncomingBridgeTransferIds[nonce] == bytes32(0x0), CompletedBridgeTransferId());
 
-        // Mark the bridge transfer as completed
-        incomingBridgeTransfers[bridgeTransferId] = true;
-
-        // Store the nonce to bridge transfer ID mapping for future reference
-        noncesToBridgeTransferIds[nonce] = bridgeTransferId;
+        // Store the nonce to bridge transfer ID
+        noncesToIncomingBridgeTransferIds[nonce] = bridgeTransferId;
 
         // Transfer the MOVE tokens to the recipient
         if (!moveToken.transfer(recipient, amount)) revert MOVETransferFailed();
