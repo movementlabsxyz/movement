@@ -132,7 +132,7 @@ async fn test_movement_event() -> Result<(), anyhow::Error> {
 	//Wait for the tx to be executed
 	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(2000)).await;
 	let event_type = format!(
-		"{}::atomic_bridge_initiator::BridgeTransferStore",
+		"{}::native_bridge_initiator::BridgeTransferStore",
 		config.movement.movement_native_address
 	);
 

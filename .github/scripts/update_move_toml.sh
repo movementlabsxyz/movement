@@ -37,7 +37,7 @@ echo "Derived resource address: $RESOURCE_ADDRESS"
 
 # Update the Move.toml file with the addresses
 sed -i "s/^resource_addr = \".*\"/resource_addr = \"$RESOURCE_ADDRESS\"/" "$MOVE_TOML_PATH"
-sed -i "s/^atomic_bridge = \".*\"/atomic_bridge = \"$RESOURCE_ADDRESS\"/" "$MOVE_TOML_PATH"
+sed -i "s/^native_bridge = \".*\"/native_bridge = \"$RESOURCE_ADDRESS\"/" "$MOVE_TOML_PATH"
 sed -i "s/^moveth = \".*\"/moveth = \"$RESOURCE_ADDRESS\"/" "$MOVE_TOML_PATH"
 sed -i "s/^master_minter = \".*\"/master_minter = \"$RESOURCE_ADDRESS\"/" "$MOVE_TOML_PATH"
 sed -i "s/^minter = \".*\"/minter = \"$RESOURCE_ADDRESS\"/" "$MOVE_TOML_PATH"

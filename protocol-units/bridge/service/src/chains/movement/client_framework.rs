@@ -25,8 +25,8 @@ pub const FRAMEWORK_ADDRESS: AccountAddress = AccountAddress::new([
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
 ]);
 
-pub const INITIATOR_MODULE_NAME: &str = "atomic_bridge_initiator";
-pub const COUNTERPARTY_MODULE_NAME: &str = "atomic_bridge_counterparty";
+pub const INITIATOR_MODULE_NAME: &str = "native_bridge_initiator";
+pub const COUNTERPARTY_MODULE_NAME: &str = "native_bridge_counterparty";
 const DUMMY_ADDRESS: AccountAddress = AccountAddress::new([0; 32]);
 
 #[allow(dead_code)]
@@ -37,7 +37,7 @@ enum Call {
 	GetDetails,
 }
 
-/// The Client for making calls to the atomic bridge framework modules
+/// The Client for making calls to the native bridge framework modules
 #[derive(Clone)]
 pub struct MovementClientFramework {
 	///Native Address of the
@@ -77,7 +77,7 @@ impl MovementClientFramework {
 
 		let payload = utils::make_aptos_payload(
 			FRAMEWORK_ADDRESS,
-			"atomic_bridge_configuration",
+			"native_bridge_configuration",
 			"set_initiator_time_lock_duration",
 			Vec::new(),
 			args,
@@ -98,7 +98,7 @@ impl MovementClientFramework {
 
 		let payload = utils::make_aptos_payload(
 			FRAMEWORK_ADDRESS,
-			"atomic_bridge_configuration",
+			"native_bridge_configuration",
 			"set_counterparty_time_lock_duration",
 			Vec::new(),
 			args,
@@ -133,7 +133,7 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 
 		let payload = utils::make_aptos_payload(
 			FRAMEWORK_ADDRESS,
-			"atomic_bridge_initiator",
+			"native_bridge_initiator",
 			"initiate_bridge_transfer",
 			Vec::new(),
 			args,
@@ -278,7 +278,7 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 
 		let payload = utils::make_aptos_payload(
 			FRAMEWORK_ADDRESS,
-			"atomic_bridge_initiator",
+			"native_bridge_initiator",
 			"refund_bridge_transfer",
 			Vec::new(),
 			args,
@@ -320,7 +320,7 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 				module: MoveModuleId {
 					address: FRAMEWORK_ADDRESS.clone().into(),
 					name: aptos_api_types::IdentifierWrapper(
-						Identifier::new("atomic_bridge_store")
+						Identifier::new("native_bridge_store")
 							.map_err(|_| BridgeContractError::FunctionViewError)?,
 					),
 				},
@@ -406,7 +406,7 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 				module: MoveModuleId {
 					address: FRAMEWORK_ADDRESS.clone().into(),
 					name: aptos_api_types::IdentifierWrapper(
-						Identifier::new("atomic_bridge_store")
+						Identifier::new("native_bridge_store")
 							.map_err(|_| BridgeContractError::FunctionViewError)?,
 					),
 				},
@@ -733,8 +733,8 @@ impl MovementClientFramework {
 				_ if line.starts_with("resource_addr = ") => {
 					format!(r#"resource_addr = "{}""#, formatted_resource_address)
 				}
-				_ if line.starts_with("atomic_bridge = ") => {
-					format!(r#"atomic_bridge = "{}""#, formatted_resource_address)
+				_ if line.starts_with("native_bridge = ") => {
+					format!(r#"native_bridge = "{}""#, formatted_resource_address)
 				}
 				_ if line.starts_with("moveth = ") => {
 					format!(r#"moveth = "{}""#, formatted_resource_address)
@@ -814,8 +814,8 @@ impl MovementClientFramework {
 				_ if line.starts_with("resource_addr = ") => {
 					format!(r#"resource_addr = "{}""#, final_formatted_resource_address)
 				}
-				_ if line.starts_with("atomic_bridge = ") => {
-					format!(r#"atomic_bridge = "{}""#, final_formatted_resource_address)
+				_ if line.starts_with("native_bridge = ") => {
+					format!(r#"native_bridge = "{}""#, final_formatted_resource_address)
 				}
 				_ if line.starts_with("moveth = ") => {
 					format!(r#"moveth = "{}""#, final_formatted_resource_address)

@@ -6,7 +6,7 @@ script {
         let framework_signer = aptos_governance::get_signer_testnet_only(core_resources, @0x1);
 
         let enabled_blob: vector<u64> = vector[
-            features::get_atomic_bridge_feature()
+            features::get_native_bridge_feature()
         ];
 
         let disabled_blob: vector<u64> = vector[];
