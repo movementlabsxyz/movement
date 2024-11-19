@@ -33,12 +33,10 @@ interface INativeBridge {
      * @return bridgeTransferId A unique id representing this BridgeTransfer
      *
      */
-    function initiateBridge(bytes32 recipient, uint256 amount)
-        external
-        returns (bytes32 bridgeTransferId);
+    function initiateBridgeTransfer(bytes32 recipient, uint256 amount) external returns (bytes32 bridgeTransferId);
 
     /**
-     * @dev Completes the bridging Counterparty
+     * @dev Completes the bridging of funds
      * @param bridgeTransferId Unique identifier for the BridgeTransfer
      * @param originator The address on the other chain that originated the transfer of funds
      * @param recipient The address on this chain to which to transfer funds
@@ -46,11 +44,27 @@ interface INativeBridge {
      * @param nonce The seed nonce to generate the bridgeTransferId
      *
      */
-    function completeBridge(
+    function completeBridgeTransfer(
         bytes32 bridgeTransferId,
         bytes32 originator,
         address recipient,
         uint256 amount,
         uint256 nonce
-        ) external;
+    ) external;
+
+    /**
+     * @dev Completes multiple bridge transfers
+     * @param bridgeTransferIds Unique identifiers for the BridgeTransfers
+     * @param initiators The addresses on the other chain that originated the transfer of funds
+     * @param recipients The addresses on this chain to which to transfer funds
+     * @param amounts The amounts to transfer
+     * @param nonces The seed nonces to generate the bridgeTransferIds
+     */
+    function batchCompleteBridgeTransfer(
+        bytes32[] memory bridgeTransferIds,
+        bytes32[] memory initiators,
+        address[] memory recipients,
+        uint256[] memory amounts,
+        uint256[] memory nonces
+    ) external;
 }
