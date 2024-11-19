@@ -51,14 +51,14 @@ contract NativeBridgeTest is Test {
         vm.expectRevert(
             abi.encodeWithSelector(IERC20Errors.ERC20InsufficientAllowance.selector, address(nativeBridge), 0, _amount)
         );
-        nativeBridge.initiateBridge(_recipient, _amount);
+        nativeBridge.initiateBridgeTransfer(_recipient, _amount);
 
         moveToken.approve(address(nativeBridge), _amount);
 
         vm.expectRevert(INativeBridge.ZeroAmount.selector);
-        nativeBridge.initiateBridge(_recipient, 0);
+        nativeBridge.initiateBridgeTransfer(_recipient, 0);
 
-        bytes32 bridgeTransferId = nativeBridge.initiateBridge(_recipient, _amount);
+        bytes32 bridgeTransferId = nativeBridge.initiateBridgeTransfer(_recipient, _amount);
 
         (address originator, bytes32 recipient_, uint256 amount, uint256 nonce) =
             nativeBridge.outgoingBridgeTransfers(bridgeTransferId);
@@ -85,31 +85,31 @@ contract NativeBridgeTest is Test {
 
         console.log("Testing unathourized relayer");
         vm.expectRevert(abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, address(this), keccak256("RELAYER_ROLE")));
-        nativeBridge.completeBridge(bridgeTransferId, _originator, _recipient, _amount, _nonce);
+        nativeBridge.completeBridgeTransfer(bridgeTransferId, _originator, _recipient, _amount, _nonce);
 
         vm.startPrank(relayer);
         console.log("Testing with wrong originator");
         vm.expectRevert(INativeBridge.InvalidBridgeTransferId.selector);
-        nativeBridge.completeBridge(
+        nativeBridge.completeBridgeTransfer(
             bridgeTransferId, keccak256(abi.encodePacked(otherUser)), _recipient, _amount, _nonce
         );
 
         if (_recipient != otherUser) {
             console.log("Testing with wrong recipient");
             vm.expectRevert(INativeBridge.InvalidBridgeTransferId.selector);
-            nativeBridge.completeBridge(bridgeTransferId, _originator, otherUser, _amount, _nonce);
+            nativeBridge.completeBridgeTransfer(bridgeTransferId, _originator, otherUser, _amount, _nonce);
         }
 
         console.log("Testing with wrong amount");
         vm.expectRevert(INativeBridge.InvalidBridgeTransferId.selector);
-        nativeBridge.completeBridge(bridgeTransferId, _originator, _recipient, _amount + 1, _nonce);
+        nativeBridge.completeBridgeTransfer(bridgeTransferId, _originator, _recipient, _amount + 1, _nonce);
 
         console.log("Testing with wrong nonce");
         vm.expectRevert(INativeBridge.InvalidBridgeTransferId.selector);
-        nativeBridge.completeBridge(bridgeTransferId, _originator, _recipient, _amount, _nonce + 1);
+        nativeBridge.completeBridgeTransfer(bridgeTransferId, _originator, _recipient, _amount, _nonce + 1);
 
         console.log("Testing correct values");
-        nativeBridge.completeBridge(bridgeTransferId, _originator, _recipient, _amount, _nonce);
+        nativeBridge.completeBridgeTransfer(bridgeTransferId, _originator, _recipient, _amount, _nonce);
 
         (bytes32 originator_, address recipient_, uint256 amount_, uint256 nonce_) =
             nativeBridge.incomingBridgeTransfers(bridgeTransferId);
@@ -128,8 +128,6 @@ contract NativeBridgeTest is Test {
         address[] memory recipients = new address[](length);
         uint256[] memory amounts = new uint256[](length);
         uint256[] memory nonces = new uint256[](length);
-
-        
 
         uint256 fundContract;
         for (uint256 i; i < length; i++) {
