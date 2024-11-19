@@ -30,7 +30,7 @@ where
 						return Err(ActionExecError(action.clone(), e));
 					}
 				}
-
+				tracing::info!("Before client.lock_bridge_transfer");
 				client
 					.lock_bridge_transfer(
 						bridge_transfer_id,
@@ -39,7 +39,7 @@ where
 						BridgeAddress(recipient.0.try_into().map_err(|_| {
 							ActionExecError(
 								action.clone(),
-								BridgeContractError::BadAddressEncoding("lock bridge traénsfer fail to convert recipient address to vec<u8>".to_string()),
+								BridgeContractError::BadAddressEncoding("lock bridge transfer fail to convert recipient address to vec<u8>".to_string()),
 							)
 						})?),
 						amount,

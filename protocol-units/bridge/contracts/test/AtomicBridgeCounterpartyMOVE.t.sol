@@ -107,7 +107,7 @@ contract AtomicBridgeCounterpartyMOVETest is Test {
         vm.stopPrank();
 
         vm.startPrank(deployer);  // Only the owner (deployer) can call lockBridgeTransfer
-        bool result = atomicBridgeCounterpartyMOVE.lockBridgeTransfer(
+        atomicBridgeCounterpartyMOVE.lockBridgeTransfer(
             initiator,
             bridgeTransferId,
             hashLock,
@@ -125,7 +125,6 @@ contract AtomicBridgeCounterpartyMOVETest is Test {
             AtomicBridgeCounterpartyMOVE.MessageState pendingState
         ) = atomicBridgeCounterpartyMOVE.bridgeTransfers(bridgeTransferId);
 
-        assert(result);
         assertEq(pendingInitiator, initiator);
         assertEq(pendingRecipient, recipient);
         assertEq(pendingAmount, amount);
