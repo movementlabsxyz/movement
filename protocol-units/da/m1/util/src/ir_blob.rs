@@ -24,6 +24,20 @@ impl InnerSignedBlobV1Data {
 		Self { blob, timestamp }
 	}
 
+	pub fn compute_id<C>(&self) -> Vec<u8>
+	where
+		C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
+		Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
+		SignatureSize<C>: ArrayLength<u8>,
+		AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
+		FieldBytesSize<C>: ModulusSize,
+	{
+		let mut id_hasher = C::Digest::new();
+		id_hasher.update(self.blob.as_slice());
+		id_hasher.update(&self.timestamp.to_be_bytes());
+		id_hasher.finalize().to_vec()
+	}
+
 	pub fn try_to_sign<C>(
 		self,
 		signing_key: &SigningKey<C>,
@@ -35,9 +49,11 @@ impl InnerSignedBlobV1Data {
 		AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 		FieldBytesSize<C>: ModulusSize,
 	{
+		let id = self.compute_id::<C>();
 		let mut hasher = C::Digest::new();
 		hasher.update(self.blob.as_slice());
 		hasher.update(&self.timestamp.to_be_bytes());
+		hasher.update(id.as_slice());
 		let prehash = hasher.finalize();
 		let prehash_bytes = prehash.as_slice();
 
@@ -47,29 +63,8 @@ impl InnerSignedBlobV1Data {
 			data: self,
 			signature: signature.to_vec(),
 			signer: signing_key.verifying_key().to_sec1_bytes().to_vec(),
-			id: prehash_bytes.to_vec(),
+			id,
 		})
-	}
-
-	pub fn try_verify<C>(&self, signature: &[u8], signer: &[u8]) -> Result<(), anyhow::Error>
-	where
-		C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-		Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-		SignatureSize<C>: ArrayLength<u8>,
-		AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-		FieldBytesSize<C>: ModulusSize,
-	{
-		let mut hasher = C::Digest::new();
-		hasher.update(self.blob.as_slice());
-		hasher.update(&self.timestamp.to_be_bytes());
-
-		let verifying_key = VerifyingKey::<C>::from_sec1_bytes(signer)?;
-		let signature = ecdsa::Signature::from_bytes(signature.into())?;
-
-		match verifying_key.verify_digest(hasher, &signature) {
-			Ok(_) => Ok(()),
-			Err(_) => Err(anyhow::anyhow!("Failed to verify signature")),
-		}
 	}
 }
 
@@ -90,7 +85,18 @@ impl InnerSignedBlobV1 {
 		AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 		FieldBytesSize<C>: ModulusSize,
 	{
-		self.data.try_verify::<C>(self.signature.as_slice(), self.signer.as_slice())
+		let mut hasher = C::Digest::new();
+		hasher.update(self.data.blob.as_slice());
+		hasher.update(&self.data.timestamp.to_be_bytes());
+		hasher.update(self.id.as_slice());
+
+		let verifying_key = VerifyingKey::<C>::from_sec1_bytes(self.signer.as_slice())?;
+		let signature = ecdsa::Signature::from_bytes(self.signature.as_slice().into())?;
+
+		match verifying_key.verify_digest(hasher, &signature) {
+			Ok(_) => Ok(()),
+			Err(_) => Err(anyhow::anyhow!("Failed to verify signature")),
+		}
 	}
 }
 
@@ -154,12 +160,31 @@ impl IntermediateBlobRepresentation {
 	}
 }
 
+#[cfg(test)]
+pub mod test {
+
+	use super::*;
+
+	#[test]
+	fn test_cannot_change_id_and_verify() -> Result<(), anyhow::Error> {
+		let blob = InnerSignedBlobV1Data::new(vec![1, 2, 3], 123);
+		let signing_key = SigningKey::<k256::Secp256k1>::random(&mut rand::thread_rng());
+		let signed_blob = blob.try_to_sign(&signing_key)?;
+
+		let mut changed_blob = signed_blob.clone();
+		changed_blob.id = vec![1, 2, 3, 4];
+
+		assert!(changed_blob.try_verify::<k256::Secp256k1>().is_err());
+
+		Ok(())
+	}
+}
+
 pub mod celestia {
 
 	use super::IntermediateBlobRepresentation;
 	use anyhow::Context;
 	use celestia_types::{consts::appconsts::AppVersion, nmt::Namespace, Blob as CelestiaBlob};
-	use tracing::info;
 
 	impl TryFrom<CelestiaBlob> for IntermediateBlobRepresentation {
 		type Error = anyhow::Error;
@@ -188,8 +213,6 @@ pub mod celestia {
 		type Error = anyhow::Error;
 
 		fn try_from(ir_blob: CelestiaIntermediateBlobRepresentation) -> Result<Self, Self::Error> {
-			info!("converting CelestiaIntermediateBlobRepresentation to CelestiaBlob");
-
 			// Extract the inner blob and namespace
 			let CelestiaIntermediateBlobRepresentation(ir_blob, namespace) = ir_blob;
 
