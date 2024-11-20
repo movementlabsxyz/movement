@@ -22,6 +22,8 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
     IERC20 public moveToken;
     bytes32 public constant RELAYER_ROLE = keccak256(abi.encodePacked("RELAYER_ROLE"));
     uint256 private _nonce;
+    address private feeCollector;
+    uint256 private collectedBridgeFee;
 
     // Prevents initialization of implementation contract exploits
     constructor() {
@@ -38,6 +40,12 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
 
         // Maintainer is optional
         _grantRole(RELAYER_ROLE, _maintainer);
+
+        feeCollector = _maintainer;
+    }
+
+    function setFeeCollector(address _feeCollector) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        feeCollector = _feeCollector;
     }
 
     function initiateBridgeTransfer(bytes32 recipient, uint256 amount)
@@ -68,9 +76,12 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
         bytes32 initiator,
         address recipient,
         uint256 amount,
-        uint256 nonce
+        uint256 nonce,
+        uint256 bridgeFee
     ) external onlyRole(RELAYER_ROLE) {
+
         _completeBridgeTransfer(bridgeTransferId, initiator, recipient, amount, nonce);
+        _transferBridgeFee();
     }
 
     function batchCompleteBridgeTransfer(
@@ -78,7 +89,8 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
         bytes32[] memory initiators,
         address[] memory recipients,
         uint256[] memory amounts,
-        uint256[] memory nonces
+        uint256[] memory nonces,
+        uint256 bridgeFee
     ) external onlyRole(RELAYER_ROLE) {
         uint256 length = bridgeTransferIds.length;
         // checks if all arrays are of the same length
@@ -87,10 +99,12 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
                 && nonces.length == length,
             InvalidLenghts()
         );
+
         // iterate over the arrays and complete the bridge transfer
         for (uint256 i; i < length; i++) {
-            _completeBridgeTransfer(bridgeTransferIds[i], initiators[i], recipients[i], amounts[i], nonces[i]);
+            _completeBridgeTransfer(bridgeTransferIds[i], initiators[i], recipients[i], amounts[i], nonces[i], bridgeFee);
         }
+        _transferBridgeFee();
     }
 
     function _completeBridgeTransfer(
@@ -98,7 +112,8 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
         bytes32 initiator,
         address recipient,
         uint256 amount,
-        uint256 nonce
+        uint256 nonce,
+        uint256 bridgeFee
     ) internal {
         // _l2l1RateLimit(amount);
         // Ensure the bridge transfer ID is valid against the initiator, recipient, amount, and nonce
@@ -112,11 +127,19 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
         // Store the nonce to bridge transfer ID
         noncesToIncomingBridgeTransferIds[nonce] = bridgeTransferId;
 
+        uint256 newAmount = amount - bridgeFee;
         // Transfer the MOVE tokens to the recipient
-        if (!moveToken.transfer(recipient, amount)) revert MOVETransferFailed();
+        if (!moveToken.transfer(recipient, newAmount)) revert MOVETransferFailed();
 
         emit BridgeTransferCompleted(bridgeTransferId, initiator, recipient, amount, nonce);
     }
+
+    function _transferBridgeFee() internal {
+        uint256 fee = collectedBridgeFee;
+        collectedBridgeFee = 0;
+        if (!moveToken.transfer(feeCollector, fee)) revert MOVETransferFailed();
+    }
+
 
     function togglePause() external onlyRole(DEFAULT_ADMIN_ROLE) {
         paused() ? _pause() : _unpause();

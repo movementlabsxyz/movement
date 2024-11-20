@@ -4156,6 +4156,7 @@ version = "0.0.2"
 dependencies = [
  "anyhow",
  "bigdecimal",
+ "bridge-config",
  "bridge-util",
  "chrono",
  "diesel",

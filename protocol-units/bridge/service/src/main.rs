@@ -82,7 +82,7 @@ async fn main() -> Result<()> {
 	let rest_jh = tokio::spawn(rest_service_future);
 
 	tracing::info!("Bridge Eth and Movement Inited. Starting bridge loop.");
-	let indexer_db_client = match Client::from_env() {
+	let indexer_db_client = match Client::from_bridge_config(&bridge_config) {
 		Ok(mut client) => {
 			client.run_migrations()?;
 			Some(client)
