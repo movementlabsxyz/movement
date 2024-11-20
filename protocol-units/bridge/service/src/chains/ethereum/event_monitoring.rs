@@ -1,6 +1,6 @@
 use super::types::EthAddress;
-use crate::chains::ethereum::types::AtomicBridgeCounterpartyMOVE;
-use crate::chains::ethereum::types::AtomicBridgeInitiatorMOVE;
+use crate::chains::ethereum::types::NativeBridgeCounterpartyMOVE;
+use crate::chains::ethereum::types::NativeBridgeInitiatorMOVE;
 use alloy::eips::BlockNumberOrTag;
 use alloy::primitives::Address;
 use alloy::providers::Provider;
@@ -52,11 +52,11 @@ impl EthMonitoring {
 		tokio::spawn({
 			let config = config.clone();
 			async move {
-				let initiator_contract = AtomicBridgeInitiatorMOVE::new(
+				let initiator_contract = NativeBridgeInitiatorMOVE::new(
 					config.eth_initiator_contract.parse().unwrap(), //If unwrap start fail. Config must be updated.
 					rpc_provider.clone(),
 				);
-				let counterpart_contract = AtomicBridgeCounterpartyMOVE::new(
+				let counterpart_contract = NativeBridgeCounterpartyMOVE::new(
 					config.eth_counterparty_contract.parse().unwrap(), //If unwrap start fail. Config must be updated.
 					rpc_provider.clone(),
 				);
@@ -272,16 +272,22 @@ impl EthMonitoring {
 								}
 							}
 						}
+						tracing::info!("Querying counterpart_trlocked_event_filter");
+						let start_time = tokio::time::Instant::now();
 						match tokio::time::timeout(
-							tokio::time::Duration::from_secs(config.rest_connection_timeout_secs),
+							tokio::time::Duration::from_secs(30),
 							counterpart_trlocked_event_filter.query(),
 						)
 						.await
 						{
 							Ok(Ok(events)) => {
+								tracing::info!(
+									"Query completed for counterpart_trlocked_event_filter in {:?}",
+									start_time.elapsed()
+								);
 								for (trlocked, _log) in events {
 									let event = {
-										// BridgeTransferInitiated(bridgeTransferId, originator, recipient, totalAmount, hashLock, initiatorTimeLockDuration);
+										// BridgeTransferLocked(bridgeTransferId, originator, recipient, totalAmount, hashLock, initiatorTimeLockDuration);
 										let details: LockDetails<EthAddress> = LockDetails {
 											bridge_transfer_id: BridgeTransferId(
 												*trlocked.bridgeTransferId,

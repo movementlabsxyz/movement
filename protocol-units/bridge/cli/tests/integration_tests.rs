@@ -7,7 +7,7 @@ use bridge_cli::{
 	clap::eth_to_movement::{self, EthSharedArgs},
 	eth_to_moveth,
 };
-use ethereum_bridge::types::{AtomicBridgeInitiator, EthAddress};
+use ethereum_bridge::types::{NativeBridgeInitiator, EthAddress};
 use movement_bridge::utils::MovementAddress;
 use std::str::FromStr;
 use url::Url;
@@ -22,7 +22,7 @@ async fn test_swap() -> eyre::Result<()> {
 	// Deploy contracts
 	let wallet = anvil.keys()[0].clone();
 
-	let initiator_contract = AtomicBridgeInitiator::deploy(provider).await?;
+	let initiator_contract = NativeBridgeInitiator::deploy(provider).await?;
 
 	// Set up EthSharedArgs
 	let eth_shared_args: EthSharedArgs = EthSharedArgs {
