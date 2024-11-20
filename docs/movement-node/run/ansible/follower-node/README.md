@@ -8,7 +8,7 @@ By running the a Follower Node locally, you will be able to gauge the performanc
 - 2 TB SSD w/ 60K IOPS and 200 MiB/s throughput
 
 ## Running a Movement Node on Follower Node
-You can join any sufficiently upgraded network as a Folloewr Node by running a Movement Node with container tags specified to latest commit hash on this branch, the [`follower`](../../../../docker/compose/suzuka-full-node/docker-compose.follower.yml) overlay. 
+You can join any sufficiently upgraded network as a Folloewr Node by running a Movement Node with container tags specified to latest commit hash on this branch, the [`follower`](../../../../../docker/compose/suzuka-full-node/docker-compose.follower.yml) overlay. 
 
 **Note**: the scripts provided herein have hardcoded constants for the Movement Testnet. You will need to change these to match the environment you are running on.
 
@@ -49,9 +49,9 @@ The username (`ubuntu` in this example) is the remote user to connect to instanc
 
 This will set up the Movement Node to connect to sync with the Follower Node environment.
 
-For a basic check on syncing, assert that there is a `0.tgz` file in the `~/.movement` directory. This file is unarchived into the same directory when syncing. If you see it, that indicates that the syncing resource was fetched. It is not rearchived itself.
+For a basic check on syncing, assert that there is a `0.tar.gz` file in the `~/.movement` directory. This file is unarchived into the same directory when syncing. If you see it, that indicates that the syncing resource was fetched. It is not rearchived itself.
 
-If you do not see the `0.tgz` that could indicate an issue with sync. See the troubleshooting steps below.
+If you do not see the `0.tar.gz` that could indicate an issue with sync. See the troubleshooting steps below.
 
 ## Troubleshooting 
 

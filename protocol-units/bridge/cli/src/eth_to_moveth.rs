@@ -29,8 +29,8 @@ async fn initiate_swap(
 	println!("Current Ethereum block height: {}", current_block);
 
 	// Convert signer's private key to EthAddress
-	let initiator_address = EthAddress(client.get_signer_address());
-	let recipient_address = RecipientAddress(From::from(recipient));
+	let initiator = EthAddress(client.get_signer_address());
+	let recipient = RecipientAddress(From::from(recipient));
 	let hash_lock_pre_image = HashLockPreImage::random();
 	let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
 	let amount = Amount(AssetType::EthAndWeth((amount, 0)));
@@ -38,12 +38,7 @@ async fn initiate_swap(
 	// TODO: Store the swap details in the local database so they can be resumed in case of failure
 
 	client
-		.initiate_bridge_transfer(
-			InitiatorAddress(initiator_address),
-			recipient_address,
-			hash_lock,
-			amount,
-		)
+		.initiate_bridge_transfer(InitiatorAddress(initiator), recipient, hash_lock, amount)
 		.await?;
 
 	// Now we need to listen to the blockchain to receive the correct events and match them accordingly.

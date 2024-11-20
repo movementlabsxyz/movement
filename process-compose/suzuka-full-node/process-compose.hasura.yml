@@ -8,8 +8,6 @@ processes:
 
     command: |
       docker compose -f docker/compose/suzuka-indexer/docker-compose.hasura.yml up --force-recreate
-    env:
-      RUST_LOG: info
     depends_on:
       indexer:
         condition: process_healthy

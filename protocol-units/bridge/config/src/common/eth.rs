@@ -90,7 +90,7 @@ env_default!(
 );
 env_default!(
 	default_eth_move_token_contract,
-	"ETH_MOVETOKEN_CONTRACT",
+	"ETH_MOVE_TOKEN_CONTRACT",
 	String,
 	DEFAULT_ETH_MOVETOKEN_CONTRACT.to_string()
 );
@@ -152,20 +152,6 @@ pub fn default_signer_private_key() -> String {
 	let random_wallet_string = random_wallet.to_bytes().to_string();
 	env::var("ETH_SIGNER_PRIVATE_KEY").unwrap_or(random_wallet_string)
 }
-
-// impl EthConfig {
-// 	pub fn build_for_test() -> Self {
-// 		Config {
-// 			rpc_url: "http://localhost:8545".parse().unwrap(),
-// 			ws_url: "ws://localhost:8545".parse().unwrap(),
-// 			signer_private_key: PrivateKeySigner::random(),
-// 			initiator_contract: "0x1234567890abcdef1234567890abcdef12345678".to_string(),
-// 			counterparty_contract: "0x1234567890abcdef1234567890abcdef12345678".to_string(),
-// 			weth_contract: "0x1234567890abcdef1234567890abcdef12345678".to_string(),
-// 			gas_limit: 10_000_000_000,
-// 		}
-// 	}
-// }
 
 impl EthConfig {
 	pub fn eth_rpc_connection_url(&self) -> String {

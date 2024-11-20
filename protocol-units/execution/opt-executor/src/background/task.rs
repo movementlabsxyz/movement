@@ -8,9 +8,9 @@ use aptos_storage_interface::DbReader;
 use aptos_types::transaction::SignedTransaction;
 
 use futures::channel::mpsc as futures_mpsc;
+use movement_collections::garbage::counted::GcCounter;
+use std::sync::{Arc, RwLock};
 use tokio::sync::mpsc;
-
-use std::sync::{atomic::AtomicU64, Arc};
 
 /// The background task for the executor, processing the incoming transactions
 /// in a mempool. If the executor is configured in the read-only mode,
@@ -28,12 +28,12 @@ impl BackgroundTask {
 	/// Constructs the full background tasks for transaction processing.
 	pub(crate) fn transaction_pipe(
 		mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
-		transaction_sender: mpsc::Sender<SignedTransaction>,
+		transaction_sender: mpsc::Sender<(u64, SignedTransaction)>,
 		db_reader: Arc<dyn DbReader>,
 		node_config: &NodeConfig,
 		mempool_config: &MempoolConfig,
-		transactions_in_flight: Arc<AtomicU64>,
-		transactions_in_flight_limit: u64,
+		transactions_in_flight: Arc<RwLock<GcCounter>>,
+		transactions_in_flight_limit: Option<u64>,
 	) -> Self {
 		Self {
 			inner: BackgroundInner::Full(TransactionPipe::new(

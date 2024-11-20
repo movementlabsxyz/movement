@@ -146,7 +146,7 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 	loop {
 		let event =
 			tokio::time::timeout(std::time::Duration::from_secs(30), eth_monitoring.next()).await?;
-		if let Some(Ok(BridgeContractEvent::InitialtorCompleted(_))) = event {
+		if let Some(Ok(BridgeContractEvent::InitiatorCompleted(_))) = event {
 			break;
 		}
 	}
@@ -186,7 +186,7 @@ async fn test_movement_event() -> Result<(), anyhow::Error> {
 	//Wait for the tx to be executed
 	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(2000)).await;
 	let event_type = format!(
-		"{}::atomic_bridge_initiator::BridgeTransferStore",
+		"{}::native_bridge_initiator::BridgeTransferStore",
 		config.movement.movement_native_address
 	);
 

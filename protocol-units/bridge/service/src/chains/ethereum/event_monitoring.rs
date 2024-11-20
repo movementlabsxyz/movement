@@ -154,10 +154,10 @@ impl EthMonitoring {
 												bridge_transfer_id: BridgeTransferId(
 													*initiated._bridgeTransferId,
 												),
-												initiator_address: BridgeAddress(EthAddress(
+												initiator: BridgeAddress(EthAddress(
 													Address::from(initiated._originator),
 												)),
-												recipient_address: BridgeAddress(
+												recipient: BridgeAddress(
 													initiated._recipient.to_vec(),
 												),
 												hash_lock: HashLock(*initiated._hashLock),
@@ -199,7 +199,7 @@ impl EthMonitoring {
 							Ok(Ok(events)) => {
 								for (completed, _log) in events {
 									if sender
-										.send(Ok(BridgeContractEvent::InitialtorCompleted(
+										.send(Ok(BridgeContractEvent::InitiatorCompleted(
 											BridgeTransferId(*completed._bridgeTransferId),
 										)))
 										.await
@@ -272,16 +272,22 @@ impl EthMonitoring {
 								}
 							}
 						}
+						tracing::info!("Querying counterpart_trlocked_event_filter");
+						let start_time = tokio::time::Instant::now();
 						match tokio::time::timeout(
-							tokio::time::Duration::from_secs(config.rest_connection_timeout_secs),
+							tokio::time::Duration::from_secs(30),
 							counterpart_trlocked_event_filter.query(),
 						)
 						.await
 						{
 							Ok(Ok(events)) => {
+								tracing::info!(
+									"Query completed for counterpart_trlocked_event_filter in {:?}",
+									start_time.elapsed()
+								);
 								for (trlocked, _log) in events {
 									let event = {
-										// BridgeTransferInitiated(bridgeTransferId, originator, recipient, totalAmount, hashLock, initiatorTimeLockDuration);
+										// BridgeTransferLocked(bridgeTransferId, originator, recipient, totalAmount, hashLock, initiatorTimeLockDuration);
 										let details: LockDetails<EthAddress> = LockDetails {
 											bridge_transfer_id: BridgeTransferId(
 												*trlocked.bridgeTransferId,
@@ -332,7 +338,7 @@ impl EthMonitoring {
 							Ok(Ok(events)) => {
 								for (completed, _log) in events {
 									if sender
-										.send(Ok(BridgeContractEvent::CounterPartCompleted(
+										.send(Ok(BridgeContractEvent::CounterPartyCompleted(
 											BridgeTransferId(*completed.bridgeTransferId),
 											HashLockPreImage(*completed.pre_image),
 										)))
