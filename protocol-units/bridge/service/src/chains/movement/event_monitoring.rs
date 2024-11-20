@@ -384,6 +384,7 @@ async fn pool_counterparty_contract(
 	.map(|e| {
 		let data: BridgeInitEventData = serde_json::from_str(&e.data.to_string())?;
 		let transfer_details = LockDetails::try_from(data)?;
+		println!("Transfer details: {:?}", transfer_details);
 		Ok((BridgeContractEvent::Locked(transfer_details), e.sequence_number.into()))
 	})
 	.collect::<Result<Vec<_>>>()
