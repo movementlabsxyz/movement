@@ -19,6 +19,8 @@ interface INativeBridge {
         uint256 nonce
     );
 
+    event RateLimitsUpdated(uint256 outboundNewRateLimit, uint256 inboundNewRateLimit);
+
     error ZeroAmount();
     error MOVETransferFailed();
     error ZeroAddress();
@@ -26,6 +28,8 @@ interface INativeBridge {
     error InvalidBridgeTransferId();
     error CompletedBridgeTransferId();
     error InvalidNonce();
+    error OutboundRateLimitExceeded();
+    error IncomingRateLimitExceeded();
 
     /**
      * @dev Creates a new bridge

@@ -6,10 +6,12 @@ import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/acce
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {INativeBridge} from "./INativeBridge.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {BokkyPooBahsDateTimeLibrary} from "@DateTimeLibrary/contracts/BookyPooBahsDateTimeLibrary.sol";
 
 // import {RateLimiter} from "./RateLimiter.sol";
 
 contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeBridge {
+    using BokkyPooBahsDateTimeLibrary for uint256;
     struct OutgoingTransfer {
         bytes32 bridgeTransferId;
         address initiator;
@@ -19,7 +21,11 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
 
     mapping(uint256 nonce => OutgoingTransfer) public noncesToOutgoingTransfers;
     mapping(bytes32 bridgeTransferId => uint256 nonce) public idsToIncomingNonces;
+    mapping(uint256 year => mapping(uint256 month => (uint256 day => uint256 amount))) public outboundRateLimitBudget;
+    mapping(uint256 year => mapping(uint256 month => (uint256 day => uint256 amount))) public incomingRateLimitBudget;
 
+    uint256 public outboundRateLimit;
+    uint256 public incomingRateLimit;
     IERC20 public moveToken;
     bytes32 public constant RELAYER_ROLE = keccak256(abi.encodePacked("RELAYER_ROLE"));
     uint256 private _nonce;
@@ -30,12 +36,16 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
     }
     // TODO: include rate limit
 
-    function initialize(address _moveToken, address _admin, address _relayer, address _maintainer) public initializer {
+    function initialize(address _moveToken, address _admin, address _relayer, address _maintainer, uint256 _outboundRateLimit, uint256 _incomingRateLimit) public initializer {
         require(_moveToken != address(0) && _admin != address(0) && _relayer != address(0), ZeroAddress());
         __Pausable_init();
         moveToken = IERC20(_moveToken);
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
         _grantRole(RELAYER_ROLE, _relayer);
+
+        // Set the rate limits
+        outboundRateLimit = _outboundRateLimit;
+        incomingRateLimit = _incomingRateLimit;
 
         // Maintainer is optional
         _grantRole(RELAYER_ROLE, _maintainer);
@@ -48,6 +58,7 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
     {
         // Ensure there is a valid amount
         require(amount > 0, ZeroAmount());
+        _outboundRateLimit(amount);
         //   _l1l2RateLimit(amount);
         address initiator = msg.sender;
 
@@ -101,7 +112,7 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
         uint256 amount,
         uint256 nonce
     ) internal {
-        // _l2l1RateLimit(amount);
+        _incomingRateLimit(amount);
         // Ensure the bridge transfer has not already been completed
         require(nonce > 0, InvalidNonce());
         require(idsToIncomingNonces[bridgeTransferId] == 0, CompletedBridgeTransferId());
@@ -120,7 +131,23 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
         emit BridgeTransferCompleted(bridgeTransferId, initiator, recipient, amount, nonce);
     }
 
+    function setRateLimits(uint256 _outboundRateLimit, uint256 _incomingRateLimit) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        outboundRateLimit = _outboundRateLimit;
+        incomingRateLimit = _incomingRateLimit;
+        emit RateLimitsUpdated(_outboundRateLimit, _incomingRateLimit);
+    }
+
     function togglePause() external onlyRole(DEFAULT_ADMIN_ROLE) {
         paused() ? _pause() : _unpause();
+    }
+
+    _rateLimitOutbound(uint256 amount) internal {
+        (uint256 year, uint256 month, uint256 day) = block.timestamp.timestampToDate();
+        require(outboundRateLimitBudget[year][month][day] + amount <= outboundRateLimit, OutboundRateLimitExceeded());
+    }
+
+    _rateLimitIncoming(uint256 amount) internal {
+        (uint256 year, uint256 month, uint256 day) = block.timestamp.timestampToDate();
+        require(incomingRateLimitBudget[year][month][day] + amount <= incomingRateLimit, IncomingRateLimitExceeded());
     }
 }
