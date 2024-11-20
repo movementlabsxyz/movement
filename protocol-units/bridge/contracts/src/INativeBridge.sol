@@ -25,6 +25,7 @@ interface INativeBridge {
     error InvalidLenghts();
     error InvalidBridgeTransferId();
     error CompletedBridgeTransferId();
+    error InvalidNonce();
 
     /**
      * @dev Creates a new bridge
