@@ -143,11 +143,12 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
 
     _rateLimitOutbound(uint256 amount) internal {
         (uint256 year, uint256 month, uint256 day) = block.timestamp.timestampToDate();
-        require(outboundRateLimitBudget[year][month][day] + amount <= outboundRateLimit, OutboundRateLimitExceeded());
+        // does += amount <= outboundRateLimit mean that the amount is added to the budget and then checked if it is less than the rate limit?
+        require(outboundRateLimitBudget[year][month][day] += amount <= outboundRateLimit, OutboundRateLimitExceeded());
     }
 
     _rateLimitIncoming(uint256 amount) internal {
         (uint256 year, uint256 month, uint256 day) = block.timestamp.timestampToDate();
-        require(incomingRateLimitBudget[year][month][day] + amount <= incomingRateLimit, IncomingRateLimitExceeded());
+        require(incomingRateLimitBudget[year][month][day] += amount <= incomingRateLimit, IncomingRateLimitExceeded());
     }
 }
