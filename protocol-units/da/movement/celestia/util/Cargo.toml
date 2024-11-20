@@ -20,7 +20,7 @@ tokio = { workspace = true }
 tokio-stream = { workspace = true }
 tonic = { workspace = true }
 prost = { workspace = true }
-movement-da-light-node-grpc = { workspace = true, features = [] }
+movement-da-light-node-proto = { workspace = true, features = [] }
 celestia-rpc = { workspace = true }
 celestia-types = { workspace = true }
 anyhow = { workspace = true }

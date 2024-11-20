@@ -15,8 +15,8 @@ use movement_celestia_da_util::{
 	config::Config,
 	ir_blob::{celestia::CelestiaIntermediateBlobRepresentation, InnerSignedBlobV1Data},
 };
-use movement_da_light_node_grpc::light_node_service_server::LightNodeService;
-use movement_da_light_node_grpc::*;
+use movement_da_light_node_proto::light_node_service_server::LightNodeService;
+use movement_da_light_node_proto::*;
 
 use crate::v1::LightNodeV1Operations;
 use ecdsa::{

@@ -1,5 +1,5 @@
 [package]
-name = "movement-da-light-node-grpc"
+name = "movement-da-light-node-proto"
 version = { workspace = true }
 edition = { workspace = true }
 license = { workspace = true }

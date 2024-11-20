@@ -9915,7 +9915,7 @@ dependencies = [
  "movement-algs",
  "movement-celestia-da-light-node-verifier",
  "movement-celestia-da-util",
- "movement-da-light-node-grpc",
+ "movement-da-light-node-proto",
  "movement-tracing",
  "movement-types",
  "prost 0.13.3",
@@ -9981,7 +9981,7 @@ version = "0.0.2"
 dependencies = [
  "anyhow",
  "ecdsa 0.16.9",
- "movement-da-light-node-grpc",
+ "movement-da-light-node-proto",
  "movement-types",
  "serde_json",
  "tokio",
@@ -10003,7 +10003,7 @@ dependencies = [
  "k256",
  "movement-celestia-da-light-node-setup",
  "movement-celestia-da-util",
- "movement-da-light-node-grpc",
+ "movement-da-light-node-proto",
  "prost 0.13.3",
  "rand 0.7.3",
  "serde_json",
@@ -10031,7 +10031,7 @@ dependencies = [
  "jsonrpsee 0.20.4",
  "k256",
  "memseq-util",
- "movement-da-light-node-grpc",
+ "movement-da-light-node-proto",
  "prost 0.13.3",
  "rand 0.8.5",
  "serde",
@@ -10076,7 +10076,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "movement-da-light-node-grpc"
+name = "movement-da-light-node-proto"
 version = "0.0.2"
 dependencies = [
  "buildtime",
@@ -10118,7 +10118,7 @@ dependencies = [
  "mcr-settlement-manager",
  "movement-celestia-da-util",
  "movement-config",
- "movement-da-light-node-grpc",
+ "movement-da-light-node-proto",
  "movement-rest",
  "movement-tracing",
  "movement-types",
@@ -10272,7 +10272,7 @@ dependencies = [
  "mcr-settlement-manager",
  "movement-celestia-da-util",
  "movement-config",
- "movement-da-light-node-grpc",
+ "movement-da-light-node-proto",
  "movement-rest",
  "movement-tracing",
  "movement-types",

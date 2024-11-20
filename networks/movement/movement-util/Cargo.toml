@@ -13,7 +13,7 @@ rust-version = { workspace = true }
 
 [dependencies]
 maptos-dof-execution = { workspace = true }
-movement-da-light-node-grpc = { workspace = true }
+movement-da-light-node-proto = { workspace = true }
 movement-celestia-da-util = { workspace = true }
 mcr-settlement-client = { workspace = true, features = ["mock"] }
 mcr-settlement-manager = { workspace = true }

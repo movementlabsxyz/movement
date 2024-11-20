@@ -17,7 +17,7 @@ tokio-stream = { workspace = true }
 tonic = { workspace = true }
 tonic-reflection = { workspace = true }
 prost = { workspace = true }
-movement-da-light-node-grpc = { workspace = true, features = ["server"] }
+movement-da-light-node-proto = { workspace = true, features = ["server"] }
 movement-celestia-da-util = { workspace = true }
 movement-celestia-da-light-node-verifier = { workspace = true }
 movement-algs = { workspace = true }

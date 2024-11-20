@@ -13,7 +13,7 @@ rust-version = { workspace = true }
 
 [dependencies]
 tokio = { workspace = true }
-movement-da-light-node-grpc = { workspace = true, features = ["client"] }
+movement-da-light-node-proto = { workspace = true, features = ["client"] }
 anyhow = { workspace = true }
 tokio-stream = { workspace = true }
 movement-types = { workspace = true }

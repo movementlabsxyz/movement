@@ -32,9 +32,9 @@ use movement_algs::grouping_heuristic::{
 	splitting::Splitting, GroupingHeuristicStack, GroupingOutcome,
 };
 use movement_celestia_da_util::config::Config;
-use movement_da_light_node_grpc as grpc;
-use movement_da_light_node_grpc::blob_response::BlobType;
-use movement_da_light_node_grpc::light_node_service_server::LightNodeService;
+use movement_da_light_node_proto as grpc;
+use movement_da_light_node_proto::blob_response::BlobType;
+use movement_da_light_node_proto::light_node_service_server::LightNodeService;
 use movement_types::block::Block;
 
 use crate::v1::{passthrough::LightNodeV1 as LightNodeV1PassThrough, LightNodeV1Operations};

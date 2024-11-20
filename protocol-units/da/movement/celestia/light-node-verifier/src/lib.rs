@@ -2,7 +2,7 @@ pub mod celestia;
 pub mod permissioned_signers;
 pub mod signed;
 
-pub use movement_da_light_node_grpc::*;
+pub use movement_da_light_node_proto::*;
 use thiserror::Error;
 
 /// Domain error for the transaction pipe task

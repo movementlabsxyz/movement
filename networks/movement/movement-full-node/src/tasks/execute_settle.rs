@@ -7,7 +7,7 @@ use maptos_dof_execution::{
 	SignatureVerifiedTransaction, SignedTransaction, Transaction,
 };
 use mcr_settlement_manager::{CommitmentEventStream, McrSettlementManagerOperations};
-use movement_da_light_node_grpc::{
+use movement_da_light_node_proto::{
 	blob_response, light_node_service_client::LightNodeServiceClient, StreamReadFromHeightRequest,
 	StreamReadFromHeightResponse,
 };

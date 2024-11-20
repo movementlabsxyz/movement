@@ -5,7 +5,7 @@ use mcr_settlement_client::McrSettlementClient;
 use mcr_settlement_manager::CommitmentEventStream;
 use mcr_settlement_manager::McrSettlementManager;
 use movement_config::Config;
-use movement_da_light_node_grpc::light_node_service_client::LightNodeServiceClient;
+use movement_da_light_node_proto::light_node_service_client::LightNodeServiceClient;
 use movement_rest::MovementRest;
 
 use anyhow::Context;

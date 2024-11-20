@@ -1,5 +1,5 @@
 use movement_celestia_da_util::config::Config;
-use movement_da_light_node_grpc::light_node_service_server::{
+use movement_da_light_node_proto::light_node_service_server::{
 	LightNodeService, LightNodeServiceServer,
 };
 use tonic::transport::Server;
@@ -18,7 +18,7 @@ pub trait LightNodeV1Operations: LightNodeService + Send + Sync + Sized + Clone 
 	/// Runs the server
 	async fn run_server(&self) -> Result<(), anyhow::Error> {
 		let reflection = tonic_reflection::server::Builder::configure()
-			.register_encoded_file_descriptor_set(movement_da_light_node_grpc::FILE_DESCRIPTOR_SET)
+			.register_encoded_file_descriptor_set(movement_da_light_node_proto::FILE_DESCRIPTOR_SET)
 			.build_v1()?;
 
 		let address = self.try_service_address()?;

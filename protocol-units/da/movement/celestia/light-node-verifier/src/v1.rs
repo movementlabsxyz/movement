@@ -1,7 +1,7 @@
 use crate::Verifier;
 use celestia_rpc::{BlobClient, Client, HeaderClient};
 use celestia_types::{nmt::Namespace, Blob};
-use movement_da_light_node_grpc::VerificationMode;
+use movement_da_light_node_proto::VerificationMode;
 use std::sync::Arc;
 
 #[derive(Clone)]

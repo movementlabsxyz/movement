@@ -9,8 +9,8 @@ members = [
     "protocol-units/execution/opt-executor",
     "protocol-units/execution/fin-view",
     "protocol-units/execution/util",
-    "protocol-units/da/grpc/light-node",
-    "protocol-units/da/celestia/*",
+    "protocol-units/da/movement/protocol/light-node",
+    "protocol-units/da/movement/celestia/*",
     "protocol-units/sequencing/memseq/*",
     "protocol-units/mempool/*",
     "protocol-units/syncing/*",
@@ -68,12 +68,12 @@ bridge-indexer-db = { path = "protocol-units/bridge/indexer-db" }
 buildtime = { path = "util/buildtime" }
 buildtime-helpers = { path = "util/buildtime/buildtime-helpers" }
 buildtime-macros = { path = "util/buildtime/buildtime-macros" }
-## da/grpc
-movement-da-light-node-grpc = { path = "protocol-units/da/grpc/light-node" }
+## da/proto
+movement-da-light-node-proto = { path = "protocol-units/da/movement/protocol/light-node" }
 ## da/celestia
-movement-celestia-da-util = { path = "protocol-units/da/celestia/util" }
-movement-celestia-da-light-node-setup = { path = "protocol-units/da/celestia/setup" }
-movement-celestia-da-light-node-verifier = { path = "protocol-units/da/celestia/light-node-verifier" }
+movement-celestia-da-util = { path = "protocol-units/da/movement/celestia/util" }
+movement-celestia-da-light-node-setup = { path = "protocol-units/da/movement/celestia/setup" }
+movement-celestia-da-light-node-verifier = { path = "protocol-units/da/movement/celestia/light-node-verifier" }
 ## execution
 maptos-dof-execution = { path = "protocol-units/execution/dof" }
 maptos-opt-executor = { path = "protocol-units/execution/opt-executor" }
