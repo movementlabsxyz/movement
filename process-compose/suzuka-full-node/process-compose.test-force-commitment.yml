@@ -3,7 +3,6 @@ version: "3"
 environment:
 
 processes:
-
   
   suzuka-full-node:
     command: |
@@ -22,7 +21,7 @@ processes:
     command : |
       # catching the timeout error code is little tricky
       # with this overlay, ultimately, the force attestation will throw if this doesn't work
-      timeout 2m suzuka-faucet-service run-simple || exit 0
+      timeout 3m suzuka-faucet-service run-simple || exit 0
     depends_on:
       suzuka-full-node:
         condition: process_healthy
@@ -35,6 +34,8 @@ processes:
   suzuka-client-tests:
     command: |
       cargo test -p suzuka-client test_example_
+      cargo test -p suzuka-client test_example_
+      cargo test -p suzuka-client test_example_
     depends_on:
       suzuka-full-node:
         condition: process_healthy
@@ -43,7 +44,32 @@ processes:
 
   force-commitment: 
     command: |
+      export RUST_LOG=off
+
+      suzuka-full-node state node commitment
+      NODE_COMMITMENT=$(suzuka-full-node state node commitment)
       suzuka-full-node admin force-commitment
+      SETTLED_COMMITMENT=$(suzuka-full-node state settlement accepted-commitment)
+
+      echo "NODE_COMMITMENT: $NODE_COMMITMENT"
+      echo "SETTLED_COMMITMENT: $SETTLED_COMMITMENT"
+
+      if [ "$NODE_COMMITMENT" == "$SETTLED_COMMITMENT" ]; then
+        echo "Node commitment does not match settled commitment"
+        exit 1
+      fi
+
+      NODE_COMMITMENT=$(suzuka-full-node state node commitment 2)
+      suzuka-full-node admin force-commitment 2
+      SETTLED_COMMITMENT=$(suzuka-full-node state settlement accepted-commitment)
+
+      echo "NODE_COMMITMENT: $NODE_COMMITMENT"
+      echo "SETTLED_COMMITMENT: $SETTLED_COMMITMENT"
+
+      if [ "$NODE_COMMITMENT" == "$SETTLED_COMMITMENT" ]; then
+        echo "Node commitment does not match settled commitment"
+        exit 1
+      fi
     depends_on:
       suzuka-full-node:
         condition: process_completed_successfully

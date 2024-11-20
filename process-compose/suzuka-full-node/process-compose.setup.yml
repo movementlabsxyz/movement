@@ -4,7 +4,7 @@ processes:
 
   setup:
     command: |
-      suzuka-full-node-setup
+      suzuka-full-node-setup | grep "hot:"
     depends_on:
       build:
         condition: process_completed_successfully

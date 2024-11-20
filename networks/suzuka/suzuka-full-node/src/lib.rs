@@ -14,6 +14,8 @@ pub enum SuzukaFullNode {
 	#[clap(subcommand)]
 	Admin(admin::Admin),
 	Run(run::Run),
+	#[clap(subcommand)]
+	State(state::State),
 }
 
 impl SuzukaFullNode {
@@ -21,6 +23,7 @@ impl SuzukaFullNode {
 		match self {
 			Self::Admin(admin) => admin.execute().await,
 			Self::Run(run) => run.execute().await,
+			Self::State(state) => state.execute().await,
 		}
 	}
 }

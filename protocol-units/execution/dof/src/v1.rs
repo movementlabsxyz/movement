@@ -111,7 +111,7 @@ impl DynOptFinExecutor for Executor {
 		if let Some(final_height) = self.finality_view.finalized_block_height() {
 			if block_height < final_height {
 				return Err(format_err!(
-					"Can't revert to height {block_height} preciding the finalized height {final_height}"
+					"Can't revert to height {block_height} preceding the finalized height {final_height}"
 				));
 			}
 		}

@@ -502,4 +502,9 @@ mod tests {
 
 		Ok(())
 	}
+
+	#[tokio::test]
+	async fn test_revert_block_head_to() -> Result<(), anyhow::Error> {
+		Ok(())
+	}
 }

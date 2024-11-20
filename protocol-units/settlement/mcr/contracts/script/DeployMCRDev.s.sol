@@ -14,6 +14,7 @@ contract DeployMCRDev is Script {
     function run() external {
         vm.startBroadcast();
 
+        console.log("hot: msg.sender: %s", msg.sender);
         MintableToken moveTokenImplementation = new MintableToken();
         MovementStaking stakingImplementation = new MovementStaking();
         MCR mcrImplementation = new MCR();
