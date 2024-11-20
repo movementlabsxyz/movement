@@ -79,7 +79,6 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
         uint256 nonce,
         uint256 bridgeFee
     ) external onlyRole(RELAYER_ROLE) {
-
         _completeBridgeTransfer(bridgeTransferId, initiator, recipient, amount, nonce);
         _transferBridgeFee();
     }
