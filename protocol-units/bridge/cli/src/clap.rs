@@ -3,7 +3,7 @@ use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
 #[command(name = "Movementlabs Bridge CLI")]
-#[command(about = "Command line interface to perform an native bridge transfers", long_about = None)]
+#[command(about = "Command line interface to perform an atomic bridge transfers", long_about = None)]
 pub struct CliOptions {
 	#[command(subcommand)]
 	pub command: Commands,

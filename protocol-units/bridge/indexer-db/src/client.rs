@@ -1,6 +1,7 @@
 use crate::migrations::run_migrations;
 use crate::models::*;
 use crate::schema::*;
+use bridge_config::Config;
 use bridge_util::chains::bridge_contracts::BridgeContractEvent;
 use bridge_util::types::BridgeTransferId;
 use bridge_util::TransferActionType;
@@ -26,10 +27,8 @@ impl Client {
 		Self { conn }
 	}
 
-	/// Gets the client from an environment variable containing the postgresql url.
-	pub fn from_env() -> Result<Self, anyhow::Error> {
-		let url = std::env::var("BRIDGE_INDEXER_DATABASE_URL")?;
-		let conn = PgConnection::establish(&url)
+	pub fn from_bridge_config(config: &Config) -> Result<Self, anyhow::Error> {
+		let conn = PgConnection::establish(&config.indexer.indexer_url)
 			.map_err(|e| anyhow::anyhow!("Failed to connect to postgresql instance: {}", e))?;
 		Ok(Self::new(conn))
 	}
@@ -60,7 +59,7 @@ impl Client {
 						initiator: hex::encode(initiator.0.to_vec()),
 						recipient: hex::encode(recipient.0.to_vec()),
 						amount: amount.0.into(),
-						..Default::default()
+						created_at: chrono::Utc::now().naive_utc(),
 					})
 					.execute(&mut self.conn)?;
 			}
@@ -69,7 +68,7 @@ impl Client {
 					.values(NewWaitAndCompleteInitiator {
 						wait_time_secs: wait_time_secs as i64,
 						pre_image: hex::encode(hash_lock_pre_image.0.to_vec()),
-						..Default::default()
+						created_at: chrono::Utc::now().naive_utc(),
 					})
 					.execute(&mut self.conn)?;
 			}
@@ -119,7 +118,7 @@ impl Client {
 						time_lock: bridge_transfer_details.time_lock.0 as i64,
 						amount: bridge_transfer_details.amount.0.into(),
 						state: 0,
-						..Default::default()
+						created_at: chrono::Utc::now().naive_utc(),
 					})
 					.execute(&mut self.conn)?;
 			}
@@ -132,7 +131,7 @@ impl Client {
 						hash_lock: hex::encode(lock_details.hash_lock.0.to_vec()),
 						time_lock: lock_details.time_lock.0 as i64,
 						amount: lock_details.amount.0.into(),
-						..Default::default()
+						created_at: chrono::Utc::now().naive_utc(),
 					})
 					.execute(&mut self.conn)?;
 			}
@@ -140,7 +139,7 @@ impl Client {
 				diesel::insert_into(initiator_completed_events::table)
 					.values(NewInitiatorCompletedEvent {
 						bridge_transfer_id: hex::encode(initiator_completed_events.0.to_vec()),
-						..Default::default()
+						created_at: chrono::Utc::now().naive_utc(),
 					})
 					.execute(&mut self.conn)?;
 			}
@@ -149,7 +148,7 @@ impl Client {
 					.values(NewCounterPartyCompletedEvent {
 						bridge_transfer_id: hex::encode(bridge_transfer_id.0.to_vec()),
 						pre_image: hex::encode(hash_lock_pre_image.0.to_vec()),
-						..Default::default()
+						created_at: chrono::Utc::now().naive_utc(),
 					})
 					.execute(&mut self.conn)?;
 			}
@@ -157,7 +156,7 @@ impl Client {
 				diesel::insert_into(cancelled_events::table)
 					.values(NewCancelledEvent {
 						bridge_transfer_id: hex::encode(bridge_transfer_id.0.to_vec()),
-						..Default::default()
+						created_at: chrono::Utc::now().naive_utc(),
 					})
 					.execute(&mut self.conn)?;
 			}
@@ -165,7 +164,7 @@ impl Client {
 				diesel::insert_into(refunded_events::table)
 					.values(NewRefundedEvent {
 						bridge_transfer_id: hex::encode(bridge_transfer_id.0.to_vec()),
-						..Default::default()
+						created_at: chrono::Utc::now().naive_utc(),
 					})
 					.execute(&mut self.conn)?;
 			}
