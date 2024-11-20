@@ -161,6 +161,17 @@ pub async fn basic_coin_transfers(
 	lead_dot_movement: &DotMovement,
 	follower_count: u8,
 ) -> Result<(), anyhow::Error> {
+	check_matching(
+		lead_dot_movement,
+		follower_count,
+		move |_dot_movement, _config, rest_client, _faucet_client| async move {
+			let block_by_version = rest_client.get_block_by_version(1, false).await?;
+			let hash = block_by_version.inner().block_hash;
+			Ok(hash)
+		},
+	)
+	.await?;
+
 	let alice = Arc::new(RwLock::new(LocalAccount::generate(&mut rand::rngs::OsRng)));
 	let bob = Arc::new(RwLock::new(LocalAccount::generate(&mut rand::rngs::OsRng)));
 
@@ -238,6 +249,21 @@ pub async fn basic_coin_transfers(
 
 				Ok((alice_balance, bob_balance))
 			}
+		},
+	)
+	.await?;
+
+	check_matching(
+		lead_dot_movement,
+		follower_count,
+		move |_dot_movement, _config, rest_client, _faucet_client| async move {
+			// get the latest ledger version
+			let latest_ledger_version = rest_client.get_ledger_information().await?.inner().version;
+
+			let block_by_version =
+				rest_client.get_block_by_version(latest_ledger_version, false).await?;
+			let hash = block_by_version.inner().block_hash;
+			Ok(hash)
 		},
 	)
 	.await?;

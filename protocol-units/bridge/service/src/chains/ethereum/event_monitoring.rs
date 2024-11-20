@@ -272,16 +272,22 @@ impl EthMonitoring {
 								}
 							}
 						}
+						tracing::info!("Querying counterpart_trlocked_event_filter");
+						let start_time = tokio::time::Instant::now();
 						match tokio::time::timeout(
-							tokio::time::Duration::from_secs(config.rest_connection_timeout_secs),
+							tokio::time::Duration::from_secs(30),
 							counterpart_trlocked_event_filter.query(),
 						)
 						.await
 						{
 							Ok(Ok(events)) => {
+								tracing::info!(
+									"Query completed for counterpart_trlocked_event_filter in {:?}",
+									start_time.elapsed()
+								);
 								for (trlocked, _log) in events {
 									let event = {
-										// BridgeTransferInitiated(bridgeTransferId, originator, recipient, totalAmount, hashLock, initiatorTimeLockDuration);
+										// BridgeTransferLocked(bridgeTransferId, originator, recipient, totalAmount, hashLock, initiatorTimeLockDuration);
 										let details: LockDetails<EthAddress> = LockDetails {
 											bridge_transfer_id: BridgeTransferId(
 												*trlocked.bridgeTransferId,

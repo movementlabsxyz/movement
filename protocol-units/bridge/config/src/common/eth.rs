@@ -153,20 +153,6 @@ pub fn default_signer_private_key() -> String {
 	env::var("ETH_SIGNER_PRIVATE_KEY").unwrap_or(random_wallet_string)
 }
 
-// impl EthConfig {
-// 	pub fn build_for_test() -> Self {
-// 		Config {
-// 			rpc_url: "http://localhost:8545".parse().unwrap(),
-// 			ws_url: "ws://localhost:8545".parse().unwrap(),
-// 			signer_private_key: PrivateKeySigner::random(),
-// 			initiator_contract: "0x1234567890abcdef1234567890abcdef12345678".to_string(),
-// 			counterparty_contract: "0x1234567890abcdef1234567890abcdef12345678".to_string(),
-// 			weth_contract: "0x1234567890abcdef1234567890abcdef12345678".to_string(),
-// 			gas_limit: 10_000_000_000,
-// 		}
-// 	}
-// }
-
 impl EthConfig {
 	pub fn eth_rpc_connection_url(&self) -> String {
 		format!(
