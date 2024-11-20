@@ -11,7 +11,7 @@ use bridge_integration_tests::TestHarness;
 use bridge_service::chains::bridge_contracts::BridgeContractError;
 use bridge_service::chains::bridge_contracts::BridgeContractEvent;
 use bridge_service::chains::ethereum::event_monitoring::EthMonitoring;
-use bridge_service::chains::ethereum::types::NativeBridgeInitiatorMOVE;
+use bridge_service::chains::ethereum::types::AtomicBridgeInitiatorMOVE;
 use bridge_service::chains::ethereum::utils::send_transaction;
 use bridge_service::chains::ethereum::utils::send_transaction_rules;
 use bridge_service::chains::{
@@ -43,7 +43,7 @@ async fn initiate_eth_bridge_transfer(
 		.await?;
 
 	let contract =
-		NativeBridgeInitiatorMOVE::new(config.eth.eth_initiator_contract.parse()?, &rpc_provider);
+		AtomicBridgeInitiatorMOVE::new(config.eth.eth_initiator_contract.parse()?, &rpc_provider);
 
 	let initiator_address = BridgeAddress(EthAddress(initiator_address));
 
@@ -146,7 +146,7 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 	loop {
 		let event =
 			tokio::time::timeout(std::time::Duration::from_secs(30), eth_monitoring.next()).await?;
-		if let Some(Ok(BridgeContractEvent::InitialtorCompleted(_))) = event {
+		if let Some(Ok(BridgeContractEvent::InitiatorCompleted(_))) = event {
 			break;
 		}
 	}
