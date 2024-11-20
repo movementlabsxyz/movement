@@ -101,10 +101,7 @@ pub fn hash_static_string(pre_image: &'static str) -> [u8; 32] {
 	hash_vec_u32(&fixed_bytes)
 }
 
-pub type InitiatorContract =
-	AtomicBridgeInitiatorMOVE::AtomicBridgeInitiatorMOVEInstance<BoxTransport, AlloyProvider>;
-pub type CounterpartyContract =
-	AtomicBridgeCounterpartyMOVE::AtomicBridgeCounterpartyMOVEInstance<BoxTransport, AlloyProvider>;
+pub type NativeBridgeContract = NativeBridge::NativeBridgeInstance<BoxTransport, AlloyProvider>;
 
 pub type AlloyProvider = FillProvider<
 	JoinFill<
