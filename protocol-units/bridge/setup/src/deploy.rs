@@ -9,7 +9,7 @@ use bridge_config::{
 use bridge_service::{
 	chains::ethereum::{
 		types::{
-			NativeBridgeCounterpartyMOVE, NativeBridgeInitiatorMOVE, EthAddress, MockMOVEToken,
+			AtomicBridgeCounterpartyMOVE, AtomicBridgeInitiatorMOVE, EthAddress, MockMOVEToken,
 		},
 		utils::{send_transaction, send_transaction_rules},
 	},
@@ -92,9 +92,9 @@ async fn deploy_eth_initiator_contract(
 		.await
 		.expect("Error during provider creation");
 
-	let contract = NativeBridgeInitiatorMOVE::deploy(rpc_provider.clone())
+	let contract = AtomicBridgeInitiatorMOVE::deploy(rpc_provider.clone())
 		.await
-		.expect("Failed to deploy NativeBridgeInitiatorMOVE");
+		.expect("Failed to deploy AtomicBridgeInitiatorMOVE");
 	tracing::info!("initiator_contract address: {}", contract.address().to_string());
 	Ok(contract.address().to_owned())
 }
@@ -109,9 +109,9 @@ async fn deploy_counterpart_contract(
 		.on_builtin(rpc_url)
 		.await
 		.expect("Error during provider creation");
-	let contract = NativeBridgeCounterpartyMOVE::deploy(rpc_provider.clone())
+	let contract = AtomicBridgeCounterpartyMOVE::deploy(rpc_provider.clone())
 		.await
-		.expect("Failed to deploy NativeBridgeCounterpartyMOVE");
+		.expect("Failed to deploy AtomicBridgeCounterpartyMOVE");
 	tracing::info!("counterparty_contract address: {}", contract.address().to_string());
 	contract.address().to_owned()
 }

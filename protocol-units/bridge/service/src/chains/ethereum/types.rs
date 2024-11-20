@@ -23,14 +23,14 @@ pub const ETH_ADDRESS_LEN: usize = 20;
 alloy::sol!(
 	#[allow(missing_docs)]
 	#[sol(rpc)]
-	NativeBridgeInitiatorMOVE,
-	"abis/NativeBridgeInitiatorMOVE.json"
+	AtomicBridgeInitiatorMOVE,
+	"abis/AtomicBridgeInitiatorMOVE.json"
 );
 alloy::sol!(
 	#[allow(missing_docs)]
 	#[sol(rpc)]
-	NativeBridgeCounterpartyMOVE,
-	"abis/NativeBridgeCounterpartyMOVE.json"
+	AtomicBridgeCounterpartyMOVE,
+	"abis/AtomicBridgeCounterpartyMOVE.json"
 );
 
 alloy::sol!(
@@ -108,9 +108,9 @@ pub fn hash_static_string(pre_image: &'static str) -> [u8; 32] {
 }
 
 pub type InitiatorContract =
-	NativeBridgeInitiatorMOVE::NativeBridgeInitiatorMOVEInstance<BoxTransport, AlloyProvider>;
+	AtomicBridgeInitiatorMOVE::AtomicBridgeInitiatorMOVEInstance<BoxTransport, AlloyProvider>;
 pub type CounterpartyContract =
-	NativeBridgeCounterpartyMOVE::NativeBridgeCounterpartyMOVEInstance<BoxTransport, AlloyProvider>;
+	AtomicBridgeCounterpartyMOVE::AtomicBridgeCounterpartyMOVEInstance<BoxTransport, AlloyProvider>;
 
 pub type AlloyProvider = FillProvider<
 	JoinFill<
