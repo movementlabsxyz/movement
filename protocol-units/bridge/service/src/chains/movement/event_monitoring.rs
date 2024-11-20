@@ -264,7 +264,7 @@ async fn pool_initiator_contract(
 	timeout_sec: u64,
 ) -> BridgeContractResult<Vec<(BridgeContractEvent<MovementAddress>, u64)>> {
 	let struct_tag = format!(
-		"{}::native_bridge_initiator::BridgeInitiatorEvents",
+		"{}::atomic_bridge_initiator::BridgeInitiatorEvents",
 		framework_address.to_string()
 	);
 	// Get initiated events
@@ -366,7 +366,7 @@ async fn pool_counterparty_contract(
 	timeout_sec: u64,
 ) -> BridgeContractResult<Vec<(BridgeContractEvent<MovementAddress>, u64)>> {
 	let struct_tag = format!(
-		"{}::native_bridge_counterparty::BridgeCounterpartyEvents",
+		"{}::atomic_bridge_counterparty::BridgeCounterpartyEvents",
 		FRAMEWORK_ADDRESS.to_string()
 	);
 
@@ -594,7 +594,7 @@ impl TryFrom<BridgeInitEventData> for LockDetails<MovementAddress> {
 ///             "account_address": "0xb07a6a200d595dd4ed39d9b91e3132e6c15735549e9920c585b2beec0ae659b6"
 ///         },
 ///         "sequence_number": "0",
-///         "type": "0xb07a6a200d595dd4ed39d9b91e3132e6c15735549e9920c585b2beec0ae659b6::native_bridge_initiator::BridgeTransferInitiatedEvent",
+///         "type": "0xb07a6a200d595dd4ed39d9b91e3132e6c15735549e9920c585b2beec0ae659b6::atomic_bridge_initiator::BridgeTransferInitiatedEvent",
 ///         "data": {
 ///             "amount": "100",
 ///             "bridge_transfer_id": "0xeaefd189df98d57b8f4619584cff1fd67f2787c664ac8e9761ecfd7a6ae1fa2b",

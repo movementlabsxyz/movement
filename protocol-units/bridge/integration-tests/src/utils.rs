@@ -55,7 +55,7 @@ pub async fn fetch_bridge_transfer_details(
 ) -> Result<BridgeTransferDetails<AccountAddress>, anyhow::Error> {
 	let rest_client = movement_client.rest_client();
 	let account_address = FRAMEWORK_ADDRESS;
-	let resource_tag = "0x1::native_bridge_store::SmartTableWrapper<vector<u8>, 0x1::native_bridge_store::BridgeTransferDetails<address, 0x1::ethereum::EthereumAddress>>";
+	let resource_tag = "0x1::atomic_bridge_store::SmartTableWrapper<vector<u8>, 0x1::atomic_bridge_store::BridgeTransferDetails<address, 0x1::ethereum::EthereumAddress>>";
 
 	let resource_response =
 		rest_client
