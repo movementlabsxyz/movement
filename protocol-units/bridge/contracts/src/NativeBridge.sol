@@ -21,8 +21,12 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
 
     mapping(uint256 nonce => OutgoingTransfer) public noncesToOutgoingTransfers;
     mapping(bytes32 bridgeTransferId => uint256 nonce) public idsToIncomingNonces;
-    mapping(uint256 year => mapping(uint256 month => (uint256 day => uint256 amount))) public outboundRateLimitBudget;
-    mapping(uint256 year => mapping(uint256 month => (uint256 day => uint256 amount))) public incomingRateLimitBudget;
+    // mapping(uint256 year => mapping(uint256 month => (uint256 day => uint256 amount))) public outboundRateLimitBudget;
+    // mapping(uint256 year => mapping(uint256 month => (uint256 day => uint256 amount))) public incomingRateLimitBudget;
+
+    uint256 public lastReset;
+    uint256 public outboundRateLimitBudget;
+    uint256 public incomingRateLimitBudget;
 
     uint256 public outboundRateLimit;
     uint256 public incomingRateLimit;
@@ -141,14 +145,31 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
         paused() ? _pause() : _unpause();
     }
 
+    // _rateLimitOutbound(uint256 amount) internal {
+    //     (uint256 year, uint256 month, uint256 day) = block.timestamp.timestampToDate();
+    //     require(outboundRateLimitBudget[year][month][day] += amount <= outboundRateLimit, OutboundRateLimitExceeded());
+    // }
+
+    // _rateLimitIncoming(uint256 amount) internal {
+    //     (uint256 year, uint256 month, uint256 day) = block.timestamp.timestampToDate();
+    //     require(incomingRateLimitBudget[year][month][day] += amount <= incomingRateLimit, IncomingRateLimitExceeded());
+    // }
+
     _rateLimitOutbound(uint256 amount) internal {
-        (uint256 year, uint256 month, uint256 day) = block.timestamp.timestampToDate();
-        // does += amount <= outboundRateLimit mean that the amount is added to the budget and then checked if it is less than the rate limit?
-        require(outboundRateLimitBudget[year][month][day] += amount <= outboundRateLimit, OutboundRateLimitExceeded());
+        _resetTime();
+        require(outboundRateLimitBudget += amount <= outboundRateLimit, OutboundRateLimitExceeded());
     }
 
     _rateLimitIncoming(uint256 amount) internal {
-        (uint256 year, uint256 month, uint256 day) = block.timestamp.timestampToDate();
-        require(incomingRateLimitBudget[year][month][day] += amount <= incomingRateLimit, IncomingRateLimitExceeded());
+        _resetTime();
+        require(incomingRateLimitBudget += amount <= outboundRateLimit, IncomingRateLimitExceeded());
+    }
+
+    _resetTime() internal {
+        if (block.timestamp - lastReset >= 1 days) {
+            lastReset = block.timestamp;
+            outboundRateLimitBudget = 0;
+            incomingRateLimitBudget = 0;
+        }
     }
 }
