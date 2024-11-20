@@ -23,14 +23,8 @@ pub const ETH_ADDRESS_LEN: usize = 20;
 alloy::sol!(
 	#[allow(missing_docs)]
 	#[sol(rpc)]
-	AtomicBridgeInitiatorMOVE,
-	"abis/AtomicBridgeInitiatorMOVE.json"
-);
-alloy::sol!(
-	#[allow(missing_docs)]
-	#[sol(rpc)]
-	AtomicBridgeCounterpartyMOVE,
-	"abis/AtomicBridgeCounterpartyMOVE.json"
+	NativeBridge,
+	"abis/NativeBridge.json"
 );
 
 alloy::sol!(
