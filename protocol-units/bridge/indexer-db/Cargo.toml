@@ -15,6 +15,7 @@ diesel_migrations = { workspace = true }
 bigdecimal = { workspace = true }
 serde = { workspace = true }
 bridge-util = { workspace = true }
+bridge-config = { workspace = true }
 anyhow = { workspace = true }
 hex = { workspace = true }
 chrono = { workspace = true }

@@ -17,6 +17,10 @@ pub struct Config {
 	/// Optional testing config
 	#[serde(default)]
 	pub testing: common::testing::TestingConfig,
+
+	/// Database configuration for the bridge indexer
+	#[serde(default)]
+	pub indexer: common::indexer::DatabaseConfig,
 }
 
 impl Default for Config {
@@ -25,6 +29,7 @@ impl Default for Config {
 			eth: common::eth::EthConfig::default(),
 			movement: common::movement::MovementConfig::default(),
 			testing: common::testing::TestingConfig::default(),
+			indexer: common::indexer::DatabaseConfig::default(),
 		}
 	}
 }
@@ -41,7 +46,7 @@ impl Config {
 			eth: common::eth::EthConfig::default(),
 			movement: common::movement::MovementConfig::suzuka_for_test(),
 			testing: common::testing::TestingConfig::default(),
+			indexer: common::indexer::DatabaseConfig::default(),
 		}
 	}
 }
-
