@@ -1,9 +1,9 @@
 use crate::config::common::{
 	default_celestia_rpc_connection_hostname, default_celestia_rpc_connection_port,
 	default_celestia_rpc_connection_protocol, default_celestia_websocket_connection_hostname,
-	default_celestia_websocket_connection_port, default_m1_da_light_node_listen_hostname,
-	default_m1_da_light_node_listen_port, default_movement_da_light_node_connection_hostname,
-	default_movement_da_light_node_connection_port,
+	default_celestia_websocket_connection_port, default_movement_da_light_node_connection_hostname,
+	default_movement_da_light_node_connection_port, default_movement_da_light_node_listen_hostname,
+	default_movement_da_light_node_listen_port,
 };
 use ecdsa::SigningKey;
 use k256::Secp256k1;
@@ -111,13 +111,15 @@ pub struct Config {
 	#[serde(default = "default_celestia_websocket_connection_port")]
 	pub celestia_websocket_connection_port: u16,
 
+	// FIXME: disentangle listen config for the light node service
+	// from the connection config to connect to the same service?
 	/// The hostname to listen on for the movement-celestia-da-light-node service
-	#[serde(default = "default_m1_da_light_node_listen_hostname")]
-	pub m1_da_light_node_listen_hostname: String,
+	#[serde(default = "default_movement_da_light_node_listen_hostname")]
+	pub movement_da_light_node_listen_hostname: String,
 
 	/// The port to listen on for the movement-celestia-da-light-node service
-	#[serde(default = "default_m1_da_light_node_listen_port")]
-	pub m1_da_light_node_listen_port: u16,
+	#[serde(default = "default_movement_da_light_node_listen_port")]
+	pub movement_da_light_node_listen_port: u16,
 
 	/// The protocol for movement-celestia-da-light-node connection
 	#[serde(default = "default_celestia_rpc_connection_protocol")]
@@ -146,8 +148,9 @@ impl Default for Config {
 			celestia_websocket_connection_hostname: default_celestia_websocket_connection_hostname(
 			),
 			celestia_websocket_connection_port: default_celestia_websocket_connection_port(),
-			m1_da_light_node_listen_hostname: default_m1_da_light_node_listen_hostname(),
-			m1_da_light_node_listen_port: default_m1_da_light_node_listen_port(),
+			movement_da_light_node_listen_hostname: default_movement_da_light_node_listen_hostname(
+			),
+			movement_da_light_node_listen_port: default_movement_da_light_node_listen_port(),
 			movement_da_light_node_connection_hostname:
 				default_movement_da_light_node_connection_hostname(),
 			movement_da_light_node_connection_port: default_movement_da_light_node_connection_port(

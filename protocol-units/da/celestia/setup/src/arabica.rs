@@ -83,11 +83,10 @@ impl Arabica {
 	pub async fn setup_celestia(
 		&self,
 		dot_movement: DotMovement,
-		mut config: Config,
+		config: Config,
 	) -> Result<Config, anyhow::Error> {
-		let mut config =
-			common::celestia::initialize_celestia_config(dot_movement.clone(), config)?;
-		let mut config = common::memseq::initialize_memseq_config(dot_movement.clone(), config)?;
+		let config = common::celestia::initialize_celestia_config(dot_movement.clone(), config)?;
+		let config = common::memseq::initialize_memseq_config(dot_movement.clone(), config)?;
 		let mut config = common::celestia::make_dirs(dot_movement.clone(), config).await?;
 
 		// celestia light init --p2p.network arabica
@@ -109,10 +108,10 @@ impl Arabica {
 
 	pub async fn create_and_fund_account(
 		&self,
-		dot_movement: DotMovement,
+		_dot_movement: DotMovement,
 		config: Config,
 	) -> Result<(), anyhow::Error> {
-		/**
+		/*
 		 * #!/bin/bash
 		# Maximum number of retries
 		max_retries=10
@@ -204,7 +203,7 @@ impl Arabica {
 		config: Config,
 	) -> Result<Config, anyhow::Error> {
 		// By default the M1 DA Light Node is not initialized.
-		if !config.m1_da_light_node_is_initial {
+		if !config.da_light_node_is_initial {
 			info!("M1 DA Light Node is already initialized.");
 			return Ok(config);
 		}
@@ -215,7 +214,7 @@ impl Arabica {
 		info!("M1 DA Light Node setup complete.");
 
 		// Now we set the config to initialized.
-		config.m1_da_light_node_is_initial = false;
+		config.da_light_node_is_initial = false;
 
 		// Placeholder for returning the actual configuration.
 		Ok(config)

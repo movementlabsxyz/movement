@@ -82,11 +82,10 @@ impl Mocha {
 	pub async fn setup_celestia(
 		&self,
 		dot_movement: DotMovement,
-		mut config: Config,
+		config: Config,
 	) -> Result<Config, anyhow::Error> {
-		let mut config =
-			common::celestia::initialize_celestia_config(dot_movement.clone(), config)?;
-		let mut config = common::memseq::initialize_memseq_config(dot_movement.clone(), config)?;
+		let config = common::celestia::initialize_celestia_config(dot_movement.clone(), config)?;
+		let config = common::memseq::initialize_memseq_config(dot_movement.clone(), config)?;
 		let mut config = common::celestia::make_dirs(dot_movement.clone(), config).await?;
 
 		// celestia light init --p2p.network mocha
@@ -109,7 +108,7 @@ impl Mocha {
 		config: Config,
 	) -> Result<Config, anyhow::Error> {
 		// By default the M1 DA Light Node is not initialized.
-		if !config.m1_da_light_node_is_initial {
+		if !config.da_light_node_is_initial {
 			info!("M1 DA Light Node is already initialized.");
 			return Ok(config);
 		}
@@ -120,7 +119,7 @@ impl Mocha {
 		info!("M1 DA Light Node setup complete.");
 
 		// Now we set the config to initialized.
-		config.m1_da_light_node_is_initial = false;
+		config.da_light_node_is_initial = false;
 
 		// Placeholder for returning the actual configuration.
 		Ok(config)

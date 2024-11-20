@@ -36,7 +36,7 @@ where
 		let godfig = Godfig::new(
 			ConfigFile::new(file),
 			vec![
-				"m1_da_light_node_config".to_string(), // in this example this comes from the structuring of the config file
+				"celestia_da_light_node_config".to_string(), // in this example this comes from the structuring of the config file
 			],
 		);
 		Ok(Self { godfig, _marker: std::marker::PhantomData })

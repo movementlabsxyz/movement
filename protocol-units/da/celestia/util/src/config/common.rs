@@ -68,7 +68,7 @@ env_default!(
 
 // The default M1 DA Light Node listen hostname
 env_default!(
-	default_m1_da_light_node_listen_hostname,
+	default_movement_da_light_node_listen_hostname,
 	"MOVEMENT_DA_LIGHT_NODE_LISTEN_HOSTNAME",
 	String,
 	"0.0.0.0".to_string()
@@ -76,7 +76,7 @@ env_default!(
 
 // The default M1 DA Light Node listen port
 env_default!(
-	default_m1_da_light_node_listen_port,
+	default_movement_da_light_node_listen_port,
 	"MOVEMENT_DA_LIGHT_NODE_LISTEN_PORT",
 	u16,
 	30730
@@ -153,4 +153,4 @@ pub fn default_celestia_bridge_replace_args() -> Vec<String> {
 }
 
 // Whether to use replace args for Celestia bridge
-env_default!(default_m1_da_light_node_is_initial, "MOVEMENT_DA_LIGHT_NODE_IS_INITIAL", bool, true);
+env_default!(default_da_light_node_is_initial, "MOVEMENT_DA_LIGHT_NODE_IS_INITIAL", bool, true);

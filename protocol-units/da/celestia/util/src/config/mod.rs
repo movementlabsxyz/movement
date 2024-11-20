@@ -118,41 +118,45 @@ impl Config {
 	pub fn movement_da_light_node_connection_protocol(&self) -> String {
 		match self {
 			Config::Local(local) => {
-				local.m1_da_light_node.movement_da_light_node_connection_protocol.clone()
+				local.da_light_node.movement_da_light_node_connection_protocol.clone()
 			}
 			Config::Arabica(local) => {
-				local.m1_da_light_node.movement_da_light_node_connection_protocol.clone()
+				local.da_light_node.movement_da_light_node_connection_protocol.clone()
 			}
 			Config::Mocha(local) => {
-				local.m1_da_light_node.movement_da_light_node_connection_protocol.clone()
+				local.da_light_node.movement_da_light_node_connection_protocol.clone()
 			}
 		}
 	}
 
 	/// Gets M1 DA Light Node listen hostname
-	pub fn m1_da_light_node_listen_hostname(&self) -> String {
+	pub fn movement_da_light_node_listen_hostname(&self) -> String {
 		match self {
-			Config::Local(local) => local.m1_da_light_node.m1_da_light_node_listen_hostname.clone(),
-			Config::Arabica(local) => {
-				local.m1_da_light_node.m1_da_light_node_listen_hostname.clone()
+			Config::Local(local) => {
+				local.da_light_node.movement_da_light_node_listen_hostname.clone()
 			}
-			Config::Mocha(local) => local.m1_da_light_node.m1_da_light_node_listen_hostname.clone(),
+			Config::Arabica(local) => {
+				local.da_light_node.movement_da_light_node_listen_hostname.clone()
+			}
+			Config::Mocha(local) => {
+				local.da_light_node.movement_da_light_node_listen_hostname.clone()
+			}
 		}
 	}
 
 	/// Gets M1 DA Light Node listen port
-	pub fn m1_da_light_node_listen_port(&self) -> u16 {
+	pub fn movement_da_light_node_listen_port(&self) -> u16 {
 		match self {
-			Config::Local(local) => local.m1_da_light_node.m1_da_light_node_listen_port,
-			Config::Arabica(local) => local.m1_da_light_node.m1_da_light_node_listen_port,
-			Config::Mocha(local) => local.m1_da_light_node.m1_da_light_node_listen_port,
+			Config::Local(local) => local.da_light_node.movement_da_light_node_listen_port,
+			Config::Arabica(local) => local.da_light_node.movement_da_light_node_listen_port,
+			Config::Mocha(local) => local.da_light_node.movement_da_light_node_listen_port,
 		}
 	}
 
 	/// Gets M1 DA Light Node service
-	pub fn m1_da_light_node_service(&self) -> String {
-		let hostname = self.m1_da_light_node_listen_hostname();
-		let port = self.m1_da_light_node_listen_port();
+	pub fn movement_da_light_node_service(&self) -> String {
+		let hostname = self.movement_da_light_node_listen_hostname();
+		let port = self.movement_da_light_node_listen_port();
 		format!("{}:{}", hostname, port)
 	}
 
@@ -160,13 +164,13 @@ impl Config {
 	pub fn movement_da_light_node_connection_hostname(&self) -> String {
 		match self {
 			Config::Local(local) => {
-				local.m1_da_light_node.movement_da_light_node_connection_hostname.clone()
+				local.da_light_node.movement_da_light_node_connection_hostname.clone()
 			}
 			Config::Arabica(local) => {
-				local.m1_da_light_node.movement_da_light_node_connection_hostname.clone()
+				local.da_light_node.movement_da_light_node_connection_hostname.clone()
 			}
 			Config::Mocha(local) => {
-				local.m1_da_light_node.movement_da_light_node_connection_hostname.clone()
+				local.da_light_node.movement_da_light_node_connection_hostname.clone()
 			}
 		}
 	}
@@ -174,9 +178,9 @@ impl Config {
 	/// Gets M1 DA Light Node connection port
 	pub fn movement_da_light_node_connection_port(&self) -> u16 {
 		match self {
-			Config::Local(local) => local.m1_da_light_node.movement_da_light_node_connection_port,
-			Config::Arabica(local) => local.m1_da_light_node.movement_da_light_node_connection_port,
-			Config::Mocha(local) => local.m1_da_light_node.movement_da_light_node_connection_port,
+			Config::Local(local) => local.da_light_node.movement_da_light_node_connection_port,
+			Config::Arabica(local) => local.da_light_node.movement_da_light_node_connection_port,
+			Config::Mocha(local) => local.da_light_node.movement_da_light_node_connection_port,
 		}
 	}
 
@@ -198,18 +202,18 @@ impl Config {
 	/// Gets the da signing key as a string
 	pub fn da_signing_key(&self) -> String {
 		match self {
-			Config::Local(local) => local.m1_da_light_node.da_signers.private_key_hex.clone(),
-			Config::Arabica(local) => local.m1_da_light_node.da_signers.private_key_hex.clone(),
-			Config::Mocha(local) => local.m1_da_light_node.da_signers.private_key_hex.clone(),
+			Config::Local(local) => local.da_light_node.da_signers.private_key_hex.clone(),
+			Config::Arabica(local) => local.da_light_node.da_signers.private_key_hex.clone(),
+			Config::Mocha(local) => local.da_light_node.da_signers.private_key_hex.clone(),
 		}
 	}
 
 	/// Gets the da signers sec1 keys
 	pub fn da_signers_sec1_keys(&self) -> HashSet<String> {
 		match self {
-			Config::Local(local) => local.m1_da_light_node.da_signers.public_keys_hex.clone(),
-			Config::Arabica(local) => local.m1_da_light_node.da_signers.public_keys_hex.clone(),
-			Config::Mocha(local) => local.m1_da_light_node.da_signers.public_keys_hex.clone(),
+			Config::Local(local) => local.da_light_node.da_signers.public_keys_hex.clone(),
+			Config::Arabica(local) => local.da_light_node.da_signers.public_keys_hex.clone(),
+			Config::Mocha(local) => local.da_light_node.da_signers.public_keys_hex.clone(),
 		}
 	}
 

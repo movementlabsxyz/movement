@@ -97,7 +97,7 @@ where
 	}
 
 	fn try_service_address(&self) -> Result<String, anyhow::Error> {
-		Ok(self.config.m1_da_light_node_service())
+		Ok(self.config.movement_da_light_node_service())
 	}
 
 	/// Runs background tasks for the LightNodeV1 instance.

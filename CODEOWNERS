@@ -4,8 +4,8 @@
 # maptos-executor
 protocol-units/execution/* @l-monninger @0xmovses @musitdev @mzabaluev
 
-# m1-da
-protocol-units/da/celestia/* @l-monninger @mzabaluev
+# da
+protocol-units/da/* @l-monninger @mzabaluev
 
 # mempool
 protocol-units/mempool/* @l-monninger @mzabaluev
