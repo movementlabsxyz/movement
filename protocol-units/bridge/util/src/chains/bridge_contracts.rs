@@ -159,13 +159,10 @@ pub trait BridgeContract<A>: Clone + Unpin + Send + Sync {
 	async fn complete_bridge_transfer(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
-		secret: HashLockPreImage,
-	) -> BridgeContractResult<()>;
-
-	async fn batch_complete_bridge_transfer(
-		&mut self,
-		bridge_transfer_id: BridgeTransferId,
-		secret: HashLockPreImage,
+		initiator: BridgeAddress<Vec<u8>>,
+		recipient: BridgeAddress<A>,
+		amount: Amount,
+		nonce: u64,
 	) -> BridgeContractResult<()>;
 
 	async fn get_bridge_transfer_details_initiator(

@@ -1,5 +1,6 @@
 use super::types::{AlloyProvider, AssetKind, EthAddress, NativeBridge, NativeBridgeContract};
 use super::utils::{calculate_storage_slot, send_transaction, send_transaction_rules};
+use alloy::sol_types::sol_data::FixedBytes;
 use alloy::{
 	network::EthereumWallet,
 	primitives::{Address, FixedBytes, U256},
@@ -169,9 +170,6 @@ impl EthClient {
 
 #[async_trait::async_trait]
 impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
-	// `_initiator`, or in the contract, `originator` is set
-	// via the `msg.sender`, which is stored in the `rpc_provider`.
-	// So `initiator` arg is not used here.
 	async fn initiate_bridge_transfer(
 		&mut self,
 		initiator: BridgeAddress<EthAddress>,
@@ -198,6 +196,37 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 		.await
 		.map_err(|e| {
 			BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
+		})?;
+
+		Ok(())
+	}
+
+	async fn complete_bridge_transfer(
+		&mut self,
+		bridge_transfer_id: BridgeTransferId,
+		initiator: BridgeAddress<Vec<u8>>,
+		recipient: BridgeAddress<EthAddress>,
+		amount: Amount,
+		nonce: u64,
+	) -> BridgeContractResult<()> {
+		let contract = NativeBridge::new(self.config.initiator_contract, self.rpc_provider.clone());
+		let call = contract.completeBridgeTransfer(
+			bridge_transfer_id.0.clone(),
+			FixedBytes(initiator.0),
+			recipient.0,
+			U256::from(amount.0),
+			U256::from(nonce),
+		);
+		send_transaction(
+			call,
+			self.signer_address,
+			&send_transaction_rules(),
+			self.config.transaction_send_retries,
+			self.config.gas_limit,
+		)
+		.await
+		.map_err(|e| {
+			BridgeContractError::OnChainError(format!("Failed to send transaction: {}", e))
 		})?;
 
 		Ok(())
