@@ -60,13 +60,13 @@ contract NativeBridgeTest is Test {
 
         bytes32 bridgeTransferId = nativeBridge.initiateBridgeTransfer(_recipient, _amount);
 
-        (address originator, bytes32 recipient_, uint256 amount, uint256 nonce) =
-            nativeBridge.outgoingBridgeTransfers(bridgeTransferId);
+        (bytes32 bridgeTransferId_, address originator, bytes32 recipient_, uint256 amount) =
+            nativeBridge.noncesToOutgoingTransfers(1);
 
         assertEq(originator, _originator);
         assertEq(recipient_, _recipient);
         assertEq(amount, _amount);
-        assertEq(nonce, 1);
+        assertEq(bridgeTransferId_, bridgeTransferId);
         vm.stopPrank();
     }
 
@@ -111,10 +111,10 @@ contract NativeBridgeTest is Test {
         console.log("Testing correct values");
         nativeBridge.completeBridgeTransfer(bridgeTransferId, _originator, _recipient, _amount, _nonce);
 
-        bytes32 _bridgeTransferId =
-            nativeBridge.noncesToIncomingBridgeTransferIds(_nonce);
+        uint256 nonce =
+            nativeBridge.idsToIncomingNonces(bridgeTransferId);
 
-        assertEq(_bridgeTransferId, bridgeTransferId);
+        assertEq(nonce, _nonce);
         vm.stopPrank();
     }
 
@@ -131,7 +131,7 @@ contract NativeBridgeTest is Test {
             originators[i] = keccak256(abi.encodePacked(i));
             recipients[i] = address(uint160(i + 1));
             amounts[i] = i + 1;
-            nonces[i] = i;
+            nonces[i] = i + 1;
             bridgeTransferIds[i] = keccak256(abi.encodePacked(originators[i], recipients[i], amounts[i], nonces[i]));
             fundContract += amounts[i];
         }
@@ -143,10 +143,10 @@ contract NativeBridgeTest is Test {
         nativeBridge.batchCompleteBridgeTransfer(bridgeTransferIds, originators, recipients, amounts, nonces);
 
         for (uint256 i; i < length; i++) {
-            bytes32 bridgeTransferId =
-                nativeBridge.noncesToIncomingBridgeTransferIds(nonces[i]);
+            uint256 nonce =
+                nativeBridge.idsToIncomingNonces(bridgeTransferIds[i]);
 
-            assertEq(bridgeTransferId, bridgeTransferIds[i]);
+            assertEq(nonce, nonces[i]);
         }
 
         vm.expectRevert(INativeBridge.CompletedBridgeTransferId.selector);
