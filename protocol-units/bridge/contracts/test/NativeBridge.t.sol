@@ -22,6 +22,7 @@ contract NativeBridgeTest is Test {
     address public relayer = address(0x8e1a7e8);
     address public recipient = address(0x2);
     address public otherUser = address(0x3);
+    uint256 public rateLimit = 10000000 * 10 ** 18;
 
     function setUp() public {
         moveToken = new MockMOVEToken();
@@ -33,7 +34,7 @@ contract NativeBridgeTest is Test {
             address(nativeBridgeImplementation),
             address(proxyAdmin),
             abi.encodeWithSignature(
-                "initialize(address,address,address,address)", address(moveToken), deployer, relayer, address(0)
+                "initialize(address,address,address,address,uint256,uint256)", address(moveToken), deployer, relayer, address(0), rateLimit, rateLimit
             )
         );
         nativeBridge = NativeBridge(address(proxy));
