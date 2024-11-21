@@ -10,15 +10,15 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 // import {RateLimiter} from "./RateLimiter.sol";
 
 contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeBridge {
-    struct OutgoingTransfer {
+    struct OutboundTransfer {
         bytes32 bridgeTransferId;
         address initiator;
         bytes32 recipient;
         uint256 amount;
     }
 
-    mapping(uint256 nonce => OutgoingTransfer) public noncesToOutgoingTransfers;
-    mapping(bytes32 bridgeTransferId => uint256 nonce) public idsToIncomingNonces;
+    mapping(uint256 nonce => OutboundTransfer) public noncesToOutboundTransfers;
+    mapping(bytes32 bridgeTransferId => uint256 nonce) public idsToInboundNonces;
 
     IERC20 public moveToken;
     bytes32 public constant RELAYER_ROLE = keccak256(abi.encodePacked("RELAYER_ROLE"));
@@ -58,7 +58,7 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
         bridgeTransferId = keccak256(abi.encodePacked(initiator, recipient, amount, ++_nonce));
 
         // Store the bridge transfer details
-        noncesToOutgoingTransfers[_nonce] = OutgoingTransfer(bridgeTransferId, initiator, recipient, amount);
+        noncesToOutboundTransfers[_nonce] = OutboundTransfer(bridgeTransferId, initiator, recipient, amount);
 
         emit BridgeTransferInitiated(bridgeTransferId, initiator, recipient, amount, _nonce);
         return bridgeTransferId;
@@ -104,7 +104,7 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
         // _l2l1RateLimit(amount);
         // Ensure the bridge transfer has not already been completed
         require(nonce > 0, InvalidNonce());
-        require(idsToIncomingNonces[bridgeTransferId] == 0, CompletedBridgeTransferId());
+        require(idsToInboundNonces[bridgeTransferId] == 0, CompletedBridgeTransferId());
         // Ensure the bridge transfer ID is valid against the initiator, recipient, amount, and nonce
         require(
             bridgeTransferId == keccak256(abi.encodePacked(initiator, recipient, amount, nonce)),
@@ -112,7 +112,7 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
         );
 
         // Store the nonce to bridge transfer ID
-        idsToIncomingNonces[bridgeTransferId] = nonce;
+        idsToInboundNonces[bridgeTransferId] = nonce;
 
         // Transfer the MOVE tokens to the recipient
         if (!moveToken.transfer(recipient, amount)) revert MOVETransferFailed();
