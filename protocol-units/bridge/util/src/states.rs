@@ -2,8 +2,8 @@ use crate::chains::bridge_contracts::BridgeContractEvent;
 use crate::events::{InvalidEventError, TransferEvent};
 use crate::types::Amount;
 use crate::types::BridgeAddress;
-use crate::types::{BridgeTransferCompletedDetails, BridgeTransferInitiatedDetails, Nonce};
 use crate::types::{BridgeTransferId, ChainId};
+use crate::types::{BridgeTransferInitiatedDetails, Nonce};
 use crate::TransferAction;
 use crate::TransferActionType;
 use std::fmt;
@@ -28,7 +28,6 @@ impl<A: From<Vec<u8>>> From<TransferAddress> for BridgeAddress<A> {
 pub enum TransferStateType {
 	Initialized,
 	Completed,
-	Done,
 }
 
 impl fmt::Display for TransferStateType {
@@ -36,7 +35,6 @@ impl fmt::Display for TransferStateType {
 		let kind = match self {
 			Self::Initialized => "Initialized",
 			Self::Completed => "Completed",
-			Self::Done => "Done",
 		};
 		write!(f, "{}", kind,)
 	}
@@ -47,8 +45,8 @@ pub struct TransferState {
 	pub state: TransferStateType,
 	pub init_chain: ChainId,
 	pub transfer_id: BridgeTransferId,
-	pub intiator_address: TransferAddress,
-	pub counter_part_address: TransferAddress,
+	pub initiator: TransferAddress,
+	pub recipient: TransferAddress,
 	pub amount: Amount,
 	pub nonce: Nonce,
 	//Max number time action are retry for the whole transfer.
@@ -99,8 +97,8 @@ impl TransferState {
 			state: TransferStateType::Initialized,
 			init_chain: chain_id,
 			transfer_id,
-			intiator_address: detail.initiator.clone().into(),
-			counter_part_address: detail.recipient.clone().into(),
+			initiator: detail.initiator.clone().into(),
+			recipient: detail.recipient.clone().into(),
 			amount: detail.amount,
 			nonce: detail.nonce,
 			retry_on_error: 0,
@@ -117,23 +115,26 @@ impl TransferState {
 		(state, action)
 	}
 
-	pub fn transition_from_completed<A: Into<Vec<u8>> + Clone>(
+	pub fn transition_from_completed(
 		mut self,
 		_transfer_id: BridgeTransferId,
-		_detail: BridgeTransferCompletedDetails<A>,
 	) -> (Self, TransferActionType) {
 		self.state = TransferStateType::Completed;
 		let action_type = TransferActionType::CompletedRemoveState;
 		(self, action_type)
 	}
 
-	pub fn transition_from_aborted<A: Into<Vec<u8>> + Clone>(
-		mut self,
-		_transfer_id: BridgeTransferId,
-		_detail: BridgeTransferCompletedDetails<A>,
-	) -> (Self, TransferActionType) {
+	pub fn transition_from_aborted(&mut self, transfer_id: BridgeTransferId) -> TransferActionType {
 		self.state = TransferStateType::Initialized;
-		let action_type = TransferActionType::AbortedReplay(0);
-		(self, action_type)
+		let action_type = TransferActionType::AbortedReplay {
+			bridge_transfer_id: transfer_id,
+			initiator: BridgeAddress(self.initiator.0.clone().into()),
+			recipient: BridgeAddress(self.recipient.0.clone().into()),
+			amount: self.amount,
+			nonce: self.nonce,
+			wait_time_sec: 10, //TODO set wait time in config.
+		};
+
+		action_type
 	}
 }

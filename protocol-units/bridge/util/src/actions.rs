@@ -41,7 +41,14 @@ pub enum TransferActionType {
 		nonce: Nonce,
 	},
 	CompletedRemoveState,
-	AbortedReplay(usize),
+	AbortedReplay {
+		bridge_transfer_id: BridgeTransferId,
+		initiator: BridgeAddress<Vec<u8>>,
+		recipient: BridgeAddress<Vec<u8>>,
+		amount: Amount,
+		nonce: Nonce,
+		wait_time_sec: u64,
+	},
 	NoAction,
 }
 
@@ -50,7 +57,7 @@ impl fmt::Display for TransferActionType {
 		let act = match self {
 			TransferActionType::CompleteBridgeTransfer { .. } => "CompleteBridgeTransfer",
 			TransferActionType::CompletedRemoveState => "CompletedRemoveState",
-			TransferActionType::AbortedReplay(_) => "AbortedReplay",
+			TransferActionType::AbortedReplay { .. } => "AbortedReplay",
 			TransferActionType::NoAction => "NoAction",
 		};
 		write!(f, "{}", act)
