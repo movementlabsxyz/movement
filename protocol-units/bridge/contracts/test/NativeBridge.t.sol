@@ -71,6 +71,48 @@ contract NativeBridgeTest is Test {
         vm.stopPrank();
     }
 
+    function testOutboundRateLimitFuzz(address sender, uint256 _amount) public {
+        excludeSender(deployer);
+        _amount = bound(_amount, 3, 1000000000 * 10 ** 8);
+        moveToken.transfer(sender, _amount);
+
+        vm.startPrank(sender);
+        moveToken.approve(address(nativeBridge), _amount);
+        nativeBridge.initiateBridgeTransfer(keccak256(abi.encodePacked(sender)), _amount / 2);
+
+        vm.warp(1 days - 1);
+        if (_amount >= moveToken.balanceOf(insuranceFund) / 4) {
+            vm.expectRevert(INativeBridge.OutboundRateLimitExceeded.selector);
+            nativeBridge.initiateBridgeTransfer(keccak256(abi.encodePacked(sender)), _amount / 2);
+            vm.warp(1 days + 1);
+            nativeBridge.initiateBridgeTransfer(keccak256(abi.encodePacked(sender)), _amount / 2);
+        } else {
+            nativeBridge.initiateBridgeTransfer(keccak256(abi.encodePacked(sender)), _amount / 2);
+        }
+    }
+
+    function testIncomingRateLimitFuzz(address receiver, uint256 _amount) public {
+        _amount = bound(_amount, 3, 1000000000 * 10 ** 8);
+        moveToken.transfer(address(nativeBridge), _amount);
+
+        bytes32 tx1BridgeTransferId = keccak256(abi.encodePacked(keccak256(abi.encodePacked(receiver)), receiver, _amount / 2, uint256(1)));
+        bytes32 tx2BridgeTransferId = keccak256(abi.encodePacked(keccak256(abi.encodePacked(receiver)), receiver, _amount / 2, uint256(2)));
+        
+
+        vm.startPrank(relayer);
+        nativeBridge.completeBridgeTransfer(tx1BridgeTransferId, keccak256(abi.encodePacked(receiver)), receiver, _amount / 2, 1);
+
+        vm.warp(1 days - 1);
+        if (_amount >= moveToken.balanceOf(insuranceFund) / 4) {
+            vm.expectRevert(INativeBridge.IncomingRateLimitExceeded.selector);
+            nativeBridge.completeBridgeTransfer(tx2BridgeTransferId, keccak256(abi.encodePacked(receiver)), receiver, _amount / 2, 2);
+            vm.warp(1 days + 1);
+            nativeBridge.completeBridgeTransfer(tx2BridgeTransferId, keccak256(abi.encodePacked(receiver)), receiver, _amount / 2, 2);
+        } else {
+            nativeBridge.completeBridgeTransfer(tx2BridgeTransferId, keccak256(abi.encodePacked(receiver)), receiver, _amount / 2, 2);
+        }
+    }
+
     function testCompleteBridgeFuzz(bytes32 _originator, address _recipient, uint256 _amount, uint256 _nonce) public {
         excludeSender(deployer);
         vm.assume(_recipient != address(0));
