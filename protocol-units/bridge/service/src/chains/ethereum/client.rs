@@ -1,6 +1,5 @@
 use super::types::{AlloyProvider, AssetKind, EthAddress, NativeBridge, NativeBridgeContract};
 use super::utils::{calculate_storage_slot, send_transaction, send_transaction_rules};
-use alloy::sol_types::sol_data::FixedBytes;
 use alloy::{
 	network::EthereumWallet,
 	primitives::{Address, FixedBytes, U256},
@@ -118,32 +117,6 @@ impl EthClient {
 		Ok(())
 	}
 
-	pub async fn initialize_counterparty_contract(
-		&self,
-		initiator_address: Address,
-		contract_address: Address,
-		timelock: TimeLock,
-	) -> Result<(), anyhow::Error> {
-		// Create the counterparty contract instance
-		let contract = NativeBridgeContract::new(contract_address, self.rpc_provider.clone());
-
-		// Prepare the initialize transaction
-		let call =
-			contract.initialize(self.signer_address, initiator_address, U256::from(timelock.0));
-
-		// Send the transaction
-		send_transaction(
-			call.to_owned(),
-			self.signer_address,
-			&send_transaction_rules(),
-			self.config.transaction_send_retries,
-			self.config.gas_limit,
-		)
-		.await?;
-
-		Ok(())
-	}
-
 	pub async fn get_block_number(&self) -> Result<u64, anyhow::Error> {
 		self.rpc_provider
 			.get_block_number()
@@ -210,10 +183,19 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 		nonce: u64,
 	) -> BridgeContractResult<()> {
 		let contract = NativeBridge::new(self.config.initiator_contract, self.rpc_provider.clone());
+		let bridge_trasnfer_id = bridge_transfer_id.0
+			..get(0..32)
+				.ok_or(generic_error("Could not get required slice from bridge_transfer_id"))?
+				.try_into()
+				.map_err(|e| {
+					BridgeContractError::ConversionFailed(format!(
+						"Failed to convert bridge_transfer_id: {e:?}"
+					))
+				})?;
 		let call = contract.completeBridgeTransfer(
-			bridge_transfer_id.0.clone(),
-			FixedBytes(initiator.0),
-			recipient.0,
+			FixedBytes(bridge_trasnfer_id),
+			FixedBytes(initiator.0.into()),
+			recipient.0 .0,
 			U256::from(amount.0),
 			U256::from(nonce),
 		);
