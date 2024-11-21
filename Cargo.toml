@@ -9,7 +9,8 @@ members = [
     "protocol-units/execution/opt-executor",
     "protocol-units/execution/fin-view",
     "protocol-units/execution/util",
-    "protocol-units/da/m1/*",
+    "protocol-units/da/movement/protocol/light-node",
+    "protocol-units/da/movement/celestia/*",
     "protocol-units/sequencing/memseq/*",
     "protocol-units/mempool/*",
     "protocol-units/syncing/*",
@@ -31,7 +32,7 @@ members = [
     "util/tracing",
     "util/syncador",
     "util/collections",
-    "networks/suzuka/*",
+    "networks/movement/*",
     "protocol-units/settlement/mcr/setup",
     "protocol-units/settlement/mcr/runner",
     "protocol-units/bridge/service",
@@ -67,12 +68,12 @@ bridge-indexer-db = { path = "protocol-units/bridge/indexer-db" }
 buildtime = { path = "util/buildtime" }
 buildtime-helpers = { path = "util/buildtime/buildtime-helpers" }
 buildtime-macros = { path = "util/buildtime/buildtime-macros" }
-## da/m1
-m1-da-light-node-client = { path = "protocol-units/da/m1/light-node-client" }
-m1-da-light-node-grpc = { path = "protocol-units/da/m1/light-node-grpc" }
-m1-da-light-node-util = { path = "protocol-units/da/m1/util" }
-m1-da-light-node-setup = { path = "protocol-units/da/m1/setup" }
-m1-da-light-node-verifier = { path = "protocol-units/da/m1/light-node-verifier" }
+## da/proto
+movement-da-light-node-proto = { path = "protocol-units/da/movement/protocol/light-node" }
+## da/celestia
+movement-celestia-da-util = { path = "protocol-units/da/movement/celestia/util" }
+movement-celestia-da-light-node-setup = { path = "protocol-units/da/movement/celestia/setup" }
+movement-celestia-da-light-node-verifier = { path = "protocol-units/da/movement/celestia/light-node-verifier" }
 ## execution
 maptos-dof-execution = { path = "protocol-units/execution/dof" }
 maptos-opt-executor = { path = "protocol-units/execution/opt-executor" }
@@ -99,15 +100,14 @@ movement-types = { path = "util/movement-types" }
 dot-movement = { path = "util/dot-movement" }
 commander = { path = "util/commander" }
 # networks
-suzuka-config = { path = "networks/suzuka/suzuka-config" }
-monza-config = { path = "networks/monza/monza-config" }
+movement-config = { path = "networks/movement/movement-config" }
 # util
 flocks = { path = "util/flocks" }
 godfig = { path = "util/godfig" }
 movement-tracing = { path = "util/tracing" }
 syncup = { path = "protocol-units/syncing/syncup" }
 syncador = { path = "util/syncador" }
-movement-collections = { path = "util/collections"}
+movement-collections = { path = "util/collections" }
 
 # Serialization and Deserialization
 borsh = { version = "0.10" } # todo: internalize jmt and bump
@@ -189,7 +189,7 @@ secp256k1 = { version = "0.27", default-features = false, features = [
 ] }
 
 ## Celestia Dependencies
-celestia-rpc = { git = "https://github.com/movementlabsxyz/lumina", rev = "2d16e6733949f6bf70849eb60c14114e6d8ea63e" } #{ version = "0.7.0" }
+celestia-rpc = { git = "https://github.com/movementlabsxyz/lumina", rev = "2d16e6733949f6bf70849eb60c14114e6d8ea63e" }   #{ version = "0.7.0" }
 celestia-types = { git = "https://github.com/movementlabsxyz/lumina", rev = "2d16e6733949f6bf70849eb60c14114e6d8ea63e" } #{ version = "0.7.0" }
 
 alloy = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2", features = [

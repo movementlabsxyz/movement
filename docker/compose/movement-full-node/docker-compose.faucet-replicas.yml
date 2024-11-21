@@ -1,0 +1,141 @@
+services:
+
+  movement-faucet-service-replica-1:
+    image: ghcr.io/movementlabsxyz/movement-faucet-service:${CONTAINER_REV}
+    container_name: movement-faucet-service-replica-1
+    command: run-simple
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+    ports:
+      - "31732:30732"
+    depends_on:
+      movement-faucet-service:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 30732" ]
+      retries: 10
+      interval: 10s
+      timeout: 5s
+    restart: on-failure:10
+
+  movement-faucet-service-replica-2:
+    image: ghcr.io/movementlabsxyz/movement-faucet-service:${CONTAINER_REV}
+    container_name: movement-faucet-service-replica-2
+    command: run-simple
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+    ports:
+      - "32732:30732"
+    depends_on:
+      movement-faucet-service-replica-1:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 30732" ]
+      retries: 10
+      interval: 10s
+      timeout: 5s
+    restart: on-failure:10
+
+  movement-faucet-service-replica-3:
+    image: ghcr.io/movementlabsxyz/movement-faucet-service:${CONTAINER_REV}
+    container_name: movement-faucet-service-replica-3
+    command: run-simple
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+    ports:
+      - "33732:30732"
+    depends_on:
+      movement-faucet-service-replica-2:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 30732" ]
+      retries: 10
+      interval: 10s
+      timeout: 5s
+    restart: on-failure:10
+
+  movement-faucet-service-replica-4:
+    image: ghcr.io/movementlabsxyz/movement-faucet-service:${CONTAINER_REV}
+    container_name: movement-faucet-service-replica-4
+    command: run-simple
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+    ports:
+      - "34732:30732"
+    depends_on:
+      movement-faucet-service-replica-3:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 30732" ]
+      retries: 10
+      interval: 10s
+      timeout: 5s
+    restart: on-failure:10
+
+  movement-faucet-service-replica-5:
+    image: ghcr.io/movementlabsxyz/movement-faucet-service:${CONTAINER_REV}
+    container_name: movement-faucet-service-replica-5
+    command: run-simple
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+    ports:
+      - "35732:30732"
+    depends_on:
+      movement-faucet-service-replica-4:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 30732" ]
+      retries: 10
+      interval: 10s
+      timeout: 5s
+    restart: on-failure:10
+
+  movement-faucet-service-replica-6:
+    image: ghcr.io/movementlabsxyz/movement-faucet-service:${CONTAINER_REV}
+    container_name: movement-faucet-service-replica-6
+    command: run-simple
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+    ports:
+      - "36732:30732"
+    depends_on:
+      movement-faucet-service-replica-5:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 30732" ]
+      retries: 10
+      interval: 10s
+      timeout: 5s
+    restart: on-failure:10
+
+  movement-faucet-service-replica-7:
+    image: ghcr.io/movementlabsxyz/movement-faucet-service:${CONTAINER_REV}
+    container_name: movement-faucet-service-replica-7
+    command: run-simple
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+    ports:
+      - "37732:30732"
+    depends_on:
+      movement-faucet-service-replica-6:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 30732" ]
+      retries: 10
+      interval: 10s
+      timeout: 5s
+    restart: on-failure:10
