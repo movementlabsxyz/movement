@@ -1,0 +1,17 @@
+version: "3"
+
+environment:
+
+processes:
+
+  client-test-feed:
+    command: |
+      # loop the test examples 
+      while true; do
+        cargo test -p movement-tests test_example_ || break
+      done
+    depends_on:
+      movement-full-node:
+        condition: process_healthy
+      movement-faucet:
+        condition: process_healthy

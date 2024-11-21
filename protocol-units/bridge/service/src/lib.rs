@@ -319,7 +319,7 @@ impl Runtime {
 					tracing::warn!("Fail to index action");
 					InvalidEventError::BadEvent(err.to_string())
 				})?;
-				tracing::info!("Index action:{action:?}");
+				tracing::info!("index_transfer_action(success): {action:?}");
 				Ok(())
 			}
 			None => {

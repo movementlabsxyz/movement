@@ -50,14 +50,14 @@ export DOT_MOVEMENT_PATH
 echo "DOT_MOVEMENT_PATH=${DOT_MOVEMENT_PATH}" >> "${MOVEMENT_ENV_FILE}"
 mkdir -p "${DOT_MOVEMENT_PATH}"
 docker compose \
-        -f docker/compose/suzuka-full-node/docker-compose.yml \
-        -f docker/compose/suzuka-full-node/docker-compose.setup-local.yml \
-        -f docker/compose/suzuka-full-node/docker-compose.celestia-local.yml \
+        -f docker/compose/movement-full-node/docker-compose.yml \
+        -f docker/compose/movement-full-node/docker-compose.setup-local.yml \
+        -f docker/compose/movement-full-node/docker-compose.celestia-local.yml \
         pull 
 docker compose \
-        -f docker/compose/suzuka-full-node/docker-compose.yml \
-        -f docker/compose/suzuka-full-node/docker-compose.setup-local.yml \
-        -f docker/compose/suzuka-full-node/docker-compose.celestia-local.yml \
+        -f docker/compose/movement-full-node/docker-compose.yml \
+        -f docker/compose/movement-full-node/docker-compose.setup-local.yml \
+        -f docker/compose/movement-full-node/docker-compose.celestia-local.yml \
         up
 ```
 

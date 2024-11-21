@@ -1,0 +1,75 @@
+[package]
+name = "movement-tests"
+version = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+authors = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
+publish = { workspace = true }
+rust-version = { workspace = true }
+
+### define here all scenarios execution binaries 
+[[bin]]
+name = "demo_scenario"
+path = "src/bin/e2e/demo_scenario.rs"
+#[[bin]]
+# name = "basic_alice_bob"
+# path = "bin/basic_alice_bob.rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[[bin]]
+name = "movement-tests-e2e-simple-interaction"
+path = "src/bin/e2e/simple_interaction.rs"
+
+[[bin]]
+name = "movement-tests-gas-dos"
+path = "src/bin/e2e/gas_dos.rs"
+
+[[bin]]
+name = "movement-tests-e2e-followers-consistent"
+path = "src/bin/e2e/followers_consistent.rs"
+
+[dependencies]
+aptos-sdk = { workspace = true }
+aptos-types = { workspace = true }
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+itertools = { workspace = true, default-features = true }
+maptos-execution-util = { workspace = true }
+once_cell = { workspace = true }
+tokio = { workspace = true }
+rand = { workspace = true }
+commander = { workspace = true }
+buildtime-helpers = { workspace = true }
+serde = { workspace = true }
+serde_yaml = { workspace = true }
+chrono = { workspace = true }
+bcs = { workspace = true }
+rayon = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }
+movement-tracing = { workspace = true }
+tracing = { workspace = true }
+url = { workspace = true }
+reqwest = { workspace = true }
+mcr-settlement-client = { workspace = true }
+movement-config = { workspace = true }
+dot-movement = { workspace = true }
+tonic = { workspace = true }
+
+[dev-dependencies]
+reqwest = { workspace = true }
+serde_json = { workspace = true }
+
+maptos-execution-util = { workspace = true }
+mcr-settlement-client = { workspace = true }
+movement-config = { workspace = true }
+dot-movement = { workspace = true }
+aptos-protos = { workspace = true }
+
+[lints]
+workspace = true

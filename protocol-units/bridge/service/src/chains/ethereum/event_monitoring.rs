@@ -1,6 +1,6 @@
 use super::types::EthAddress;
-use crate::chains::ethereum::types::NativeBridgeCounterpartyMOVE;
-use crate::chains::ethereum::types::NativeBridgeInitiatorMOVE;
+use crate::chains::ethereum::types::AtomicBridgeCounterpartyMOVE;
+use crate::chains::ethereum::types::AtomicBridgeInitiatorMOVE;
 use alloy::eips::BlockNumberOrTag;
 use alloy::primitives::Address;
 use alloy::providers::Provider;
@@ -52,11 +52,11 @@ impl EthMonitoring {
 		tokio::spawn({
 			let config = config.clone();
 			async move {
-				let initiator_contract = NativeBridgeInitiatorMOVE::new(
+				let initiator_contract = AtomicBridgeInitiatorMOVE::new(
 					config.eth_initiator_contract.parse().unwrap(), //If unwrap start fail. Config must be updated.
 					rpc_provider.clone(),
 				);
-				let counterpart_contract = NativeBridgeCounterpartyMOVE::new(
+				let counterpart_contract = AtomicBridgeCounterpartyMOVE::new(
 					config.eth_counterparty_contract.parse().unwrap(), //If unwrap start fail. Config must be updated.
 					rpc_provider.clone(),
 				);

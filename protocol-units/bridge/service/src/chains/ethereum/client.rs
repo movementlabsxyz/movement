@@ -1,6 +1,6 @@
 use super::types::{
-	AlloyProvider, AssetKind, CounterpartyContract, EthAddress, InitiatorContract,
-	NativeBridgeCounterpartyMOVE, NativeBridgeInitiatorMOVE,
+	AlloyProvider, AssetKind, AtomicBridgeCounterpartyMOVE, AtomicBridgeInitiatorMOVE,
+	CounterpartyContract, EthAddress, InitiatorContract,
 };
 use super::utils::{calculate_storage_slot, send_transaction, send_transaction_rules};
 use alloy::{
@@ -96,9 +96,9 @@ impl EthClient {
 			.await?;
 
 		let initiator_contract =
-			NativeBridgeInitiatorMOVE::new(config.initiator_contract, rpc_provider.clone());
+			AtomicBridgeInitiatorMOVE::new(config.initiator_contract, rpc_provider.clone());
 		let counterparty_contract =
-			NativeBridgeCounterpartyMOVE::new(config.counterparty_contract, rpc_provider.clone());
+			AtomicBridgeCounterpartyMOVE::new(config.counterparty_contract, rpc_provider.clone());
 
 		Ok(EthClient {
 			rpc_provider,
@@ -192,7 +192,7 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 				"Failed to convert in [u8; 32] recipient: {e:?}"
 			))
 		})?;
-		let contract = NativeBridgeInitiatorMOVE::new(
+		let contract = AtomicBridgeInitiatorMOVE::new(
 			self.config.initiator_contract,
 			self.rpc_provider.clone(),
 		);
@@ -233,7 +233,7 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 			.try_into()
 			.map_err(|_| generic_error("Could not convert pre-image to [u8; 32]"))?;
 		info! {"Pre-image: {:?}", pre_image};
-		let contract = NativeBridgeInitiatorMOVE::new(
+		let contract = AtomicBridgeInitiatorMOVE::new(
 			self.config.initiator_contract,
 			self.rpc_provider.clone(),
 		);
@@ -269,7 +269,7 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 			.try_into()
 			.map_err(|_| generic_error("Could not convert pre-image to [u8; 32]"))?;
 
-		let contract = NativeBridgeCounterpartyMOVE::new(
+		let contract = AtomicBridgeCounterpartyMOVE::new(
 			self.config.counterparty_contract,
 			self.rpc_provider.clone(),
 		);
@@ -367,7 +367,7 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
 	) -> BridgeContractResult<()> {
-		let contract = NativeBridgeCounterpartyMOVE::new(
+		let contract = AtomicBridgeCounterpartyMOVE::new(
 			self.config.counterparty_contract,
 			self.rpc_provider.clone(),
 		);

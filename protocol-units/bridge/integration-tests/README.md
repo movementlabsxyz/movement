@@ -1,15 +1,15 @@
-# Running client integration tests against the native bridge
+# Running client integration tests against the atomic bridge
 
 The client integration tests for the framework bridge modules are in `tests`:
 
 - `client_l1move_l2move.rs` (run with command `rust_backtrace=1 cargo test --test client_l1move_l2move test_movement_client_initiate_transfer -- --nocapture --test-threads=1`)
 - `client_l2move_l1move.rs` (run with command `rust_backtrace=1 cargo test --test client_l2move_l1move test_movement_client_initiate_transfer -- --nocapture --test-threads=1`)
 
-In order to successfully run the tests against a local Suzuka node, the core resource account `0xA550C18` needs to be set to the same private key generated in `config.json`.
+In order to successfully run the tests against a local Movement node, the core resource account `0xA550C18` needs to be set to the same private key generated in `config.json`.
 
 ## Steps to run integration tests
 
-1. Navigate to the root of the `movement` repo, checkout the `andygolay/framework-client-tests` branch, and start a local Suzuka node:
+1. Navigate to the root of the `movement` repo, checkout the `andygolay/framework-client-tests` branch, and start a local Movement node:
 
 ```
 CELESTIA_LOG_LEVEL=FATAL CARGO_PROFILE=release CARGO_PROFILE_FLAGS=--release nix develop --extra-experimental-features nix-command --extra-experimental-features flakes --command bash  -c "just bridge native build.setup.eth-local.celestia-local --keep-tui"

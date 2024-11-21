@@ -4,6 +4,9 @@ set -e
 # Remove old data directory
 rm -rf ./.data
 
+# Remove socket files
+rm -rf /tmp/.s.PGSQL.5432
+
 # Initialize the database cluster
 initdb -D ./.data --no-locale
 

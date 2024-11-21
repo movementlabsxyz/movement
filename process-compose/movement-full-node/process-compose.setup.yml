@@ -1,0 +1,14 @@
+version: "3"
+
+processes:
+
+  setup:
+    command: |
+      movement-full-node-setup | grep "hot:"
+    depends_on:
+      build:
+        condition: process_completed_successfully
+    readiness_probe:
+      initial_delay_seconds: 10
+      exec:
+        command: echo "true"

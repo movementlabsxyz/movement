@@ -1,0 +1,14 @@
+services:
+
+  movement-tests-e2e-simple-interaction:
+    image: ghcr.io/movementlabsxyz/movement-tests-e2e-simple-interaction:${CONTAINER_REV}
+    container_name: movement-tests-e2e-simple-interaction
+    command: run-simple
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+    depends_on:
+      movement-faucet-service:
+        # wait for all of the replicas to be ready
+        condition: service_healthy
