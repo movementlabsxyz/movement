@@ -128,8 +128,8 @@ impl EthClient {
 		self.config.signer_private_key.address()
 	}
 
-	pub fn set_initiator_contract(&mut self, contract: InitiatorContract) {
-		self.initiator_contract = contract;
+	pub fn set_initiator_contract(&mut self, contract: NativeBridgeContract) {
+		self.native_bridge_contract = contract;
 	}
 
 	pub fn initiator_contract_address(&self) -> Address {
@@ -182,19 +182,24 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 		amount: Amount,
 		nonce: u64,
 	) -> BridgeContractResult<()> {
+		let generic_error = |desc| BridgeContractError::GenericError(String::from(desc));
 		let contract = NativeBridge::new(self.config.initiator_contract, self.rpc_provider.clone());
-		let bridge_trasnfer_id = bridge_transfer_id.0
-			..get(0..32)
-				.ok_or(generic_error("Could not get required slice from bridge_transfer_id"))?
-				.try_into()
-				.map_err(|e| {
-					BridgeContractError::ConversionFailed(format!(
-						"Failed to convert bridge_transfer_id: {e:?}"
-					))
-				})?;
+		let bridge_transfer_array: [u8; 32] = bridge_transfer_id
+			.0
+			.get(0..32) // Get the first 32 bytes
+			.ok_or_else(|| generic_error("Could not get required slice from bridge_transfer_id"))? // Handle the error if slice is not available
+			.try_into() // Convert slice to array
+			.map_err(|e| {
+				BridgeContractError::ConversionFailed(format!(
+					"Failed to convert bridge_transfer_id: {e:?}"
+				))
+			})?;
+		let initiator: [u8; 32] = initiator.0.try_into().map_err(|_| {
+			BridgeContractError::ConversionFailed("initiator must be exactly 32 bytes".to_string())
+		})?;
 		let call = contract.completeBridgeTransfer(
 			FixedBytes(bridge_trasnfer_id),
-			FixedBytes(initiator.0.into()),
+			FixedBytes(initiator),
 			recipient.0 .0,
 			U256::from(amount.0),
 			U256::from(nonce),
