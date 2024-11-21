@@ -2,7 +2,7 @@ use anyhow::Result;
 use std::sync::Arc;
 /// A simple demo scenario that sleep a few milli second and log some messages.
 /// To run it use: cargo run --release --bin demo_scenario
-use movement_tests::load_soak_testing::{
+use movement_client::load_soak_testing::{
 	execute_test, init_test, ExecutionConfig, Scenario, TestKind,
 };
 

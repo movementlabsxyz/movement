@@ -1,10 +1,6 @@
 use anyhow::Context;
 use bcs::to_bytes;
-use once_cell::sync::Lazy;
-use std::str::FromStr;
-use std::time::SystemTime;
-use std::time::UNIX_EPOCH;
-use movement_tests::{
+use movement_client::{
 	coin_client::CoinClient,
 	move_types::{
 		identifier::Identifier,
@@ -15,6 +11,10 @@ use movement_tests::{
 	types::transaction::{EntryFunction, SignedTransaction, TransactionPayload},
 	types::{account_address::AccountAddress, chain_id::ChainId, LocalAccount},
 };
+use once_cell::sync::Lazy;
+use std::str::FromStr;
+use std::time::SystemTime;
+use std::time::UNIX_EPOCH;
 use url::Url;
 
 static SUZUKA_CONFIG: Lazy<movement_config::Config> = Lazy::new(|| {
@@ -187,7 +187,7 @@ pub async fn test_sending_failed_transaction() -> Result<(), anyhow::Error> {
 	match rest_client.submit(&transaction).await {
 		Ok(_) => panic!("Transaction should have failed with high sequence number"),
 		Err(e) => match e {
-			movement_tests::rest_client::error::RestError::Api(aptos_error) => {
+			movement_client::rest_client::error::RestError::Api(aptos_error) => {
 				println!("Transaction failed as expected: {:?}", aptos_error);
 				assert_eq!(aptos_error.error.error_code as u32, 402); // 402 is used for too old and too new
 			}
@@ -253,7 +253,7 @@ pub async fn test_sending_failed_transaction() -> Result<(), anyhow::Error> {
 			res
 		),
 		Err(e) => match e {
-			movement_tests::rest_client::error::RestError::Api(aptos_error) => {
+			movement_client::rest_client::error::RestError::Api(aptos_error) => {
 				println!("Transaction failed as expected: {:?}", aptos_error);
 				assert_eq!(aptos_error.error.error_code as u32, 402); // 402 is used for too old and too new
 			}

@@ -1,7 +1,7 @@
 use anyhow::Context;
 use once_cell::sync::Lazy;
 use std::str::FromStr;
-use movement_tests::{
+use movement_client::{
 	coin_client::CoinClient,
 	rest_client::{Client, FaucetClient},
 	types::LocalAccount,

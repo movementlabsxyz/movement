@@ -4,9 +4,9 @@ use aptos_sdk::{
 	rest_client::{Client, FaucetClient},
 	types::LocalAccount,
 };
+use movement_client::load_soak_testing::{execute_test, init_test, ExecutionConfig, Scenario};
 use std::str::FromStr;
 use std::sync::Arc;
-use movement_tests::load_soak_testing::{execute_test, init_test, ExecutionConfig, Scenario};
 use url::Url;
 
 fn main() {

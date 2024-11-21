@@ -6,7 +6,7 @@ use aptos_sdk::{
 };
 use std::str::FromStr;
 use std::sync::Arc;
-use movement_tests::load_soak_testing::{execute_test, init_test, ExecutionConfig, Scenario};
+use movement_client::load_soak_testing::{execute_test, init_test, ExecutionConfig, Scenario};
 use url::Url;
 
 fn main() {

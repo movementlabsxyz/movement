@@ -10,7 +10,7 @@ processes:
       # with this overlay, ultimately, the force attestation will throw if this doesn't work
       timeout 3m movement-full-node run || exit 0
     depends_on:
-      m1-da-light-node:
+      movement-celestia-da-light-node:
         condition: process_healthy
     readiness_probe:
       initial_delay_seconds: 10
@@ -47,26 +47,31 @@ processes:
       export RUST_LOG=off
 
       movement-full-node state node commitment
-      NODE_COMMITMENT=$(movement-full-node state node commitment)
+      export NODE_COMMITMENT=$(movement-full-node state node commitment)
       movement-full-node admin force-commitment
-      SETTLED_COMMITMENT=$(movement-full-node state settlement accepted-commitment)
+      export SETTLED_COMMITMENT=$(movement-full-node state settlement accepted-commitment)
 
-      echo "NODE_COMMITMENT: $NODE_COMMITMENT"
-      echo "SETTLED_COMMITMENT: $SETTLED_COMMITMENT"
+      echo "NODE_COMMITMENT: $$NODE_COMMITMENT"
+      echo "SETTLED_COMMITMENT: $$SETTLED_COMMITMENT"
 
-      if [ "$NODE_COMMITMENT" == "$SETTLED_COMMITMENT" ]; then
+      if [ "$$NODE_COMMITMENT" == "" ]; then
+        echo "Empty commitment"
+        exit 1
+      fi
+
+      if [ "$$NODE_COMMITMENT" != "$$SETTLED_COMMITMENT" ]; then
         echo "Node commitment does not match settled commitment"
         exit 1
       fi
 
-      NODE_COMMITMENT=$(movement-full-node state node commitment 2)
+      export NODE_COMMITMENT=$(movement-full-node state node commitment 2)
       movement-full-node admin force-commitment 2
-      SETTLED_COMMITMENT=$(movement-full-node state settlement accepted-commitment)
+      export SETTLED_COMMITMENT=$(movement-full-node state settlement accepted-commitment)
 
-      echo "NODE_COMMITMENT: $NODE_COMMITMENT"
-      echo "SETTLED_COMMITMENT: $SETTLED_COMMITMENT"
+      echo "NODE_COMMITMENT: $$NODE_COMMITMENT"
+      echo "SETTLED_COMMITMENT: $$SETTLED_COMMITMENT"
 
-      if [ "$NODE_COMMITMENT" == "$SETTLED_COMMITMENT" ]; then
+      if [ "$$NODE_COMMITMENT" != "$$SETTLED_COMMITMENT" ]; then
         echo "Node commitment does not match settled commitment"
         exit 1
       fi

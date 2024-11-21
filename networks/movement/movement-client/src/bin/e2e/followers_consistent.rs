@@ -1,6 +1,6 @@
 use anyhow::Context;
 use dot_movement::DotMovement;
-use movement_tests::{
+use movement_client::{
 	coin_client::CoinClient,
 	rest_client::{Client, FaucetClient},
 	types::LocalAccount,
