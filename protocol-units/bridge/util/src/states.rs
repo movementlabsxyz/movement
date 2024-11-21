@@ -2,10 +2,8 @@ use crate::chains::bridge_contracts::BridgeContractEvent;
 use crate::events::{InvalidEventError, TransferEvent};
 use crate::types::Amount;
 use crate::types::BridgeAddress;
-use crate::types::BridgeTransferDetails;
-use crate::types::HashLockPreImage;
-use crate::types::LockDetails;
-use crate::types::{BridgeTransferId, ChainId, HashLock, TimeLock};
+use crate::types::{BridgeTransferCompletedDetails, BridgeTransferInitiatedDetails, Nonce};
+use crate::types::{BridgeTransferId, ChainId};
 use crate::TransferAction;
 use crate::TransferActionType;
 use std::fmt;
@@ -29,22 +27,16 @@ impl<A: From<Vec<u8>>> From<TransferAddress> for BridgeAddress<A> {
 #[derive(Debug, Clone, Copy, Eq, PartialEq, PartialOrd, Ord, Hash)]
 pub enum TransferStateType {
 	Initialized,
-	Locked,
-	SecretReceived,
-	CompletedIntiator,
+	Completed,
 	Done,
-	Refund,
 }
 
 impl fmt::Display for TransferStateType {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		let kind = match self {
 			Self::Initialized => "Initialized",
-			Self::Locked => "Locked",
-			Self::SecretReceived => "SecretReceived",
-			Self::CompletedIntiator => "CompletedIntiator",
+			Self::Completed => "Completed",
 			Self::Done => "Done",
-			Self::Refund => "Refund",
 		};
 		write!(f, "{}", kind,)
 	}
@@ -57,10 +49,8 @@ pub struct TransferState {
 	pub transfer_id: BridgeTransferId,
 	pub intiator_address: TransferAddress,
 	pub counter_part_address: TransferAddress,
-	pub hash_lock: HashLock,
-	pub time_lock: TimeLock,
 	pub amount: Amount,
-	pub contract_state: u8,
+	pub nonce: Nonce,
 	//Max number time action are retry for the whole transfer.
 	pub retry_on_error: usize,
 }
@@ -85,39 +75,23 @@ impl TransferState {
 				// already present invalid
 				Err(InvalidEventError::InitAnAlreadyExist)
 			}
-			// Lock event must on on the counter part chain.
-			(BridgeContractEvent::Locked(_), TransferStateType::Initialized) => (event.chain
+			// Complete event must on on the counter part chain.
+			(BridgeContractEvent::Completed(_), TransferStateType::Initialized) => (event.chain
 				!= self.init_chain)
 				.then_some(())
 				.ok_or(InvalidEventError::BadChain),
-			// Lock event is only applied on Initialized swap state
-			(BridgeContractEvent::Locked(details), _) => Err(InvalidEventError::BadEvent(format!("Received a locked event with state not Initialized, transfer_id: {} state:{} details: {details:?}", self.transfer_id, self.state))),
-			// CounterPartCompleted event must on on the counter part chain.
-			(BridgeContractEvent::CounterPartyCompleted(_, _), TransferStateType::Locked) => {
-				(event.chain != self.init_chain)
-					.then_some(())
-					.ok_or(InvalidEventError::BadChain)
-			}
-			// CounterPartCompleted event is only applied on Locked swap state
-			(BridgeContractEvent::CounterPartyCompleted(_, _), _) => {
-				Err(InvalidEventError::BadEvent(format!("Received a CounterPartCompleted event with state not Locked, transfer_id: {} state:{}", self.transfer_id, self.state)))
-			}
-			// InitiatorCompleted event must on on the init chain.
-			(BridgeContractEvent::InitiatorCompleted(_), TransferStateType::SecretReceived) => {
-				(event.chain == self.init_chain)
-					.then_some(())
-					.ok_or(InvalidEventError::BadChain)
-			}
-			(BridgeContractEvent::InitiatorCompleted(_), _) => Err(InvalidEventError::BadEvent(format!("Received a InitialtorCompleted event with state not SecretReceived, transfer_id: {} state:{}", self.transfer_id, self.state))),
-			(BridgeContractEvent::Refunded(_), _) => Ok(()),
-			(&BridgeContractEvent::Cancelled(_), _) => Ok(()),
+
+			_ => Err(InvalidEventError::BadEvent(format!(
+				"Received an invalid event {} with state not Initialized, transfer_id: {} state:{}",
+				event.contract_event, self.transfer_id, self.state
+			))),
 		}
 	}
 
 	pub fn transition_from_initiated<A: Into<Vec<u8>> + Clone>(
 		chain_id: ChainId,
 		transfer_id: BridgeTransferId,
-		detail: BridgeTransferDetails<A>,
+		detail: BridgeTransferInitiatedDetails<A>,
 	) -> (Self, TransferAction) {
 		println!("State transition_from_initiated amount {:?}", detail.amount);
 
@@ -127,72 +101,39 @@ impl TransferState {
 			transfer_id,
 			intiator_address: detail.initiator.clone().into(),
 			counter_part_address: detail.recipient.clone().into(),
-			hash_lock: detail.hash_lock,
-			time_lock: detail.time_lock,
 			amount: detail.amount,
-			contract_state: detail.state,
+			nonce: detail.nonce,
 			retry_on_error: 0,
 		};
 
-		let action_type = TransferActionType::LockBridgeTransfer {
+		let action_type = TransferActionType::CompleteBridgeTransfer {
 			bridge_transfer_id: transfer_id,
-			hash_lock: detail.hash_lock,
 			initiator: BridgeAddress(detail.initiator.0.into()),
 			recipient: BridgeAddress(detail.recipient.0.into()),
 			amount: detail.amount,
+			nonce: detail.nonce,
 		};
 		let action = TransferAction { chain: chain_id, transfer_id, kind: action_type };
 		(state, action)
 	}
 
-	pub fn transition_from_locked_done<A: Into<Vec<u8>> + Clone>(
+	pub fn transition_from_completed<A: Into<Vec<u8>> + Clone>(
 		mut self,
 		_transfer_id: BridgeTransferId,
-		_detail: LockDetails<A>,
+		_detail: BridgeTransferCompletedDetails<A>,
 	) -> (Self, TransferActionType) {
-		self.state = TransferStateType::Locked;
-		let action_type = TransferActionType::NoAction;
+		self.state = TransferStateType::Completed;
+		let action_type = TransferActionType::CompletedRemoveState;
 		(self, action_type)
 	}
 
-	pub fn transition_from_counterpart_completed(
+	pub fn transition_from_aborted<A: Into<Vec<u8>> + Clone>(
 		mut self,
 		_transfer_id: BridgeTransferId,
-		secret: HashLockPreImage,
+		_detail: BridgeTransferCompletedDetails<A>,
 	) -> (Self, TransferActionType) {
-		self.state = TransferStateType::SecretReceived;
-		let action_type = TransferActionType::WaitAndCompleteInitiator(0, secret);
+		self.state = TransferStateType::Initialized;
+		let action_type = TransferActionType::AbortedReplay(0);
 		(self, action_type)
-	}
-
-	pub fn transition_from_initiator_completed(
-		mut self,
-		_transfer_id: BridgeTransferId,
-	) -> (Self, TransferActionType) {
-		self.state = TransferStateType::Done;
-		let action_type = TransferActionType::NoAction;
-		(self, action_type)
-	}
-
-	pub fn transition_from_cancelled(
-		mut self,
-		_transfer_id: BridgeTransferId,
-	) -> (Self, TransferActionType) {
-		self.state = TransferStateType::Done;
-		let action_type = TransferActionType::NoAction;
-		(self, action_type)
-	}
-
-	pub fn transition_from_refunded(
-		mut self,
-		_transfer_id: BridgeTransferId,
-	) -> (Self, TransferActionType) {
-		self.state = TransferStateType::Done;
-		let action_type = TransferActionType::NoAction;
-		(self, action_type)
-	}
-
-	pub fn transition_to_refund(&self) -> (TransferStateType, TransferActionType) {
-		(TransferStateType::Refund, TransferActionType::RefundInitiator)
 	}
 }

@@ -1,6 +1,6 @@
 use crate::chains::bridge_contracts::BridgeContractError;
 use crate::types::ChainId;
-use crate::types::{Amount, BridgeAddress, BridgeTransferId, HashLock, HashLockPreImage};
+use crate::types::{Amount, BridgeAddress, BridgeTransferId, Nonce};
 use std::fmt;
 use thiserror::Error;
 
@@ -33,26 +33,24 @@ impl fmt::Display for TransferAction {
 
 #[derive(Debug, Clone)]
 pub enum TransferActionType {
-	LockBridgeTransfer {
+	CompleteBridgeTransfer {
 		bridge_transfer_id: BridgeTransferId,
-		hash_lock: HashLock,
 		initiator: BridgeAddress<Vec<u8>>,
 		recipient: BridgeAddress<Vec<u8>>,
 		amount: Amount,
+		nonce: Nonce,
 	},
-	WaitAndCompleteInitiator(u64, HashLockPreImage),
-	RefundInitiator,
-	TransferDone,
+	CompletedRemoveState,
+	AbortedReplay(usize),
 	NoAction,
 }
 
 impl fmt::Display for TransferActionType {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		let act = match self {
-			TransferActionType::LockBridgeTransfer { .. } => "LockBridgeTransfer",
-			TransferActionType::WaitAndCompleteInitiator(..) => "WaitAndCompleteInitiator",
-			TransferActionType::RefundInitiator => "RefundInitiator",
-			TransferActionType::TransferDone => "TransferDone",
+			TransferActionType::CompleteBridgeTransfer { .. } => "CompleteBridgeTransfer",
+			TransferActionType::CompletedRemoveState => "CompletedRemoveState",
+			TransferActionType::AbortedReplay(_) => "AbortedReplay",
 			TransferActionType::NoAction => "NoAction",
 		};
 		write!(f, "{}", act)
