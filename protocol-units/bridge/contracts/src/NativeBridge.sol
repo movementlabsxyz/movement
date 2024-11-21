@@ -30,17 +30,29 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
     }
     // TODO: include rate limit
 
+    /**
+    * @dev Initializes the NativeBridge contract
+    * @param _moveToken The address of the MOVE token contract
+    * @param _admin The address of the admin role
+    * @param _relayer The address of the relayer role
+    * @param _maintainer The address of the maintainer role
+     */
     function initialize(address _moveToken, address _admin, address _relayer, address _maintainer) public initializer {
         require(_moveToken != address(0) && _admin != address(0) && _relayer != address(0), ZeroAddress());
         __Pausable_init();
         moveToken = IERC20(_moveToken);
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
         _grantRole(RELAYER_ROLE, _relayer);
-
-        // Maintainer is optional
         _grantRole(RELAYER_ROLE, _maintainer);
     }
 
+    /**
+     * @dev Creates a new bridge
+     * @param recipient The address on the other chain to which to transfer funds
+     * @param amount The amount of MOVE to send
+     * @return bridgeTransferId A unique id representing this BridgeTransfer
+     *
+     */
     function initiateBridgeTransfer(bytes32 recipient, uint256 amount)
         external
         whenNotPaused
@@ -64,6 +76,14 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
         return bridgeTransferId;
     }
 
+    /**
+     * @dev Completes the bridging of funds. Only the relayer can call this function.
+     * @param bridgeTransferId Unique identifier for the BridgeTransfer
+     * @param originator The address on the other chain that originated the transfer of funds
+     * @param recipient The address on this chain to which to transfer funds
+     * @param amount The amount to transfer
+     * @param nonce The seed nonce to generate the bridgeTransferId
+     */
     function completeBridgeTransfer(
         bytes32 bridgeTransferId,
         bytes32 initiator,
