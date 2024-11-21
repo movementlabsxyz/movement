@@ -59,7 +59,7 @@ impl MovementClientFramework {
 			utils::create_local_account(config.movement_signer_key.clone(), &rest_client).await?;
 		let native_address = AccountAddress::from_hex_literal(&config.movement_native_address)?;
 		Ok(MovementClientFramework { native_address, rest_client, signer: Arc::new(signer) })
-	}
+	}	
 
 	pub fn rest_client(&self) -> &Client {
 		&self.rest_client
