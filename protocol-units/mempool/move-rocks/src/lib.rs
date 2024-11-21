@@ -22,7 +22,7 @@ pub struct RocksdbMempool {
 
 fn construct_mempool_transaction_key(transaction: &MempoolTransaction) -> Result<String, Error> {
 	// Pre-allocate a string with the required capacity
-	let mut key = String::with_capacity(32 + 1 + 32 + 1 + 32 + 1 + 32);
+	let mut key = String::with_capacity(32 + 1 + 32 + 1 + 32 + 1 + 64);
 	// Write key components. The numbers are zero-padded to 32 characters.
 	key.write_fmt(format_args!(
 		"{:032}:{:032}:{:032}:{}",
