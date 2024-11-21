@@ -22,7 +22,7 @@ contract NativeBridgeTest is Test {
     address public relayer = address(0x8e1a7e8);
     address public recipient = address(0x2);
     address public otherUser = address(0x3);
-    uint256 public rateLimit = 10000000 * 10 ** 18;
+    address public insuranceFund = address(this);
 
     function setUp() public {
         moveToken = new MockMOVEToken();
@@ -34,7 +34,7 @@ contract NativeBridgeTest is Test {
             address(nativeBridgeImplementation),
             address(proxyAdmin),
             abi.encodeWithSignature(
-                "initialize(address,address,address,address,uint256,uint256)", address(moveToken), deployer, relayer, address(0), rateLimit, rateLimit
+                "initialize(address,address,address,address,address)", address(moveToken), deployer, relayer, address(0), insuranceFund
             )
         );
         nativeBridge = NativeBridge(address(proxy));
@@ -45,7 +45,7 @@ contract NativeBridgeTest is Test {
         vm.assume(_originator != address(0));
         vm.assume(_originator != deployer);
 
-        _amount = bound(_amount, 1, 10000000000 * 10 ** 8);
+        _amount = bound(_amount, 1, 100000000 * 10 ** 8);
         moveToken.transfer(_originator, _amount);
         vm.startPrank(_originator);
         // require approval
@@ -76,7 +76,7 @@ contract NativeBridgeTest is Test {
         vm.assume(_recipient != address(0));
         vm.assume(relayer != address(0));
 
-        _amount = bound(_amount, 1, 10000000000 * 10 ** 8);
+        _amount = bound(_amount, 1, 100000000 * 10 ** 8);
         // nonce cannot be uint256 max because we are testing a +1 addition case to the nonce
         _nonce = bound(_nonce, 1, type(uint256).max - 1);
 

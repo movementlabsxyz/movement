@@ -19,7 +19,8 @@ interface INativeBridge {
         uint256 nonce
     );
 
-    event RateLimitsUpdated(uint256 outboundNewRateLimit, uint256 inboundNewRateLimit);
+    event InsuranceFundUpdated(address insuranceFund);
+    event PauseToggled(bool paused);
 
     error ZeroAmount();
     error MOVETransferFailed();

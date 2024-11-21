@@ -24,12 +24,7 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
     mapping(uint256 year => mapping(uint256 month => mapping(uint256 day => uint256 amount))) public outboundRateLimitBudget;
     mapping(uint256 year => mapping(uint256 month => mapping(uint256 day => uint256 amount))) public incomingRateLimitBudget;
 
-    // uint256 public lastReset;
-    // uint256 public outboundRateLimitBudget;
-    // uint256 public incomingRateLimitBudget;
-
-    uint256 public outboundRateLimit;
-    uint256 public incomingRateLimit;
+    address public insuranceFund;
     IERC20 public moveToken;
     bytes32 public constant RELAYER_ROLE = keccak256(abi.encodePacked("RELAYER_ROLE"));
     uint256 private _nonce;
@@ -40,16 +35,15 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
     }
     // TODO: include rate limit
 
-    function initialize(address _moveToken, address _admin, address _relayer, address _maintainer, uint256 _outboundRateLimit, uint256 _incomingRateLimit) public initializer {
+    function initialize(address _moveToken, address _admin, address _relayer, address _maintainer, address _insuranceFund) public initializer {
         require(_moveToken != address(0) && _admin != address(0) && _relayer != address(0), ZeroAddress());
         __Pausable_init();
         moveToken = IERC20(_moveToken);
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
         _grantRole(RELAYER_ROLE, _relayer);
 
-        // Set the rate limits
-        outboundRateLimit = _outboundRateLimit;
-        incomingRateLimit = _incomingRateLimit;
+        // Set insurance fund
+        insuranceFund = _insuranceFund;
 
         // Maintainer is optional
         _grantRole(RELAYER_ROLE, _maintainer);
@@ -63,7 +57,6 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
         // Ensure there is a valid amount
         require(amount > 0, ZeroAmount());
         _rateLimitOutbound(amount);
-        //   _l1l2RateLimit(amount);
         address initiator = msg.sender;
 
         // Transfer the MOVE tokens from the user to the contract
@@ -135,45 +128,25 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
         emit BridgeTransferCompleted(bridgeTransferId, initiator, recipient, amount, nonce);
     }
 
-    function setRateLimits(uint256 _outboundRateLimit, uint256 _incomingRateLimit) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        outboundRateLimit = _outboundRateLimit;
-        incomingRateLimit = _incomingRateLimit;
-        emit RateLimitsUpdated(_outboundRateLimit, _incomingRateLimit);
+    function setInsuranceFund(address _insuranceFund) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        insuranceFund = _insuranceFund;
+        emit InsuranceFundUpdated(_insuranceFund);
     }
 
     function togglePause() external onlyRole(DEFAULT_ADMIN_ROLE) {
         paused() ? _pause() : _unpause();
+        emit PauseToggled(paused());
     }
 
     function _rateLimitOutbound(uint256 amount) internal {
         (uint256 year, uint256 month, uint256 day) = block.timestamp.timestampToDate();
         outboundRateLimitBudget[year][month][day] += amount;
-        require(outboundRateLimitBudget[year][month][day] <= outboundRateLimit, OutboundRateLimitExceeded());
+        require(outboundRateLimitBudget[year][month][day] < moveToken.balanceOf(insuranceFund) / 4, OutboundRateLimitExceeded());
     }
 
     function _rateLimitIncoming(uint256 amount) internal {
         (uint256 year, uint256 month, uint256 day) = block.timestamp.timestampToDate();
         incomingRateLimitBudget[year][month][day] += amount;
-        require(incomingRateLimitBudget[year][month][day] <= incomingRateLimit, IncomingRateLimitExceeded());
+        require(incomingRateLimitBudget[year][month][day] < moveToken.balanceOf(insuranceFund) / 4, IncomingRateLimitExceeded());
     }
-
-    // function _rateLimitOutbound(uint256 amount) internal {
-    //     _resetTime();
-    //     outboundRateLimitBudget += amount;
-    //     require(outboundRateLimitBudget <= outboundRateLimit, OutboundRateLimitExceeded());
-    // }
-
-    // function _rateLimitIncoming(uint256 amount) internal {
-    //     _resetTime();
-    //     incomingRateLimitBudget += amount;
-    //     require(incomingRateLimitBudget <= outboundRateLimit, IncomingRateLimitExceeded());
-    // }
-
-    // function _resetTime() internal {
-    //     if (block.timestamp - lastReset >= 1 days) {
-    //         lastReset = block.timestamp;
-    //         outboundRateLimitBudget = 0;
-    //         incomingRateLimitBudget = 0;
-    //     }
-    // }
 }
