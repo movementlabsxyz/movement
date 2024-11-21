@@ -19,12 +19,33 @@ pub struct InnerSignedBlobV1Data {
 	pub timestamp: u64,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Id(Vec<u8>);
+
+/// The id for an Ir Blob
+impl Id {
+	pub fn as_slice(&self) -> &[u8] {
+		self.0.as_slice()
+	}
+
+	pub fn to_vec(self) -> Vec<u8> {
+		self.0
+	}
+}
+
+impl From<Vec<u8>> for Id {
+	fn from(id: Vec<u8>) -> Self {
+		Id(id)
+	}
+}
+
 impl InnerSignedBlobV1Data {
 	pub fn new(blob: Vec<u8>, timestamp: u64) -> Self {
 		Self { blob, timestamp }
 	}
 
-	pub fn compute_id<C>(&self) -> Vec<u8>
+	/// Computes the id of InnerSignedBlobV1Data
+	pub fn compute_id<C>(&self) -> Id
 	where
 		C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
 		Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
@@ -35,7 +56,7 @@ impl InnerSignedBlobV1Data {
 		let mut id_hasher = C::Digest::new();
 		id_hasher.update(self.blob.as_slice());
 		id_hasher.update(&self.timestamp.to_be_bytes());
-		id_hasher.finalize().to_vec()
+		Id(id_hasher.finalize().to_vec())
 	}
 
 	pub fn try_to_sign<C>(
@@ -73,7 +94,7 @@ pub struct InnerSignedBlobV1 {
 	pub data: InnerSignedBlobV1Data,
 	pub signature: Vec<u8>,
 	pub signer: Vec<u8>,
-	pub id: Vec<u8>,
+	pub id: Id,
 }
 
 impl InnerSignedBlobV1 {
@@ -172,7 +193,7 @@ pub mod test {
 		let signed_blob = blob.try_to_sign(&signing_key)?;
 
 		let mut changed_blob = signed_blob.clone();
-		changed_blob.id = vec![1, 2, 3, 4];
+		changed_blob.id = Id(vec![1, 2, 3, 4]);
 
 		assert!(changed_blob.try_verify::<k256::Secp256k1>().is_err());
 
