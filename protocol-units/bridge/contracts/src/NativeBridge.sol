@@ -6,12 +6,12 @@ import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/acce
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {INativeBridge} from "./INativeBridge.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {BokkyPooBahsDateTimeLibrary} from "@DateTimeLibrary/contracts/BokkyPooBahsDateTimeLibrary.sol";
+import {DateTimeLibrary} from "./lib/DateTimeLibrary.sol";
 
 // import {RateLimiter} from "./RateLimiter.sol";
 
 contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeBridge {
-    using BokkyPooBahsDateTimeLibrary for uint256;
+    using DateTimeLibrary for uint256;
     struct OutgoingTransfer {
         bytes32 bridgeTransferId;
         address initiator;
