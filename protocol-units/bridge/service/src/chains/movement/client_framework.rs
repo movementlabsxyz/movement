@@ -9,7 +9,7 @@ use aptos_sdk::{
 use aptos_types::account_address::AccountAddress;
 use bridge_config::common::movement::MovementConfig;
 use bridge_util::{
-	chains::bridge_contracts::{BridgeContract, BridgeContractError, BridgeContractResult},
+	chains::bridge_contracts::{BridgeClientContract, BridgeRelayerContract, BridgeContractError, BridgeContractResult},
 	types::{
 		Amount, BridgeAddress, BridgeTransferDetails, BridgeTransferDetailsCounterparty,
 		BridgeTransferId, HashLock, HashLockPreImage, TimeLock,
@@ -25,8 +25,7 @@ pub const FRAMEWORK_ADDRESS: AccountAddress = AccountAddress::new([
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
 ]);
 
-pub const INITIATOR_MODULE_NAME: &str = "atomic_bridge_initiator";
-pub const COUNTERPARTY_MODULE_NAME: &str = "atomic_bridge_counterparty";
+pub const NATIVE_BRIDGE_MODULE_NAME: &str = "native_bridge";
 const DUMMY_ADDRESS: AccountAddress = AccountAddress::new([0; 32]);
 
 #[allow(dead_code)]
@@ -68,72 +67,25 @@ impl MovementClientFramework {
 	pub fn signer(&self) -> &LocalAccount {
 		&self.signer
 	}
-
-	pub async fn initiator_set_timelock(
-		&mut self,
-		time_lock: u64,
-	) -> Result<(), BridgeContractError> {
-		let args = vec![utils::serialize_u64(&time_lock)?];
-
-		let payload = utils::make_aptos_payload(
-			FRAMEWORK_ADDRESS,
-			"atomic_bridge_configuration",
-			"set_initiator_time_lock_duration",
-			Vec::new(),
-			args,
-		);
-
-		utils::send_and_confirm_aptos_transaction(&self.rest_client, self.signer.as_ref(), payload)
-			.await
-			.map_err(|_| BridgeContractError::CallError)?;
-
-		Ok(())
-	}
-
-	pub async fn counterparty_set_timelock(
-		&mut self,
-		time_lock: u64,
-	) -> Result<(), BridgeContractError> {
-		let args = vec![utils::serialize_u64(&time_lock)?];
-
-		let payload = utils::make_aptos_payload(
-			FRAMEWORK_ADDRESS,
-			"atomic_bridge_configuration",
-			"set_counterparty_time_lock_duration",
-			Vec::new(),
-			args,
-		);
-
-		utils::send_and_confirm_aptos_transaction(&self.rest_client, self.signer.as_ref(), payload)
-			.await
-			.map_err(|_| BridgeContractError::CallError)?;
-
-		Ok(())
-	}
 }
 
 #[async_trait::async_trait]
-impl BridgeContract<MovementAddress> for MovementClientFramework {
+impl BridgeClientContract<MovementAddress> for MovementClientFramework {
 	async fn initiate_bridge_transfer(
 		&mut self,
-		_initiator: BridgeAddress<MovementAddress>,
 		recipient: BridgeAddress<Vec<u8>>,
-		hash_lock: HashLock,
 		amount: Amount,
 	) -> BridgeContractResult<()> {
 		debug!("Amount value: {:?}", amount);
 
-		let serialized_hash_lock = utils::serialize_vec_initiator(&hash_lock.0[..])?;
-
 		let args = vec![
 			utils::serialize_vec_initiator(&recipient.0)?,
-			serialized_hash_lock,
 			utils::serialize_u64_initiator(&amount)?,
 		];
 
 		let payload = utils::make_aptos_payload(
 			FRAMEWORK_ADDRESS,
-			"atomic_bridge_initiator",
+			NATIVE_BRIDGE_MODULE_NAME,
 			"initiate_bridge_transfer",
 			Vec::new(),
 			args,
@@ -147,165 +99,6 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 		.await
 		.map_err(|_| BridgeContractError::InitiateTransferError)?;
 
-		Ok(())
-	}
-
-	async fn initiator_complete_bridge_transfer(
-		&mut self,
-		bridge_transfer_id: BridgeTransferId,
-		preimage: HashLockPreImage,
-	) -> BridgeContractResult<()> {
-		let unpadded_preimage = {
-			let mut end = preimage.0.len();
-			while end > 0 && preimage.0[end - 1] == 0 {
-				end -= 1;
-			}
-			&preimage.0[..end]
-		};
-		println!("Unpadded preimage: {:?}", unpadded_preimage);
-		let args2 = vec![
-			utils::serialize_vec_initiator(&bridge_transfer_id.0[..])?,
-			utils::serialize_vec_initiator(unpadded_preimage)?,
-		];
-
-		let payload = utils::make_aptos_payload(
-			FRAMEWORK_ADDRESS,
-			INITIATOR_MODULE_NAME,
-			"complete_bridge_transfer",
-			Vec::new(),
-			args2,
-		);
-
-		let _ = utils::send_and_confirm_aptos_transaction(
-			&self.rest_client,
-			self.signer.as_ref(),
-			payload,
-		)
-		.await
-		.map_err(|_| BridgeContractError::CompleteTransferError);
-
-		Ok(())
-	}
-
-	async fn counterparty_complete_bridge_transfer(
-		&mut self,
-		bridge_transfer_id: BridgeTransferId,
-		preimage: HashLockPreImage,
-	) -> BridgeContractResult<()> {
-		let unpadded_preimage = {
-			let mut end = preimage.0.len();
-			while end > 0 && preimage.0[end - 1] == 0 {
-				end -= 1;
-			}
-			&preimage.0[..end]
-		};
-		let args2 = vec![
-			utils::serialize_vec(&bridge_transfer_id.0[..])?,
-			utils::serialize_vec(&unpadded_preimage)?,
-		];
-
-		let payload = utils::make_aptos_payload(
-			FRAMEWORK_ADDRESS,
-			COUNTERPARTY_MODULE_NAME,
-			"complete_bridge_transfer",
-			Vec::new(),
-			args2,
-		);
-
-		let result = utils::send_and_confirm_aptos_transaction(
-			&self.rest_client,
-			self.signer.as_ref(),
-			payload,
-		)
-		.await
-		.map_err(|_| BridgeContractError::CompleteTransferError);
-
-		match &result {
-			Ok(tx_result) => {
-				debug!("Transaction succeeded: {:?}", tx_result);
-			}
-			Err(err) => {
-				debug!("Transaction failed: {:?}", err);
-			}
-		}
-
-		Ok(())
-	}
-
-	async fn lock_bridge_transfer(
-		&mut self,
-		bridge_transfer_id: BridgeTransferId,
-		hash_lock: HashLock,
-		initiator: BridgeAddress<Vec<u8>>,
-		recipient: BridgeAddress<MovementAddress>,
-		amount: Amount,
-	) -> BridgeContractResult<()> {
-		debug!("Starting lock bridge transfer");
-		debug!("Initiator: {:?}", initiator.0);
-
-		let args = vec![
-			utils::serialize_vec(&initiator.0)?,
-			utils::serialize_vec(&bridge_transfer_id.0[..])?,
-			utils::serialize_vec(&hash_lock.0[..])?,
-			utils::serialize_vec(&recipient.0)?,
-			utils::serialize_u64(&amount)?,
-		];
-
-		let payload = utils::make_aptos_payload(
-			FRAMEWORK_ADDRESS,
-			COUNTERPARTY_MODULE_NAME,
-			"lock_bridge_transfer_assets",
-			Vec::new(),
-			args,
-		);
-
-		let _ = utils::send_and_confirm_aptos_transaction(
-			&self.rest_client,
-			self.signer.as_ref(),
-			payload,
-		)
-		.await
-		.map_err(|_| BridgeContractError::LockTransferError)?;
-
-		Ok(())
-	}
-
-	async fn refund_bridge_transfer(
-		&mut self,
-		bridge_transfer_id: BridgeTransferId,
-	) -> BridgeContractResult<()> {
-		let args = vec![utils::serialize_vec_initiator(&bridge_transfer_id.0[..])?];
-
-		let payload = utils::make_aptos_payload(
-			FRAMEWORK_ADDRESS,
-			"atomic_bridge_initiator",
-			"refund_bridge_transfer",
-			Vec::new(),
-			args,
-		);
-
-		utils::send_and_confirm_aptos_transaction(&self.rest_client, self.signer.as_ref(), payload)
-			.await
-			.map_err(|err| BridgeContractError::OnChainError(err.to_string()))?;
-
-		Ok(())
-	}
-
-	async fn abort_bridge_transfer(
-		&mut self,
-		bridge_transfer_id: BridgeTransferId,
-	) -> BridgeContractResult<()> {
-		let args3 = vec![utils::serialize_vec(&bridge_transfer_id.0[..])?];
-		let payload = utils::make_aptos_payload(
-			FRAMEWORK_ADDRESS,
-			COUNTERPARTY_MODULE_NAME,
-			"abort_bridge_transfer",
-			Vec::new(),
-			args3,
-		);
-		utils::send_and_confirm_aptos_transaction(&self.rest_client, self.signer.as_ref(), payload)
-			.await
-			.map_err(|_| BridgeContractError::AbortTransferError)?;
 		Ok(())
 	}
 
@@ -482,6 +275,61 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 	}
 }
 
+#[async_trait::async_trait]
+impl BridgeRelayerContract<MovementAddress> for MovementClientFramework {
+	async fn complete_bridge_transfer(
+		&mut self,
+		bridge_transfer_id: BridgeTransferId,
+		initiator: BridgeAddress<Vec<u8>>,
+		recipient: BridgeAddress<MovementAddress>,
+		amount: Amount,
+		nonce: Nonce,
+	) -> BridgeContractResult<()> {
+		let unpadded_preimage = {
+			let mut end = preimage.0.len();
+			while end > 0 && preimage.0[end - 1] == 0 {
+				end -= 1;
+			}
+			&preimage.0[..end]
+		};
+		let args = vec![
+			utils::serialize_vec(&bridge_transfer_id.0[..])?,
+			utils::serialize_vec_initiator(&initiator.0)?,
+			utils::serialize_vec_initiator(&recipient.0)?,
+			utils::serialize_u64_initiator(&amount)?,
+			utils::serialize_u64_initiator(&nonce)?,
+		];
+
+		let payload = utils::make_aptos_payload(
+			FRAMEWORK_ADDRESS,
+			NATIVE_BRIDGE_MODULE_NAME,
+			"complete_bridge_transfer",
+			Vec::new(),
+			args,
+		);
+
+		let result = utils::send_and_confirm_aptos_transaction(
+			&self.rest_client,
+			self.signer.as_ref(),
+			payload,
+		)
+		.await
+		.map_err(|_| BridgeContractError::CompleteTransferError);
+
+		match &result {
+			Ok(tx_result) => {
+				debug!("Transaction succeeded: {:?}", tx_result);
+			}
+			Err(err) => {
+				debug!("Transaction failed: {:?}", err);
+			}
+		}
+
+		Ok(())
+	}
+
+}
+
 //@TODO: feature flag from here for testing only
 
 use std::{
@@ -580,52 +428,6 @@ impl MovementClientFramework {
 			println!("stdout: {}", String::from_utf8_lossy(&update_bridge_operator_output.stdout));
 		}
 		if !update_bridge_operator_output.stderr.is_empty() {
-			eprintln!("stderr: {}", String::from_utf8_lossy(&update_bridge_operator_output.stderr));
-		}
-
-		let set_initiator_time_lock_script_output = Command::new("movement")
-		.args(&[
-			"move",
-			"run-script",
-			"--compiled-script-path",
-			"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/set_initiator_time_lock_duration.mv",
-			"--args",
-			"u64: 11",
-			"--profile",
-			"default",
-			"--assume-yes",
-		])
-		.stdout(Stdio::piped())
-		.stderr(Stdio::piped())
-		.output()?;
-
-		if !set_initiator_time_lock_script_output.stdout.is_empty() {
-			println!("stdout: {}", String::from_utf8_lossy(&update_bridge_operator_output.stdout));
-		}
-		if !set_initiator_time_lock_script_output.stderr.is_empty() {
-			eprintln!("stderr: {}", String::from_utf8_lossy(&update_bridge_operator_output.stderr));
-		}
-
-		let set_counterparty_time_lock_script_output = Command::new("movement")
-		.args(&[
-			"move",
-			"run-script",
-			"--compiled-script-path",
-			"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/set_counterparty_time_lock_duration.mv",
-			"--args",
-			"u64: 5",
-			"--profile",
-			"default",
-			"--assume-yes",
-		])
-		.stdout(Stdio::piped())
-		.stderr(Stdio::piped())
-		.output()?;
-
-		if !set_counterparty_time_lock_script_output.stdout.is_empty() {
-			println!("stdout: {}", String::from_utf8_lossy(&update_bridge_operator_output.stdout));
-		}
-		if !set_counterparty_time_lock_script_output.stderr.is_empty() {
 			eprintln!("stderr: {}", String::from_utf8_lossy(&update_bridge_operator_output.stderr));
 		}
 
