@@ -124,7 +124,9 @@ impl DynOptFinExecutor for Executor {
 
 	/// Rollover the genesis block
 	async fn rollover_genesis_block(&self) -> Result<(), anyhow::Error> {
-		self.executor.rollover_genesis_now().await
+		self.executor
+			.rollover_genesis(self.executor.config().chain.genesis_timestamp_microseconds)
+			.await
 	}
 
 	fn decrement_transactions_in_flight(&self, count: u64) {

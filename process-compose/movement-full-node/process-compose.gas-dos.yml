@@ -1,0 +1,16 @@
+version: "3"
+
+environment:
+
+processes:
+
+  gas-dos-test:
+    command: |
+      cargo run --bin movement-tests-gas-dos
+    depends_on:
+      movement-full-node:
+        condition: process_healthy
+      movement-faucet:
+        condition: process_healthy
+    availability:
+      exit_on_end: true

@@ -68,11 +68,12 @@ jobs:
             -p maptos-opt-executor \
             -p memseq \
             -p move-rocks \
-            -p movement-types
+            -p movement-types \
+            -p movement-config
         EOF
 
-  suzuka-full-node-local:
-    if: github.event.label.name == 'cicd:suzuka-full-node' ||  github.ref == 'refs/heads/main'
+  movement-full-node-local:
+    if: github.event.label.name == 'cicd:movement-full-node' ||  github.ref == 'refs/heads/main'
     strategy:
       matrix:
         include:
@@ -96,15 +97,15 @@ jobs:
         name: movementlabs
         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
-    - name: Run Suzuka Full Node Tests Against Local ETH and Local Celestia
+    - name: Run Movement Full Node Tests Against Local ETH and Local Celestia
       env:
         CELESTIA_LOG_LEVEL: FATAL # adjust the log level while debugging
       run: |
-        nix develop --command bash  -c "just suzuka-full-node native build.setup.eth-local.celestia-local.test -t=false"
-        nix develop --command bash  -c "just suzuka-full-node native build.setup.eth-local.celestia-local.test -t=false"  
+        nix develop --command bash  -c "just movement-full-node native build.setup.eth-local.celestia-local.test -t=false"
+        nix develop --command bash  -c "just movement-full-node native build.setup.eth-local.celestia-local.test -t=false"  
 
-  suzuka-full-node-malicious:
-    if: github.event.label.name == 'cicd:suzuka-full-node-malicious' ||  github.ref == 'refs/heads/main'
+  movement-full-node-malicious:
+    if: github.event.label.name == 'cicd:movement-full-node-malicious' ||  github.ref == 'refs/heads/main'
 
     strategy:
       matrix:
@@ -124,14 +125,14 @@ jobs:
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
 
-    - name: Run Suzuka Full Node Gas DoS Test
+    - name: Run Movement Full Node Gas DoS Test
       env:
         CELESTIA_LOG_LEVEL: FATAL # adjust the log level while debugging
       run: |
-        nix develop --command bash  -c "just suzuka-full-node native build.setup.eth-local.celestia-local.gas-dos -t=false"
+        nix develop --command bash  -c "just movement-full-node native build.setup.eth-local.celestia-local.gas-dos -t=false"
 
-  suzuka-multi-node-local:
-    if: github.event.label.name == 'cicd:suzuka-multi-node-local' ||  github.ref == 'refs/heads/main'
+  movement-multi-node-local:
+    if: github.event.label.name == 'cicd:movement-multi-node-local' ||  github.ref == 'refs/heads/main'
     strategy:
       matrix:
         include:
@@ -150,16 +151,16 @@ jobs:
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
 
-    - name: Run Suzuka Full Node Tests Against Local ETH and Local Celestia
+    - name: Run Movement Full Node Tests Against Local ETH and Local Celestia
       env:
         CELESTIA_LOG_LEVEL: FATAL # adjust the log level while debugging
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       run: |
-        nix develop --command bash  -c "just suzuka-full-node native build.setup.eth-local.celestia-local.test-followers -t=false"
+        nix develop --command bash  -c "just movement-full-node native build.setup.eth-local.celestia-local.test-followers -t=false"
 
-  suzuka-indexer-local:
-    if: github.event.label.name == 'cicd:suzuka-full-node' ||  github.ref == 'refs/heads/main'
+  movement-indexer-local:
+    if: github.event.label.name == 'cicd:movement-full-node' ||  github.ref == 'refs/heads/main'
     strategy:
       matrix:
         include:
@@ -178,13 +179,13 @@ jobs:
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
 
-    - name: Run Suzuka Full Node + indexer Tests Against Local ETH and Local Celestia
+    - name: Run Movement Full Node + indexer Tests Against Local ETH and Local Celestia
       env:
         CELESTIA_LOG_LEVEL: FATAL # adjust the log level while debugging
       run: |
-        nix develop --command bash  -c "just suzuka-full-node native build.celestia-local.indexer.hasura.indexer-test -t=false"
+        nix develop --command bash  -c "just movement-full-node native build.celestia-local.indexer.hasura.indexer-test -t=false"
   
-  suzuka-full-node-remote:
+  movement-full-node-remote:
     if: false 
     strategy:
       matrix:
@@ -209,15 +210,15 @@ jobs:
         name: movementlabs
         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
-    - name: Run Suzuka Full Node Tests Against Holesky and Local Celestia
+    - name: Run Movement Full Node Tests Against Holesky and Local Celestia
       env: 
         CELESTIA_LOG_LEVEL: FATAL # adjust the log level while debugging
         MCR_DEPLOYMENT_ACCOUNT_PRIVATE_KEY: ${{ secrets.MCR_DEPLOYMENT_ACCOUNT_PRIVATE_KEY }}
       run: |
-        nix develop --command bash  -c "just suzuka-full-node native build.setup.eth-holesky.celestia-local.test -t=false"
-        nix develop --command bash  -c "just suzuka-full-node native build.setup.eth-holesky.celestia-local.test -t=false"
+        nix develop --command bash  -c "just movement-full-node native build.setup.eth-holesky.celestia-local.test -t=false"
+        nix develop --command bash  -c "just movement-full-node native build.setup.eth-holesky.celestia-local.test -t=false"
 
-  m1-da-light-node:
+  movement-celestia-da-light-node:
     if: false # this is effectively tested by the above
     strategy:
       matrix:
@@ -240,9 +241,9 @@ jobs:
         name: movementlabs
         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
-    - name: Run M1 DA Light Node tests in nix environment
+    - name: Run Movement DA Light Node tests in nix environment
       # adjust the log level while debugging
-      run: CELESTIA_LOG_LEVEL=FATAL nix develop --command bash  -c "just m1-da-light-node native build.setup.test.local -t=false"  
+      run: CELESTIA_LOG_LEVEL=FATAL nix develop --command bash  -c "just movement-celestia-da-light-node native build.setup.test.local -t=false"  
 
     - name: Run foundry tests
       # Run the foundry solidity contracts using the WETH9 contract on sepolia
@@ -415,4 +416,4 @@ jobs:
 #
 #    - name: Run Indexer tests in nix environment
 #      # adjust the log level while debugging
-#      run: CELESTIA_LOG_LEVEL=FATAL nix develop --command bash  -c "just suzuka-full-node native build.celestia-local.indexer.hasura.indexer-test -t=false"
+#      run: CELESTIA_LOG_LEVEL=FATAL nix develop --command bash  -c "just movement-full-node native build.celestia-local.indexer.hasura.indexer-test -t=false"

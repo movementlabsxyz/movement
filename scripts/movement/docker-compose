@@ -4,7 +4,7 @@ set -euo pipefail
 
 if [ "$#" -lt 3 ]; then
     echo "Usage: $0 <service> <runtime> <flags> [docker-compose flags...]"
-    echo "Example: $0 suzuka-full-node docker-compose setup.local.test"
+    echo "Example: $0 movement-full-node docker-compose setup.local.test"
     exit 1
 fi
 

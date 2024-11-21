@@ -1,4 +1,4 @@
-use crate::{HarnessMvtClient, HarnessMvtClientFramework};
+use crate::HarnessMvtClient;
 use alloy::hex;
 use anyhow::Result;
 use aptos_sdk::{
@@ -47,97 +47,6 @@ pub fn assert_counterparty_bridge_transfer_details_framework(
 	assert_eq!(details.amount, Amount(expected_amount));
 	assert_eq!(details.hash_lock.0, expected_hash_lock);
 	assert_eq!(details.time_lock.0, expected_time_lock);
-}
-
-pub async fn extract_bridge_transfer_id(
-	movement_client: &mut MovementClientFramework,
-) -> Result<[u8; 32], anyhow::Error> {
-	let sender_address = movement_client.signer().address();
-	let sequence_number = 0;
-	let rest_client = movement_client.rest_client();
-
-	let transactions = rest_client
-		.get_account_transactions(sender_address, Some(sequence_number), Some(20))
-		.await
-		.map_err(|e| anyhow::Error::msg(format!("Failed to get transactions: {:?}", e)))?;
-
-	if let Some(transaction) = transactions.into_inner().last() {
-		if let Transaction::UserTransaction(user_txn) = transaction {
-			for event in &user_txn.events {
-				if let aptos_sdk::rest_client::aptos_api_types::MoveType::Struct(struct_tag) =
-					&event.typ
-				{
-					match struct_tag.name.as_str() {
-						"BridgeTransferInitiatedEvent" | "BridgeTransferLockedEvent" => {
-							if let Some(bridge_transfer_id) =
-								event.data.get("bridge_transfer_id").and_then(|v| v.as_str())
-							{
-								let hex_str = bridge_transfer_id.trim_start_matches("0x");
-								let decoded_vec = hex::decode(hex_str).map_err(|_| {
-									anyhow::Error::msg("Failed to decode hex string into Vec<u8>")
-								})?;
-								return decoded_vec.try_into().map_err(|_| {
-									anyhow::Error::msg(
-										"Failed to convert decoded Vec<u8> to [u8; 32]",
-									)
-								});
-							}
-						}
-						_ => {}
-					}
-				}
-			}
-		}
-	}
-	Err(anyhow::Error::msg("No matching transaction found"))
-}
-
-pub async fn extract_bridge_transfer_id_framework(
-	movement_client: &mut MovementClientFramework,
-) -> Result<[u8; 32], anyhow::Error> {
-	let sender_address = movement_client.signer().address();
-	let sequence_number = 0;
-	let rest_client = movement_client.rest_client();
-	debug!("Sender address: {:?}", sender_address);
-
-	let transactions = rest_client
-		.get_account_transactions(sender_address, Some(sequence_number), Some(20))
-		.await
-		.map_err(|e| anyhow::Error::msg(format!("Failed to get transactions: {:?}", e)))?;
-
-	if let Some(transaction) = transactions.into_inner().last() {
-		if let Transaction::UserTransaction(user_txn) = transaction {
-			for event in &user_txn.events {
-				if let aptos_sdk::rest_client::aptos_api_types::MoveType::Struct(struct_tag) =
-					&event.typ
-				{
-					match struct_tag.name.as_str() {
-						"BridgeTransferInitiatedEvent" | "BridgeTransferLockedEvent" => {
-							if let Some(bridge_transfer_id_str) =
-								event.data.get("bridge_transfer_id").and_then(|v| v.as_str())
-							{
-								let bridge_transfer_id_vec =
-									hex::decode(bridge_transfer_id_str.trim_start_matches("0x"))
-										.map_err(|_| {
-											anyhow::Error::msg(
-												"Failed to decode hex string into Vec<u8>",
-											)
-										})?;
-								let bridge_transfer_id: [u8; 32] =
-									bridge_transfer_id_vec.try_into().map_err(|_| {
-										anyhow::Error::msg("Failed to convert Vec<u8> to [u8; 32]")
-									})?;
-
-								return Ok(bridge_transfer_id);
-							}
-						}
-						_ => {}
-					}
-				}
-			}
-		}
-	}
-	Err(anyhow::Error::msg("No matching transaction found"))
 }
 
 pub async fn fetch_bridge_transfer_details(
@@ -202,7 +111,7 @@ pub async fn fund_and_check_balance(
 }
 
 pub async fn fund_and_check_balance_framework(
-	movement_harness: &mut HarnessMvtClientFramework,
+	movement_harness: &mut HarnessMvtClient,
 	expected_balance: u64,
 ) -> Result<()> {
 	let movement_client_signer = movement_harness.movement_client.signer();
@@ -230,8 +139,6 @@ pub async fn initiate_bridge_transfer_helper(
 	amount: u64,
 	timelock_modify: bool,
 ) -> Result<(), BridgeContractError> {
-	// Publish for test
-
 	if timelock_modify {
 		// Set the timelock to 1 second for testing
 		movement_client.initiator_set_timelock(1).await.expect("Failed to set timelock");

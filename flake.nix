@@ -150,7 +150,7 @@
             shellHook = ''
               #!/usr/bin/env ${pkgs.bash}
 
-              DOT_MOVEMENT_PATH=$(pwd).movement
+              export DOT_MOVEMENT_PATH=$(pwd)/.movement
               mkdir -p $DOT_MOVEMENT_PATH
 
               # export PKG_CONFIG_PATH=$PKG_CONFIG_PATH_FOR_TARGET
