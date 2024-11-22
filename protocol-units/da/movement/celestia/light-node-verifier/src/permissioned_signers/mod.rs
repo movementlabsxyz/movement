@@ -69,7 +69,11 @@ where
 	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 	FieldBytesSize<C>: ModulusSize,
 {
-	async fn verify(&self, blob: CelestiaBlob, height: u64) -> Result<Verified<IntermediateBlobRepresentation>, Error> {
+	async fn verify(
+		&self,
+		blob: CelestiaBlob,
+		height: u64,
+	) -> Result<Verified<IntermediateBlobRepresentation>, Error> {
 		let verified_blob = self.celestia.verify(blob, height).await?;
 		self.known_signers.verify(verified_blob.into_inner(), height).await
 	}
