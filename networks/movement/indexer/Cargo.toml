@@ -1,0 +1,36 @@
+[package]
+name = "movement-indexer-service"
+version = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+authors = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
+publish = { workspace = true }
+rust-version = { workspace = true }
+
+[[bin]]
+name = "load_metadata"
+path = "bin/load_metadata.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+tokio = { workspace = true }
+dot-movement = { workspace = true }
+futures = { workspace = true }
+num_cpus = { workspace = true }
+poem = { workspace = true }
+processor = { workspace = true }
+server-framework = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+maptos-execution-util = { workspace = true }
+clap = { workspace = true }
+reqwest = { workspace = true, features = ["json"] }
+serde_json = { workspace = true }
+tempfile = { workspace = true }
+
+serde_yaml = "0.9.34"
+
+[lints]
+workspace = true

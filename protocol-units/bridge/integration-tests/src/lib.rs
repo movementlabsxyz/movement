@@ -62,6 +62,7 @@ pub struct MovementToEthCallArgs {
 	pub hash_lock: EthHash,
 	pub time_lock: u64,
 	pub amount: u64,
+	pub pre_image: [u8; 32],
 }
 
 impl Default for EthToMovementCallArgs {
@@ -99,13 +100,30 @@ impl Default for EthToMovementCallArgs {
 
 impl Default for MovementToEthCallArgs {
 	fn default() -> Self {
+		// Generate a 6-character random alphanumeric suffix
+		let random_suffix: String =
+			thread_rng().sample_iter(&Alphanumeric).take(6).map(char::from).collect();
+
+		// Construct the bridge_transfer_id with the random suffix
+		let mut bridge_transfer_id = b"00000000000000000000000tra".to_vec();
+		bridge_transfer_id.extend_from_slice(random_suffix.as_bytes());
+
+		// Generate a random 32-byte secret
+		let pre_image: [u8; 32] = thread_rng().gen();
+
 		Self {
 			initiator: MovementAddress(AccountAddress::new(*b"0x000000000000000000000000A55018")),
 			recipient: b"32Be343B94f860124dC4fEe278FDCBD38C102D88".to_vec(),
-			bridge_transfer_id: EthHash(*b"00000000000000000000000transfer1"),
-			hash_lock: EthHash(*keccak256(b"secret")),
+			bridge_transfer_id: EthHash(
+				bridge_transfer_id
+					.as_slice()
+					.try_into()
+					.expect("Expected bridge_transfer_id to be 32 bytes"),
+			),
+			hash_lock: EthHash(*keccak256(&pre_image)), // Hash the secret for the hash lock
 			time_lock: 3600,
 			amount: 100,
+			pre_image, // Store the generated secret in the struct
 		}
 	}
 }
@@ -152,7 +170,7 @@ impl HarnessEthClient {
 		signer_private_key
 	}
 
-	pub fn get_initiator_address(config: &Config) -> Address {
+	pub fn get_initiator(config: &Config) -> Address {
 		HarnessEthClient::get_initiator_private_key(config).address()
 	}
 
@@ -168,40 +186,8 @@ impl HarnessEthClient {
 		HarnessEthClient::get_recipient_private_key(config).address()
 	}
 
-	pub async fn initiator_complete_bridge_transfer(
-		&self,
-		config: &Config,
-		initiator_privatekey: PrivateKeySigner,
-		transfer_id: BridgeTransferId,
-		pre_image: HashLockPreImage,
-	) -> Result<(), anyhow::Error> {
-		let initiator_address = initiator_privatekey.address();
-		let rpc_provider = ProviderBuilder::new()
-			.with_recommended_fillers()
-			.wallet(EthereumWallet::from(initiator_privatekey))
-			.on_builtin(&config.eth.eth_rpc_connection_url())
-			.await?;
-
-		let contract = AtomicBridgeInitiatorMOVE::new(
-			Address::from_str(&config.eth.eth_initiator_contract)?,
-			rpc_provider.clone(),
-		);
-
-		let call =
-			contract.completeBridgeTransfer(FixedBytes(transfer_id.0), FixedBytes(*pre_image));
-
-		let _ = send_transaction(
-			call,
-			initiator_address,
-			&send_transaction_rules(),
-			config.eth.transaction_send_retries,
-			config.eth.gas_limit as u128,
-		)
-		.await?;
-		Ok(())
-	}
-
 	pub async fn initiate_eth_bridge_transfer(
+		&self,
 		config: &Config,
 		initiator_privatekey: PrivateKeySigner,
 		recipient: MovementAddress,
@@ -209,7 +195,51 @@ impl HarnessEthClient {
 		amount: Amount,
 	) -> Result<(), anyhow::Error> {
 		let initiator_address = initiator_privatekey.address();
-		let rpc_provider = ProviderBuilder::new()
+		let move_value = U256::from(amount.0.clone());
+		tracing::info!("initiator_address: {initiator_address}");
+		tracing::info!("self.signer_address(): {}", self.signer_address());
+
+		{
+			// Move some ERC token to the initiator account
+			//So that he can do the bridge transfer.
+			let rpc_provider = self.rpc_provider().await;
+			let mock_move_token = MockMOVEToken::new(
+				Address::from_str(&config.eth.eth_move_token_contract)?,
+				&rpc_provider,
+			);
+
+			// Approve the ETH initiator contract to spend Amount of MOVE
+			let approve_call = mock_move_token
+				.approve(self.signer_address(), move_value)
+				.from(self.signer_address());
+
+			send_transaction(
+				approve_call,
+				self.signer_address(),
+				&send_transaction_rules(),
+				config.eth.transaction_send_retries,
+				config.eth.gas_limit as u128,
+			)
+			.await?;
+
+			//transfer the tokens to the initiator.
+			let transfer_call = mock_move_token
+				.transferFrom(self.signer_address(), initiator_address, move_value)
+				.from(self.signer_address());
+
+			//			transfer_call.send().await?.get_receipt().await?;
+
+			send_transaction(
+				transfer_call,
+				self.signer_address(),
+				&send_transaction_rules(),
+				config.eth.transaction_send_retries,
+				config.eth.gas_limit as u128,
+			)
+			.await?;
+		}
+
+		let initiator_rpc_provider = ProviderBuilder::new()
 			.with_recommended_fillers()
 			.wallet(EthereumWallet::from(initiator_privatekey))
 			.on_builtin(&config.eth.eth_rpc_connection_url())
@@ -217,57 +247,31 @@ impl HarnessEthClient {
 
 		let mock_move_token = MockMOVEToken::new(
 			Address::from_str(&config.eth.eth_move_token_contract)?,
-			&rpc_provider,
+			&initiator_rpc_provider,
 		);
 
-		// Initialize the MockMOVEToken contract with the initiator address as the initial fund recipient
-		let initialize_call = mock_move_token.initialize(initiator_address).from(initiator_address);
+		// Approve the ETH initiator contract to spend Amount of MOVE
+		let approve_call = mock_move_token
+			.approve(Address::from_str(&config.eth.eth_initiator_contract)?, move_value)
+			.from(initiator_address);
 
-		let _ = send_transaction(
-			initialize_call,
+		send_transaction(
+			approve_call,
 			initiator_address,
 			&send_transaction_rules(),
 			config.eth.transaction_send_retries,
 			config.eth.gas_limit as u128,
 		)
-		.await;
-
-		// Approve the ETH initiator contract to spend Amount of MOVE
-		let move_value = U256::from(amount.0.clone());
-		tracing::info!("MOVE value: {}", move_value);
-		let approve_call = mock_move_token
-			.approve(Address::from_str(&config.eth.eth_initiator_contract)?, move_value)
-			.from(initiator_address);
-
-		let number_retry = config.eth.transaction_send_retries;
-		let gas_limit = config.eth.gas_limit as u128;
-
-		let transaction_receipt = send_transaction(
-			approve_call,
-			initiator_address,
-			&send_transaction_rules(),
-			number_retry,
-			gas_limit,
-		)
 		.await?;
-
-		tracing::info!("After token approval, transaction receipt: {:?}", transaction_receipt);
-		let token_balance = mock_move_token.balanceOf(initiator_address).call().await?;
-		tracing::info!("After token approval, MockMOVEToken balance: {:?}", token_balance._0);
 
 		// Instantiate AtomicBridgeInitiatorMOVE
 		let initiator_contract_address = config.eth.eth_initiator_contract.parse()?;
 		let initiator_contract =
-			AtomicBridgeInitiatorMOVE::new(initiator_contract_address, &rpc_provider);
+			AtomicBridgeInitiatorMOVE::new(initiator_contract_address, &initiator_rpc_provider);
 
 		let recipient_address = BridgeAddress(Into::<Vec<u8>>::into(recipient));
 		let recipient_bytes: [u8; 32] =
 			recipient_address.0.try_into().expect("Recipient address must be 32 bytes");
-
-		tracing::info!("Before initiate");
-		tracing::info!("Amount: {}", U256::from(amount.0));
-		tracing::info!("Recipient: {}", FixedBytes(recipient_bytes));
-		tracing::info!("hashLock: {}", FixedBytes(hash_lock.0));
 
 		let call = initiator_contract
 			.initiateBridgeTransfer(

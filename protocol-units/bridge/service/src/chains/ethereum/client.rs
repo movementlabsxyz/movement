@@ -131,39 +131,14 @@ impl EthClient {
 		timelock: TimeLock,
 	) -> Result<(), anyhow::Error> {
 		// Create the counterparty contract instance
-		let contract = AtomicBridgeCounterpartyMOVE::new(
-			contract_address,
-			self.rpc_provider.clone(),
-		);
-	
-		// Prepare the initialize transaction
-		let call = contract.initialize(self.signer_address, initiator_address, U256::from(timelock.0));
-	
-		// Send the transaction
-		send_transaction(
-			call.to_owned(),
-			self.signer_address,
-			&send_transaction_rules(),
-			self.config.transaction_send_retries,
-			self.config.gas_limit,
-		)
-		.await?;
-	
-		Ok(())
-	}
-	
+		let contract =
+			AtomicBridgeCounterpartyMOVE::new(contract_address, self.rpc_provider.clone());
 
-	pub async fn initialize_initiator_contract(
-		&self,
-		weth: EthAddress,
-		owner: EthAddress,
-		timelock: TimeLock,
-	) -> Result<(), anyhow::Error> {
-		let contract = AtomicBridgeInitiatorMOVE::new(
-			self.config.initiator_contract,
-			self.rpc_provider.clone(),
-		);
-		let call = contract.initialize(weth.0, owner.0, U256::from(timelock.0));
+		// Prepare the initialize transaction
+		let call =
+			contract.initialize(self.signer_address, initiator_address, U256::from(timelock.0));
+
+		// Send the transaction
 		send_transaction(
 			call.to_owned(),
 			self.signer_address,
@@ -202,19 +177,19 @@ impl EthClient {
 
 #[async_trait::async_trait]
 impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
-	// `_initiator_address`, or in the contract, `originator` is set
+	// `_initiator`, or in the contract, `originator` is set
 	// via the `msg.sender`, which is stored in the `rpc_provider`.
-	// So `initiator_address` arg is not used here.
+	// So `initiator` arg is not used here.
 	async fn initiate_bridge_transfer(
 		&mut self,
-		initiator_address: BridgeAddress<EthAddress>,
-		recipient_address: BridgeAddress<Vec<u8>>,
+		initiator: BridgeAddress<EthAddress>,
+		recipient: BridgeAddress<Vec<u8>>,
 		hash_lock: HashLock,
 		amount: Amount, // the ETH amount
 	) -> BridgeContractResult<()> {
-		let recipient_bytes: [u8; 32] = recipient_address.0.try_into().map_err(|e| {
+		let recipient_bytes: [u8; 32] = recipient.0.try_into().map_err(|e| {
 			BridgeContractError::ConversionFailed(format!(
-				"Failed to convert in [u8; 32] recipient_address: {e:?}"
+				"Failed to convert in [u8; 32] recipient: {e:?}"
 			))
 		})?;
 		let contract = AtomicBridgeInitiatorMOVE::new(
@@ -227,8 +202,7 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 				FixedBytes(recipient_bytes),
 				FixedBytes(hash_lock.0),
 			)
-			//			.value(U256::from(amount.0))
-			.from(*initiator_address.0);
+			.from(*initiator.0);
 		let _ = send_transaction(
 			call,
 			self.signer_address,
@@ -274,7 +248,7 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 		)
 		.await
 		.map_err(|e| {
-			BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
+			BridgeContractError::OnChainError(format!("Failed to send transaction: {}", e))
 		})?;
 
 		Ok(())
@@ -311,7 +285,7 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 		)
 		.await
 		.map_err(|e| {
-			BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
+			BridgeContractError::OnChainError(format!("Failed to send transaction: {}", e))
 		})?;
 
 		Ok(())
@@ -322,10 +296,12 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 		bridge_transfer_id: BridgeTransferId,
 	) -> BridgeContractResult<()> {
 		let contract = AtomicBridgeInitiatorMOVE::new(
-			self.config.counterparty_contract,
+			self.config.initiator_contract,
 			self.rpc_provider.clone(),
 		);
+		tracing::info!("Bridge transfer ID: {:?}", bridge_transfer_id);
 		let call = contract.refundBridgeTransfer(FixedBytes(bridge_transfer_id.0));
+
 		send_transaction(
 			call,
 			self.signer_address,
@@ -335,7 +311,7 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 		)
 		.await
 		.map_err(|e| {
-			BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
+			BridgeContractError::OnChainError(format!("Failed to send transaction: {}", e))
 		})?;
 
 		Ok(())
@@ -379,7 +355,7 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 		)
 		.await
 		.map_err(|e| {
-			BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
+			BridgeContractError::OnChainError(format!("Failed to send transaction: {}", e))
 		})?;
 
 		tracing::info!("LockBridgeTransfer receipt: {:?}", receipt);
@@ -405,7 +381,7 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 		)
 		.await
 		.map_err(|e| {
-			BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
+			BridgeContractError::OnChainError(format!("Failed to send transaction: {}", e))
 		})?;
 		let call = contract.abortBridgeTransfer(FixedBytes(bridge_transfer_id.0));
 		send_transaction(
@@ -417,7 +393,7 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 		)
 		.await
 		.map_err(|e| {
-			BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
+			BridgeContractError::OnChainError(format!("Failed to send transaction: {}", e))
 		})?;
 
 		Ok(())
@@ -446,8 +422,8 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 
 		Ok(Some(BridgeTransferDetails {
 			bridge_transfer_id,
-			initiator_address: BridgeAddress(eth_details.originator),
-			recipient_address: BridgeAddress(eth_details.recipient.to_vec()),
+			initiator: BridgeAddress(eth_details.originator),
+			recipient: BridgeAddress(eth_details.recipient.to_vec()),
 			hash_lock: HashLock(eth_details.hash_lock),
 			time_lock: TimeLock(eth_details.time_lock.wrapping_to::<u64>()),
 			amount: eth_details.amount.into(),
@@ -478,8 +454,8 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 
 		Ok(Some(BridgeTransferDetailsCounterparty {
 			bridge_transfer_id,
-			initiator_address: BridgeAddress(eth_details.originator.to_vec()),
-			recipient_address: BridgeAddress(eth_details.recipient),
+			initiator: BridgeAddress(eth_details.originator.to_vec()),
+			recipient: BridgeAddress(eth_details.recipient),
 			hash_lock: HashLock(eth_details.hash_lock),
 			time_lock: TimeLock(eth_details.time_lock.wrapping_to::<u64>()),
 			amount: eth_details.amount.into(),

@@ -3,24 +3,25 @@ pragma solidity ^0.8.22;
 pragma abicoder v2;
 
 import {Test, console} from "forge-std/Test.sol";
-import {
-    AtomicBridgeInitiatorMOVE,
-    IAtomicBridgeInitiatorMOVE,
-    OwnableUpgradeable
-} from "../src/AtomicBridgeInitiatorMOVE.sol";
+import {AtomicBridgeInitiatorMOVE, IAtomicBridgeInitiatorMOVE} from "../src/AtomicBridgeInitiatorMOVE.sol";
+import {AccessControlUpgradeable, IAccessControl} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {MockMOVEToken} from "../src/MockMOVEToken.sol";
-import {console} from "forge-std/console.sol";
+import {MockMOVEToken} from "../src/MockMOVEToken.sol";  
+import {RateLimiter} from "../src/RateLimiter.sol";
+
 
 contract AtomicBridgeInitiatorMOVETest is Test {
     AtomicBridgeInitiatorMOVE public atomicBridgeInitiatorImplementation;
-    MockMOVEToken public moveToken;
+    MockMOVEToken public moveToken;   
+    RateLimiter public rateLimiterImplementation;
+    RateLimiter public rateLimiter;
     ProxyAdmin public proxyAdmin;
     TransparentUpgradeableProxy public proxy;
     AtomicBridgeInitiatorMOVE public atomicBridgeInitiatorMOVE;
 
     address public originator = address(1);
+    address public insuranceFund = address(4);
     bytes32 public recipient = keccak256(abi.encodePacked(address(2)));
     bytes32 public hashLock = keccak256(abi.encodePacked("secret"));
     uint256 public amount = 1 ether;
@@ -30,6 +31,7 @@ contract AtomicBridgeInitiatorMOVETest is Test {
         // Deploy the MOVEToken contract and mint some tokens to the deployer
         moveToken = new MockMOVEToken();
         moveToken.initialize(address(this)); // Contract will hold initial MOVE tokens
+        moveToken.transfer(insuranceFund, moveToken.balanceOf(address(this)) / 10); // 10% of the total supply
 
         originator = vm.addr(uint256(keccak256(abi.encodePacked(block.timestamp, block.prevrandao))));
 
@@ -40,34 +42,58 @@ contract AtomicBridgeInitiatorMOVETest is Test {
             address(atomicBridgeInitiatorImplementation),
             address(proxyAdmin),
             abi.encodeWithSignature(
-                "initialize(address,address,uint256)",
-                address(moveToken),
+                "initialize(address,address,address,address,uint256)", 
+                address(moveToken), 
+                address(this),
+                address(this),
                 address(this),
                 timeLockDuration
             )
         );
 
         atomicBridgeInitiatorMOVE = AtomicBridgeInitiatorMOVE(address(proxy));
+
+        rateLimiterImplementation = new RateLimiter();
+        proxy = new TransparentUpgradeableProxy(
+            address(rateLimiterImplementation),
+            address(this),
+            abi.encodeWithSignature(
+                "initialize(address,address,address,address,address)",
+                address(moveToken),
+                address(this),
+                address(atomicBridgeInitiatorMOVE),
+                address(0x1337), // just a mock address
+                insuranceFund
+            )
+        );
+
+        rateLimiter = RateLimiter(address(proxy));
+
+        atomicBridgeInitiatorMOVE.setRateLimiter(address(rateLimiter));
     }
 
     function testInitiateBridgeTransferWithMove() public {
-        uint256 moveAmount = 100 * 10 ** 8;
+        uint256 moveAmount = 100 * 10**8;
 
         // Transfer moveAmount tokens to the originator and check initial balance
-        moveToken.transfer(originator, moveAmount);
+        moveToken.transfer(originator, moveAmount); 
         uint256 initialBalance = moveToken.balanceOf(originator);
 
         vm.startPrank(originator);
         moveToken.approve(address(atomicBridgeInitiatorMOVE), moveAmount);
 
         // Initiate the bridge transfer
-        bytes32 bridgeTransferId = atomicBridgeInitiatorMOVE.initiateBridgeTransfer(moveAmount, recipient, hashLock);
+        bytes32 bridgeTransferId = atomicBridgeInitiatorMOVE.initiateBridgeTransfer(
+            moveAmount, 
+            recipient, 
+            hashLock 
+        );
 
         // Verify the bridge transfer details
         (
+            uint256 transferAmount,
             address transferOriginator,
             bytes32 transferRecipient,
-            uint256 transferAmount,
             bytes32 transferHashLock,
             uint256 transferTimeLock,
             AtomicBridgeInitiatorMOVE.MessageState transferState
@@ -90,17 +116,21 @@ contract AtomicBridgeInitiatorMOVETest is Test {
     function testCompleteBridgeTransfer() public {
         bytes32 secret = "secret";
         bytes32 testHashLock = keccak256(abi.encodePacked(secret));
-        uint256 moveAmount = 100 * 10 ** 8; // 100 MOVEToken
+        uint256 moveAmount = 100 * 10**8; // 100 MOVEToken
 
         // Transfer moveAmount tokens to the originator and check initial balance
-        moveToken.transfer(originator, moveAmount);
+        moveToken.transfer(originator, moveAmount); 
         uint256 initialBalance = moveToken.balanceOf(originator);
 
         vm.startPrank(originator);
         moveToken.approve(address(atomicBridgeInitiatorMOVE), moveAmount);
 
         // Initiate the bridge transfer
-        bytes32 bridgeTransferId = atomicBridgeInitiatorMOVE.initiateBridgeTransfer(moveAmount, recipient, testHashLock);
+        bytes32 bridgeTransferId = atomicBridgeInitiatorMOVE.initiateBridgeTransfer(
+            moveAmount, 
+            recipient, 
+            testHashLock 
+        );
 
         vm.stopPrank();
 
@@ -108,9 +138,9 @@ contract AtomicBridgeInitiatorMOVETest is Test {
 
         // Verify the bridge transfer details after completion
         (
+            uint256 completedAmount,
             address completedOriginator,
             bytes32 completedRecipient,
-            uint256 completedAmount,
             bytes32 completedHashLock,
             uint256 completedTimeLock,
             AtomicBridgeInitiatorMOVE.MessageState completedState
@@ -129,7 +159,7 @@ contract AtomicBridgeInitiatorMOVETest is Test {
     }
 
     function testRefundBridgeTransfer() public {
-        uint256 moveAmount = 100 * 10 ** 8; // 100 MOVEToken
+        uint256 moveAmount = 100 * 10**8; // 100 MOVEToken
 
         // Transfer moveAmount tokens to the originator and check initial balance
         moveToken.transfer(originator, moveAmount);
@@ -139,7 +169,11 @@ contract AtomicBridgeInitiatorMOVETest is Test {
         moveToken.approve(address(atomicBridgeInitiatorMOVE), moveAmount);
 
         // Initiate the bridge transfer
-        bytes32 bridgeTransferId = atomicBridgeInitiatorMOVE.initiateBridgeTransfer(moveAmount, recipient, hashLock);
+        bytes32 bridgeTransferId = atomicBridgeInitiatorMOVE.initiateBridgeTransfer(
+            moveAmount, 
+            recipient, 
+            hashLock 
+        );
         vm.stopPrank();
 
         // Advance time and block height to ensure the time lock has expired
@@ -147,7 +181,7 @@ contract AtomicBridgeInitiatorMOVETest is Test {
 
         // Test that a non-owner cannot call refund
         vm.startPrank(originator);
-        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, originator));
+        vm.expectRevert(abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, originator, keccak256("REFUNDER_ROLE")));
         atomicBridgeInitiatorMOVE.refundBridgeTransfer(bridgeTransferId);
         vm.stopPrank();
 
@@ -161,3 +195,4 @@ contract AtomicBridgeInitiatorMOVETest is Test {
         assertEq(finalBalance, initialBalance, "MOVE balance mismatch");
     }
 }
+

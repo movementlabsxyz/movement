@@ -28,9 +28,9 @@ processes:
       celestia-light-node:
         condition: process_healthy
 
-  m1-da-light-node:
+  movement-celestia-da-light-node:
     command: |
-      m1-da-light-node
+      movement-celestia-da-light-node
     depends_on:
       celestia-light-node:
         condition: process_healthy
@@ -41,24 +41,22 @@ processes:
       exec:
         command: grpcurl -plaintext 0.0.0.0:30730 list
     
-  suzuka-full-node:
+  movement-full-node:
     command: |
-      suzuka-full-node
-    env:
-      RUST_LOG: info,aptos-indexer=debug
+      movement-full-node
     depends_on:
-      m1-da-light-node:
+      movement-celestia-da-light-node:
         condition: process_healthy
     readiness_probe:
       initial_delay_seconds: 10
       exec:
         command: curl http://0.0.0.0:30731
 
-  suzuka-faucet: 
+  movement-faucet: 
     command : |
-      suzuka-faucet-service run-simple
+      movement-faucet-service run-simple
     depends_on:
-      suzuka-full-node:
+      movement-full-node:
         condition: process_healthy
     readiness_probe:
       initial_delay_seconds: 30

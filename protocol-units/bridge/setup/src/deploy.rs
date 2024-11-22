@@ -67,6 +67,7 @@ pub async fn setup_local_ethereum(config: &mut BridgeConfig) -> Result<(), anyho
 		signer_private_key.clone(),
 		&rpc_url,
 		&config.eth.eth_initiator_contract,
+		&config.eth.eth_counterparty_contract,
 		EthAddress(move_token_contract),
 		EthAddress(signer_private_key.address()),
 		*TimeLock(config.eth.time_lock_secs),
@@ -136,6 +137,7 @@ async fn initialize_eth_contracts(
 	signer_private_key: PrivateKeySigner,
 	rpc_url: &str,
 	initiator_contract_address: &str,
+	counterpart_contract_address: &str,
 	move_token: EthAddress,
 	owner: EthAddress,
 	timelock: u64,
@@ -151,10 +153,26 @@ async fn initialize_eth_contracts(
 		.on_builtin(rpc_url)
 		.await
 		.expect("Error during provider creation");
+
+	// Initialize the MockMOVEToken contract with the initiator address as the initial fund recipient
+	let mock_move_token = MockMOVEToken::new(*move_token, &rpc_provider);
+	let initialize_token_call = mock_move_token.initialize(owner.0).from(owner.0);
+
+	let _ = send_transaction(
+		initialize_token_call,
+		signer_address,
+		&send_transaction_rules(),
+		transaction_send_retries,
+		gas_limit.into(),
+	)
+	.await;
+
 	let initiator_contract =
 		AtomicBridgeInitiatorMOVE::new(initiator_contract_address.parse()?, rpc_provider.clone());
 
-	let call = initiator_contract.initialize(move_token.0, owner.0, U256::from(timelock));
+	let call = initiator_contract
+		.initialize(move_token.0, owner.0, U256::from(timelock), U256::from(1000000))
+		.from(owner.0);
 	send_transaction(
 		call,
 		signer_address,
@@ -165,14 +183,14 @@ async fn initialize_eth_contracts(
 	.await
 	.expect("Failed to send transaction");
 
-	let counterpart_contract = AtomicBridgeCounterpartyMOVE::deploy(rpc_provider.clone())
-		.await
-		.expect("Failed to deploy AtomicBridgeCounterpartyMOVE");
-	let call = counterpart_contract.initialize(
-		initiator_contract_address.parse()?,
-		owner.0,
-		U256::from(timelock),
+	let counterpart_contract = AtomicBridgeCounterpartyMOVE::new(
+		counterpart_contract_address.parse()?,
+		rpc_provider.clone(),
 	);
+
+	let call = counterpart_contract
+		.initialize(initiator_contract_address.parse()?, owner.0, U256::from(timelock))
+		.from(owner.0);
 	send_transaction(
 		call,
 		signer_address,

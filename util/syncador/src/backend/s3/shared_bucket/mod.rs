@@ -8,18 +8,39 @@ pub mod push;
 use movement_types::application;
 use std::path::PathBuf;
 
-pub async fn create_random(
+pub async fn create_with_load_from_env(
 	bucket: String,
 	pull_destination: PathBuf,
+	metadata: metadata::Metadata,
 ) -> Result<(push::Push, pull::Pull), anyhow::Error> {
 	let region = match std::env::var("AWS_REGION") {
 		Ok(region) => Some(Region::new(region)),
 		Err(_) => None,
 	};
 	let config = aws_config::load_from_env().await.into_builder().region(region).build();
-	info!("Client used region {:?}", config.region());
+	info!("Create client used region {:?}", config.region());
 	let client = aws_sdk_s3::Client::new(&config);
-	create(client, bucket, metadata::Metadata::random(), pull_destination).await
+	create(client, bucket, metadata, pull_destination).await
+}
+
+pub async fn destroy_with_load_from_env(bucket: String) -> Result<(), anyhow::Error> {
+	let region = match std::env::var("AWS_REGION") {
+		Ok(region) => Some(Region::new(region)),
+		Err(_) => None,
+	};
+	let config = aws_config::load_from_env().await.into_builder().region(region).build();
+	info!("Destroy client used region {:?}", config.region());
+	let client = aws_sdk_s3::Client::new(&config);
+	let bucket_connection = bucket_connection::BucketConnection::new(client, bucket);
+	bucket_connection.destroy(true).await
+}
+
+pub async fn create_random(
+	bucket: String,
+	pull_destination: PathBuf,
+) -> Result<(push::Push, pull::Pull), anyhow::Error> {
+	let metadata = metadata::Metadata::random();
+	create_with_load_from_env(bucket, pull_destination, metadata).await
 }
 
 pub async fn create_random_with_application_id(
@@ -27,20 +48,8 @@ pub async fn create_random_with_application_id(
 	application_id: application::Id,
 	pull_destination: PathBuf,
 ) -> Result<(push::Push, pull::Pull), anyhow::Error> {
-	let region = match std::env::var("AWS_REGION") {
-		Ok(region) => Some(Region::new(region)),
-		Err(_) => None,
-	};
-	let config = aws_config::load_from_env().await.into_builder().region(region).build();
-	info!("Client used region {:?}", config.region());
-	let client = aws_sdk_s3::Client::new(&config);
-	create(
-		client,
-		bucket,
-		metadata::Metadata::random().with_application_id(application_id),
-		pull_destination,
-	)
-	.await
+	let metadata = metadata::Metadata::random().with_application_id(application_id);
+	create_with_load_from_env(bucket, pull_destination, metadata).await
 }
 
 pub async fn create(

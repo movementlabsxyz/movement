@@ -11,7 +11,7 @@ use bridge_service::{
 			utils::MovementAddress,
 		},
 	},
-	types::{Amount, HashLock, HashLockPreImage},
+	types::{Amount, BridgeAddress, HashLock, HashLockPreImage},
 };
 use futures::StreamExt;
 use tracing_subscriber::EnvFilter;
@@ -37,22 +37,23 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 	}
 
 	let recipient_privkey = mvt_client_harness.fund_account().await;
-	let recipient_address = MovementAddress(recipient_privkey.address());
+	let recipient = MovementAddress(recipient_privkey.address());
 
 	// initiate Eth transfer
 	tracing::info!("Call initiate_transfer on Eth");
 	let hash_lock_pre_image = HashLockPreImage::random();
 	let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
 	let amount = Amount(1);
-	HarnessEthClient::initiate_eth_bridge_transfer(
-		&config,
-		HarnessEthClient::get_initiator_private_key(&config),
-		recipient_address,
-		hash_lock,
-		amount,
-	)
-	.await
-	.expect("Failed to initiate bridge transfer");
+	eth_client_harness
+		.initiate_eth_bridge_transfer(
+			&config,
+			HarnessEthClient::get_initiator_private_key(&config),
+			recipient,
+			hash_lock,
+			amount,
+		)
+		.await
+		.expect("Failed to initiate bridge transfer");
 
 	//Wait for the tx to be executed
 	tracing::info!("Wait for the MVT Locked event.");
@@ -82,12 +83,13 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 
 	let (_, eth_health_rx) = tokio::sync::mpsc::channel(10);
 	let mut eth_monitoring = EthMonitoring::build(&config.eth, eth_health_rx).await.unwrap();
-	// Wait for InitialtorCompleted event
+
+	// Wait for InitiatorCompleted event
 	tracing::info!("Wait for InitiatorCompleted event.");
 	loop {
 		let event =
 			tokio::time::timeout(std::time::Duration::from_secs(30), eth_monitoring.next()).await?;
-		if let Some(Ok(BridgeContractEvent::InitialtorCompleted(_))) = event {
+		if let Some(Ok(BridgeContractEvent::InitiatorCompleted(_))) = event {
 			break;
 		}
 	}
@@ -114,15 +116,18 @@ async fn test_movement_event() -> Result<(), anyhow::Error> {
 
 	let args = MovementToEthCallArgs::default();
 
-	bridge_integration_tests::utils::initiate_bridge_transfer_helper_framework(
-		&mut movement_client,
-		args.initiator.0,
-		args.recipient.clone(),
-		args.hash_lock.0,
-		args.amount,
-	)
-	.await
-	.expect("Failed to initiate bridge transfer");
+	{
+		let res = BridgeContract::initiate_bridge_transfer(
+			&mut movement_client,
+			BridgeAddress(MovementAddress(args.initiator.0)),
+			BridgeAddress(args.recipient.clone()),
+			HashLock(args.hash_lock.0),
+			Amount(args.amount),
+		)
+		.await?;
+
+		tracing::info!("Initiate result: {:?}", res);
+	}
 
 	//Wait for the tx to be executed
 	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(2000)).await;
@@ -231,15 +236,16 @@ async fn test_bridge_transfer_movement_eth_happy_path() -> Result<(), anyhow::Er
 	//let hash_lock_pre_image = HashLockPreImage::random();
 	let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
 	let amount = Amount(1);
-	HarnessEthClient::initiate_eth_bridge_transfer(
-		&config,
-		HarnessEthClient::get_initiator_private_key(&config),
-		recipient_address,
-		hash_lock,
-		amount,
-	)
-	.await
-	.expect("Failed to initiate bridge transfer");
+	eth_client_harness
+		.initiate_eth_bridge_transfer(
+			&config,
+			HarnessEthClient::get_initiator_private_key(&config),
+			recipient_address,
+			hash_lock,
+			amount,
+		)
+		.await
+		.expect("Failed to initiate bridge transfer");
 
 	tracing::info!("Before init_set_timelock");
 
@@ -307,7 +313,7 @@ async fn test_bridge_transfer_movement_eth_happy_path() -> Result<(), anyhow::Er
 	loop {
 		let event =
 			tokio::time::timeout(std::time::Duration::from_secs(30), mvt_monitoring.next()).await?;
-		if let Some(Ok(BridgeContractEvent::InitialtorCompleted(_))) = event {
+		if let Some(Ok(BridgeContractEvent::InitiatorCompleted(_))) = event {
 			break;
 		}
 	}

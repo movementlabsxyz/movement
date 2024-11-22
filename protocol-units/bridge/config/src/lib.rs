@@ -39,9 +39,8 @@ impl Config {
 	pub fn suzuka() -> Self {
 		Config {
 			eth: common::eth::EthConfig::default(),
-			movement: common::movement::MovementConfig::suzuka_for_test(),
+			movement: common::movement::MovementConfig::for_test(),
 			testing: common::testing::TestingConfig::default(),
 		}
 	}
 }
-
