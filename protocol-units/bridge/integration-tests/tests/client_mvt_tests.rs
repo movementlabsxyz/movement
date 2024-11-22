@@ -31,7 +31,7 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 			.await?;
 
 		{
-			let res = BridgeContract::initiate_bridge_transfer(
+			let res = BridgeClientContract::initiate_bridge_transfer(
 				&mut mvt_client_harness.movement_client,
 				BridgeAddress(args.recipient.clone()),
 				Amount(args.amount),
