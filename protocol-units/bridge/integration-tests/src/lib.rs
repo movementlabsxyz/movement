@@ -191,7 +191,6 @@ impl HarnessEthClient {
 		config: &Config,
 		initiator_privatekey: PrivateKeySigner,
 		recipient: MovementAddress,
-		hash_lock: HashLock,
 		amount: Amount,
 	) -> Result<(), anyhow::Error> {
 		let initiator_address = initiator_privatekey.address();
@@ -275,9 +274,8 @@ impl HarnessEthClient {
 
 		let call = initiator_contract
 			.initiateBridgeTransfer(
-				U256::from(amount.0),
 				FixedBytes(recipient_bytes),
-				FixedBytes(hash_lock.0),
+				U256::from(amount.0),
 			)
 			.from(initiator_address);
 		let _ = send_transaction(
@@ -341,76 +339,6 @@ impl HarnessMvtClient {
 			.await
 			.expect("Failed to fund account");
 		account
-	}
-
-	pub async fn initiate_bridge_transfer(
-		&mut self,
-		recipient: EthAddress,
-		amount: u64,
-	) -> BridgeContractResult<()> {
-		let recipient_bytes: Vec<u8> = recipient.into();
-		let args = vec![
-			movement_utils::serialize_vec_initiator(&recipient_bytes)?,
-			movement_utils::serialize_u64_initiator(&amount)?,
-		];
-
-		let payload = movement_utils::make_aptos_payload(
-			FRAMEWORK_ADDRESS,
-			NATIVE_BRIDGE_MODULE_NAME,
-			"initiate_bridge_transfer",
-			Vec::new(),
-			args,
-		);
-
-		let _ = movement_utils::send_and_confirm_aptos_transaction(
-			&self.movement_client.rest_client,
-			initiator,
-			payload,
-		)
-		.await
-		.map_err(|_| BridgeContractError::InitiateTransferError)?;
-
-		Ok(())
-	}
-
-	pub async fn complete_bridge_transfer(
-		&mut self,
-		bridge_transfer_id: BridgeTransferId,
-		initiator: EthAddress,
-		recipient: LocalAccount,
-		amount: Amount,
-		nonce: u64
-	) -> BridgeContractResult<AptosTransaction> {
-		let unpadded_preimage = {
-			let mut end = preimage.0.len();
-			while end > 0 && preimage.0[end - 1] == 0 {
-				end -= 1;
-			}
-			&preimage.0[..end]
-		};
-		let args2 = vec![
-			bridge_service::chains::movement::utils::serialize_vec(&bridge_transfer_id.0[..])?,
-			bridge_service::chains::movement::utils::serialize_vec(&initiator)?,
-			bridge_service::chains::movement::utils::serialize_vec(&recipient)?,
-			bridge_service::chains::movement::utils::serialize_u64(&amount)?,
-			bridge_service::chains::movement::utils::serialize_u64(&nonce)?,
-		];
-
-		let payload = bridge_service::chains::movement::utils::make_aptos_payload(
-			FRAMEWORK_ADDRESS,
-			NATIVE_BRIDGE_MODULE_NAME,			
-			"complete_bridge_transfer",
-			Vec::new(),
-			args2,
-		);
-
-		bridge_service::chains::movement::utils::send_and_confirm_aptos_transaction(
-			&self.rest_client,
-			&recipient,
-			payload,
-		)
-		.await
-		.map_err(|_| BridgeContractError::CompleteTransferError)
 	}
 }
 
