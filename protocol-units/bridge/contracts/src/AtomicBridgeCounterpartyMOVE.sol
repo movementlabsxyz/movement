@@ -4,6 +4,7 @@ pragma solidity ^0.8.22;
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {IAtomicBridgeCounterpartyMOVE} from "./IAtomicBridgeCounterpartyMOVE.sol";
 import {AtomicBridgeInitiatorMOVE} from "./AtomicBridgeInitiatorMOVE.sol";
+import {RateLimiter} from "./RateLimiter.sol";
 
 contract AtomicBridgeCounterpartyMOVE is IAtomicBridgeCounterpartyMOVE, OwnableUpgradeable {
     enum MessageState {
@@ -22,6 +23,7 @@ contract AtomicBridgeCounterpartyMOVE is IAtomicBridgeCounterpartyMOVE, OwnableU
     }
 
     AtomicBridgeInitiatorMOVE public atomicBridgeInitiatorMOVE;
+    RateLimiter public rateLimiter;
     mapping(bytes32 => BridgeTransferDetails) public bridgeTransfers;
 
     // Configurable time lock duration
@@ -43,6 +45,11 @@ contract AtomicBridgeCounterpartyMOVE is IAtomicBridgeCounterpartyMOVE, OwnableU
 
     function setTimeLockDuration(uint256 _timeLockDuration) external onlyOwner {
         counterpartyTimeLockDuration = _timeLockDuration;
+    }
+
+    function setRateLimiter(address _rateLimiter) external onlyOwner {
+        if (_rateLimiter == address(0)) revert ZeroAddress();
+        rateLimiter = RateLimiter(_rateLimiter);
     }
 
     function lockBridgeTransfer(
