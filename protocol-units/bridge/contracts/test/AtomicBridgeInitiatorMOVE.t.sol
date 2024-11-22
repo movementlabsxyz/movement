@@ -7,15 +7,19 @@ import {AtomicBridgeInitiatorMOVE, IAtomicBridgeInitiatorMOVE, OwnableUpgradeabl
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {MockMOVEToken} from "../src/MockMOVEToken.sol";  
+import {RateLimiter} from "../src/RateLimiter.sol";
 
 contract AtomicBridgeInitiatorMOVETest is Test {
     AtomicBridgeInitiatorMOVE public atomicBridgeInitiatorImplementation;
     MockMOVEToken public moveToken;   
+    RateLimiter public rateLimiterImplementation;
+    RateLimiter public rateLimiter;
     ProxyAdmin public proxyAdmin;
     TransparentUpgradeableProxy public proxy;
     AtomicBridgeInitiatorMOVE public atomicBridgeInitiatorMOVE;
 
     address public originator = address(1);
+    address public insuranceFund = address(4);
     bytes32 public recipient = keccak256(abi.encodePacked(address(2)));
     bytes32 public hashLock = keccak256(abi.encodePacked("secret"));
     uint256 public amount = 1 ether;
@@ -25,6 +29,7 @@ contract AtomicBridgeInitiatorMOVETest is Test {
         // Deploy the MOVEToken contract and mint some tokens to the deployer
         moveToken = new MockMOVEToken();
         moveToken.initialize(address(this)); // Contract will hold initial MOVE tokens
+        moveToken.transfer(insuranceFund, moveToken.balanceOf(address(this)) / 10); // 10% of the total supply
 
         originator = vm.addr(uint256(keccak256(abi.encodePacked(block.timestamp, block.prevrandao))));
 
@@ -44,6 +49,24 @@ contract AtomicBridgeInitiatorMOVETest is Test {
         );
 
         atomicBridgeInitiatorMOVE = AtomicBridgeInitiatorMOVE(address(proxy));
+
+        rateLimiterImplementation = new RateLimiter();
+        proxy = new TransparentUpgradeableProxy(
+            address(rateLimiterImplementation),
+            address(this),
+            abi.encodeWithSignature(
+                "initialize(address,address,address,address,address)",
+                address(moveToken),
+                address(this),
+                address(atomicBridgeInitiatorMOVE),
+                address(0x1337), // just a mock address
+                insuranceFund
+            )
+        );
+
+        rateLimiter = RateLimiter(address(proxy));
+
+        atomicBridgeInitiatorMOVE.setRateLimiter(address(rateLimiter));
     }
 
     function testInitiateBridgeTransferWithMove() public {

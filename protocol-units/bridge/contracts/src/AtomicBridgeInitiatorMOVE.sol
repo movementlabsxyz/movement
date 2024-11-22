@@ -5,6 +5,7 @@ import {IAtomicBridgeInitiatorMOVE} from "./IAtomicBridgeInitiatorMOVE.sol";
 import {MockMOVEToken} from "./MockMOVEToken.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {RateLimiter} from "./RateLimiter.sol";
 
 contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgradeable {
     enum MessageState {
@@ -29,6 +30,7 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
     uint256 public poolBalance;
 
     address public counterpartyAddress;
+    RateLimiter public rateLimiter;
     ERC20Upgradeable public moveToken;
     uint256 private nonce;
 
@@ -58,10 +60,16 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         counterpartyAddress = _counterpartyAddress;
     }
 
+    function setRateLimiter(address _rateLimiter) external onlyOwner {
+        if (_rateLimiter == address(0)) revert ZeroAddress();
+        rateLimiter = RateLimiter(_rateLimiter);
+    }
+
     function initiateBridgeTransfer(uint256 moveAmount, bytes32 recipient, bytes32 hashLock)
         external
         returns (bytes32 bridgeTransferId)
     {
+        rateLimiter.rateLimitOutbound(moveAmount);
         address originator = msg.sender;
             
         require(moveAmount > 0, "ZeroAmount");
@@ -98,6 +106,7 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
     function completeBridgeTransfer(bytes32 bridgeTransferId, bytes32 preImage) external onlyOwner {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
 
+        rateLimiter.rateLimitInbound(bridgeTransfer.amount);
         require(bridgeTransfer.state == MessageState.INITIALIZED, "BridgeTransferHasBeenCompleted");
         require(keccak256(abi.encodePacked(preImage)) == bridgeTransfer.hashLock, "InvalidSecret");
         require(block.timestamp <= bridgeTransfer.timeLock, "TimelockExpired");
@@ -107,8 +116,9 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         emit BridgeTransferCompleted(bridgeTransferId, preImage);
     }
 
-    function refundBridgeTransfer(bytes32 bridgeTransferId) external {
+    function refundBridgeTransfer(bytes32 bridgeTransferId) external onlyOwner {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
+        rateLimiter.rateLimitInbound(bridgeTransfer.amount);
         require(bridgeTransfer.state == MessageState.INITIALIZED, "BridgeTransferStateNotInitialized");
         require(block.timestamp >= bridgeTransfer.timeLock, "TimeLockNotExpired");
 
