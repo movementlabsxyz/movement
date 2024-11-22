@@ -34,6 +34,8 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
     ERC20Upgradeable public moveToken;
     uint256 private nonce;
 
+    uint256 public sponsoredTransferFee;
+
     // Configurable time lock duration
     uint256 public initiatorTimeLockDuration;
 
@@ -42,7 +44,8 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         address _moveToken,
         address owner,
         uint256 _timeLockDuration,
-        uint256 _initialPoolBalance
+        uint256 _initialPoolBalance,
+        uint256 _sponsoredTransferFee
     ) public initializer {
         require(_moveToken != address(0) && owner != address(0), "ZeroAddress");
         moveToken = ERC20Upgradeable(_moveToken);
@@ -53,6 +56,10 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
 
         // Set the initial pool balance
         poolBalance = _initialPoolBalance;
+
+        // Set the sponsored transfer fee
+        sponsoredTransferFee = _sponsoredTransferFee;
+
     }
 
     function setCounterpartyAddress(address _counterpartyAddress) external onlyOwner {
@@ -65,6 +72,10 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         rateLimiter = RateLimiter(_rateLimiter);
     }
 
+    function setSponsoredTransferFee(uint256 _sponsoredTransferFee) external onlyOwner {
+        sponsoredTransferFee = _sponsoredTransferFee;
+    }
+
     function initiateBridgeTransfer(uint256 moveAmount, bytes32 recipient, bytes32 hashLock)
         external
         returns (bytes32 bridgeTransferId)
@@ -72,12 +83,8 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         rateLimiter.rateLimitOutbound(moveAmount);
         address originator = msg.sender;
             
-        require(moveAmount > 0, "ZeroAmount");
+        require(moveAmount > sponsoredTransferFee, "INSUFFICIENT_AMOUNT");
 
-        // Ensure there is a valid amount
-        if (moveAmount == 0) {
-            revert ZeroAmount();
-        }
 
         // Transfer the MOVE tokens from the user to the contract
         if (!moveToken.transferFrom(originator, address(this), moveAmount)) {
@@ -87,11 +94,13 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         // Update the pool balance
         poolBalance += moveAmount;
 
+        uint256 amount = moveAmount - sponsoredTransferFee; // deduct the sponsored transfer fee
+
         // Generate a unique nonce to prevent replay attacks, and generate a transfer ID
         bridgeTransferId = keccak256(abi.encodePacked(originator, recipient, hashLock, initiatorTimeLockDuration, block.timestamp, nonce++));
 
         bridgeTransfers[bridgeTransferId] = BridgeTransfer({
-            amount: moveAmount,
+            amount: amount,
             originator: originator,
             recipient: recipient,
             hashLock: hashLock,
@@ -99,7 +108,7 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
             state: MessageState.INITIALIZED
         });
 
-        emit BridgeTransferInitiated(bridgeTransferId, originator, recipient, moveAmount, hashLock, initiatorTimeLockDuration);
+        emit BridgeTransferInitiated(bridgeTransferId, originator, recipient, amount, hashLock, initiatorTimeLockDuration);
         return bridgeTransferId;
     }
 

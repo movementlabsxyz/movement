@@ -28,6 +28,7 @@ contract AtomicBridgeCounterpartyMOVETest is Test {
     uint256 public amount = 100 * 10 ** 8; // 100 MOVEToken (assuming 8 decimals)
     uint256 public timeLock = 100;
     bytes32 public initiator = keccak256(abi.encodePacked(deployer));
+    uint256 public constant sponsoredTransferFee = 1;
     bytes32 public bridgeTransferId =
         keccak256(abi.encodePacked(block.timestamp, initiator, recipient, amount, hashLock, timeLock));
 
@@ -53,11 +54,12 @@ contract AtomicBridgeCounterpartyMOVETest is Test {
             address(atomicBridgeInitiatorMOVEImplementation),
             address(deployer),
             abi.encodeWithSignature(
-                "initialize(address,address,uint256,uint256)",
+                "initialize(address,address,uint256,uint256,uint256)",
                 address(moveToken),
                 deployer,
                 initiatorTimeLockDuration,
-                0 ether // Initial pool balance
+                0 ether, // Initial pool balance
+                sponsoredTransferFee
             )
         );
         atomicBridgeInitiatorMOVE = AtomicBridgeInitiatorMOVE(address(proxy));

@@ -24,6 +24,7 @@ contract AtomicBridgeInitiatorMOVETest is Test {
     bytes32 public hashLock = keccak256(abi.encodePacked("secret"));
     uint256 public amount = 1 ether;
     uint256 public constant timeLockDuration = 48 * 60 * 60; // 48 hours in seconds
+    uint256 public constant sponsoredTransferFee = 1;
 
     function setUp() public {
         // Deploy the MOVEToken contract and mint some tokens to the deployer
@@ -40,11 +41,12 @@ contract AtomicBridgeInitiatorMOVETest is Test {
             address(atomicBridgeInitiatorImplementation),
             address(proxyAdmin),
             abi.encodeWithSignature(
-                "initialize(address,address,uint256,uint256)", 
+                "initialize(address,address,uint256,uint256,uint256)", 
                 address(moveToken), 
                 address(this), 
                 timeLockDuration,
-                0 ether
+                0 ether,
+                sponsoredTransferFee
             )
         );
 
@@ -96,7 +98,7 @@ contract AtomicBridgeInitiatorMOVETest is Test {
             AtomicBridgeInitiatorMOVE.MessageState transferState
         ) = atomicBridgeInitiatorMOVE.bridgeTransfers(bridgeTransferId);
 
-        assertEq(transferAmount, moveAmount);
+        assertEq(transferAmount, moveAmount - sponsoredTransferFee);
         assertEq(transferOriginator, originator);
         assertEq(transferRecipient, recipient);
         assertEq(transferHashLock, hashLock);
@@ -143,7 +145,7 @@ contract AtomicBridgeInitiatorMOVETest is Test {
             AtomicBridgeInitiatorMOVE.MessageState completedState
         ) = atomicBridgeInitiatorMOVE.bridgeTransfers(bridgeTransferId);
 
-        assertEq(completedAmount, moveAmount);
+        assertEq(completedAmount, moveAmount - sponsoredTransferFee);
         assertEq(completedOriginator, originator);
         assertEq(completedRecipient, recipient);
         assertEq(completedHashLock, testHashLock);
@@ -189,7 +191,7 @@ contract AtomicBridgeInitiatorMOVETest is Test {
 
         // Verify that the originator receives the refund and the balance is restored
         uint256 finalBalance = moveToken.balanceOf(originator);
-        assertEq(finalBalance, initialBalance, "MOVE balance mismatch");
+        assertEq(finalBalance, initialBalance - sponsoredTransferFee, "MOVE balance mismatch");
     }
 }
 
