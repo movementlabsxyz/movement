@@ -27,7 +27,7 @@ use bridge_service::{
 			types::{AlloyProvider, EthAddress, EthHash},
 		},
 		movement::{
-			client_framework::{MovementClientFramework, FRAMEWORK_ADDRESS},
+			client_framework::{MovementClientFramework, FRAMEWORK_ADDRESS, NATIVE_BRIDGE_MODULE_NAME},
 			utils::{self as movement_utils, MovementAddress, MovementHash},
 		},
 	},
@@ -343,28 +343,20 @@ impl HarnessMvtClient {
 		account
 	}
 
-	pub async fn init_set_timelock(&mut self, timelock: u64) -> Result<(), BridgeContractError> {
-		self.movement_client.initiator_set_timelock(timelock).await?;
-		Ok(())
-	}
-
 	pub async fn initiate_bridge_transfer(
 		&mut self,
-		initiator: &LocalAccount,
 		recipient: EthAddress,
-		hash_lock: HashLock,
 		amount: u64,
 	) -> BridgeContractResult<()> {
 		let recipient_bytes: Vec<u8> = recipient.into();
 		let args = vec![
 			movement_utils::serialize_vec_initiator(&recipient_bytes)?,
-			movement_utils::serialize_vec_initiator(&hash_lock.0[..])?,
 			movement_utils::serialize_u64_initiator(&amount)?,
 		];
 
 		let payload = movement_utils::make_aptos_payload(
 			FRAMEWORK_ADDRESS,
-			"atomic_bridge_initiator",
+			NATIVE_BRIDGE_MODULE_NAME,
 			"initiate_bridge_transfer",
 			Vec::new(),
 			args,
@@ -381,11 +373,13 @@ impl HarnessMvtClient {
 		Ok(())
 	}
 
-	pub async fn counterparty_complete_bridge_transfer(
+	pub async fn complete_bridge_transfer(
 		&mut self,
-		recipient_privatekey: LocalAccount,
 		bridge_transfer_id: BridgeTransferId,
-		preimage: HashLockPreImage,
+		initiator: EthAddress,
+		recipient: LocalAccount,
+		amount: Amount,
+		nonce: u64
 	) -> BridgeContractResult<AptosTransaction> {
 		let unpadded_preimage = {
 			let mut end = preimage.0.len();
@@ -396,12 +390,15 @@ impl HarnessMvtClient {
 		};
 		let args2 = vec![
 			bridge_service::chains::movement::utils::serialize_vec(&bridge_transfer_id.0[..])?,
-			bridge_service::chains::movement::utils::serialize_vec(&unpadded_preimage)?,
+			bridge_service::chains::movement::utils::serialize_vec(&initiator)?,
+			bridge_service::chains::movement::utils::serialize_vec(&recipient)?,
+			bridge_service::chains::movement::utils::serialize_u64(&amount)?,
+			bridge_service::chains::movement::utils::serialize_u64(&nonce)?,
 		];
 
 		let payload = bridge_service::chains::movement::utils::make_aptos_payload(
 			FRAMEWORK_ADDRESS,
-			bridge_service::chains::movement::client_framework::COUNTERPARTY_MODULE_NAME,
+			NATIVE_BRIDGE_MODULE_NAME,			
 			"complete_bridge_transfer",
 			Vec::new(),
 			args2,
@@ -409,7 +406,7 @@ impl HarnessMvtClient {
 
 		bridge_service::chains::movement::utils::send_and_confirm_aptos_transaction(
 			&self.rest_client,
-			&recipient_privatekey,
+			&recipient,
 			payload,
 		)
 		.await

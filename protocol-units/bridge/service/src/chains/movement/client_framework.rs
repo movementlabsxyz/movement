@@ -285,13 +285,6 @@ impl BridgeRelayerContract<MovementAddress> for MovementClientFramework {
 		amount: Amount,
 		nonce: Nonce,
 	) -> BridgeContractResult<()> {
-		let unpadded_preimage = {
-			let mut end = preimage.0.len();
-			while end > 0 && preimage.0[end - 1] == 0 {
-				end -= 1;
-			}
-			&preimage.0[..end]
-		};
 		let args = vec![
 			utils::serialize_vec(&bridge_transfer_id.0[..])?,
 			utils::serialize_vec_initiator(&initiator.0)?,

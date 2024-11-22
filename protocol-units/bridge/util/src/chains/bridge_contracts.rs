@@ -141,11 +141,6 @@ pub trait BridgeClientContract<A>: Clone + Unpin + Send + Sync {
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
 	) -> BridgeContractResult<Option<BridgeTransferInitiatedDetails<A>>>;
-
-	async fn get_bridge_transfer_details_complete(
-		&mut self,
-		bridge_transfer_id: BridgeTransferId,
-	) -> BridgeContractResult<Option<BridgeTransferCompletedDetails<A>>>;
 }
 
 #[async_trait::async_trait]
