@@ -9,10 +9,12 @@ pub enum InvalidEventError {
 	BadChain,
 	#[error("Get an initiate swap event with an existing id")]
 	InitAnAlreadyExist,
-	#[error("Bad event received")]
-	BadEvent,
+	#[error("Bad event received: {0}")]
+	BadEvent(String),
 	#[error("No existing state found for a non init event")]
 	StateNotFound,
+	#[error("Error during event indexing:{0}")]
+	IndexingFailed(String),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

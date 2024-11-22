@@ -17,9 +17,21 @@ async fn test_rest_service_health_endpoint() -> Result<(), anyhow::Error> {
 	let mock_config = Config::default();
 
 	// Create the REST service, unwrapping the result
-	let rest_service = Arc::new(BridgeRest::new(&mock_config.movement)?);
+	let (health_tx, mut health_rx) = tokio::sync::mpsc::channel(10);
+	let rest_service = Arc::new(BridgeRest::new(&mock_config.movement, health_tx)?);
 
 	let rest_service_for_task = Arc::clone(&rest_service);
+
+	//simulate the bridge loop part
+	let bridge_loop_future = tokio::spawn(async move {
+		loop {
+			if let Some(oneshot_tx) = health_rx.recv().await {
+				if let Err(err) = oneshot_tx.send("OK".to_string()) {
+					tracing::warn!("Heal check oneshot channel closed abnormally :{err:?}");
+				}
+			}
+		}
+	});
 
 	let rest_service_future = tokio::spawn(async move {
 		let _ = rest_service_for_task.run_service().await;
@@ -34,6 +46,7 @@ async fn test_rest_service_health_endpoint() -> Result<(), anyhow::Error> {
 
 	// Abort the REST service task
 	rest_service_future.abort();
+	bridge_loop_future.abort();
 
 	Ok(())
 }

@@ -1,14 +1,8 @@
 use anyhow::Result;
-use bridge_config::Config;
 use bridge_integration_tests::utils as test_utils;
-use bridge_integration_tests::{MovementToEthCallArgs, TestHarnessFramework};
-use bridge_service::chains::movement::client_framework::MovementClientFramework;
-use bridge_service::types::AssetType;
+use bridge_integration_tests::{MovementToEthCallArgs, TestHarness};
 use bridge_service::{
-	chains::{
-		bridge_contracts::BridgeContract,
-		movement::utils::MovementHash,
-	},
+	chains::{bridge_contracts::BridgeContract, movement::utils::MovementHash},
 	types::{BridgeTransferId, HashLockPreImage},
 };
 use chrono::Utc;
@@ -19,9 +13,8 @@ use tracing::info;
 #[tokio::test]
 async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
-	MovementClientFramework::bridge_setup_scripts().await?;
-	let config: Config = Config::suzuka();
-	let (mut mvt_client_harness, _config) = TestHarnessFramework::new_with_suzuka(config).await;
+	let (mut mvt_client_harness, _config) =
+		TestHarness::new_with_movement().await.expect("Bridge config file not set");
 	let args = MovementToEthCallArgs::default();
 
 	let test_result = async {
@@ -54,17 +47,12 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 		info!("Bridge transfer details: {:?}", details);
 
 		assert_eq!(details.state, 1, "Bridge transfer should be initiated.");
-		
-		let amount = match details.amount.0 {
-			AssetType::Moveth(amount) => amount,
-			_ => panic!("Expected Moveth asset type but found something else"),
-		};
 
 		test_utils::assert_counterparty_bridge_transfer_details_framework(
 			&details,
 			details.initiator_address.to_string(),
 			details.recipient_address.to_vec(),
-			amount,
+			details.amount.0,
 			details.hash_lock.0,
 			details.time_lock.0,
 		);
@@ -80,11 +68,10 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 #[tokio::test]
 async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
-	MovementClientFramework::bridge_setup_scripts().await?;
-	let config: Config = Config::suzuka();
-	let (mut mvt_client_harness, _config) = TestHarnessFramework::new_with_suzuka(config).await;
+	let (mut mvt_client_harness, config) =
+		TestHarness::new_with_movement().await.expect("Bridge config file not set");
 	let args = MovementToEthCallArgs::default();
-	let test_result = async {
+	async {
 		test_utils::fund_and_check_balance_framework(&mut mvt_client_harness, 100_000_000_000)
 			.await?;
 		test_utils::initiate_bridge_transfer_helper_framework(
@@ -116,7 +103,7 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 		let secret = b"secret";
 		let mut padded_secret = [0u8; 32];
 		padded_secret[..secret.len()].copy_from_slice(secret);
-		
+
 		BridgeContract::initiator_complete_bridge_transfer(
 			&mut mvt_client_harness.movement_client,
 			BridgeTransferId(bridge_transfer_id),
@@ -134,16 +121,12 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 		.expect("Expected to find bridge transfer details, but got None");
 
 		info!("Bridge transfer details: {:?}", details);
-		
-		let amount = match details.amount.0 {
-			AssetType::Moveth(amount) => amount,
-			_ => panic!("Expected Moveth asset type but found something else"),
-		};
+
 		test_utils::assert_counterparty_bridge_transfer_details_framework(
 			&details,
 			details.initiator_address.to_string(),
 			details.recipient_address.to_vec(),
-			amount,
+			details.amount.0,
 			details.hash_lock.0,
 			details.time_lock.0,
 		);
@@ -152,21 +135,15 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 
 		Ok(())
 	}
-	.await;
-
-	test_result
+	.await
 }
 
 #[tokio::test]
 async fn test_movement_client_refund_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 
-	MovementClientFramework::bridge_setup_scripts().await?;
-
-	let config: Config = Config::suzuka();
-
-	let (mut mvt_client_harness, _config) = TestHarnessFramework::new_with_suzuka(config).await;
-
+	let (mut mvt_client_harness, _config) =
+		TestHarness::new_with_movement().await.expect("Bridge config file not set");
 	let args = MovementToEthCallArgs::default();
 
 	let test_result = async {
@@ -187,7 +164,7 @@ async fn test_movement_client_refund_transfer() -> Result<(), anyhow::Error> {
 		)
 		.await?;
 		info!("Bridge transfer ID: {:?}", bridge_transfer_id);
-		
+
 		let details = BridgeContract::get_bridge_transfer_details_initiator(
 			&mut mvt_client_harness.movement_client,
 			BridgeTransferId(MovementHash(bridge_transfer_id).0),
@@ -199,7 +176,7 @@ async fn test_movement_client_refund_transfer() -> Result<(), anyhow::Error> {
 		info!("Time lock: {:?}", details.time_lock);
 
 		sleep(Duration::from_secs(20)).await;
-		
+
 		info!("Current timestamp: {:?}", Utc::now().timestamp());
 
 		BridgeContract::refund_bridge_transfer(
@@ -225,5 +202,3 @@ async fn test_movement_client_refund_transfer() -> Result<(), anyhow::Error> {
 
 	test_result
 }
-
-

@@ -158,7 +158,7 @@ pub mod celestia {
 
 	use super::IntermediateBlobRepresentation;
 	use anyhow::Context;
-	use celestia_types::{nmt::Namespace, Blob as CelestiaBlob};
+	use celestia_types::{consts::appconsts::AppVersion, nmt::Namespace, Blob as CelestiaBlob};
 	use tracing::info;
 
 	impl TryFrom<CelestiaBlob> for IntermediateBlobRepresentation {
@@ -202,7 +202,8 @@ pub mod celestia {
 
 			// Construct the final CelestiaBlob by assigning the compressed data
 			// and associating it with the provided namespace
-			Ok(CelestiaBlob::new(namespace, compressed_blob).map_err(|e| anyhow::anyhow!(e))?)
+			Ok(CelestiaBlob::new(namespace, compressed_blob, AppVersion::V2)
+				.map_err(|e| anyhow::anyhow!(e))?)
 		}
 	}
 }

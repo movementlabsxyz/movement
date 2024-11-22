@@ -76,7 +76,10 @@ impl fmt::Display for TransferState {
 }
 
 impl TransferState {
-	pub fn validate_event<A>(&self, event: &TransferEvent<A>) -> Result<(), InvalidEventError> {
+	pub fn validate_event<A: std::fmt::Debug>(
+		&self,
+		event: &TransferEvent<A>,
+	) -> Result<(), InvalidEventError> {
 		match (&event.contract_event, &self.state) {
 			(BridgeContractEvent::Initiated(_), _) => {
 				// already present invalid
@@ -88,7 +91,7 @@ impl TransferState {
 				.then_some(())
 				.ok_or(InvalidEventError::BadChain),
 			// Lock event is only applied on Initialized swap state
-			(BridgeContractEvent::Locked(_), _) => Err(InvalidEventError::BadEvent),
+			(BridgeContractEvent::Locked(details), _) => Err(InvalidEventError::BadEvent(format!("Received a locked event with state not Initialized, transfer_id: {} state:{} details: {details:?}", self.transfer_id, self.state))),
 			// CounterPartCompleted event must on on the counter part chain.
 			(BridgeContractEvent::CounterPartCompleted(_, _), TransferStateType::Locked) => {
 				(event.chain != self.init_chain)
@@ -97,7 +100,7 @@ impl TransferState {
 			}
 			// CounterPartCompleted event is only applied on Locked swap state
 			(BridgeContractEvent::CounterPartCompleted(_, _), _) => {
-				Err(InvalidEventError::BadEvent)
+				Err(InvalidEventError::BadEvent(format!("Received a CounterPartCompleted event with state not Locked, transfer_id: {} state:{}", self.transfer_id, self.state)))
 			}
 			// InitialtorCompleted event must on on the init chain.
 			(BridgeContractEvent::InitialtorCompleted(_), TransferStateType::SecretReceived) => {
@@ -105,7 +108,7 @@ impl TransferState {
 					.then_some(())
 					.ok_or(InvalidEventError::BadChain)
 			}
-			(BridgeContractEvent::InitialtorCompleted(_), _) => Err(InvalidEventError::BadEvent),
+			(BridgeContractEvent::InitialtorCompleted(_), _) => Err(InvalidEventError::BadEvent(format!("Received a InitialtorCompleted event with state not SecretReceived, transfer_id: {} state:{}", self.transfer_id, self.state))),
 			(BridgeContractEvent::Refunded(_), _) => Ok(()),
 			(&BridgeContractEvent::Cancelled(_), _) => Ok(()),
 		}
@@ -116,6 +119,8 @@ impl TransferState {
 		transfer_id: BridgeTransferId,
 		detail: BridgeTransferDetails<A>,
 	) -> (Self, TransferAction) {
+		println!("State transition_from_initiated amount {:?}", detail.amount);
+
 		let state = TransferState {
 			state: TransferStateType::Initialized,
 			init_chain: chain_id,

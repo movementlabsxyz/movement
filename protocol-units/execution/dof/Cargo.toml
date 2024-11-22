@@ -38,3 +38,4 @@ aptos-db = { workspace = true }
 aptos-sdk = { workspace = true }
 aptos-proptest-helpers = { workspace = true }
 rand = { workspace = true }
+tempfile = { workspace = true }

@@ -70,6 +70,9 @@ env_default!(
 // The default chain id
 env_default!(default_maptos_chain_id, "MAPTOS_CHAIN_ID", ChainId, ChainId::from_str("27").unwrap());
 
+// The default read-only mode
+env_default!(default_maptos_read_only, "MAPTOS_READ_ONLY", bool, false);
+
 // The default private key
 pub fn default_maptos_private_key() -> Ed25519PrivateKey {
 	match std::env::var("MAPTOS_PRIVATE_KEY") {
@@ -105,6 +108,15 @@ env_default!(
 	u16,
 	30734
 );
+
+env_default!(
+	default_maptos_indexer_healthcheck_hostname,
+	"MAPTOS_INDEXER_HEALTHCHECK_HOSTNAME",
+	String,
+	"0.0.0.0".to_string()
+);
+
+env_default!(default_maptos_indexer_healthcheck_port, "MAPTOS_INDEXER_HEALTHCHECK_PORT", u16, 8084);
 
 env_default!(
 	default_maptos_indexer_grpc_inactivity_timeout,

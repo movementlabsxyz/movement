@@ -4,6 +4,7 @@ pragma solidity ^0.8.22;
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {IAtomicBridgeInitiatorMOVE} from "./IAtomicBridgeInitiatorMOVE.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {console} from "forge-std/console.sol";
 
 contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, AccessControlUpgradeable {
     enum MessageState {
@@ -77,14 +78,16 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, AccessControlU
         returns (bytes32 bridgeTransferId)
     {
         address originator = msg.sender;
-
+        console.log("ICI initiateBridgeTransfer amount:%d", moveAmount);
         // Ensure there is a valid amount
         if (moveAmount == 0) {
             revert ZeroAmount();
         }
+        console.log("ICI initiateBridgeTransfer amount ok");
 
         // Transfer the MOVE tokens from the user to the contract
         if (!moveToken.transferFrom(originator, address(this), moveAmount)) {
+            console.log("ICI initiateBridgeTransfer transfer failed");
             revert MOVETransferFailed();
         }
 
@@ -108,7 +111,7 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, AccessControlU
         return bridgeTransferId;
     }
 
-    function completeBridgeTransfer(bytes32 bridgeTransferId, bytes32 preImage) external {
+    function completeBridgeTransfer(bytes32 bridgeTransferId, bytes32 preImage) external onlyOwner {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
         if (bridgeTransfer.state != MessageState.INITIALIZED) revert BridgeTransferHasBeenCompleted();
         if (keccak256(abi.encodePacked(preImage)) != bridgeTransfer.hashLock) revert InvalidSecret();
@@ -123,7 +126,6 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, AccessControlU
         if (bridgeTransfer.state != MessageState.INITIALIZED) revert BridgeTransferStateNotInitialized();
         if (block.timestamp < bridgeTransfer.timeLock) revert TimeLockNotExpired();
         bridgeTransfer.state = MessageState.REFUNDED;
-
         if (!moveToken.transfer(bridgeTransfer.originator, bridgeTransfer.amount)) revert MOVETransferFailed();
 
         emit BridgeTransferRefunded(bridgeTransferId);

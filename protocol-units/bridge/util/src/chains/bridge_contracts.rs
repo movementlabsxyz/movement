@@ -9,6 +9,12 @@ use crate::types::{
 
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
 pub enum BridgeContractError {
+	#[error("Account balance error")]
+	AccountBalanceError,
+	#[error("Funding error")]
+	FundingError,
+	#[error("Invalid Url")]
+	InvalidUrl,
 	#[error("Failed to extract transfer Id")]
 	TransferIdExtractionError,
 	#[error("Failed to mint")]
@@ -49,6 +55,8 @@ pub enum BridgeContractError {
 	OnChainUnknownEvent,
 	#[error("Error during onchain call:{0}")]
 	OnChainError(String),
+	#[error("Error during decoding address:{0}")]
+	BadAddressEncoding(String),
 	#[error("Error during deserializing an event :{1:?} : {0}")]
 	EventDeserializingFail(String, BridgeContractEventType),
 }

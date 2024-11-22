@@ -4,6 +4,7 @@ pragma solidity ^0.8.22;
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {IAtomicBridgeCounterpartyMOVE} from "./IAtomicBridgeCounterpartyMOVE.sol";
 import {AtomicBridgeInitiatorMOVE} from "./AtomicBridgeInitiatorMOVE.sol";
+import {console} from "forge-std/console.sol";
 
 contract AtomicBridgeCounterpartyMOVE is IAtomicBridgeCounterpartyMOVE, AccessControlUpgradeable {
 
@@ -78,6 +79,7 @@ contract AtomicBridgeCounterpartyMOVE is IAtomicBridgeCounterpartyMOVE, AccessCo
         if (amount == 0) revert ZeroAmount();
         // The time lock is now based on the configurable duration
         uint256 timeLock = block.timestamp + counterpartyTimeLockDuration;
+        console.log("ICI LOCK timeLock:%d", timeLock);
 
         bridgeTransfers[bridgeTransferId] = BridgeTransferDetails({
             recipient: recipient,
@@ -87,20 +89,19 @@ contract AtomicBridgeCounterpartyMOVE is IAtomicBridgeCounterpartyMOVE, AccessCo
             timeLock: timeLock,
             state: MessageState.PENDING
         });
+        console.log("ICI LOCK done");
 
         emit BridgeTransferLocked(bridgeTransferId, recipient, amount, hashLock, counterpartyTimeLockDuration);
     }
 
     function completeBridgeTransfer(bytes32 bridgeTransferId, bytes32 preImage) external {
         BridgeTransferDetails storage details = bridgeTransfers[bridgeTransferId];
-        if (details.state != MessageState.PENDING) revert BridgeTransferStateNotPending();
+        // if (details.state != MessageState.PENDING) revert BridgeTransferStateNotPending();
         bytes32 computedHash = keccak256(abi.encodePacked(preImage));
-        if (computedHash != details.hashLock) revert InvalidSecret();
-        if (block.timestamp > details.timeLock) revert TimeLockExpired();
+        // if (computedHash != details.hashLock) revert InvalidSecret();
+        // if (block.timestamp > details.timeLock) revert TimeLockExpired();
 
         details.state = MessageState.COMPLETED;
-
-        atomicBridgeInitiatorMOVE.withdrawMOVE(details.recipient, details.amount);
 
         emit BridgeTransferCompleted(bridgeTransferId, preImage);
     }

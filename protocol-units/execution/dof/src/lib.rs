@@ -27,7 +27,6 @@ pub trait DynOptFinExecutor {
 	fn background(
 		&self,
 		transaction_sender: Sender<SignedTransaction>,
-		config: &Config,
 	) -> Result<
 		(Self::Context, impl Future<Output = Result<(), anyhow::Error>> + Send + 'static),
 		anyhow::Error,
