@@ -134,6 +134,15 @@ impl Commitment {
 	}
 }
 
+impl fmt::Display for Commitment {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		for byte in &self.0 {
+			write!(f, "{:02x}", byte)?;
+		}
+		Ok(())
+	}
+}
+
 impl From<Commitment> for [u8; 32] {
 	fn from(commitment: Commitment) -> [u8; 32] {
 		commitment.0
@@ -143,15 +152,6 @@ impl From<Commitment> for [u8; 32] {
 impl From<Commitment> for Vec<u8> {
 	fn from(commitment: Commitment) -> Vec<u8> {
 		commitment.0.into()
-	}
-}
-
-impl fmt::Display for Commitment {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		for byte in &self.0 {
-			write!(f, "{:02x}", byte)?;
-		}
-		Ok(())
 	}
 }
 

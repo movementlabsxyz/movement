@@ -39,7 +39,7 @@ impl Commitment {
 		let commitment = settlement_client.get_posted_commitment_at_height(height).await?;
 
 		// Use println as this is standard (non-logging output)
-		println!("{:?}", commitment);
+		println!("{:#?}", commitment);
 
 		Ok(())
 	}

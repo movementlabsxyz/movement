@@ -139,7 +139,10 @@ impl DynOptFinExecutor for Executor {
 	/// Rollover the genesis block
 	async fn rollover_genesis_block(&self) -> Result<(), anyhow::Error> {
 		self.executor
-			.rollover_genesis(self.executor.config().chain.genesis_timestamp_microseconds)
+			.rollover_genesis(
+				self.executor.config().chain.genesis_timestamp_microseconds,
+				HashValue::from_hex(&self.executor.config().chain.genesis_block_hash_hex)?,
+			)
 			.await
 	}
 

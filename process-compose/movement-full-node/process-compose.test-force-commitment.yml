@@ -60,7 +60,7 @@ processes:
       fi
 
       if [ "$$NODE_COMMITMENT" != "$$SETTLED_COMMITMENT" ]; then
-        echo "Node commitment does not match settled commitment"
+        echo "Node commitment does not match settled commitment at latest height"
         exit 1
       fi
 
@@ -72,7 +72,7 @@ processes:
       echo "SETTLED_COMMITMENT: $$SETTLED_COMMITMENT"
 
       if [ "$$NODE_COMMITMENT" != "$$SETTLED_COMMITMENT" ]; then
-        echo "Node commitment does not match settled commitment"
+        echo "Node commitment does not match settled commitment at height 2"
         exit 1
       fi
     depends_on:

@@ -165,9 +165,12 @@ impl Executor {
 		Ok(ledger_info.ledger_info().timestamp_usecs())
 	}
 
-	pub async fn rollover_genesis(&self, timestamp: u64) -> Result<(), anyhow::Error> {
+	pub async fn rollover_genesis(
+		&self,
+		timestamp: u64,
+		block_id: HashValue,
+	) -> Result<(), anyhow::Error> {
 		let (epoch, round) = self.get_next_epoch_and_round()?;
-		let block_id = HashValue::random();
 
 		// genesis timestamp should always be 0
 		let genesis_timestamp = self.get_last_state_timestamp_micros()?;
@@ -189,19 +192,6 @@ impl Executor {
 			ExecutableTransactions::Unsharded(into_signature_verified_block(vec![block_metadata]));
 		let block = ExecutableBlock::new(block_id.clone(), txs);
 		self.execute_block(block).await?;
-		Ok(())
-	}
-
-	/// Rollover the genesis block.
-	/// This should only be used for testing. The data availability layer should provide an initial transaction that rolls over the genesis block.
-	pub async fn rollover_genesis_now(&self) -> Result<(), anyhow::Error> {
-		// rollover timestamp needs to be within the epoch, by  default above this is one hour, so below is 59 minutes
-		let rollover_timestamp = chrono::Utc::now().timestamp_micros() as u64;
-		self.rollover_genesis(
-			rollover_timestamp,
-			// rollover_timestamp - (59 * 60 * 1000 * 1000), // 60 minutes
-		)
-		.await?;
 		Ok(())
 	}
 
@@ -326,7 +316,9 @@ mod tests {
 		let (tx_sender, _tx_receiver) = mpsc::channel(1);
 		let (executor, _tempdir) = Executor::try_test_default(private_key)?;
 		let (context, _transaction_pipe) = executor.background(tx_sender)?;
-		executor.rollover_genesis_now().await?;
+		executor
+			.rollover_genesis(chrono::Utc::now().timestamp_micros() as u64, HashValue::random())
+			.await?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
@@ -429,7 +421,9 @@ mod tests {
 		let (executor, _tempdir) = Executor::try_test_default(private_key)?;
 		let (context, _transaction_pipe) = executor.background(tx_sender)?;
 		let service = Service::new(&context);
-		executor.rollover_genesis_now().await?;
+		executor
+			.rollover_genesis(chrono::Utc::now().timestamp_micros() as u64, HashValue::random())
+			.await?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
