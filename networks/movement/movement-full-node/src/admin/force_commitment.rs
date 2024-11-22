@@ -36,8 +36,8 @@ impl ForceCommitment {
 		};
 		info!("Forcing commmitment at height {}", height);
 		executor.revert_block_head_to(height).await?;
-		let commitment = executor.get_block_commitment_by_height(height).await?;
-		println!("{:#?}", commitment);
+		let commitment = executor.get_commitment_for_height(height).await?;
+		println!("{}", commitment);
 
 		settlement_client.force_block_commitment(commitment).await?;
 

@@ -49,7 +49,7 @@ pub trait DynOptFinExecutor {
 	fn set_finalized_block_height(&self, block_height: u64) -> Result<(), anyhow::Error>;
 
 	/// Gets the block commitment for a given height
-	async fn get_block_commitment_by_height(
+	async fn get_commitment_for_height(
 		&self,
 		block_height: u64,
 	) -> Result<BlockCommitment, anyhow::Error>;
@@ -72,9 +72,6 @@ pub trait DynOptFinExecutor {
 		block_id: HashValue,
 		timestamp: u64,
 	) -> Result<BlockMetadata, anyhow::Error>;
-
-	/// Rollover the genesis block
-	async fn rollover_genesis_block(&self) -> Result<(), anyhow::Error>;
 
 	/// Decrements transactions in flight on the transaction channel.
 	fn decrement_transactions_in_flight(&self, count: u64);

@@ -146,7 +146,8 @@ impl Executor {
 		let aggregate_signature = AggregateSignature::empty();
 		let ledger_info = LedgerInfoWithSignatures::new(ledger_info, aggregate_signature);
 		let db_writer = self.db().writer.clone();
-		tokio::task::spawn_blocking(move || db_writer.revert_commit(&ledger_info)).await??;
+		let ledger_info_copy = ledger_info.clone();
+		tokio::task::spawn_blocking(move || db_writer.revert_commit(&ledger_info_copy)).await??;
 		// Reset the executor state to the reverted storage
 		self.block_executor.reset()?;
 		Ok(())
@@ -163,36 +164,6 @@ impl Executor {
 	pub fn get_last_state_timestamp_micros(&self) -> Result<u64, anyhow::Error> {
 		let ledger_info = self.db().reader.get_latest_ledger_info()?;
 		Ok(ledger_info.ledger_info().timestamp_usecs())
-	}
-
-	pub async fn rollover_genesis(
-		&self,
-		timestamp: u64,
-		block_id: HashValue,
-	) -> Result<(), anyhow::Error> {
-		let (epoch, round) = self.get_next_epoch_and_round()?;
-
-		// genesis timestamp should always be 0
-		let genesis_timestamp = self.get_last_state_timestamp_micros()?;
-		info!(
-			"Rollover genesis: epoch: {}, round: {}, block_id: {}, genesis timestamp {}",
-			epoch, round, block_id, genesis_timestamp
-		);
-
-		let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
-			block_id,
-			epoch,
-			round,
-			self.signer.author(),
-			vec![],
-			vec![],
-			timestamp,
-		));
-		let txs =
-			ExecutableTransactions::Unsharded(into_signature_verified_block(vec![block_metadata]));
-		let block = ExecutableBlock::new(block_id.clone(), txs);
-		self.execute_block(block).await?;
-		Ok(())
 	}
 
 	pub fn ledger_info_with_sigs(
@@ -316,9 +287,6 @@ mod tests {
 		let (tx_sender, _tx_receiver) = mpsc::channel(1);
 		let (executor, _tempdir) = Executor::try_test_default(private_key)?;
 		let (context, _transaction_pipe) = executor.background(tx_sender)?;
-		executor
-			.rollover_genesis(chrono::Utc::now().timestamp_micros() as u64, HashValue::random())
-			.await?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
@@ -406,7 +374,7 @@ mod tests {
 			// Check the commitment against state proof
 			let state_proof = db_reader.get_state_proof(latest_version)?;
 			let expected_commitment = Commitment::digest_state_proof(&state_proof);
-			assert_eq!(block_commitment.height(), i + 2);
+			assert_eq!(block_commitment.height(), i + 1);
 			assert_eq!(block_commitment.commitment(), expected_commitment);
 		}
 
@@ -421,9 +389,6 @@ mod tests {
 		let (executor, _tempdir) = Executor::try_test_default(private_key)?;
 		let (context, _transaction_pipe) = executor.background(tx_sender)?;
 		let service = Service::new(&context);
-		executor
-			.rollover_genesis(chrono::Utc::now().timestamp_micros() as u64, HashValue::random())
-			.await?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(

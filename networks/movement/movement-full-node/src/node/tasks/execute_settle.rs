@@ -68,11 +68,6 @@ where
 	S: McrSettlementManagerOperations,
 {
 	pub async fn run(mut self) -> anyhow::Result<()> {
-		// TODO: this is a temporary solution to rollover the genesis block, really this
-		// (a) needs to be read from the DA and
-		// (b) requires modifications to Aptos Core.
-		// self.executor.rollover_genesis_block().await?;
-
 		let synced_height = self.da_db.get_synced_height().await?;
 		info!("Synced height: {:?}", synced_height);
 		let mut blocks_from_da = self

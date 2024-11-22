@@ -46,10 +46,17 @@ processes:
     command: |
       export RUST_LOG=off
 
-      movement-full-node state node commitment
+      export PRE_NODE_COMMITMENT=$(movement-full-node state node commitment)
       export NODE_COMMITMENT=$(movement-full-node state node commitment)
+      
+      if [ "$$PRE_NODE_COMMITMENT" != "$$NODE_COMMITMENT" ]; then
+        echo "Node fetching different commitments"
+        exit 1
+      fi
+
       movement-full-node admin force-commitment
       export SETTLED_COMMITMENT=$(movement-full-node state settlement accepted-commitment)
+      export NODE_COMMITMENT=$(movement-full-node state node commitment)
 
       echo "NODE_COMMITMENT: $$NODE_COMMITMENT"
       echo "SETTLED_COMMITMENT: $$SETTLED_COMMITMENT"
@@ -64,15 +71,15 @@ processes:
         exit 1
       fi
 
-      export NODE_COMMITMENT=$(movement-full-node state node commitment 2)
-      movement-full-node admin force-commitment 2
+      movement-full-node admin force-commitment 10
+      export NODE_COMMITMENT=$(movement-full-node state node commitment 10)
       export SETTLED_COMMITMENT=$(movement-full-node state settlement accepted-commitment)
 
       echo "NODE_COMMITMENT: $$NODE_COMMITMENT"
       echo "SETTLED_COMMITMENT: $$SETTLED_COMMITMENT"
 
       if [ "$$NODE_COMMITMENT" != "$$SETTLED_COMMITMENT" ]; then
-        echo "Node commitment does not match settled commitment at height 2"
+        echo "Node commitment does not match settled commitment at height 10"
         exit 1
       fi
     depends_on:

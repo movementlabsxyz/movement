@@ -1,9 +1,9 @@
 use crate::transaction::Transaction;
 use aptos_types::state_proof::StateProof;
-use core::fmt;
 use serde::{Deserialize, Serialize};
 use std::collections::btree_set;
 use std::collections::BTreeSet;
+use std::fmt;
 
 pub type Transactions<'a> = btree_set::Iter<'a, Transaction>;
 
@@ -181,6 +181,16 @@ impl BlockCommitment {
 
 	pub fn test() -> Self {
 		Self::new(0, Id::test(), Commitment::test())
+	}
+}
+
+impl fmt::Display for BlockCommitment {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		write!(
+			f,
+			"BlockCommitment {{ height: {}, block_id: {}, commitment: {} }}",
+			self.height, self.block_id, self.commitment
+		)
 	}
 }
 

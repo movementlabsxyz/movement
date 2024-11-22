@@ -30,9 +30,9 @@ impl Commitment {
 			None => executor.get_block_head_height()?,
 		};
 
-		let commitment = executor.get_block_commitment_by_height(height).await?;
+		let commitment = executor.get_commitment_for_height(height).await?;
 		// Use println as this is standard (non-logging output)
-		println!("{:#?}", commitment);
+		println!("{}", commitment);
 
 		Ok(())
 	}

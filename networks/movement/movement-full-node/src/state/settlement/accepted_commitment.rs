@@ -37,7 +37,10 @@ impl AcceptedCommitment {
 
 		let commitment = settlement_client.get_commitment_at_height(height).await?;
 		// Use println as this is standard (non-logging output)
-		println!("{:#?}", commitment);
+		match commitment {
+			Some(commitment) => println!("{}", commitment),
+			None => println!("No commitment found at height {}", height),
+		}
 
 		Ok(())
 	}

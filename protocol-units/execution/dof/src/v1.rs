@@ -93,7 +93,7 @@ impl DynOptFinExecutor for Executor {
 		self.finality_view.set_finalized_block_height(height)
 	}
 
-	async fn get_block_commitment_by_height(
+	async fn get_commitment_for_height(
 		&self,
 		block_height: u64,
 	) -> Result<BlockCommitment, anyhow::Error> {
@@ -134,16 +134,6 @@ impl DynOptFinExecutor for Executor {
 
 		// Create a block metadata transaction.
 		Ok(BlockMetadata::new(block_id, epoch, round, signer.author(), vec![], vec![], timestamp))
-	}
-
-	/// Rollover the genesis block
-	async fn rollover_genesis_block(&self) -> Result<(), anyhow::Error> {
-		self.executor
-			.rollover_genesis(
-				self.executor.config().chain.genesis_timestamp_microseconds,
-				HashValue::from_hex(&self.executor.config().chain.genesis_block_hash_hex)?,
-			)
-			.await
 	}
 
 	fn decrement_transactions_in_flight(&self, count: u64) {
