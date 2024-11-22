@@ -1,9 +1,10 @@
 use crate::chains::bridge_contracts::BridgeContractEvent;
+use crate::chains::bridge_contracts::BridgeTransferInitiatedDetails;
 use crate::events::{InvalidEventError, TransferEvent};
 use crate::types::Amount;
 use crate::types::BridgeAddress;
+use crate::types::Nonce;
 use crate::types::{BridgeTransferId, ChainId};
-use crate::types::{BridgeTransferInitiatedDetails, Nonce};
 use crate::TransferAction;
 use crate::TransferActionType;
 use std::fmt;

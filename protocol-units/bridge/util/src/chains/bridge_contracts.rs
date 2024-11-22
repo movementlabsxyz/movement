@@ -1,7 +1,5 @@
-use crate::types::{
-	Amount, BridgeAddress, BridgeTransferCompletedDetails, BridgeTransferId,
-	BridgeTransferInitiatedDetails, Nonce,
-};
+use crate::types::{Amount, BridgeAddress, BridgeTransferId, Nonce};
+use serde::Deserialize;
 use std::fmt;
 use thiserror::Error;
 use tokio_stream::Stream;
@@ -123,6 +121,24 @@ impl<A> fmt::Display for BridgeContractEvent<A> {
 	}
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Deserialize)]
+pub struct BridgeTransferInitiatedDetails<A> {
+	pub bridge_transfer_id: BridgeTransferId,
+	pub initiator: BridgeAddress<A>,
+	pub recipient: BridgeAddress<Vec<u8>>,
+	pub amount: Amount,
+	pub nonce: Nonce,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Deserialize)]
+pub struct BridgeTransferCompletedDetails<A> {
+	pub bridge_transfer_id: BridgeTransferId,
+	pub initiator: BridgeAddress<Vec<u8>>,
+	pub recipient: BridgeAddress<A>,
+	pub amount: Amount,
+	pub nonce: Nonce,
+}
+
 pub trait BridgeContractMonitoring:
 	Stream<Item = BridgeContractResult<BridgeContractEvent<Self::Address>>> + Unpin
 {
@@ -136,8 +152,7 @@ pub trait BridgeClientContract<A>: Clone + Unpin + Send + Sync {
 		recipient: BridgeAddress<Vec<u8>>,
 		amount: Amount,
 	) -> BridgeContractResult<()>;
-
-	async fn get_bridge_transfer_details_initiate(
+	async fn get_bridge_transfer_details(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
 	) -> BridgeContractResult<Option<BridgeTransferInitiatedDetails<A>>>;
@@ -153,6 +168,16 @@ pub trait BridgeRelayerContract<A>: Clone + Unpin + Send + Sync {
 		amount: Amount,
 		nonce: Nonce,
 	) -> BridgeContractResult<()>;
+
+	async fn get_bridge_transfer_details_with_nonce(
+		&mut self,
+		nonce: Nonce,
+	) -> BridgeContractResult<Option<BridgeTransferInitiatedDetails<A>>>;
+
+	async fn is_bridge_transfer_completed(
+		&mut self,
+		bridge_transfer_id: BridgeTransferId,
+	) -> BridgeContractResult<bool>;
 }
 
 #[async_trait::async_trait]
