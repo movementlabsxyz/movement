@@ -4220,7 +4220,6 @@ dependencies = [
  "bcs 0.1.4",
  "bridge-config",
  "bridge-grpc",
- "bridge-indexer-db",
  "bridge-util",
  "delegate",
  "derive-new",

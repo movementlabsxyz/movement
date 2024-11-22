@@ -10,14 +10,14 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 // import {RateLimiter} from "./RateLimiter.sol";
 
 contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeBridge {
-    struct OutgoingTransfer {
+    struct OutboundTransfer {
         bytes32 bridgeTransferId;
         address initiator;
         bytes32 recipient;
         uint256 amount;
     }
 
-    mapping(uint256 nonce => OutgoingTransfer) public noncesToOutgoingTransfers;
+    mapping(uint256 nonce => OutboundTransfer) public noncesToOutboundTransfers;
     mapping(bytes32 bridgeTransferId => uint256 nonce) public idsToInboundNonces;
     mapping(uint256 day => uint256 amount) public outboundRateLimitBudget;
     mapping(uint256 day => uint256 amount) public inboundRateLimitBudget;
@@ -33,6 +33,13 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
     }
     // TODO: include rate limit
 
+    /**
+    * @dev Initializes the NativeBridge contract
+    * @param _moveToken The address of the MOVE token contract
+    * @param _admin The address of the admin role
+    * @param _relayer The address of the relayer role
+    * @param _maintainer The address of the maintainer role
+     */
     function initialize(address _moveToken, address _admin, address _relayer, address _maintainer, address _insuranceFund) public initializer {
         require(_moveToken != address(0) && _admin != address(0) && _relayer != address(0), ZeroAddress());
         __Pausable_init();
@@ -47,6 +54,13 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
         _grantRole(RELAYER_ROLE, _maintainer);
     }
 
+    /**
+     * @dev Creates a new bridge
+     * @param recipient The address on the other chain to which to transfer funds
+     * @param amount The amount of MOVE to send
+     * @return bridgeTransferId A unique id representing this BridgeTransfer
+     *
+     */
     function initiateBridgeTransfer(bytes32 recipient, uint256 amount)
         external
         whenNotPaused
@@ -64,12 +78,20 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
         bridgeTransferId = keccak256(abi.encodePacked(initiator, recipient, amount, ++_nonce));
 
         // Store the bridge transfer details
-        noncesToOutgoingTransfers[_nonce] = OutgoingTransfer(bridgeTransferId, initiator, recipient, amount);
+        noncesToOutboundTransfers[_nonce] = OutboundTransfer(bridgeTransferId, initiator, recipient, amount);
 
         emit BridgeTransferInitiated(bridgeTransferId, initiator, recipient, amount, _nonce);
         return bridgeTransferId;
     }
 
+    /**
+     * @dev Completes the bridging of funds. Only the relayer can call this function.
+     * @param bridgeTransferId Unique identifier for the BridgeTransfer
+     * @param originator The address on the other chain that originated the transfer of funds
+     * @param recipient The address on this chain to which to transfer funds
+     * @param amount The amount to transfer
+     * @param nonce The seed nonce to generate the bridgeTransferId
+     */
     function completeBridgeTransfer(
         bytes32 bridgeTransferId,
         bytes32 initiator,
@@ -80,6 +102,14 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
         _completeBridgeTransfer(bridgeTransferId, initiator, recipient, amount, nonce);
     }
 
+    /**
+    * @dev Completes multiple bridge transfers
+    * @param bridgeTransferIds Unique identifiers for the BridgeTransfers
+    * @param initiators The addresses on the other chain that originated the transfer of funds
+    * @param recipients The addresses on this chain to which to transfer funds
+    * @param amounts The amounts to transfer
+    * @param nonces The seed nonces to generate the bridgeTransferIds
+     */
     function batchCompleteBridgeTransfer(
         bytes32[] memory bridgeTransferIds,
         bytes32[] memory initiators,
