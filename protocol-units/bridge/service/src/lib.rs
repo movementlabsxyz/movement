@@ -1,8 +1,10 @@
 use crate::actions::process_action;
-use bridge_indexer_db::client::Client as IndexerClient;
+//use bridge_indexer_db::client::Client as IndexerClient;
 use bridge_util::{
 	actions::{ActionExecError, TransferAction, TransferActionType},
-	chains::bridge_contracts::{BridgeContract, BridgeContractEvent, BridgeContractMonitoring},
+	chains::bridge_contracts::{
+		BridgeContractEvent, BridgeContractMonitoring, BridgeRelayerContract,
+	},
 	events::{InvalidEventError, TransferEvent},
 	states::{TransferState, TransferStateType},
 	types::{BridgeTransferId, ChainId},
@@ -47,12 +49,12 @@ pub async fn run_bridge<
 	A1: Send + TryFrom<Vec<u8>> + std::clone::Clone + 'static + std::fmt::Debug,
 	A2: Send + TryFrom<Vec<u8>> + std::clone::Clone + 'static + std::fmt::Debug,
 >(
-	client_one: impl BridgeContract<A1> + 'static,
+	client_one: impl BridgeRelayerContract<A1> + 'static,
 	mut stream_one: impl BridgeContractMonitoring<Address = A1>,
-	client_two: impl BridgeContract<A2> + 'static,
+	client_two: impl BridgeRelayerContract<A2> + 'static,
 	mut stream_two: impl BridgeContractMonitoring<Address = A2>,
 	mut healthcheck_request_rx: mpsc::Receiver<oneshot::Sender<String>>,
-	indexer_db_client: Option<IndexerClient>,
+	//	indexer_db_client: Option<IndexerClient>,
 	healthcheck_tx_one: mpsc::Sender<oneshot::Sender<bool>>,
 	healthcheck_tx_two: mpsc::Sender<oneshot::Sender<bool>>,
 ) -> Result<(), anyhow::Error>
@@ -60,7 +62,7 @@ where
 	Vec<u8>: From<A1>,
 	Vec<u8>: From<A2>,
 {
-	let mut state_runtime = Runtime::new(indexer_db_client);
+	let mut state_runtime = Runtime::new(); //indexer_db_client
 
 	let mut client_exec_result_futures_one = FuturesUnordered::new();
 	let mut client_exec_result_futures_two = FuturesUnordered::new();
@@ -274,60 +276,61 @@ async fn check_monitoring_loop_heath(
 
 struct Runtime {
 	swap_state_map: HashMap<BridgeTransferId, TransferState>,
-	indexer_db_client: Option<IndexerClient>,
+	//indexer_db_client: Option<IndexerClient>,
 }
 
 impl Runtime {
-	pub fn new(indexer_db_client: Option<IndexerClient>) -> Self {
-		Runtime { swap_state_map: HashMap::new(), indexer_db_client }
+	pub fn new() -> Self {
+		//indexer_db_client: Option<IndexerClient>
+		Runtime { swap_state_map: HashMap::new() } //indexer_db_client
 	}
 
 	pub fn iter_state(&self) -> impl Iterator<Item = &TransferState> {
 		self.swap_state_map.values()
 	}
 
-	fn index_event<A>(&mut self, event: TransferEvent<A>) -> Result<(), InvalidEventError>
-	where
-		A: Into<Vec<u8>> + std::clone::Clone + std::fmt::Debug,
-	{
-		match self.indexer_db_client {
-			Some(ref mut client) => {
-				let event = event.contract_event;
+	// fn index_event<A>(&mut self, event: TransferEvent<A>) -> Result<(), InvalidEventError>
+	// where
+	// 	A: Into<Vec<u8>> + std::clone::Clone + std::fmt::Debug,
+	// {
+	// 	match self.indexer_db_client {
+	// 		Some(ref mut client) => {
+	// 			let event = event.contract_event;
 
-				client.insert_bridge_contract_event(event.clone()).map_err(|err| {
-					tracing::warn!("Fail to index event :{err}");
-					InvalidEventError::IndexingFailed(err.to_string())
-				})?;
-				tracing::info!("index_event(success):{event:?}");
-				Ok(())
-			}
-			None => {
-				tracing::warn!("No indexer db client found. Event not indexed");
-				Ok(())
-			}
-		}
-	}
+	// 			client.insert_bridge_contract_event(event.clone()).map_err(|err| {
+	// 				tracing::warn!("Fail to index event :{err}");
+	// 				InvalidEventError::IndexingFailed(err.to_string())
+	// 			})?;
+	// 			tracing::info!("index_event(success):{event:?}");
+	// 			Ok(())
+	// 		}
+	// 		None => {
+	// 			tracing::warn!("No indexer db client found. Event not indexed");
+	// 			Ok(())
+	// 		}
+	// 	}
+	// }
 
-	pub fn index_transfer_action(
-		&mut self,
-		action: TransferAction,
-	) -> Result<(), InvalidEventError> {
-		match self.indexer_db_client {
-			Some(ref mut client) => {
-				let action = action.kind;
-				client.insert_transfer_action(action.clone()).map_err(|err| {
-					tracing::warn!("Fail to index action");
-					InvalidEventError::BadEvent(err.to_string())
-				})?;
-				tracing::info!("index_transfer_action(success): {action:?}");
-				Ok(())
-			}
-			None => {
-				tracing::warn!("No indexer db client found. Action not indexed");
-				Ok(())
-			}
-		}
-	}
+	// pub fn index_transfer_action(
+	// 	&mut self,
+	// 	action: TransferAction,
+	// ) -> Result<(), InvalidEventError> {
+	// 	match self.indexer_db_client {
+	// 		Some(ref mut client) => {
+	// 			let action = action.kind;
+	// 			client.insert_transfer_action(action.clone()).map_err(|err| {
+	// 				tracing::warn!("Fail to index action");
+	// 				InvalidEventError::BadEvent(err.to_string())
+	// 			})?;
+	// 			tracing::info!("index_transfer_action(success): {action:?}");
+	// 			Ok(())
+	// 		}
+	// 		None => {
+	// 			tracing::warn!("No indexer db client found. Action not indexed");
+	// 			Ok(())
+	// 		}
+	// 	}
+	// }
 
 	pub fn process_event<A>(
 		&mut self,
@@ -339,7 +342,7 @@ impl Runtime {
 		tracing::info!("Event received: {:?}", event);
 		self.validate_state(&event)?;
 		let indexer_event = event.clone();
-		self.index_event(indexer_event)?;
+		//		self.index_event(indexer_event)?;
 		let event_transfer_id = event.contract_event.bridge_transfer_id();
 		let state_opt = self.swap_state_map.remove(&event_transfer_id);
 		//create swap state if need
@@ -348,7 +351,7 @@ impl Runtime {
 				TransferState::transition_from_initiated(event.chain, event_transfer_id, detail);
 			action.chain = state.init_chain.other();
 			self.swap_state_map.insert(state.transfer_id, state);
-			self.index_transfer_action(action.clone())?;
+			//			self.index_transfer_action(action.clone())?;
 			return Ok(action);
 		} else {
 			//tested before in validate_state() state can be unwrap
@@ -357,35 +360,9 @@ impl Runtime {
 
 		let (action_kind, chain_id) = match event.contract_event {
 			BridgeContractEvent::Initiated(_) => unreachable!(),
-			BridgeContractEvent::Locked(detail) => {
-				let (new_state, action_kind) =
-					state.transition_from_locked_done(event_transfer_id, detail);
+			BridgeContractEvent::Completed(_ddetail) => {
+				let (new_state, action_kind) = state.transition_from_completed(event_transfer_id);
 				state = new_state;
-				(action_kind, state.init_chain)
-			}
-			BridgeContractEvent::CounterPartyCompleted(_, preimage) => {
-				let (new_state, action_kind) =
-					state.transition_from_counterpart_completed(event_transfer_id, preimage);
-				state = new_state;
-				(action_kind, state.init_chain)
-			}
-			BridgeContractEvent::InitiatorCompleted(_) => {
-				let (new_state, action_kind) =
-					state.transition_from_initiator_completed(event_transfer_id);
-				state = new_state;
-
-				(action_kind, state.init_chain)
-			}
-			BridgeContractEvent::Cancelled(_) => {
-				let (new_state, action_kind) = state.transition_from_cancelled(event_transfer_id);
-				state = new_state;
-
-				(action_kind, state.init_chain)
-			}
-			BridgeContractEvent::Refunded(_) => {
-				let (new_state, action_kind) = state.transition_from_refunded(event_transfer_id);
-				state = new_state;
-
 				(action_kind, state.init_chain)
 			}
 		};
@@ -395,9 +372,9 @@ impl Runtime {
 
 		// index action
 		// todo: really this should come after process_action completion, but the current use of process_action is hacky
-		self.index_transfer_action(action.clone())?;
+		//		self.index_transfer_action(action.clone())?;
 
-		if state.state != TransferStateType::Done {
+		if state.state != TransferStateType::Completed {
 			self.swap_state_map.insert(state.transfer_id, state);
 		}
 		Ok(action)
@@ -449,10 +426,11 @@ impl Runtime {
 				if state.retry_on_error > 5 {
 					// Depending on the action cancel transfer
 					match action.kind {
-						TransferActionType::LockBridgeTransfer { .. } => {
+						TransferActionType::CompleteBridgeTransfer { .. }
+						| TransferActionType::AbortedReplay { .. } => {
 							//Lock fail. Refund initiator
-							let (new_state_type, action_kind) = state.transition_to_refund();
-							state.state = new_state_type;
+							let transfer_id = state.transfer_id;
+							let action_kind = state.transition_from_aborted(transfer_id);
 							let action = TransferAction {
 								chain: state.init_chain,
 								transfer_id: state.transfer_id,
@@ -460,11 +438,8 @@ impl Runtime {
 							};
 							Some(action)
 						}
-						TransferActionType::WaitAndCompleteInitiator(..) => {
-							todo!()
-						}
-						TransferActionType::RefundInitiator => None, //will wait automatic refund
-						TransferActionType::TransferDone => None,
+						//Could never errors.
+						TransferActionType::CompletedRemoveState => None,
 						TransferActionType::NoAction => None,
 					}
 				} else {

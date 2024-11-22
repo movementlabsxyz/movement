@@ -7,18 +7,17 @@ use alloy::{
 	rlp::{RlpDecodable, RlpEncodable},
 	signers::local::PrivateKeySigner,
 };
-use alloy_primitives::Uint;
 use alloy_rlp::Decodable;
 use bridge_config::common::eth::EthConfig;
 use bridge_grpc::bridge_server::BridgeServer;
-use bridge_util::chains::bridge_contracts::{BridgeContractError, BridgeContractResult};
-use bridge_util::types::{
-	Amount, BridgeAddress, BridgeTransferDetails, BridgeTransferDetailsCounterparty,
-	BridgeTransferId, HashLock, HashLockPreImage, TimeLock,
+use bridge_util::chains::bridge_contracts::BridgeTransferInitiatedDetails;
+use bridge_util::chains::bridge_contracts::{
+	BridgeClientContract, BridgeContractError, BridgeContractResult, BridgeRelayerContract,
 };
+use bridge_util::types::Nonce;
+use bridge_util::types::{Amount, BridgeAddress, BridgeTransferId};
 use std::{fmt::Debug, net::SocketAddr};
 use tonic::transport::Server;
-use tracing::info;
 use url::Url;
 
 /// Configuration for the Ethereum Bridge Client
@@ -54,23 +53,19 @@ impl TryFrom<&EthConfig> for Config {
 }
 
 #[derive(RlpDecodable, RlpEncodable)]
-struct EthBridgeTransferDetails {
+struct EthBridgeTransferDetailsInitiate {
 	pub amount: U256,
 	pub originator: EthAddress,
 	pub recipient: [u8; 32],
-	pub hash_lock: [u8; 32],
-	pub time_lock: U256,
-	pub state: u8,
+	pub nonce: U256,
 }
 
 #[derive(RlpDecodable, RlpEncodable)]
-struct EthBridgeTransferDetailsCounterparty {
+struct EthBridgeTransferDetailsComplete {
 	pub amount: U256,
 	pub originator: [u8; 32],
 	pub recipient: EthAddress,
-	pub hash_lock: [u8; 32],
-	pub time_lock: U256,
-	pub state: u8,
+	pub nonce: U256,
 }
 
 #[derive(Clone)]
@@ -142,12 +137,10 @@ impl EthClient {
 }
 
 #[async_trait::async_trait]
-impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
+impl BridgeClientContract<EthAddress> for EthClient {
 	async fn initiate_bridge_transfer(
 		&mut self,
-		initiator: BridgeAddress<EthAddress>,
 		recipient: BridgeAddress<Vec<u8>>,
-		hash_lock: HashLock,
 		amount: Amount, // the ETH amount
 	) -> BridgeContractResult<()> {
 		let recipient_bytes: [u8; 32] = recipient.0.try_into().map_err(|e| {
@@ -158,7 +151,7 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 		let contract = NativeBridge::new(self.config.initiator_contract, self.rpc_provider.clone());
 		let call = contract
 			.initiateBridgeTransfer(FixedBytes(recipient_bytes), U256::from(amount.0))
-			.from(*initiator.0);
+			.from(self.signer_address);
 		let _ = send_transaction(
 			call,
 			self.signer_address,
@@ -174,13 +167,46 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 		Ok(())
 	}
 
+	async fn get_bridge_transfer_details(
+		&mut self,
+		bridge_transfer_id: BridgeTransferId,
+	) -> BridgeContractResult<Option<BridgeTransferInitiatedDetails<EthAddress>>> {
+		let generic_error = |desc| BridgeContractError::GenericError(String::from(desc));
+
+		let mapping_slot = U256::from(0); // the mapping is the zeroth slot in the contract
+		let key = bridge_transfer_id.0.clone();
+		let storage_slot = calculate_storage_slot(key, mapping_slot);
+		let storage: U256 = self
+			.rpc_provider
+			.get_storage_at(self.initiator_contract_address(), storage_slot)
+			.await
+			.map_err(|_| generic_error("could not find storage"))?;
+		let storage_bytes = storage.to_be_bytes::<32>();
+
+		println!("storage_bytes: {:?}", storage_bytes);
+		let mut storage_slice = &storage_bytes[..];
+		let eth_details = EthBridgeTransferDetailsInitiate::decode(&mut storage_slice)
+			.map_err(|_| generic_error("could not decode storage"))?;
+
+		Ok(Some(BridgeTransferInitiatedDetails {
+			bridge_transfer_id,
+			initiator: BridgeAddress(eth_details.originator),
+			recipient: BridgeAddress(eth_details.recipient.to_vec()),
+			amount: eth_details.amount.into(),
+			nonce: Nonce(eth_details.nonce.wrapping_to::<u128>()),
+		}))
+	}
+}
+
+#[async_trait::async_trait]
+impl BridgeRelayerContract<EthAddress> for EthClient {
 	async fn complete_bridge_transfer(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
 		initiator: BridgeAddress<Vec<u8>>,
 		recipient: BridgeAddress<EthAddress>,
 		amount: Amount,
-		nonce: u64,
+		nonce: Nonce,
 	) -> BridgeContractResult<()> {
 		let generic_error = |desc| BridgeContractError::GenericError(String::from(desc));
 		let contract = NativeBridge::new(self.config.initiator_contract, self.rpc_provider.clone());
@@ -198,11 +224,11 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 			BridgeContractError::ConversionFailed("initiator must be exactly 32 bytes".to_string())
 		})?;
 		let call = contract.completeBridgeTransfer(
-			FixedBytes(bridge_trasnfer_id),
+			FixedBytes(bridge_transfer_id.0),
 			FixedBytes(initiator),
 			recipient.0 .0,
 			U256::from(amount.0),
-			U256::from(nonce),
+			U256::from(nonce.0),
 		);
 		send_transaction(
 			call,
@@ -219,68 +245,18 @@ impl bridge_util::chains::bridge_contracts::BridgeContract<EthAddress> for EthCl
 		Ok(())
 	}
 
-	async fn get_bridge_transfer_details_initiator(
+	async fn get_bridge_transfer_details_with_nonce(
 		&mut self,
-		bridge_transfer_id: BridgeTransferId,
-	) -> BridgeContractResult<Option<BridgeTransferDetails<EthAddress>>> {
-		let generic_error = |desc| BridgeContractError::GenericError(String::from(desc));
-
-		let mapping_slot = U256::from(0); // the mapping is the zeroth slot in the contract
-		let key = bridge_transfer_id.0.clone();
-		let storage_slot = calculate_storage_slot(key, mapping_slot);
-		let storage: U256 = self
-			.rpc_provider
-			.get_storage_at(self.initiator_contract_address(), storage_slot)
-			.await
-			.map_err(|_| generic_error("could not find storage"))?;
-		let storage_bytes = storage.to_be_bytes::<32>();
-
-		println!("storage_bytes: {:?}", storage_bytes);
-		let mut storage_slice = &storage_bytes[..];
-		let eth_details = EthBridgeTransferDetails::decode(&mut storage_slice)
-			.map_err(|_| generic_error("could not decode storage"))?;
-
-		Ok(Some(BridgeTransferDetails {
-			bridge_transfer_id,
-			initiator: BridgeAddress(eth_details.originator),
-			recipient: BridgeAddress(eth_details.recipient.to_vec()),
-			hash_lock: HashLock(eth_details.hash_lock),
-			time_lock: TimeLock(eth_details.time_lock.wrapping_to::<u64>()),
-			amount: eth_details.amount.into(),
-			state: eth_details.state,
-		}))
+		nonce: Nonce,
+	) -> BridgeContractResult<Option<BridgeTransferInitiatedDetails<EthAddress>>> {
+		todo!()
 	}
 
-	async fn get_bridge_transfer_details_counterparty(
+	async fn is_bridge_transfer_completed(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
-	) -> BridgeContractResult<Option<BridgeTransferDetailsCounterparty<EthAddress>>> {
-		let generic_error = |desc| BridgeContractError::GenericError(String::from(desc));
-
-		let mapping_slot = U256::from(0); // the mapping is the zeroth slot in the contract
-		let key = bridge_transfer_id.0.clone();
-		let storage_slot = calculate_storage_slot(key, mapping_slot);
-		let storage: U256 = self
-			.rpc_provider
-			.get_storage_at(self.initiator_contract_address(), storage_slot)
-			.await
-			.map_err(|_| generic_error("could not find storage"))?;
-		let storage_bytes = storage.to_be_bytes::<32>();
-
-		println!("storage_bytes: {:?}", storage_bytes);
-		let mut storage_slice = &storage_bytes[..];
-		let eth_details = EthBridgeTransferDetailsCounterparty::decode(&mut storage_slice)
-			.map_err(|_| generic_error("could not decode storage"))?;
-
-		Ok(Some(BridgeTransferDetailsCounterparty {
-			bridge_transfer_id,
-			initiator: BridgeAddress(eth_details.originator.to_vec()),
-			recipient: BridgeAddress(eth_details.recipient),
-			hash_lock: HashLock(eth_details.hash_lock),
-			time_lock: TimeLock(eth_details.time_lock.wrapping_to::<u64>()),
-			amount: eth_details.amount.into(),
-			state: eth_details.state,
-		}))
+	) -> BridgeContractResult<bool> {
+		todo!()
 	}
 }
 
@@ -297,16 +273,14 @@ mod tests {
 	#[test]
 	fn test_wrapping_to_on_eth_details() {
 		let current_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
-		let eth_details = EthBridgeTransferDetails {
+		let eth_details = EthBridgeTransferDetailsInitiate {
 			amount: U256::from(10u64.pow(18)),
 			originator: EthAddress([0; 20].into()),
 			recipient: [0; 32],
-			hash_lock: [0; 32],
-			time_lock: U256::from(current_time + 84600), // 1 day
-			state: 1,
+			nonce: U256::from(current_time + 84600), // 1 day
 		};
 		test_wrapping_to(&eth_details.amount, 10u64.pow(18));
-		test_wrapping_to(&eth_details.time_lock, current_time + 84600);
+		test_wrapping_to(&eth_details.nonce, current_time + 84600);
 	}
 
 	#[test]
@@ -315,16 +289,14 @@ mod tests {
 			let current_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
 			let additional_time = rand::random::<u64>();
 			let random_amount = rand::random::<u64>();
-			let eth_details = EthBridgeTransferDetails {
+			let eth_details = EthBridgeTransferDetailsInitiate {
 				amount: U256::from(random_amount),
 				originator: EthAddress([0; 20].into()),
 				recipient: [0; 32],
-				hash_lock: [0; 32],
-				time_lock: U256::from(current_time + additional_time),
-				state: 1,
+				nonce: U256::from(current_time + additional_time),
 			};
 			test_wrapping_to(&eth_details.amount, random_amount);
-			test_wrapping_to(&eth_details.time_lock, current_time + additional_time);
+			test_wrapping_to(&eth_details.nonce, current_time + additional_time);
 		}
 	}
 }

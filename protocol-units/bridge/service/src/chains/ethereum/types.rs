@@ -7,13 +7,11 @@ use alloy::providers::fillers::{
 use alloy::providers::RootProvider;
 use alloy::rlp::{RlpDecodable, RlpEncodable};
 use alloy::transports::BoxTransport;
+use bridge_util::chains::bridge_contracts::BridgeTransferInitiatedDetails;
 use bridge_util::types::Amount;
 use bridge_util::types::BridgeAddress;
-use bridge_util::types::BridgeTransferDetails;
 use bridge_util::types::BridgeTransferId;
-use bridge_util::types::HashLock;
-use bridge_util::types::HashLockPreImage;
-use bridge_util::types::LockDetails;
+use bridge_util::types::Nonce;
 use rand::Rng;
 use std::hash::{DefaultHasher, Hash, Hasher};
 
@@ -64,16 +62,6 @@ impl EthHash {
 		let mut hash = [0u8; 32];
 		rng.fill(&mut hash);
 		Self(hash)
-	}
-}
-
-impl From<HashLock> for EthHash {
-	fn from(value: HashLock) -> Self {
-		let mut fixed_bytes = [0u8; 32];
-		let len = value.0.len().min(32);
-		fixed_bytes[..len].copy_from_slice(&value.0[..len]);
-
-		Self(hash_vec_u32(&fixed_bytes))
 	}
 }
 
@@ -163,42 +151,5 @@ impl From<[u8; 32]> for EthAddress {
 impl From<[u8; 20]> for EthAddress {
 	fn from(bytes: [u8; 20]) -> Self {
 		EthAddress(Address(bytes.into()))
-	}
-}
-
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub struct CompletedDetails<A> {
-	pub bridge_transfer_id: BridgeTransferId,
-	pub recipient: BridgeAddress<A>,
-	pub hash_lock: HashLock,
-	pub secret: HashLockPreImage,
-	pub amount: Amount,
-}
-
-impl<A> CompletedDetails<A>
-where
-	A: From<Vec<u8>>,
-{
-	pub fn from_bridge_transfer_details(
-		bridge_transfer_details: BridgeTransferDetails<Vec<u8>>,
-		secret: HashLockPreImage,
-	) -> Self {
-		CompletedDetails {
-			bridge_transfer_id: bridge_transfer_details.bridge_transfer_id,
-			recipient: BridgeAddress(A::from(bridge_transfer_details.recipient.0)),
-			hash_lock: bridge_transfer_details.hash_lock,
-			secret,
-			amount: bridge_transfer_details.amount,
-		}
-	}
-
-	pub fn from_lock_details(lock_details: LockDetails<A>, secret: HashLockPreImage) -> Self {
-		CompletedDetails {
-			bridge_transfer_id: lock_details.bridge_transfer_id,
-			recipient: lock_details.recipient,
-			hash_lock: lock_details.hash_lock,
-			secret,
-			amount: lock_details.amount,
-		}
 	}
 }
