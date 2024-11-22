@@ -70,3 +70,9 @@
 [submodule "protocol-units/tokens/mock/testnet/holesky/lib/openzeppelin-contracts"]
 	path = protocol-units/tokens/mock/testnet/holesky/lib/openzeppelin-contracts
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+[submodule "lib/BokkyPooBahsDateTimeLibrary"]
+	path = lib/BokkyPooBahsDateTimeLibrary
+	url = https://github.com/bokkypoobah/BokkyPooBahsDateTimeLibrary
+[submodule "protocol-units/bridge/contracts/lib/BokkyPooBahsDateTimeLibrary"]
+	path = protocol-units/bridge/contracts/lib/BokkyPooBahsDateTimeLibrary
+	url = https://github.com/bokkypoobah/BokkyPooBahsDateTimeLibrary

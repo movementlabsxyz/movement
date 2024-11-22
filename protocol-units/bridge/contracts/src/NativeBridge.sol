@@ -19,7 +19,10 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
 
     mapping(uint256 nonce => OutboundTransfer) public noncesToOutboundTransfers;
     mapping(bytes32 bridgeTransferId => uint256 nonce) public idsToInboundNonces;
+    mapping(uint256 day => uint256 amount) public outboundRateLimitBudget;
+    mapping(uint256 day => uint256 amount) public inboundRateLimitBudget;
 
+    address public insuranceFund;
     IERC20 public moveToken;
     bytes32 public constant RELAYER_ROLE = keccak256(abi.encodePacked("RELAYER_ROLE"));
     uint256 private _nonce;
@@ -37,12 +40,17 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
     * @param _relayer The address of the relayer role
     * @param _maintainer The address of the maintainer role
      */
-    function initialize(address _moveToken, address _admin, address _relayer, address _maintainer) public initializer {
+    function initialize(address _moveToken, address _admin, address _relayer, address _maintainer, address _insuranceFund) public initializer {
         require(_moveToken != address(0) && _admin != address(0) && _relayer != address(0), ZeroAddress());
         __Pausable_init();
         moveToken = IERC20(_moveToken);
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
         _grantRole(RELAYER_ROLE, _relayer);
+
+        // Set insurance fund
+        insuranceFund = _insuranceFund;
+
+        // Maintainer is optional
         _grantRole(RELAYER_ROLE, _maintainer);
     }
 
@@ -60,7 +68,7 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
     {
         // Ensure there is a valid amount
         require(amount > 0, ZeroAmount());
-        //   _l1l2RateLimit(amount);
+        _rateLimitOutbound(amount);
         address initiator = msg.sender;
 
         // Transfer the MOVE tokens from the user to the contract
@@ -79,7 +87,7 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
     /**
      * @dev Completes the bridging of funds. Only the relayer can call this function.
      * @param bridgeTransferId Unique identifier for the BridgeTransfer
-     * @param originator The address on the other chain that originated the transfer of funds
+     * @param initiator The address on the other chain that originated the transfer of funds
      * @param recipient The address on this chain to which to transfer funds
      * @param amount The amount to transfer
      * @param nonce The seed nonce to generate the bridgeTransferId
@@ -129,7 +137,7 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
         uint256 amount,
         uint256 nonce
     ) internal {
-        // _l2l1RateLimit(amount);
+        _rateLimitInbound(amount);
         // Ensure the bridge transfer has not already been completed
         require(nonce > 0, InvalidNonce());
         require(idsToInboundNonces[bridgeTransferId] == 0, CompletedBridgeTransferId());
@@ -148,7 +156,25 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
         emit BridgeTransferCompleted(bridgeTransferId, initiator, recipient, amount, nonce);
     }
 
+    function setInsuranceFund(address _insuranceFund) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        insuranceFund = _insuranceFund;
+        emit InsuranceFundUpdated(_insuranceFund);
+    }
+
     function togglePause() external onlyRole(DEFAULT_ADMIN_ROLE) {
         paused() ? _pause() : _unpause();
+        emit PauseToggled(paused());
+    }
+
+    function _rateLimitOutbound(uint256 amount) internal {
+        uint256 day = block.timestamp / 1 days;
+        outboundRateLimitBudget[day] += amount;
+        require(outboundRateLimitBudget[day] < moveToken.balanceOf(insuranceFund) / 4, OutboundRateLimitExceeded());
+    }
+
+    function _rateLimitInbound(uint256 amount) internal {
+        uint256 day = block.timestamp / 1 days;
+        inboundRateLimitBudget[day] += amount;
+        require(inboundRateLimitBudget[day] < moveToken.balanceOf(insuranceFund) / 4, InboundRateLimitExceeded());
     }
 }
