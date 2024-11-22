@@ -6,12 +6,10 @@ import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/acce
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {INativeBridge} from "./INativeBridge.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {DateTimeLibrary} from "./lib/DateTimeLibrary.sol";
 
 // import {RateLimiter} from "./RateLimiter.sol";
 
 contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeBridge {
-    using DateTimeLibrary for uint256;
     struct OutgoingTransfer {
         bytes32 bridgeTransferId;
         address initiator;
@@ -20,9 +18,9 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
     }
 
     mapping(uint256 nonce => OutgoingTransfer) public noncesToOutgoingTransfers;
-    mapping(bytes32 bridgeTransferId => uint256 nonce) public idsToIncomingNonces;
-    mapping(uint256 year => mapping(uint256 month => mapping(uint256 day => uint256 amount))) public outboundRateLimitBudget;
-    mapping(uint256 year => mapping(uint256 month => mapping(uint256 day => uint256 amount))) public incomingRateLimitBudget;
+    mapping(bytes32 bridgeTransferId => uint256 nonce) public idsToInboundNonces;
+    mapping(uint256 day => uint256 amount) public outboundRateLimitBudget;
+    mapping(uint256 day => uint256 amount) public inboundRateLimitBudget;
 
     address public insuranceFund;
     IERC20 public moveToken;
@@ -109,10 +107,10 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
         uint256 amount,
         uint256 nonce
     ) internal {
-        _rateLimitIncoming(amount);
+        _rateLimitInbound(amount);
         // Ensure the bridge transfer has not already been completed
         require(nonce > 0, InvalidNonce());
-        require(idsToIncomingNonces[bridgeTransferId] == 0, CompletedBridgeTransferId());
+        require(idsToInboundNonces[bridgeTransferId] == 0, CompletedBridgeTransferId());
         // Ensure the bridge transfer ID is valid against the initiator, recipient, amount, and nonce
         require(
             bridgeTransferId == keccak256(abi.encodePacked(initiator, recipient, amount, nonce)),
@@ -120,7 +118,7 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
         );
 
         // Store the nonce to bridge transfer ID
-        idsToIncomingNonces[bridgeTransferId] = nonce;
+        idsToInboundNonces[bridgeTransferId] = nonce;
 
         // Transfer the MOVE tokens to the recipient
         if (!moveToken.transfer(recipient, amount)) revert MOVETransferFailed();
@@ -139,14 +137,14 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
     }
 
     function _rateLimitOutbound(uint256 amount) internal {
-        (uint256 year, uint256 month, uint256 day) = block.timestamp.timestampToDate();
-        outboundRateLimitBudget[year][month][day] += amount;
-        require(outboundRateLimitBudget[year][month][day] < moveToken.balanceOf(insuranceFund) / 4, OutboundRateLimitExceeded());
+        uint256 day = block.timestamp / 1 days;
+        outboundRateLimitBudget[day] += amount;
+        require(outboundRateLimitBudget[day] < moveToken.balanceOf(insuranceFund) / 4, OutboundRateLimitExceeded());
     }
 
-    function _rateLimitIncoming(uint256 amount) internal {
-        (uint256 year, uint256 month, uint256 day) = block.timestamp.timestampToDate();
-        incomingRateLimitBudget[year][month][day] += amount;
-        require(incomingRateLimitBudget[year][month][day] < moveToken.balanceOf(insuranceFund) / 4, IncomingRateLimitExceeded());
+    function _rateLimitInbound(uint256 amount) internal {
+        uint256 day = block.timestamp / 1 days;
+        inboundRateLimitBudget[day] += amount;
+        require(inboundRateLimitBudget[day] < moveToken.balanceOf(insuranceFund) / 4, InboundRateLimitExceeded());
     }
 }

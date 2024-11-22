@@ -30,7 +30,7 @@ interface INativeBridge {
     error CompletedBridgeTransferId();
     error InvalidNonce();
     error OutboundRateLimitExceeded();
-    error IncomingRateLimitExceeded();
+    error InboundRateLimitExceeded();
 
     /**
      * @dev Creates a new bridge

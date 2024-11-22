@@ -91,7 +91,7 @@ contract NativeBridgeTest is Test {
         }
     }
 
-    function testIncomingRateLimitFuzz(address receiver, uint256 _amount) public {
+    function testInboundRateLimitFuzz(address receiver, uint256 _amount) public {
         _amount = bound(_amount, 3, 1000000000 * 10 ** 8);
         moveToken.transfer(address(nativeBridge), _amount);
 
@@ -104,7 +104,7 @@ contract NativeBridgeTest is Test {
 
         vm.warp(1 days - 1);
         if (_amount >= moveToken.balanceOf(insuranceFund) / 4) {
-            vm.expectRevert(INativeBridge.IncomingRateLimitExceeded.selector);
+            vm.expectRevert(INativeBridge.InboundRateLimitExceeded.selector);
             nativeBridge.completeBridgeTransfer(tx2BridgeTransferId, keccak256(abi.encodePacked(receiver)), receiver, _amount / 2, 2);
             vm.warp(1 days + 1);
             nativeBridge.completeBridgeTransfer(tx2BridgeTransferId, keccak256(abi.encodePacked(receiver)), receiver, _amount / 2, 2);
@@ -155,7 +155,7 @@ contract NativeBridgeTest is Test {
         nativeBridge.completeBridgeTransfer(bridgeTransferId, _originator, _recipient, _amount, _nonce);
 
         uint256 nonce =
-            nativeBridge.idsToIncomingNonces(bridgeTransferId);
+            nativeBridge.idsToInboundNonces(bridgeTransferId);
 
         assertEq(nonce, _nonce);
         vm.stopPrank();
@@ -187,7 +187,7 @@ contract NativeBridgeTest is Test {
 
         for (uint256 i; i < length; i++) {
             uint256 nonce =
-                nativeBridge.idsToIncomingNonces(bridgeTransferIds[i]);
+                nativeBridge.idsToInboundNonces(bridgeTransferIds[i]);
 
             assertEq(nonce, nonces[i]);
         }
