@@ -25,8 +25,7 @@ use url::Url;
 pub struct Config {
 	pub rpc_url: Url,
 	pub signer_private_key: PrivateKeySigner,
-	pub initiator_contract: Address,
-	pub counterparty_contract: Address,
+	pub native_contract: Address,
 	pub movetoken_contract: Address,
 	pub gas_limit: u128,
 	pub transaction_send_retries: u32,
@@ -42,8 +41,7 @@ impl TryFrom<&EthConfig> for Config {
 		Ok(Config {
 			rpc_url,
 			signer_private_key,
-			initiator_contract: conf.eth_initiator_contract.parse()?,
-			counterparty_contract: conf.eth_counterparty_contract.parse()?,
+			native_contract: conf.eth_native_contract.parse()?,
 			movetoken_contract: conf.eth_move_token_contract.parse()?,
 			gas_limit: conf.gas_limit.into(),
 			transaction_send_retries: conf.transaction_send_retries,
@@ -87,7 +85,7 @@ impl EthClient {
 			.await?;
 
 		let native_bridge_contract =
-			NativeBridgeContract::new(config.initiator_contract, rpc_provider.clone());
+			NativeBridgeContract::new(config.native_contract, rpc_provider.clone());
 
 		Ok(EthClient {
 			rpc_provider,
@@ -127,12 +125,8 @@ impl EthClient {
 		self.native_bridge_contract = contract;
 	}
 
-	pub fn initiator_contract_address(&self) -> Address {
-		self.config.initiator_contract
-	}
-
-	pub fn counterparty_contract_address(&self) -> Address {
-		self.config.counterparty_contract
+	pub fn native_contract_address(&self) -> Address {
+		self.config.native_contract
 	}
 }
 
@@ -148,7 +142,7 @@ impl BridgeClientContract<EthAddress> for EthClient {
 				"Failed to convert in [u8; 32] recipient: {e:?}"
 			))
 		})?;
-		let contract = NativeBridge::new(self.config.initiator_contract, self.rpc_provider.clone());
+		let contract = NativeBridge::new(self.config.native_contract, self.rpc_provider.clone());
 		let call = contract
 			.initiateBridgeTransfer(FixedBytes(recipient_bytes), U256::from(amount.0))
 			.from(self.signer_address);
@@ -178,7 +172,7 @@ impl BridgeClientContract<EthAddress> for EthClient {
 		let storage_slot = calculate_storage_slot(key, mapping_slot);
 		let storage: U256 = self
 			.rpc_provider
-			.get_storage_at(self.initiator_contract_address(), storage_slot)
+			.get_storage_at(self.native_contract_address(), storage_slot)
 			.await
 			.map_err(|_| generic_error("could not find storage"))?;
 		let storage_bytes = storage.to_be_bytes::<32>();
@@ -209,7 +203,7 @@ impl BridgeRelayerContract<EthAddress> for EthClient {
 		nonce: Nonce,
 	) -> BridgeContractResult<()> {
 		let generic_error = |desc| BridgeContractError::GenericError(String::from(desc));
-		let contract = NativeBridge::new(self.config.initiator_contract, self.rpc_provider.clone());
+		let contract = NativeBridge::new(self.config.native_contract, self.rpc_provider.clone());
 		let bridge_transfer_array: [u8; 32] = bridge_transfer_id
 			.0
 			.get(0..32) // Get the first 32 bytes

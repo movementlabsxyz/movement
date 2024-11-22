@@ -9,8 +9,7 @@ const DEFAULT_ETH_RPC_CONNECTION_HOSTNAME: &str = "localhost";
 const DEFAULT_ETH_RPC_CONNECTION_PORT: u16 = 8545;
 const DEFAULT_ETH_WS_CONNECTION_HOSTNAME: &str = "localhost";
 const DEFAULT_ETH_WS_CONNECTION_PORT: u16 = 8545; // same as RPC
-const DEFAULT_ETH_INITIATOR_CONTRACT: &str = "Oxeee";
-const DEFAULT_ETH_COUNTERPARTY_CONTRACT: &str = "0xccc";
+const DEFAULT_ETH_NATIVE_CONTRACT: &str = "Oxeee";
 const DEFAULT_ETH_WETH_CONTRACT: &str = "0xe3e3";
 const DEFAULT_ETH_MOVETOKEN_CONTRACT: &str = "0xe3e2";
 const DEFAULT_ASSET: &str = "MOVE";
@@ -34,10 +33,8 @@ pub struct EthConfig {
 	#[serde(default)]
 	// Eth chain config.
 	pub eth_chain_id: u64,
-	#[serde(default = "default_eth_initiator_contract")]
-	pub eth_initiator_contract: String,
-	#[serde(default = "default_eth_counterparty_contract")]
-	pub eth_counterparty_contract: String,
+	#[serde(default = "default_eth_native_contract")]
+	pub eth_native_contract: String,
 	#[serde(default = "default_eth_weth_contract")]
 	pub eth_weth_contract: String,
 	#[serde(default = "default_eth_move_token_contract")]
@@ -45,9 +42,6 @@ pub struct EthConfig {
 
 	#[serde(default = "default_signer_private_key")]
 	pub signer_private_key: String,
-
-	#[serde(default = "default_time_lock_secs")]
-	pub time_lock_secs: u64,
 
 	#[serde(default = "default_gas_limit")]
 	pub gas_limit: u64,
@@ -69,17 +63,10 @@ env_default!(
 );
 
 env_default!(
-	default_eth_initiator_contract,
-	"ETH_INITIATOR_CONTRACT",
+	default_eth_native_contract,
+	"ETH_NATIVE_CONTRACT",
 	String,
-	DEFAULT_ETH_INITIATOR_CONTRACT.to_string()
-);
-
-env_default!(
-	default_eth_counterparty_contract,
-	"ETH_COUNTERPARTY_CONTRACT",
-	String,
-	DEFAULT_ETH_COUNTERPARTY_CONTRACT.to_string()
+	DEFAULT_ETH_NATIVE_CONTRACT.to_string()
 );
 
 env_default!(
@@ -96,8 +83,6 @@ env_default!(
 );
 
 env_default!(default_asset, "ASSET", String, DEFAULT_ASSET.to_string());
-
-env_short_default!(default_time_lock_secs, u64, 48 * 60 * 60 as u64); //48h by default
 
 env_short_default!(default_gas_limit, u64, 10_000_000_000_000_000 as u64);
 
@@ -185,12 +170,9 @@ impl Default for EthConfig {
 			eth_ws_connection_port: default_eth_ws_connection_port(),
 			eth_chain_id: default_eth_chain_id(),
 
-			eth_initiator_contract: default_eth_initiator_contract(),
-			eth_counterparty_contract: default_eth_counterparty_contract(),
+			eth_native_contract: default_eth_native_contract(),
 			eth_weth_contract: default_eth_weth_contract(),
 			eth_move_token_contract: default_eth_move_token_contract(),
-
-			time_lock_secs: default_time_lock_secs(),
 
 			signer_private_key: default_signer_private_key(),
 			gas_limit: default_gas_limit(),

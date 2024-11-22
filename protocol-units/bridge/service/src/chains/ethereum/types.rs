@@ -7,11 +7,7 @@ use alloy::providers::fillers::{
 use alloy::providers::RootProvider;
 use alloy::rlp::{RlpDecodable, RlpEncodable};
 use alloy::transports::BoxTransport;
-use bridge_util::chains::bridge_contracts::BridgeTransferInitiatedDetails;
-use bridge_util::types::Amount;
 use bridge_util::types::BridgeAddress;
-use bridge_util::types::BridgeTransferId;
-use bridge_util::types::Nonce;
 use rand::Rng;
 use std::hash::{DefaultHasher, Hash, Hasher};
 

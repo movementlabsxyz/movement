@@ -1,19 +1,11 @@
 use alloy::{
 	network::EthereumWallet, providers::ProviderBuilder, signers::local::PrivateKeySigner,
 };
-use alloy_primitives::{Address, U256};
-use bridge_config::{
-	common::{eth::EthConfig, movement::MovementConfig},
-	Config as BridgeConfig,
-};
-use bridge_service::{
-	chains::ethereum::{
-		types::{
-			AtomicBridgeCounterpartyMOVE, AtomicBridgeInitiatorMOVE, EthAddress, MockMOVEToken,
-		},
-		utils::{send_transaction, send_transaction_rules},
-	},
-	types::TimeLock,
+use alloy_primitives::Address;
+use bridge_config::{common::movement::MovementConfig, Config as BridgeConfig};
+use bridge_service::chains::ethereum::{
+	types::{EthAddress, MockMOVEToken, NativeBridgeContract},
+	utils::{send_transaction, send_transaction_rules},
 };
 use hex::ToHex;
 use std::io::BufRead;
@@ -51,13 +43,9 @@ pub async fn setup_local_ethereum(config: &mut BridgeConfig) -> Result<(), anyho
 	let rpc_url = config.eth.eth_rpc_connection_url();
 
 	tracing::info!("Bridge deploy setup_local_ethereum");
-	config.eth.eth_initiator_contract = deploy_eth_initiator_contract(config).await?.to_string();
+	config.eth.eth_native_contract = deploy_eth_native_contract(config).await?.to_string();
 	tracing::info!("Bridge deploy after intiator");
 	tracing::info!("Signer private key: {:?}", signer_private_key.address());
-	config.eth.eth_counterparty_contract =
-		deploy_counterpart_contract(signer_private_key.clone(), &rpc_url)
-			.await
-			.to_string();
 
 	let move_token_contract =
 		deploy_move_token_contract(signer_private_key.clone(), &rpc_url).await;
@@ -66,11 +54,9 @@ pub async fn setup_local_ethereum(config: &mut BridgeConfig) -> Result<(), anyho
 	initialize_eth_contracts(
 		signer_private_key.clone(),
 		&rpc_url,
-		&config.eth.eth_initiator_contract,
-		&config.eth.eth_counterparty_contract,
+		&config.eth.eth_native_contract,
 		EthAddress(move_token_contract),
 		EthAddress(signer_private_key.address()),
-		*TimeLock(config.eth.time_lock_secs),
 		config.eth.gas_limit,
 		config.eth.transaction_send_retries,
 	)
@@ -78,9 +64,7 @@ pub async fn setup_local_ethereum(config: &mut BridgeConfig) -> Result<(), anyho
 	Ok(())
 }
 
-async fn deploy_eth_initiator_contract(
-	config: &mut BridgeConfig,
-) -> Result<Address, anyhow::Error> {
+async fn deploy_eth_native_contract(config: &mut BridgeConfig) -> Result<Address, anyhow::Error> {
 	let signer_private_key = config.eth.signer_private_key.parse::<PrivateKeySigner>()?;
 	println!("ICI {:?}", config.eth.eth_rpc_connection_url());
 	let rpc_url = config.eth.eth_rpc_connection_url();
@@ -92,28 +76,11 @@ async fn deploy_eth_initiator_contract(
 		.await
 		.expect("Error during provider creation");
 
-	let contract = AtomicBridgeInitiatorMOVE::deploy(rpc_provider.clone())
+	let contract = NativeBridgeContract::deploy(rpc_provider.clone())
 		.await
 		.expect("Failed to deploy AtomicBridgeInitiatorMOVE");
 	tracing::info!("initiator_contract address: {}", contract.address().to_string());
 	Ok(contract.address().to_owned())
-}
-
-async fn deploy_counterpart_contract(
-	signer_private_key: PrivateKeySigner,
-	rpc_url: &str,
-) -> Address {
-	let rpc_provider = ProviderBuilder::new()
-		.with_recommended_fillers()
-		.wallet(EthereumWallet::from(signer_private_key))
-		.on_builtin(rpc_url)
-		.await
-		.expect("Error during provider creation");
-	let contract = AtomicBridgeCounterpartyMOVE::deploy(rpc_provider.clone())
-		.await
-		.expect("Failed to deploy AtomicBridgeCounterpartyMOVE");
-	tracing::info!("counterparty_contract address: {}", contract.address().to_string());
-	contract.address().to_owned()
 }
 
 async fn deploy_move_token_contract(
@@ -137,14 +104,12 @@ async fn initialize_eth_contracts(
 	signer_private_key: PrivateKeySigner,
 	rpc_url: &str,
 	initiator_contract_address: &str,
-	counterpart_contract_address: &str,
 	move_token: EthAddress,
 	owner: EthAddress,
-	timelock: u64,
 	gas_limit: u64,
 	transaction_send_retries: u32,
 ) -> Result<(), anyhow::Error> {
-	tracing::info!("Setup Eth initialize_initiator_contract with timelock:{timelock});");
+	tracing::info!("Setup Eth initialize_initiator_contract.");
 	let signer_address = signer_private_key.address();
 
 	let rpc_provider = ProviderBuilder::new()
@@ -167,29 +132,11 @@ async fn initialize_eth_contracts(
 	)
 	.await;
 
-	let initiator_contract =
-		AtomicBridgeInitiatorMOVE::new(initiator_contract_address.parse()?, rpc_provider.clone());
+	let native_contract =
+		NativeBridgeContract::new(initiator_contract_address.parse()?, rpc_provider.clone());
 
-	let call = initiator_contract
-		.initialize(move_token.0, owner.0, U256::from(timelock), U256::from(1000000))
-		.from(owner.0);
-	send_transaction(
-		call,
-		signer_address,
-		&send_transaction_rules(),
-		transaction_send_retries,
-		gas_limit.into(),
-	)
-	.await
-	.expect("Failed to send transaction");
-
-	let counterpart_contract = AtomicBridgeCounterpartyMOVE::new(
-		counterpart_contract_address.parse()?,
-		rpc_provider.clone(),
-	);
-
-	let call = counterpart_contract
-		.initialize(initiator_contract_address.parse()?, owner.0, U256::from(timelock))
+	let call = native_contract
+		.initialize(move_token.0, owner.0, owner.0, owner.0) // admin / relayer / maintener
 		.from(owner.0);
 	send_transaction(
 		call,

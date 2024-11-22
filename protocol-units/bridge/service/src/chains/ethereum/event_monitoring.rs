@@ -39,11 +39,7 @@ impl EthMonitoring {
 			.on_builtin(client_config.rpc_url.as_str())
 			.await?;
 
-		tracing::info!(
-			"Start Eth monitoring with initiator:{} counterpart:{}",
-			config.eth_initiator_contract,
-			config.eth_counterparty_contract
-		);
+		tracing::info!("Start Eth monitoring with initiator:{}", config.eth_native_contract,);
 
 		let (mut sender, listener) = futures::channel::mpsc::unbounded::<
 			BridgeContractResult<BridgeContractEvent<EthAddress>>,
@@ -53,7 +49,7 @@ impl EthMonitoring {
 			let config = config.clone();
 			async move {
 				let native_contract = NativeBridge::new(
-					config.eth_initiator_contract.parse().unwrap(), //If unwrap start fail. Config must be updated.
+					config.eth_native_contract.parse().unwrap(), //If unwrap start fail. Config must be updated.
 					rpc_provider.clone(),
 				);
 				let mut last_processed_block = 0;
