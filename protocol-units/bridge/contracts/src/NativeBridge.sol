@@ -87,7 +87,7 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
     /**
      * @dev Completes the bridging of funds. Only the relayer can call this function.
      * @param bridgeTransferId Unique identifier for the BridgeTransfer
-     * @param originator The address on the other chain that originated the transfer of funds
+     * @param initiator The address on the other chain that originated the transfer of funds
      * @param recipient The address on this chain to which to transfer funds
      * @param amount The amount to transfer
      * @param nonce The seed nonce to generate the bridgeTransferId

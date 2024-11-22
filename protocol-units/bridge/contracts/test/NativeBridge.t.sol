@@ -62,7 +62,7 @@ contract NativeBridgeTest is Test {
         bytes32 bridgeTransferId = nativeBridge.initiateBridgeTransfer(_recipient, _amount);
 
         (bytes32 bridgeTransferId_, address originator, bytes32 recipient_, uint256 amount) =
-            nativeBridge.noncesToOutgoingTransfers(1);
+            nativeBridge.noncesToOutboundTransfers(1);
 
         assertEq(originator, _originator);
         assertEq(recipient_, _recipient);
