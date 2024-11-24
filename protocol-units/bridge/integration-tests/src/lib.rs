@@ -1,4 +1,4 @@
-use alloy::primitives::{FixedBytes, Uint, U256};
+use alloy::primitives::{FixedBytes, U256};
 use alloy::{
 	primitives::{keccak256, Address},
 	providers::ProviderBuilder,
@@ -6,32 +6,24 @@ use alloy::{
 };
 use alloy_network::EthereumWallet;
 use aptos_sdk::{
-	rest_client::{aptos_api_types::Transaction as AptosTransaction, Client, FaucetClient},
+	rest_client::{Client, FaucetClient},
 	types::{account_address::AccountAddress, LocalAccount},
 };
 use bridge_config::Config;
 use bridge_service::chains::ethereum::types::MockMOVEToken;
-use bridge_service::chains::ethereum::types::{
-	AtomicBridgeCounterpartyMOVE, AtomicBridgeInitiatorMOVE,
-};
+use bridge_service::chains::ethereum::types::NativeBridge;
 use bridge_service::chains::ethereum::utils::send_transaction;
 use bridge_service::chains::ethereum::utils::send_transaction_rules;
 use bridge_service::types::Amount;
 use bridge_service::types::BridgeAddress;
-use bridge_service::types::HashLock;
-use bridge_service::{
-	chains::{
-		bridge_contracts::{BridgeContractError, BridgeContractResult},
-		ethereum::{
-			client::EthClient,
-			types::{AlloyProvider, EthAddress, EthHash},
-		},
-		movement::{
-			client_framework::{MovementClientFramework, FRAMEWORK_ADDRESS, NATIVE_BRIDGE_MODULE_NAME},
-			utils::{self as movement_utils, MovementAddress, MovementHash},
-		},
+use bridge_service::types::BridgeTransferId;
+
+use bridge_service::chains::{
+	ethereum::{
+		client::EthClient,
+		types::{AlloyProvider, EthHash},
 	},
-	types::{BridgeTransferId, HashLockPreImage},
+	movement::{client_framework::MovementClientFramework, utils::MovementAddress},
 };
 use godfig::{backend::config_file::ConfigFile, Godfig};
 use rand::{distributions::Alphanumeric, thread_rng, Rng, SeedableRng};
@@ -48,9 +40,7 @@ pub mod utils;
 pub struct EthToMovementCallArgs {
 	pub initiator: Vec<u8>,
 	pub recipient: MovementAddress,
-	pub bridge_transfer_id: MovementHash,
-	pub hash_lock: MovementHash,
-	pub time_lock: u64,
+	pub bridge_transfer_id: BridgeTransferId,
 	pub amount: u64,
 }
 
@@ -59,10 +49,7 @@ pub struct MovementToEthCallArgs {
 	pub initiator: MovementAddress,
 	pub recipient: Vec<u8>,
 	pub bridge_transfer_id: EthHash,
-	pub hash_lock: EthHash,
-	pub time_lock: u64,
 	pub amount: u64,
-	pub pre_image: [u8; 32],
 }
 
 impl Default for EthToMovementCallArgs {
@@ -263,20 +250,17 @@ impl HarnessEthClient {
 		)
 		.await?;
 
-		// Instantiate AtomicBridgeInitiatorMOVE
+		// Instantiate NativeBridge
 		let initiator_contract_address = config.eth.eth_initiator_contract.parse()?;
 		let initiator_contract =
-			AtomicBridgeInitiatorMOVE::new(initiator_contract_address, &initiator_rpc_provider);
+			NativeBridge::new(initiator_contract_address, &initiator_rpc_provider);
 
 		let recipient_address = BridgeAddress(Into::<Vec<u8>>::into(recipient));
 		let recipient_bytes: [u8; 32] =
 			recipient_address.0.try_into().expect("Recipient address must be 32 bytes");
 
 		let call = initiator_contract
-			.initiateBridgeTransfer(
-				FixedBytes(recipient_bytes),
-				U256::from(amount.0),
-			)
+			.initiateBridgeTransfer(FixedBytes(recipient_bytes), U256::from(amount.0))
 			.from(initiator_address);
 		let _ = send_transaction(
 			call,
