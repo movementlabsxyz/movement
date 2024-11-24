@@ -57,7 +57,7 @@ cat ${MOVEMENT_ENV_FILE}
 4. Pull the container images. For this you need to make sure the movement config dir
 exists.
 ```bash
-DOT_MOVEMENT_PATH="~/.movement"
+DOT_MOVEMENT_PATH="/home/${USER}/.movement"
 export DOT_MOVEMENT_PATH
 echo "DOT_MOVEMENT_PATH=${DOT_MOVEMENT_PATH}" >> "${MOVEMENT_ENV_FILE}"
 
@@ -95,7 +95,7 @@ printenv | grep --quiet USER \
   && envsubst < docs/movement-node/run/manual/movement-full-node.service.template \
               > docs/movement-node/run/manual/movement-full-node.service
 ```
-output should look like this:
+The output should resemble the following example:
 ```
 INFO: Using USER=ubuntu and CONTAINER_REV=e6cb8e287cb837af6e61451f2ff405047dd285c9
 ```
