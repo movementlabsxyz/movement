@@ -48,7 +48,7 @@ impl fmt::Display for ChainId {
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, PartialOrd, Ord, Hash, Deserialize)]
-pub struct Nonce(u128);
+pub struct Nonce(pub u128);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Deserialize)]
 pub struct BridgeTransferId(pub BridgeHash);
@@ -144,22 +144,4 @@ impl From<Uint<256, 4>> for Amount {
 pub enum ConversionError {
 	#[error("Invalid conversion from AssetType to Uint")]
 	InvalidConversion,
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Deserialize)]
-pub struct BridgeTransferInitiatedDetails<A> {
-	pub bridge_transfer_id: BridgeTransferId,
-	pub initiator: BridgeAddress<A>,
-	pub recipient: BridgeAddress<Vec<u8>>,
-	pub amount: Amount,
-	pub nonce: Nonce,
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Deserialize)]
-pub struct BridgeTransferCompletedDetails<A> {
-	pub bridge_transfer_id: BridgeTransferId,
-	pub initiator: BridgeAddress<Vec<u8>>,
-	pub recipient: BridgeAddress<A>,
-	pub amount: Amount,
-	pub nonce: Nonce,
 }
