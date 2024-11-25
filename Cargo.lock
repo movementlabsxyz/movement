@@ -826,7 +826,10 @@ dependencies = [
 name = "aptos-account-whitelist"
 version = "0.0.2"
 dependencies = [
+ "anyhow",
  "aptos-types",
+ "godfig",
+ "serde",
  "whitelist",
 ]
 
@@ -8799,6 +8802,7 @@ name = "maptos-execution-util"
 version = "0.0.2"
 dependencies = [
  "anyhow",
+ "aptos-account-whitelist",
  "aptos-crypto",
  "aptos-sdk",
  "aptos-types",
@@ -8840,6 +8844,7 @@ name = "maptos-opt-executor"
 version = "0.0.2"
 dependencies = [
  "anyhow",
+ "aptos-account-whitelist",
  "aptos-api",
  "aptos-api-types",
  "aptos-bitvec",

@@ -70,6 +70,7 @@ tonic = { workspace = true }
 movement-rest = { workspace = true }
 dot-movement = { workspace = true }
 movement-collections = { workspace = true }
+aptos-account-whitelist = { workspace = true }
 
 [dev-dependencies]
 dirs = { workspace = true }

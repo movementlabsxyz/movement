@@ -13,5 +13,5 @@ pub enum Error {
 pub trait WhitelistOperations<T> {
 	async fn is_whitelisted(&self, item: &T) -> Result<bool, Error>;
 
-	async fn try_into_set(self) -> Result<HashSet<T>, Error>;
+	fn try_into_set(self) -> Result<HashSet<T>, Error>;
 }

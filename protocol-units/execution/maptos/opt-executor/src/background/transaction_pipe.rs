@@ -17,6 +17,7 @@ use aptos_vm_validator::vm_validator::{self, TransactionValidation, VMValidator}
 use std::collections::HashSet;
 
 use crate::gc_account_sequence_number::UsedSequenceNumberPool;
+use aptos_account_whitelist::config::Config as WhitelistConfig;
 use futures::channel::mpsc as futures_mpsc;
 use futures::StreamExt;
 use movement_collections::garbage::counted::GcCounter;
@@ -61,10 +62,11 @@ impl TransactionPipe {
 		db_reader: Arc<dyn DbReader>,
 		node_config: &NodeConfig,
 		mempool_config: &MempoolConfig,
+		whitelist_config: &WhitelistConfig,
 		transactions_in_flight: Arc<RwLock<GcCounter>>,
 		transactions_in_flight_limit: Option<u64>,
-	) -> Self {
-		TransactionPipe {
+	) -> Result<Self, anyhow::Error> {
+		Ok(TransactionPipe {
 			mempool_client_receiver,
 			transaction_sender,
 			db_reader,
@@ -76,7 +78,7 @@ impl TransactionPipe {
 				mempool_config.sequence_number_ttl_ms,
 				mempool_config.gc_slot_duration_ms,
 			),
-			whitelisted_accounts: mempool_config.whitelisted_accounts()?,
+			whitelisted_accounts: whitelist_config.whitelisted_accounts()?,
 		})
 	}
 

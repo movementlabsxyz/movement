@@ -43,6 +43,10 @@ pub struct Config {
 	/// The mempool configuration
 	#[serde(default)]
 	pub mempool: mempool::Config,
+
+	/// Access control
+	#[serde(default)]
+	pub access_control: aptos_account_whitelist::config::Config,
 }
 
 impl Default for Config {
@@ -56,6 +60,7 @@ impl Default for Config {
 			fin: fin::Config::default(),
 			load_shedding: load_shedding::Config::default(),
 			mempool: mempool::Config::default(),
+			access_control: aptos_account_whitelist::config::Config::default(),
 		}
 	}
 }

@@ -12,6 +12,9 @@ rust-version = { workspace = true }
 [dependencies]
 aptos-types = { workspace = true }
 whitelist = { workspace = true }
+godfig = { workspace = true }
+serde = { workspace = true }
+anyhow = { workspace = true }
 
 [lints]
 workspace = true

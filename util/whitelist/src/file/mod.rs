@@ -48,7 +48,7 @@ where
 	}
 
 	/// Converts the whitelist to a hashset.
-	async fn try_into_set(self) -> Result<HashSet<T>, WhitelistOperationsError> {
+	fn try_into_set(self) -> Result<HashSet<T>, WhitelistOperationsError> {
 		Ok(self.whitelist)
 	}
 }

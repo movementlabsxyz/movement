@@ -163,6 +163,7 @@ impl Executor {
 				self.db().reader.clone(),
 				&node_config,
 				&self.config.mempool,
+				&self.config.access_control,
 				self.transactions_in_flight.clone(),
 				maptos_config.load_shedding.max_transactions_in_flight,
 			)?

@@ -7,6 +7,7 @@ use aptos_mempool::MempoolClientRequest;
 use aptos_storage_interface::DbReader;
 use aptos_types::transaction::SignedTransaction;
 
+use aptos_account_whitelist::config::Config as WhitelistConfig;
 use futures::channel::mpsc as futures_mpsc;
 use movement_collections::garbage::counted::GcCounter;
 use std::sync::{Arc, RwLock};
@@ -32,16 +33,18 @@ impl BackgroundTask {
 		db_reader: Arc<dyn DbReader>,
 		node_config: &NodeConfig,
 		mempool_config: &MempoolConfig,
+		whitelist_config: &WhitelistConfig,
 		transactions_in_flight: Arc<RwLock<GcCounter>>,
 		transactions_in_flight_limit: Option<u64>,
-	) -> Self {
-		Self {
+	) -> Result<Self, anyhow::Error> {
+		Ok(Self {
 			inner: BackgroundInner::Full(TransactionPipe::new(
 				mempool_client_receiver,
 				transaction_sender,
 				db_reader,
 				node_config,
 				mempool_config,
+				whitelist_config,
 				transactions_in_flight,
 				transactions_in_flight_limit,
 			)?),
