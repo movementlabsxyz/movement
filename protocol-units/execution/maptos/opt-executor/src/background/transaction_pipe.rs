@@ -9,10 +9,12 @@ use aptos_mempool::core_mempool::CoreMempool;
 use aptos_mempool::SubmissionStatus;
 use aptos_mempool::{core_mempool::TimelineState, MempoolClientRequest};
 use aptos_storage_interface::{state_view::LatestDbStateCheckpointView as _, DbReader};
+use aptos_types::account_address::AccountAddress;
 use aptos_types::mempool_status::{MempoolStatus, MempoolStatusCode};
 use aptos_types::transaction::SignedTransaction;
 use aptos_types::vm_status::DiscardedVMStatus;
 use aptos_vm_validator::vm_validator::{self, TransactionValidation, VMValidator};
+use std::collections::HashSet;
 
 use crate::gc_account_sequence_number::UsedSequenceNumberPool;
 use futures::channel::mpsc as futures_mpsc;
@@ -43,6 +45,8 @@ pub struct TransactionPipe {
 	last_gc: Instant,
 	// The pool of used sequence numbers
 	used_sequence_number_pool: UsedSequenceNumberPool,
+	/// The accounts whitelisted for ingress
+	whitelisted_accounts: Option<HashSet<AccountAddress>>,
 }
 
 enum SequenceNumberValidity {
@@ -72,6 +76,14 @@ impl TransactionPipe {
 				mempool_config.sequence_number_ttl_ms,
 				mempool_config.gc_slot_duration_ms,
 			),
+			whitelisted_accounts: mempool_config.whitelisted_accounts()?,
+		})
+	}
+
+	pub fn is_whitelisted(&self, address: &AccountAddress) -> Result<bool, Error> {
+		match &self.whitelisted_accounts {
+			Some(whitelisted_accounts) => Ok(whitelisted_accounts.contains(address)),
+			None => Ok(true),
 		}
 	}
 
@@ -195,6 +207,11 @@ impl TransactionPipe {
 		&mut self,
 		transaction: SignedTransaction,
 	) -> Result<SubmissionStatus, Error> {
+		// Check whether the account is whitelisted
+		if !self.is_whitelisted(&transaction.sender())? {
+			return Ok((MempoolStatus::new(MempoolStatusCode::TooManyTransactions), None));
+		}
+
 		// For now, we are going to consider a transaction in flight until it exits the mempool and is sent to the DA as is indicated by WriteBatch.
 		let in_flight = {
 			let transactions_in_flight = self.transactions_in_flight.read().unwrap();

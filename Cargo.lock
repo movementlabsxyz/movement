@@ -8802,6 +8802,7 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "tempfile",
+ "tokio",
  "toml 0.8.19",
 ]
 

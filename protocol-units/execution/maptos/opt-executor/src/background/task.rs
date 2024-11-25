@@ -44,8 +44,8 @@ impl BackgroundTask {
 				mempool_config,
 				transactions_in_flight,
 				transactions_in_flight_limit,
-			)),
-		}
+			)?),
+		})
 	}
 
 	pub(crate) fn read_only(

@@ -77,10 +77,10 @@ movement-celestia-da-light-node-setup = { path = "protocol-units/da/movement/cel
 movement-celestia-da-light-node-verifier = { path = "protocol-units/da/movement/celestia/light-node-verifier" }
 movement-celestia-da-light-node-prevalidator = { path = "protocol-units/da/movement/celestia/light-node-prevalidator" }
 ## execution
-maptos-dof-execution = { path = "protocol-units/execution/dof" }
-maptos-opt-executor = { path = "protocol-units/execution/opt-executor" }
-maptos-fin-view = { path = "protocol-units/execution/fin-view" }
-maptos-execution-util = { path = "protocol-units/execution/util" }
+maptos-dof-execution = { path = "protocol-units/execution/maptos/dof" }
+maptos-opt-executor = { path = "protocol-units/execution/maptos/opt-executor" }
+maptos-fin-view = { path = "protocol-units/execution/maptos/fin-view" }
+maptos-execution-util = { path = "protocol-units/execution/maptos/util" }
 ## infra
 movement-rest = { path = "protocol-units/movement-rest" }
 ## mempool
