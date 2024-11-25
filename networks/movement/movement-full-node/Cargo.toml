@@ -41,6 +41,7 @@ hyper = { workspace = true }
 hex = { workspace = true }
 mcr-settlement-config = { workspace = true }
 clap = { workspace =  true }
+movement-da-light-node-client = { workspace = true}
 
 [features]
 default = []

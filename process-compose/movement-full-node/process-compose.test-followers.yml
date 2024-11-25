@@ -6,6 +6,8 @@ processes:
     command: |
       export AWS_REGION=us-west-2
       export MOVEMENT_SYNC="leader::follower-test-$MOVEMENT_SHARED_RANDOM_1<=>{maptos,maptos-storage,movement-da-db}/**"
+      export MAYBE_RUN_LOCAL=true
+      export MAYBE_DEPLOY_MCR=true
       movement-full-node-setup
     depends_on:
       build:
@@ -16,8 +18,16 @@ processes:
         command: echo "true"
 
   setup-follower-1:
+    environment:
+      - "ETH_RPC_CONNECTION_PROTOCOL=http"
+      - "ETH_RPC_CONNECTION_HOSTNAME=0.0.0.0"
+      - "ETH_RPC_CONNECTION_PORT=8090"
+      - "ETH_WS_CONNECTION_PROTOCOL=ws"
+      - "ETH_WS_CONNECTION_HOSTNAME=0.0.0.0"
+      - "ETH_WS_CONNECTION_PORT=8090"
+      - "MAYBE_RUN_LOCAL=true"
     command: |
-      sleep 120
+      sleep 30
       export AWS_REGION=us-west-2
       export MAYBE_RUN_LOCAL=false
       export MAYBE_DEPLOY_MCR=false
@@ -33,14 +43,14 @@ processes:
       movement-full-node:
         condition: process_healthy
     readiness_probe:
-      initial_delay_seconds: 180
+      initial_delay_seconds: 40
       exec:
         command: echo "true"
 
   movement-full-follower-1:
     command: |
       export DOT_MOVEMENT_PATH=$DOT_MOVEMENT_PATH-follower-1
-      movement-full-node
+      movement-full-node run
     depends_on:
       movement-celestia-da-light-node:
         condition: process_healthy
@@ -49,13 +59,20 @@ processes:
       movement-full-node:
         condition: process_healthy
     readiness_probe:
-      initial_delay_seconds: 10
       exec:
         command: curl http://0.0.0.0:31731
 
   setup-follower-2:
+    environment:
+      - "ETH_RPC_CONNECTION_PROTOCOL=http"
+      - "ETH_RPC_CONNECTION_HOSTNAME=0.0.0.0"
+      - "ETH_RPC_CONNECTION_PORT=8090"
+      - "ETH_WS_CONNECTION_PROTOCOL=ws"
+      - "ETH_WS_CONNECTION_HOSTNAME=0.0.0.0"
+      - "ETH_WS_CONNECTION_PORT=8090"
+      - "MAYBE_RUN_LOCAL=true"
     command: |
-      sleep 120
+      sleep 30
       export AWS_REGION=us-west-2
       export MAYBE_RUN_LOCAL=false
       export MAYBE_DEPLOY_MCR=false
@@ -71,14 +88,14 @@ processes:
       movement-full-node:
         condition: process_healthy
     readiness_probe:
-      initial_delay_seconds: 180
+      initial_delay_seconds: 40
       exec:
         command: echo "true"
 
   movement-full-follower-2:
     command: |
       export DOT_MOVEMENT_PATH=$DOT_MOVEMENT_PATH-follower-2
-      movement-full-node
+      movement-full-node run
     depends_on:
       movement-celestia-da-light-node:
         condition: process_healthy
@@ -87,14 +104,21 @@ processes:
       movement-full-node:
         condition: process_healthy
     readiness_probe:
-      initial_delay_seconds: 10
       exec:
         command: curl http://0.0.0.0:32731
 
   test-followers-consistent:
     command: |
+      # run the test
       cargo run --bin movement-tests-e2e-followers-consistent -- 2
+
+      # delete the resources
       movement-util syncing delete-resource
+
+      # output the transactions for each follower for debugging
+      curl http://0.0.0.0:30731/v1/transactions > $DOT_MOVEMENT_PATH/transactions-leader.json
+      curl http://0.0.0.0:31731/v1/transactions > $DOT_MOVEMENT_PATH/transactions-follower-1.json
+      curl http://0.0.0.0:32731/v1/transactions > $DOT_MOVEMENT_PATH/transactions-follower-2.json
     depends_on:
       movement-full-follower-1:
         condition: process_healthy
@@ -104,3 +128,5 @@ processes:
         condition: process_healthy
     availability:
       exit_on_end: true
+
+  

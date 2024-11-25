@@ -2,9 +2,8 @@
 
 use maptos_dof_execution::SignedTransaction;
 use movement_celestia_da_util::config::Config as LightNodeConfig;
-use movement_da_light_node_proto::{
-	light_node_service_client::LightNodeServiceClient, BatchWriteRequest, BlobWrite,
-};
+use movement_da_light_node_client::MovementDaLightNodeClient;
+use movement_da_light_node_proto::{BatchWriteRequest, BlobWrite};
 
 use tokio::sync::mpsc;
 use tracing::{info, warn};
@@ -18,14 +17,14 @@ const LOGGING_UID: AtomicU64 = AtomicU64::new(0);
 
 pub struct Task {
 	transaction_receiver: mpsc::Receiver<(u64, SignedTransaction)>,
-	da_light_node_client: LightNodeServiceClient<tonic::transport::Channel>,
+	da_light_node_client: MovementDaLightNodeClient,
 	da_light_node_config: LightNodeConfig,
 }
 
 impl Task {
 	pub(crate) fn new(
 		transaction_receiver: mpsc::Receiver<(u64, SignedTransaction)>,
-		da_light_node_client: LightNodeServiceClient<tonic::transport::Channel>,
+		da_light_node_client: MovementDaLightNodeClient,
 		da_light_node_config: LightNodeConfig,
 	) -> Self {
 		Task { transaction_receiver, da_light_node_client, da_light_node_config }

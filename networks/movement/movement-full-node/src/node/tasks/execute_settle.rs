@@ -7,9 +7,9 @@ use maptos_dof_execution::{
 	SignatureVerifiedTransaction, SignedTransaction, Transaction,
 };
 use mcr_settlement_manager::{CommitmentEventStream, McrSettlementManagerOperations};
+use movement_da_light_node_client::MovementDaLightNodeClient;
 use movement_da_light_node_proto::{
-	blob_response, light_node_service_client::LightNodeServiceClient, StreamReadFromHeightRequest,
-	StreamReadFromHeightResponse,
+	blob_response, StreamReadFromHeightRequest, StreamReadFromHeightResponse,
 };
 use movement_types::block::{Block, BlockCommitment, BlockCommitmentEvent};
 
@@ -24,7 +24,7 @@ pub struct Task<E, S> {
 	executor: E,
 	settlement_manager: S,
 	da_db: DaDB,
-	da_light_node_client: LightNodeServiceClient<tonic::transport::Channel>,
+	da_light_node_client: MovementDaLightNodeClient,
 	// Stream receiving commitment events, conditionally enabled
 	commitment_events:
 		Either<CommitmentEventStream, stream::Pending<<CommitmentEventStream as Stream>::Item>>,
@@ -37,7 +37,7 @@ impl<E, S> Task<E, S> {
 		executor: E,
 		settlement_manager: S,
 		da_db: DaDB,
-		da_light_node_client: LightNodeServiceClient<tonic::transport::Channel>,
+		da_light_node_client: MovementDaLightNodeClient,
 		commitment_events: Option<CommitmentEventStream>,
 		execution_extension: execution_extension::Config,
 		settlement_config: mcr_settlement_config::Config,
@@ -73,8 +73,7 @@ where
 		let mut blocks_from_da = self
 			.da_light_node_client
 			.stream_read_from_height(StreamReadFromHeightRequest { height: synced_height })
-			.await?
-			.into_inner();
+			.await?;
 
 		loop {
 			select! {

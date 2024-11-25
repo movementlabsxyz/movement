@@ -3,7 +3,7 @@ use godfig::env_default;
 use serde::{Deserialize, Serialize};
 use std::env;
 
-const DEFAULT_MCR_CONTRACT_ADDRESS: &str = "0x0";
+const DEFAULT_MCR_CONTRACT_ADDRESS: &str = "0x5fc8d32690cc91d4c39d9d3abcbd16989f875707";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {

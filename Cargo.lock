@@ -10111,6 +10111,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "movement-da-light-node-client"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "bytes 1.8.0",
+ "http-body-util",
+ "hyper-util",
+ "movement-da-light-node-proto",
+ "tonic 0.12.3",
+ "tonic-web",
+ "tower 0.5.1",
+]
+
+[[package]]
 name = "movement-da-light-node-proto"
 version = "0.0.2"
 dependencies = [
@@ -10155,6 +10169,7 @@ dependencies = [
  "mcr-settlement-manager",
  "movement-celestia-da-util",
  "movement-config",
+ "movement-da-light-node-client",
  "movement-da-light-node-proto",
  "movement-rest",
  "movement-tracing",
@@ -14764,6 +14779,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "tonic-web"
+version = "0.12.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5299dd20801ad736dccb4a5ea0da7376e59cd98f213bf1c3d478cf53f4834b58"
+dependencies = [
+ "base64 0.22.1",
+ "bytes 1.8.0",
+ "http 1.1.0",
+ "http-body 1.0.1",
+ "http-body-util",
+ "pin-project 1.1.7",
+ "tokio-stream",
+ "tonic 0.12.3",
+ "tower-http",
+ "tower-layer",
+ "tower-service",
+ "tracing",
+]
+
+[[package]]
 name = "tower"
 version = "0.4.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -14793,6 +14828,22 @@ dependencies = [
  "futures-util",
  "pin-project-lite",
  "sync_wrapper 0.1.2",
+ "tower-layer",
+ "tower-service",
+]
+
+[[package]]
+name = "tower-http"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e9cd434a998747dd2c4276bc96ee2e0c7a2eadf3cae88e52be55a05fa9053f5"
+dependencies = [
+ "bitflags 2.6.0",
+ "bytes 1.8.0",
+ "http 1.1.0",
+ "http-body 1.0.1",
+ "http-body-util",
+ "pin-project-lite",
  "tower-layer",
  "tower-service",
 ]

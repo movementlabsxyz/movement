@@ -268,6 +268,126 @@ pub async fn basic_coin_transfers(
 	)
 	.await?;
 
+	// Have Alice send Bob some coins.
+	let alice_clone = alice.clone();
+	let bob_clone = bob.clone();
+	pick_one(
+		lead_dot_movement,
+		follower_count,
+		move |_dot_movement, _config, rest_client, _faucet_client| {
+			let alice = alice_clone.clone();
+			let bob = bob_clone.clone();
+			async move {
+				let mut alice = alice.write().await;
+				let coin_client = CoinClient::new(&rest_client);
+				let txn_hash = coin_client
+					.transfer(&mut *alice, bob.read().await.address(), 1_000, None)
+					.await
+					.context("Failed to submit transaction to transfer coins")?;
+				rest_client
+					.wait_for_transaction(&txn_hash)
+					.await
+					.context("Failed when waiting for the transfer transaction")?;
+
+				Ok(())
+			}
+		},
+	)
+	.await?;
+
+	// check all the coin balances are equal
+	let alice_clone = alice.clone();
+	let bob_clone = bob.clone();
+	check_matching(
+		lead_dot_movement,
+		follower_count,
+		move |_dot_movement, _config, rest_client, _faucet_client| {
+			let alice = alice_clone.clone();
+			let bob = bob_clone.clone();
+			async move {
+				let coin_client = CoinClient::new(&rest_client);
+				let alice_balance = coin_client
+					.get_account_balance(&alice.read().await.address())
+					.await
+					.context("Failed to get Alice's account balance")?;
+				let bob_balance = coin_client
+					.get_account_balance(&bob.read().await.address())
+					.await
+					.context("Failed to get Bob's account balance")?;
+
+				Ok((alice_balance, bob_balance))
+			}
+		},
+	)
+	.await?;
+
+	// Have Alice send Bob some coins.
+	let alice_clone = alice.clone();
+	let bob_clone = bob.clone();
+	pick_one(
+		lead_dot_movement,
+		follower_count,
+		move |_dot_movement, _config, rest_client, _faucet_client| {
+			let alice = alice_clone.clone();
+			let bob = bob_clone.clone();
+			async move {
+				let coin_client = CoinClient::new(&rest_client);
+				let mut alice = alice.write().await;
+				let txn_hash = coin_client
+					.transfer(&mut *alice, bob.read().await.address(), 1_000, None)
+					.await
+					.context("Failed to submit transaction to transfer coins")?;
+				rest_client
+					.wait_for_transaction(&txn_hash)
+					.await
+					.context("Failed when waiting for the transfer transaction")?;
+
+				Ok(())
+			}
+		},
+	)
+	.await?;
+
+	// check all the coin balances are equal
+	check_matching(
+		lead_dot_movement,
+		follower_count,
+		move |_dot_movement, _config, rest_client, _faucet_client| {
+			let alice = alice.clone();
+			let bob = bob.clone();
+			async move {
+				let coin_client = CoinClient::new(&rest_client);
+				let alice_balance = coin_client
+					.get_account_balance(&alice.read().await.address())
+					.await
+					.context("Failed to get Alice's account balance")?;
+				let bob_balance = coin_client
+					.get_account_balance(&bob.read().await.address())
+					.await
+					.context("Failed to get Bob's account balance")?;
+
+				Ok((alice_balance, bob_balance))
+			}
+		},
+	)
+	.await?;
+
+	// check that all the block hashes are equal
+	check_matching(
+		lead_dot_movement,
+		follower_count,
+		move |_dot_movement, _config, rest_client, _faucet_client| async move {
+			// get the latest ledger version
+			let latest_ledger_version = rest_client.get_ledger_information().await?.inner().version;
+
+			let block_by_version =
+				rest_client.get_block_by_version(latest_ledger_version, false).await?;
+			let hash = block_by_version.inner().block_hash;
+			Ok(hash)
+		},
+	)
+	.await?;
+
 	Ok(())
 }
 

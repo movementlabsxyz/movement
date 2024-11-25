@@ -5,7 +5,7 @@ use mcr_settlement_client::McrSettlementClient;
 use mcr_settlement_manager::CommitmentEventStream;
 use mcr_settlement_manager::McrSettlementManager;
 use movement_config::Config;
-use movement_da_light_node_proto::light_node_service_client::LightNodeServiceClient;
+use movement_da_light_node_client::MovementDaLightNodeClient;
 use movement_rest::MovementRest;
 
 use anyhow::Context;
@@ -15,7 +15,7 @@ use tracing::debug;
 
 pub struct MovementPartialNode<T> {
 	executor: T,
-	light_node_client: LightNodeServiceClient<tonic::transport::Channel>,
+	light_node_client: MovementDaLightNodeClient,
 	settlement_manager: McrSettlementManager,
 	commitment_events: Option<CommitmentEventStream>,
 	movement_rest: MovementRest,
@@ -109,13 +109,15 @@ impl MovementPartialNode<Executor> {
 			"Connecting to light node at {}:{}",
 			light_node_connection_hostname, light_node_connection_port
 		);
-		let light_node_client = LightNodeServiceClient::connect(format!(
-			"{}://{}:{}",
-			light_node_connection_protocol,
-			light_node_connection_hostname,
-			light_node_connection_port
-		))
-		.await
+		let light_node_client = MovementDaLightNodeClient::try_http1(
+			format!(
+				"{}://{}:{}",
+				light_node_connection_protocol,
+				light_node_connection_hostname,
+				light_node_connection_port
+			)
+			.as_str(),
+		)
 		.context("Failed to connect to light node")?;
 
 		debug!("Creating the executor");

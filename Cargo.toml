@@ -9,7 +9,7 @@ members = [
     "protocol-units/execution/opt-executor",
     "protocol-units/execution/fin-view",
     "protocol-units/execution/util",
-    "protocol-units/da/movement/protocol/light-node",
+    "protocol-units/da/movement/protocol/*",
     "protocol-units/da/movement/celestia/*",
     "protocol-units/sequencing/memseq/*",
     "protocol-units/mempool/*",
@@ -70,6 +70,7 @@ buildtime-helpers = { path = "util/buildtime/buildtime-helpers" }
 buildtime-macros = { path = "util/buildtime/buildtime-macros" }
 ## da/proto
 movement-da-light-node-proto = { path = "protocol-units/da/movement/protocol/light-node" }
+movement-da-light-node-client = { path = "protocol-units/da/movement/protocol/client" }
 ## da/celestia
 movement-celestia-da-util = { path = "protocol-units/da/movement/celestia/util" }
 movement-celestia-da-light-node-setup = { path = "protocol-units/da/movement/celestia/setup" }
@@ -317,6 +318,9 @@ regex = "1.10.6"
 globset = "0.4.15"
 glob = "0.3.1"
 hyper = "1.4"
+hyper-util = { version = "0.1.4"}
+tower = { version = "0.5"}
+http-body-util = "0.1"
 
 # trying to pin diesel
 diesel = { version = "2.2.4", features = ["postgres", "numeric", "r2d2"] }
