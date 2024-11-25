@@ -9931,6 +9931,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "movement-celestia-da-light-node-prevalidator"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "aptos-types",
+ "async-stream",
+ "bcs 0.1.4",
+ "dot-movement",
+ "ecdsa 0.16.9",
+ "hex",
+ "k256",
+ "movement-celestia-da-light-node-setup",
+ "movement-celestia-da-util",
+ "movement-da-light-node-proto",
+ "movement-types",
+ "prost 0.13.3",
+ "rand 0.7.3",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tonic 0.12.3",
+ "tracing",
+]
+
+[[package]]
 name = "movement-celestia-da-light-node-runners"
 version = "0.0.2"
 dependencies = [
