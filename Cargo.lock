@@ -9913,6 +9913,7 @@ dependencies = [
  "k256",
  "memseq",
  "movement-algs",
+ "movement-celestia-da-light-node-prevalidator",
  "movement-celestia-da-light-node-verifier",
  "movement-celestia-da-util",
  "movement-da-light-node-proto",

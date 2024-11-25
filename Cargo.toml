@@ -75,6 +75,7 @@ movement-da-light-node-client = { path = "protocol-units/da/movement/protocol/cl
 movement-celestia-da-util = { path = "protocol-units/da/movement/celestia/util" }
 movement-celestia-da-light-node-setup = { path = "protocol-units/da/movement/celestia/setup" }
 movement-celestia-da-light-node-verifier = { path = "protocol-units/da/movement/celestia/light-node-verifier" }
+movement-celestia-da-light-node-prevalidator = { path = "protocol-units/da/movement/celestia/light-node-prevalidator" }
 ## execution
 maptos-dof-execution = { path = "protocol-units/execution/dof" }
 maptos-opt-executor = { path = "protocol-units/execution/opt-executor" }
