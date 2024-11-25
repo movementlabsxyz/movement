@@ -66,6 +66,9 @@ impl TransactionPipe {
 		transactions_in_flight: Arc<RwLock<GcCounter>>,
 		transactions_in_flight_limit: Option<u64>,
 	) -> Result<Self, anyhow::Error> {
+		let whitelisted_accounts = whitelist_config.whitelisted_accounts()?;
+		info!("Whitelisted accounts: {:?}", whitelisted_accounts);
+
 		Ok(TransactionPipe {
 			mempool_client_receiver,
 			transaction_sender,
@@ -78,13 +81,17 @@ impl TransactionPipe {
 				mempool_config.sequence_number_ttl_ms,
 				mempool_config.gc_slot_duration_ms,
 			),
-			whitelisted_accounts: whitelist_config.whitelisted_accounts()?,
+			whitelisted_accounts,
 		})
 	}
 
 	pub fn is_whitelisted(&self, address: &AccountAddress) -> Result<bool, Error> {
 		match &self.whitelisted_accounts {
-			Some(whitelisted_accounts) => Ok(whitelisted_accounts.contains(address)),
+			Some(whitelisted_accounts) => {
+				let whitelisted = whitelisted_accounts.contains(address);
+				info!("Checking if account {:?} is whitelisted: {:?}", address, whitelisted);
+				Ok(whitelisted)
+			}
 			None => Ok(true),
 		}
 	}

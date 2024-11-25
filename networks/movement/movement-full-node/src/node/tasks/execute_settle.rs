@@ -211,7 +211,7 @@ where
 		block_transactions.push(block_metadata_transaction);
 
 		for transaction in block.transactions() {
-			let signed_transaction: SignedTransaction = serde_json::from_slice(transaction.data())?;
+			let signed_transaction: SignedTransaction = bcs::from_bytes(transaction.data())?;
 
 			// check if the transaction has already been executed to prevent replays
 			if self

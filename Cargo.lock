@@ -10234,6 +10234,7 @@ name = "movement-full-node-setup"
 version = "0.0.2"
 dependencies = [
  "anyhow",
+ "aptos-sdk",
  "async-recursion",
  "celestia-rpc",
  "celestia-types",

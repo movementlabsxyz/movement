@@ -1,0 +1,22 @@
+version: "3"
+
+environment:
+
+processes:
+  
+  setup:
+    environment:
+      - APTOS_ACCOUNT_WHITELIST=$DOT_MOVEMENT_PATH/default_signer_address_whitelist
+
+  movement-faucet: 
+    command : |
+      movement-faucet-service run-simple --do-not-delegate
+
+  test-whitelist:
+    command: |
+      cargo run --bin movement-tests-e2e-whitelist
+    depends_on:
+      movement-full-node:
+        condition: process_healthy
+      movement-faucet:
+        condition: process_healthy

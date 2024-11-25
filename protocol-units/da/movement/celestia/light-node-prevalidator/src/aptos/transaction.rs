@@ -1,5 +1,5 @@
 use crate::{Error, Prevalidated, PrevalidatorOperations};
-use aptos_types::transaction::Transaction as AptosTransaction;
+use aptos_types::transaction::SignedTransaction as AptosTransaction;
 use movement_types::transaction::Transaction;
 
 pub struct Validator;
@@ -17,14 +17,10 @@ impl PrevalidatorOperations<Transaction, AptosTransaction> for Validator {
 				Error::Validation(format!("Failed to deserialize AptosTransaction: {}", e))
 			})?;
 
-		match &aptos_transaction {
-			AptosTransaction::UserTransaction(user_transaction) => {
-				user_transaction.verify_signature().map_err(|e| {
-					Error::Validation(format!("Failed to prevalidate signature: {}", e))
-				})?;
-				Ok(Prevalidated::new(aptos_transaction))
-			}
-			_ => Err(Error::Validation("Invalid transaction type".to_string())),
-		}
+		aptos_transaction
+			.verify_signature()
+			.map_err(|e| Error::Validation(format!("Failed to prevalidate signature: {}", e)))?;
+
+		Ok(Prevalidated::new(aptos_transaction))
 	}
 }

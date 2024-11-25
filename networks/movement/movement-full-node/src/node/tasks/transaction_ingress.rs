@@ -74,7 +74,7 @@ impl Task {
 							sequence_number = transaction.sequence_number(),
 							"received transaction",
 						);
-						let serialized_aptos_transaction = serde_json::to_vec(&transaction)?;
+						let serialized_aptos_transaction = bcs::to_bytes(&transaction)?;
 						let movement_transaction = movement_types::transaction::Transaction::new(
 							serialized_aptos_transaction,
 							application_priority,
