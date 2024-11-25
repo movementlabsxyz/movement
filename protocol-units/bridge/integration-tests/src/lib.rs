@@ -1,17 +1,13 @@
-use alloy::primitives::{FixedBytes, U256};
-use alloy::{
-	primitives::{keccak256, Address},
-	providers::ProviderBuilder,
-	signers::local::PrivateKeySigner,
-};
+use alloy::primitives::U256;
+use alloy::{primitives::Address, providers::ProviderBuilder, signers::local::PrivateKeySigner};
 use alloy_network::EthereumWallet;
 use aptos_sdk::{
 	rest_client::{Client, FaucetClient},
 	types::{account_address::AccountAddress, LocalAccount},
 };
 use bridge_config::Config;
+use bridge_service::chains::bridge_contracts::BridgeClientContract;
 use bridge_service::chains::ethereum::types::MockMOVEToken;
-use bridge_service::chains::ethereum::types::NativeBridge;
 use bridge_service::chains::ethereum::utils::send_transaction;
 use bridge_service::chains::ethereum::utils::send_transaction_rules;
 use bridge_service::types::Amount;
@@ -19,10 +15,7 @@ use bridge_service::types::BridgeAddress;
 use bridge_service::types::BridgeTransferId;
 
 use bridge_service::chains::{
-	ethereum::{
-		client::EthClient,
-		types::{AlloyProvider, EthHash},
-	},
+	ethereum::{client::EthClient, types::AlloyProvider},
 	movement::{client_framework::MovementClientFramework, utils::MovementAddress},
 };
 use godfig::{backend::config_file::ConfigFile, Godfig};
@@ -48,7 +41,7 @@ pub struct EthToMovementCallArgs {
 pub struct MovementToEthCallArgs {
 	pub initiator: MovementAddress,
 	pub recipient: Vec<u8>,
-	pub bridge_transfer_id: EthHash,
+	pub bridge_transfer_id: BridgeTransferId,
 	pub amount: u64,
 }
 
@@ -72,14 +65,12 @@ impl Default for EthToMovementCallArgs {
 			// Dummy recipient address
 			recipient: MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face")),
 			// Convert to [u8; 32] with explicit type annotation
-			bridge_transfer_id: MovementHash(
+			bridge_transfer_id: BridgeTransferId(
 				bridge_transfer_id
 					.as_slice()
 					.try_into()
 					.expect("Expected bridge_transfer_id to be 32 bytes"),
 			),
-			hash_lock: MovementHash(*keccak256(b"secret")),
-			time_lock: 3600,
 			amount: 100,
 		}
 	}
@@ -95,22 +86,16 @@ impl Default for MovementToEthCallArgs {
 		let mut bridge_transfer_id = b"00000000000000000000000tra".to_vec();
 		bridge_transfer_id.extend_from_slice(random_suffix.as_bytes());
 
-		// Generate a random 32-byte secret
-		let pre_image: [u8; 32] = thread_rng().gen();
-
 		Self {
 			initiator: MovementAddress(AccountAddress::new(*b"0x000000000000000000000000A55018")),
 			recipient: b"32Be343B94f860124dC4fEe278FDCBD38C102D88".to_vec(),
-			bridge_transfer_id: EthHash(
+			bridge_transfer_id: BridgeTransferId(
 				bridge_transfer_id
 					.as_slice()
 					.try_into()
 					.expect("Expected bridge_transfer_id to be 32 bytes"),
 			),
-			hash_lock: EthHash(*keccak256(&pre_image)), // Hash the secret for the hash lock
-			time_lock: 3600,
 			amount: 100,
-			pre_image, // Store the generated secret in the struct
 		}
 	}
 }
@@ -131,7 +116,9 @@ impl HarnessEthClient {
 			.parse::<PrivateKeySigner>()
 			.expect("Error during parsing signer private key?");
 
-		let eth_client = EthClient::new(&config.eth).await.expect("Failed to create EthClient");
+		let eth_client = EthClient::build_with_config(&config.eth)
+			.await
+			.expect("Failed to create EthClient");
 		HarnessEthClient { eth_client, eth_rpc_url, signer_private_key }
 	}
 
@@ -225,20 +212,22 @@ impl HarnessEthClient {
 			.await?;
 		}
 
-		let initiator_rpc_provider = ProviderBuilder::new()
-			.with_recommended_fillers()
-			.wallet(EthereumWallet::from(initiator_privatekey))
-			.on_builtin(&config.eth.eth_rpc_connection_url())
-			.await?;
+		// let initiator_rpc_provider = ProviderBuilder::new()
+		// 	.with_recommended_fillers()
+		// 	.wallet(EthereumWallet::from(initiator_privatekey))
+		// 	.on_builtin(&config.eth.eth_rpc_connection_url())
+		// 	.await?;
+		let mut initiator_client =
+			EthClient::build_with_signer(initiator_privatekey, &config.eth).await?;
 
 		let mock_move_token = MockMOVEToken::new(
 			Address::from_str(&config.eth.eth_move_token_contract)?,
-			&initiator_rpc_provider,
+			&initiator_client.rpc_provider,
 		);
 
 		// Approve the ETH initiator contract to spend Amount of MOVE
 		let approve_call = mock_move_token
-			.approve(Address::from_str(&config.eth.eth_initiator_contract)?, move_value)
+			.approve(Address::from_str(&config.eth.eth_native_contract)?, move_value)
 			.from(initiator_address);
 
 		send_transaction(
@@ -250,26 +239,30 @@ impl HarnessEthClient {
 		)
 		.await?;
 
-		// Instantiate NativeBridge
-		let initiator_contract_address = config.eth.eth_initiator_contract.parse()?;
-		let initiator_contract =
-			NativeBridge::new(initiator_contract_address, &initiator_rpc_provider);
-
+		//Initiate transfer
 		let recipient_address = BridgeAddress(Into::<Vec<u8>>::into(recipient));
-		let recipient_bytes: [u8; 32] =
-			recipient_address.0.try_into().expect("Recipient address must be 32 bytes");
+		initiator_client.initiate_bridge_transfer(recipient_address, amount).await?;
 
-		let call = initiator_contract
-			.initiateBridgeTransfer(FixedBytes(recipient_bytes), U256::from(amount.0))
-			.from(initiator_address);
-		let _ = send_transaction(
-			call,
-			initiator_address,
-			&send_transaction_rules(),
-			config.eth.transaction_send_retries,
-			config.eth.gas_limit as u128,
-		)
-		.await?;
+		// // Instantiate NativeBridge
+		// let initiator_contract_address = config.eth.eth_initiator_contract.parse()?;
+		// let initiator_contract =
+		// 	NativeBridge::new(initiator_contract_address, &initiator_rpc_provider);
+
+		// let recipient_address = BridgeAddress(Into::<Vec<u8>>::into(recipient));
+		// let recipient_bytes: [u8; 32] =
+		// 	recipient_address.0.try_into().expect("Recipient address must be 32 bytes");
+
+		// let call = initiator_contract
+		// 	.initiateBridgeTransfer(FixedBytes(recipient_bytes), U256::from(amount.0))
+		// 	.from(initiator_address);
+		// let _ = send_transaction(
+		// 	call,
+		// 	initiator_address,
+		// 	&send_transaction_rules(),
+		// 	config.eth.transaction_send_retries,
+		// 	config.eth.gas_limit as u128,
+		// )
+		// .await?;
 
 		Ok(())
 	}
@@ -296,7 +289,7 @@ impl HarnessMvtClient {
 	}
 
 	pub async fn build(config: &Config) -> Self {
-		let movement_client = MovementClientFramework::new(&config.movement)
+		let movement_client = MovementClientFramework::build_with_config(&config.movement)
 			.await
 			.expect("Failed to create MovementClient");
 
@@ -312,6 +305,24 @@ impl HarnessMvtClient {
 		)));
 
 		HarnessMvtClient { movement_client, rest_client, faucet_client }
+	}
+
+	pub async fn initiate_bridge_transfer_helper_framework(
+		config: &Config,
+		initiator_privatekey: LocalAccount,
+		recipient: Vec<u8>,
+		amount: u64,
+	) -> Result<(), anyhow::Error> {
+		//Create a client with Initiator as signer.
+		let mut movement_client =
+			MovementClientFramework::build_with_signer(initiator_privatekey, &config.movement)
+				.await?;
+
+		movement_client
+			.initiate_bridge_transfer(BridgeAddress(recipient), Amount(amount))
+			.await?;
+
+		Ok(())
 	}
 
 	pub async fn fund_account(&self) -> LocalAccount {

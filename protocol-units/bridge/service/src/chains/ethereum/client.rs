@@ -75,8 +75,31 @@ pub struct EthClient {
 }
 
 impl EthClient {
-	pub async fn new(config: &EthConfig) -> Result<Self, anyhow::Error> {
+	pub async fn build_with_config(config: &EthConfig) -> Result<Self, anyhow::Error> {
 		let config: Config = config.try_into()?;
+		let signer_address = config.signer_private_key.address();
+		let rpc_provider = ProviderBuilder::new()
+			.with_recommended_fillers()
+			.wallet(EthereumWallet::from(config.signer_private_key.clone()))
+			.on_builtin(config.rpc_url.as_str())
+			.await?;
+
+		let native_bridge_contract =
+			NativeBridgeContract::new(config.native_contract, rpc_provider.clone());
+
+		Ok(EthClient {
+			rpc_provider,
+			native_bridge_contract,
+			config: config.clone(),
+			signer_address,
+		})
+	}
+	pub async fn build_with_signer(
+		signer: PrivateKeySigner,
+		config: &EthConfig,
+	) -> Result<Self, anyhow::Error> {
+		let mut config: Config = config.try_into()?;
+		config.signer_private_key = signer;
 		let signer_address = config.signer_private_key.address();
 		let rpc_provider = ProviderBuilder::new()
 			.with_recommended_fillers()

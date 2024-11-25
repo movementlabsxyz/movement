@@ -49,7 +49,7 @@ pub struct MovementClientFramework {
 }
 
 impl MovementClientFramework {
-	pub async fn new(config: &MovementConfig) -> Result<Self, anyhow::Error> {
+	pub async fn build_with_config(config: &MovementConfig) -> Result<Self, anyhow::Error> {
 		let node_connection_url = Url::from_str(config.mvt_rpc_connection_url().as_str())
 			.map_err(|_| BridgeContractError::SerializationError)?;
 
@@ -57,6 +57,18 @@ impl MovementClientFramework {
 
 		let signer =
 			utils::create_local_account(config.movement_signer_key.clone(), &rest_client).await?;
+		let native_address = AccountAddress::from_hex_literal(&config.movement_native_address)?;
+		Ok(MovementClientFramework { native_address, rest_client, signer: Arc::new(signer) })
+	}
+
+	pub async fn build_with_signer(
+		signer: LocalAccount,
+		config: &MovementConfig,
+	) -> Result<Self, anyhow::Error> {
+		let node_connection_url = Url::from_str(config.mvt_rpc_connection_url().as_str())
+			.map_err(|_| BridgeContractError::SerializationError)?;
+
+		let rest_client = Client::new(node_connection_url.clone());
 		let native_address = AccountAddress::from_hex_literal(&config.movement_native_address)?;
 		Ok(MovementClientFramework { native_address, rest_client, signer: Arc::new(signer) })
 	}
