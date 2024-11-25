@@ -15661,6 +15661,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "whitelist"
+version = "0.0.2"
+dependencies = [
+ "prost 0.13.3",
+ "thiserror",
+ "tonic 0.12.3",
+]
+
+[[package]]
 name = "whoami"
 version = "1.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
