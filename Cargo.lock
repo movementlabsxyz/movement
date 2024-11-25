@@ -10061,6 +10061,8 @@ version = "0.0.2"
 dependencies = [
  "alloy",
  "anyhow",
+ "aptos-account-whitelist",
+ "aptos-types",
  "async-stream",
  "bcs 0.1.4",
  "celestia-rpc",

@@ -1,4 +1,5 @@
 use anyhow::Context;
+use aptos_types::account_address::AccountAddress;
 use celestia_rpc::Client;
 use celestia_types::nmt::Namespace;
 use serde::{Deserialize, Serialize};
@@ -237,6 +238,14 @@ impl Config {
 			Config::Mocha(local) => {
 				Ok((local.memseq.memseq_max_block_size, local.memseq.memseq_build_time))
 			}
+		}
+	}
+
+	pub fn whitelisted_accounts(&self) -> Result<Option<HashSet<AccountAddress>>, anyhow::Error> {
+		match self {
+			Config::Local(local) => local.access_control.whitelisted_accounts(),
+			Config::Arabica(local) => local.access_control.whitelisted_accounts(),
+			Config::Mocha(local) => local.access_control.whitelisted_accounts(),
 		}
 	}
 }

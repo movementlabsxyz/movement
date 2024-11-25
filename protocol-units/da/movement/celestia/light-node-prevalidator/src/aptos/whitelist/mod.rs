@@ -10,6 +10,15 @@ pub struct Validator {
 	whitelist_validator: whitelist::Validator,
 }
 
+impl Validator {
+	/// Creates a new Validator with a whitelist of AccountAddresses.
+	pub fn new(
+		whitelist: std::collections::HashSet<aptos_types::account_address::AccountAddress>,
+	) -> Self {
+		Self { whitelist_validator: whitelist::Validator::new(whitelist) }
+	}
+}
+
 #[tonic::async_trait]
 impl PrevalidatorOperations<Transaction, Transaction> for Validator {
 	/// Verifies a Transaction as a Valid Transaction
