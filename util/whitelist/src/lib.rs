@@ -1,4 +1,5 @@
 pub mod file;
+use std::collections::HashSet;
 use thiserror::Error;
 
 /// Domain error for the whitelist
@@ -11,4 +12,6 @@ pub enum Error {
 #[tonic::async_trait]
 pub trait WhitelistOperations<T> {
 	async fn is_whitelisted(&self, item: &T) -> Result<bool, Error>;
+
+	async fn try_into_set(self) -> Result<HashSet<T>, Error>;
 }

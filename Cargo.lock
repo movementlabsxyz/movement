@@ -823,6 +823,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "aptos-account-whitelist"
+version = "0.0.2"
+dependencies = [
+ "aptos-types",
+ "whitelist",
+]
+
+[[package]]
 name = "aptos-accumulator"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=9dfc8e7a3d622597dfd81cc4ba480a5377f87a41#9dfc8e7a3d622597dfd81cc4ba480a5377f87a41"

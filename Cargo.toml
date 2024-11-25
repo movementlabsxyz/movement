@@ -20,6 +20,7 @@ members = [
     "protocol-units/settlement/mcr/setup",
     "protocol-units/settlement/mcr/runner",
     "protocol-units/movement-rest",
+    "protocol-units/access-control/aptos/account-whitelist",
     "util/buildtime",
     "util/buildtime/buildtime-helpers",
     "util/buildtime/buildtime-macros",
@@ -111,6 +112,9 @@ movement-tracing = { path = "util/tracing" }
 syncup = { path = "protocol-units/syncing/syncup" }
 syncador = { path = "util/syncador" }
 movement-collections = { path = "util/collections" }
+whitelist = { path = "util/whitelist" }
+## access control
+aptos-account-whitelist = { path = "protocol-units/access-control/aptos/account-whitelist" }
 
 # Serialization and Deserialization
 borsh = { version = "0.10" } # todo: internalize jmt and bump

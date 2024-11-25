@@ -10,10 +10,8 @@ publish = { workspace = true }
 rust-version = { workspace = true }
 
 [dependencies]
-tonic = { workspace = true }
-prost = { workspace = true }
-thiserror = { workspace = true }
-
+aptos-types = { workspace = true }
+whitelist = { workspace = true }
 
 [lints]
 workspace = true

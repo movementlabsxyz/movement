@@ -46,4 +46,9 @@ where
 	async fn is_whitelisted(&self, item: &T) -> Result<bool, WhitelistOperationsError> {
 		Ok(self.whitelist.contains(item))
 	}
+
+	/// Converts the whitelist to a hashset.
+	async fn try_into_set(self) -> Result<HashSet<T>, WhitelistOperationsError> {
+		Ok(self.whitelist)
+	}
 }
