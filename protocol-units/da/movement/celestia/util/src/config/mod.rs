@@ -184,6 +184,15 @@ impl Config {
 		}
 	}
 
+	/// Whether to use HTTP/1.1 for the movement-da-light-node service
+	pub fn movement_da_light_node_http1(&self) -> bool {
+		match self {
+			Config::Local(local) => local.da_light_node.movement_da_light_node_http1,
+			Config::Arabica(local) => local.da_light_node.movement_da_light_node_http1,
+			Config::Mocha(local) => local.da_light_node.movement_da_light_node_http1,
+		}
+	}
+
 	/// Gets the memseq path
 	pub fn try_memseq_path(&self) -> Result<String, anyhow::Error> {
 		match self {

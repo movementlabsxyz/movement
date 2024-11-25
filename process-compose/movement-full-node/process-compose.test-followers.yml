@@ -26,6 +26,7 @@ processes:
       - "ETH_WS_CONNECTION_HOSTNAME=0.0.0.0"
       - "ETH_WS_CONNECTION_PORT=8090"
       - "MAYBE_RUN_LOCAL=true"
+      - "MOVEMENT_DA_LIGHT_NODE_HTTP1=true"
     command: |
       sleep 30
       export AWS_REGION=us-west-2
@@ -71,6 +72,7 @@ processes:
       - "ETH_WS_CONNECTION_HOSTNAME=0.0.0.0"
       - "ETH_WS_CONNECTION_PORT=8090"
       - "MAYBE_RUN_LOCAL=true"
+      - "MOVEMENT_DA_LIGHT_NODE_HTTP1=false"
     command: |
       sleep 30
       export AWS_REGION=us-west-2

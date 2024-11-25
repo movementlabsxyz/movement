@@ -109,16 +109,34 @@ impl MovementPartialNode<Executor> {
 			"Connecting to light node at {}:{}",
 			light_node_connection_hostname, light_node_connection_port
 		);
-		let light_node_client = MovementDaLightNodeClient::try_http1(
-			format!(
-				"{}://{}:{}",
-				light_node_connection_protocol,
-				light_node_connection_hostname,
-				light_node_connection_port
+		let light_node_client = if config
+			.celestia_da_light_node
+			.celestia_da_light_node_config
+			.movement_da_light_node_http1()
+		{
+			MovementDaLightNodeClient::try_http1(
+				format!(
+					"{}://{}:{}",
+					light_node_connection_protocol,
+					light_node_connection_hostname,
+					light_node_connection_port
+				)
+				.as_str(),
 			)
-			.as_str(),
-		)
-		.context("Failed to connect to light node")?;
+			.context("Failed to connect to light node")?
+		} else {
+			MovementDaLightNodeClient::try_http2(
+				format!(
+					"{}://{}:{}",
+					light_node_connection_protocol,
+					light_node_connection_hostname,
+					light_node_connection_port
+				)
+				.as_str(),
+			)
+			.await
+			.context("Failed to connect to light node")?
+		};
 
 		debug!("Creating the executor");
 		let executor = Executor::try_from_config(config.execution_config.maptos_config.clone())
