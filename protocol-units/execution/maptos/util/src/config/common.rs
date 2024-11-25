@@ -1,6 +1,8 @@
 use std::str::FromStr;
 
-use aptos_crypto::{ed25519::Ed25519PrivateKey, Genesis, HashValue, ValidCryptoMaterialStringExt};
+use aptos_crypto::{
+	ed25519::Ed25519PrivateKey, Genesis, HashValue, Uniform, ValidCryptoMaterialStringExt,
+};
 use aptos_types::chain_id::ChainId;
 use godfig::{env_default, env_or_none};
 use std::collections::HashSet;
@@ -77,7 +79,10 @@ env_default!(default_maptos_read_only, "MAPTOS_READ_ONLY", bool, false);
 // The default private key
 pub fn default_maptos_private_key() -> Ed25519PrivateKey {
 	match std::env::var("MAPTOS_PRIVATE_KEY") {
-		Ok(val) => Ed25519PrivateKey::from_encoded_string(&val).unwrap(),
+		Ok(val) => match val.as_str() {
+			"random" => Ed25519PrivateKey::generate(&mut rand::rngs::OsRng),
+			_ => Ed25519PrivateKey::from_encoded_string(&val).unwrap(),
+		},
 		Err(_) => Ed25519PrivateKey::genesis(),
 	}
 }

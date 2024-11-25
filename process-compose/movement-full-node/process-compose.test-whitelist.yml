@@ -7,6 +7,7 @@ processes:
   setup:
     environment:
       - APTOS_ACCOUNT_WHITELIST=$DOT_MOVEMENT_PATH/default_signer_address_whitelist
+      - MAPTOS_PRIVATE_KEY=random
 
   movement-faucet: 
     command : |
