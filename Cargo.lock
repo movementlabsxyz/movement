@@ -4185,6 +4185,7 @@ dependencies = [
  "bridge-grpc",
  "bridge-service",
  "bridge-setup",
+ "bridge-util",
  "chrono",
  "dot-movement",
  "futures",

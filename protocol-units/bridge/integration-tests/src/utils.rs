@@ -1,50 +1,25 @@
 use crate::HarnessMvtClient;
-use alloy::hex;
 use anyhow::Result;
 use aptos_sdk::{coin_client::CoinClient, types::account_address::AccountAddress};
-use bridge_service::chains::bridge_contracts::BridgeClientContract;
-use bridge_service::chains::bridge_contracts::BridgeContractError;
-use bridge_service::chains::movement::client_framework::MovementClientFramework;
-use bridge_service::chains::movement::utils::{self as movement_utils, MovementAddress};
-use bridge_service::types::{Amount, BridgeAddress};
-use serde_json::Value;
-use tracing::debug;
+use bridge_service::chains::movement::utils::MovementAddress;
+use bridge_util::chains::bridge_contracts::BridgeTransferInitiatedDetails;
 
 const FRAMEWORK_ADDRESS: AccountAddress = AccountAddress::new([
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
 ]);
 
-// pub fn assert_bridge_transfer_details(
-// 	details: &BridgeTransferDetails<MovementAddress>, // MovementAddress for initiator
-// 	expected_bridge_transfer_id: [u8; 32],
-// 	expected_hash_lock: [u8; 32],
-// 	expected_sender_address: AccountAddress,
-// 	expected_recipient: Vec<u8>,
-// 	expected_amount: u64,
-// 	expected_state: u8,
-// ) {
-// 	assert_eq!(details.bridge_transfer_id.0, expected_bridge_transfer_id);
-// 	assert_eq!(details.hash_lock.0, expected_hash_lock);
-// 	assert_eq!(details.initiator.0 .0, expected_sender_address);
-// 	assert_eq!(details.recipient.0, expected_recipient);
-// 	assert_eq!(details.amount.0, expected_amount);
-// 	assert_eq!(details.state, expected_state, "Bridge transfer state mismatch.");
-// }
-
-// pub fn assert_counterparty_bridge_transfer_details_framework(
-// 	details: &BridgeTransferDetails<MovementAddress>,
-// 	expected_sender_address: String,
-// 	expected_recipient: Vec<u8>,
-// 	expected_amount: u64,
-// 	expected_hash_lock: [u8; 32],
-// 	expected_time_lock: u64,
-// ) {
-// 	assert_eq!(details.initiator.to_string(), expected_sender_address);
-// 	assert_eq!(details.recipient, BridgeAddress(expected_recipient));
-// 	assert_eq!(details.amount, Amount(expected_amount));
-// 	assert_eq!(details.hash_lock.0, expected_hash_lock);
-// 	assert_eq!(details.time_lock.0, expected_time_lock);
-// }
+pub fn assert_bridge_transfer_details(
+	details: &BridgeTransferInitiatedDetails<MovementAddress>, // MovementAddress for initiator
+	expected_bridge_transfer_id: [u8; 32],
+	expected_sender_address: AccountAddress,
+	expected_recipient: Vec<u8>,
+	expected_amount: u64,
+) {
+	assert_eq!(details.bridge_transfer_id.0, expected_bridge_transfer_id);
+	assert_eq!(details.initiator.0 .0, expected_sender_address);
+	assert_eq!(details.recipient.0, expected_recipient);
+	assert_eq!(details.amount.0, expected_amount);
+}
 
 // pub async fn fetch_bridge_transfer_details(
 // 	movement_client: &mut MovementClientFramework,

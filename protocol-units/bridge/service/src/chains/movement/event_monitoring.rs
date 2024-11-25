@@ -1,19 +1,18 @@
 use super::{client_framework::FRAMEWORK_ADDRESS, utils::MovementAddress};
-use crate::{
-	chains::bridge_contracts::{
-		BridgeContractError, BridgeContractEvent, BridgeContractEventType,
-		BridgeContractMonitoring, BridgeContractResult,
-	},
-	types::{Amount, BridgeAddress, BridgeTransferId},
-};
+use crate::types::{Amount, BridgeAddress, BridgeTransferId};
 use anyhow::Result;
 use aptos_sdk::{
 	rest_client::aptos_api_types::VersionedEvent, types::account_address::AccountAddress,
 };
 use bridge_config::common::movement::MovementConfig;
+use bridge_util::chains::bridge_contracts::BridgeContractError;
+use bridge_util::chains::bridge_contracts::BridgeContractEventType;
+use bridge_util::chains::bridge_contracts::BridgeContractResult;
 use bridge_util::chains::bridge_contracts::BridgeTransferCompletedDetails;
 use bridge_util::chains::bridge_contracts::BridgeTransferInitiatedDetails;
 use bridge_util::types::Nonce;
+use bridge_util::BridgeContractEvent;
+use bridge_util::BridgeContractMonitoring;
 
 use futures::{
 	channel::mpsc::{self as futurempsc},

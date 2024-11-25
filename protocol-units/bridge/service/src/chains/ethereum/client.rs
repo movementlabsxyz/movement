@@ -225,18 +225,7 @@ impl BridgeRelayerContract<EthAddress> for EthClient {
 		amount: Amount,
 		nonce: Nonce,
 	) -> BridgeContractResult<()> {
-		let generic_error = |desc| BridgeContractError::GenericError(String::from(desc));
 		let contract = NativeBridge::new(self.config.native_contract, self.rpc_provider.clone());
-		let bridge_transfer_array: [u8; 32] = bridge_transfer_id
-			.0
-			.get(0..32) // Get the first 32 bytes
-			.ok_or_else(|| generic_error("Could not get required slice from bridge_transfer_id"))? // Handle the error if slice is not available
-			.try_into() // Convert slice to array
-			.map_err(|e| {
-				BridgeContractError::ConversionFailed(format!(
-					"Failed to convert bridge_transfer_id: {e:?}"
-				))
-			})?;
 		let initiator: [u8; 32] = initiator.0.try_into().map_err(|_| {
 			BridgeContractError::ConversionFailed("initiator must be exactly 32 bytes".to_string())
 		})?;

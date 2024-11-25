@@ -6,13 +6,13 @@ use aptos_sdk::{
 	types::{account_address::AccountAddress, LocalAccount},
 };
 use bridge_config::Config;
-use bridge_service::chains::bridge_contracts::BridgeClientContract;
 use bridge_service::chains::ethereum::types::MockMOVEToken;
 use bridge_service::chains::ethereum::utils::send_transaction;
 use bridge_service::chains::ethereum::utils::send_transaction_rules;
 use bridge_service::types::Amount;
 use bridge_service::types::BridgeAddress;
 use bridge_service::types::BridgeTransferId;
+use bridge_util::chains::bridge_contracts::BridgeClientContract;
 
 use bridge_service::chains::{
 	ethereum::{client::EthClient, types::AlloyProvider},
@@ -286,6 +286,10 @@ impl HarnessMvtClient {
 	pub fn gen_aptos_account() -> LocalAccount {
 		let mut rng = ::rand::rngs::StdRng::from_seed([3u8; 32]);
 		LocalAccount::generate(&mut rng)
+	}
+
+	pub fn signer_address(&self) -> AccountAddress {
+		self.movement_client.signer().address()
 	}
 
 	pub async fn build(config: &Config) -> Self {
