@@ -10,8 +10,6 @@
     rev: "{{ movement_container_version }}"
 
   tasks:
-    - debug:
-        msg: "MOVEMENT_SYNC: {{ movement_sync }}"
 
     - name: Install required packages
       ansible.builtin.apt:
