@@ -77,6 +77,7 @@ mcr-settlement-client = { workspace = true }
 movement-config = { workspace = true }
 dot-movement = { workspace = true }
 aptos-protos = { workspace = true }
+tracing-test = { workspace = true }
 
 [lints]
 workspace = true

@@ -10125,6 +10125,7 @@ dependencies = [
  "tonic 0.12.3",
  "tracing",
  "tracing-subscriber 0.3.18",
+ "tracing-test",
  "url",
 ]
 
