@@ -68,12 +68,27 @@
         line: "REV={{ movement_container_version }}"
         create: yes
 
+    - name: Remove the movement config dir if it exists
+      ansible.builtin.file:
+        path: "/home/{{ user }}/.movement"
+        state: absent
+
     - name: Make sure that the movement config dir exists 
       ansible.builtin.file:
         path: "/home/{{ user }}/.movement"
         state: directory
         owner: "{{ user }}"
         group: "{{ user }}"
+
+    - name: Stop the suzuka-full-node service if running
+      ansible.builtin.systemd:
+        name: suzuka-full-node
+        state: stopped
+        enabled: no
+
+    - name: Kill all running Docker containers
+      ansible.builtin.shell: |
+        docker ps -q | xargs -r docker stop
 
     - name: Create movement-full-node systemd service
       ansible.builtin.template:
