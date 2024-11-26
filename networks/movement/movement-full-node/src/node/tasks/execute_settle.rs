@@ -22,7 +22,7 @@ use tracing::{debug, error, info, info_span, Instrument};
 
 pub struct Task<E, S> {
 	executor: E,
-	settlement_manager: S,
+	settlement_manager: Option<S>,
 	da_db: DaDB,
 	da_light_node_client: MovementDaLightNodeClient,
 	// Stream receiving commitment events, conditionally enabled
@@ -35,7 +35,7 @@ pub struct Task<E, S> {
 impl<E, S> Task<E, S> {
 	pub(crate) fn new(
 		executor: E,
-		settlement_manager: S,
+		settlement_manager: Option<S>,
 		da_db: DaDB,
 		da_light_node_client: MovementDaLightNodeClient,
 		commitment_events: Option<CommitmentEventStream>,
@@ -152,10 +152,17 @@ where
 			&& da_height % self.settlement_config.settle.settlement_super_block_size == 0
 		{
 			info!("Posting block commitment via settlement manager");
-			match self.settlement_manager.post_block_commitment(commitment).await {
-				Ok(_) => {}
-				Err(e) => {
-					error!("Failed to post block commitment: {:?}", e);
+			match &self.settlement_manager {
+				Some(settlement_manager) => {
+					match settlement_manager.post_block_commitment(commitment).await {
+						Ok(_) => {}
+						Err(e) => {
+							error!("Failed to post block commitment: {:?}", e);
+						}
+					}
+				}
+				None => {
+					error!("Settlement manager not initialized");
 				}
 			}
 		} else {

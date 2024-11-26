@@ -16,7 +16,7 @@ use tracing::debug;
 pub struct MovementPartialNode<T> {
 	executor: T,
 	light_node_client: MovementDaLightNodeClient,
-	settlement_manager: McrSettlementManager,
+	settlement_manager: Option<McrSettlementManager>,
 	commitment_events: Option<CommitmentEventStream>,
 	movement_rest: MovementRest,
 	config: Config,
@@ -27,7 +27,7 @@ impl<T> MovementPartialNode<T>
 where
 	T: DynOptFinExecutor + Send + 'static,
 {
-	pub fn settlement_manager(&self) -> &McrSettlementManager {
+	pub fn settlement_manager(&self) -> &Option<McrSettlementManager> {
 		&self.settlement_manager
 	}
 
@@ -142,14 +142,17 @@ impl MovementPartialNode<Executor> {
 		let executor = Executor::try_from_config(config.execution_config.maptos_config.clone())
 			.context("Failed to create the inner executor")?;
 
-		debug!("Creating the settlement client");
-		let settlement_client = McrSettlementClient::build_with_config(&config.mcr)
-			.await
-			.context("Failed to build MCR settlement client with config")?;
-		let (settlement_manager, commitment_events) =
-			McrSettlementManager::new(settlement_client, &config.mcr);
-		let commitment_events =
-			if config.mcr.should_settle() { Some(commitment_events) } else { None };
+		let (settlement_manager, commitment_events) = if config.mcr.should_settle() {
+			debug!("Creating the settlement client");
+			let settlement_client = McrSettlementClient::build_with_config(&config.mcr)
+				.await
+				.context("Failed to build MCR settlement client with config")?;
+			let (settlement_manager, commitment_events) =
+				McrSettlementManager::new(settlement_client, &config.mcr);
+			(Some(settlement_manager), Some(commitment_events))
+		} else {
+			(None, None)
+		};
 
 		debug!("Creating the movement rest service");
 		let movement_rest =

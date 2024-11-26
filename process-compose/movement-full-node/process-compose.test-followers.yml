@@ -65,12 +65,7 @@ processes:
 
   setup-follower-2:
     environment:
-      - "ETH_RPC_CONNECTION_PROTOCOL=http"
-      - "ETH_RPC_CONNECTION_HOSTNAME=0.0.0.0"
-      - "ETH_RPC_CONNECTION_PORT=8090"
-      - "ETH_WS_CONNECTION_PROTOCOL=ws"
-      - "ETH_WS_CONNECTION_HOSTNAME=0.0.0.0"
-      - "ETH_WS_CONNECTION_PORT=8090"
+      # use invalid eth hostnames to check that non-settling follower doesn't have build issues. 
       - "MAYBE_RUN_LOCAL=true"
       - "MOVEMENT_DA_LIGHT_NODE_HTTP1=false"
     command: |
