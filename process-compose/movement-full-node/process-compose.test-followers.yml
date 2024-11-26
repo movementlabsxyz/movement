@@ -5,7 +5,7 @@ processes:
   setup:
     command: |
       export AWS_REGION=us-west-2
-      export MOVEMENT_SYNC="leader::follower-test-$MOVEMENT_SHARED_RANDOM_1<=>{maptos,maptos-storage,movement-da-db}/**"
+      export MOVEMENT_SYNC="leader::follower-test-$MOVEMENT_SHARED_RANDOM_1<=>{default_signer_address_whitelist,maptos,maptos-storage,movement-da-db}/**"
       export MAYBE_RUN_LOCAL=true
       export MAYBE_DEPLOY_MCR=true
       movement-full-node-setup
@@ -36,7 +36,7 @@ processes:
       export MAPTOS_API_CONNECTION_PORT=31731
       export MAPTOS_API_LISTEN_PORT=31731
       export DOT_MOVEMENT_PATH=$DOT_MOVEMENT_PATH-follower-1
-      export MOVEMENT_SYNC="follower::follower-test-$MOVEMENT_SHARED_RANDOM_1<=>{maptos,maptos-storage,movement-da-db}/**"
+      export MOVEMENT_SYNC="follower::follower-test-$MOVEMENT_SHARED_RANDOM_1<=>{default_signer_address_whitelist,maptos,maptos-storage,movement-da-db}/**"
       movement-full-node-setup
     depends_on:
       build:
@@ -82,7 +82,7 @@ processes:
       export MAPTOS_API_CONNECTION_PORT=32731
       export MAPTOS_API_LISTEN_PORT=32731
       export DOT_MOVEMENT_PATH=$DOT_MOVEMENT_PATH-follower-2
-      export MOVEMENT_SYNC="follower::follower-test-$MOVEMENT_SHARED_RANDOM_1<=>{maptos,maptos-storage,movement-da-db}/**"
+      export MOVEMENT_SYNC="follower::follower-test-$MOVEMENT_SHARED_RANDOM_1<=>{default_signer_address_whitelist,maptos,maptos-storage,movement-da-db}/**"
       movement-full-node-setup
     depends_on:
       build:

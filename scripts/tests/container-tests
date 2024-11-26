@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Run the first test and capture the exit code
-STATUS=$(timeout 4m just movement-full-node docker-compose local.faucet-replicas.test --abort-on-container-failure)
+STATUS=$(timeout 2m just movement-full-node docker-compose local.faucet-replicas.test --abort-on-container-failure)
 EXIT_CODE=$?
 
 # Clean up before checking the status
@@ -21,7 +21,7 @@ else
 fi
 
 # Run the second test and capture the exit code
-STATUS=$(timeout 4m just movement-full-node docker-compose local.test-followers --abort-on-container-failure)
+STATUS=$(timeout 2m just movement-full-node docker-compose local.test-followers --abort-on-container-failure)
 EXIT_CODE=$?
 
 # Check the exit code and act accordingly
