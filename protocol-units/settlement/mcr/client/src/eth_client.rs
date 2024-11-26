@@ -138,7 +138,10 @@ impl
 			config.transactions.gas_limit,
 			config.transactions.transaction_send_retries,
 		)
-		.await?;
+		.await
+		.context(
+			"Failed to create the MCR settlement client with the RPC provider and contract address",
+		)?;
 		Ok(client)
 	}
 }
@@ -159,7 +162,10 @@ impl<P> McrSettlementClient<P> {
 	{
 		let ws = WsConnect::new(ws_url);
 
-		let ws_provider = ProviderBuilder::new().on_ws(ws).await?;
+		let ws_provider = ProviderBuilder::new()
+			.on_ws(ws)
+			.await
+			.context("Failed to create the WebSocket provider for the MCR settlement client")?;
 
 		let rule1: Box<dyn VerifyRule> = Box::new(SendTransactionErrorRule::<UnderPriced>::new());
 		let rule2: Box<dyn VerifyRule> =
