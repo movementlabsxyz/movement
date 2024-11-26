@@ -29,6 +29,6 @@ flowchart TB
 
   EE{"Event BridgeTransferCompleted Event fail to read"}-->EEE("Error No change")
   EEE -->EA("Action Log error")
-  FE{"Event Event BridgeTransferInitiated Event fail to read"}-->EEE("Error No change")
+  FE{"Event BridgeTransferInitiated Event fail to read"}-->EEE("Error No change")
  
 ```
