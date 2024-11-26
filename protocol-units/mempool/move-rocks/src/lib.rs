@@ -13,6 +13,7 @@ mod cf {
 	pub const MEMPOOL_TRANSACTIONS: &str = "mempool_transactions";
 	pub const BLOCKS: &str = "blocks";
 	pub const TRANSACTION_LOOKUPS: &str = "transaction_lookups";
+	pub const TRANSACTION_TIMELINE: &str = "transaction_timeline";
 }
 
 #[derive(Debug, Clone)]
@@ -20,9 +21,9 @@ pub struct RocksdbMempool {
 	db: Arc<DB>,
 }
 
-fn construct_mempool_transaction_key(transaction: &MempoolTransaction) -> Result<String, Error> {
+fn construct_mempool_transaction_key(transaction: &MempoolTransaction) -> String {
 	// Pre-allocate a string with the required capacity
-	let mut key = String::with_capacity(32 + 1 + 32 + 1 + 32 + 1 + 32);
+	let mut key = String::with_capacity(32 + 1 + 32 + 1 + 32 + 1 + 64);
 	// Write key components. The numbers are zero-padded to 32 characters.
 	key.write_fmt(format_args!(
 		"{:032}:{:032}:{:032}:{}",
@@ -31,15 +32,23 @@ fn construct_mempool_transaction_key(transaction: &MempoolTransaction) -> Result
 		transaction.transaction.sequence_number(),
 		transaction.transaction.id(),
 	))
-	.map_err(|_| Error::msg("Error writing mempool transaction key"))?;
-	Ok(key)
+	.unwrap();
+	key
 }
 
-fn construct_timestamp_threshold_key(timestamp_threshold: u64) -> Result<String, Error> {
+fn construct_transaction_timeline_key(transaction: &MempoolTransaction) -> String {
+	// Pre-allocate a string with the required capacity
+	let mut key = String::with_capacity(32 + 1 + 64);
+	// Write key components. The numbers are zero-padded to 32 characters.
+	key.write_fmt(format_args!("{:032}:{}", transaction.timestamp, transaction.transaction.id()))
+		.unwrap();
+	key
+}
+
+fn construct_timeline_threshold_key(timestamp_threshold: u64) -> String {
 	let mut key = String::with_capacity(32 + 1);
-	key.write_fmt(format_args!("{:032}:", timestamp_threshold))
-		.map_err(|_| Error::msg("Error writing timestamp threshold key"))?;
-	Ok(key)
+	key.write_fmt(format_args!("{:032}:", timestamp_threshold)).unwrap();
+	key
 }
 
 impl RocksdbMempool {
@@ -53,11 +62,13 @@ impl RocksdbMempool {
 		let blocks_cf = ColumnFamilyDescriptor::new(cf::BLOCKS, Options::default());
 		let transaction_lookups_cf =
 			ColumnFamilyDescriptor::new(cf::TRANSACTION_LOOKUPS, Options::default());
+		let transaction_timeline_cf =
+			ColumnFamilyDescriptor::new(cf::TRANSACTION_TIMELINE, Options::default());
 
 		let db = DB::open_cf_descriptors(
 			&options,
 			path,
-			[mempool_transactions_cf, blocks_cf, transaction_lookups_cf],
+			[mempool_transactions_cf, blocks_cf, transaction_lookups_cf, transaction_timeline_cf],
 		)
 		.map_err(|e| Error::new(e))?;
 
@@ -128,9 +139,12 @@ impl MempoolTransactionOperations for RocksdbMempool {
 			let transaction_lookups_cf_handle = db
 				.cf_handle(cf::TRANSACTION_LOOKUPS)
 				.ok_or_else(|| Error::msg("CF handle not found"))?;
+			let transaction_timeline_cf_handle = db
+				.cf_handle(cf::TRANSACTION_TIMELINE)
+				.ok_or_else(|| Error::msg("CF handle not found"))?;
 
-			// Add the transactions and update the lookup table atomically
-			// in a single write batch.
+			// Add the transactions and update the lookup table and the GC timeline
+			// atomically in a single write batch.
 			// https://github.com/movementlabsxyz/movement/issues/322
 
 			let mut batch = WriteBatch::default();
@@ -141,11 +155,16 @@ impl MempoolTransactionOperations for RocksdbMempool {
 				}
 
 				let serialized_transaction = bcs::to_bytes(&transaction)?;
-				let key = construct_mempool_transaction_key(&transaction)?;
+				let key = construct_mempool_transaction_key(&transaction);
 				batch.put_cf(&mempool_transactions_cf_handle, &key, &serialized_transaction);
 				batch.put_cf(
 					&transaction_lookups_cf_handle,
 					transaction.transaction.id().to_vec(),
+					&key,
+				);
+				batch.put_cf(
+					&transaction_timeline_cf_handle,
+					&construct_transaction_timeline_key(&transaction),
 					&key,
 				);
 			}
@@ -169,18 +188,26 @@ impl MempoolTransactionOperations for RocksdbMempool {
 			let transaction_lookups_cf_handle = db
 				.cf_handle(cf::TRANSACTION_LOOKUPS)
 				.ok_or_else(|| Error::msg("CF handle not found"))?;
+			let transaction_timeline_cf_handle = db
+				.cf_handle(cf::TRANSACTION_TIMELINE)
+				.ok_or_else(|| Error::msg("CF handle not found"))?;
 
-			// Add the transaction and update the lookup table atomically
-			// in a single write batch.
+			// Add the transaction and update the lookup table and the GC timeline
+			// atomically in a single write batch.
 			// https://github.com/movementlabsxyz/movement/issues/322
 
 			let mut batch = WriteBatch::default();
 
-			let key = construct_mempool_transaction_key(&transaction)?;
+			let key = construct_mempool_transaction_key(&transaction);
 			batch.put_cf(&mempool_transactions_cf_handle, &key, &serialized_transaction);
 			batch.put_cf(
 				&transaction_lookups_cf_handle,
 				transaction.transaction.id().to_vec(),
+				&key,
+			);
+			batch.put_cf(
+				&transaction_timeline_cf_handle,
+				&construct_transaction_timeline_key(&transaction),
 				&key,
 			);
 
@@ -212,6 +239,8 @@ impl MempoolTransactionOperations for RocksdbMempool {
 					// Remove the transaction and its entry in the lookup table
 					// atomically in a single write batch.
 					// https://github.com/movementlabsxyz/movement/issues/322
+					// Note that the timeline entry is not removed. It should be
+					// eventually collected in a GC pass.
 
 					let mut batch = WriteBatch::default();
 					batch.delete_cf(&cf_handle, k);
@@ -271,6 +300,8 @@ impl MempoolTransactionOperations for RocksdbMempool {
 					// Remove the transaction and its entry in the lookup table
 					// atomically in a single write batch.
 					// https://github.com/movementlabsxyz/movement/issues/322
+					// Note that the timeline entry is not removed. It should be
+					// eventually collected in a GC pass.
 
 					let mut batch = WriteBatch::default();
 					batch.delete_cf(&cf_handle, &key);
@@ -332,18 +363,32 @@ impl MempoolTransactionOperations for RocksdbMempool {
 			let cf_handle = db
 				.cf_handle(cf::MEMPOOL_TRANSACTIONS)
 				.ok_or_else(|| Error::msg("CF handle not found"))?;
+			let timeline_cf_handle = db
+				.cf_handle(cf::TRANSACTION_TIMELINE)
+				.ok_or_else(|| Error::msg("CF handle not found"))?;
 			let lookups_cf_handle = db
 				.cf_handle(cf::TRANSACTION_LOOKUPS)
 				.ok_or_else(|| Error::msg("CF handle not found"))?;
 			let mut read_options = ReadOptions::default();
 			read_options
-				.set_iterate_upper_bound(construct_timestamp_threshold_key(timestamp_threshold)?);
-			let mut iter = db.iterator_cf_opt(&cf_handle, read_options, IteratorMode::Start);
+				.set_iterate_upper_bound(construct_timeline_threshold_key(timestamp_threshold));
+			let mut iter =
+				db.iterator_cf_opt(&timeline_cf_handle, read_options, IteratorMode::Start);
 			let mut transaction_count = 0;
 			let mut batch = WriteBatch::default();
 
-			if let Some(res) = iter.next() {
-				let (key, value) = res?;
+			while let Some(res) = iter.next() {
+				let (timeline_key, key) = res?;
+
+				batch.delete_cf(&timeline_cf_handle, &timeline_key);
+
+				let value = match db.get_cf(&cf_handle, &key)? {
+					Some(value) => value,
+					None => {
+						// The transaction has been removed
+						continue;
+					}
+				};
 				let transaction: MempoolTransaction = bcs::from_bytes(&value)?;
 
 				batch.delete_cf(&cf_handle, &key);
