@@ -6,6 +6,6 @@ ansible-playbook --inventory <your-inventory> \
     --user ubuntu  \
     --extra-vars "movement_container_version=${CONTAINER_REV}" \
     --extra-vars "user=ubuntu" \
-    docs/movement-node/run/ansible/follower-node/movement-full-follower.yml \
+    docs/movement-node/run/ansible/follower-node/mainnet/movement-full-follower.yml \
     --private-key your-private-key.pem
 ```
