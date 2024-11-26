@@ -78,12 +78,6 @@
         owner: "{{ user }}"
         group: "{{ user }}"
 
-    - name: Stop the suzuka-full-node service if running
-      ansible.builtin.systemd:
-        name: suzuka-full-node
-        state: stopped
-        enabled: no
-
     - name: Kill all running Docker containers
       ansible.builtin.shell: |
         docker ps -q | xargs -r docker stop
