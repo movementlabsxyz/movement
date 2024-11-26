@@ -450,8 +450,7 @@ where
 		&self,
 		request: tonic::Request<grpc::BatchWriteRequest>,
 	) -> std::result::Result<tonic::Response<grpc::BatchWriteResponse>, tonic::Status> {
-		let blobs_for_intent = request.into_inner().blobs;
-		let blobs_for_submission = blobs_for_intent.clone();
+		let blobs_for_submission = request.into_inner().blobs;
 		let height: u64 = self
 			.pass_through
 			.default_client
@@ -461,16 +460,9 @@ where
 			.height()
 			.into();
 
-		let intents: Vec<grpc::BlobResponse> = blobs_for_intent
-			.into_iter()
-			.map(|blob| {
-				Self::make_sequenced_blob_intent(blob.data, height)
-					.map_err(|e| tonic::Status::internal(e.to_string()))
-			})
-			.collect::<Result<Vec<grpc::BlobResponse>, tonic::Status>>()?;
-
 		// make transactions from the blobs
 		let mut transactions = Vec::new();
+		let mut intents = Vec::new();
 		for blob in blobs_for_submission {
 			let transaction: Transaction = serde_json::from_slice(&blob.data)
 				.map_err(|e| tonic::Status::internal(e.to_string()))?;
@@ -481,6 +473,10 @@ where
 					match prevalidator.prevalidate(transaction).await {
 						Ok(prevalidated) => {
 							transactions.push(prevalidated.into_inner());
+							intents.push(
+								Self::make_sequenced_blob_intent(blob.data, height)
+									.map_err(|e| tonic::Status::internal(e.to_string()))?,
+							);
 						}
 						Err(e) => {
 							match e {

@@ -64,6 +64,9 @@ mcr-settlement-client = { workspace = true }
 movement-config = { workspace = true }
 dot-movement = { workspace = true }
 tonic = { workspace = true }
+movement-da-light-node-client = { workspace = true }
+movement-da-light-node-proto = { workspace = true, features = ["client"]}
+movement-types = { workspace = true }
 
 [dev-dependencies]
 reqwest = { workspace = true }
