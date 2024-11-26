@@ -66,6 +66,12 @@ processes:
   setup-follower-2:
     environment:
       # use invalid eth hostnames to check that non-settling follower doesn't have build issues. 
+      - "ETH_RPC_CONNECTION_PROTOCOL=this"
+      - "ETH_RPC_CONNECTION_HOSTNAME=is"
+      - "ETH_RPC_CONNECTION_PORT=8"
+      - "ETH_WS_CONNECTION_PROTOCOL=joke"
+      - "ETH_WS_CONNECTION_HOSTNAME=about"
+      - "ETH_WS_CONNECTION_PORT=0"
       - "MAYBE_RUN_LOCAL=true"
       - "MOVEMENT_DA_LIGHT_NODE_HTTP1=false"
     command: |
