@@ -2,6 +2,7 @@ use alloy::{
 	network::EthereumWallet, providers::ProviderBuilder, signers::local::PrivateKeySigner,
 };
 use alloy_primitives::Address;
+use alloy_primitives::U256;
 use bridge_config::{common::movement::MovementConfig, Config as BridgeConfig};
 use bridge_service::chains::ethereum::{
 	types::{EthAddress, MockMOVEToken, NativeBridgeContract},
@@ -51,7 +52,7 @@ pub async fn setup_local_ethereum(config: &mut BridgeConfig) -> Result<(), anyho
 		deploy_move_token_contract(signer_private_key.clone(), &rpc_url).await;
 	config.eth.eth_move_token_contract = move_token_contract.to_string();
 
-	initialize_eth_contracts(
+	config.eth.eth_native_contract = initialize_eth_contracts(
 		signer_private_key.clone(),
 		&rpc_url,
 		&config.eth.eth_native_contract,
@@ -60,7 +61,8 @@ pub async fn setup_local_ethereum(config: &mut BridgeConfig) -> Result<(), anyho
 		config.eth.gas_limit,
 		config.eth.transaction_send_retries,
 	)
-	.await?;
+	.await?
+	.to_string();
 	Ok(())
 }
 
@@ -100,15 +102,18 @@ async fn deploy_move_token_contract(
 	move_token.address().to_owned()
 }
 
+use ethabi::{Contract, Token};
+use serde_json::{from_str, Value};
+
 async fn initialize_eth_contracts(
 	signer_private_key: PrivateKeySigner,
 	rpc_url: &str,
-	initiator_contract_address: &str,
+	native_bridge_contract_address: &str,
 	move_token: EthAddress,
 	owner: EthAddress,
 	gas_limit: u64,
 	transaction_send_retries: u32,
-) -> Result<(), anyhow::Error> {
+) -> Result<Address, anyhow::Error> {
 	tracing::info!("Setup Eth initialize_initiator_contract.");
 	let signer_address = signer_private_key.address();
 
@@ -118,6 +123,7 @@ async fn initialize_eth_contracts(
 		.on_builtin(rpc_url)
 		.await
 		.expect("Error during provider creation");
+	let native_bridge_contract_address: Address = native_bridge_contract_address.parse()?;
 
 	// Initialize the MockMOVEToken contract with the initiator address as the initial fund recipient
 	let mock_move_token = MockMOVEToken::new(*move_token, &rpc_provider);
@@ -132,23 +138,57 @@ async fn initialize_eth_contracts(
 	)
 	.await;
 
-	let native_contract =
-		NativeBridgeContract::new(initiator_contract_address.parse()?, rpc_provider.clone());
+	// create proxy contracts.
+	let proxy_admin = ProxyAdmin::deploy(rpc_provider.clone(), signer_address)
+		.await
+		.expect("Failed to deploy ProxyAdmin");
+	// Deploy TransparentUpgradeableProxy for AtomicBridgeCounterparty
 
-	let call = native_contract
-		.initialize(move_token.0, owner.0, owner.0, owner.0) // admin / relayer / maintener
-		.from(owner.0);
-	send_transaction(
-		call,
+	// Load the ABI from a JSON file or inline JSON
+	//	let contract_abi = include_bytes!("../../service/abis/AtomicBridgeInitiator.json");
+	let path = "/home/pdelrieu/dev/blockchain/movement/github/PR/state_logic/both_framework/movement/protocol-units/bridge/service/abis/NativeBridge.json";
+	let data = std::fs::read_to_string(path).expect("Unable to read ABI file");
+
+	// Parse the JSON data
+	let v: Value = from_str(&data).expect("Unable to parse JSON");
+
+	// Extract the "abi" field
+	let abi = v["abi"].to_string();
+
+	let contract = Contract::load(abi.as_bytes()).expect("Incorrect ABI");
+	let function = contract.function("initialize").expect("Function must exist in ABI");
+	let tokens = vec![
+		Token::Address(ethabi::Address::from_slice(move_token.as_slice())),
+		Token::Address(ethabi::Address::from_slice(signer_address.as_slice())),
+		Token::Address(ethabi::Address::from_slice(signer_address.as_slice())),
+		Token::Address(ethabi::Address::from_slice(Address::ZERO.as_slice())),
+	];
+	// Encode the function call
+	let initialize_data = function.encode_input(&tokens).unwrap();
+
+	let upgradeable_proxy = TransparentUpgradeableProxy::deploy(
+		rpc_provider.clone(),           // The provider (same one used for deployment)
+		native_bridge_contract_address, // Address of the contract
+		*proxy_admin.address(),
+		initialize_data.clone().into(),
+	)
+	.await?;
+
+	// Transfer some coin to the native contract (using the proxy address) so that it can complete transfer.
+	let transfer_token_call = mock_move_token
+		.transfer(*upgradeable_proxy.address(), U256::from(10000000000u64) * U256::from(100000u64))
+		.from(signer_address);
+
+	let _ = send_transaction(
+		transfer_token_call,
 		signer_address,
 		&send_transaction_rules(),
 		transaction_send_retries,
 		gas_limit.into(),
 	)
-	.await
-	.expect("Failed to send transaction");
+	.await;
 
-	Ok(())
+	Ok(*upgradeable_proxy.address())
 }
 
 pub fn deploy_local_movement_node(config: &mut MovementConfig) -> Result<(), anyhow::Error> {

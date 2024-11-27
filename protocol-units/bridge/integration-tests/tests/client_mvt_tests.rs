@@ -1,7 +1,6 @@
 use anyhow::Result;
 use aptos_sdk::coin_client::CoinClient;
 use aptos_sdk::types::account_address::AccountAddress;
-use bridge_integration_tests::utils as test_utils;
 use bridge_integration_tests::{MovementToEthCallArgs, TestHarness};
 use bridge_service::chains::movement::event_monitoring::MovementMonitoring;
 use bridge_service::{
@@ -23,7 +22,8 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 	let args = MovementToEthCallArgs::default();
 
 	let test_result = async {
-		test_utils::fund_and_check_balance_framework(&mut mvt_client_harness, 100_000_000_000)
+		mvt_client_harness
+			.fund_signer_and_check_balance_framework(100_000_000_000)
 			.await?;
 
 		{

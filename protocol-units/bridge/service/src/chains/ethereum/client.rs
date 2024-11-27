@@ -169,6 +169,7 @@ impl BridgeClientContract<EthAddress> for EthClient {
 		let call = contract
 			.initiateBridgeTransfer(FixedBytes(recipient_bytes), U256::from(amount.0))
 			.from(self.signer_address);
+
 		let _ = send_transaction(
 			call,
 			self.signer_address,
@@ -236,6 +237,7 @@ impl BridgeRelayerContract<EthAddress> for EthClient {
 			U256::from(amount.0),
 			U256::from(nonce.0),
 		);
+
 		send_transaction(
 			call,
 			self.signer_address,

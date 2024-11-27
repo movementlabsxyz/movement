@@ -1,6 +1,7 @@
 use alloy::primitives::U256;
 use alloy::{primitives::Address, providers::ProviderBuilder, signers::local::PrivateKeySigner};
 use alloy_network::EthereumWallet;
+use aptos_sdk::coin_client::CoinClient;
 use aptos_sdk::{
 	rest_client::{Client, FaucetClient},
 	types::{account_address::AccountAddress, LocalAccount},
@@ -9,15 +10,15 @@ use bridge_config::Config;
 use bridge_service::chains::ethereum::types::MockMOVEToken;
 use bridge_service::chains::ethereum::utils::send_transaction;
 use bridge_service::chains::ethereum::utils::send_transaction_rules;
-use bridge_service::types::Amount;
-use bridge_service::types::BridgeAddress;
-use bridge_service::types::BridgeTransferId;
-use bridge_util::chains::bridge_contracts::BridgeClientContract;
-
 use bridge_service::chains::{
 	ethereum::{client::EthClient, types::AlloyProvider},
 	movement::{client_framework::MovementClientFramework, utils::MovementAddress},
 };
+use bridge_service::types::Amount;
+use bridge_service::types::BridgeAddress;
+use bridge_service::types::BridgeTransferId;
+use bridge_service::types::Nonce;
+use bridge_util::chains::bridge_contracts::BridgeClientContract;
 use godfig::{backend::config_file::ConfigFile, Godfig};
 use rand::{distributions::Alphanumeric, thread_rng, Rng, SeedableRng};
 use std::{
@@ -25,9 +26,8 @@ use std::{
 	str::FromStr,
 	sync::{Arc, RwLock},
 };
+use tiny_keccak::{Hasher, Keccak};
 use url::Url;
-
-pub mod utils;
 
 #[derive(Clone)]
 pub struct EthToMovementCallArgs {
@@ -160,6 +160,25 @@ impl HarnessEthClient {
 		HarnessEthClient::get_recipient_private_key(config).address()
 	}
 
+	pub fn calculated_transfer_bridfe_id(
+		initiator: AccountAddress,
+		recipient: Address,
+		amount: Amount,
+		nonce: Nonce,
+	) -> BridgeTransferId {
+		let mut hasher = Keccak::v256();
+		hasher.update(&initiator.as_slice());
+		hasher.update(&recipient.as_slice());
+		let encoded = ethabi::encode(&[ethabi::Token::Uint(ethabi::Uint::from(amount.0 as u128))]);
+		hasher.update(&encoded);
+		let encoded = ethabi::encode(&[ethabi::Token::Uint(ethabi::Uint::from(nonce.0))]);
+		hasher.update(&encoded);
+		let mut output = [0u8; 32];
+		hasher.finalize(&mut output);
+
+		BridgeTransferId(output)
+	}
+
 	pub async fn initiate_eth_bridge_transfer(
 		&self,
 		config: &Config,
@@ -243,27 +262,6 @@ impl HarnessEthClient {
 		let recipient_address = BridgeAddress(Into::<Vec<u8>>::into(recipient));
 		initiator_client.initiate_bridge_transfer(recipient_address, amount).await?;
 
-		// // Instantiate NativeBridge
-		// let initiator_contract_address = config.eth.eth_initiator_contract.parse()?;
-		// let initiator_contract =
-		// 	NativeBridge::new(initiator_contract_address, &initiator_rpc_provider);
-
-		// let recipient_address = BridgeAddress(Into::<Vec<u8>>::into(recipient));
-		// let recipient_bytes: [u8; 32] =
-		// 	recipient_address.0.try_into().expect("Recipient address must be 32 bytes");
-
-		// let call = initiator_contract
-		// 	.initiateBridgeTransfer(FixedBytes(recipient_bytes), U256::from(amount.0))
-		// 	.from(initiator_address);
-		// let _ = send_transaction(
-		// 	call,
-		// 	initiator_address,
-		// 	&send_transaction_rules(),
-		// 	config.eth.transaction_send_retries,
-		// 	config.eth.gas_limit as u128,
-		// )
-		// .await?;
-
 		Ok(())
 	}
 }
@@ -339,6 +337,28 @@ impl HarnessMvtClient {
 			.expect("Failed to fund account");
 		account
 	}
+
+	pub async fn fund_signer_and_check_balance_framework(
+		&mut self,
+		expected_balance: u64,
+	) -> Result<(), anyhow::Error> {
+		let coin_client = CoinClient::new(&self.rest_client);
+		self.faucet_client
+			.write()
+			.unwrap()
+			.fund(self.signer_address(), expected_balance)
+			.await?;
+
+		let balance = coin_client.get_account_balance(&self.signer_address()).await?;
+		assert!(
+			balance >= expected_balance,
+			"Expected Movement Client to have at least {}, but found {}",
+			expected_balance,
+			balance
+		);
+
+		Ok(())
+	}
 }
 
 pub struct TestHarness;
@@ -376,5 +396,14 @@ impl TestHarness {
 		let config = TestHarness::read_bridge_config().await?;
 		let test_harness = HarnessEthClient::build(&config).await;
 		Ok((test_harness, config))
+	}
+
+	// Get a different nonce for every test
+	pub fn create_nonce() -> Nonce {
+		let start = std::time::SystemTime::now();
+		let duration_since_epoch =
+			start.duration_since(std::time::UNIX_EPOCH).expect("Time went backwards");
+		let timestamp_seconds = duration_since_epoch.as_millis();
+		Nonce(timestamp_seconds)
 	}
 }
