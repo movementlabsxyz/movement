@@ -19,9 +19,9 @@ use tokio_stream::StreamExt;
 pub use bridge_util::types;
 
 mod actions;
-//pub mod chains;
-//pub mod grpc;
-//pub mod rest;
+pub mod chains;
+pub mod grpc;
+pub mod rest;
 
 #[derive(Debug)]
 struct HeathCheckStatus {

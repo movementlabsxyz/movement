@@ -23,7 +23,7 @@ use aptos_sdk::{
 };
 use bridge_util::{
 	chains::bridge_contracts::BridgeContractError,
-	types::{AddressError, BridgeAddress, HashLockPreImage},
+	types::{AddressError, BridgeAddress},
 };
 use derive_new::new;
 use rand::{rngs::StdRng, Rng, RngCore, SeedableRng};
@@ -127,26 +127,6 @@ impl TryFrom<&str> for MovementAddress {
 		let s = s.trim_start_matches("0x");
 		let bytes = hex::decode(s).map_err(|_| AddressError::InvalidHexString)?;
 		bytes.try_into()
-	}
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]
-pub struct MovementHash(pub [u8; 32]);
-
-impl MovementHash {
-	pub fn random() -> Self {
-		let mut rng = TestRng::seed_from_u64(0);
-		let mut hash = [0u8; 32];
-		rng.fill_bytes(&mut hash);
-		Self(hash)
-	}
-}
-
-impl From<HashLockPreImage> for MovementHash {
-	fn from(preimage: HashLockPreImage) -> Self {
-		let mut hash = [0u8; 32];
-		hash.copy_from_slice(&preimage.0);
-		Self(hash)
 	}
 }
 
@@ -278,8 +258,12 @@ pub fn serialize_vec<T: serde::Serialize + ?Sized>(
 	bcs::to_bytes(value).map_err(|_| BridgeContractError::SerializationError)
 }
 
-pub fn serialize_u64_initiator(value: &u64) -> Result<Vec<u8>, BridgeContractError> {
-	bcs::to_bytes(value).map_err(|_| BridgeContractError::SerializationError)
+pub fn serialize_u64_initiator(value: u64) -> Result<Vec<u8>, BridgeContractError> {
+	bcs::to_bytes(&value).map_err(|_| BridgeContractError::SerializationError)
+}
+
+pub fn serialize_u128_initiator(value: u128) -> Result<Vec<u8>, BridgeContractError> {
+	bcs::to_bytes(&value).map_err(|_| BridgeContractError::SerializationError)
 }
 
 pub fn serialize_address_initiator(
