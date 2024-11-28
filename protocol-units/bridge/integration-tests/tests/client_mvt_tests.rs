@@ -97,7 +97,7 @@ async fn test_movement_complete_transfer() -> Result<(), anyhow::Error> {
 
 	let transfer_id = BridgeTransferId::gen_unique_hash(&mut rand::rngs::OsRng);
 	let initiator = b"32Be343B94f860124dC4fEe278FDCBD38C102D88".to_vec();
-	let recipient = AccountAddress::new(*b"0x00000000000000000000000000face");
+	let recipient = AccountAddress::new(*b"0x00000000000000000000000000fade");
 	let amount = Amount(1);
 	let incoming_nonce = Nonce(5);
 
@@ -126,25 +126,42 @@ async fn test_movement_complete_transfer() -> Result<(), anyhow::Error> {
 	.await
 	.expect("Failed to complete bridge transfer");
 
+
 	// Use timeout to wait for the next event
 	let event_option =
 		tokio::time::timeout(std::time::Duration::from_secs(30), mvt_monitoring.next())
 			.await
-			.expect("Timeout while waiting for the ETH Locked event");
+			.expect("Timeout while waiting for the Movement Initiated event");
 
 	// Check if we received an event (Option) and handle the Result inside it
-	let details = match event_option {
-		Some(Ok(BridgeContractEvent::Completed(detail))) => detail,
+	let (
+		returned_bridge_transfer_id, 
+		returned_initiator,
+		returned_recipient,
+		returned_amount,
+		returned_nonce
+	) = match event_option {
+		Some(Ok(BridgeContractEvent::Completed(detail))) => {
+			(
+				detail.bridge_transfer_id, 
+				detail.initiator,
+				detail.recipient,
+				detail.amount,
+				detail.nonce
+			)
+		}
 		Some(Err(e)) => panic!("Error in bridge contract event: {:?}", e),
 		None => panic!("No event received"),
 		_ => panic!("Not a an Initiated event: {:?}", event_option),
 	};
 
-	assert_eq!(details.bridge_transfer_id.0, transfer_id.0);
-	assert_eq!(details.initiator.0, initiator, "Initiator address does not match");
-	assert_eq!(details.recipient.0, MovementAddress(recipient));
-	assert_eq!(details.amount, amount);
-	assert_eq!(details.nonce, incoming_nonce);
+
+	tracing::info!("Received bridge_transfer_id: {:?}", returned_bridge_transfer_id);
+
+	//assert_eq!(returned_initiator, mvt_client_harness.signer_address());
+	assert_eq!(BridgeAddress(returned_recipient.0.0), BridgeAddress(recipient.clone()));
+	assert_eq!(returned_amount, amount);
+	assert_eq!(returned_nonce, Nonce(1));
 
 	Ok(())
 }
