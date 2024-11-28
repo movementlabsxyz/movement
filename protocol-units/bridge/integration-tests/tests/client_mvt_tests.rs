@@ -1,6 +1,8 @@
+use alloy_primitives::keccak256;
 use anyhow::Result;
 use aptos_sdk::coin_client::CoinClient;
 use aptos_sdk::types::account_address::AccountAddress;
+use bcs::to_bytes;
 use bridge_integration_tests::{MovementToEthCallArgs, TestHarness};
 use bridge_service::chains::movement::event_monitoring::MovementMonitoring;
 use bridge_service::{
@@ -95,11 +97,26 @@ async fn test_movement_complete_transfer() -> Result<(), anyhow::Error> {
 	let mut mvt_monitoring =
 		MovementMonitoring::build(&config.movement, mvt_health_rx).await.unwrap();
 
-	let transfer_id = BridgeTransferId::gen_unique_hash(&mut rand::rngs::OsRng);
 	let initiator = b"32Be343B94f860124dC4fEe278FDCBD38C102D88".to_vec();
 	let recipient = AccountAddress::new(*b"0x00000000000000000000000000fade");
 	let amount = Amount(1);
 	let incoming_nonce = Nonce(5);
+
+	// Serialize each component into BCS bytes
+	let initiator_bytes = to_bytes(&initiator).expect("Failed to serialize initiator");
+	let recipient_bytes = to_bytes(&recipient).expect("Failed to serialize recipient");
+	let amount_bytes = to_bytes(&amount.0).expect("Failed to serialize amount");
+	let nonce_bytes = to_bytes(&incoming_nonce.0).expect("Failed to serialize nonce");
+
+	// Concatenate the serialized bytes
+	let mut combined_bytes = Vec::new();
+	combined_bytes.extend_from_slice(&initiator_bytes);
+	combined_bytes.extend_from_slice(&recipient_bytes);
+	combined_bytes.extend_from_slice(&amount_bytes);
+	combined_bytes.extend_from_slice(&nonce_bytes);
+
+	// Compute the Keccak-256 hash of the combined bytes
+	let bridge_transfer_id = keccak256(combined_bytes);
 
 	let coin_client = CoinClient::new(&mvt_client_harness.rest_client);
 	let movement_client_signer = mvt_client_harness.movement_client.signer();
@@ -117,7 +134,7 @@ async fn test_movement_complete_transfer() -> Result<(), anyhow::Error> {
 
 	BridgeRelayerContract::complete_bridge_transfer(
 		&mut mvt_client_harness.movement_client,
-		transfer_id,
+		BridgeTransferId(bridge_transfer_id.into()),
 		BridgeAddress(initiator.clone()),
 		BridgeAddress(MovementAddress(recipient)),
 		amount,
