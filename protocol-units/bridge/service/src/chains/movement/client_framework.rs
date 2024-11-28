@@ -19,7 +19,7 @@ use bridge_util::{
 use hex;
 use rand::prelude::*;
 use std::{path::Path, str::FromStr, sync::Arc};
-use tracing::debug;
+use tracing::{debug, info};
 use url::Url;
 
 pub const FRAMEWORK_ADDRESS: AccountAddress = AccountAddress::new([
@@ -89,7 +89,7 @@ impl BridgeClientContract<MovementAddress> for MovementClientFramework {
 		recipient: BridgeAddress<Vec<u8>>,
 		amount: Amount,
 	) -> BridgeContractResult<()> {
-		debug!("Amount value: {:?}", amount);
+		tracing::info!("Amount value: {:?}", amount);
 
 		let args = vec![
 			utils::serialize_vec_initiator(&recipient.0)?,

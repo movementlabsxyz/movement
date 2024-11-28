@@ -219,7 +219,7 @@ async fn pool_contract(
 	timeout_sec: u64,
 ) -> BridgeContractResult<Vec<(BridgeContractEvent<MovementAddress>, u64)>> {
 	let struct_tag = format!(
-		"{}::atomic_bridge_initiator::BridgeInitiatorEvents",
+		"{}::native_bridge::BridgeEvents",
 		framework_address.to_string()
 	);
 	// Get initiated events
