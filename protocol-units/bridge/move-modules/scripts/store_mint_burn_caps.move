@@ -5,7 +5,7 @@ script {
 
     fun store_mint_burn_caps(core_resources: &signer) {
         let framework_signer = aptos_governance::get_signer_testnet_only(core_resources, @aptos_framework);
-        let (mint, burn) = transaction_fee::copy_capabilities_for_bridge(&framework_signer);
+        let (mint, burn) = transaction_fee::copy_capabilities_for_native_bridge(&framework_signer);
 
         native_bridge_core::store_aptos_coin_mint_cap(&framework_signer, mint);
         native_bridge_core::store_aptos_coin_burn_cap(&framework_signer, burn);
