@@ -13,6 +13,7 @@ use std::io::BufRead;
 use std::{
 	io::Write,
 	process::{Command, Stdio},
+	env
 };
 
 // Proxy contract to be able to call bridge contract.
@@ -146,7 +147,8 @@ async fn initialize_eth_contracts(
 
 	// Load the ABI from a JSON file or inline JSON
 	//	let contract_abi = include_bytes!("../../service/abis/AtomicBridgeInitiator.json");
-	let path = "/home/pdelrieu/dev/blockchain/movement/github/PR/state_logic/both_framework/movement/protocol-units/bridge/service/abis/NativeBridge.json";
+
+	let path = "protocol-units/bridge/service/abis/NativeBridge.json";
 	let data = std::fs::read_to_string(path).expect("Unable to read ABI file");
 
 	// Parse the JSON data
@@ -320,12 +322,12 @@ pub fn deploy_on_movement_framework(config: &mut MovementConfig) -> Result<(), a
 		);
 	}
 
-	let update_bridge_operator_output = Command::new("movement")
+	let update_bridge_relayer_output = Command::new("movement")
 			.args(&[
 				"move",
 				"run-script",
 				"--compiled-script-path",
-				"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/update_bridge_operator.mv",
+				"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/update_bridge_relayer.mv",
 				"--args",
 				"address:0xf90391c81027f03cdea491ed8b36ffaced26b6df208a9b569e5baf2590eb9b16",
 				"--profile",
@@ -336,16 +338,16 @@ pub fn deploy_on_movement_framework(config: &mut MovementConfig) -> Result<(), a
 			.stderr(Stdio::piped())
 			.output()?;
 
-	if !update_bridge_operator_output.stdout.is_empty() {
+	if !update_bridge_relayer_output.stdout.is_empty() {
 		println!(
-			"run-script update_bridge_operatorstdout: {}",
-			String::from_utf8_lossy(&update_bridge_operator_output.stdout)
+			"run-script update_bridge_relayer stdout: {}",
+			String::from_utf8_lossy(&update_bridge_relayer_output.stdout)
 		);
 	}
-	if !update_bridge_operator_output.stderr.is_empty() {
+	if !update_bridge_relayer_output.stderr.is_empty() {
 		eprintln!(
-			"run-script update_bridge_operator supdate_bridge_operator tderr: {}",
-			String::from_utf8_lossy(&update_bridge_operator_output.stderr)
+			"run-script update_bridge_relayer update_bridge_relayer stderr: {}",
+			String::from_utf8_lossy(&update_bridge_relayer_output.stderr)
 		);
 	}
 
@@ -368,13 +370,13 @@ pub fn deploy_on_movement_framework(config: &mut MovementConfig) -> Result<(), a
 	if !set_initiator_time_lock_script_output.stdout.is_empty() {
 		println!(
 			"run-script set_initiator_time_lock_duration stdout: {}",
-			String::from_utf8_lossy(&update_bridge_operator_output.stdout)
+			String::from_utf8_lossy(&update_bridge_relayer_output.stdout)
 		);
 	}
 	if !set_initiator_time_lock_script_output.stderr.is_empty() {
 		eprintln!(
 			"run-script set_initiator_time_lock_duration stderr: {}",
-			String::from_utf8_lossy(&update_bridge_operator_output.stderr)
+			String::from_utf8_lossy(&update_bridge_relayer_output.stderr)
 		);
 	}
 
@@ -397,13 +399,13 @@ pub fn deploy_on_movement_framework(config: &mut MovementConfig) -> Result<(), a
 	if !set_counterparty_time_lock_script_output.stdout.is_empty() {
 		println!(
 			"run-script set_counterparty_time_lock_duration stdout: {}",
-			String::from_utf8_lossy(&update_bridge_operator_output.stdout)
+			String::from_utf8_lossy(&update_bridge_relayer_output.stdout)
 		);
 	}
 	if !set_counterparty_time_lock_script_output.stderr.is_empty() {
 		eprintln!(
 			"run-script set_counterparty_time_lock_duration stderr: {}",
-			String::from_utf8_lossy(&update_bridge_operator_output.stderr)
+			String::from_utf8_lossy(&update_bridge_relayer_output.stderr)
 		);
 	}
 
