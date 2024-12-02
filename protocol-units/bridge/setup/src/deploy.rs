@@ -147,8 +147,9 @@ async fn initialize_eth_contracts(
 
 	// Load the ABI from a JSON file or inline JSON
 	//	let contract_abi = include_bytes!("../../service/abis/AtomicBridgeInitiator.json");
-
-	let path = "protocol-units/bridge/service/abis/NativeBridge.json";
+	let path = std::env::current_dir()
+		.unwrap() // unwrap ok current dir set during setup start.
+		.join("protocol-units/bridge/service/abis/NativeBridge.json");
 	let data = std::fs::read_to_string(path).expect("Unable to read ABI file");
 
 	// Parse the JSON data

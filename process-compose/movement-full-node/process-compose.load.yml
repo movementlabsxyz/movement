@@ -1,0 +1,16 @@
+version: "3"
+
+environment:
+
+processes:
+
+  movement-tests-loadtests:
+    command: |
+      LOADTEST_NUMBER_SCENARIO=1 LOADTEST_NUMBER_SCENARIO_PER_CLIENT=1 cargo run -p movement-tests --bin basic_alice_bob
+    depends_on:
+      movement-full-node:
+        condition: process_healthy
+      movement-faucet:
+        condition: process_healthy
+    availability:
+      exit_on_end: true
