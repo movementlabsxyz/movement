@@ -1,19 +1,12 @@
 use alloy::{
 	network::EthereumWallet, providers::ProviderBuilder, signers::local::PrivateKeySigner,
 };
-use alloy_primitives::{Address, U256};
-use bridge_config::{
-	common::{eth::EthConfig, movement::MovementConfig},
-	Config as BridgeConfig,
-};
-use bridge_service::{
-	chains::ethereum::{
-		types::{
-			AtomicBridgeCounterpartyMOVE, AtomicBridgeInitiatorMOVE, EthAddress, MockMOVEToken,
-		},
-		utils::{send_transaction, send_transaction_rules},
-	},
-	types::TimeLock,
+use alloy_primitives::Address;
+use alloy_primitives::U256;
+use bridge_config::{common::movement::MovementConfig, Config as BridgeConfig};
+use bridge_service::chains::ethereum::{
+	types::{EthAddress, MockMOVEToken, NativeBridgeContract},
+	utils::{send_transaction, send_transaction_rules},
 };
 use hex::ToHex;
 use std::io::BufRead;
@@ -51,36 +44,29 @@ pub async fn setup_local_ethereum(config: &mut BridgeConfig) -> Result<(), anyho
 	let rpc_url = config.eth.eth_rpc_connection_url();
 
 	tracing::info!("Bridge deploy setup_local_ethereum");
-	config.eth.eth_initiator_contract = deploy_eth_initiator_contract(config).await?.to_string();
+	config.eth.eth_native_contract = deploy_eth_native_contract(config).await?.to_string();
 	tracing::info!("Bridge deploy after intiator");
 	tracing::info!("Signer private key: {:?}", signer_private_key.address());
-	config.eth.eth_counterparty_contract =
-		deploy_counterpart_contract(signer_private_key.clone(), &rpc_url)
-			.await
-			.to_string();
 
 	let move_token_contract =
 		deploy_move_token_contract(signer_private_key.clone(), &rpc_url).await;
 	config.eth.eth_move_token_contract = move_token_contract.to_string();
 
-	initialize_eth_contracts(
+	config.eth.eth_native_contract = initialize_eth_contracts(
 		signer_private_key.clone(),
 		&rpc_url,
-		&config.eth.eth_initiator_contract,
-		&config.eth.eth_counterparty_contract,
+		&config.eth.eth_native_contract,
 		EthAddress(move_token_contract),
 		EthAddress(signer_private_key.address()),
-		*TimeLock(config.eth.time_lock_secs),
 		config.eth.gas_limit,
 		config.eth.transaction_send_retries,
 	)
-	.await?;
+	.await?
+	.to_string();
 	Ok(())
 }
 
-async fn deploy_eth_initiator_contract(
-	config: &mut BridgeConfig,
-) -> Result<Address, anyhow::Error> {
+async fn deploy_eth_native_contract(config: &mut BridgeConfig) -> Result<Address, anyhow::Error> {
 	let signer_private_key = config.eth.signer_private_key.parse::<PrivateKeySigner>()?;
 	println!("ICI {:?}", config.eth.eth_rpc_connection_url());
 	let rpc_url = config.eth.eth_rpc_connection_url();
@@ -92,28 +78,11 @@ async fn deploy_eth_initiator_contract(
 		.await
 		.expect("Error during provider creation");
 
-	let contract = AtomicBridgeInitiatorMOVE::deploy(rpc_provider.clone())
+	let contract = NativeBridgeContract::deploy(rpc_provider.clone())
 		.await
 		.expect("Failed to deploy AtomicBridgeInitiatorMOVE");
 	tracing::info!("initiator_contract address: {}", contract.address().to_string());
 	Ok(contract.address().to_owned())
-}
-
-async fn deploy_counterpart_contract(
-	signer_private_key: PrivateKeySigner,
-	rpc_url: &str,
-) -> Address {
-	let rpc_provider = ProviderBuilder::new()
-		.with_recommended_fillers()
-		.wallet(EthereumWallet::from(signer_private_key))
-		.on_builtin(rpc_url)
-		.await
-		.expect("Error during provider creation");
-	let contract = AtomicBridgeCounterpartyMOVE::deploy(rpc_provider.clone())
-		.await
-		.expect("Failed to deploy AtomicBridgeCounterpartyMOVE");
-	tracing::info!("counterparty_contract address: {}", contract.address().to_string());
-	contract.address().to_owned()
 }
 
 async fn deploy_move_token_contract(
@@ -133,18 +102,19 @@ async fn deploy_move_token_contract(
 	move_token.address().to_owned()
 }
 
+use ethabi::{Contract, Token};
+use serde_json::{from_str, Value};
+
 async fn initialize_eth_contracts(
 	signer_private_key: PrivateKeySigner,
 	rpc_url: &str,
-	initiator_contract_address: &str,
-	counterpart_contract_address: &str,
+	native_bridge_contract_address: &str,
 	move_token: EthAddress,
 	owner: EthAddress,
-	timelock: u64,
 	gas_limit: u64,
 	transaction_send_retries: u32,
-) -> Result<(), anyhow::Error> {
-	tracing::info!("Setup Eth initialize_initiator_contract with timelock:{timelock});");
+) -> Result<Address, anyhow::Error> {
+	tracing::info!("Setup Eth initialize_initiator_contract.");
 	let signer_address = signer_private_key.address();
 
 	let rpc_provider = ProviderBuilder::new()
@@ -153,6 +123,7 @@ async fn initialize_eth_contracts(
 		.on_builtin(rpc_url)
 		.await
 		.expect("Error during provider creation");
+	let native_bridge_contract_address: Address = native_bridge_contract_address.parse()?;
 
 	// Initialize the MockMOVEToken contract with the initiator address as the initial fund recipient
 	let mock_move_token = MockMOVEToken::new(*move_token, &rpc_provider);
@@ -167,41 +138,57 @@ async fn initialize_eth_contracts(
 	)
 	.await;
 
-	let initiator_contract =
-		AtomicBridgeInitiatorMOVE::new(initiator_contract_address.parse()?, rpc_provider.clone());
+	// create proxy contracts.
+	let proxy_admin = ProxyAdmin::deploy(rpc_provider.clone(), signer_address)
+		.await
+		.expect("Failed to deploy ProxyAdmin");
+	// Deploy TransparentUpgradeableProxy for AtomicBridgeCounterparty
 
-	let call = initiator_contract
-		.initialize(move_token.0, owner.0, U256::from(timelock), U256::from(1000000))
-		.from(owner.0);
-	send_transaction(
-		call,
+	// Load the ABI from a JSON file or inline JSON
+	//	let contract_abi = include_bytes!("../../service/abis/AtomicBridgeInitiator.json");
+	let path = "/home/pdelrieu/dev/blockchain/movement/github/PR/state_logic/both_framework/movement/protocol-units/bridge/service/abis/NativeBridge.json";
+	let data = std::fs::read_to_string(path).expect("Unable to read ABI file");
+
+	// Parse the JSON data
+	let v: Value = from_str(&data).expect("Unable to parse JSON");
+
+	// Extract the "abi" field
+	let abi = v["abi"].to_string();
+
+	let contract = Contract::load(abi.as_bytes()).expect("Incorrect ABI");
+	let function = contract.function("initialize").expect("Function must exist in ABI");
+	let tokens = vec![
+		Token::Address(ethabi::Address::from_slice(move_token.as_slice())),
+		Token::Address(ethabi::Address::from_slice(signer_address.as_slice())),
+		Token::Address(ethabi::Address::from_slice(signer_address.as_slice())),
+		Token::Address(ethabi::Address::from_slice(Address::ZERO.as_slice())),
+	];
+	// Encode the function call
+	let initialize_data = function.encode_input(&tokens).unwrap();
+
+	let upgradeable_proxy = TransparentUpgradeableProxy::deploy(
+		rpc_provider.clone(),           // The provider (same one used for deployment)
+		native_bridge_contract_address, // Address of the contract
+		*proxy_admin.address(),
+		initialize_data.clone().into(),
+	)
+	.await?;
+
+	// Transfer some coin to the native contract (using the proxy address) so that it can complete transfer.
+	let transfer_token_call = mock_move_token
+		.transfer(*upgradeable_proxy.address(), U256::from(10000000000u64) * U256::from(100000u64))
+		.from(signer_address);
+
+	let _ = send_transaction(
+		transfer_token_call,
 		signer_address,
 		&send_transaction_rules(),
 		transaction_send_retries,
 		gas_limit.into(),
 	)
-	.await
-	.expect("Failed to send transaction");
+	.await;
 
-	let counterpart_contract = AtomicBridgeCounterpartyMOVE::new(
-		counterpart_contract_address.parse()?,
-		rpc_provider.clone(),
-	);
-
-	let call = counterpart_contract
-		.initialize(initiator_contract_address.parse()?, owner.0, U256::from(timelock))
-		.from(owner.0);
-	send_transaction(
-		call,
-		signer_address,
-		&send_transaction_rules(),
-		transaction_send_retries,
-		gas_limit.into(),
-	)
-	.await
-	.expect("Failed to send transaction");
-
-	Ok(())
+	Ok(*upgradeable_proxy.address())
 }
 
 pub fn deploy_local_movement_node(config: &mut MovementConfig) -> Result<(), anyhow::Error> {

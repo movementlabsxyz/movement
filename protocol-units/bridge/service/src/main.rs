@@ -3,7 +3,7 @@ use bridge_config::Config;
 use bridge_grpc::{
 	bridge_server::BridgeServer, health_check_response::ServingStatus, health_server::HealthServer,
 };
-use bridge_indexer_db::client::Client;
+//use bridge_indexer_db::client::Client;
 use bridge_service::{
 	chains::{
 		ethereum::{client::EthClient, event_monitoring::EthMonitoring},
@@ -45,8 +45,10 @@ async fn main() -> Result<()> {
 
 	let (eth_health_tx, eth_health_rx) = tokio::sync::mpsc::channel(10);
 	let one_stream = EthMonitoring::build(&bridge_config.eth, eth_health_rx).await.unwrap();
-	let one_client = EthClient::new(&bridge_config.eth).await.unwrap();
-	let two_client = MovementClientFramework::new(&bridge_config.movement).await.unwrap();
+	let one_client = EthClient::build_with_config(&bridge_config.eth).await.unwrap();
+	let two_client = MovementClientFramework::build_with_config(&bridge_config.movement)
+		.await
+		.unwrap();
 	let (mvt_health_tx, mvt_health_rx) = tokio::sync::mpsc::channel(10);
 	let two_stream =
 		MovementMonitoring::build(&bridge_config.movement, mvt_health_rx).await.unwrap();
@@ -82,16 +84,16 @@ async fn main() -> Result<()> {
 	let rest_jh = tokio::spawn(rest_service_future);
 
 	tracing::info!("Bridge Eth and Movement Inited. Starting bridge loop.");
-	let indexer_db_client = match Client::from_env() {
-		Ok(mut client) => {
-			client.run_migrations()?;
-			Some(client)
-		}
-		Err(e) => {
-			tracing::warn!("Failed to create indexer db client: {e:?}");
-			None
-		}
-	};
+	// let indexer_db_client = match Client::from_bridge_config(&bridge_config) {
+	// 	Ok(mut client) => {
+	// 		client.run_migrations()?;
+	// 		Some(client)
+	// 	}
+	// 	Err(e) => {
+	// 		tracing::warn!("Failed to create indexer db client: {e:?}");
+	// 		None
+	// 	}
+	// };
 
 	let loop_jh = tokio::spawn(async move {
 		bridge_service::run_bridge(
@@ -100,7 +102,7 @@ async fn main() -> Result<()> {
 			two_client,
 			two_stream,
 			health_rx,
-			indexer_db_client,
+			//			indexer_db_client,
 			eth_health_tx,
 			mvt_health_tx,
 		)

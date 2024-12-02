@@ -1,38 +1,24 @@
-use alloy::primitives::{FixedBytes, Uint, U256};
-use alloy::{
-	primitives::{keccak256, Address},
-	providers::ProviderBuilder,
-	signers::local::PrivateKeySigner,
-};
+use alloy::primitives::U256;
+use alloy::{primitives::Address, providers::ProviderBuilder, signers::local::PrivateKeySigner};
 use alloy_network::EthereumWallet;
+use aptos_sdk::coin_client::CoinClient;
 use aptos_sdk::{
-	rest_client::{aptos_api_types::Transaction as AptosTransaction, Client, FaucetClient},
+	rest_client::{Client, FaucetClient},
 	types::{account_address::AccountAddress, LocalAccount},
 };
 use bridge_config::Config;
 use bridge_service::chains::ethereum::types::MockMOVEToken;
-use bridge_service::chains::ethereum::types::{
-	AtomicBridgeCounterpartyMOVE, AtomicBridgeInitiatorMOVE,
-};
 use bridge_service::chains::ethereum::utils::send_transaction;
 use bridge_service::chains::ethereum::utils::send_transaction_rules;
+use bridge_service::chains::{
+	ethereum::{client::EthClient, types::AlloyProvider},
+	movement::{client_framework::MovementClientFramework, utils::MovementAddress},
+};
 use bridge_service::types::Amount;
 use bridge_service::types::BridgeAddress;
-use bridge_service::types::HashLock;
-use bridge_service::{
-	chains::{
-		bridge_contracts::{BridgeContractError, BridgeContractResult},
-		ethereum::{
-			client::EthClient,
-			types::{AlloyProvider, EthAddress, EthHash},
-		},
-		movement::{
-			client_framework::{MovementClientFramework, FRAMEWORK_ADDRESS},
-			utils::{self as movement_utils, MovementAddress, MovementHash},
-		},
-	},
-	types::{BridgeTransferId, HashLockPreImage},
-};
+use bridge_service::types::BridgeTransferId;
+use bridge_service::types::Nonce;
+use bridge_util::chains::bridge_contracts::BridgeClientContract;
 use godfig::{backend::config_file::ConfigFile, Godfig};
 use rand::{distributions::Alphanumeric, thread_rng, Rng, SeedableRng};
 use std::{
@@ -40,17 +26,14 @@ use std::{
 	str::FromStr,
 	sync::{Arc, RwLock},
 };
+use tiny_keccak::{Hasher, Keccak};
 use url::Url;
-
-pub mod utils;
 
 #[derive(Clone)]
 pub struct EthToMovementCallArgs {
 	pub initiator: Vec<u8>,
 	pub recipient: MovementAddress,
-	pub bridge_transfer_id: MovementHash,
-	pub hash_lock: MovementHash,
-	pub time_lock: u64,
+	pub bridge_transfer_id: BridgeTransferId,
 	pub amount: u64,
 }
 
@@ -58,11 +41,8 @@ pub struct EthToMovementCallArgs {
 pub struct MovementToEthCallArgs {
 	pub initiator: MovementAddress,
 	pub recipient: Vec<u8>,
-	pub bridge_transfer_id: EthHash,
-	pub hash_lock: EthHash,
-	pub time_lock: u64,
+	pub bridge_transfer_id: BridgeTransferId,
 	pub amount: u64,
-	pub pre_image: [u8; 32],
 }
 
 impl Default for EthToMovementCallArgs {
@@ -85,14 +65,12 @@ impl Default for EthToMovementCallArgs {
 			// Dummy recipient address
 			recipient: MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face")),
 			// Convert to [u8; 32] with explicit type annotation
-			bridge_transfer_id: MovementHash(
+			bridge_transfer_id: BridgeTransferId(
 				bridge_transfer_id
 					.as_slice()
 					.try_into()
 					.expect("Expected bridge_transfer_id to be 32 bytes"),
 			),
-			hash_lock: MovementHash(*keccak256(b"secret")),
-			time_lock: 3600,
 			amount: 100,
 		}
 	}
@@ -108,22 +86,16 @@ impl Default for MovementToEthCallArgs {
 		let mut bridge_transfer_id = b"00000000000000000000000tra".to_vec();
 		bridge_transfer_id.extend_from_slice(random_suffix.as_bytes());
 
-		// Generate a random 32-byte secret
-		let pre_image: [u8; 32] = thread_rng().gen();
-
 		Self {
 			initiator: MovementAddress(AccountAddress::new(*b"0x000000000000000000000000A55018")),
 			recipient: b"32Be343B94f860124dC4fEe278FDCBD38C102D88".to_vec(),
-			bridge_transfer_id: EthHash(
+			bridge_transfer_id: BridgeTransferId(
 				bridge_transfer_id
 					.as_slice()
 					.try_into()
 					.expect("Expected bridge_transfer_id to be 32 bytes"),
 			),
-			hash_lock: EthHash(*keccak256(&pre_image)), // Hash the secret for the hash lock
-			time_lock: 3600,
 			amount: 100,
-			pre_image, // Store the generated secret in the struct
 		}
 	}
 }
@@ -144,7 +116,9 @@ impl HarnessEthClient {
 			.parse::<PrivateKeySigner>()
 			.expect("Error during parsing signer private key?");
 
-		let eth_client = EthClient::new(&config.eth).await.expect("Failed to create EthClient");
+		let eth_client = EthClient::build_with_config(&config.eth)
+			.await
+			.expect("Failed to create EthClient");
 		HarnessEthClient { eth_client, eth_rpc_url, signer_private_key }
 	}
 
@@ -186,12 +160,30 @@ impl HarnessEthClient {
 		HarnessEthClient::get_recipient_private_key(config).address()
 	}
 
+	pub fn calculated_transfer_bridfe_id(
+		initiator: AccountAddress,
+		recipient: Address,
+		amount: Amount,
+		nonce: Nonce,
+	) -> BridgeTransferId {
+		let mut hasher = Keccak::v256();
+		hasher.update(&initiator.as_slice());
+		hasher.update(&recipient.as_slice());
+		let encoded = ethabi::encode(&[ethabi::Token::Uint(ethabi::Uint::from(amount.0 as u128))]);
+		hasher.update(&encoded);
+		let encoded = ethabi::encode(&[ethabi::Token::Uint(ethabi::Uint::from(nonce.0))]);
+		hasher.update(&encoded);
+		let mut output = [0u8; 32];
+		hasher.finalize(&mut output);
+
+		BridgeTransferId(output)
+	}
+
 	pub async fn initiate_eth_bridge_transfer(
 		&self,
 		config: &Config,
 		initiator_privatekey: PrivateKeySigner,
 		recipient: MovementAddress,
-		hash_lock: HashLock,
 		amount: Amount,
 	) -> Result<(), anyhow::Error> {
 		let initiator_address = initiator_privatekey.address();
@@ -239,20 +231,22 @@ impl HarnessEthClient {
 			.await?;
 		}
 
-		let initiator_rpc_provider = ProviderBuilder::new()
-			.with_recommended_fillers()
-			.wallet(EthereumWallet::from(initiator_privatekey))
-			.on_builtin(&config.eth.eth_rpc_connection_url())
-			.await?;
+		// let initiator_rpc_provider = ProviderBuilder::new()
+		// 	.with_recommended_fillers()
+		// 	.wallet(EthereumWallet::from(initiator_privatekey))
+		// 	.on_builtin(&config.eth.eth_rpc_connection_url())
+		// 	.await?;
+		let mut initiator_client =
+			EthClient::build_with_signer(initiator_privatekey, &config.eth).await?;
 
 		let mock_move_token = MockMOVEToken::new(
 			Address::from_str(&config.eth.eth_move_token_contract)?,
-			&initiator_rpc_provider,
+			&initiator_client.rpc_provider,
 		);
 
 		// Approve the ETH initiator contract to spend Amount of MOVE
 		let approve_call = mock_move_token
-			.approve(Address::from_str(&config.eth.eth_initiator_contract)?, move_value)
+			.approve(Address::from_str(&config.eth.eth_native_contract)?, move_value)
 			.from(initiator_address);
 
 		send_transaction(
@@ -264,30 +258,9 @@ impl HarnessEthClient {
 		)
 		.await?;
 
-		// Instantiate AtomicBridgeInitiatorMOVE
-		let initiator_contract_address = config.eth.eth_initiator_contract.parse()?;
-		let initiator_contract =
-			AtomicBridgeInitiatorMOVE::new(initiator_contract_address, &initiator_rpc_provider);
-
+		//Initiate transfer
 		let recipient_address = BridgeAddress(Into::<Vec<u8>>::into(recipient));
-		let recipient_bytes: [u8; 32] =
-			recipient_address.0.try_into().expect("Recipient address must be 32 bytes");
-
-		let call = initiator_contract
-			.initiateBridgeTransfer(
-				U256::from(amount.0),
-				FixedBytes(recipient_bytes),
-				FixedBytes(hash_lock.0),
-			)
-			.from(initiator_address);
-		let _ = send_transaction(
-			call,
-			initiator_address,
-			&send_transaction_rules(),
-			config.eth.transaction_send_retries,
-			config.eth.gas_limit as u128,
-		)
-		.await?;
+		initiator_client.initiate_bridge_transfer(recipient_address, amount).await?;
 
 		Ok(())
 	}
@@ -313,8 +286,12 @@ impl HarnessMvtClient {
 		LocalAccount::generate(&mut rng)
 	}
 
+	pub fn signer_address(&self) -> AccountAddress {
+		self.movement_client.signer().address()
+	}
+
 	pub async fn build(config: &Config) -> Self {
-		let movement_client = MovementClientFramework::new(&config.movement)
+		let movement_client = MovementClientFramework::build_with_config(&config.movement)
 			.await
 			.expect("Failed to create MovementClient");
 
@@ -332,6 +309,24 @@ impl HarnessMvtClient {
 		HarnessMvtClient { movement_client, rest_client, faucet_client }
 	}
 
+	pub async fn initiate_bridge_transfer_helper_framework(
+		config: &Config,
+		initiator_privatekey: LocalAccount,
+		recipient: Vec<u8>,
+		amount: u64,
+	) -> Result<(), anyhow::Error> {
+		//Create a client with Initiator as signer.
+		let mut movement_client =
+			MovementClientFramework::build_with_signer(initiator_privatekey, &config.movement)
+				.await?;
+
+		movement_client
+			.initiate_bridge_transfer(BridgeAddress(recipient), Amount(amount))
+			.await?;
+
+		Ok(())
+	}
+
 	pub async fn fund_account(&self) -> LocalAccount {
 		let account = LocalAccount::generate(&mut rand::rngs::OsRng);
 		self.faucet_client
@@ -343,77 +338,26 @@ impl HarnessMvtClient {
 		account
 	}
 
-	pub async fn init_set_timelock(&mut self, timelock: u64) -> Result<(), BridgeContractError> {
-		self.movement_client.initiator_set_timelock(timelock).await?;
-		Ok(())
-	}
-
-	pub async fn initiate_bridge_transfer(
+	pub async fn fund_signer_and_check_balance_framework(
 		&mut self,
-		initiator: &LocalAccount,
-		recipient: EthAddress,
-		hash_lock: HashLock,
-		amount: u64,
-	) -> BridgeContractResult<()> {
-		let recipient_bytes: Vec<u8> = recipient.into();
-		let args = vec![
-			movement_utils::serialize_vec_initiator(&recipient_bytes)?,
-			movement_utils::serialize_vec_initiator(&hash_lock.0[..])?,
-			movement_utils::serialize_u64_initiator(&amount)?,
-		];
+		expected_balance: u64,
+	) -> Result<(), anyhow::Error> {
+		let coin_client = CoinClient::new(&self.rest_client);
+		self.faucet_client
+			.write()
+			.unwrap()
+			.fund(self.signer_address(), expected_balance)
+			.await?;
 
-		let payload = movement_utils::make_aptos_payload(
-			FRAMEWORK_ADDRESS,
-			"atomic_bridge_initiator",
-			"initiate_bridge_transfer",
-			Vec::new(),
-			args,
+		let balance = coin_client.get_account_balance(&self.signer_address()).await?;
+		assert!(
+			balance >= expected_balance,
+			"Expected Movement Client to have at least {}, but found {}",
+			expected_balance,
+			balance
 		);
 
-		let _ = movement_utils::send_and_confirm_aptos_transaction(
-			&self.movement_client.rest_client,
-			initiator,
-			payload,
-		)
-		.await
-		.map_err(|_| BridgeContractError::InitiateTransferError)?;
-
 		Ok(())
-	}
-
-	pub async fn counterparty_complete_bridge_transfer(
-		&mut self,
-		recipient_privatekey: LocalAccount,
-		bridge_transfer_id: BridgeTransferId,
-		preimage: HashLockPreImage,
-	) -> BridgeContractResult<AptosTransaction> {
-		let unpadded_preimage = {
-			let mut end = preimage.0.len();
-			while end > 0 && preimage.0[end - 1] == 0 {
-				end -= 1;
-			}
-			&preimage.0[..end]
-		};
-		let args2 = vec![
-			bridge_service::chains::movement::utils::serialize_vec(&bridge_transfer_id.0[..])?,
-			bridge_service::chains::movement::utils::serialize_vec(&unpadded_preimage)?,
-		];
-
-		let payload = bridge_service::chains::movement::utils::make_aptos_payload(
-			FRAMEWORK_ADDRESS,
-			bridge_service::chains::movement::client_framework::COUNTERPARTY_MODULE_NAME,
-			"complete_bridge_transfer",
-			Vec::new(),
-			args2,
-		);
-
-		bridge_service::chains::movement::utils::send_and_confirm_aptos_transaction(
-			&self.rest_client,
-			&recipient_privatekey,
-			payload,
-		)
-		.await
-		.map_err(|_| BridgeContractError::CompleteTransferError)
 	}
 }
 
@@ -452,5 +396,14 @@ impl TestHarness {
 		let config = TestHarness::read_bridge_config().await?;
 		let test_harness = HarnessEthClient::build(&config).await;
 		Ok((test_harness, config))
+	}
+
+	// Get a different nonce for every test
+	pub fn create_nonce() -> Nonce {
+		let start = std::time::SystemTime::now();
+		let duration_since_epoch =
+			start.duration_since(std::time::UNIX_EPOCH).expect("Time went backwards");
+		let timestamp_seconds = duration_since_epoch.as_millis();
+		Nonce(timestamp_seconds)
 	}
 }
