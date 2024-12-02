@@ -13,5 +13,5 @@ else
 fi
 
 echo "Building wait-for-celestia-light-node..."
-cargo build $CARGO_PROFILE_FLAGS -p m1-da-light-node-util --bin wait-for-celestia-light-node
+cargo build $CARGO_PROFILE_FLAGS -p movement-celestia-da-util --bin wait-for-celestia-light-node
 echo "Built wait-for-celestia-light-node!"

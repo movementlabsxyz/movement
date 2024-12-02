@@ -12,10 +12,10 @@ To help guide the relevant code-owners, we maintain the following graph of depen
 ```dot
 digraph TestDependencies {
   "cargo check (workspace)" -> "cargo test (workspace)"
-  "cargo test (workspace)" -> "cicd:suzuka-full-node"
-  "cicd:suzuka-full-node" -> "cicd:suzuka-containers"
+  "cargo test (workspace)" -> "cicd:movement-full-node"
+  "cicd:movement-full-node" -> "cicd:movement-containers"
   "cargo test (workspace)" -> "cicd:bridge"
-  "cicd:mcr" -> "cicd:suzuka-full-node"
+  "cicd:mcr" -> "cicd:movement-full-node"
 }
 ```
 

@@ -34,9 +34,9 @@ processes:
     availability:
       restart: exit_on_failure
 
-  m1-da-light-node:
+  movement-celestia-da-light-node:
     command: |
-      m1-da-light-node
+      movement-celestia-da-light-node
     depends_on:
       celestia-light-node:
         condition: process_healthy

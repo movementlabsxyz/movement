@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -e
+
+echo "Building movement-celestia-da-light-node..."
+cargo build $CARGO_PROFILE_FLAGS -p movement-celestia-da-light-node --features "sequencer"
+echo "Built movement-celestia-da-light-node!"
+
+echo "Building movement-celestia-* runners..."
+cargo build $CARGO_PROFILE_FLAGS -p movement-celestia-da-light-node-runners
+echo "Built movement-celestia-* runners!"
+
+echo "Building movement-full-node..."
+cargo build $CARGO_PROFILE_FLAGS -p movement-full-node
+echo "Built movement-full-node!"
+
+echo "Building movement-faucet-service..."
+cargo build $CARGO_PROFILE_FLAGS -p movement-faucet-service
+echo "Built movement-faucet-service!"
+
+echo "Building movement-full-node-setup..."
+cargo build $CARGO_PROFILE_FLAGS -p movement-full-node-setup
+echo "Built movement-full-node-setup!"
+
+
+echo "Bulding movement-util..."
+cargo build $CARGO_PROFILE_FLAGS -p movement-util
+echo "Built movement-util!"
+cargo build $CARGO_PROFILE_FLAGS -p movement-celestia-da-util --bin wait-for-celestia-light-node
+echo "Built wait-for-celestia-light-node!"

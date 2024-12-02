@@ -1,9 +1,9 @@
-m1-da-light-node RUNTIME FEATURES *ARGS:
-    ./scripts/movement/run m1-da-light-node {{ RUNTIME }} {{ FEATURES }} {{ ARGS }}
+movement-celestia-da-light-node RUNTIME FEATURES *ARGS:
+    ./scripts/movement/run movement-celestia-da-light-node {{ RUNTIME }} {{ FEATURES }} {{ ARGS }}
 monza-full-node RUNTIME FEATURES *ARGS:
     ./scripts/movement/run monza-full-node {{ RUNTIME }} {{ FEATURES }} {{ ARGS }}
-suzuka-full-node RUNTIME FEATURES *ARGS:
-    ./scripts/movement/run suzuka-full-node {{ RUNTIME }} {{ FEATURES }} {{ ARGS }}
+movement-full-node RUNTIME FEATURES *ARGS:
+    ./scripts/movement/run movement-full-node {{ RUNTIME }} {{ FEATURES }} {{ ARGS }}
 mcr-contract-tests: 
     cd ./protocol-units/settlement/mcr/contracts && forge test
 mcr-client RUNTIME FEATURES *ARGS:

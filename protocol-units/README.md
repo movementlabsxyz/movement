@@ -1,6 +1,6 @@
 # `protocol-units`
 We identify the following protocol unit categories:
-- [Data Availability](./da/m1/README.md): Protocol units concerned with enabling the secure submission and ordered retrieval of transaction data to and from a network. Light node clients and servers are members of this category.
+- [Data Availability](./da/celestia/README.md): Protocol units concerned with enabling the secure submission and ordered retrieval of transaction data to and from a network. Light node clients and servers are members of this category.
 - [Mempool](./mempool/README.md): Protocol units concerned with the acceptance and ordering of transactions in a network prior to consensus. Mempool modules are members of this category.
 - [Sequencing](./sequencing/README.md): Protocol units concerned with consensus on the order of transactions in a network. Sequencer node implementations are members of this category.
 - [Bridge](./bridge): Protocol units concerned with cross-blockchain bridging using atomic swaps. The atomic bridge consists of several packages and utilities to bridge from Ethereum to Movement, which can be extended to support any blockchains.
