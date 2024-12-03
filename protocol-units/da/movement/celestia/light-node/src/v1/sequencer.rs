@@ -484,7 +484,7 @@ pub mod block {
 	use movement_types::block::Block;
 
 	/// A wrapped block that can be used with the binpacking heuristic
-	#[derive(Debug)]
+	#[derive(Debug, Clone, PartialEq, Eq)]
 	pub struct WrappedBlock {
 		pub block: Block,
 		pub blob: Blob,
@@ -513,10 +513,11 @@ pub mod block {
 
 	impl Splitable for WrappedBlock {
 		fn split(self, factor: usize) -> Result<Vec<Self>, anyhow::Error> {
+			let namespace = self.blob.namespace;
 			let split_blocks = self.block.split(factor)?;
 			let mut wrapped_blocks = Vec::new();
 			for block in split_blocks {
-				let wrapped_block = WrappedBlock { block, blob: self.blob.clone() };
+				let wrapped_block = WrappedBlock::try_new(block, namespace)?;
 				wrapped_blocks.push(wrapped_block);
 			}
 			Ok(wrapped_blocks)
@@ -526,6 +527,59 @@ pub mod block {
 	impl BinpackingWeighted for WrappedBlock {
 		fn weight(&self) -> usize {
 			self.blob.data.len()
+		}
+	}
+
+	#[cfg(test)]
+	pub mod test {
+
+		use super::*;
+		use movement_types::block;
+		use movement_types::transaction::Transaction;
+
+		#[test]
+		fn test_block_splits() -> Result<(), anyhow::Error> {
+			let transactions = vec![
+				Transaction::new(vec![0; 32], 0, 0),
+				Transaction::new(vec![1; 32], 0, 1),
+				Transaction::new(vec![2; 32], 0, 2),
+				Transaction::new(vec![3; 32], 0, 3),
+			];
+
+			let block = Block::new(
+				block::BlockMetadata::default(),
+				block::Id::test(),
+				transactions.into_iter().collect(),
+			);
+			let wrapped_block = WrappedBlock::try_new(block, Namespace::new(0, &[0])?)?;
+			let original_block = wrapped_block.clone();
+			let split_blocks = wrapped_block.split(2)?;
+			assert_eq!(split_blocks.len(), 2);
+
+			// check that block is not the same as the original block
+			assert_ne!(split_blocks[0], original_block);
+			assert_ne!(split_blocks[1], original_block);
+
+			// check that block matches the expected split
+			let expected_transactions =
+				vec![Transaction::new(vec![0; 32], 0, 0), Transaction::new(vec![1; 32], 0, 1)];
+			let expected_block = Block::new(
+				block::BlockMetadata::default(),
+				block::Id::test(),
+				expected_transactions.into_iter().collect(),
+			);
+			assert_eq!(split_blocks[0].block, expected_block);
+
+			let expected_transactions =
+				vec![Transaction::new(vec![2; 32], 0, 2), Transaction::new(vec![3; 32], 0, 3)];
+			let expected_block = Block::new(
+				block::BlockMetadata::default(),
+				block::Id::test(),
+				expected_transactions.into_iter().collect(),
+			);
+			assert_eq!(split_blocks[1].block, expected_block);
+
+			Ok(())
 		}
 	}
 }
