@@ -32,7 +32,7 @@ fn construct_mempool_transaction_key(transaction: &MempoolTransaction) -> String
 		transaction.transaction.sequence_number(),
 		transaction.transaction.id(),
 	))
-	.unwrap();
+	.unwrap(); // write to String never fails
 	key
 }
 
@@ -41,7 +41,7 @@ fn construct_transaction_timeline_key(transaction: &MempoolTransaction) -> Strin
 	let mut key = String::with_capacity(32 + 1 + 64);
 	// Write key components. The numbers are zero-padded to 32 characters.
 	key.write_fmt(format_args!("{:032}:{}", transaction.timestamp, transaction.transaction.id()))
-		.unwrap();
+		.unwrap(); // write to String never fails
 	key
 }
 
