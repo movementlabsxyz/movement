@@ -8742,168 +8742,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "m1-da-light-node"
-version = "0.0.2"
-dependencies = [
- "anyhow",
- "async-stream",
- "bcs 0.1.4",
- "celestia-rpc",
- "celestia-types",
- "chrono",
- "dot-movement",
- "ecdsa 0.16.9",
- "futures",
- "godfig",
- "hex",
- "k256",
- "m1-da-light-node-grpc",
- "m1-da-light-node-util",
- "m1-da-light-node-verifier",
- "memseq",
- "movement-algs",
- "movement-tracing",
- "movement-types",
- "prost 0.13.3",
- "serde",
- "serde_json",
- "tempfile",
- "tokio",
- "tokio-stream",
- "tonic 0.12.3",
- "tonic-reflection 0.12.3",
- "tracing",
- "zstd 0.13.2",
-]
-
-[[package]]
-name = "m1-da-light-node-client"
-version = "0.0.2"
-dependencies = [
- "anyhow",
- "ecdsa 0.16.9",
- "m1-da-light-node-grpc",
- "movement-types",
- "serde_json",
- "tokio",
- "tokio-stream",
- "tonic 0.12.3",
-]
-
-[[package]]
-name = "m1-da-light-node-grpc"
-version = "0.0.2"
-dependencies = [
- "buildtime",
- "prost 0.13.3",
- "tonic 0.12.3",
- "tonic-build",
-]
-
-[[package]]
-name = "m1-da-light-node-runners"
-version = "0.0.2"
-dependencies = [
- "anyhow",
- "commander",
- "dot-movement",
- "godfig",
- "hex",
- "m1-da-light-node-util",
- "rand 0.7.3",
- "reqwest 0.12.9",
- "serde",
- "serde_json",
- "tempfile",
- "tokio",
- "tokio-stream",
- "tracing",
- "tracing-subscriber 0.3.18",
-]
-
-[[package]]
-name = "m1-da-light-node-setup"
-version = "0.0.2"
-dependencies = [
- "anyhow",
- "async-recursion",
- "celestia-rpc",
- "celestia-types",
- "commander",
- "dot-movement",
- "godfig",
- "hex",
- "m1-da-light-node-util",
- "rand 0.7.3",
- "reqwest 0.12.9",
- "serde",
- "serde_json",
- "tempfile",
- "tokio",
- "tokio-stream",
- "tracing",
- "tracing-subscriber 0.3.18",
-]
-
-[[package]]
-name = "m1-da-light-node-util"
-version = "0.0.2"
-dependencies = [
- "alloy",
- "anyhow",
- "async-stream",
- "bcs 0.1.4",
- "celestia-rpc",
- "celestia-types",
- "dot-movement",
- "ecdsa 0.16.9",
- "godfig",
- "hex",
- "jsonrpsee 0.20.4",
- "k256",
- "m1-da-light-node-grpc",
- "memseq-util",
- "prost 0.13.3",
- "rand 0.8.5",
- "serde",
- "serde_derive",
- "serde_json",
- "tempfile",
- "tokio",
- "tokio-stream",
- "toml 0.8.19",
- "tonic 0.12.3",
- "tracing",
- "tracing-subscriber 0.3.18",
- "zstd 0.13.2",
-]
-
-[[package]]
-name = "m1-da-light-node-verifier"
-version = "0.0.2"
-dependencies = [
- "anyhow",
- "async-stream",
- "celestia-rpc",
- "celestia-types",
- "dot-movement",
- "ecdsa 0.16.9",
- "hex",
- "k256",
- "m1-da-light-node-grpc",
- "m1-da-light-node-setup",
- "m1-da-light-node-util",
- "prost 0.13.3",
- "rand 0.7.3",
- "serde_json",
- "thiserror",
- "tokio",
- "tokio-stream",
- "tonic 0.12.3",
- "tracing",
-]
-
-[[package]]
 name = "maplit"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8946,7 +8784,7 @@ dependencies = [
  "aptos-types",
  "godfig",
  "hex",
- "m1-da-light-node-util",
+ "movement-celestia-da-util",
  "rand 0.7.3",
  "serde",
  "serde_derive",
@@ -10046,11 +9884,294 @@ dependencies = [
 ]
 
 [[package]]
+name = "movement-celestia-da-light-node"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "async-stream",
+ "bcs 0.1.4",
+ "celestia-rpc",
+ "celestia-types",
+ "chrono",
+ "dot-movement",
+ "ecdsa 0.16.9",
+ "futures",
+ "godfig",
+ "hex",
+ "k256",
+ "memseq",
+ "movement-algs",
+ "movement-celestia-da-light-node-verifier",
+ "movement-celestia-da-util",
+ "movement-da-light-node-proto",
+ "movement-tracing",
+ "movement-types",
+ "prost 0.13.3",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "tokio-stream",
+ "tonic 0.12.3",
+ "tonic-reflection 0.12.3",
+ "tracing",
+ "zstd 0.13.2",
+]
+
+[[package]]
+name = "movement-celestia-da-light-node-runners"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "commander",
+ "dot-movement",
+ "godfig",
+ "hex",
+ "movement-celestia-da-util",
+ "rand 0.7.3",
+ "reqwest 0.12.9",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+]
+
+[[package]]
+name = "movement-celestia-da-light-node-setup"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "async-recursion",
+ "celestia-rpc",
+ "celestia-types",
+ "commander",
+ "dot-movement",
+ "godfig",
+ "hex",
+ "movement-celestia-da-util",
+ "rand 0.7.3",
+ "reqwest 0.12.9",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+]
+
+[[package]]
+name = "movement-celestia-da-light-node-tests"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "ecdsa 0.16.9",
+ "movement-da-light-node-proto",
+ "movement-types",
+ "serde_json",
+ "tokio",
+ "tokio-stream",
+ "tonic 0.12.3",
+]
+
+[[package]]
+name = "movement-celestia-da-light-node-verifier"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "async-stream",
+ "celestia-rpc",
+ "celestia-types",
+ "dot-movement",
+ "ecdsa 0.16.9",
+ "hex",
+ "k256",
+ "movement-celestia-da-light-node-setup",
+ "movement-celestia-da-util",
+ "movement-da-light-node-proto",
+ "prost 0.13.3",
+ "rand 0.7.3",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tonic 0.12.3",
+ "tracing",
+]
+
+[[package]]
+name = "movement-celestia-da-util"
+version = "0.0.2"
+dependencies = [
+ "alloy",
+ "anyhow",
+ "async-stream",
+ "bcs 0.1.4",
+ "celestia-rpc",
+ "celestia-types",
+ "dot-movement",
+ "ecdsa 0.16.9",
+ "godfig",
+ "hex",
+ "jsonrpsee 0.20.4",
+ "k256",
+ "memseq-util",
+ "movement-da-light-node-proto",
+ "prost 0.13.3",
+ "rand 0.8.5",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "tokio-stream",
+ "toml 0.8.19",
+ "tonic 0.12.3",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "zstd 0.13.2",
+]
+
+[[package]]
 name = "movement-collections"
 version = "0.0.2"
 dependencies = [
  "anyhow",
  "uuid",
+]
+
+[[package]]
+name = "movement-config"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "dot-movement",
+ "godfig",
+ "maptos-execution-util",
+ "mcr-settlement-client",
+ "mcr-settlement-config",
+ "movement-celestia-da-util",
+ "movement-types",
+ "serde",
+ "serde_derive",
+ "syncup",
+ "tokio",
+ "toml 0.8.19",
+ "tracing",
+]
+
+[[package]]
+name = "movement-da-light-node-proto"
+version = "0.0.2"
+dependencies = [
+ "buildtime",
+ "prost 0.13.3",
+ "tonic 0.12.3",
+ "tonic-build",
+]
+
+[[package]]
+name = "movement-faucet-service"
+version = "2.0.1"
+dependencies = [
+ "anyhow",
+ "aptos-config",
+ "aptos-faucet-core",
+ "aptos-logger",
+ "aptos-sdk",
+ "clap 4.5.21",
+ "dot-movement",
+ "movement-config",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "movement-full-node"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "bcs 0.1.4",
+ "console-subscriber",
+ "dot-movement",
+ "futures",
+ "godfig",
+ "hex",
+ "hyper 1.5.0",
+ "maptos-dof-execution",
+ "mcr-settlement-client",
+ "mcr-settlement-manager",
+ "movement-celestia-da-util",
+ "movement-config",
+ "movement-da-light-node-proto",
+ "movement-rest",
+ "movement-tracing",
+ "movement-types",
+ "prost 0.13.3",
+ "rocksdb",
+ "serde_json",
+ "sha2 0.10.8",
+ "tokio",
+ "tokio-stream",
+ "tonic 0.12.3",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "zstd 0.13.2",
+]
+
+[[package]]
+name = "movement-full-node-setup"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "async-recursion",
+ "celestia-rpc",
+ "celestia-types",
+ "commander",
+ "dot-movement",
+ "futures",
+ "godfig",
+ "hex",
+ "mcr-settlement-config",
+ "mcr-settlement-setup",
+ "movement-celestia-da-light-node-setup",
+ "movement-celestia-da-util",
+ "movement-config",
+ "movement-types",
+ "rand 0.7.3",
+ "serde",
+ "serde_json",
+ "syncup",
+ "tempfile",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+]
+
+[[package]]
+name = "movement-indexer-service"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "clap 4.5.21",
+ "dot-movement",
+ "futures",
+ "maptos-execution-util",
+ "num_cpus",
+ "poem",
+ "processor",
+ "reqwest 0.12.9",
+ "serde_json",
+ "serde_yaml 0.9.34+deprecated",
+ "server-framework",
+ "tempfile",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
 ]
 
 [[package]]
@@ -10063,6 +10184,41 @@ dependencies = [
  "poem",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "movement-tests"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "aptos-protos 1.3.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=903d4b3267024785063fd17d1fb90639e7d55ca8)",
+ "aptos-sdk",
+ "aptos-types",
+ "async-trait",
+ "bcs 0.1.4",
+ "buildtime-helpers",
+ "chrono",
+ "commander",
+ "dot-movement",
+ "futures",
+ "itertools 0.12.1",
+ "maptos-execution-util",
+ "mcr-settlement-client",
+ "movement-config",
+ "movement-tracing",
+ "once_cell",
+ "rand 0.7.3",
+ "rayon",
+ "reqwest 0.12.9",
+ "serde",
+ "serde_json",
+ "serde_yaml 0.9.34+deprecated",
+ "thiserror",
+ "tokio",
+ "tonic 0.12.3",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "url",
 ]
 
 [[package]]
@@ -10086,6 +10242,38 @@ dependencies = [
  "serde_with",
  "sha2 0.10.8",
  "tokio",
+]
+
+[[package]]
+name = "movement-util"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "bcs 0.1.4",
+ "clap 4.5.21",
+ "console-subscriber",
+ "dot-movement",
+ "futures",
+ "godfig",
+ "maptos-dof-execution",
+ "mcr-settlement-client",
+ "mcr-settlement-manager",
+ "movement-celestia-da-util",
+ "movement-config",
+ "movement-da-light-node-proto",
+ "movement-rest",
+ "movement-tracing",
+ "movement-types",
+ "rocksdb",
+ "serde_json",
+ "sha2 0.10.8",
+ "syncup",
+ "tokio",
+ "tokio-stream",
+ "tonic 0.12.3",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "zstd 0.13.2",
 ]
 
 [[package]]
@@ -13762,194 +13950,6 @@ name = "subtle-ng"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "734676eb262c623cec13c3155096e08d1f8f29adce39ba17948b18dad1e54142"
-
-[[package]]
-name = "suzuka-client"
-version = "0.0.2"
-dependencies = [
- "anyhow",
- "aptos-protos 1.3.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=903d4b3267024785063fd17d1fb90639e7d55ca8)",
- "aptos-sdk",
- "aptos-types",
- "async-trait",
- "bcs 0.1.4",
- "buildtime-helpers",
- "chrono",
- "commander",
- "dot-movement",
- "futures",
- "itertools 0.12.1",
- "maptos-execution-util",
- "mcr-settlement-client",
- "movement-tracing",
- "once_cell",
- "rand 0.7.3",
- "rayon",
- "reqwest 0.12.9",
- "serde",
- "serde_json",
- "serde_yaml 0.9.34+deprecated",
- "suzuka-config",
- "thiserror",
- "tokio",
- "tonic 0.12.3",
- "tracing",
- "tracing-subscriber 0.3.18",
- "url",
-]
-
-[[package]]
-name = "suzuka-config"
-version = "0.0.2"
-dependencies = [
- "anyhow",
- "dot-movement",
- "godfig",
- "m1-da-light-node-util",
- "maptos-execution-util",
- "mcr-settlement-client",
- "mcr-settlement-config",
- "movement-types",
- "serde",
- "serde_derive",
- "syncup",
- "tokio",
- "toml 0.8.19",
- "tracing",
-]
-
-[[package]]
-name = "suzuka-faucet-service"
-version = "2.0.1"
-dependencies = [
- "anyhow",
- "aptos-config",
- "aptos-faucet-core",
- "aptos-logger",
- "aptos-sdk",
- "clap 4.5.21",
- "dot-movement",
- "suzuka-config",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "suzuka-full-node"
-version = "0.0.2"
-dependencies = [
- "anyhow",
- "bcs 0.1.4",
- "console-subscriber",
- "dot-movement",
- "futures",
- "godfig",
- "hex",
- "hyper 1.5.0",
- "m1-da-light-node-client",
- "m1-da-light-node-util",
- "maptos-dof-execution",
- "mcr-settlement-client",
- "mcr-settlement-manager",
- "movement-rest",
- "movement-tracing",
- "movement-types",
- "prost 0.13.3",
- "rocksdb",
- "serde_json",
- "sha2 0.10.8",
- "suzuka-config",
- "tokio",
- "tokio-stream",
- "tonic 0.12.3",
- "tracing",
- "tracing-subscriber 0.3.18",
- "zstd 0.13.2",
-]
-
-[[package]]
-name = "suzuka-full-node-setup"
-version = "0.0.2"
-dependencies = [
- "anyhow",
- "async-recursion",
- "celestia-rpc",
- "celestia-types",
- "commander",
- "dot-movement",
- "futures",
- "godfig",
- "hex",
- "m1-da-light-node-setup",
- "m1-da-light-node-util",
- "mcr-settlement-config",
- "mcr-settlement-setup",
- "movement-types",
- "rand 0.7.3",
- "serde",
- "serde_json",
- "suzuka-config",
- "syncup",
- "tempfile",
- "tokio",
- "tokio-stream",
- "tracing",
- "tracing-subscriber 0.3.18",
-]
-
-[[package]]
-name = "suzuka-indexer-service"
-version = "0.0.2"
-dependencies = [
- "anyhow",
- "clap 4.5.21",
- "dot-movement",
- "futures",
- "maptos-execution-util",
- "num_cpus",
- "poem",
- "processor",
- "reqwest 0.12.9",
- "serde_json",
- "serde_yaml 0.9.34+deprecated",
- "server-framework",
- "tempfile",
- "tokio",
- "tracing",
- "tracing-subscriber 0.3.18",
-]
-
-[[package]]
-name = "suzuka-util"
-version = "0.0.2"
-dependencies = [
- "anyhow",
- "bcs 0.1.4",
- "clap 4.5.21",
- "console-subscriber",
- "dot-movement",
- "futures",
- "godfig",
- "m1-da-light-node-client",
- "m1-da-light-node-util",
- "maptos-dof-execution",
- "mcr-settlement-client",
- "mcr-settlement-manager",
- "movement-rest",
- "movement-tracing",
- "movement-types",
- "rocksdb",
- "serde_json",
- "sha2 0.10.8",
- "suzuka-config",
- "syncup",
- "tokio",
- "tokio-stream",
- "tonic 0.12.3",
- "tracing",
- "tracing-subscriber 0.3.18",
- "zstd 0.13.2",
-]
 
 [[package]]
 name = "symbolic-common"

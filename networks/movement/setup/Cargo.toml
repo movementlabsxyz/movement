@@ -1,0 +1,44 @@
+[package]
+name = "movement-full-node-setup"
+version = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+authors = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
+publish = { workspace = true }
+rust-version = { workspace = true }
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+dot-movement = { workspace = true }
+movement-celestia-da-util = { workspace = true }
+movement-celestia-da-light-node-setup = { workspace = true }
+mcr-settlement-setup = { workspace = true }
+mcr-settlement-config = { workspace = true }
+movement-config = { workspace = true }
+
+anyhow = { workspace = true }
+tokio = { workspace = true }
+tokio-stream = { workspace = true }
+serde_json = { workspace = true }
+serde = { workspace = true }
+commander = { workspace = true }
+tracing = { workspace = true }
+rand = { workspace = true }
+hex = { workspace = true }
+celestia-rpc = { workspace = true }
+celestia-types = { workspace = true }
+async-recursion = { workspace = true }
+tracing-subscriber = { workspace = true }
+godfig = { workspace = true }
+syncup = { workspace = true }
+futures = { workspace = true }
+movement-types = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+
+[lints]
+workspace = true

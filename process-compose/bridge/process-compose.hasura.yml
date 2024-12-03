@@ -7,7 +7,7 @@ processes:
       - "POSTGRES_DB_HOST=${POSTGRES_HOST_IP}"
 
     command: |
-      docker compose -f docker/compose/suzuka-indexer/docker-compose.hasura.yml up --force-recreate
+      docker compose -f docker/compose/movement-indexer/docker-compose.hasura.yml up --force-recreate
     env:
       RUST_LOG: info
     depends_on:

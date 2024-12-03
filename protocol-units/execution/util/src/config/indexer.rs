@@ -7,11 +7,11 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Config {
-	/// The URL of the Suzuka node gRPC indexer server
+	/// The URL of the Movement node gRPC indexer server
 	#[serde(default = "default_maptos_indexer_grpc_listen_hostname")]
 	pub maptos_indexer_grpc_listen_hostname: String,
 
-	/// The port of the Suzuka node gRPC indexer server
+	/// The port of the Movement node gRPC indexer server
 	#[serde(default = "default_maptos_indexer_grpc_listen_port")]
 	pub maptos_indexer_grpc_listen_port: u16,
 

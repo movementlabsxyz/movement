@@ -47,7 +47,7 @@ async fn main() -> Result<(), anyhow::Error> {
 		.try_transaction(|config| async move {
 			let mut config = config.unwrap_or(Config::default());
 
-			// Update config with Suzuka node conf if present
+			// Update config with Movement node conf if present
 			if let Ok(maptos_config) = maptos_config {
 				println!("Update bridge config with suzuka node config");
 				config.movement.mvt_rpc_connection_hostname =
