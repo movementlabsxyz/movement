@@ -179,7 +179,7 @@ version = "0.1.47"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "18c5c520273946ecf715c0010b4e3503d7eba9893cd9ce6b7fff5654c4a3c470"
 dependencies = [
- "alloy-primitives 0.8.14",
+ "alloy-primitives 0.8.0",
  "num_enum",
  "strum 0.26.3",
 ]
@@ -255,7 +255,7 @@ dependencies = [
  "alloy-rlp",
  "alloy-serde",
  "c-kzg",
- "derive_more 0.99.18",
+ "derive_more",
  "once_cell",
  "serde",
  "sha2 0.10.8",
@@ -339,7 +339,7 @@ dependencies = [
  "bytes 1.9.0",
  "cfg-if",
  "const-hex",
- "derive_more 0.99.18",
+ "derive_more",
  "hex-literal",
  "itoa",
  "k256",
@@ -353,17 +353,16 @@ dependencies = [
 
 [[package]]
 name = "alloy-primitives"
-version = "0.8.14"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9db948902dfbae96a73c2fbf1f7abec62af034ab883e4c777c3fd29702bd6e2c"
+checksum = "a767e59c86900dd7c3ce3ecef04f3ace5ac9631ee150beb8b7d22f7fa3bbb2d7"
 dependencies = [
  "bytes 1.9.0",
  "cfg-if",
  "const-hex",
- "derive_more 1.0.0",
+ "derive_more",
  "hex-literal",
  "itoa",
- "paste",
  "ruint",
  "tiny-keccak",
 ]
@@ -2625,7 +2624,7 @@ dependencies = [
  "bytes 1.9.0",
  "claims",
  "crossbeam-channel",
- "derive_more 0.99.18",
+ "derive_more",
  "fail",
  "futures",
  "hex",
@@ -4211,7 +4210,7 @@ dependencies = [
  "bridge-util",
  "delegate",
  "derive-new",
- "derive_more 0.99.18",
+ "derive_more",
  "dot-movement",
  "futures",
  "futures-time",
@@ -4269,7 +4268,7 @@ version = "0.0.2"
 dependencies = [
  "alloy",
  "async-trait",
- "derive_more 0.99.18",
+ "derive_more",
  "hex",
  "rand 0.7.3",
  "serde",
@@ -5756,27 +5755,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "derive_more"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a9b99b9cbbe49445b21764dc0625032a89b145a2642e67603e1c936f5458d05"
-dependencies = [
- "derive_more-impl",
-]
-
-[[package]]
-name = "derive_more-impl"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb7330aeadfbe296029522e6c40f315320aba36fc43a5b3632f3795348f3bd22"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.90",
- "unicode-xid",
-]
-
-[[package]]
 name = "deunicode"
 version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5794,7 +5772,7 @@ dependencies = [
  "chrono",
  "diesel_derives",
  "itoa",
- "num-bigint 0.4.6",
+ "num-bigint 0.2.6",
  "num-integer",
  "num-traits",
  "pq-sys",
@@ -8470,7 +8448,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc2f4eb4bc735547cfed7c0a4922cbd04a4655978c09b54f1f7b228750664c34"
 dependencies = [
  "cfg-if",
- "windows-targets 0.52.6",
+ "windows-targets 0.48.5",
 ]
 
 [[package]]
@@ -8857,7 +8835,7 @@ dependencies = [
  "bytes 1.9.0",
  "chrono",
  "clap 4.5.21",
- "derive_more 0.99.18",
+ "derive_more",
  "dirs",
  "dot-movement",
  "fail",
@@ -11423,7 +11401,7 @@ checksum = "e69c569eb0671cc85e65cfb6bd960d0168d24732ff58825227b4d2a10167ba91"
 dependencies = [
  "base64 0.13.1",
  "bytes 1.9.0",
- "derive_more 0.99.18",
+ "derive_more",
  "futures-util",
  "mime",
  "num-traits",
@@ -15290,7 +15268,7 @@ dependencies = [
  "errno",
  "js-sys",
  "libc",
- "rustix 0.38.41",
+ "rustix 0.37.27",
  "wasi 0.11.0+wasi-snapshot-preview1",
  "wasm-bindgen",
  "winapi 0.3.9",
@@ -15625,7 +15603,7 @@ version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf221c93e13a30d793f7645a0e7762c55d169dbb0a49671918a2319d289b10bb"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
