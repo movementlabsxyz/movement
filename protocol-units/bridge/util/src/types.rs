@@ -47,7 +47,7 @@ impl fmt::Display for ChainId {
 	}
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, PartialOrd, Ord, Hash, Deserialize)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, PartialOrd, Ord, Hash, Deserialize, serde::Serialize)]
 pub struct Nonce(pub u128);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Deserialize)]
@@ -129,7 +129,7 @@ where
 	}
 }
 
-#[derive(Deref, DerefMut, Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[derive(Deref, DerefMut, Debug, Clone, Copy, PartialEq, Eq, Deserialize, serde::Serialize)]
 pub struct Amount(pub u64);
 
 impl From<Uint<256, 4>> for Amount {

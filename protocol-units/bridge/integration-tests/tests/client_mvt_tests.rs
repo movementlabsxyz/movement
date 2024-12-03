@@ -15,6 +15,7 @@ use bridge_util::BridgeContractEvent;
 use bridge_util::BridgeRelayerContract;
 use futures::StreamExt;
 use tokio::{self};
+use rand::Rng;
 
 #[tokio::test]
 async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
@@ -79,7 +80,7 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 		assert_eq!(initiator.0 .0, mvt_client_harness.signer_address());
 		assert_eq!(recipient, BridgeAddress(args.recipient.clone()));
 		assert_eq!(amount, Amount(args.amount));
-		assert_eq!(nonce, Nonce(1));
+		assert_eq!(nonce, Nonce(12));
 
 		Ok(())
 	}
@@ -88,8 +89,59 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 	test_result
 }
 
+fn hex_to_bytes(input: Vec<u8>) -> Vec<u8> {
+	let mut result = Vec::new();
+	assert!(input.len() % 2 == 0, "Input length must be even for valid hex");
+
+	let mut i = 0;
+	while i < input.len() {
+		let high_nibble = ascii_hex_to_u8(input[i]);
+		let low_nibble = ascii_hex_to_u8(input[i + 1]);
+		let byte = (high_nibble << 4) | low_nibble;
+		result.push(byte);
+		i += 2;
+	}
+
+	result
+}
+
+fn ascii_hex_to_u8(ch: u8) -> u8 {
+	match ch {
+		b'0'..=b'9' => ch - b'0',
+		b'A'..=b'F' => ch - b'A' + 10,
+		b'a'..=b'f' => ch - b'a' + 10,
+		_ => panic!("Invalid hex character: {}", ch),
+	}
+}
+
+fn normalize_to_32_bytes(value: Vec<u8>) -> Vec<u8> {
+	let mut meaningful = Vec::new();
+	let mut i = 0;
+
+	// Remove trailing zeroes
+	while i < value.len() {
+		if value[i] != 0 {
+			meaningful.push(value[i]);
+		}
+		i += 1;
+	}
+
+	let mut result = Vec::with_capacity(32);
+	let padding_length = 32 - meaningful.len();
+
+	// Pad with zeros on the left
+	for _ in 0..padding_length {
+		result.push(0);
+	}
+
+	// Append the meaningful bytes
+	result.extend_from_slice(&meaningful);
+
+	result
+}
+
 #[tokio::test]
-async fn test_movement_complete_transfer() -> Result<(), anyhow::Error> {
+async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::INFO).try_init();
 	let (mut mvt_client_harness, config) =
 		TestHarness::new_with_movement().await.expect("Bridge config file not set");
@@ -99,21 +151,18 @@ async fn test_movement_complete_transfer() -> Result<(), anyhow::Error> {
 
 	let initiator = b"32Be343B94f860124dC4fEe278FDCBD38C102D88".to_vec();
 	let recipient = AccountAddress::new(*b"0x00000000000000000000000000fade");
-	let amount = Amount(1);
-	let incoming_nonce = Nonce(5);
+	let amount = Amount(100);
 
-	// Serialize each component into BCS bytes
-	let initiator_bytes = to_bytes(&initiator).expect("Failed to serialize initiator");
-	let recipient_bytes = to_bytes(&recipient).expect("Failed to serialize recipient");
-	let amount_bytes = to_bytes(&amount.0).expect("Failed to serialize amount");
-	let nonce_bytes = to_bytes(&incoming_nonce.0).expect("Failed to serialize nonce");
-
-	// Concatenate the serialized bytes
+	let mut rng = rand::thread_rng(); // Create a random number generator
+	let rand: u128 = rng.gen_range(1, 1_000_000); // Specify the range [1, 1,000,000]
+	let incoming_nonce = Nonce(rand); // Create the Nonce with the generated number
 	let mut combined_bytes = Vec::new();
-	combined_bytes.extend_from_slice(&initiator_bytes);
-	combined_bytes.extend_from_slice(&recipient_bytes);
-	combined_bytes.extend_from_slice(&amount_bytes);
-	combined_bytes.extend_from_slice(&nonce_bytes);
+	let initiator_bytes = hex::decode(String::from_utf8(initiator.clone()).expect("Invalid UTF-8 recipient"))
+	.expect("Failed to decode recipient hex");
+	combined_bytes.extend(initiator_bytes);
+	combined_bytes.extend(bcs::to_bytes(&recipient).expect("Failed to serialize recipient"));
+	combined_bytes.extend(normalize_to_32_bytes(bcs::to_bytes(&amount).expect("Failed to serialize amount")));
+	combined_bytes.extend(normalize_to_32_bytes(bcs::to_bytes(&incoming_nonce).expect("Failed to serialize nonce")));
 
 	// Compute the Keccak-256 hash of the combined bytes
 	let bridge_transfer_id = keccak256(combined_bytes);
@@ -178,7 +227,7 @@ async fn test_movement_complete_transfer() -> Result<(), anyhow::Error> {
 	//assert_eq!(returned_initiator, mvt_client_harness.signer_address());
 	assert_eq!(BridgeAddress(returned_recipient.0.0), BridgeAddress(recipient.clone()));
 	assert_eq!(returned_amount, amount);
-	assert_eq!(returned_nonce, Nonce(1));
+	assert_eq!(returned_nonce, incoming_nonce);
 
 	Ok(())
 }
