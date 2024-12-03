@@ -37,7 +37,7 @@ members = [
     "protocol-units/bridge/service",
     "protocol-units/bridge/grpc",
     "protocol-units/bridge/integration-tests",
-    "protocol-units/bridge/indexer-db",
+    #"protocol-units/bridge/indexer-db",
     "protocol-units/bridge/util",
     "protocol-units/settlement/mcr/runner",
     "benches/*",
@@ -107,7 +107,7 @@ godfig = { path = "util/godfig" }
 movement-tracing = { path = "util/tracing" }
 syncup = { path = "protocol-units/syncing/syncup" }
 syncador = { path = "util/syncador" }
-movement-collections = { path = "util/collections"}
+movement-collections = { path = "util/collections" }
 
 # Serialization and Deserialization
 borsh = { version = "0.10" } # todo: internalize jmt and bump
@@ -190,7 +190,7 @@ secp256k1 = { version = "0.27", default-features = false, features = [
 ] }
 
 ## Celestia Dependencies
-celestia-rpc = { git = "https://github.com/movementlabsxyz/lumina", rev = "2d16e6733949f6bf70849eb60c14114e6d8ea63e" } #{ version = "0.7.0" }
+celestia-rpc = { git = "https://github.com/movementlabsxyz/lumina", rev = "2d16e6733949f6bf70849eb60c14114e6d8ea63e" }   #{ version = "0.7.0" }
 celestia-types = { git = "https://github.com/movementlabsxyz/lumina", rev = "2d16e6733949f6bf70849eb60c14114e6d8ea63e" } #{ version = "0.7.0" }
 
 alloy = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2", features = [

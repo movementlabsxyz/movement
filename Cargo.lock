@@ -4151,22 +4151,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bridge-indexer-db"
-version = "0.0.2"
-dependencies = [
- "anyhow",
- "bigdecimal",
- "bridge-config",
- "bridge-util",
- "chrono",
- "diesel",
- "diesel_migrations",
- "hex",
- "serde",
- "tokio",
-]
-
-[[package]]
 name = "bridge-integration-tests"
 version = "0.0.2"
 dependencies = [
