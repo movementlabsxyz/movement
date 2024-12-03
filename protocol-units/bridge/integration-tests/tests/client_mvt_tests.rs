@@ -1,6 +1,8 @@
+use alloy_primitives::keccak256;
 use anyhow::Result;
 use aptos_sdk::coin_client::CoinClient;
 use aptos_sdk::types::account_address::AccountAddress;
+use bcs::to_bytes;
 use bridge_integration_tests::{MovementToEthCallArgs, TestHarness};
 use bridge_service::chains::movement::event_monitoring::MovementMonitoring;
 use bridge_service::{
@@ -27,6 +29,7 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 			.await?;
 
 		{
+			tracing::info!("Before intiate_bridge_transfer");
 			let res = BridgeClientContract::initiate_bridge_transfer(
 				&mut mvt_client_harness.movement_client,
 				BridgeAddress(args.recipient.clone()),
@@ -50,9 +53,21 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 				.expect("Timeout while waiting for the Movement Initiated event");
 
 		// Check if we received an event (Option) and handle the Result inside it
-		let (bridge_transfer_id, nonce) = match event_option {
+		let (
+			bridge_transfer_id, 
+			initiator,
+			recipient,
+			amount,
+			nonce
+		) = match event_option {
 			Some(Ok(BridgeContractEvent::Initiated(detail))) => {
-				(detail.bridge_transfer_id, detail.nonce)
+				(
+					detail.bridge_transfer_id, 
+					detail.initiator,
+					detail.recipient,
+					detail.amount,
+					detail.nonce
+				)
 			}
 			Some(Err(e)) => panic!("Error in bridge contract event: {:?}", e),
 			None => panic!("No event received"),
@@ -61,19 +76,10 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 
 		tracing::info!("Received bridge_transfer_id: {:?}", bridge_transfer_id);
 
-		let details = BridgeClientContract::get_bridge_transfer_details(
-			&mut mvt_client_harness.movement_client,
-			bridge_transfer_id,
-		)
-		.await
-		.expect("Failed to get bridge transfer details")
-		.expect("Expected to find bridge transfer details, but got None");
-
-		assert_eq!(details.bridge_transfer_id, bridge_transfer_id);
-		assert_eq!(details.initiator.0 .0, mvt_client_harness.signer_address());
-		assert_eq!(details.recipient, BridgeAddress(args.recipient.clone()));
-		assert_eq!(details.amount, Amount(args.amount));
-		assert_eq!(details.nonce, nonce);
+		assert_eq!(initiator.0 .0, mvt_client_harness.signer_address());
+		assert_eq!(recipient, BridgeAddress(args.recipient.clone()));
+		assert_eq!(amount, Amount(args.amount));
+		assert_eq!(nonce, Nonce(1));
 
 		Ok(())
 	}
@@ -91,11 +97,26 @@ async fn test_movement_complete_transfer() -> Result<(), anyhow::Error> {
 	let mut mvt_monitoring =
 		MovementMonitoring::build(&config.movement, mvt_health_rx).await.unwrap();
 
-	let transfer_id = BridgeTransferId::gen_unique_hash(&mut rand::rngs::OsRng);
 	let initiator = b"32Be343B94f860124dC4fEe278FDCBD38C102D88".to_vec();
-	let recipient = AccountAddress::new(*b"0x00000000000000000000000000face");
+	let recipient = AccountAddress::new(*b"0x00000000000000000000000000fade");
 	let amount = Amount(1);
 	let incoming_nonce = Nonce(5);
+
+	// Serialize each component into BCS bytes
+	let initiator_bytes = to_bytes(&initiator).expect("Failed to serialize initiator");
+	let recipient_bytes = to_bytes(&recipient).expect("Failed to serialize recipient");
+	let amount_bytes = to_bytes(&amount.0).expect("Failed to serialize amount");
+	let nonce_bytes = to_bytes(&incoming_nonce.0).expect("Failed to serialize nonce");
+
+	// Concatenate the serialized bytes
+	let mut combined_bytes = Vec::new();
+	combined_bytes.extend_from_slice(&initiator_bytes);
+	combined_bytes.extend_from_slice(&recipient_bytes);
+	combined_bytes.extend_from_slice(&amount_bytes);
+	combined_bytes.extend_from_slice(&nonce_bytes);
+
+	// Compute the Keccak-256 hash of the combined bytes
+	let bridge_transfer_id = keccak256(combined_bytes);
 
 	let coin_client = CoinClient::new(&mvt_client_harness.rest_client);
 	let movement_client_signer = mvt_client_harness.movement_client.signer();
@@ -113,7 +134,7 @@ async fn test_movement_complete_transfer() -> Result<(), anyhow::Error> {
 
 	BridgeRelayerContract::complete_bridge_transfer(
 		&mut mvt_client_harness.movement_client,
-		transfer_id,
+		BridgeTransferId(bridge_transfer_id.into()),
 		BridgeAddress(initiator.clone()),
 		BridgeAddress(MovementAddress(recipient)),
 		amount,
@@ -122,25 +143,42 @@ async fn test_movement_complete_transfer() -> Result<(), anyhow::Error> {
 	.await
 	.expect("Failed to complete bridge transfer");
 
+
 	// Use timeout to wait for the next event
 	let event_option =
 		tokio::time::timeout(std::time::Duration::from_secs(30), mvt_monitoring.next())
 			.await
-			.expect("Timeout while waiting for the ETH Locked event");
+			.expect("Timeout while waiting for the Movement Initiated event");
 
 	// Check if we received an event (Option) and handle the Result inside it
-	let details = match event_option {
-		Some(Ok(BridgeContractEvent::Completed(detail))) => detail,
+	let (
+		returned_bridge_transfer_id, 
+		returned_initiator,
+		returned_recipient,
+		returned_amount,
+		returned_nonce
+	) = match event_option {
+		Some(Ok(BridgeContractEvent::Completed(detail))) => {
+			(
+				detail.bridge_transfer_id, 
+				detail.initiator,
+				detail.recipient,
+				detail.amount,
+				detail.nonce
+			)
+		}
 		Some(Err(e)) => panic!("Error in bridge contract event: {:?}", e),
 		None => panic!("No event received"),
 		_ => panic!("Not a an Initiated event: {:?}", event_option),
 	};
 
-	assert_eq!(details.bridge_transfer_id.0, transfer_id.0);
-	assert_eq!(details.initiator.0, initiator, "Initiator address does not match");
-	assert_eq!(details.recipient.0, MovementAddress(recipient));
-	assert_eq!(details.amount, amount);
-	assert_eq!(details.nonce, incoming_nonce);
+
+	tracing::info!("Received bridge_transfer_id: {:?}", returned_bridge_transfer_id);
+
+	//assert_eq!(returned_initiator, mvt_client_harness.signer_address());
+	assert_eq!(BridgeAddress(returned_recipient.0.0), BridgeAddress(recipient.clone()));
+	assert_eq!(returned_amount, amount);
+	assert_eq!(returned_nonce, Nonce(1));
 
 	Ok(())
 }

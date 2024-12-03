@@ -19,7 +19,7 @@ use bridge_util::{
 use hex;
 use rand::prelude::*;
 use std::{path::Path, str::FromStr, sync::Arc};
-use tracing::debug;
+use tracing::{debug, info};
 use url::Url;
 
 pub const FRAMEWORK_ADDRESS: AccountAddress = AccountAddress::new([
@@ -89,7 +89,7 @@ impl BridgeClientContract<MovementAddress> for MovementClientFramework {
 		recipient: BridgeAddress<Vec<u8>>,
 		amount: Amount,
 	) -> BridgeContractResult<()> {
-		debug!("Amount value: {:?}", amount);
+		tracing::info!("Amount value: {:?}", amount);
 
 		let args = vec![
 			utils::serialize_vec_initiator(&recipient.0)?,
@@ -294,8 +294,10 @@ impl BridgeRelayerContract<MovementAddress> for MovementClientFramework {
 			utils::serialize_vec_initiator(&initiator.0)?,
 			utils::serialize_vec_initiator(&recipient.0)?,
 			utils::serialize_u64_initiator(*amount)?,
-			utils::serialize_u128_initiator(nonce.0)?,
+			utils::serialize_u64_initiator(nonce.0.try_into().unwrap())?,
 		];
+
+		info!("The complete_bridge_transfer args are: {:?}", args);
 
 		let payload = utils::make_aptos_payload(
 			FRAMEWORK_ADDRESS,
