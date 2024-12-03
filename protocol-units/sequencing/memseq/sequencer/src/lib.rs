@@ -16,9 +16,11 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 #[derive(Clone)]
 pub struct Memseq<T: MempoolTransactionOperations> {
+	/// The mempool to get transactions from.
 	mempool: T,
 	// this value should not be changed after initialization
 	block_size: u32,
+	/// The id of the parent block.
 	pub parent_block: Arc<RwLock<block::Id>>,
 	// this value should not be changed after initialization
 	building_time_ms: u64,
@@ -46,6 +48,21 @@ impl<T: MempoolTransactionOperations> Memseq<T> {
 
 	pub fn building_time_ms(&self) -> u64 {
 		self.building_time_ms
+	}
+
+	pub async fn parent_block(&self) -> block::Id {
+		*self.parent_block.read().await
+	}
+
+	async fn build_next_block(
+		&self,
+		metadata: block::BlockMetadata,
+		transactions: Vec<Transaction>,
+	) -> Result<Block, anyhow::Error> {
+		let mut parent_block = self.parent_block.write().await;
+		let new_block = Block::new(metadata, *parent_block, BTreeSet::from_iter(transactions));
+		*parent_block = new_block.id();
+		Ok(new_block)
 	}
 }
 
@@ -104,17 +121,8 @@ impl<T: MempoolTransactionOperations> Sequencer for Memseq<T> {
 		if transactions.is_empty() {
 			Ok(None)
 		} else {
-			let new_block = {
-				let parent_block = self.parent_block.read().await.clone();
-				Block::new(Default::default(), parent_block, BTreeSet::from_iter(transactions))
-			};
-
-			// update the parent block
-			{
-				let mut parent_block = self.parent_block.write().await;
-				*parent_block = new_block.id();
-			}
-
+			let new_block =
+				self.build_next_block(block::BlockMetadata::default(), transactions).await?;
 			Ok(Some(new_block))
 		}
 	}
@@ -425,6 +433,27 @@ pub mod test {
 		};
 
 		tokio::try_join!(building_task, waiting_task)?;
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_build_next_block() -> Result<(), anyhow::Error> {
+		let dir = tempdir()?;
+		let path = dir.path().to_path_buf();
+		let memseq = Memseq::try_move_rocks(path, 128, 250)?;
+
+		let transactions = vec![
+			Transaction::new(vec![1, 2, 3], 0, 0),
+			Transaction::new(vec![4, 5, 6], 0, 0),
+			Transaction::new(vec![7, 8, 9], 0, 0),
+		];
+
+		let metadata = block::BlockMetadata::default();
+		let block = memseq.build_next_block(metadata, transactions).await?;
+
+		assert_eq!(block.transactions().len(), 3);
+		assert_eq!(block.id(), memseq.parent_block().await);
 
 		Ok(())
 	}
