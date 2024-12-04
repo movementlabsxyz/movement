@@ -25,7 +25,6 @@ where
 			nonce,
 		} => {
 			let future = async move {
-				tracing::info!("Before client.lock_bridge_transfer");
 				client
 					.complete_bridge_transfer(
 						bridge_transfer_id,
