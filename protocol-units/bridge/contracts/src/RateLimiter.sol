@@ -49,7 +49,7 @@ contract RateLimiter is AccessControlUpgradeable {
 
     function setRateLimiterCoefficients(uint256 numerator, uint256 denominator) external onlyRole(RATE_LIMITER_ADMIN) {
 
-        require(denominator/numerator >= 4, "INSURANCE_FUND_MUST_BE_4X_RATE_LIMITER");
+        require(numerator == 0 || denominator/numerator >= 4, "INSURANCE_FUND_MUST_BE_4X_RATE_LIMITER");
 
         rateLimiterNumerator = numerator;
         rateLimiterDenominator = denominator;

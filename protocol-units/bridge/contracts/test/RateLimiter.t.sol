@@ -71,14 +71,14 @@ contract RateLimiterTest is Test {
                 for (uint256 i = 0; i < numberOfIterations; i++) {
 
                     if (totalTransferred + _perTransfer > periodMax) {
-                        vm.expectRevert();
+                        vm.expectRevert(RateLimiter.OutboundRateLimitExceeded.selector);
                         rateLimiter.rateLimitOutbound(_perTransfer);
                     } else {
                         rateLimiter.rateLimitOutbound(_perTransfer);
                     }
 
                     if (totalTransferred + _perTransfer > periodMax) {
-                        vm.expectRevert();
+                        vm.expectRevert(RateLimiter.InboundRateLimitExceeded.selector);
                         rateLimiter.rateLimitInbound(_perTransfer);
                     } else {
                         rateLimiter.rateLimitInbound(_perTransfer);
@@ -91,6 +91,24 @@ contract RateLimiterTest is Test {
         } else {
             vm.expectRevert("INSURANCE_FUND_MUST_BE_4X_RATE_LIMITER");
             rateLimiter.setRateLimiterCoefficients(_numerator, _denominator);
+        }
+
+    }
+
+    function testShutDownFuzz(uint256 _denominator, uint256 _transferDenominator) public {
+
+        uint256 _transferAmount = 1 ether / ((_transferDenominator % 1000) + 1);
+        _denominator = (_denominator % 1000) + 1;
+
+        vm.prank(rateLimiterOperator);
+        // whatever the denominator is, this should stop all transfers
+        rateLimiter.setRateLimiterCoefficients(0, _denominator);
+
+        if (_transferAmount > 0) {
+            vm.expectRevert(RateLimiter.OutboundRateLimitExceeded.selector);
+            rateLimiter.rateLimitOutbound(_transferAmount);
+            vm.expectRevert(RateLimiter.InboundRateLimitExceeded.selector);
+            rateLimiter.rateLimitInbound(_transferAmount);
         }
 
     }
