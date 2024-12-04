@@ -44,7 +44,8 @@ contract RateLimiter is AccessControlUpgradeable {
         _grantRole(RATE_LIMITER_ADMIN, _counterpartyAddress);
         moveToken = IERC20(_moveToken);
         insuranceFund = _insuranceFund;
-        periodDuration = 1 days;
+        periodDurationVersion = 1;
+        periodDuration[periodDurationVersion] = 1 days;
         rateLimiterNumerator = 1;
         rateLimiterDenominator = 4;
     }
