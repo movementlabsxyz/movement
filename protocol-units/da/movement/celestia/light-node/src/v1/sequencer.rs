@@ -11,6 +11,9 @@ use ecdsa::{
 	hazmat::{DigestPrimitive, SignPrimitive, VerifyPrimitive},
 	SignatureSize,
 };
+use movement_celestia_da_light_node_prevalidator::{
+	aptos::whitelist::Validator, PrevalidatorOperations,
+};
 use std::boxed::Box;
 use std::fmt::Debug;
 use std::path::PathBuf;
@@ -52,6 +55,7 @@ where
 {
 	pub pass_through: LightNodeV1PassThrough<C>,
 	pub memseq: Arc<memseq::Memseq<memseq::RocksdbMempool>>,
+	pub prevalidator: Option<Arc<Validator>>,
 }
 
 impl<C> Debug for LightNodeV1<C>
@@ -92,7 +96,14 @@ where
 		)?);
 		info!("Initialized Memseq with Move Rocks for LightNodeV1 in sequencer mode.");
 
-		Ok(Self { pass_through, memseq })
+		// prevalidator
+		let whitelisted_accounts = config.whitelisted_accounts()?;
+		let prevalidator = match whitelisted_accounts {
+			Some(whitelisted_accounts) => Some(Arc::new(Validator::new(whitelisted_accounts))),
+			None => None,
+		};
+
+		Ok(Self { pass_through, memseq, prevalidator })
 	}
 
 	fn try_service_address(&self) -> Result<String, anyhow::Error> {
@@ -439,8 +450,7 @@ where
 		&self,
 		request: tonic::Request<grpc::BatchWriteRequest>,
 	) -> std::result::Result<tonic::Response<grpc::BatchWriteResponse>, tonic::Status> {
-		let blobs_for_intent = request.into_inner().blobs;
-		let blobs_for_submission = blobs_for_intent.clone();
+		let blobs_for_submission = request.into_inner().blobs;
 		let height: u64 = self
 			.pass_through
 			.default_client
@@ -450,20 +460,46 @@ where
 			.height()
 			.into();
 
-		let intents: Vec<grpc::BlobResponse> = blobs_for_intent
-			.into_iter()
-			.map(|blob| {
-				Self::make_sequenced_blob_intent(blob.data, height)
-					.map_err(|e| tonic::Status::internal(e.to_string()))
-			})
-			.collect::<Result<Vec<grpc::BlobResponse>, tonic::Status>>()?;
-
 		// make transactions from the blobs
 		let mut transactions = Vec::new();
+		let mut intents = Vec::new();
 		for blob in blobs_for_submission {
 			let transaction: Transaction = serde_json::from_slice(&blob.data)
 				.map_err(|e| tonic::Status::internal(e.to_string()))?;
-			transactions.push(transaction);
+
+			match &self.prevalidator {
+				Some(prevalidator) => {
+					// match the prevalidated status, if validation error discard if internal error raise internal error
+					match prevalidator.prevalidate(transaction).await {
+						Ok(prevalidated) => {
+							transactions.push(prevalidated.into_inner());
+							intents.push(
+								Self::make_sequenced_blob_intent(blob.data, height)
+									.map_err(|e| tonic::Status::internal(e.to_string()))?,
+							);
+						}
+						Err(e) => {
+							match e {
+								movement_celestia_da_light_node_prevalidator::Error::Validation(
+									_,
+								) => {
+									// discard the transaction
+									info!(
+										"discarding transaction due to prevalidation error {:?}",
+										e
+									);
+								}
+								movement_celestia_da_light_node_prevalidator::Error::Internal(
+									e,
+								) => {
+									return Err(tonic::Status::internal(e.to_string()));
+								}
+							}
+						}
+					}
+				}
+				None => transactions.push(transaction),
+			}
 		}
 
 		// publish the transactions

@@ -1,4 +1,6 @@
 use crate::MovementFullNodeSetupOperations;
+use aptos_sdk::crypto::ed25519::Ed25519PublicKey;
+use aptos_sdk::types::transaction::authenticator::AuthenticationKey;
 use dot_movement::DotMovement;
 
 // use tracing::debug;
@@ -54,6 +56,24 @@ impl Local {
 			.join(chain_id.to_string())
 			.join(".maptos");
 		config.execution_config.maptos_config.chain.maptos_db_path.replace(db_path);
+
+		// write the maptos signer address to the default signer address whitelist
+		let default_signer_address_whitelist_path =
+			dot_movement.get_path().join("default_signer_address_whitelist");
+
+		let signer_account_address = AuthenticationKey::ed25519(&Ed25519PublicKey::from(
+			&config.execution_config.maptos_config.chain.maptos_private_key,
+		))
+		.account_address();
+
+		std::fs::write(
+			default_signer_address_whitelist_path.clone(),
+			format!(
+				"{}\n{}",
+				signer_account_address.to_hex(),
+				"000000000000000000000000000000000000000000000000000000000a550c18"
+			),
+		)?;
 
 		Ok(config)
 	}
