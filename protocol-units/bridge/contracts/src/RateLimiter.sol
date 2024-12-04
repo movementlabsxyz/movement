@@ -17,7 +17,8 @@ contract RateLimiter is AccessControlUpgradeable {
     uint256 public rateLimiterDenominator;
 
     // the period over which the rate limit is enforced
-    uint256 public periodDuration;
+    mapping(uint256 version => uint256) public periodDuration;
+    uint256 periodDurationVersion;
 
     error OutboundRateLimitExceeded();
     error InboundRateLimitExceeded();
@@ -48,6 +49,15 @@ contract RateLimiter is AccessControlUpgradeable {
         rateLimiterDenominator = 4;
     }
 
+    function setRateLimitPeriodDuration(uint256 _periodDuration) external onlyRole(RATE_LIMITER_ADMIN) {
+        periodDurationVersion++;
+        periodDuration[periodDurationVersion] = _periodDuration;
+    }
+
+    function currentPeriodDuration() public view returns (uint256) {
+        return periodDuration[periodDurationVersion];
+    }
+
     function setRateLimiterCoefficients(uint256 numerator, uint256 denominator) external onlyRole(RATE_LIMITER_ADMIN) {
 
         require(numerator == 0 || denominator/numerator >= 4, RateLimitCoefficientTooLow());
@@ -57,14 +67,14 @@ contract RateLimiter is AccessControlUpgradeable {
     }
 
     function rateLimitOutbound(uint256 amount) external onlyRole(ATOMIC_BRIDGE) {
-        uint256 period = block.timestamp / periodDuration;
+        uint256 period = block.timestamp / currentPeriodDuration();
         outboundRateLimitBudget[period] += amount;
         uint256 periodMax = moveToken.balanceOf(insuranceFund) * rateLimiterNumerator / rateLimiterDenominator;
         require(outboundRateLimitBudget[period] < periodMax, OutboundRateLimitExceeded());
     }
 
     function rateLimitInbound(uint256 amount) external onlyRole(ATOMIC_BRIDGE) {
-        uint256 period = block.timestamp / periodDuration;
+        uint256 period = block.timestamp / currentPeriodDuration();
         inboundRateLimitBudget[period] += amount;
         uint256 periodMax = moveToken.balanceOf(insuranceFund) * rateLimiterNumerator / rateLimiterDenominator;
         require(inboundRateLimitBudget[period] < periodMax, InboundRateLimitExceeded());
