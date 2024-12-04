@@ -19,13 +19,15 @@ where
 	match action.kind.clone() {
 		TransferActionType::CompleteBridgeTransfer {
 			bridge_transfer_id,
-			initiator,
+			mut initiator,
 			recipient,
 			amount,
 			nonce,
 		} => {
+			initiator.0 = hex::encode(initiator.0).into_bytes();
+
 			let future = async move {
-				tracing::info!("Before client.lock_bridge_transfer");
+				tracing::info!("Before client.complete_bridge_transfer");
 				client
 					.complete_bridge_transfer(
 						bridge_transfer_id,
@@ -33,7 +35,7 @@ where
 						BridgeAddress(recipient.0.try_into().map_err(|_| {
 							ActionExecError(
 								action.clone(),
-								BridgeContractError::BadAddressEncoding("lock bridge transfer fail to convert recipient address to vec<u8>".to_string()),
+								BridgeContractError::BadAddressEncoding("Complete bridge transfer fail to convert recipient address to vec<u8>".to_string()),
 							)
 						})?),
 						amount,
