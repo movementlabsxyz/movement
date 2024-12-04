@@ -152,10 +152,10 @@ impl From<[u8; 20]> for EthAddress {
 }
 
 impl AddressVecCodec for EthAddress {
-	fn try_decode(value: Vec<u8>) -> Result<Self, AddressError> {
+	fn try_decode_recipient(value: Vec<u8>) -> Result<Self, AddressError> {
 		EthAddress::try_from(value)
 	}
-	fn encode(self) -> Vec<u8> {
+	fn encode_initiator(self) -> Vec<u8> {
 		self.into()
 	}
 }

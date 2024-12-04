@@ -31,7 +31,7 @@ where
 					.complete_bridge_transfer(
 						bridge_transfer_id,
 						initiator,
-						BridgeAddress(A::try_decode(recipient.0).map_err(|err| {
+						BridgeAddress(A::try_decode_recipient(recipient.0).map_err(|err| {
 							ActionExecError(
 								action.clone(),
 								BridgeContractError::BadAddressEncoding(format!("Complete bridge transfer fail to convert recipient address to vec<u8> : {err}")),

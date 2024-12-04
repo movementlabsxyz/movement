@@ -95,7 +95,7 @@ impl TransferState {
 	) -> (Self, TransferAction) {
 		println!("State transition_from_initiated amount {:?}", detail.amount);
 
-		let initiator = detail.initiator.0.encode();
+		let initiator = detail.initiator.0.encode_initiator();
 
 		let state = TransferState {
 			state: TransferStateType::Initialized,

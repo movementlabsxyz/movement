@@ -132,18 +132,11 @@ impl TryFrom<&str> for MovementAddress {
 }
 
 impl AddressVecCodec for MovementAddress {
-	fn try_decode(value: Vec<u8>) -> Result<Self, AddressError> {
-		// let addr_str = String::from_utf8(value).map_err(|err| {
-		// 	AddressError::AddressConvertionlError(format!("MovementAddress vecdecode error:{err}",))
-		// })?;
-		// let bytes = hex::decode(addr_str).map_err(|err| {
-		// 	AddressError::AddressConvertionlError(
-		// 		format!("MovementAddress hex decode error:{err}",),
-		// 	)
-		// })?;
+	fn try_decode_recipient(value: Vec<u8>) -> Result<Self, AddressError> {
+		// Get binary address from movement chain.
 		MovementAddress::try_from(value)
 	}
-	fn encode(self) -> Vec<u8> {
+	fn encode_initiator(self) -> Vec<u8> {
 		let bytes: Vec<u8> = self.into();
 		// convert initiator address to hex because Transfer id verification
 		// use hex encoded address for initiator on Mvt.
