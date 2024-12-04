@@ -89,7 +89,7 @@ contract RateLimiterTest is Test {
             }
 
         } else {
-            vm.expectRevert("INSURANCE_FUND_MUST_BE_4X_RATE_LIMITER");
+            vm.expectRevert(RateLimiter.RateLimitCoefficientTooLow.selector);
             rateLimiter.setRateLimiterCoefficients(_numerator, _denominator);
         }
 
