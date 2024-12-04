@@ -125,7 +125,6 @@ impl EthMonitoring {
 							Ok(Ok(events)) => {
 								for (initiated, _log) in events {
 									let event = {
-										// BridgeTransferInitiated(bridgeTransferId, originator, recipient, totalAmount, hashLock, initiatorTimeLockDuration);
 										let details: BridgeTransferInitiatedDetails<EthAddress> =
 											BridgeTransferInitiatedDetails {
 												bridge_transfer_id: BridgeTransferId(

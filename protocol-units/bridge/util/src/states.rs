@@ -1,5 +1,6 @@
 use crate::chains::bridge_contracts::BridgeContractEvent;
 use crate::chains::bridge_contracts::BridgeTransferInitiatedDetails;
+use crate::chains::AddressVecCodec;
 use crate::events::{InvalidEventError, TransferEvent};
 use crate::types::Amount;
 use crate::types::BridgeAddress;
@@ -87,18 +88,20 @@ impl TransferState {
 		}
 	}
 
-	pub fn transition_from_initiated<A: Into<Vec<u8>> + Clone>(
+	pub fn transition_from_initiated<A: AddressVecCodec + Clone>(
 		chain_id: ChainId,
 		transfer_id: BridgeTransferId,
 		detail: BridgeTransferInitiatedDetails<A>,
 	) -> (Self, TransferAction) {
 		println!("State transition_from_initiated amount {:?}", detail.amount);
 
+		let initiator = detail.initiator.0.encode();
+
 		let state = TransferState {
 			state: TransferStateType::Initialized,
 			init_chain: chain_id,
 			transfer_id,
-			initiator: detail.initiator.clone().into(),
+			initiator: TransferAddress(initiator.clone()),
 			recipient: detail.recipient.clone().into(),
 			amount: detail.amount,
 			nonce: detail.nonce,
@@ -107,7 +110,7 @@ impl TransferState {
 
 		let action_type = TransferActionType::CompleteBridgeTransfer {
 			bridge_transfer_id: transfer_id,
-			initiator: BridgeAddress(detail.initiator.0.into()),
+			initiator: BridgeAddress(initiator),
 			recipient: BridgeAddress(detail.recipient.0.into()),
 			amount: detail.amount,
 			nonce: detail.nonce,
@@ -130,7 +133,7 @@ impl TransferState {
 		let action_type = TransferActionType::AbortedReplay {
 			bridge_transfer_id: transfer_id,
 			initiator: BridgeAddress(self.initiator.0.clone().into()),
-			recipient: BridgeAddress(self.recipient.0.clone().into()),
+			recipient: BridgeAddress(self.recipient.0.clone()),
 			amount: self.amount,
 			nonce: self.nonce,
 			wait_time_sec: 10, //TODO set wait time in config.

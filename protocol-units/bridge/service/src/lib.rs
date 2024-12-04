@@ -1,4 +1,5 @@
 use crate::actions::process_action;
+use bridge_util::chains::AddressVecCodec;
 //use bridge_indexer_db::client::Client as IndexerClient;
 use bridge_util::{
 	actions::{ActionExecError, TransferAction, TransferActionType},
@@ -46,8 +47,8 @@ impl HeathCheckStatus {
 }
 
 pub async fn run_bridge<
-	A1: Send + TryFrom<Vec<u8>> + std::clone::Clone + 'static + std::fmt::Debug,
-	A2: Send + TryFrom<Vec<u8>> + std::clone::Clone + 'static + std::fmt::Debug,
+	A1: Send + std::clone::Clone + 'static + std::fmt::Debug + AddressVecCodec,
+	A2: Send + std::clone::Clone + 'static + std::fmt::Debug + AddressVecCodec,
 >(
 	client_one: impl BridgeRelayerContract<A1> + 'static,
 	mut stream_one: impl BridgeContractMonitoring<Address = A1>,
@@ -57,11 +58,7 @@ pub async fn run_bridge<
 	//	indexer_db_client: Option<IndexerClient>,
 	healthcheck_tx_one: mpsc::Sender<oneshot::Sender<bool>>,
 	healthcheck_tx_two: mpsc::Sender<oneshot::Sender<bool>>,
-) -> Result<(), anyhow::Error>
-where
-	Vec<u8>: From<A1>,
-	Vec<u8>: From<A2>,
-{
+) -> Result<(), anyhow::Error> {
 	let mut state_runtime = Runtime::new(); //indexer_db_client
 
 	let mut client_exec_result_futures_one = FuturesUnordered::new();
@@ -337,7 +334,7 @@ impl Runtime {
 		event: TransferEvent<A>,
 	) -> Result<TransferAction, InvalidEventError>
 	where
-		A: Into<Vec<u8>> + std::clone::Clone + std::fmt::Debug,
+		A: AddressVecCodec + std::clone::Clone + std::fmt::Debug,
 	{
 		tracing::info!("Event received: {:?}", event);
 		self.validate_state(&event)?;

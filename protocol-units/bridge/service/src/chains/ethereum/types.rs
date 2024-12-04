@@ -7,6 +7,7 @@ use alloy::providers::fillers::{
 use alloy::providers::RootProvider;
 use alloy::rlp::{RlpDecodable, RlpEncodable};
 use alloy::transports::BoxTransport;
+use bridge_util::chains::AddressVecCodec;
 use bridge_util::types::BridgeAddress;
 use rand::Rng;
 use std::hash::{DefaultHasher, Hash, Hasher};
@@ -147,5 +148,14 @@ impl From<[u8; 32]> for EthAddress {
 impl From<[u8; 20]> for EthAddress {
 	fn from(bytes: [u8; 20]) -> Self {
 		EthAddress(Address(bytes.into()))
+	}
+}
+
+impl AddressVecCodec for EthAddress {
+	fn try_decode(value: Vec<u8>) -> Result<Self, AddressError> {
+		EthAddress::try_from(value)
+	}
+	fn encode(self) -> Vec<u8> {
+		self.into()
 	}
 }
