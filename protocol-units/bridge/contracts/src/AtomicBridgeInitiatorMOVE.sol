@@ -2,12 +2,11 @@
 pragma solidity ^0.8.22;
 
 import {IAtomicBridgeInitiatorMOVE} from "./IAtomicBridgeInitiatorMOVE.sol";
-import {MockMOVEToken} from "./MockMOVEToken.sol";
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {RateLimiter} from "./RateLimiter.sol";
 
-contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgradeable {
+contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, AccessControlUpgradeable {
     enum MessageState {
         INITIALIZED,
         COMPLETED,
@@ -26,41 +25,49 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
     // Mapping of bridge transfer ids to BridgeTransfer structs
     mapping(bytes32 => BridgeTransfer) public bridgeTransfers;
 
-    // Total MOVE token pool balance
-    uint256 public poolBalance;
-
     address public counterpartyAddress;
     RateLimiter public rateLimiter;
-    ERC20Upgradeable public moveToken;
+    IERC20 public moveToken;
     uint256 private nonce;
 
     // Configurable time lock duration
     uint256 public initiatorTimeLockDuration;
 
-    // Initialize the contract with MOVE token address, owner, custom time lock duration, and initial pool balance
+    bytes32 public constant RELAYER_ROLE = keccak256("RELAYER_ROLE");
+    bytes32 public constant REFUNDER_ROLE = keccak256("REFUNDER_ROLE");
+
+    // Prevents initialization of implementation contract exploits
+    constructor() {
+        _disableInitializers();
+    }
+
+    // Initialize the contract with MOVE token address, owner, and custom time lock duration
     function initialize(
         address _moveToken,
-        address owner,
-        uint256 _timeLockDuration,
-        uint256 _initialPoolBalance
+        address _owner,
+        address _relayer,
+        address _refunder,
+        uint256 _timeLockDuration
     ) public initializer {
-        require(_moveToken != address(0) && owner != address(0), "ZeroAddress");
-        moveToken = ERC20Upgradeable(_moveToken);
-        __Ownable_init(owner);
+        if (_moveToken == address(0) && _owner == address(0) && _relayer == address(0) && _refunder == address(0)) {
+            revert ZeroAddress();
+        }
+        require(_timeLockDuration > 0, ZeroAmount());
+        moveToken = IERC20(_moveToken);
+        _grantRole(DEFAULT_ADMIN_ROLE, _owner);
+        _grantRole(RELAYER_ROLE, _relayer);
+        _grantRole(REFUNDER_ROLE, _refunder);
 
         // Set the custom time lock duration
         initiatorTimeLockDuration = _timeLockDuration;
-
-        // Set the initial pool balance
-        poolBalance = _initialPoolBalance;
     }
 
-    function setCounterpartyAddress(address _counterpartyAddress) external onlyOwner {
+    function setCounterpartyAddress(address _counterpartyAddress) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(_counterpartyAddress != address(0), "ZeroAddress");
         counterpartyAddress = _counterpartyAddress;
     }
 
-    function setRateLimiter(address _rateLimiter) external onlyOwner {
+    function setRateLimiter(address _rateLimiter) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (_rateLimiter == address(0)) revert ZeroAddress();
         rateLimiter = RateLimiter(_rateLimiter);
     }
@@ -72,7 +79,7 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         rateLimiter.rateLimitOutbound(moveAmount);
         address originator = msg.sender;
             
-        require(moveAmount > 0, "ZeroAmount");
+        require(moveAmount > 0, ZeroAmount());
 
         // Ensure there is a valid amount
         if (moveAmount == 0) {
@@ -83,9 +90,6 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         if (!moveToken.transferFrom(originator, address(this), moveAmount)) {
             revert MOVETransferFailed();
         }
-
-        // Update the pool balance
-        poolBalance += moveAmount;
 
         // Generate a unique nonce to prevent replay attacks, and generate a transfer ID
         bridgeTransferId = keccak256(abi.encodePacked(originator, recipient, hashLock, initiatorTimeLockDuration, block.timestamp, nonce++));
@@ -103,7 +107,7 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         return bridgeTransferId;
     }
 
-    function completeBridgeTransfer(bytes32 bridgeTransferId, bytes32 preImage) external onlyOwner {
+    function completeBridgeTransfer(bytes32 bridgeTransferId, bytes32 preImage) external onlyRole(RELAYER_ROLE) {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
 
         rateLimiter.rateLimitInbound(bridgeTransfer.amount);
@@ -116,7 +120,7 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         emit BridgeTransferCompleted(bridgeTransferId, preImage);
     }
 
-    function refundBridgeTransfer(bytes32 bridgeTransferId) external onlyOwner {
+    function refundBridgeTransfer(bytes32 bridgeTransferId) external onlyRole(REFUNDER_ROLE) {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
         rateLimiter.rateLimitInbound(bridgeTransfer.amount);
         require(bridgeTransfer.state == MessageState.INITIALIZED, "BridgeTransferStateNotInitialized");
@@ -131,8 +135,6 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
 
     function withdrawMOVE(address recipient, uint256 amount) external {
         if (msg.sender != counterpartyAddress) revert Unauthorized();
-        if (poolBalance < amount) revert InsufficientMOVEBalance();
-        poolBalance -= amount;
         if (!moveToken.transfer(recipient, amount)) revert MOVETransferFailed();
     }
 }

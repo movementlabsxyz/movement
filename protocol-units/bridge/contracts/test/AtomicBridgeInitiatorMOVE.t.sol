@@ -3,11 +3,13 @@ pragma solidity ^0.8.22;
 pragma abicoder v2;
 
 import {Test, console} from "forge-std/Test.sol";
-import {AtomicBridgeInitiatorMOVE, IAtomicBridgeInitiatorMOVE, OwnableUpgradeable} from "../src/AtomicBridgeInitiatorMOVE.sol";
+import {AtomicBridgeInitiatorMOVE, IAtomicBridgeInitiatorMOVE} from "../src/AtomicBridgeInitiatorMOVE.sol";
+import {AccessControlUpgradeable, IAccessControl} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {MockMOVEToken} from "../src/MockMOVEToken.sol";  
 import {RateLimiter} from "../src/RateLimiter.sol";
+
 
 contract AtomicBridgeInitiatorMOVETest is Test {
     AtomicBridgeInitiatorMOVE public atomicBridgeInitiatorImplementation;
@@ -40,11 +42,12 @@ contract AtomicBridgeInitiatorMOVETest is Test {
             address(atomicBridgeInitiatorImplementation),
             address(proxyAdmin),
             abi.encodeWithSignature(
-                "initialize(address,address,uint256,uint256)", 
+                "initialize(address,address,address,address,uint256)", 
                 address(moveToken), 
-                address(this), 
-                timeLockDuration,
-                0 ether
+                address(this),
+                address(this),
+                address(this),
+                timeLockDuration
             )
         );
 
@@ -178,7 +181,7 @@ contract AtomicBridgeInitiatorMOVETest is Test {
 
         // Test that a non-owner cannot call refund
         vm.startPrank(originator);
-        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, originator));
+        vm.expectRevert(abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, originator, keccak256("REFUNDER_ROLE")));
         atomicBridgeInitiatorMOVE.refundBridgeTransfer(bridgeTransferId);
         vm.stopPrank();
 

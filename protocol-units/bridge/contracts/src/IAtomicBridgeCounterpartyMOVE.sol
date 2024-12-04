@@ -31,7 +31,7 @@ interface IAtomicBridgeCounterpartyMOVE {
      * @param bridgeTransferId A unique id representing this BridgeTransfer
      * @param hashLock The hash of the secret (HASH) that will unlock the funds
      * @param recipient The address to which to transfer the funds
-     * @param amount The amount of WETH to lock
+     * @param amount The amount of MOVE to lock
      *
      */
     function lockBridgeTransfer(
@@ -43,7 +43,7 @@ interface IAtomicBridgeCounterpartyMOVE {
     ) external;
 
     /**
-     * @dev Completes the bridge transfer and withdraws WETH to the recipient
+     * @dev Completes the bridge transfer and withdraws MOVE to the recipient
      * @param bridgeTransferId Unique identifier for the BridgeTransfer
      * @param preImage The secret that unlocks the funds
      *

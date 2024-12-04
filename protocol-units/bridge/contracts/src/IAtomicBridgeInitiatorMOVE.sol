@@ -30,14 +30,14 @@ interface IAtomicBridgeInitiatorMOVE {
 
 
     /**
-     * @dev Creates a new atomic bridge transfer using native ETH
-     * @param _wethAmount The amount of WETH to send
+     * @dev Creates a new atomic bridge transfer using MOVE tokens
+     * @param _amount The amount of MOVE to send
      * @param _recipient The address on the other chain to which to transfer the funds
      * @param _hashLock The hash of the secret (HASH) that will unlock the funds
      * @return _bridgeTransferId A unique id representing this BridgeTransfer
      *
      */
-    function initiateBridgeTransfer(uint256 _wethAmount, bytes32 _recipient, bytes32 _hashLock)
+    function initiateBridgeTransfer(uint256 _amount, bytes32 _recipient, bytes32 _hashLock)
         external
         returns (bytes32 _bridgeTransferId);
 
