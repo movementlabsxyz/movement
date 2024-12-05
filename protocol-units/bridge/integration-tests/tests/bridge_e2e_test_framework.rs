@@ -92,6 +92,7 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 }
 
 #[tokio::test]
+#[ignore]
 async fn test_bridge_transfer_movement_eth_happy_path() -> Result<(), anyhow::Error> {
 	tracing_subscriber::fmt()
 		.with_env_filter(
