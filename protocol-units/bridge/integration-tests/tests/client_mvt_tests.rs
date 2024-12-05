@@ -1,7 +1,5 @@
-use alloy_primitives::keccak256;
 use anyhow::Result;
 use aptos_sdk::coin_client::CoinClient;
-use aptos_sdk::types::account_address::AccountAddress;
 use bridge_integration_tests::HarnessEthClient;
 use bridge_integration_tests::HarnessMvtClient;
 use bridge_integration_tests::{MovementToEthCallArgs, TestHarness};
@@ -11,7 +9,7 @@ use bridge_service::{
 		movement::utils::MovementAddress,
 		ethereum::types::EthAddress
 	},
-	types::{Amount, BridgeAddress, BridgeTransferId},
+	types::{Amount, BridgeAddress},
 };
 use bridge_util::types::Nonce;
 use bridge_util::BridgeClientContract;
@@ -19,7 +17,6 @@ use bridge_util::BridgeContractEvent;
 use bridge_util::BridgeRelayerContract;
 use futures::StreamExt;
 use tokio::{self};
-use rand::Rng;
 
 #[tokio::test]
 async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
@@ -108,7 +105,6 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
         // Set recipient address
 	let recipient = HarnessMvtClient::gen_aptos_account().address();
 
-
         // Set amount to 1
         let amount = Amount(1);
 
@@ -121,20 +117,6 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 		amount,
 		incoming_nonce,
 	);
-
-        // // Combine bytes for hashing bridge_transfer_id
-        // let mut combined_bytes = Vec::new();
-        // combined_bytes.extend(&initiator);
-        // combined_bytes.extend(bcs::to_bytes(&recipient).expect("Failed to serialize recipient"));
-        // combined_bytes.extend(normalize_to_32_bytes(
-        //         bcs::to_bytes(&amount).expect("Failed to serialize amount"),
-        // ));
-        // combined_bytes.extend(normalize_to_32_bytes(
-        //         bcs::to_bytes(&incoming_nonce).expect("Failed to serialize nonce"),
-        // ));
-
-        // // Compute bridge_transfer_id using Keccak-256 hash
-        // let bridge_transfer_id = keccak256(combined_bytes);
 
         let coin_client = CoinClient::new(&mvt_client_harness.rest_client);
         let movement_client_signer = mvt_client_harness.movement_client.signer();
