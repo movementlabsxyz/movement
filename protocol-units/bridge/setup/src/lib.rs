@@ -1,4 +1,3 @@
-use alloy::node_bindings::AnvilInstance;
 use bridge_config::Config;
 
 pub mod deploy;
@@ -15,8 +14,6 @@ pub async fn process_compose_setup(config: Config) -> Result<Config, anyhow::Err
 
 pub async fn test_eth_setup(mut config: Config) -> Result<Config, anyhow::Error> {
 	//let anvil = local::setup_eth(&mut config.eth, &mut config.testing);
-	//Define the timelock to 15s for the test
-	config.eth.time_lock_secs = 15;
 	//Deploy locally
 	crate::deploy::setup_local_ethereum(&mut config).await?;
 	Ok(config)

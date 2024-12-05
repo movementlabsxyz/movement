@@ -22,6 +22,7 @@ contract NativeBridgeTest is Test {
     address public relayer = address(0x8e1a7e8);
     address public recipient = address(0x2);
     address public otherUser = address(0x3);
+    address public insuranceFund = address(this);
 
     function setUp() public {
         moveToken = new MockMOVEToken();
@@ -33,7 +34,7 @@ contract NativeBridgeTest is Test {
             address(nativeBridgeImplementation),
             address(proxyAdmin),
             abi.encodeWithSignature(
-                "initialize(address,address,address,address)", address(moveToken), deployer, relayer, address(0)
+                "initialize(address,address,address,address,address)", address(moveToken), deployer, relayer, address(0), insuranceFund
             )
         );
         nativeBridge = NativeBridge(address(proxy));
@@ -44,7 +45,7 @@ contract NativeBridgeTest is Test {
         vm.assume(_originator != address(0));
         vm.assume(_originator != deployer);
 
-        _amount = bound(_amount, 1, 10000000000 * 10 ** 8);
+        _amount = bound(_amount, 1, 100000000 * 10 ** 8);
         moveToken.transfer(_originator, _amount);
         vm.startPrank(_originator);
         // require approval
@@ -60,14 +61,56 @@ contract NativeBridgeTest is Test {
 
         bytes32 bridgeTransferId = nativeBridge.initiateBridgeTransfer(_recipient, _amount);
 
-        (address originator, bytes32 recipient_, uint256 amount, uint256 nonce) =
-            nativeBridge.outgoingBridgeTransfers(bridgeTransferId);
+        (bytes32 bridgeTransferId_, address originator, bytes32 recipient_, uint256 amount) =
+            nativeBridge.noncesToOutboundTransfers(1);
 
         assertEq(originator, _originator);
         assertEq(recipient_, _recipient);
         assertEq(amount, _amount);
-        assertEq(nonce, 1);
+        assertEq(bridgeTransferId_, bridgeTransferId);
         vm.stopPrank();
+    }
+
+    function testOutboundRateLimitFuzz(address sender, uint256 _amount) public {
+        excludeSender(deployer);
+        _amount = bound(_amount, 3, 1000000000 * 10 ** 8);
+        moveToken.transfer(sender, _amount);
+
+        vm.startPrank(sender);
+        moveToken.approve(address(nativeBridge), _amount);
+        nativeBridge.initiateBridgeTransfer(keccak256(abi.encodePacked(sender)), _amount / 2);
+
+        vm.warp(1 days - 1);
+        if (_amount >= moveToken.balanceOf(insuranceFund) / 4) {
+            vm.expectRevert(INativeBridge.OutboundRateLimitExceeded.selector);
+            nativeBridge.initiateBridgeTransfer(keccak256(abi.encodePacked(sender)), _amount / 2);
+            vm.warp(1 days + 1);
+            nativeBridge.initiateBridgeTransfer(keccak256(abi.encodePacked(sender)), _amount / 2);
+        } else {
+            nativeBridge.initiateBridgeTransfer(keccak256(abi.encodePacked(sender)), _amount / 2);
+        }
+    }
+
+    function testInboundRateLimitFuzz(address receiver, uint256 _amount) public {
+        _amount = bound(_amount, 3, 1000000000 * 10 ** 8);
+        moveToken.transfer(address(nativeBridge), _amount);
+
+        bytes32 tx1BridgeTransferId = keccak256(abi.encodePacked(keccak256(abi.encodePacked(receiver)), receiver, _amount / 2, uint256(1)));
+        bytes32 tx2BridgeTransferId = keccak256(abi.encodePacked(keccak256(abi.encodePacked(receiver)), receiver, _amount / 2, uint256(2)));
+        
+
+        vm.startPrank(relayer);
+        nativeBridge.completeBridgeTransfer(tx1BridgeTransferId, keccak256(abi.encodePacked(receiver)), receiver, _amount / 2, 1);
+
+        vm.warp(1 days - 1);
+        if (_amount >= moveToken.balanceOf(insuranceFund) / 4) {
+            vm.expectRevert(INativeBridge.InboundRateLimitExceeded.selector);
+            nativeBridge.completeBridgeTransfer(tx2BridgeTransferId, keccak256(abi.encodePacked(receiver)), receiver, _amount / 2, 2);
+            vm.warp(1 days + 1);
+            nativeBridge.completeBridgeTransfer(tx2BridgeTransferId, keccak256(abi.encodePacked(receiver)), receiver, _amount / 2, 2);
+        } else {
+            nativeBridge.completeBridgeTransfer(tx2BridgeTransferId, keccak256(abi.encodePacked(receiver)), receiver, _amount / 2, 2);
+        }
     }
 
     function testCompleteBridgeFuzz(bytes32 _originator, address _recipient, uint256 _amount, uint256 _nonce) public {
@@ -75,7 +118,7 @@ contract NativeBridgeTest is Test {
         vm.assume(_recipient != address(0));
         vm.assume(relayer != address(0));
 
-        _amount = bound(_amount, 1, 10000000000 * 10 ** 8);
+        _amount = bound(_amount, 1, 100000000 * 10 ** 8);
         // nonce cannot be uint256 max because we are testing a +1 addition case to the nonce
         _nonce = bound(_nonce, 1, type(uint256).max - 1);
 
@@ -111,10 +154,10 @@ contract NativeBridgeTest is Test {
         console.log("Testing correct values");
         nativeBridge.completeBridgeTransfer(bridgeTransferId, _originator, _recipient, _amount, _nonce);
 
-        bytes32 _bridgeTransferId =
-            nativeBridge.noncesToIncomingBridgeTransferIds(_nonce);
+        uint256 nonce =
+            nativeBridge.idsToInboundNonces(bridgeTransferId);
 
-        assertEq(_bridgeTransferId, bridgeTransferId);
+        assertEq(nonce, _nonce);
         vm.stopPrank();
     }
 
@@ -131,7 +174,7 @@ contract NativeBridgeTest is Test {
             originators[i] = keccak256(abi.encodePacked(i));
             recipients[i] = address(uint160(i + 1));
             amounts[i] = i + 1;
-            nonces[i] = i;
+            nonces[i] = i + 1;
             bridgeTransferIds[i] = keccak256(abi.encodePacked(originators[i], recipients[i], amounts[i], nonces[i]));
             fundContract += amounts[i];
         }
@@ -143,10 +186,10 @@ contract NativeBridgeTest is Test {
         nativeBridge.batchCompleteBridgeTransfer(bridgeTransferIds, originators, recipients, amounts, nonces);
 
         for (uint256 i; i < length; i++) {
-            bytes32 bridgeTransferId =
-                nativeBridge.noncesToIncomingBridgeTransferIds(nonces[i]);
+            uint256 nonce =
+                nativeBridge.idsToInboundNonces(bridgeTransferIds[i]);
 
-            assertEq(bridgeTransferId, bridgeTransferIds[i]);
+            assertEq(nonce, nonces[i]);
         }
 
         vm.expectRevert(INativeBridge.CompletedBridgeTransferId.selector);
