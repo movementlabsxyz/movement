@@ -2,11 +2,15 @@ use alloy_primitives::keccak256;
 use anyhow::Result;
 use aptos_sdk::coin_client::CoinClient;
 use aptos_sdk::types::account_address::AccountAddress;
-use bcs::to_bytes;
+use bridge_integration_tests::HarnessEthClient;
+use bridge_integration_tests::HarnessMvtClient;
 use bridge_integration_tests::{MovementToEthCallArgs, TestHarness};
 use bridge_service::chains::movement::event_monitoring::MovementMonitoring;
 use bridge_service::{
-	chains::movement::utils::MovementAddress,
+	chains::{
+		movement::utils::MovementAddress,
+		ethereum::types::EthAddress
+	},
 	types::{Amount, BridgeAddress, BridgeTransferId},
 };
 use bridge_util::types::Nonce;
@@ -28,7 +32,6 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 		mvt_client_harness
 			.fund_signer_and_check_balance_framework(100_000_000_000)
 			.await?;
-
 		{
 			tracing::info!("Before intiate_bridge_transfer");
 			let res = BridgeClientContract::initiate_bridge_transfer(
@@ -149,30 +152,25 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 	let mut mvt_monitoring =
 		MovementMonitoring::build(&config.movement, mvt_health_rx).await.unwrap();
 
-	let initiator = b"32Be343B94f860124dC4fEe278FDCBD38C102D88".to_vec();
-	let recipient = AccountAddress::new(*b"0x00000000000000000000000000fade");
-	let amount = Amount(100);
+	let initiator_address =
+		EthAddress(HarnessEthClient::get_recipient_private_key(&config).address());
+	let recipient_address = HarnessMvtClient::gen_aptos_account().address();
+	let nonce = TestHarness::create_nonce();
+	let amount = Amount(2);
 
-	let mut rng = rand::thread_rng(); // Create a random number generator
-	let rand: u128 = rng.gen_range(1, 1_000_000); // Specify the range [1, 1,000,000]
-	let incoming_nonce = Nonce(rand); // Create the Nonce with the generated number
-	let mut combined_bytes = Vec::new();
-	let initiator_bytes = hex::decode(String::from_utf8(initiator.clone()).expect("Invalid UTF-8 recipient"))
-	.expect("Failed to decode recipient hex");
-	combined_bytes.extend(initiator_bytes);
-	combined_bytes.extend(bcs::to_bytes(&recipient).expect("Failed to serialize recipient"));
-	combined_bytes.extend(normalize_to_32_bytes(bcs::to_bytes(&amount).expect("Failed to serialize amount")));
-	combined_bytes.extend(normalize_to_32_bytes(bcs::to_bytes(&incoming_nonce).expect("Failed to serialize nonce")));
-
-	// Compute the Keccak-256 hash of the combined bytes
-	let bridge_transfer_id = keccak256(combined_bytes);
+	let bridge_transfer_id = HarnessMvtClient::calculate_bridge_transfer_id(
+		*initiator_address,
+		recipient_address,
+		amount,
+		nonce,
+	);
 
 	let coin_client = CoinClient::new(&mvt_client_harness.rest_client);
 	let movement_client_signer = mvt_client_harness.movement_client.signer();
 	{
 		let faucet_client = mvt_client_harness.faucet_client.write().unwrap();
 		faucet_client.fund(movement_client_signer.address(), 100_000_000).await?;
-		faucet_client.fund(recipient, 100_000_000).await?;
+		faucet_client.fund(recipient_address, 100_000_000).await?;
 	}
 	let balance = coin_client.get_account_balance(&movement_client_signer.address()).await?;
 	assert!(
@@ -183,11 +181,11 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 
 	BridgeRelayerContract::complete_bridge_transfer(
 		&mut mvt_client_harness.movement_client,
-		BridgeTransferId(bridge_transfer_id.into()),
-		BridgeAddress(initiator.clone()),
-		BridgeAddress(MovementAddress(recipient)),
+		bridge_transfer_id,
+		BridgeAddress(initiator_address.into()),
+		BridgeAddress(MovementAddress(recipient_address)),
 		amount,
-		incoming_nonce,
+		nonce,
 	)
 	.await
 	.expect("Failed to complete bridge transfer");
@@ -225,9 +223,9 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 	tracing::info!("Received bridge_transfer_id: {:?}", returned_bridge_transfer_id);
 
 	//assert_eq!(returned_initiator, mvt_client_harness.signer_address());
-	assert_eq!(BridgeAddress(returned_recipient.0.0), BridgeAddress(recipient.clone()));
+	assert_eq!(BridgeAddress(returned_recipient.0.0), BridgeAddress(recipient_address));
 	assert_eq!(returned_amount, amount);
-	assert_eq!(returned_nonce, incoming_nonce);
+	assert_eq!(returned_nonce, nonce);
 
 	Ok(())
 }

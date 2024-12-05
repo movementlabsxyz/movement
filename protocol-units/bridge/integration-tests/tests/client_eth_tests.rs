@@ -62,12 +62,14 @@ async fn test_eth_client_complete_bridge_transfer() {
 	let nonce = TestHarness::create_nonce();
 	let amount = Amount(2);
 
-	let transfer_id = HarnessEthClient::calculated_transfer_bridfe_id(
+	let transfer_id = HarnessEthClient::calculate_bridge_transfer_id(
 		initiator_address,
 		*recipeint_address,
 		amount,
 		nonce,
 	);
+
+	tracing::info!("Transfer ID Eth side: {:?}", transfer_id);
 
 	let res = eth_client_harness
 		.eth_client

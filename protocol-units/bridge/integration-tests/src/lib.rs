@@ -160,7 +160,7 @@ impl HarnessEthClient {
 		HarnessEthClient::get_recipient_private_key(config).address()
 	}
 
-	pub fn calculated_transfer_bridfe_id(
+	pub fn calculate_bridge_transfer_id(
 		initiator: AccountAddress,
 		recipient: Address,
 		amount: Amount,
@@ -307,6 +307,25 @@ impl HarnessMvtClient {
 		)));
 
 		HarnessMvtClient { movement_client, rest_client, faucet_client }
+	}
+
+	pub fn calculate_bridge_transfer_id(
+		initiator: Address,
+		recipient: AccountAddress,
+		amount: Amount,
+		nonce: Nonce,
+	) -> BridgeTransferId {
+		let mut hasher = Keccak::v256();
+		hasher.update(&initiator.as_slice());
+		hasher.update(&recipient.as_slice());
+		let encoded = ethabi::encode(&[ethabi::Token::Uint(ethabi::Uint::from(amount.0 as u128))]);
+		hasher.update(&encoded);
+		let encoded = ethabi::encode(&[ethabi::Token::Uint(ethabi::Uint::from(nonce.0))]);
+		hasher.update(&encoded);
+		let mut output = [0u8; 32];
+		hasher.finalize(&mut output);
+
+		BridgeTransferId(output)
 	}
 
 	pub async fn initiate_bridge_transfer_helper_framework(
