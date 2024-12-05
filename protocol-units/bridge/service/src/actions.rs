@@ -19,12 +19,12 @@ where
 	match action.kind.clone() {
 		TransferActionType::CompleteBridgeTransfer {
 			bridge_transfer_id,
-			mut initiator,
+			initiator,
 			recipient,
 			amount,
 			nonce,
 		} => {
-			initiator.0 = hex::encode(initiator.0).into_bytes();
+			//initiator.0 = hex::encode(initiator.0).into_bytes();
 
 			let future = async move {
 				tracing::info!("Before client.complete_bridge_transfer");

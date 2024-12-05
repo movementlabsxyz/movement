@@ -142,90 +142,105 @@ fn normalize_to_32_bytes(value: Vec<u8>) -> Vec<u8> {
 
 	result
 }
-
 #[tokio::test]
 async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
-	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::INFO).try_init();
-	let (mut mvt_client_harness, config) =
-		TestHarness::new_with_movement().await.expect("Bridge config file not set");
-	let (_mvt_health_tx, mvt_health_rx) = tokio::sync::mpsc::channel(10);
-	let mut mvt_monitoring =
-		MovementMonitoring::build(&config.movement, mvt_health_rx).await.unwrap();
+        let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::INFO).try_init();
+        let (mut mvt_client_harness, config) =
+                TestHarness::new_with_movement().await.expect("Bridge config file not set");
+        let (_mvt_health_tx, mvt_health_rx) = tokio::sync::mpsc::channel(10);
+        let mut mvt_monitoring =
+                MovementMonitoring::build(&config.movement, mvt_health_rx).await.unwrap();
 
-	let initiator_address =
-		EthAddress(HarnessEthClient::get_recipient_private_key(&config).address());
-	let recipient_address = HarnessMvtClient::gen_aptos_account().address();
-	let nonce = TestHarness::create_nonce();
-	let amount = Amount(2);
+        // Set initiator as hex string
+        let initiator = hex::decode("32Be343B94f860124dC4fEe278FDCBD38C102D88")
+                .expect("Failed to decode initiator hex");
 
-	let bridge_transfer_id = HarnessMvtClient::calculate_bridge_transfer_id(
-		*initiator_address,
-		recipient_address,
-		amount,
-		nonce,
-	);
+        // Set recipient address
+        let recipient = AccountAddress::new(*b"0x00000000000000000000000000fade");
 
-	let coin_client = CoinClient::new(&mvt_client_harness.rest_client);
-	let movement_client_signer = mvt_client_harness.movement_client.signer();
-	{
-		let faucet_client = mvt_client_harness.faucet_client.write().unwrap();
-		faucet_client.fund(movement_client_signer.address(), 100_000_000).await?;
-		faucet_client.fund(recipient_address, 100_000_000).await?;
-	}
-	let balance = coin_client.get_account_balance(&movement_client_signer.address()).await?;
-	assert!(
-		balance >= 100_000_000,
-		"Expected Movement Client to have at least 100_000_000, but found {}",
-		balance
-	);
+        // Set amount to 1
+        let amount = Amount(1);
 
-	BridgeRelayerContract::complete_bridge_transfer(
-		&mut mvt_client_harness.movement_client,
-		bridge_transfer_id,
-		BridgeAddress(initiator_address.into()),
-		BridgeAddress(MovementAddress(recipient_address)),
-		amount,
-		nonce,
-	)
-	.await
-	.expect("Failed to complete bridge transfer");
+        // Random nonce
+        let incoming_nonce = TestHarness::create_nonce();
 
+        // Combine bytes for hashing bridge_transfer_id
+        let mut combined_bytes = Vec::new();
+        combined_bytes.extend(&initiator);
+        combined_bytes.extend(bcs::to_bytes(&recipient).expect("Failed to serialize recipient"));
+        combined_bytes.extend(normalize_to_32_bytes(
+                bcs::to_bytes(&amount).expect("Failed to serialize amount"),
+        ));
+        combined_bytes.extend(normalize_to_32_bytes(
+                bcs::to_bytes(&incoming_nonce).expect("Failed to serialize nonce"),
+        ));
 
-	// Use timeout to wait for the next event
-	let event_option =
-		tokio::time::timeout(std::time::Duration::from_secs(30), mvt_monitoring.next())
-			.await
-			.expect("Timeout while waiting for the Movement Initiated event");
+        // Compute bridge_transfer_id using Keccak-256 hash
+        let bridge_transfer_id = keccak256(combined_bytes);
 
-	// Check if we received an event (Option) and handle the Result inside it
-	let (
-		returned_bridge_transfer_id, 
-		returned_initiator,
-		returned_recipient,
-		returned_amount,
-		returned_nonce
-	) = match event_option {
-		Some(Ok(BridgeContractEvent::Completed(detail))) => {
-			(
-				detail.bridge_transfer_id, 
-				detail.initiator,
-				detail.recipient,
-				detail.amount,
-				detail.nonce
-			)
-		}
-		Some(Err(e)) => panic!("Error in bridge contract event: {:?}", e),
-		None => panic!("No event received"),
-		_ => panic!("Not a an Initiated event: {:?}", event_option),
-	};
+        let coin_client = CoinClient::new(&mvt_client_harness.rest_client);
+        let movement_client_signer = mvt_client_harness.movement_client.signer();
 
+        // Fund accounts
+        {
+                let faucet_client = mvt_client_harness.faucet_client.write().unwrap();
+                faucet_client
+                        .fund(movement_client_signer.address(), 100_000_000)
+                        .await?;
+                faucet_client.fund(recipient, 100_000_000).await?;
+        }
 
-	tracing::info!("Received bridge_transfer_id: {:?}", returned_bridge_transfer_id);
+        // Assert the balance is sufficient
+        let balance = coin_client
+                .get_account_balance(&movement_client_signer.address())
+                .await?;
+        assert!(
+                balance >= 100_000_000,
+                "Expected Movement Client to have at least 100_000_000, but found {}",
+                balance
+        );
 
-	//assert_eq!(returned_initiator, mvt_client_harness.signer_address());
-	assert_eq!(BridgeAddress(returned_recipient.0.0), BridgeAddress(recipient_address));
-	assert_eq!(returned_amount, amount);
-	assert_eq!(returned_nonce, nonce);
+        // Call the complete_bridge_transfer function
+        BridgeRelayerContract::complete_bridge_transfer(
+                &mut mvt_client_harness.movement_client,
+                BridgeTransferId(bridge_transfer_id.into()),
+                BridgeAddress(initiator.clone()),
+                BridgeAddress(MovementAddress(recipient)),
+                amount,
+                incoming_nonce,
+        )
+        .await
+        .expect("Failed to complete bridge transfer");
 
-	Ok(())
+        // Wait for the Movement-side Completed event
+        tracing::info!("Wait for Movement-side Completed event.");
+        loop {
+                let event = tokio::time::timeout(std::time::Duration::from_secs(30), mvt_monitoring.next())
+                        .await
+                        .expect("Wait for completed event timeout.");
+                if let Some(Ok(BridgeContractEvent::Completed(detail))) = event {
+                        tracing::info!("Completed details: {:?}", detail);
+                        assert_eq!(
+                                detail.bridge_transfer_id,
+                                BridgeTransferId(bridge_transfer_id.into()),
+                                "Bad transfer id in completed event"
+                        );
+                        assert_eq!(detail.nonce, incoming_nonce, "Bad nonce in completed event");
+                        assert_eq!(detail.amount, amount, "Bad amount in completed event");
+                        assert_eq!(
+                                detail.initiator.0,
+                                initiator,
+                                "Bad initiator address in completed event"
+                        );
+                        assert_eq!(
+                                detail.recipient.0.0,
+                                recipient,
+                                "Bad recipient address in completed event"
+                        );
+                        break;
+                }
+        }
+
+        Ok(())
 }
+

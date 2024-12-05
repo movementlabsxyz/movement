@@ -290,9 +290,9 @@ impl BridgeRelayerContract<MovementAddress> for MovementClientFramework {
 		nonce: Nonce,
 	) -> BridgeContractResult<()> {
 		let args = vec![
-			bridge_transfer_id.0[..].to_vec(),
-			initiator.0[..].to_vec(),
-			recipient.0.0[..].to_vec(),
+			utils::serialize_vec(&bridge_transfer_id.0[..])?,
+			utils::serialize_vec_initiator(&initiator.0)?,
+			utils::serialize_vec_initiator(&recipient.0)?,
 			utils::serialize_u64_initiator(*amount)?,
 			utils::serialize_u64_initiator(nonce.0.try_into().unwrap())?,
 		];
