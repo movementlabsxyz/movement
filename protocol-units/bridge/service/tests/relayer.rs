@@ -49,7 +49,7 @@ impl TryFrom<Vec<u8>> for MockAddress {
 	}
 }
 
-fn calculated_transfer_bridfe_id(
+fn calculated_transfer_bridge_id(
 	initiator: &[u8],
 	recipient: &[u8],
 	amount: Amount,
