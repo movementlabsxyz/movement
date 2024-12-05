@@ -36,6 +36,7 @@ godfig = { workspace = true }
 syncup = { workspace = true }
 futures = { workspace = true }
 movement-types = { workspace = true }
+aptos-sdk = { workspace = true}
 
 [dev-dependencies]
 tempfile = { workspace = true }

@@ -1,4 +1,5 @@
 use anyhow::Context;
+use aptos_types::account_address::AccountAddress;
 use celestia_rpc::Client;
 use celestia_types::nmt::Namespace;
 use serde::{Deserialize, Serialize};
@@ -184,6 +185,15 @@ impl Config {
 		}
 	}
 
+	/// Whether to use HTTP/1.1 for the movement-da-light-node service
+	pub fn movement_da_light_node_http1(&self) -> bool {
+		match self {
+			Config::Local(local) => local.da_light_node.movement_da_light_node_http1,
+			Config::Arabica(local) => local.da_light_node.movement_da_light_node_http1,
+			Config::Mocha(local) => local.da_light_node.movement_da_light_node_http1,
+		}
+	}
+
 	/// Gets the memseq path
 	pub fn try_memseq_path(&self) -> Result<String, anyhow::Error> {
 		match self {
@@ -228,6 +238,14 @@ impl Config {
 			Config::Mocha(local) => {
 				Ok((local.memseq.memseq_max_block_size, local.memseq.memseq_build_time))
 			}
+		}
+	}
+
+	pub fn whitelisted_accounts(&self) -> Result<Option<HashSet<AccountAddress>>, anyhow::Error> {
+		match self {
+			Config::Local(local) => local.access_control.whitelisted_accounts(),
+			Config::Arabica(local) => local.access_control.whitelisted_accounts(),
+			Config::Mocha(local) => local.access_control.whitelisted_accounts(),
 		}
 	}
 }

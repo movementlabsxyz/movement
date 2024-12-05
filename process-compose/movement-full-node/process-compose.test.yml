@@ -4,9 +4,9 @@ environment:
 
 processes:
 
-  movement-tests-tests:
+  movement-client-tests:
     command: |
-      cargo test -p movement-tests test_example_
+      cargo test -p movement-client test_example_
     depends_on:
       movement-full-node:
         condition: process_healthy

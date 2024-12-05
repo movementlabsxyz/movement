@@ -10,13 +10,14 @@ import {BaseSettlement} from "./settlement/BaseSettlement.sol";
 import {IMCR} from "./interfaces/IMCR.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-contract MCR is
-    Initializable,
-    BaseSettlement,
-    MCRStorage,
-    ReentrancyGuard,
-    IMCR
-{
+contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
+
+    // A role for setting commitments
+    bytes32 public constant COMMITMENT_ADMIN = keccak256("COMMITMENT_ADMIN");
+
+    // Trusted attesters admin
+    bytes32 public constant TRUSTED_ATTESTER = keccak256("TRUSTED_ATTESTER");
+
     function initialize(
         IMovementStaking _stakingContract,
         uint256 _lastAcceptedBlockHeight,
@@ -29,6 +30,26 @@ contract MCR is
         leadingBlockTolerance = _leadingBlockTolerance;
         lastAcceptedBlockHeight = _lastAcceptedBlockHeight;
         stakingContract.registerDomain(_epochDuration, _custodians);
+        grantCommitmentAdmin(msg.sender);
+        grantTrustedAttester(msg.sender);
+    }
+
+    function grantCommitmentAdmin(address account) public {
+        require(
+            hasRole(DEFAULT_ADMIN_ROLE, msg.sender),
+            "ADD_COMMITMENT_ADMIN_IS_ADMIN_ONLY"
+        );
+        grantRole(COMMITMENT_ADMIN, account);
+    }
+
+    function batchGrantCommitmentAdmin(address[] memory accounts) public {
+        require(
+            hasRole(DEFAULT_ADMIN_ROLE, msg.sender),
+            "ADD_COMMITMENT_ADMIN_IS_ADMIN_ONLY"
+        );
+        for (uint256 i = 0; i < accounts.length; i++) {
+            grantRole(COMMITMENT_ADMIN, accounts[i]);
+        }
     }
 
     // creates a commitment
@@ -118,8 +139,11 @@ contract MCR is
             );
     }
 
-    function acceptGenesisCeremony() public onlyRole(DEFAULT_ADMIN_ROLE) {
-        
+    function acceptGenesisCeremony() public {
+        require(
+            hasRole(DEFAULT_ADMIN_ROLE, msg.sender),
+            "ACCEPT_GENESIS_CEREMONY_IS_ADMIN_ONLY"
+        );
         stakingContract.acceptGenesisCeremony();
     }
 
@@ -159,10 +183,40 @@ contract MCR is
         return commitments[height][attester];
     }
 
-    function getAcceptedCommitmentAtBlockHeight(
-        uint256 height
-    ) public view returns (BlockCommitment memory) {
-        return acceptedBlocks[height];
+    // Sets the accepted commitment at a give block height
+    function setAcceptedCommitmentAtBlockHeight(BlockCommitment memory blockCommitment) public {
+        require(
+            hasRole(COMMITMENT_ADMIN, msg.sender),
+            "SET_LAST_ACCEPTED_COMMITMENT_AT_HEIGHT_IS_COMMITMENT_ADMIN_ONLY"
+        );
+        versionedAcceptedBlocks[acceptedBlocksVersion][blockCommitment.height] = blockCommitment;  
+    }
+
+    // Sets the last accepted block height. 
+    function setLastAcceptedBlockHeight(uint256 height) public {
+        require(
+            hasRole(COMMITMENT_ADMIN, msg.sender),
+            "SET_LAST_ACCEPTED_BLOCK_HEIGHT_IS_COMMITMENT_ADMIN_ONLY"
+        );
+        lastAcceptedBlockHeight = height;
+    }
+
+    // Forces the latest attestation by setting the block height
+    // Note: this only safe when we are running with a single validator as it does not zero out follow-on commitments.
+    function forceLatestCommitment(BlockCommitment memory blockCommitment) public {
+        /*require(
+            hasRole(COMMITMENT_ADMIN, msg.sender),
+            "FORCE_LATEST_COMMITMENT_IS_COMMITMENT_ADMIN_ONLY"
+        );*/
+
+        // increment the acceptedBlocksVersion (effectively removing all other accepted blocks)
+        acceptedBlocksVersion += 1;
+        versionedAcceptedBlocks[acceptedBlocksVersion][blockCommitment.height] = blockCommitment;
+        lastAcceptedBlockHeight = blockCommitment.height; 
+    }
+
+    function getAcceptedCommitmentAtBlockHeight(uint256 height) public view returns (BlockCommitment memory) {
+        return versionedAcceptedBlocks[acceptedBlocksVersion][height];
     }
 
     function getAttesters() public view returns (address[] memory) {
@@ -266,20 +320,36 @@ contract MCR is
         return false;
     }
 
-    /**
-     * @dev There is no reason for this to be reentrant, so it is marked as nonReentrant.
-     */
-    function submitBlockCommitment(
-        BlockCommitment memory blockCommitment
-    ) public nonReentrant {
+    function grantTrustedAttester(address attester) public onlyRole(COMMITMENT_ADMIN) {
+        grantRole(TRUSTED_ATTESTER, attester);
+    }
+
+    function batchGrantTrustedAttester(address[] memory attesters) public onlyRole(COMMITMENT_ADMIN) {
+        for (uint256 i = 0; i < attesters.length; i++) {
+            grantRole(TRUSTED_ATTESTER, attesters[i]);
+        }
+
+    }
+
+    function setOpenAttestationEnabled(bool enabled) public onlyRole(COMMITMENT_ADMIN) {
+        openAttestationEnabled = enabled;
+    }
+
+    function submitBlockCommitment(BlockCommitment memory blockCommitment) public {
+        require(
+            openAttestationEnabled || hasRole(TRUSTED_ATTESTER, msg.sender),
+            "UNAUTHORIZED_BLOCK_COMMITMENT"
+        );
         submitBlockCommitmentForAttester(msg.sender, blockCommitment);
     }
 
-    function submitBatchBlockCommitment(
-        BlockCommitment[] memory blockCommitments
-    ) public {
+    function submitBatchBlockCommitment(BlockCommitment[] memory blockCommitments) public {
+        require(
+            openAttestationEnabled || hasRole(TRUSTED_ATTESTER, msg.sender),
+            "UNAUTHORIZED_BLOCK_COMMITMENT"
+        );
         for (uint256 i = 0; i < blockCommitments.length; i++) {
-            submitBlockCommitment(blockCommitments[i]);
+            submitBlockCommitmentForAttester(msg.sender, blockCommitments[i]);
         }
     }
 
@@ -297,7 +367,7 @@ contract MCR is
             revert UnacceptableBlockCommitment();
 
         // set accepted block commitment
-        acceptedBlocks[blockCommitment.height] = blockCommitment;
+        versionedAcceptedBlocks[acceptedBlocksVersion][blockCommitment.height] = blockCommitment;
 
         // set last accepted block height
         lastAcceptedBlockHeight = blockCommitment.height;

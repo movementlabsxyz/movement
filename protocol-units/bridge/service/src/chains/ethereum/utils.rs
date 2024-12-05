@@ -14,6 +14,7 @@ use mcr_settlement_client::send_eth_transaction::{
 };
 use std::str::FromStr;
 use thiserror::Error;
+use tracing::info;
 
 #[derive(Debug, Error)]
 pub enum EthUtilError {
@@ -79,6 +80,9 @@ pub async fn send_transaction<
 	number_retry: u32,
 	gas_limit: u128,
 ) -> Result<TransactionReceipt, anyhow::Error> {
+	info!("base_call_builder: {:?}", base_call_builder);
+	info!("Sending transaction with gas limit: {}", gas_limit);
+
 	// set signer address as from for gas_estimation.
 	// The gas estimate need to set teh from before calling.
 	let base_call_builder = base_call_builder.from(signer_address);

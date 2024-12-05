@@ -8,7 +8,7 @@ processes:
     command: |
       # loop the test examples 
       while true; do
-        cargo test -p movement-tests test_example_ || break
+        cargo test -p movement-client test_example_ || break
       done
     depends_on:
       movement-full-node:

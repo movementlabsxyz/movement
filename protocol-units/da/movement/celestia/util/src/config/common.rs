@@ -154,3 +154,6 @@ pub fn default_celestia_bridge_replace_args() -> Vec<String> {
 
 // Whether to use replace args for Celestia bridge
 env_default!(default_da_light_node_is_initial, "MOVEMENT_DA_LIGHT_NODE_IS_INITIAL", bool, true);
+
+// Whether to use http1 for Movement Light Node Connections
+env_default!(default_movement_da_light_node_http1, "MOVEMENT_DA_LIGHT_NODE_HTTP1", bool, true);

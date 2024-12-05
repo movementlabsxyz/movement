@@ -1,0 +1,23 @@
+[Unit]
+Description=Movement Full Follower
+After=network.target
+
+[Service]
+Type=simple
+User={{ user }}
+WorkingDirectory=/home/{{ user }}/movement
+Environment="DOT_MOVEMENT_PATH=/home/{{ user }}/.movement"
+Environment="CONTAINER_REV={{ rev }}"
+Environment="MAPTOS_CHAIN_ID=126"
+Environment="MOVEMENT_SYNC=follower::mainnet-l-sync-bucket-sync<=>{default_signer_address_whitelist,maptos,maptos-storage,movement-da-db}/**"
+
+Environment="MOVEMENT_DA_LIGHT_NODE_CONNECTION_PROTOCOL=https"
+Environment="MOVEMENT_DA_LIGHT_NODE_CONNECTION_HOSTNAME=m1-da-light-node.mainnet.movementnetwork.xyz"
+Environment="MOVEMENT_DA_LIGHT_NODE_CONNECTION_PORT=443"
+
+Environment="AWS_REGION=us-west-1"
+ExecStart=/usr/bin/docker compose --env-file .env -f /home/{{ user }}/movement/docker/compose/movement-full-node/docker-compose.yml -f /home/{{ user }}/movement/docker/compose/movement-full-node/docker-compose.follower.yml up --force-recreate --remove-orphans
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
