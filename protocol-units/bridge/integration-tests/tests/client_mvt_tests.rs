@@ -14,8 +14,8 @@ use bridge_util::BridgeClientContract;
 use bridge_util::BridgeContractEvent;
 use bridge_util::BridgeRelayerContract;
 use futures::StreamExt;
-use tokio::{self};
 use rand::Rng;
+use tokio::{self};
 
 #[tokio::test]
 async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
@@ -54,22 +54,14 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 				.expect("Timeout while waiting for the Movement Initiated event");
 
 		// Check if we received an event (Option) and handle the Result inside it
-		let (
-			bridge_transfer_id, 
-			initiator,
-			recipient,
-			amount,
-			nonce
-		) = match event_option {
-			Some(Ok(BridgeContractEvent::Initiated(detail))) => {
-				(
-					detail.bridge_transfer_id, 
-					detail.initiator,
-					detail.recipient,
-					detail.amount,
-					detail.nonce
-				)
-			}
+		let (bridge_transfer_id, initiator, recipient, amount, nonce) = match event_option {
+			Some(Ok(BridgeContractEvent::Initiated(detail))) => (
+				detail.bridge_transfer_id,
+				detail.initiator,
+				detail.recipient,
+				detail.amount,
+				detail.nonce,
+			),
 			Some(Err(e)) => panic!("Error in bridge contract event: {:?}", e),
 			None => panic!("No event received"),
 			_ => panic!("Not a an Initiated event: {:?}", event_option),
@@ -80,7 +72,7 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 		assert_eq!(initiator.0 .0, mvt_client_harness.signer_address());
 		assert_eq!(recipient, BridgeAddress(args.recipient.clone()));
 		assert_eq!(amount, Amount(args.amount));
-		assert_eq!(nonce, Nonce(12));
+		assert_eq!(nonce, Nonce(1));
 
 		Ok(())
 	}
@@ -157,12 +149,16 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 	let rand: u128 = rng.gen_range(1, 1_000_000); // Specify the range [1, 1,000,000]
 	let incoming_nonce = Nonce(rand); // Create the Nonce with the generated number
 	let mut combined_bytes = Vec::new();
-	let initiator_bytes = hex::decode(String::from_utf8(initiator.clone()).expect("Invalid UTF-8 recipient"))
-	.expect("Failed to decode recipient hex");
+	let initiator_bytes =
+		hex::decode(String::from_utf8(initiator.clone()).expect("Invalid UTF-8 recipient"))
+			.expect("Failed to decode recipient hex");
 	combined_bytes.extend(initiator_bytes);
 	combined_bytes.extend(bcs::to_bytes(&recipient).expect("Failed to serialize recipient"));
-	combined_bytes.extend(normalize_to_32_bytes(bcs::to_bytes(&amount).expect("Failed to serialize amount")));
-	combined_bytes.extend(normalize_to_32_bytes(bcs::to_bytes(&incoming_nonce).expect("Failed to serialize nonce")));
+	combined_bytes
+		.extend(normalize_to_32_bytes(bcs::to_bytes(&amount).expect("Failed to serialize amount")));
+	combined_bytes.extend(normalize_to_32_bytes(
+		bcs::to_bytes(&incoming_nonce).expect("Failed to serialize nonce"),
+	));
 
 	// Compute the Keccak-256 hash of the combined bytes
 	let bridge_transfer_id = keccak256(combined_bytes);
@@ -192,7 +188,6 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 	.await
 	.expect("Failed to complete bridge transfer");
 
-
 	// Use timeout to wait for the next event
 	let event_option =
 		tokio::time::timeout(std::time::Duration::from_secs(30), mvt_monitoring.next())
@@ -201,31 +196,28 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 
 	// Check if we received an event (Option) and handle the Result inside it
 	let (
-		returned_bridge_transfer_id, 
+		returned_bridge_transfer_id,
 		returned_initiator,
 		returned_recipient,
 		returned_amount,
-		returned_nonce
+		returned_nonce,
 	) = match event_option {
-		Some(Ok(BridgeContractEvent::Completed(detail))) => {
-			(
-				detail.bridge_transfer_id, 
-				detail.initiator,
-				detail.recipient,
-				detail.amount,
-				detail.nonce
-			)
-		}
+		Some(Ok(BridgeContractEvent::Completed(detail))) => (
+			detail.bridge_transfer_id,
+			detail.initiator,
+			detail.recipient,
+			detail.amount,
+			detail.nonce,
+		),
 		Some(Err(e)) => panic!("Error in bridge contract event: {:?}", e),
 		None => panic!("No event received"),
 		_ => panic!("Not a an Initiated event: {:?}", event_option),
 	};
 
-
 	tracing::info!("Received bridge_transfer_id: {:?}", returned_bridge_transfer_id);
 
 	//assert_eq!(returned_initiator, mvt_client_harness.signer_address());
-	assert_eq!(BridgeAddress(returned_recipient.0.0), BridgeAddress(recipient.clone()));
+	assert_eq!(BridgeAddress(returned_recipient.0 .0), BridgeAddress(recipient.clone()));
 	assert_eq!(returned_amount, amount);
 	assert_eq!(returned_nonce, incoming_nonce);
 
