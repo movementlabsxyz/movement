@@ -92,56 +92,6 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 	test_result
 }
 
-fn hex_to_bytes(input: Vec<u8>) -> Vec<u8> {
-	let mut result = Vec::new();
-	assert!(input.len() % 2 == 0, "Input length must be even for valid hex");
-
-	let mut i = 0;
-	while i < input.len() {
-		let high_nibble = ascii_hex_to_u8(input[i]);
-		let low_nibble = ascii_hex_to_u8(input[i + 1]);
-		let byte = (high_nibble << 4) | low_nibble;
-		result.push(byte);
-		i += 2;
-	}
-
-	result
-}
-
-fn ascii_hex_to_u8(ch: u8) -> u8 {
-	match ch {
-		b'0'..=b'9' => ch - b'0',
-		b'A'..=b'F' => ch - b'A' + 10,
-		b'a'..=b'f' => ch - b'a' + 10,
-		_ => panic!("Invalid hex character: {}", ch),
-	}
-}
-
-fn normalize_to_32_bytes(value: Vec<u8>) -> Vec<u8> {
-	let mut meaningful = Vec::new();
-	let mut i = 0;
-
-	// Remove trailing zeroes
-	while i < value.len() {
-		if value[i] != 0 {
-			meaningful.push(value[i]);
-		}
-		i += 1;
-	}
-
-	let mut result = Vec::with_capacity(32);
-	let padding_length = 32 - meaningful.len();
-
-	// Pad with zeros on the left
-	for _ in 0..padding_length {
-		result.push(0);
-	}
-
-	// Append the meaningful bytes
-	result.extend_from_slice(&meaningful);
-
-	result
-}
 #[tokio::test]
 async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
         let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::INFO).try_init();
@@ -152,11 +102,12 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
                 MovementMonitoring::build(&config.movement, mvt_health_rx).await.unwrap();
 
         // Set initiator as hex string
-        let initiator = hex::decode("32Be343B94f860124dC4fEe278FDCBD38C102D88")
-                .expect("Failed to decode initiator hex");
+	let initiator =
+	EthAddress(HarnessEthClient::get_recipient_private_key(&config).address());
 
         // Set recipient address
-        let recipient = AccountAddress::new(*b"0x00000000000000000000000000fade");
+	let recipient = HarnessMvtClient::gen_aptos_account().address();
+
 
         // Set amount to 1
         let amount = Amount(1);
@@ -164,19 +115,26 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
         // Random nonce
         let incoming_nonce = TestHarness::create_nonce();
 
-        // Combine bytes for hashing bridge_transfer_id
-        let mut combined_bytes = Vec::new();
-        combined_bytes.extend(&initiator);
-        combined_bytes.extend(bcs::to_bytes(&recipient).expect("Failed to serialize recipient"));
-        combined_bytes.extend(normalize_to_32_bytes(
-                bcs::to_bytes(&amount).expect("Failed to serialize amount"),
-        ));
-        combined_bytes.extend(normalize_to_32_bytes(
-                bcs::to_bytes(&incoming_nonce).expect("Failed to serialize nonce"),
-        ));
+	let bridge_transfer_id = HarnessMvtClient::calculate_bridge_transfer_id(
+		*initiator,
+		recipient,
+		amount,
+		incoming_nonce,
+	);
 
-        // Compute bridge_transfer_id using Keccak-256 hash
-        let bridge_transfer_id = keccak256(combined_bytes);
+        // // Combine bytes for hashing bridge_transfer_id
+        // let mut combined_bytes = Vec::new();
+        // combined_bytes.extend(&initiator);
+        // combined_bytes.extend(bcs::to_bytes(&recipient).expect("Failed to serialize recipient"));
+        // combined_bytes.extend(normalize_to_32_bytes(
+        //         bcs::to_bytes(&amount).expect("Failed to serialize amount"),
+        // ));
+        // combined_bytes.extend(normalize_to_32_bytes(
+        //         bcs::to_bytes(&incoming_nonce).expect("Failed to serialize nonce"),
+        // ));
+
+        // // Compute bridge_transfer_id using Keccak-256 hash
+        // let bridge_transfer_id = keccak256(combined_bytes);
 
         let coin_client = CoinClient::new(&mvt_client_harness.rest_client);
         let movement_client_signer = mvt_client_harness.movement_client.signer();
@@ -203,8 +161,8 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
         // Call the complete_bridge_transfer function
         BridgeRelayerContract::complete_bridge_transfer(
                 &mut mvt_client_harness.movement_client,
-                BridgeTransferId(bridge_transfer_id.into()),
-                BridgeAddress(initiator.clone()),
+                bridge_transfer_id,
+                BridgeAddress(initiator.clone().0.to_vec()),
                 BridgeAddress(MovementAddress(recipient)),
                 amount,
                 incoming_nonce,
@@ -222,14 +180,14 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
                         tracing::info!("Completed details: {:?}", detail);
                         assert_eq!(
                                 detail.bridge_transfer_id,
-                                BridgeTransferId(bridge_transfer_id.into()),
+                                bridge_transfer_id,
                                 "Bad transfer id in completed event"
                         );
                         assert_eq!(detail.nonce, incoming_nonce, "Bad nonce in completed event");
                         assert_eq!(detail.amount, amount, "Bad amount in completed event");
                         assert_eq!(
-                                detail.initiator.0,
-                                initiator,
+                                detail.initiator,
+                                BridgeAddress(initiator.0.to_vec()),
                                 "Bad initiator address in completed event"
                         );
                         assert_eq!(
