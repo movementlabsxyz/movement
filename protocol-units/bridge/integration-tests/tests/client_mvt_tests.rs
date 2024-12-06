@@ -54,22 +54,14 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 				.expect("Timeout while waiting for the Movement Initiated event");
 
 		// Check if we received an event (Option) and handle the Result inside it
-		let (
-			bridge_transfer_id, 
-			initiator,
-			recipient,
-			amount,
-			nonce
-		) = match event_option {
-			Some(Ok(BridgeContractEvent::Initiated(detail))) => {
-				(
-					detail.bridge_transfer_id, 
-					detail.initiator,
-					detail.recipient,
-					detail.amount,
-					detail.nonce
-				)
-			}
+		let (bridge_transfer_id, initiator, recipient, amount, nonce) = match event_option {
+			Some(Ok(BridgeContractEvent::Initiated(detail))) => (
+				detail.bridge_transfer_id,
+				detail.initiator,
+				detail.recipient,
+				detail.amount,
+				detail.nonce,
+			),
 			Some(Err(e)) => panic!("Error in bridge contract event: {:?}", e),
 			None => panic!("No event received"),
 			_ => panic!("Not a an Initiated event: {:?}", event_option),
@@ -80,7 +72,7 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 		assert_eq!(initiator.0 .0, mvt_client_harness.signer_address());
 		assert_eq!(recipient, BridgeAddress(args.recipient.clone()));
 		assert_eq!(amount, Amount(args.amount));
-		assert_eq!(nonce, Nonce(12));
+		assert_eq!(nonce, Nonce(1));
 
 		Ok(())
 	}
