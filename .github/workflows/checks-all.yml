@@ -321,25 +321,9 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Install Movement CLI
+    - name: Install Aptos CLI
       run: |
-        sudo apt-get update 
-        sudo apt-get install -y build-essential
-        sudo apt-get install -y binutils
-        sudo apt-get install -y lld
-        sudo apt-get install -y libudev-dev
-        sudo apt-get install -y libdw-dev
-        which ld
-        which lld
-        which gcc
-        which cc
-        echo $PATH
-        export GIT_CLONE_PROTECTION_ACTIVE=false
-        git clone https://github.com/movementlabsxyz/aptos-core/ 
-        cd aptos-core
-        cargo build -p movement
-        sudo cp target/debug/movement /usr/local/bin/
-        cd -
+        curl -fsSL "https://raw.githubusercontent.com/andygolay/aptos-cli-install/refs/heads/main/install_cli_v3.5.py" | python3
 
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
