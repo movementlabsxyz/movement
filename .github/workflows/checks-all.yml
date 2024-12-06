@@ -338,9 +338,7 @@ jobs:
       run: |
         echo "Starting bridge process in the background..."
         CELESTIA_LOG_LEVEL=FATAL \
-        CARGO_PROFILE=release \
-        CARGO_PROFILE_FLAGS=--release \
-        nix develop --extra-experimental-features nix-command --extra-experimental-features flakes --command bash -c "just bridge native build.setup.eth-local.celestia-local.bridge.bridge-indexer --keep-tui" &
+        nix develop --extra-experimental-features nix-command --extra-experimental-features flakes --command bash -c "just bridge native build.setup.eth-local.celestia-local.bridge -t=false" &
         
         echo "Waiting for movement-full-node process to start..."
         for i in {1..30}; do
