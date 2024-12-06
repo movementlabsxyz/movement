@@ -334,7 +334,7 @@ jobs:
         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
     - name: Start and Manage Bridge Process
-      working-directory: movement
+      # working-directory: movement
       run: |
         echo "Starting bridge process in the background..."
         CELESTIA_LOG_LEVEL=FATAL \
