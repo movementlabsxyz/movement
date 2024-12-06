@@ -24,8 +24,6 @@ where
 			amount,
 			nonce,
 		} => {
-			//initiator.0 = hex::encode(initiator.0).into_bytes();
-
 			let future = async move {
 				tracing::info!("Before client.complete_bridge_transfer");
 				client
