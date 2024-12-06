@@ -203,7 +203,7 @@ pub fn deploy_local_movement_node(config: &mut MovementConfig) -> Result<(), any
 
 pub fn init_movement_node(config: &mut MovementConfig) -> Result<(), anyhow::Error> {
 	tracing::info!("Start deploy_local_movement_node rpc url:{}", config.mvt_rpc_connection_url());
-	let mut process = Command::new("movement") //--network
+	let mut process = Command::new("aptos") //--network
 		.args(&[
 			"init",
 			"--network",
@@ -257,7 +257,7 @@ pub fn init_movement_node(config: &mut MovementConfig) -> Result<(), anyhow::Err
 
 pub fn deploy_on_movement_framework(config: &mut MovementConfig) -> Result<(), anyhow::Error> {
 	tracing::info!("Before compile move modules");
-	let compile_output = Command::new("movement")
+	let compile_output = Command::new("aptos")
 		.args(&["move", "compile", "--package-dir", "protocol-units/bridge/move-modules/"])
 		.stdout(Stdio::piped())
 		.stderr(Stdio::piped())
@@ -269,7 +269,7 @@ pub fn deploy_on_movement_framework(config: &mut MovementConfig) -> Result<(), a
 	if !compile_output.stderr.is_empty() {
 		tracing::info!("move compile stderr: {}", String::from_utf8_lossy(&compile_output.stderr));
 	}
-	let enable_bridge_feature_output = Command::new("movement")
+	let enable_bridge_feature_output = Command::new("aptos")
 			.args(&[
 				"move",
 				"run-script",
@@ -296,7 +296,7 @@ pub fn deploy_on_movement_framework(config: &mut MovementConfig) -> Result<(), a
 		);
 	}
 
-	let store_mint_burn_caps_output = Command::new("movement")
+	let store_mint_burn_caps_output = Command::new("aptos")
 			.args(&[
 				"move",
 				"run-script",
@@ -323,7 +323,7 @@ pub fn deploy_on_movement_framework(config: &mut MovementConfig) -> Result<(), a
 		);
 	}
 
-	let update_bridge_relayer_output = Command::new("movement")
+	let update_bridge_relayer_output = Command::new("aptos")
 			.args(&[
 				"move",
 				"run-script",
@@ -352,7 +352,7 @@ pub fn deploy_on_movement_framework(config: &mut MovementConfig) -> Result<(), a
 		);
 	}
 
-	let set_initiator_time_lock_script_output = Command::new("movement")
+	let set_initiator_time_lock_script_output = Command::new("aptos")
 		.args(&[
 			"move",
 			"run-script",
@@ -381,7 +381,7 @@ pub fn deploy_on_movement_framework(config: &mut MovementConfig) -> Result<(), a
 		);
 	}
 
-	let set_counterparty_time_lock_script_output = Command::new("movement")
+	let set_counterparty_time_lock_script_output = Command::new("aptos")
 		.args(&[
 			"move",
 			"run-script",
@@ -416,7 +416,7 @@ pub fn deploy_on_movement_framework(config: &mut MovementConfig) -> Result<(), a
 }
 
 fn update_mvt_account_address() -> Result<(), anyhow::Error> {
-	let config_file_path = std::env::current_dir()?.join(".movement/config.yaml");
+	let config_file_path = std::env::current_dir()?.join(".aptos/config.yaml");
 	let new_address = "0xA550C18";
 	let mut tmp_lines: Vec<String> = Vec::new();
 
