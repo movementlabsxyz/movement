@@ -306,7 +306,7 @@ jobs:
             forge test --fork-url https://ethereum-sepolia-rpc.publicnode.com -vv
         "
 
-  ## any use of Move CLI requires ubuntu-24.04 and to not run on buildjet
+  ## any use of Aptos CLI requires ubuntu-24.04 and to not run on buildjet
   bridge-client-integration-and-e2e-tests:
     strategy:
       matrix:
