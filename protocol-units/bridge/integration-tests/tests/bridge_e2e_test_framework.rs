@@ -78,7 +78,6 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 		if let Some(Ok(BridgeContractEvent::Completed(detail))) = event {
 			assert_eq!(detail.bridge_transfer_id, bridge_transfer_id);
 			let addr_vec: Vec<u8> = EthAddress(HarnessEthClient::get_initiator(&config)).into();
-			//let addr_ascii_hex: Vec<u8> = hex::encode(addr_vec).into_bytes();
 			assert_eq!(detail.initiator.0, addr_vec);
 			assert_eq!(detail.recipient, BridgeAddress(recipient));
 			assert_eq!(detail.amount, amount);
