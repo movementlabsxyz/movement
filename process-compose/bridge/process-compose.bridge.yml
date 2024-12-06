@@ -4,7 +4,7 @@ processes:
     
   bridge:
     command: |
-      RUST_BACKTRACE=1 bridge-service
+      cargo test -p bridge-integration-tests test_movement_event -- --nocapture --test-threads=1
     readiness_probe:
       initial_delay_seconds: 5
       exec:

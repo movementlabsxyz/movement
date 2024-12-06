@@ -333,46 +333,9 @@ jobs:
         name: movementlabs
         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
-    - name: Start and Manage Bridge Process
-      # working-directory: movement
-      run: |
-        echo "Starting bridge process in the background..."
-        CELESTIA_LOG_LEVEL=FATAL \
-        nix develop --extra-experimental-features nix-command --extra-experimental-features flakes --command bash -c "just bridge native build.setup.eth-local.celestia-local.bridge -t=false" &
-        
-        echo "Waiting for movement-full-node process to start..."
-        for i in {1..30}; do
-          PROCESS=$(ps aux | grep 'movement-full-node' | grep -v 'grep' | awk '{print $2}')
-          if [ -n "$PROCESS" ]; then
-            echo "movement-full-node process started with PID: $PROCESS"
-            break
-          fi
-          sleep 3
-        done
-
-        if [ -z "$PROCESS" ]; then
-          echo "movement-full-node process did not start in time"
-          exit 1
-        fi
-
-        echo "movement-full-node process detected with PID: $PROCESS"
-        echo "Waiting an additional 90 seconds for initialization..."
-        sleep 90
-        echo "Process initialization complete."
-
-        echo "Running eth_movement tests..."
-        nix develop --command bash -c "rust_backtrace=1 cargo test --test client_eth_tests -- --nocapture --test-threads=1"
-
-        echo "Running movement_eth tests..."
-        nix develop --command bash -c "rust_backtrace=1 cargo test --test client_mvt_tests -- --nocapture --test-threads=1"
-
-        echo "Stopping movement-full-node process..."
-        if [ -n "$PROCESS" ]; then
-          kill -9 "$PROCESS"
-          echo "movement-full-node process stopped successfully."
-        else
-          echo "No movement-full-node process found to stop."
-        fi
+    - name: Run Movement Client tests
+      # adjust the log level while debugging
+      run: CELESTIA_LOG_LEVEL=FATAL nix develop --command bash  -c "just bridge native build.setup.eth-local.celestia-local.bridge.test-mvt-client -t=false"  
 
   # ## any use of Move CLI requires ubuntu-24.04 and to not run on buildjet
   # bridge-client-integration-and-e2e-tests:
