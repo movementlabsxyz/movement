@@ -294,7 +294,7 @@ jobs:
 
     - name: Install Aptos CLI
       run: |
-        curl -fsSL "https://raw.githubusercontent.com/andygolay/aptos-cli-install/refs/heads/main/install_cli.py" | python3
+        curl -fsSL "https://raw.githubusercontent.com/andygolay/aptos-cli-install/refs/heads/main/install_cli_v3.5.py" | python3
 
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
