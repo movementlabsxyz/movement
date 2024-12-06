@@ -16,20 +16,20 @@ use tokio::{select, sync::Mutex};
 use tokio_stream::StreamExt;
 
 pub async fn run_relayer_one_direction<
-	A1: Send + TryFrom<Vec<u8>> + std::clone::Clone + 'static + std::fmt::Debug,
-	A2: Send + TryFrom<Vec<u8>> + std::clone::Clone + 'static + std::fmt::Debug,
+	SOURCE: Send + TryFrom<Vec<u8>> + std::clone::Clone + 'static + std::fmt::Debug,
+	TARGET: Send + TryFrom<Vec<u8>> + std::clone::Clone + 'static + std::fmt::Debug,
 >(
 	direction: &str,
-	mut stream_source: impl BridgeContractMonitoring<Address = A1>,
+	mut stream_source: impl BridgeContractMonitoring<Address = SOURCE>,
 	healthcheck_source: mpsc::Sender<oneshot::Sender<bool>>,
-	client_target: impl BridgeRelayerContract<A2> + 'static,
-	mut stream_target: impl BridgeContractMonitoring<Address = A2>,
+	client_target: impl BridgeRelayerContract<TARGET> + 'static,
+	mut stream_target: impl BridgeContractMonitoring<Address = TARGET>,
 	mut healthcheck_request_rx: mpsc::Receiver<oneshot::Sender<bool>>,
 	//	indexer_db_client: Option<IndexerClient>,
 ) -> Result<(), anyhow::Error>
 where
-	Vec<u8>: From<A1>,
-	Vec<u8>: From<A2>,
+	Vec<u8>: From<SOURCE>,
+	Vec<u8>: From<TARGET>,
 {
 	let mut state_runtime = Runtime::new(); //indexer_db_client
 
@@ -50,7 +50,7 @@ where
 			Some(event_res) = stream_source.next() =>{
 				match event_res {
 					Ok(BridgeContractEvent::Initiated(detail)) => {
-						let event : TransferEvent<A1> = BridgeContractEvent::Initiated(detail).into();
+						let event : TransferEvent<SOURCE> = BridgeContractEvent::Initiated(detail).into();
 						tracing::info!("Relayer:{direction}, receive Initiated event :{} ", event.contract_event);
 						process_event(event, &mut state_runtime, client_target.clone(), client_lock.clone(), &mut client_exec_result_futures);
 					}
@@ -61,7 +61,7 @@ where
 			Some(event_res) = stream_target.next() =>{
 				match event_res {
 					Ok(BridgeContractEvent::Completed(detail)) => {
-						let event : TransferEvent<A2> = BridgeContractEvent::Completed(detail).into();
+						let event : TransferEvent<TARGET> = BridgeContractEvent::Completed(detail).into();
 						tracing::info!("Relayer:{direction}, receive Completed event :{} ", event.contract_event);
 						process_event(event, &mut state_runtime, client_target.clone(), client_lock.clone(), &mut client_exec_result_futures);
 					}
