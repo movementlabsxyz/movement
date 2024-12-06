@@ -278,7 +278,7 @@ jobs:
 
   ## any use of Move CLI requires ubuntu-24.04 and to not run on buildjet
   move-modules-test:
-    # if: github.event.label.name == 'cicd:bridge' ||  github.ref == 'refs/heads/main'
+    # if: github.event.label.name == 'cicd:bridge' ||  github.ref == 'refs/heads/main' ||  github.ref == 'refs/heads/feature/trusted-relayer'
     strategy:
       matrix:
         include:
