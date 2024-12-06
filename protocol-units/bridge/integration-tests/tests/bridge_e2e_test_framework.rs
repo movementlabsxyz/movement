@@ -98,7 +98,7 @@ async fn test_bridge_transfer_movement_eth_happy_path() -> Result<(), anyhow::Er
 		)
 		.init();
 
-	let (mut eth_client_harness, mut mvt_client_harness, config) =
+	let (_eth_client_harness, mvt_client_harness, config) =
 		TestHarness::new_with_eth_and_movement().await?;
 	let (_, mvt_health_rx) = tokio::sync::mpsc::channel(10);
 	let mut mvt_monitoring =
