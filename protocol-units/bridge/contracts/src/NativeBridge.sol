@@ -7,8 +7,6 @@ import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/Pau
 import {INativeBridge} from "./INativeBridge.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-// import {RateLimiter} from "./RateLimiter.sol";
-
 contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeBridge {
     struct OutboundTransfer {
         bytes32 bridgeTransferId;
@@ -22,16 +20,15 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
     mapping(uint256 day => uint256 amount) public outboundRateLimitBudget;
     mapping(uint256 day => uint256 amount) public inboundRateLimitBudget;
 
-    address public insuranceFund;
-    IERC20 public moveToken;
     bytes32 public constant RELAYER_ROLE = keccak256(abi.encodePacked("RELAYER_ROLE"));
+    IERC20 public moveToken;
+    address public insuranceFund;
     uint256 private _nonce;
 
     // Prevents initialization of implementation contract exploits
     constructor() {
         _disableInitializers();
     }
-    // TODO: include rate limit
 
     /**
     * @dev Initializes the NativeBridge contract

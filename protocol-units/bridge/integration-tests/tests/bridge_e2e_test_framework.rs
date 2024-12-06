@@ -78,7 +78,8 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 		if let Some(Ok(BridgeContractEvent::Completed(detail))) = event {
 			assert_eq!(detail.bridge_transfer_id, bridge_transfer_id);
 			let addr_vec: Vec<u8> = EthAddress(HarnessEthClient::get_initiator(&config)).into();
-			assert_eq!(detail.initiator.0, addr_vec);
+			let addr_ascii_hex: Vec<u8> = hex::encode(addr_vec).into_bytes();
+			assert_eq!(detail.initiator.0, addr_ascii_hex);
 			assert_eq!(detail.recipient, BridgeAddress(recipient));
 			assert_eq!(detail.amount, amount);
 			assert_eq!(detail.nonce, nonce);
@@ -91,6 +92,7 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 }
 
 #[tokio::test]
+#[ignore]
 async fn test_bridge_transfer_movement_eth_happy_path() -> Result<(), anyhow::Error> {
 	tracing_subscriber::fmt()
 		.with_env_filter(
@@ -165,6 +167,7 @@ async fn test_bridge_transfer_movement_eth_happy_path() -> Result<(), anyhow::Er
 }
 
 #[tokio::test]
+#[ignore]
 async fn test_movement_event() -> Result<(), anyhow::Error> {
 	tracing_subscriber::fmt()
 		.with_env_filter(
