@@ -17,7 +17,6 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
 
     mapping(uint256 nonce => OutboundTransfer) public noncesToOutboundTransfers;
     mapping(bytes32 bridgeTransferId => uint256 nonce) public idsToInboundNonces;
-    mapping(uint256 day => uint256 amount) public outboundRateLimitBudget;
     mapping(uint256 day => uint256 amount) public inboundRateLimitBudget;
 
     bytes32 public constant RELAYER_ROLE = keccak256(abi.encodePacked("RELAYER_ROLE"));
@@ -65,7 +64,6 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
     {
         // Ensure there is a valid amount
         require(amount > 0, ZeroAmount());
-        _rateLimitOutbound(amount);
         address initiator = msg.sender;
 
         // Transfer the MOVE tokens from the user to the contract
@@ -134,7 +132,6 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
         uint256 amount,
         uint256 nonce
     ) internal {
-        _rateLimitInbound(amount);
         // Ensure the bridge transfer has not already been completed
         require(nonce > 0, InvalidNonce());
         require(idsToInboundNonces[bridgeTransferId] == 0, CompletedBridgeTransferId());
@@ -161,12 +158,6 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
     function togglePause() external onlyRole(DEFAULT_ADMIN_ROLE) {
         paused() ? _pause() : _unpause();
         emit PauseToggled(paused());
-    }
-
-    function _rateLimitOutbound(uint256 amount) internal {
-        uint256 day = block.timestamp / 1 days;
-        outboundRateLimitBudget[day] += amount;
-        require(outboundRateLimitBudget[day] < moveToken.balanceOf(insuranceFund) / 4, OutboundRateLimitExceeded());
     }
 
     function _rateLimitInbound(uint256 amount) internal {

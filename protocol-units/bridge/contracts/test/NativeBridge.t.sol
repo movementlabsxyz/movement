@@ -71,26 +71,6 @@ contract NativeBridgeTest is Test {
         vm.stopPrank();
     }
 
-    function testOutboundRateLimitFuzz(address sender, uint256 _amount) public {
-        excludeSender(deployer);
-        _amount = bound(_amount, 3, 1000000000 * 10 ** 8);
-        moveToken.transfer(sender, _amount);
-
-        vm.startPrank(sender);
-        moveToken.approve(address(nativeBridge), _amount);
-        nativeBridge.initiateBridgeTransfer(keccak256(abi.encodePacked(sender)), _amount / 2);
-
-        vm.warp(1 days - 1);
-        if (_amount >= moveToken.balanceOf(insuranceFund) / 4) {
-            vm.expectRevert(INativeBridge.OutboundRateLimitExceeded.selector);
-            nativeBridge.initiateBridgeTransfer(keccak256(abi.encodePacked(sender)), _amount / 2);
-            vm.warp(1 days + 1);
-            nativeBridge.initiateBridgeTransfer(keccak256(abi.encodePacked(sender)), _amount / 2);
-        } else {
-            nativeBridge.initiateBridgeTransfer(keccak256(abi.encodePacked(sender)), _amount / 2);
-        }
-    }
-
     function testInboundRateLimitFuzz(address receiver, uint256 _amount) public {
         _amount = bound(_amount, 3, 1000000000 * 10 ** 8);
         moveToken.transfer(address(nativeBridge), _amount);
