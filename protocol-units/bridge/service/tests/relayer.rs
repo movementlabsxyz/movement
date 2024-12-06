@@ -15,8 +15,13 @@ use futures::{
 	channel::mpsc::{UnboundedReceiver, UnboundedSender},
 	Stream, StreamExt,
 };
+use std::sync::atomic::AtomicUsize;
+use std::sync::atomic::Ordering;
+use std::sync::Arc;
 use std::{pin::Pin, task::Poll};
 use tiny_keccak::{Hasher, Keccak};
+use tokio::sync::mpsc;
+use tokio::sync::oneshot;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct MockAddress(pub Vec<u8>);
@@ -70,7 +75,7 @@ pub struct RelayerMockClient {
 	sender: UnboundedSender<BridgeContractResult<BridgeContractEvent<MockAddress>>>,
 	complete_notifier:
 		tokio::sync::mpsc::Sender<BridgeContractResult<BridgeContractEvent<MockAddress>>>,
-	send_retry: usize,
+	send_retry: Arc<AtomicUsize>,
 }
 
 impl RelayerMockClient {
@@ -83,7 +88,11 @@ impl RelayerMockClient {
 			BridgeContractResult<BridgeContractEvent<MockAddress>>,
 		>(100);
 		(
-			RelayerMockClient { sender, complete_notifier: notifier_sender, send_retry },
+			RelayerMockClient {
+				sender,
+				complete_notifier: notifier_sender,
+				send_retry: Arc::new(AtomicUsize::new(send_retry)),
+			},
 			notifier_listener,
 		)
 	}
@@ -100,8 +109,9 @@ impl BridgeRelayerContract<MockAddress> for RelayerMockClient {
 		nonce: Nonce,
 	) -> BridgeContractResult<()> {
 		//manage Tx send error simulation
-		if self.send_retry != 0 {
-			self.send_retry -= 0;
+		let retry = self.send_retry.fetch_sub(1, Ordering::Acquire);
+		// if retry unwrap (> 5000) should be considered as 0.
+		if retry != 0 && retry < 5000 {
 			self.complete_notifier
 				.send(Err(BridgeContractError::OnChainError("Retry.".to_string())))
 				.await
@@ -114,7 +124,7 @@ impl BridgeRelayerContract<MockAddress> for RelayerMockClient {
 			calculated_transfer_bridfe_id(&initiator.0, &recipient.0 .0, amount, nonce);
 		if bridge_transfer_id != calcuated_bridge_transfer_id {
 			self.complete_notifier
-				.send(Err(BridgeContractError::OnChainError("Bas transfer Id.".to_string())))
+				.send(Err(BridgeContractError::OnChainError("Bad transfer Id.".to_string())))
 				.await
 				.unwrap();
 			return Err(BridgeContractError::OnChainError(
@@ -156,7 +166,22 @@ pub struct MockMonitoring {
 impl MockMonitoring {
 	pub fn build(
 		listener: UnboundedReceiver<BridgeContractResult<BridgeContractEvent<MockAddress>>>,
+		mut health_check_rx: mpsc::Receiver<oneshot::Sender<bool>>,
 	) -> Self {
+		//Start Health check loop
+		tokio::spawn({
+			async move {
+				loop {
+					//Check if there's a health check request
+					if let Some(tx) = health_check_rx.recv().await {
+						if let Err(err) = tx.send(true) {
+							tracing::warn!("Mock Heath check send on oneshot channel failed:{err}");
+						}
+					}
+				}
+			}
+		});
+
 		MockMonitoring { listener }
 	}
 }
@@ -206,71 +231,72 @@ async fn test_relayer_logic() -> Result<(), anyhow::Error> {
 		.init();
 
 	let l1_initiator_address = MockAddress(vec![11]);
-	let l1_recipient_address = MockAddress(vec![12]);
-
-	let l2_initiator_address = MockAddress(vec![21]);
 	let l2_recipient_address = MockAddress(vec![22]);
 
 	let (mut l1_sender, l1_listener) = futures::channel::mpsc::unbounded::<
 		BridgeContractResult<BridgeContractEvent<MockAddress>>,
 	>();
-	let (l1_relayer_client, mut l1_notifier) = RelayerMockClient::build(0, l1_sender.clone());
-	let l1_monitor = MockMonitoring::build(l1_listener);
-
-	let (mut l2_sender, l2_listener) = futures::channel::mpsc::unbounded::<
+	let (l1_health_tx, l1_health_rx) = tokio::sync::mpsc::channel(10);
+	let l1_monitor = MockMonitoring::build(l1_listener, l1_health_rx);
+	let (l2_sender, l2_listener) = futures::channel::mpsc::unbounded::<
 		BridgeContractResult<BridgeContractEvent<MockAddress>>,
 	>();
-	let (l2_relayer_client, mut l2_notifier) = RelayerMockClient::build(0, l2_sender.clone());
-	let l2_monitor = MockMonitoring::build(l2_listener);
+	let (l2_relayer_client, mut l2_mock_notifier) = RelayerMockClient::build(2, l2_sender.clone());
 
-	let (l1_health_tx, _l1_health_rx) = tokio::sync::mpsc::channel(10);
-	let (l2_health_tx, _l2_health_rx) = tokio::sync::mpsc::channel(10);
+	let (_l2_health_tx, l2_health_rx) = tokio::sync::mpsc::channel(10);
+	let l2_monitor = MockMonitoring::build(l2_listener, l2_health_rx);
+
 	let (_health_tx, health_rx) = tokio::sync::mpsc::channel(10);
-	let _loop_jh = tokio::spawn(async move {
-		bridge_service::run_bridge(
-			l1_relayer_client,
-			l1_monitor,
-			l2_relayer_client,
-			l2_monitor,
-			health_rx,
-			l1_health_tx,
-			l2_health_tx,
-		)
-		.await
+
+	// Start relay in L1-> L2 direction
+	let _ = tokio::spawn({
+		async move {
+			bridge_service::relayer::run_relayer_one_direction(
+				"L1->L2",
+				l1_monitor,
+				l1_health_tx,
+				l2_relayer_client,
+				l2_monitor,
+				health_rx,
+			)
+			.await
+		}
 	});
+	println!("ICI3");
 
-	// // Test send Tx fail 2 time L1-> L2
-	// let l1_transfer_id = initiate_bridge_transfer(
-	// 	l1_initiator_address.clone(),
-	// 	l2_recipient_address.clone(),
-	// 	Amount(11),
-	// 	Nonce(12),
-	// 	&mut l1_sender,
-	// )
-	// .await;
-	// // Get retry event.
-	// let event = tokio::time::timeout(std::time::Duration::from_secs(15), l2_notifier.recv())
-	// 	.await
-	// 	.expect("L2 commplete not call by the relayer.");
-	// assert!(event.is_some());
-	// let event = event.unwrap();
-	// assert!(event.is_err());
-	// let event = tokio::time::timeout(std::time::Duration::from_secs(15), l2_notifier.recv())
-	// 	.await
-	// 	.expect("L2 commplete not call by the relayer.");
-	// assert!(event.is_some());
-	// let event = event.unwrap();
-	// assert!(event.is_err());
+	// Test send Tx fail 2 time L1-> L2
+	let l1_transfer_id = initiate_bridge_transfer(
+		l1_initiator_address.clone(),
+		l2_recipient_address.clone(),
+		Amount(11),
+		Nonce(12),
+		&mut l1_sender,
+	)
+	.await;
 
-	// //get ok transfer completed
-	// let event = tokio::time::timeout(std::time::Duration::from_secs(5), l2_notifier.recv())
-	// 	.await
-	// 	.expect("L2 commplete not call by the relayer.");
-	// assert!(event.is_some());
-	// let event = event.unwrap();
-	// assert!(event.is_ok());
-	// let event = event.unwrap();
-	// assert_eq!(event.bridge_transfer_id(), l1_transfer_id);
+	// Get retry event.
+	let event = tokio::time::timeout(std::time::Duration::from_secs(5), l2_mock_notifier.recv())
+		.await
+		.expect("L2 commplete not call by the relayer.");
+	assert!(event.is_some());
+	let event = event.unwrap();
+	assert!(event.is_err());
+
+	let event = tokio::time::timeout(std::time::Duration::from_secs(15), l2_mock_notifier.recv())
+		.await
+		.expect("L2 commplete not call by the relayer.");
+	assert!(event.is_some());
+	let event = event.unwrap();
+	assert!(event.is_err());
+	//get ok transfer completed
+	let event = tokio::time::timeout(std::time::Duration::from_secs(15), l2_mock_notifier.recv())
+		.await
+		.expect("L2 commplete not call by the relayer.");
+	assert!(event.is_some());
+	let event = event.unwrap();
+	assert!(event.is_ok());
+	let event = event.unwrap();
+	assert_eq!(event.bridge_transfer_id(), l1_transfer_id);
 
 	// Test Happy path L1->L2
 	// Simulate Initiate transfer event.
@@ -283,7 +309,7 @@ async fn test_relayer_logic() -> Result<(), anyhow::Error> {
 	)
 	.await;
 	// Wait for completed notification.
-	let event = tokio::time::timeout(std::time::Duration::from_secs(5), l2_notifier.recv())
+	let event = tokio::time::timeout(std::time::Duration::from_secs(5), l2_mock_notifier.recv())
 		.await
 		.expect("L2 commplete not call by the relayer.");
 	assert!(event.is_some());
@@ -292,56 +318,5 @@ async fn test_relayer_logic() -> Result<(), anyhow::Error> {
 	let event = event.unwrap();
 	assert_eq!(event.bridge_transfer_id(), l1_transfer_id);
 
-	// // Test send Tx fail 2 time L1-> L2
-	// let l2_transfer_id = initiate_bridge_transfer(
-	// 	l2_initiator_address.clone(),
-	// 	l1_recipient_address.clone(),
-	// 	Amount(22),
-	// 	Nonce(21),
-	// 	&mut l2_sender,
-	// )
-	// .await;
-	// // Get retry event.
-	// let event = tokio::time::timeout(std::time::Duration::from_secs(15), l1_notifier.recv())
-	// 	.await
-	// 	.expect("L1 commplete not call by the relayer.");
-	// assert!(event.is_some());
-	// let event = event.unwrap();
-	// assert!(event.is_err());
-	// let event = tokio::time::timeout(std::time::Duration::from_secs(15), l1_notifier.recv())
-	// 	.await
-	// 	.expect("L1 commplete not call by the relayer.");
-	// assert!(event.is_some());
-	// let event = event.unwrap();
-	// assert!(event.is_err());
-	// //get ok transfer completed
-	// let event = tokio::time::timeout(std::time::Duration::from_secs(5), l1_notifier.recv())
-	// 	.await
-	// 	.expect("L1 commplete not call by the relayer.");
-	// assert!(event.is_some());
-	// let event = event.unwrap();
-	// assert!(event.is_ok());
-	// let event = event.unwrap();
-	// assert_eq!(event.bridge_transfer_id(), l2_transfer_id);
-
-	// Test Happy path L2->L1 .
-	// Send Initiate transfer event.
-	let l2_transfer_id = initiate_bridge_transfer(
-		l2_initiator_address,
-		l1_recipient_address,
-		Amount(22),
-		Nonce(21),
-		&mut l2_sender,
-	)
-	.await;
-	// Wait for completed notification.
-	let event = tokio::time::timeout(std::time::Duration::from_secs(5), l1_notifier.recv())
-		.await
-		.expect("L1 commplete not call by the relayer.");
-	assert!(event.is_some());
-	let event = event.unwrap();
-	assert!(event.is_ok());
-	let event = event.unwrap();
-	assert_eq!(event.bridge_transfer_id(), l2_transfer_id);
 	Ok(())
 }

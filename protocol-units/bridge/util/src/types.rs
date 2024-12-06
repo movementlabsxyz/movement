@@ -22,31 +22,6 @@ pub enum AddressError {
 	AddressConvertionlError(String),
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, PartialOrd, Ord, Hash)]
-pub enum ChainId {
-	ONE,
-	TWO,
-}
-
-impl ChainId {
-	pub fn other(&self) -> ChainId {
-		match self {
-			ChainId::ONE => ChainId::TWO,
-			ChainId::TWO => ChainId::ONE,
-		}
-	}
-}
-
-impl fmt::Display for ChainId {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		let s = match self {
-			ChainId::ONE => "ONE",
-			ChainId::TWO => "TWO",
-		};
-		write!(f, "{}", s)
-	}
-}
-
 #[derive(Debug, Clone, Copy, Eq, PartialEq, PartialOrd, Ord, Hash, Deserialize)]
 pub struct Nonce(pub u128);
 

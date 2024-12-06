@@ -12,7 +12,8 @@ use tokio::sync::oneshot;
 use tracing::info;
 
 struct RestContext {
-	request_tx: mpsc::Sender<oneshot::Sender<String>>,
+	l1_request_tx: mpsc::Sender<oneshot::Sender<bool>>,
+	l2_request_tx: mpsc::Sender<oneshot::Sender<bool>>,
 }
 
 pub struct BridgeRest {
@@ -25,11 +26,12 @@ impl BridgeRest {
 
 	pub fn new(
 		conf: &MovementConfig,
-		request_tx: mpsc::Sender<oneshot::Sender<String>>,
+		l1_request_tx: mpsc::Sender<oneshot::Sender<bool>>,
+		l2_request_tx: mpsc::Sender<oneshot::Sender<bool>>,
 	) -> Result<Self, anyhow::Error> {
 		let url = format!("{}:{}", conf.rest_listener_hostname, conf.rest_port);
 
-		let context = RestContext { request_tx };
+		let context = RestContext { l1_request_tx, l2_request_tx };
 		Ok(Self { url, context: Arc::new(context) })
 	}
 
@@ -48,8 +50,12 @@ impl BridgeRest {
 
 #[handler]
 async fn health(context: Data<&Arc<RestContext>>) -> Result<Response, anyhow::Error> {
-	let (tx, rx) = oneshot::channel();
-	tokio::time::timeout(std::time::Duration::from_secs(2), context.request_tx.send(tx)).await??;
-	let resp = rx.await?;
-	Ok(resp.into_response())
+	let (l1_tx, l1_rx) = oneshot::channel();
+	context.l1_request_tx.send(l1_tx).await?;
+	let (l2_tx, l2_rx) = oneshot::channel();
+	context.l2_request_tx.send(l2_tx).await?;
+	let l1_resp = tokio::time::timeout(std::time::Duration::from_secs(2), l1_rx).await??;
+	let l2_resp = tokio::time::timeout(std::time::Duration::from_secs(2), l2_rx).await??;
+	let res = if l1_resp && l2_resp { "OK".to_string() } else { format!("NOK") };
+	Ok(res.into_response())
 }

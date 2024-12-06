@@ -15,20 +15,84 @@ use bridge_util::chains::bridge_contracts::BridgeTransferInitiatedDetails;
 use bridge_util::types::Nonce;
 use bridge_util::types::{BridgeAddress, BridgeTransferId};
 use futures::SinkExt;
-use futures::{channel::mpsc::UnboundedReceiver, Stream, StreamExt};
+use futures::{
+	channel::mpsc::{UnboundedReceiver, UnboundedSender},
+	Stream, StreamExt,
+};
+use std::sync::Arc;
 use std::{pin::Pin, task::Poll};
+use tokio::sync::RwLock;
 use tokio::sync::{mpsc, oneshot};
 
 pub struct EthMonitoring {
+	pulling_task: Option<PullMonitoring>,
 	listener: UnboundedReceiver<BridgeContractResult<BridgeContractEvent<EthAddress>>>,
+}
+impl EthMonitoring {
+	pub async fn build(
+		config: &EthConfig,
+		health_check_rx: mpsc::Receiver<oneshot::Sender<bool>>,
+	) -> Result<Self, anyhow::Error> {
+		let pulling_task = PullMonitoring::start_pulling(config, health_check_rx).await?;
+		let listener = pulling_task.add_notification_channel().await;
+
+		Ok(Self { pulling_task: Some(pulling_task), listener })
+	}
+
+	pub async fn child(&self) -> Self {
+		let listener = self
+			.pulling_task
+			.as_ref()
+			.expect("EthMonitoring Clone on non initial object.")
+			.add_notification_channel()
+			.await;
+		Self { pulling_task: None, listener }
+	}
 }
 
 impl BridgeContractMonitoring for EthMonitoring {
 	type Address = EthAddress;
 }
 
-impl EthMonitoring {
-	pub async fn build(
+impl Stream for EthMonitoring {
+	type Item = BridgeContractResult<BridgeContractEvent<EthAddress>>;
+
+	fn poll_next(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Option<Self::Item>> {
+		let this = self.get_mut();
+		this.listener.poll_next_unpin(cx)
+	}
+}
+
+pub struct PullMonitoring {
+	notification_channel_list:
+		Arc<RwLock<Vec<UnboundedSender<BridgeContractResult<BridgeContractEvent<EthAddress>>>>>>,
+}
+
+impl PullMonitoring {
+	pub async fn add_notification_channel(
+		&self,
+	) -> UnboundedReceiver<BridgeContractResult<BridgeContractEvent<EthAddress>>> {
+		let (sender, listener) = futures::channel::mpsc::unbounded::<
+			BridgeContractResult<BridgeContractEvent<EthAddress>>,
+		>();
+		let mut list = self.notification_channel_list.write().await;
+		list.push(sender);
+		listener
+	}
+
+	async fn notify_event(
+		list: &Vec<UnboundedSender<BridgeContractResult<BridgeContractEvent<EthAddress>>>>,
+		event: BridgeContractResult<BridgeContractEvent<EthAddress>>,
+	) {
+		for ref mut notif in list {
+			if notif.send(event.clone()).await.is_err() {
+				tracing::error!("Eth Monitor Failed to send event to listener channel");
+				break;
+			}
+		}
+	}
+
+	pub async fn start_pulling(
 		config: &EthConfig,
 		mut health_check_rx: mpsc::Receiver<oneshot::Sender<bool>>,
 	) -> Result<Self, anyhow::Error> {
@@ -39,14 +103,13 @@ impl EthMonitoring {
 			.on_builtin(client_config.rpc_url.as_str())
 			.await?;
 
-		tracing::info!("Start Eth monitoring with initiator:{}", config.eth_native_contract,);
+		let notification_channel_list = Arc::new(RwLock::new(vec![]));
 
-		let (mut sender, listener) = futures::channel::mpsc::unbounded::<
-			BridgeContractResult<BridgeContractEvent<EthAddress>>,
-		>();
+		tracing::info!("Start Eth monitoring with initiator:{}", config.eth_native_contract,);
 
 		tokio::spawn({
 			let config = config.clone();
+			let notification_channel_list = notification_channel_list.clone();
 			async move {
 				let native_contract = NativeBridge::new(
 					config.eth_native_contract.parse().unwrap(), //If unwrap start fail. Config must be updated.
@@ -78,30 +141,25 @@ impl EthMonitoring {
 					{
 						Ok(Ok(block_number)) => block_number,
 						Ok(Err(err)) => {
-							if sender
-								.send(Err(BridgeContractError::OnChainError(format!(
+							PullMonitoring::notify_event(
+								&*notification_channel_list.read().await,
+								Err(BridgeContractError::OnChainError(format!(
 									"Eth get blocknumber request failed: {err}"
-								))))
-								.await
-								.is_err()
-							{
-								tracing::error!("Failed to send event to listener channel");
-								break;
-							}
+								))),
+							)
+							.await;
+
 							let _ = tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
 							continue;
 						}
 						Err(err) => {
-							if sender
-								.send(Err(BridgeContractError::OnChainError(format!(
+							PullMonitoring::notify_event(
+								&*notification_channel_list.read().await,
+								Err(BridgeContractError::OnChainError(format!(
 									"Eth get blocknumber timeout: {err}"
-								))))
-								.await
-								.is_err()
-							{
-								tracing::error!("Failed to send event to listener channel");
-								break;
-							}
+								))),
+							)
+							.await;
 							let _ = tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
 							continue;
 						}
@@ -142,35 +200,33 @@ impl EthMonitoring {
 											};
 										BridgeContractEvent::Initiated(details)
 									};
-									if sender.send(Ok(event)).await.is_err() {
-										tracing::error!("Failed to send event to listener channel");
-										break;
-									}
+									PullMonitoring::notify_event(
+										&*notification_channel_list.read().await,
+										Ok(event),
+									)
+									.await;
 								}
 							}
 							Ok(Err(_)) => {
-								if sender
-									.send(Err(BridgeContractError::OnChainError("Eth monitoring query initiator_initiate_event_filter timeout.".to_string())))
-									.await
-									.is_err()
-								{
-									tracing::error!("Failed to send event to listener channel");
-									break;
-								}
+								PullMonitoring::notify_event(
+										&*notification_channel_list.read().await,
+										Err(BridgeContractError::OnChainError("Eth monitoring query initiator_initiate_event_filter timeout.".to_string())),
+									).await;
 							}
 							Err(err) => {
-								if sender
-									.send(Err(BridgeContractError::OnChainError(err.to_string())))
-									.await
-									.is_err()
-								{
-									tracing::error!("Failed to send event to listener channel");
-									break;
-								}
+								PullMonitoring::notify_event(
+									&*notification_channel_list.read().await,
+									Err(BridgeContractError::OnChainError(err.to_string())),
+								)
+								.await;
 							}
 						}
 						match tokio::time::timeout(
-							tokio::time::Duration::from_secs(config.rest_connection_timeout_secs),completed_event_filter.query()).await {
+							tokio::time::Duration::from_secs(config.rest_connection_timeout_secs),
+							completed_event_filter.query(),
+						)
+						.await
+						{
 							Ok(Ok(events)) => {
 								for (completed, _log) in events {
 									let event = {
@@ -186,37 +242,32 @@ impl EthMonitoring {
 												recipient: BridgeAddress(EthAddress(
 													Address::from(completed.recipient),
 												)),
-												nonce: bridge_util::types::Nonce(completed.nonce.wrapping_to::<u128>()),
+												nonce: bridge_util::types::Nonce(
+													completed.nonce.wrapping_to::<u128>(),
+												),
 												amount: completed.amount.into(),
-
 											};
 										BridgeContractEvent::Completed(details)
 									};
-									if sender.send(Ok(event)).await.is_err() {
-										tracing::error!("Failed to send event to listener channel");
-										break;
-									}
+									PullMonitoring::notify_event(
+										&*notification_channel_list.read().await,
+										Ok(event),
+									)
+									.await;
 								}
 							}
 							Ok(Err(_)) => {
-								if sender
-									.send(Err(BridgeContractError::OnChainError("Eth monitoring query initiator_trcompleted_event_filter timeout.".to_string())))
-									.await
-									.is_err()
-								{
-									tracing::error!("Failed to send event to listener channel");
-									break;
-								}
+								PullMonitoring::notify_event(
+										&*notification_channel_list.read().await,
+										Err(BridgeContractError::OnChainError("Eth monitoring query initiator_trcompleted_event_filter timeout.".to_string())),
+									).await;
 							}
 							Err(err) => {
-								if sender
-									.send(Err(BridgeContractError::OnChainError(err.to_string())))
-									.await
-									.is_err()
-								{
-									tracing::error!("Failed to send event to listener channel");
-									break;
-								}
+								PullMonitoring::notify_event(
+									&*notification_channel_list.read().await,
+									Err(BridgeContractError::OnChainError(err.to_string())),
+								)
+								.await;
 							}
 						}
 					} // end if
@@ -226,15 +277,6 @@ impl EthMonitoring {
 			} // End spawn
 		});
 
-		Ok(Self { listener })
-	}
-}
-
-impl Stream for EthMonitoring {
-	type Item = BridgeContractResult<BridgeContractEvent<EthAddress>>;
-
-	fn poll_next(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Option<Self::Item>> {
-		let this = self.get_mut();
-		this.listener.poll_next_unpin(cx)
+		Ok(PullMonitoring { notification_channel_list })
 	}
 }

@@ -396,6 +396,9 @@ jobs:
   #   - name: Run movement_eth tests
   #     run: |
   #       nix develop --command bash -c "rust_backtrace=1 cargo test --test movement_eth -- --nocapture --test-threads=1"
+  #   - name: Run Relayer tests
+  #     run: |
+  #       nix develop --command bash -c "rust_backtrace=1 cargo test --test relayer -- --nocapture --test-threads=1"
 
 #  Indexer:
 #    strategy:

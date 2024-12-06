@@ -43,17 +43,18 @@ async fn main() -> Result<()> {
 
 	tracing::info!("Bridge config loaded: {bridge_config:?}");
 
-	let (eth_health_tx, eth_health_rx) = tokio::sync::mpsc::channel(10);
-	let one_stream = EthMonitoring::build(&bridge_config.eth, eth_health_rx).await.unwrap();
-	let one_client = EthClient::build_with_config(&bridge_config.eth).await.unwrap();
-	let two_client = MovementClientFramework::build_with_config(&bridge_config.movement)
+	let (eth_client_health_tx, eth_client_health_rx) = tokio::sync::mpsc::channel(10);
+	let (mvt_client_health_tx, mvt_client_health_rx) = tokio::sync::mpsc::channel(10);
+	let eth_stream = EthMonitoring::build(&bridge_config.eth, eth_client_health_rx).await.unwrap();
+	let eth_client = EthClient::build_with_config(&bridge_config.eth).await.unwrap();
+	let mvt_client = MovementClientFramework::build_with_config(&bridge_config.movement)
 		.await
 		.unwrap();
-	let (mvt_health_tx, mvt_health_rx) = tokio::sync::mpsc::channel(10);
-	let two_stream =
-		MovementMonitoring::build(&bridge_config.movement, mvt_health_rx).await.unwrap();
+	let mvt_stream = MovementMonitoring::build(&bridge_config.movement, mvt_client_health_rx)
+		.await
+		.unwrap();
 
-	let one_client_for_grpc = one_client.clone();
+	let eth_client_for_grpc = eth_client.clone();
 
 	// Initialize the gRPC health check service
 	let health_service = HealthCheckService::default();
@@ -70,16 +71,17 @@ async fn main() -> Result<()> {
 	let grpc_jh = tokio::spawn(async move {
 		Server::builder()
 			.add_service(HealthServer::new(health_service))
-			.add_service(BridgeServer::new(one_client_for_grpc))
+			.add_service(BridgeServer::new(eth_client_for_grpc))
 			.serve(grpc_addr)
 			.await
 	});
 
-	// Initialize the gRPC health check service
-	let (health_tx, health_rx) = tokio::sync::mpsc::channel(10);
-	// Start the gRPC server on a specific address (e.g., localhost:50051)
+	// Initialize the Rpc health check service
+	let (eth_rest_health_tx, eth_rest_health_rx) = tokio::sync::mpsc::channel(10);
+	let (mvt_rest_health_tx, mvt_rest_health_rx) = tokio::sync::mpsc::channel(10);
 	// Create and run the REST service
-	let rest_service = BridgeRest::new(&bridge_config.movement, health_tx)?;
+	let rest_service =
+		BridgeRest::new(&bridge_config.movement, eth_rest_health_tx, mvt_rest_health_tx)?;
 	let rest_service_future = rest_service.run_service();
 	let rest_jh = tokio::spawn(rest_service_future);
 
@@ -95,16 +97,32 @@ async fn main() -> Result<()> {
 	// 	}
 	// };
 
-	let loop_jh = tokio::spawn(async move {
-		bridge_service::run_bridge(
-			one_client,
-			one_stream,
-			two_client,
-			two_stream,
-			health_rx,
-			//			indexer_db_client,
-			eth_health_tx,
-			mvt_health_tx,
+	// Start relay in L1-> L2 direction
+	let loop_jh1 = tokio::spawn({
+		let eth_stream = eth_stream.child().await;
+		let mvt_stream = mvt_stream.child().await;
+		async move {
+			bridge_service::relayer::run_relayer_one_direction(
+				"Eth->Mvt",
+				eth_stream,
+				eth_client_health_tx,
+				mvt_client,
+				mvt_stream,
+				eth_rest_health_rx,
+			)
+			.await
+		}
+	});
+
+	// Start relay in L2-> L1 direction
+	let loop_jh2 = tokio::spawn(async move {
+		bridge_service::relayer::run_relayer_one_direction(
+			"Mvt->Eth",
+			mvt_stream,
+			mvt_client_health_tx,
+			eth_client,
+			eth_stream,
+			mvt_rest_health_rx,
 		)
 		.await
 	});
@@ -113,8 +131,11 @@ async fn main() -> Result<()> {
 		res = rest_jh => {
 			tracing::error!("Heath check Rest server exit because :{res:?}");
 		}
-		res = loop_jh => {
-			tracing::error!("Main relayer loop exit because :{res:?}");
+		res = loop_jh1 => {
+			tracing::error!("Eth->Mvt relayer loop exit because :{res:?}");
+		}
+		res = loop_jh2 => {
+			tracing::error!("Mvt->Eth relayer loop exit because :{res:?}");
 		}
 		res = grpc_jh => {
 			tracing::error!("gRpc server exit because :{res:?}");
