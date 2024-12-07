@@ -33,6 +33,7 @@ contract PoolDeployer is Script {
         console.log("moveAmount: ", moveAmount);
         console.log("ethAmount: ", ethAmount);
         pair = IUniswapV2Pair(factory.createPair(moveAddress, wethAddress));
-        router.addLiquidity(moveAddress, wethAddress, moveAmount, ethAmount, 0, 0, address(this), block.timestamp + 1000);
+        router.addLiquidity(moveAddress, wethAddress, moveAmount, ethAmount, 0, 0, vm.addr(privateKey), block.timestamp + 1000);
+        vm.stopBroadcast();
     }
 }
