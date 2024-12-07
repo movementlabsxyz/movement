@@ -3,8 +3,8 @@ use crate::chains::bridge_contracts::BridgeTransferInitiatedDetails;
 use crate::events::{InvalidEventError, TransferEvent};
 use crate::types::Amount;
 use crate::types::BridgeAddress;
+use crate::types::BridgeTransferId;
 use crate::types::Nonce;
-use crate::types::{BridgeTransferId, ChainId};
 use crate::TransferAction;
 use crate::TransferActionType;
 use std::fmt;
@@ -44,7 +44,6 @@ impl fmt::Display for TransferStateType {
 #[allow(dead_code)]
 pub struct TransferState {
 	pub state: TransferStateType,
-	pub init_chain: ChainId,
 	pub transfer_id: BridgeTransferId,
 	pub initiator: TransferAddress,
 	pub recipient: TransferAddress,
@@ -56,11 +55,7 @@ pub struct TransferState {
 
 impl fmt::Display for TransferState {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		write!(
-			f,
-			"Transfer State: {} / transfer id: {} / init_chain: {} ",
-			self.state, self.transfer_id, self.init_chain
-		)
+		write!(f, "Transfer State: {} / transfer id: {}", self.state, self.transfer_id)
 	}
 }
 
@@ -75,28 +70,16 @@ impl TransferState {
 				Err(InvalidEventError::InitAnAlreadyExist)
 			}
 			// Complete event must on on the counter part chain.
-			(BridgeContractEvent::Completed(_), TransferStateType::Initialized) => (event.chain
-				!= self.init_chain)
-				.then_some(())
-				.ok_or(InvalidEventError::BadChain),
-
-			_ => Err(InvalidEventError::BadEvent(format!(
-				"Received an invalid event {} with state not Initialized, transfer_id: {} state:{}",
-				event.contract_event, self.transfer_id, self.state
-			))),
+			(BridgeContractEvent::Completed(_), _) => Ok(()),
 		}
 	}
 
 	pub fn transition_from_initiated<A: Into<Vec<u8>> + Clone>(
-		chain_id: ChainId,
 		transfer_id: BridgeTransferId,
 		detail: BridgeTransferInitiatedDetails<A>,
 	) -> (Self, TransferAction) {
-		println!("State transition_from_initiated amount {:?}", detail.amount);
-
 		let state = TransferState {
 			state: TransferStateType::Initialized,
-			init_chain: chain_id,
 			transfer_id,
 			initiator: detail.initiator.clone().into(),
 			recipient: detail.recipient.clone().into(),
@@ -112,7 +95,7 @@ impl TransferState {
 			amount: detail.amount,
 			nonce: detail.nonce,
 		};
-		let action = TransferAction { chain: chain_id, transfer_id, kind: action_type };
+		let action = TransferAction { transfer_id, kind: action_type };
 		(state, action)
 	}
 

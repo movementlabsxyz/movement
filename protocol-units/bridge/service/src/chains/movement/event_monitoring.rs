@@ -13,6 +13,8 @@ use bridge_util::chains::bridge_contracts::BridgeTransferInitiatedDetails;
 use bridge_util::types::Nonce;
 use bridge_util::BridgeContractEvent;
 use bridge_util::BridgeContractMonitoring;
+use std::sync::Arc;
+use tokio::sync::RwLock;
 
 use futures::{
 	channel::mpsc::{self as futurempsc},
@@ -104,29 +106,95 @@ impl MvtPullingState {
 }
 
 pub struct MovementMonitoring {
+	pulling_task: Option<PullMonitoring>,
 	listener:
 		futurempsc::UnboundedReceiver<BridgeContractResult<BridgeContractEvent<MovementAddress>>>,
+}
+
+impl MovementMonitoring {
+	pub async fn build(
+		config: &MovementConfig,
+		health_check_rx: mpsc::Receiver<oneshot::Sender<bool>>,
+	) -> Result<Self, anyhow::Error> {
+		let pulling_task = PullMonitoring::start_pulling(config, health_check_rx).await?;
+		let listener = pulling_task.add_notification_channel().await;
+
+		Ok(Self { pulling_task: Some(pulling_task), listener })
+	}
+
+	pub async fn child(&self) -> Self {
+		let listener = self
+			.pulling_task
+			.as_ref()
+			.expect("EthMonitoring Clone on non initial object.")
+			.add_notification_channel()
+			.await;
+		Self { pulling_task: None, listener }
+	}
 }
 
 impl BridgeContractMonitoring for MovementMonitoring {
 	type Address = MovementAddress;
 }
 
-impl MovementMonitoring {
-	pub async fn build(
+impl Stream for MovementMonitoring {
+	type Item = BridgeContractResult<BridgeContractEvent<MovementAddress>>;
+
+	fn poll_next(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Option<Self::Item>> {
+		let this = self.get_mut();
+		this.listener.poll_next_unpin(cx)
+	}
+}
+
+pub struct PullMonitoring {
+	notification_channel_list: Arc<
+		RwLock<
+			Vec<
+				futurempsc::UnboundedSender<
+					BridgeContractResult<BridgeContractEvent<MovementAddress>>,
+				>,
+			>,
+		>,
+	>,
+}
+impl PullMonitoring {
+	pub async fn add_notification_channel(
+		&self,
+	) -> futurempsc::UnboundedReceiver<BridgeContractResult<BridgeContractEvent<MovementAddress>>> {
+		let (sender, listener) = futures::channel::mpsc::unbounded::<
+			BridgeContractResult<BridgeContractEvent<MovementAddress>>,
+		>();
+		let mut list = self.notification_channel_list.write().await;
+		list.push(sender);
+		listener
+	}
+
+	async fn notify_event(
+		list: &Vec<
+			futurempsc::UnboundedSender<BridgeContractResult<BridgeContractEvent<MovementAddress>>>,
+		>,
+		event: BridgeContractResult<BridgeContractEvent<MovementAddress>>,
+	) {
+		for ref mut notif in list {
+			if notif.send(event.clone()).await.is_err() {
+				tracing::error!("MvtMonitor Failed to send event to listener channel");
+				break;
+			}
+		}
+	}
+
+	pub async fn start_pulling(
 		config: &MovementConfig,
 		mut health_check_rx: mpsc::Receiver<oneshot::Sender<bool>>,
 	) -> Result<Self, anyhow::Error> {
-		// Spawn a task to forward events to the listener channel
-		let (mut sender, listener) = futures::channel::mpsc::unbounded::<
-			BridgeContractResult<BridgeContractEvent<MovementAddress>>,
-		>();
+		let notification_channel_list = Arc::new(RwLock::new(vec![]));
 
 		//read the pull state
 		let mut pull_state = MvtPullingState::build_from_store_file().await?;
 
 		tokio::spawn({
 			let config = config.clone();
+			let notification_channel_list = notification_channel_list.clone();
 			async move {
 				loop {
 					//Check if there's a health check request
@@ -175,10 +243,11 @@ impl MovementMonitoring {
 					);
 
 					for event in event_list {
-						if sender.send(event).await.is_err() {
-							tracing::error!("Failed to send event to listener channel");
-							break;
-						}
+						PullMonitoring::notify_event(
+							&*notification_channel_list.read().await,
+							event,
+						)
+						.await;
 					}
 					pull_state = new_pull_state;
 
@@ -190,16 +259,7 @@ impl MovementMonitoring {
 			}
 		});
 
-		Ok(MovementMonitoring { listener })
-	}
-}
-
-impl Stream for MovementMonitoring {
-	type Item = BridgeContractResult<BridgeContractEvent<MovementAddress>>;
-
-	fn poll_next(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Option<Self::Item>> {
-		let this = self.get_mut();
-		this.listener.poll_next_unpin(cx)
+		Ok(PullMonitoring { notification_channel_list })
 	}
 }
 
@@ -218,10 +278,7 @@ async fn pool_contract(
 	pull_state: &MvtPullingState,
 	timeout_sec: u64,
 ) -> BridgeContractResult<Vec<(BridgeContractEvent<MovementAddress>, u64)>> {
-	let struct_tag = format!(
-		"{}::native_bridge::BridgeEvents",
-		framework_address.to_string()
-	);
+	let struct_tag = format!("{}::native_bridge::BridgeEvents", framework_address.to_string());
 	// Get initiated events
 	let initiated_events = get_account_events(
 		rest_url,

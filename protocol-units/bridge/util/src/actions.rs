@@ -1,5 +1,4 @@
 use crate::chains::bridge_contracts::BridgeContractError;
-use crate::types::ChainId;
 use crate::types::{Amount, BridgeAddress, BridgeTransferId, Nonce};
 use std::fmt;
 use thiserror::Error;
@@ -21,13 +20,12 @@ impl fmt::Display for ActionExecError {
 
 #[derive(Debug, Clone)]
 pub struct TransferAction {
-	pub chain: ChainId,
 	pub transfer_id: BridgeTransferId,
 	pub kind: TransferActionType,
 }
 impl fmt::Display for TransferAction {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		write!(f, "Action: {}/{}/{}", self.chain, self.transfer_id, self.kind)
+		write!(f, "Action: {} / {}", self.transfer_id, self.kind)
 	}
 }
 

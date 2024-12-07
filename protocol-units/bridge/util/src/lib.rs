@@ -16,4 +16,3 @@ pub use crate::events::TransferEvent;
 pub use crate::states::TransferState;
 pub use crate::states::TransferStateType;
 pub use crate::types::BridgeTransferId;
-pub use crate::types::ChainId;

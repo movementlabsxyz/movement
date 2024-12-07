@@ -13,7 +13,6 @@ use std::io::BufRead;
 use std::{
 	io::Write,
 	process::{Command, Stdio},
-	env
 };
 
 // Proxy contract to be able to call bridge contract.
@@ -255,7 +254,7 @@ pub fn init_movement_node(config: &mut MovementConfig) -> Result<(), anyhow::Err
 	Ok(())
 }
 
-pub fn deploy_on_movement_framework(config: &mut MovementConfig) -> Result<(), anyhow::Error> {
+pub fn deploy_on_movement_framework(_config: &mut MovementConfig) -> Result<(), anyhow::Error> {
 	tracing::info!("Before compile move modules");
 	let compile_output = Command::new("movement")
 		.args(&["move", "compile", "--package-dir", "protocol-units/bridge/move-modules/"])
