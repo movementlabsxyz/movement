@@ -123,13 +123,6 @@ impl BridgeRelayerContract<MockAddress> for RelayerMockClient {
 		let calcuated_bridge_transfer_id =
 			calculated_transfer_bridfe_id(&initiator.0, &recipient.0 .0, amount, nonce);
 		if bridge_transfer_id != calcuated_bridge_transfer_id {
-			println!(
-				"Transfer ids: {bridge_transfer_id} calculated: {calcuated_bridge_transfer_id}"
-			);
-			println!("initiator :{:?}", initiator.0);
-			println!("recipient :{:?}", recipient.0 .0);
-			println!("amount :{:?}", amount);
-			println!("nonce :{:?}", nonce);
 			self.complete_notifier
 				.send(Err(BridgeContractError::OnChainError("Bad transfer Id.".to_string())))
 				.await
@@ -213,9 +206,6 @@ async fn initiate_bridge_transfer(
 	nonce: Nonce,
 	sender: &mut UnboundedSender<BridgeContractResult<BridgeContractEvent<MockAddress>>>,
 ) -> BridgeTransferId {
-	println!("initiator :{:?}", initiator.0);
-	println!("recipient :{:?}", recipient.0);
-
 	let bridge_transfer_id =
 		calculated_transfer_bridfe_id(&initiator.0, &recipient.0, amount, nonce);
 	let details = BridgeTransferInitiatedDetails {
