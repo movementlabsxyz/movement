@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 import "forge-std/Script.sol";
 import "v2-core/interfaces/IUniswapV2Factory.sol";
 import "v2-core/interfaces/IUniswapV2Pair.sol";
+import {IERC20} from "v2-core/interfaces/IERC20.sol";
 import "v2-periphery/interfaces/IUniswapV2Router02.sol";
 import "forge-std/console.sol";
 
@@ -21,7 +22,7 @@ contract PoolDeployer is Script {
     uint256 public moveTotalSupply = 10* 10**9 * 10**moveDecimals;
     uint256 public moveAndEthDepositValue = 250_000;
 
-    uint256 public targetValuation = 500_000_000;
+    uint256 public targetValuation = 1_500_000_000;
     uint256 public currentEthPrice = 4000;
 
     function run() external {
@@ -32,8 +33,11 @@ contract PoolDeployer is Script {
         uint256 moveAmount = (moveAndEthDepositValue * 1e18) / movePriceInEth;
         console.log("moveAmount: ", moveAmount);
         console.log("ethAmount: ", ethAmount);
+
+        IERC20(moveAddress).approve(address(router), moveAmount);
+        IERC20(wethAddress).approve(address(router), ethAmount);
         pair = IUniswapV2Pair(factory.createPair(moveAddress, wethAddress));
-        router.addLiquidity(moveAddress, wethAddress, moveAmount, ethAmount, 0, 0, vm.addr(privateKey), block.timestamp + 1000);
+        router.addLiquidity(moveAddress, wethAddress, moveAmount, ethAmount, moveAmount, ethAmount, vm.addr(privateKey), block.timestamp + 1000);
         vm.stopBroadcast();
     }
 }
