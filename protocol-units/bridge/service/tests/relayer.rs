@@ -226,7 +226,7 @@ async fn test_relayer_logic() -> Result<(), anyhow::Error> {
 	let (l1_health_tx, _l1_health_rx) = tokio::sync::mpsc::channel(10);
 	let (l2_health_tx, _l2_health_rx) = tokio::sync::mpsc::channel(10);
 	let (_health_tx, health_rx) = tokio::sync::mpsc::channel(10);
-	let _loop_jh = tokio::spawn(async move {
+	let _ = tokio::spawn(async move {
 		bridge_service::run_bridge(
 			l1_relayer_client,
 			l1_monitor,
