@@ -21,6 +21,7 @@ use aptos_sdk::{
 		AccountKey, LocalAccount,
 	},
 };
+use bridge_util::chains::AddressVecCodec;
 use bridge_util::{
 	chains::bridge_contracts::BridgeContractError,
 	types::{AddressError, BridgeAddress},
@@ -127,6 +128,16 @@ impl TryFrom<&str> for MovementAddress {
 		let s = s.trim_start_matches("0x");
 		let bytes = hex::decode(s).map_err(|_| AddressError::InvalidHexString)?;
 		bytes.try_into()
+	}
+}
+
+impl AddressVecCodec for MovementAddress {
+	fn try_decode_recipient(value: Vec<u8>) -> Result<Self, AddressError> {
+		// Get binary address from movement chain.
+		MovementAddress::try_from(value)
+	}
+	fn encode_initiator(self) -> Vec<u8> {
+		self.into()
 	}
 }
 
