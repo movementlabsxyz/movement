@@ -2,14 +2,17 @@ use alloy::primitives::U256;
 use alloy::{primitives::Address, providers::ProviderBuilder, signers::local::PrivateKeySigner};
 use alloy_network::EthereumWallet;
 use aptos_sdk::coin_client::CoinClient;
+use aptos_sdk::move_types::identifier::Identifier;
+use aptos_sdk::rest_client::aptos_api_types::{self, EntryFunctionId, MoveModuleId, ViewRequest};
 use aptos_sdk::{
-	rest_client::{Client, FaucetClient},
+	rest_client::{Client, FaucetClient, Response},
 	types::{account_address::AccountAddress, LocalAccount},
 };
 use bridge_config::Config;
 use bridge_service::chains::ethereum::types::MockMOVEToken;
 use bridge_service::chains::ethereum::utils::send_transaction;
 use bridge_service::chains::ethereum::utils::send_transaction_rules;
+use bridge_service::chains::movement::client_framework::FRAMEWORK_ADDRESS;
 use bridge_service::chains::{
 	ethereum::{client::EthClient, types::AlloyProvider},
 	movement::{client_framework::MovementClientFramework, utils::MovementAddress},
@@ -95,7 +98,7 @@ impl Default for MovementToEthCallArgs {
 					.try_into()
 					.expect("Expected bridge_transfer_id to be 32 bytes"),
 			),
-			amount: 100,
+			amount: 100_000_000_000,
 		}
 	}
 }
@@ -335,6 +338,53 @@ impl HarnessMvtClient {
 		result
 	}
 
+	pub async fn get_bridge_fee(&self) -> Result<u64, anyhow::Error> {
+		// Create the view request to call the bridge_fee Move function
+		let view_request = ViewRequest {
+			function: EntryFunctionId {
+				module: MoveModuleId {
+					address: FRAMEWORK_ADDRESS.clone().into(),
+					name: aptos_api_types::IdentifierWrapper(
+						Identifier::new("native_bridge_configuration")
+							.map_err(|_| anyhow::anyhow!("Failed to create module name identifier"))?,
+					),
+				},
+				name: aptos_api_types::IdentifierWrapper(
+					Identifier::new("bridge_fee")
+						.map_err(|_| anyhow::anyhow!("Failed to create function name identifier"))?,
+				),
+			},
+			type_arguments: vec![],
+			arguments: vec![],
+		};
+	
+		// Make the view call
+		let response: Response<Vec<serde_json::Value>> = self
+			.rest_client
+			.view(&view_request, None)
+			.await
+			.map_err(|err| anyhow::anyhow!("Failed to call view function: {:?}", err))?;
+	
+		let values = response.inner();
+
+		tracing::info!("Raw response: {:?}", values);
+
+		// Ensure the response contains exactly one value
+		if values.len() != 1 {
+			return Err(anyhow::anyhow!("Unexpected response length: {}", values.len()));
+		}
+
+		// Parse the bridge fee from the string
+		let fee_str = values[0]
+			.as_str()
+			.ok_or_else(|| anyhow::anyhow!("Bridge fee is not a string"))?;
+		let fee = fee_str
+			.parse::<u64>()
+			.map_err(|err| anyhow::anyhow!("Failed to parse bridge fee as u64: {:?}", err))?;
+
+		Ok(fee)
+	}
+	
 	pub fn calculate_bridge_transfer_id(
 		initiator: Address,
 		recipient: AccountAddress,
