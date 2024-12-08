@@ -160,7 +160,7 @@ impl HarnessEthClient {
 		HarnessEthClient::get_recipient_private_key(config).address()
 	}
 
-	pub fn calculated_transfer_bridfe_id(
+	pub fn calculate_bridge_transfer_id(
 		initiator: AccountAddress,
 		recipient: Address,
 		amount: Amount,

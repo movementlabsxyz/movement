@@ -49,7 +49,7 @@ impl TryFrom<Vec<u8>> for MockAddress {
 	}
 }
 
-fn calculated_transfer_bridge_id(
+fn calculate_bridge_transfer_id(
 	initiator: &[u8],
 	recipient: &[u8],
 	amount: Amount,
@@ -111,7 +111,7 @@ impl BridgeRelayerContract<MockAddress> for RelayerMockClient {
 
 		//verify the transfer Id
 		let calcuated_bridge_transfer_id =
-			calculated_transfer_bridfe_id(&initiator.0, &recipient.0 .0, amount, nonce);
+			calculate_bridge_transfer_id(&initiator.0, &recipient.0 .0, amount, nonce);
 		if bridge_transfer_id != calcuated_bridge_transfer_id {
 			self.complete_notifier
 				.send(Err(BridgeContractError::OnChainError("Bas transfer Id.".to_string())))
@@ -182,7 +182,7 @@ async fn initiate_bridge_transfer(
 	sender: &mut UnboundedSender<BridgeContractResult<BridgeContractEvent<MockAddress>>>,
 ) -> BridgeTransferId {
 	let bridge_transfer_id =
-		calculated_transfer_bridfe_id(&initiator.0, &recipient.0, amount, nonce);
+		calculate_bridge_transfer_id(&initiator.0, &recipient.0, amount, nonce);
 	let details = BridgeTransferInitiatedDetails {
 		bridge_transfer_id,
 		initiator: BridgeAddress(initiator.clone()),
