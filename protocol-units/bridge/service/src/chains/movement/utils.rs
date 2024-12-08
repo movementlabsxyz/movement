@@ -137,11 +137,7 @@ impl AddressVecCodec for MovementAddress {
 		MovementAddress::try_from(value)
 	}
 	fn encode_initiator(self) -> Vec<u8> {
-		let bytes: Vec<u8> = self.into();
-		// convert initiator address to hex because Transfer id verification
-		// use hex encoded address for initiator on Mvt.
-		// Encode initiator so that counterpart chain use the same encoding.
-		hex::encode(bytes).into_bytes()
+		self.into()
 	}
 }
 
