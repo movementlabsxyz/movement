@@ -32,7 +32,7 @@ where
 						BridgeAddress(recipient.0.try_into().map_err(|_| {
 							ActionExecError(
 								action.clone(),
-								BridgeContractError::BadAddressEncoding("lock bridge transfer fail to convert recipient address to vec<u8>".to_string()),
+								BridgeContractError::BadAddressEncoding("Complete bridge transfer fail to convert recipient address to vec<u8>".to_string()),
 							)
 						})?),
 						amount,

@@ -309,6 +309,51 @@ impl HarnessMvtClient {
 		HarnessMvtClient { movement_client, rest_client, faucet_client }
 	}
 
+	fn normalize_to_32_bytes(value: Vec<u8>) -> Vec<u8> {
+		let mut meaningful = Vec::new();
+		let mut i = 0;
+	
+		// Remove trailing zeroes
+		while i < value.len() {
+			if value[i] != 0 {
+				meaningful.push(value[i]);
+			}
+			i += 1;
+		}
+	
+		let mut result = Vec::with_capacity(32);
+		let padding_length = 32 - meaningful.len();
+	
+		// Pad with zeros on the left
+		for _ in 0..padding_length {
+			result.push(0);
+		}
+	
+		// Append the meaningful bytes
+		result.extend_from_slice(&meaningful);
+	
+		result
+	}
+
+	pub fn calculate_bridge_transfer_id(
+		initiator: Address,
+		recipient: AccountAddress,
+		amount: Amount,
+		nonce: Nonce,
+	) -> BridgeTransferId {
+		let mut hasher = Keccak::v256();
+		hasher.update(&initiator.as_slice());
+		hasher.update(&recipient.as_slice());
+		let encoded_amount = Self::normalize_to_32_bytes(bcs::to_bytes(&amount).expect("Failed to serialize amount"));
+		hasher.update(&encoded_amount);
+		let encoded_nonce = Self::normalize_to_32_bytes(bcs::to_bytes(&nonce).expect("Failed to serialize nonce"));
+		hasher.update(&encoded_nonce);
+		let mut output = [0u8; 32];
+		hasher.finalize(&mut output);
+
+		BridgeTransferId(output)
+	}
+
 	pub async fn initiate_bridge_transfer_helper_framework(
 		config: &Config,
 		initiator_privatekey: LocalAccount,
