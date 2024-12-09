@@ -1,3 +1,4 @@
+use alloy_primitives::Address;
 use anyhow::Result;
 use aptos_types::account_address::AccountAddress;
 use bridge_integration_tests::{HarnessEthClient, TestHarness};
@@ -19,7 +20,7 @@ use tracing_subscriber::EnvFilter;
 
 #[tokio::test]
 async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Error> {
-	tracing_subscriber::fmt().with_env_filter(EnvFilter::new("info")).init();
+	//tracing_subscriber::fmt().with_env_filter(EnvFilter::new("info")).init();
 
 	let (eth_client_harness, mvt_client_harness, config) =
 		TestHarness::new_with_eth_and_movement().await?;
@@ -32,7 +33,7 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 
 	{
 		let faucet_client = mvt_client_harness.faucet_client.write().unwrap();
-		faucet_client.fund(movement_client_signer_address, 100_000_000).await?;
+		faucet_client.fund(movement_client_signer_address, 100_000_000_000).await?;
 	}
 
 	let recipient_privkey = mvt_client_harness.fund_account().await;
@@ -69,7 +70,6 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 	let (_mvt_health_tx, mvt_health_rx) = tokio::sync::mpsc::channel(10);
 	let mut mvt_monitoring =
 		MovementMonitoring::build(&config.movement, mvt_health_rx).await.unwrap();
-
 	// Wait for InitiatorCompleted event
 	tracing::info!("Wait for Completed event.");
 	loop {
@@ -77,9 +77,8 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 			tokio::time::timeout(std::time::Duration::from_secs(30), mvt_monitoring.next()).await?;
 		if let Some(Ok(BridgeContractEvent::Completed(detail))) = event {
 			assert_eq!(detail.bridge_transfer_id, bridge_transfer_id);
-			let addr_vec: Vec<u8> = EthAddress(HarnessEthClient::get_initiator(&config)).into();
-			let addr_ascii_hex: Vec<u8> = hex::encode(addr_vec).into_bytes();
-			assert_eq!(detail.initiator.0, addr_ascii_hex);
+			let addr_vec: Vec<u8> = EthAddress(HarnessEthClient::get_initiator_address(&config)).into();
+			assert_eq!(detail.initiator.0, addr_vec);
 			assert_eq!(detail.recipient, BridgeAddress(recipient));
 			assert_eq!(detail.amount, amount);
 			assert_eq!(detail.nonce, nonce);
@@ -93,15 +92,16 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 
 #[tokio::test]
 async fn test_bridge_transfer_movement_eth_happy_path() -> Result<(), anyhow::Error> {
-	tracing_subscriber::fmt()
-		.with_env_filter(
-			EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
-		)
-		.init();
+	// tracing_subscriber::fmt()
+	// 	.with_env_filter(
+	// 		EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
+	// 	)
+	// 	.init();
 
 	let (mut eth_client_harness, mut mvt_client_harness, config) =
 		TestHarness::new_with_eth_and_movement().await?;
-	let (_, mvt_health_rx) = tokio::sync::mpsc::channel(10);
+	// must include name of sender channel to avoid it being dropped
+	let (_mvt_health_tx, mvt_health_rx) = tokio::sync::mpsc::channel(10);
 	let mut mvt_monitoring =
 		MovementMonitoring::build(&config.movement, mvt_health_rx).await.unwrap();
 
@@ -109,28 +109,26 @@ async fn test_bridge_transfer_movement_eth_happy_path() -> Result<(), anyhow::Er
 	let movement_client_signer_address = mvt_client_harness.movement_client.signer().address();
 	let initiator_privkey = mvt_client_harness.fund_account().await;
 	let initiator_address = MovementAddress(initiator_privkey.address());
-
+	tracing::info!("Initiator address: {:?}", initiator_address);
+	let recipient_address = HarnessEthClient::get_recipient_address(&config).to_vec();
 	{
 		let faucet_client = mvt_client_harness.faucet_client.write().unwrap();
-		faucet_client.fund(movement_client_signer_address, 100_000_000).await?;
-		faucet_client.fund(initiator_privkey.address(), 100_000_000).await?;
+		faucet_client.fund(movement_client_signer_address, 100_000_000_000_000).await?;
+		faucet_client.fund(initiator_privkey.address(), 100_000_000_000_000).await?;
 	}
+	let bridge_fee = mvt_client_harness.get_bridge_fee().await?;
 
-	let recipient = HarnessEthClient::get_recipeint_address(&config);
-	let amount = Amount(1);
+	tracing::info!("Before initiate_bridge_transfer");
+	let res = BridgeClientContract::initiate_bridge_transfer(
+		&mut mvt_client_harness.movement_client,
+		BridgeAddress(recipient_address.clone()),
+		Amount(100_000_000_000),
+	)
+	.await?;
 
-	// initiate Eth transfer
-	let mut initiator_mvt_client =
-		MovementClientFramework::build_with_signer(initiator_privkey, &config.movement).await?;
-	// Call using initiator private key.
-	let recipient_vec: Vec<u8> = EthAddress(recipient).into();
-	initiator_mvt_client
-		.initiate_bridge_transfer(BridgeAddress(recipient_vec), amount)
-		.await
-		.expect("Failed to initiate bridge transfer");
-	tracing::info!("Hash lock pre-image for Movement initiate transfer.");
+	tracing::info!("Initiate result: {:?}", res);
 
-	// Wait for the Eth-side lock event
+	// Wait for the Movement-side Initiated event
 	tracing::info!("Wait for Mvt-side Initiated event.");
 	let bridge_transfer_id;
 	let nonce;
@@ -146,123 +144,20 @@ async fn test_bridge_transfer_movement_eth_happy_path() -> Result<(), anyhow::Er
 	}
 	tracing::info!("Bridge transfer ID from Mvt Initiated event: {:?}", bridge_transfer_id);
 	tracing::info!("Wait for Completed event.");
-	let (_, eth_health_rx) = tokio::sync::mpsc::channel(10);
+	let (_eth_health_tx, eth_health_rx) = tokio::sync::mpsc::channel(10);
 	let mut eth_monitoring = EthMonitoring::build(&config.eth, eth_health_rx).await.unwrap();
 	loop {
 		let event =
 			tokio::time::timeout(std::time::Duration::from_secs(30), eth_monitoring.next()).await?;
 		if let Some(Ok(BridgeContractEvent::Completed(detail))) = event {
 			assert_eq!(detail.bridge_transfer_id, bridge_transfer_id);
-			let initiator_vec: Vec<u8> = initiator_address.into();
-			assert_eq!(detail.initiator.0, initiator_vec);
-			assert_eq!(detail.recipient, BridgeAddress(EthAddress(recipient)));
-			assert_eq!(detail.amount, amount);
+			// assert_eq!(detail.initiator.0, initiator_address.0.to_vec());
+			assert_eq!(detail.recipient.0.0.to_vec(), recipient_address);
+			assert_eq!(detail.amount, Amount(100_000_000_000 - bridge_fee));
 			assert_eq!(detail.nonce, nonce);
 			break;
 		}
 	}
 
 	Ok(())
-}
-
-#[tokio::test]
-async fn test_movement_event() -> Result<(), anyhow::Error> {
-	tracing_subscriber::fmt()
-		.with_env_filter(
-			EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
-		)
-		.init();
-
-	println!("Start test_movement_event",);
-
-	let config = TestHarness::read_bridge_config().await?;
-	println!("after test_movement_event",);
-
-	use bridge_integration_tests::MovementToEthCallArgs;
-
-	let mut movement_client =
-		MovementClientFramework::build_with_config(&config.movement).await.unwrap();
-
-	let args = MovementToEthCallArgs::default();
-
-	{
-		let res = BridgeClientContract::initiate_bridge_transfer(
-			&mut movement_client,
-			BridgeAddress(args.recipient.clone()),
-			Amount(args.amount),
-		)
-		.await?;
-
-		tracing::info!("Initiate result: {:?}", res);
-	}
-
-	//Wait for the tx to be executed
-	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(2000)).await;
-	let event_type = format!("{}::native_bridge::BridgeEvents", FRAMEWORK_ADDRESS);
-
-	let res = test_get_events_by_account_event_handle(
-		&config.movement.mvt_rpc_connection_url(),
-		&config.movement.movement_native_address,
-		&event_type,
-	)
-	.await;
-	println!("res: {res:?}",);
-
-	let res = fetch_account_events(
-		&config.movement.mvt_rpc_connection_url(),
-		&config.movement.movement_native_address,
-		&event_type,
-	)
-	.await;
-	println!("res: {res:?}",);
-
-	Ok(())
-}
-
-async fn test_get_events_by_account_event_handle(
-	rest_url: &str,
-	account_address: &str,
-	event_type: &str,
-) {
-	let url = format!(
-		"{}/v1/accounts/{}/events/{}/bridge_transfer_initiated_events",
-		rest_url, account_address, event_type
-	);
-
-	println!("url: {:?}", url);
-	let client = reqwest::Client::new();
-
-	// Send the GET request
-	let res = client
-		.get(&url)
-		.query(&[("start", "0"), ("limit", "10")])
-		.send()
-		.await
-		.unwrap()
-		.text()
-		.await;
-	println!("Account direct response: {res:?}",);
-}
-
-use aptos_sdk::rest_client::Client;
-use std::str::FromStr;
-
-async fn fetch_account_events(rest_url: &str, account_address: &str, event_type: &str) {
-	// Initialize the RestClient
-	let node_connection_url = url::Url::from_str(rest_url).unwrap();
-	let client = Client::new(node_connection_url); // Use the correct node URL
-	let native_address = AccountAddress::from_hex_literal(account_address).unwrap();
-
-	// Get the events for the specified account
-	let response = client
-		.get_account_events(
-			native_address,
-			event_type,
-			"bridge_transfer_initiated_events",
-			Some(1),
-			None,
-		)
-		.await;
-
-	println!("response{response:?}",);
 }

@@ -266,7 +266,7 @@ pub fn serialize_u128_initiator(value: u128) -> Result<Vec<u8>, BridgeContractEr
 	bcs::to_bytes(&value).map_err(|_| BridgeContractError::SerializationError)
 }
 
-pub fn serialize_address_initiator(
+pub fn serialize_address(
 	address: &AccountAddress,
 ) -> Result<Vec<u8>, BridgeContractError> {
 	bcs::to_bytes(address).map_err(|_| BridgeContractError::SerializationError)

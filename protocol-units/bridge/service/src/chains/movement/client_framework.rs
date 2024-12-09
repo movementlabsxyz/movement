@@ -114,7 +114,7 @@ impl BridgeClientContract<MovementAddress> for MovementClientFramework {
 
 		Ok(())
 	}
-
+	
 	async fn get_bridge_transfer_details(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,

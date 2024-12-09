@@ -30,8 +30,8 @@ async fn test_eth_client_initiate_bridge_transfer() {
 		.await;
 	assert!(res.is_ok(), "initiate_bridge_transfer failed because: {res:?}");
 
-	// Wait for the Eth-side Completed event
-	tracing::info!("Wait for Mvt-side Completed event.");
+	// Wait for the Eth-side Initiated event
+	tracing::info!("Wait for Eth-side Initiated event.");
 	loop {
 		let event = tokio::time::timeout(std::time::Duration::from_secs(30), eth_monitoring.next())
 			.await
@@ -62,12 +62,14 @@ async fn test_eth_client_complete_bridge_transfer() {
 	let nonce = TestHarness::create_nonce();
 	let amount = Amount(2);
 
-	let transfer_id = HarnessEthClient::calculated_transfer_bridfe_id(
+	let transfer_id = HarnessEthClient::calculate_bridge_transfer_id(
 		initiator_address,
 		*recipeint_address,
 		amount,
 		nonce,
 	);
+
+	tracing::info!("Transfer ID Eth side: {:?}", transfer_id);
 
 	let res = eth_client_harness
 		.eth_client
@@ -83,7 +85,7 @@ async fn test_eth_client_complete_bridge_transfer() {
 	assert!(res.is_ok(), "complete_bridge_transfer failed: {:?}", res.unwrap_err());
 
 	// Wait for the Eth-side Completed event
-	tracing::info!("Wait for Mvt-side Completed event.");
+	tracing::info!("Wait for Eth-side Completed event.");
 	loop {
 		let event = tokio::time::timeout(std::time::Duration::from_secs(30), eth_monitoring.next())
 			.await
