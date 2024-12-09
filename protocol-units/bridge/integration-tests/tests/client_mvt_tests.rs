@@ -84,101 +84,6 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 }
 
 #[tokio::test]
-async fn test_movement_client_complete_transfer_old() -> Result<(), anyhow::Error> {
-        let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::INFO).try_init();
-        let (mut mvt_client_harness, config) =
-                TestHarness::new_with_movement().await.expect("Bridge config file not set");
-        let (_mvt_health_tx, mvt_health_rx) = tokio::sync::mpsc::channel(10);
-        let mut mvt_monitoring =
-                MovementMonitoring::build(&config.movement, mvt_health_rx).await.unwrap();
-
-        // Set initiator as hex string
-	let initiator =
-	EthAddress(HarnessEthClient::get_recipient_private_key(&config).address());
-
-        // Set recipient address
-	let recipient = HarnessMvtClient::gen_aptos_account().address();
-
-        // Set amount to 1
-        let amount = Amount(1);
-
-        // Random nonce
-        let incoming_nonce = TestHarness::create_nonce();
-
-	let bridge_transfer_id = HarnessMvtClient::calculate_bridge_transfer_id(
-		*initiator,
-		recipient,
-		amount,
-		incoming_nonce,
-	);
-
-        let coin_client = CoinClient::new(&mvt_client_harness.rest_client);
-        let movement_client_signer = mvt_client_harness.movement_client.signer();
-
-        // Fund accounts
-        {
-                let faucet_client = mvt_client_harness.faucet_client.write().unwrap();
-                faucet_client
-                        .fund(movement_client_signer.address(), 100_000_000)
-                        .await?;
-                faucet_client.fund(recipient, 100_000_000).await?;
-        }
-
-        // Assert the balance is sufficient
-        let balance = coin_client
-                .get_account_balance(&movement_client_signer.address())
-                .await?;
-        assert!(
-                balance >= 100_000_000,
-                "Expected Movement Client to have at least 100_000_000, but found {}",
-                balance
-        );
-
-        // Call the complete_bridge_transfer function
-        BridgeRelayerContract::complete_bridge_transfer(
-                &mut mvt_client_harness.movement_client,
-                bridge_transfer_id,
-                BridgeAddress(initiator.clone().0.to_vec()),
-                BridgeAddress(MovementAddress(recipient)),
-                amount,
-                incoming_nonce,
-        )
-        .await
-        .expect("Failed to complete bridge transfer");
-
-        // Wait for the Movement-side Completed event
-        tracing::info!("Wait for Movement-side Completed event.");
-        loop {
-                let event = tokio::time::timeout(std::time::Duration::from_secs(30), mvt_monitoring.next())
-                        .await
-                        .expect("Wait for completed event timeout.");
-                if let Some(Ok(BridgeContractEvent::Completed(detail))) = event {
-                        tracing::info!("Completed details: {:?}", detail);
-                        assert_eq!(
-                                detail.bridge_transfer_id,
-                                bridge_transfer_id,
-                                "Bad transfer id in completed event"
-                        );
-                        assert_eq!(detail.nonce, incoming_nonce, "Bad nonce in completed event");
-                        assert_eq!(detail.amount, amount, "Bad amount in completed event");
-                        assert_eq!(
-                                detail.initiator,
-                                BridgeAddress(initiator.0.to_vec()),
-                                "Bad initiator address in completed event"
-                        );
-                        assert_eq!(
-                                detail.recipient.0.0,
-                                recipient,
-                                "Bad recipient address in completed event"
-                        );
-                        break;
-                }
-        }
-
-        Ok(())
-}
-
-#[tokio::test]
 async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::INFO).try_init();
 	let (mut mvt_client_harness, config) =
@@ -202,7 +107,7 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
         tracing::info!("Initiator: {:?}", initiator.clone().0);
         tracing::info!("Recipient: {:?}", recipient);
         tracing::info!("Amount: {:?}", amount);
-        tracing::info!("Incoming nonce: {:?}", amount);
+        tracing::info!("Incoming nonce: {:?}", incoming_nonce);
 
 	let bridge_transfer_id = HarnessMvtClient::calculate_bridge_transfer_id(
 		initiator.clone().0,
@@ -267,6 +172,10 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 			break;
 		}
 	}
+
+        // Gracefully stop monitoring
+	tracing::info!("Stopping monitoring tasks.");
+	drop(mvt_monitoring); // Drop Mvt monitoring object
 
 	Ok(())
 }

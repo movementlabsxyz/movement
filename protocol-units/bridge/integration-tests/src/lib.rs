@@ -22,6 +22,7 @@ use bridge_service::types::BridgeAddress;
 use bridge_service::types::BridgeTransferId;
 use bridge_service::types::Nonce;
 use bridge_util::chains::bridge_contracts::BridgeClientContract;
+use ethabi::ethereum_types;
 use godfig::{backend::config_file::ConfigFile, Godfig};
 use rand::{distributions::Alphanumeric, thread_rng, Rng, SeedableRng};
 use std::{
@@ -241,30 +242,11 @@ impl HarnessMvtClient {
 		HarnessMvtClient { movement_client, rest_client, faucet_client }
 	}
 
-	fn normalize_to_32_bytes(value: Vec<u8>) -> Vec<u8> {
-		let mut meaningful = Vec::new();
-		let mut i = 0;
-
-		// Remove trailing zeroes
-		while i < value.len() {
-			if value[i] != 0 {
-				meaningful.push(value[i]);
-			}
-			i += 1;
-		}
-
-		let mut result = Vec::with_capacity(32);
-		let padding_length = 32 - meaningful.len();
-
-		// Pad with zeros on the left
-		for _ in 0..padding_length {
-			result.push(0);
-		}
-
-		// Append the meaningful bytes
-		result.extend_from_slice(&meaningful);
-
-		result
+	fn normalize_to_32_bytes(value: u64) -> Vec<u8> {
+		// Convert the u64 value to a u256 (as bytes)
+		let bytes = ethabi::encode(&[ethabi::Token::Uint(ethabi::Uint::from(value as u128))]);
+	
+		bytes
 	}
 
 	pub async fn get_bridge_fee(&self) -> Result<u64, anyhow::Error> {
@@ -325,12 +307,9 @@ impl HarnessMvtClient {
 		let mut hasher = Keccak::v256();
 		hasher.update(&initiator.as_slice());
 		hasher.update(&bcs::to_bytes(&recipient).unwrap());
-		let encoded_amount = Self::normalize_to_32_bytes(
-			bcs::to_bytes(&amount).expect("Failed to serialize amount"),
-		);
+		let encoded_amount = Self::normalize_to_32_bytes(amount.0);
 		hasher.update(&encoded_amount);
-		let encoded_nonce =
-			Self::normalize_to_32_bytes(bcs::to_bytes(&nonce).expect("Failed to serialize nonce"));
+		let encoded_nonce = Self::normalize_to_32_bytes(nonce.0 as u64);
 		hasher.update(&encoded_nonce);
 		let mut output = [0u8; 32];
 		hasher.finalize(&mut output);
