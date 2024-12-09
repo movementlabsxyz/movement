@@ -32,77 +32,6 @@ use std::{
 use tiny_keccak::{Hasher, Keccak};
 use url::Url;
 
-#[derive(Clone)]
-pub struct EthToMovementCallArgs {
-	pub initiator: Vec<u8>,
-	pub recipient: MovementAddress,
-	pub bridge_transfer_id: BridgeTransferId,
-	pub amount: u64,
-}
-
-#[derive(Clone)]
-pub struct MovementToEthCallArgs {
-	pub initiator: MovementAddress,
-	pub recipient: Vec<u8>,
-	pub bridge_transfer_id: BridgeTransferId,
-	pub amount: u64,
-}
-
-impl Default for EthToMovementCallArgs {
-	fn default() -> Self {
-		// Generate 6 random alphanumeric characters
-		let random_suffix: String =
-			thread_rng().sample_iter(&Alphanumeric).take(6).map(char::from).collect();
-
-		// Construct the bridge_transfer_id with the random suffix
-		let mut bridge_transfer_id = b"00000000000000000000000tra".to_vec();
-		bridge_transfer_id.extend_from_slice(random_suffix.as_bytes());
-
-		Self {
-			// Dummy valid EIP-55 address used in framework modules
-			// initiator: b"32Be343B94f860124dC4fEe278FDCBD38C102D88".to_vec(),
-			// Actual Eth address
-			initiator: b"0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc".to_vec(),
-			// All lowercase version:
-			//initiator: b"0x32be343b94f860124dc4fee278fdcbd38c102d88".to_vec(),
-			// Dummy recipient address
-			recipient: MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face")),
-			// Convert to [u8; 32] with explicit type annotation
-			bridge_transfer_id: BridgeTransferId(
-				bridge_transfer_id
-					.as_slice()
-					.try_into()
-					.expect("Expected bridge_transfer_id to be 32 bytes"),
-			),
-			amount: 100,
-		}
-	}
-}
-
-impl Default for MovementToEthCallArgs {
-	fn default() -> Self {
-		// Generate a 6-character random alphanumeric suffix
-		let random_suffix: String =
-			thread_rng().sample_iter(&Alphanumeric).take(6).map(char::from).collect();
-
-		// Construct the bridge_transfer_id with the random suffix
-		let mut bridge_transfer_id = b"00000000000000000000000tra".to_vec();
-		bridge_transfer_id.extend_from_slice(random_suffix.as_bytes());
-
-		Self {
-			initiator: MovementAddress(AccountAddress::new(*b"0x000000000000000000000000A55018")),
-			recipient: b"32Be343B94f860124dC4fEe278FDCBD38C102D88".to_vec(),
-			bridge_transfer_id: BridgeTransferId(
-				bridge_transfer_id
-					.as_slice()
-					.try_into()
-					.expect("Expected bridge_transfer_id to be 32 bytes"),
-			),
-			amount: 100_000_000_000,
-		}
-	}
-}
-
 pub struct HarnessEthClient {
 	pub eth_rpc_url: String,
 	pub signer_private_key: PrivateKeySigner,
@@ -147,7 +76,7 @@ impl HarnessEthClient {
 		signer_private_key
 	}
 
-	pub fn get_initiator(config: &Config) -> Address {
+	pub fn get_initiator_address(config: &Config) -> Address {
 		HarnessEthClient::get_initiator_private_key(config).address()
 	}
 
@@ -159,7 +88,7 @@ impl HarnessEthClient {
 		signer_private_key
 	}
 
-	pub fn get_recipeint_address(config: &Config) -> Address {
+	pub fn get_recipient_address(config: &Config) -> Address {
 		HarnessEthClient::get_recipient_private_key(config).address()
 	}
 
@@ -315,7 +244,7 @@ impl HarnessMvtClient {
 	fn normalize_to_32_bytes(value: Vec<u8>) -> Vec<u8> {
 		let mut meaningful = Vec::new();
 		let mut i = 0;
-	
+
 		// Remove trailing zeroes
 		while i < value.len() {
 			if value[i] != 0 {
@@ -323,18 +252,18 @@ impl HarnessMvtClient {
 			}
 			i += 1;
 		}
-	
+
 		let mut result = Vec::with_capacity(32);
 		let padding_length = 32 - meaningful.len();
-	
+
 		// Pad with zeros on the left
 		for _ in 0..padding_length {
 			result.push(0);
 		}
-	
+
 		// Append the meaningful bytes
 		result.extend_from_slice(&meaningful);
-	
+
 		result
 	}
 
@@ -345,26 +274,28 @@ impl HarnessMvtClient {
 				module: MoveModuleId {
 					address: FRAMEWORK_ADDRESS.clone().into(),
 					name: aptos_api_types::IdentifierWrapper(
-						Identifier::new("native_bridge_configuration")
-							.map_err(|_| anyhow::anyhow!("Failed to create module name identifier"))?,
+						Identifier::new("native_bridge_configuration").map_err(|_| {
+							anyhow::anyhow!("Failed to create module name identifier")
+						})?,
 					),
 				},
 				name: aptos_api_types::IdentifierWrapper(
-					Identifier::new("bridge_fee")
-						.map_err(|_| anyhow::anyhow!("Failed to create function name identifier"))?,
+					Identifier::new("bridge_fee").map_err(|_| {
+						anyhow::anyhow!("Failed to create function name identifier")
+					})?,
 				),
 			},
 			type_arguments: vec![],
 			arguments: vec![],
 		};
-	
+
 		// Make the view call
 		let response: Response<Vec<serde_json::Value>> = self
 			.rest_client
 			.view(&view_request, None)
 			.await
 			.map_err(|err| anyhow::anyhow!("Failed to call view function: {:?}", err))?;
-	
+
 		let values = response.inner();
 
 		tracing::info!("Raw response: {:?}", values);
@@ -384,7 +315,7 @@ impl HarnessMvtClient {
 
 		Ok(fee)
 	}
-	
+
 	pub fn calculate_bridge_transfer_id(
 		initiator: Address,
 		recipient: AccountAddress,
@@ -393,10 +324,13 @@ impl HarnessMvtClient {
 	) -> BridgeTransferId {
 		let mut hasher = Keccak::v256();
 		hasher.update(&initiator.as_slice());
-		hasher.update(&recipient.as_slice());
-		let encoded_amount = Self::normalize_to_32_bytes(bcs::to_bytes(&amount).expect("Failed to serialize amount"));
+		hasher.update(&bcs::to_bytes(&recipient).unwrap());
+		let encoded_amount = Self::normalize_to_32_bytes(
+			bcs::to_bytes(&amount).expect("Failed to serialize amount"),
+		);
 		hasher.update(&encoded_amount);
-		let encoded_nonce = Self::normalize_to_32_bytes(bcs::to_bytes(&nonce).expect("Failed to serialize nonce"));
+		let encoded_nonce =
+			Self::normalize_to_32_bytes(bcs::to_bytes(&nonce).expect("Failed to serialize nonce"));
 		hasher.update(&encoded_nonce);
 		let mut output = [0u8; 32];
 		hasher.finalize(&mut output);
