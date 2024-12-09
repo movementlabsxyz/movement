@@ -104,11 +104,6 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 	// Random nonce
 	let incoming_nonce = TestHarness::create_nonce();
 
-        tracing::info!("Initiator: {:?}", initiator.clone().0);
-        tracing::info!("Recipient: {:?}", recipient);
-        tracing::info!("Amount: {:?}", amount);
-        tracing::info!("Incoming nonce: {:?}", incoming_nonce);
-
 	let bridge_transfer_id = HarnessMvtClient::calculate_bridge_transfer_id(
 		initiator.clone().0,
 		recipient,

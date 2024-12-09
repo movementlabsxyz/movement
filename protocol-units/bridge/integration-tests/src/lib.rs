@@ -22,7 +22,7 @@ use bridge_service::types::BridgeAddress;
 use bridge_service::types::BridgeTransferId;
 use bridge_service::types::Nonce;
 use bridge_util::chains::bridge_contracts::BridgeClientContract;
-use ethabi::ethereum_types;
+use ethabi;
 use godfig::{backend::config_file::ConfigFile, Godfig};
 use rand::{distributions::Alphanumeric, thread_rng, Rng, SeedableRng};
 use std::{

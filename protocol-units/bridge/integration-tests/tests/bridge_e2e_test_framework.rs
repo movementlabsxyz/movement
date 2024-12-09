@@ -87,12 +87,6 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 		}
 	}
 
-	// Gracefully stop monitoring
-	tracing::info!("Stopping monitoring tasks.");
-	drop(mvt_monitoring);
-	drop(eth_monitoring);
-	tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-
 	Ok(())
 }
 
@@ -165,59 +159,5 @@ async fn test_bridge_transfer_movement_eth_happy_path() -> Result<(), anyhow::Er
 		}
 	}
 
-	// Gracefully stop monitoring
-	tracing::info!("Stopping monitoring tasks.");
-	drop(mvt_monitoring);
-	drop(eth_monitoring);
-	tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-
 	Ok(())
-}
-
-async fn test_get_events_by_account_event_handle(
-	rest_url: &str,
-	account_address: &str,
-	event_type: &str,
-) {
-	let url = format!(
-		"{}/v1/accounts/{}/events/{}/bridge_transfer_initiated_events",
-		rest_url, account_address, event_type
-	);
-
-	println!("url: {:?}", url);
-	let client = reqwest::Client::new();
-
-	// Send the GET request
-	let res = client
-		.get(&url)
-		.query(&[("start", "0"), ("limit", "10")])
-		.send()
-		.await
-		.unwrap()
-		.text()
-		.await;
-	println!("Account direct response: {res:?}",);
-}
-
-use aptos_sdk::rest_client::Client;
-use std::str::FromStr;
-
-async fn fetch_account_events(rest_url: &str, account_address: &str, event_type: &str) {
-	// Initialize the RestClient
-	let node_connection_url = url::Url::from_str(rest_url).unwrap();
-	let client = Client::new(node_connection_url); // Use the correct node URL
-	let native_address = AccountAddress::from_hex_literal(account_address).unwrap();
-
-	// Get the events for the specified account
-	let response = client
-		.get_account_events(
-			native_address,
-			event_type,
-			"bridge_transfer_initiated_events",
-			Some(1),
-			None,
-		)
-		.await;
-
-	println!("response{response:?}",);
 }
