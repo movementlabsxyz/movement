@@ -20,7 +20,7 @@ use tracing_subscriber::EnvFilter;
 
 #[tokio::test]
 async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Error> {
-	tracing_subscriber::fmt().with_env_filter(EnvFilter::new("info")).init();
+	//tracing_subscriber::fmt().with_env_filter(EnvFilter::new("info")).init();
 
 	let (eth_client_harness, mvt_client_harness, config) =
 		TestHarness::new_with_eth_and_movement().await?;
@@ -87,16 +87,22 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 		}
 	}
 
+	// Gracefully stop monitoring
+	tracing::info!("Stopping monitoring tasks.");
+	drop(mvt_monitoring);
+	drop(eth_monitoring);
+	tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+
 	Ok(())
 }
 
 #[tokio::test]
 async fn test_bridge_transfer_movement_eth_happy_path() -> Result<(), anyhow::Error> {
-	tracing_subscriber::fmt()
-		.with_env_filter(
-			EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
-		)
-		.init();
+	// tracing_subscriber::fmt()
+	// 	.with_env_filter(
+	// 		EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
+	// 	)
+	// 	.init();
 
 	let (mut eth_client_harness, mut mvt_client_harness, config) =
 		TestHarness::new_with_eth_and_movement().await?;
@@ -158,6 +164,12 @@ async fn test_bridge_transfer_movement_eth_happy_path() -> Result<(), anyhow::Er
 			break;
 		}
 	}
+
+	// Gracefully stop monitoring
+	tracing::info!("Stopping monitoring tasks.");
+	drop(mvt_monitoring);
+	drop(eth_monitoring);
+	tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
 	Ok(())
 }

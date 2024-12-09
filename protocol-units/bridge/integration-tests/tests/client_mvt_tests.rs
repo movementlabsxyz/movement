@@ -173,9 +173,5 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 		}
 	}
 
-        // Gracefully stop monitoring
-	tracing::info!("Stopping monitoring tasks.");
-	drop(mvt_monitoring); // Drop Mvt monitoring object
-
 	Ok(())
 }
