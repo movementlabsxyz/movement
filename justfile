@@ -1,8 +1,8 @@
 # Function to check and remove the .movement/ directory if it exists
 remove-dot-movement:
-    @if [ -d .movement ]; then \
-        echo "Removing .movement directory..."; \
-        rm -rf .movement; \
+    @if [ "${REMOVE_DOT_MOVEMENT}" = "true" ] && [ -d "${DOT_MOVEMENT_PATH}" ]; then \
+        echo "Removing ${DOT_MOVEMENT_PATH} directory..."; \
+        rm -rf "${DOT_MOVEMENT_PATH}"; \
     fi
 
 # Commands with a dependency on `remove-dot-movement`

@@ -153,6 +153,9 @@
               export DOT_MOVEMENT_PATH=$(pwd)/.movement
               mkdir -p $DOT_MOVEMENT_PATH
 
+              # by default set to remove the .movement directory
+              export REMOVE_DOT_MOVEMENT=true
+
               # export PKG_CONFIG_PATH=$PKG_CONFIG_PATH_FOR_TARGET
 
               # Export linker flags if on Darwin (macOS)
