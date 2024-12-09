@@ -8,8 +8,8 @@ contract RateLimiter is AccessControlUpgradeable {
     bytes32 public constant ATOMIC_BRIDGE = keccak256("ATOMIC_BRIDGE");
     bytes32 public constant RATE_LIMITER_ADMIN = keccak256("RATE_LIMITER_ADMIN");
 
-    mapping(uint256 day => uint256 amount) public outboundRateLimitBudget;
-    mapping(uint256 day => uint256 amount) public inboundRateLimitBudget;
+    mapping(uint256 version => mapping (uint256 period => uint256 amount)) public outboundRateLimitBudget;
+    mapping(uint256 version => mapping (uint256 period => uint256 amount)) public inboundRateLimitBudget;
     address public insuranceFund;
     IERC20 public moveToken;
 
@@ -69,15 +69,15 @@ contract RateLimiter is AccessControlUpgradeable {
 
     function rateLimitOutbound(uint256 amount) external onlyRole(ATOMIC_BRIDGE) {
         uint256 period = block.timestamp / currentPeriodDuration();
-        outboundRateLimitBudget[period] += amount;
+        outboundRateLimitBudget[periodDurationVersion][period] += amount;
         uint256 periodMax = moveToken.balanceOf(insuranceFund) * rateLimiterNumerator / rateLimiterDenominator;
-        require(outboundRateLimitBudget[period] < periodMax, OutboundRateLimitExceeded());
+        require(outboundRateLimitBudget[periodDurationVersion][period] < periodMax, OutboundRateLimitExceeded());
     }
 
     function rateLimitInbound(uint256 amount) external onlyRole(ATOMIC_BRIDGE) {
         uint256 period = block.timestamp / currentPeriodDuration();
-        inboundRateLimitBudget[period] += amount;
+        inboundRateLimitBudget[periodDurationVersion][period] += amount;
         uint256 periodMax = moveToken.balanceOf(insuranceFund) * rateLimiterNumerator / rateLimiterDenominator;
-        require(inboundRateLimitBudget[period] < periodMax, InboundRateLimitExceeded());
+        require(inboundRateLimitBudget[periodDurationVersion][period] < periodMax, InboundRateLimitExceeded());
     }
 }

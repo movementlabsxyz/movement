@@ -54,7 +54,7 @@ contract RateLimiterTest is Test {
 
         _numerator = _numerator % 1000;
         _denominator = _denominator % 1000;
-        uint256 _perTransfer = 1 ether * (_perTransfer % 1000);
+        _perTransfer = 1 ether * (_perTransfer % 1000);
 
         vm.prank(rateLimiterOperator);
         if (_numerator == 0) {
