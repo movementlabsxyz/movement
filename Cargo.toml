@@ -5,11 +5,11 @@ resolver = "2"
 members = [
     "protocol-units/bridge/config",
     "protocol-units/bridge/setup",
-    "protocol-units/execution/dof",
-    "protocol-units/execution/opt-executor",
-    "protocol-units/execution/fin-view",
-    "protocol-units/execution/util",
-    "protocol-units/da/movement/protocol/light-node",
+    "protocol-units/execution/maptos/dof",
+    "protocol-units/execution/maptos/opt-executor",
+    "protocol-units/execution/maptos/fin-view",
+    "protocol-units/execution/maptos/util",
+    "protocol-units/da/movement/protocol/*",
     "protocol-units/da/movement/celestia/*",
     "protocol-units/sequencing/memseq/*",
     "protocol-units/mempool/*",
@@ -20,6 +20,7 @@ members = [
     "protocol-units/settlement/mcr/setup",
     "protocol-units/settlement/mcr/runner",
     "protocol-units/movement-rest",
+    "protocol-units/access-control/aptos/account-whitelist",
     "util/buildtime",
     "util/buildtime/buildtime-helpers",
     "util/buildtime/buildtime-macros",
@@ -32,15 +33,13 @@ members = [
     "util/tracing",
     "util/syncador",
     "util/collections",
+    "util/whitelist",
     "networks/movement/*",
-    "protocol-units/settlement/mcr/setup",
-    "protocol-units/settlement/mcr/runner",
     "protocol-units/bridge/service",
     "protocol-units/bridge/grpc",
     "protocol-units/bridge/integration-tests",
     "protocol-units/bridge/indexer-db",
     "protocol-units/bridge/util",
-    "protocol-units/settlement/mcr/runner",
     "benches/*",
 ]
 
@@ -70,15 +69,17 @@ buildtime-helpers = { path = "util/buildtime/buildtime-helpers" }
 buildtime-macros = { path = "util/buildtime/buildtime-macros" }
 ## da/proto
 movement-da-light-node-proto = { path = "protocol-units/da/movement/protocol/light-node" }
+movement-da-light-node-client = { path = "protocol-units/da/movement/protocol/client" }
 ## da/celestia
 movement-celestia-da-util = { path = "protocol-units/da/movement/celestia/util" }
 movement-celestia-da-light-node-setup = { path = "protocol-units/da/movement/celestia/setup" }
 movement-celestia-da-light-node-verifier = { path = "protocol-units/da/movement/celestia/light-node-verifier" }
+movement-celestia-da-light-node-prevalidator = { path = "protocol-units/da/movement/celestia/light-node-prevalidator" }
 ## execution
-maptos-dof-execution = { path = "protocol-units/execution/dof" }
-maptos-opt-executor = { path = "protocol-units/execution/opt-executor" }
-maptos-fin-view = { path = "protocol-units/execution/fin-view" }
-maptos-execution-util = { path = "protocol-units/execution/util" }
+maptos-dof-execution = { path = "protocol-units/execution/maptos/dof" }
+maptos-opt-executor = { path = "protocol-units/execution/maptos/opt-executor" }
+maptos-fin-view = { path = "protocol-units/execution/maptos/fin-view" }
+maptos-execution-util = { path = "protocol-units/execution/maptos/util" }
 ## infra
 movement-rest = { path = "protocol-units/movement-rest" }
 ## mempool
@@ -108,6 +109,9 @@ movement-tracing = { path = "util/tracing" }
 syncup = { path = "protocol-units/syncing/syncup" }
 syncador = { path = "util/syncador" }
 movement-collections = { path = "util/collections" }
+whitelist = { path = "util/whitelist" }
+## access control
+aptos-account-whitelist = { path = "protocol-units/access-control/aptos/account-whitelist" }
 
 # Serialization and Deserialization
 borsh = { version = "0.10" } # todo: internalize jmt and bump
@@ -318,6 +322,9 @@ regex = "1.10.6"
 globset = "0.4.15"
 glob = "0.3.1"
 hyper = "1.4"
+hyper-util = { version = "0.1.4"}
+tower = { version = "0.5"}
+http-body-util = "0.1"
 
 # trying to pin diesel
 diesel = { version = "2.2.4", features = ["postgres", "numeric", "r2d2"] }

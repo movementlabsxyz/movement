@@ -2,6 +2,7 @@ pub mod appd;
 pub mod bridge;
 pub mod da_light_node;
 use crate::config::common::{default_celestia_force_new_chain, default_da_light_node_is_initial};
+use aptos_account_whitelist::config::Config as WhitelistConfig;
 use memseq_util::Config as MemseqConfig;
 use serde::{Deserialize, Serialize};
 
@@ -29,6 +30,10 @@ pub struct Config {
 
 	#[serde(default = "default_da_light_node_is_initial")]
 	pub da_light_node_is_initial: bool,
+
+	/// The access control config
+	#[serde(default)]
+	pub access_control: WhitelistConfig,
 }
 
 impl Default for Config {
@@ -40,6 +45,7 @@ impl Default for Config {
 			celestia_force_new_chain: default_celestia_force_new_chain(),
 			memseq: MemseqConfig::default(),
 			da_light_node_is_initial: default_da_light_node_is_initial(),
+			access_control: WhitelistConfig::default(),
 		}
 	}
 }

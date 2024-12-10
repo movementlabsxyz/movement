@@ -7,7 +7,7 @@ use clap::Subcommand;
 #[derive(Subcommand, Debug)]
 #[clap(rename_all = "kebab-case", about = "Commands for syncing")]
 pub enum Syncing {
-	Delete(delete_resource::DeleteResource),
+	DeleteResource(delete_resource::DeleteResource),
 	/*Downsync(downsync::Downsync),
 	Upsync(upsync::Upsync),*/
 }
@@ -15,7 +15,7 @@ pub enum Syncing {
 impl Syncing {
 	pub async fn execute(&self) -> Result<(), anyhow::Error> {
 		match self {
-			Syncing::Delete(delete) => delete.execute().await,
+			Syncing::DeleteResource(delete) => delete.execute().await,
 			/*Syncing::Downsync(downsync) => downsync.execute(),
 			Syncing::Upsync(upsync) => upsync.execute(),*/
 		}
