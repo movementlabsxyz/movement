@@ -25,14 +25,14 @@ impl BridgeRest {
 	pub const BRIDGE_REST_ENV_VAR: &'static str = "BRIDGE_REST_URL";
 
 	pub fn new(
-		conf: &MovementConfig,
+		rest_listener_url: String,
 		l1_request_tx: mpsc::Sender<oneshot::Sender<bool>>,
 		l2_request_tx: mpsc::Sender<oneshot::Sender<bool>>,
 	) -> Result<Self, anyhow::Error> {
-		let url = format!("{}:{}", conf.rest_listener_hostname, conf.rest_port);
+		//		let url = format!("{}:{}", conf.rest_listener_hostname, conf.rest_port);
 
 		let context = RestContext { l1_request_tx, l2_request_tx };
-		Ok(Self { url, context: Arc::new(context) })
+		Ok(Self { url: rest_listener_url, context: Arc::new(context) })
 	}
 
 	pub fn run_service(&self) -> impl Future<Output = Result<(), Error>> + Send {

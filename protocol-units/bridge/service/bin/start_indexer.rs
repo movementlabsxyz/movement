@@ -1,23 +1,11 @@
 use anyhow::Result;
 use bridge_config::Config;
-use bridge_grpc::{
-	bridge_server::BridgeServer, health_check_response::ServingStatus, health_server::HealthServer,
-};
+use bridge_indexer_db::run_indexer_client;
+use bridge_service::chains::ethereum::event_monitoring::EthMonitoring;
+use bridge_service::chains::movement::event_monitoring::MovementMonitoring;
+use bridge_service::rest::BridgeRest;
 use bridge_util::chains::check_monitoring_health;
-//use bridge_indexer_db::client::Client;
-use bridge_service::{
-	chains::{
-		ethereum::{client::EthClient, event_monitoring::EthMonitoring},
-		movement::{
-			client_framework::MovementClientFramework, event_monitoring::MovementMonitoring,
-		},
-	},
-	grpc::HealthCheckService,
-	rest::BridgeRest,
-};
 use godfig::{backend::config_file::ConfigFile, Godfig};
-use std::net::SocketAddr;
-use tonic::transport::Server;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -47,35 +35,9 @@ async fn main() -> Result<()> {
 	let (eth_client_health_tx, eth_client_health_rx) = tokio::sync::mpsc::channel(10);
 	let (mvt_client_health_tx, mvt_client_health_rx) = tokio::sync::mpsc::channel(10);
 	let eth_stream = EthMonitoring::build(&bridge_config.eth, eth_client_health_rx).await.unwrap();
-	let eth_client = EthClient::build_with_config(&bridge_config.eth).await.unwrap();
-	let mvt_client = MovementClientFramework::build_with_config(&bridge_config.movement)
-		.await
-		.unwrap();
 	let mvt_stream = MovementMonitoring::build(&bridge_config.movement, mvt_client_health_rx)
 		.await
 		.unwrap();
-
-	let eth_client_for_grpc = eth_client.clone();
-
-	// Initialize the gRPC health check service
-	let health_service = HealthCheckService::default();
-	health_service.set_service_status("", ServingStatus::Serving);
-	health_service.set_service_status("Bridge", ServingStatus::Serving);
-
-	let grpc_addr: SocketAddr = format!(
-		"{}:{}",
-		bridge_config.movement.grpc_listener_hostname, bridge_config.movement.grpc_port
-	)
-	.parse()
-	.unwrap();
-
-	let grpc_jh = tokio::spawn(async move {
-		Server::builder()
-			.add_service(HealthServer::new(health_service))
-			.add_service(BridgeServer::new(eth_client_for_grpc))
-			.serve(grpc_addr)
-			.await
-	});
 
 	// Initialize the Rpc health check service
 	let (eth_rest_health_tx, eth_rest_health_rx) = tokio::sync::mpsc::channel(10);
@@ -83,7 +45,7 @@ async fn main() -> Result<()> {
 	// Create and run the REST service
 	let url = format!(
 		"{}:{}",
-		bridge_config.movement.rest_listener_hostname, bridge_config.movement.rest_port
+		bridge_config.indexer.rest_listener_hostname, bridge_config.indexer.rest_port
 	);
 	let rest_service = BridgeRest::new(url, eth_rest_health_tx, mvt_rest_health_tx)?;
 	let rest_service_future = rest_service.run_service();
@@ -97,25 +59,10 @@ async fn main() -> Result<()> {
 	let mvt_healh_check_jh =
 		tokio::spawn(check_monitoring_health("Mvt", mvt_client_health_tx, mvt_rest_health_rx));
 
-	// Start relay in L1-> L2 direction
-	let loop_jh1 = tokio::spawn({
-		let eth_stream = eth_stream.child().await;
-		let mvt_stream = mvt_stream.child().await;
-		async move {
-			bridge_service::relayer::run_relayer_one_direction(
-				"Eth->Mvt", eth_stream, mvt_client, mvt_stream,
-			)
-			.await
-		}
-	});
+	tracing::info!("Bridge Eth and Movement Inited. Starting bridge loop.");
 
-	// Start relay in L2-> L1 direction
-	let loop_jh2 = tokio::spawn(async move {
-		bridge_service::relayer::run_relayer_one_direction(
-			"Mvt->Eth", mvt_stream, eth_client, eth_stream,
-		)
-		.await
-	});
+	// Start indexer
+	let indexer_jh = tokio::spawn(run_indexer_client(bridge_config, eth_stream, mvt_stream));
 
 	tokio::select! {
 		res = eth_healh_check_jh => {
@@ -127,14 +74,8 @@ async fn main() -> Result<()> {
 		res = rest_jh => {
 			tracing::error!("Heath check Rest server exit because :{res:?}");
 		}
-		res = loop_jh1 => {
-			tracing::error!("Eth->Mvt relayer loop exit because :{res:?}");
-		}
-		res = loop_jh2 => {
-			tracing::error!("Mvt->Eth relayer loop exit because :{res:?}");
-		}
-		res = grpc_jh => {
-			tracing::error!("gRpc server exit because :{res:?}");
+		res = indexer_jh => {
+			tracing::error!("Indexer loop exit because :{res:?}");
 		}
 	};
 

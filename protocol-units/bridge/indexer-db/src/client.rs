@@ -4,7 +4,6 @@ use crate::schema::*;
 use bridge_config::Config;
 use bridge_util::chains::bridge_contracts::BridgeContractEvent;
 use bridge_util::types::BridgeTransferId;
-use bridge_util::TransferActionType;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 
@@ -14,11 +13,7 @@ pub struct Client {
 
 pub struct BridgeEventPackage {
 	pub initiated_events: Vec<InitiatedEvent>,
-	pub locked_events: Vec<LockedEvent>,
-	pub initiator_completed_events: Vec<InitiatorCompletedEvent>,
-	pub counter_party_completed_events: Vec<CounterPartyCompletedEvent>,
-	pub cancelled_events: Vec<CancelledEvent>,
-	pub refunded_events: Vec<RefundedEvent>,
+	pub completed_events: Vec<CompletedEvent>,
 }
 
 impl Client {
@@ -39,64 +34,6 @@ impl Client {
 		Ok(())
 	}
 
-	/// Inserts a new transfer action into the database.
-	pub fn insert_transfer_action(
-		&mut self,
-		action_type: TransferActionType,
-	) -> Result<(), diesel::result::Error> {
-		match action_type {
-			TransferActionType::LockBridgeTransfer {
-				bridge_transfer_id,
-				hash_lock,
-				initiator,
-				recipient,
-				amount,
-			} => {
-				diesel::insert_into(lock_bridge_transfers::table)
-					.values(NewLockBridgeTransfer {
-						bridge_transfer_id: hex::encode(bridge_transfer_id.0.to_vec()),
-						hash_lock: hex::encode(hash_lock.0.to_vec()),
-						initiator: hex::encode(initiator.0.to_vec()),
-						recipient: hex::encode(recipient.0.to_vec()),
-						amount: amount.0.into(),
-						created_at: chrono::Utc::now().naive_utc(),
-					})
-					.execute(&mut self.conn)?;
-			}
-			TransferActionType::WaitAndCompleteInitiator(wait_time_secs, hash_lock_pre_image) => {
-				diesel::insert_into(wait_and_complete_initiators::table)
-					.values(NewWaitAndCompleteInitiator {
-						wait_time_secs: wait_time_secs as i64,
-						pre_image: hex::encode(hash_lock_pre_image.0.to_vec()),
-						created_at: chrono::Utc::now().naive_utc(),
-					})
-					.execute(&mut self.conn)?;
-			}
-			TransferActionType::RefundInitiator => {
-				// do nothing
-			}
-			TransferActionType::TransferDone => {
-				// do nothing
-			}
-			TransferActionType::NoAction => {
-				// do nothing
-			}
-		}
-
-		Ok(())
-	}
-
-	/// Gets the lock bridge transfer action with a given bridge transfer id.
-	pub fn get_lock_bridge_transfer_action(
-		&mut self,
-		bridge_transfer_id: BridgeTransferId,
-	) -> Result<LockBridgeTransfer, diesel::result::Error> {
-		let bridge_transfer_id = hex::encode(bridge_transfer_id.0.to_vec());
-		lock_bridge_transfers::table
-			.filter(lock_bridge_transfers::bridge_transfer_id.eq(bridge_transfer_id))
-			.first::<LockBridgeTransfer>(&mut self.conn)
-	}
-
 	/// Inserts a new bridge contract event into the database.
 	pub fn insert_bridge_contract_event<A>(
 		&mut self,
@@ -105,65 +42,28 @@ impl Client {
 	where
 		A: Into<Vec<u8>>,
 	{
+		tracing::info!("Indexer insert_bridge_contract_event event:{contract_event}");
 		match contract_event {
-			BridgeContractEvent::Initiated(bridge_transfer_details) => {
+			BridgeContractEvent::Initiated(details) => {
 				diesel::insert_into(initiated_events::table)
 					.values(NewInitiatedEvent {
-						bridge_transfer_id: hex::encode(
-							bridge_transfer_details.bridge_transfer_id.0.to_vec(),
-						),
-						initiator: hex::encode(bridge_transfer_details.initiator.0.into()),
-						recipient: hex::encode(bridge_transfer_details.recipient.0.to_vec()),
-						hash_lock: hex::encode(bridge_transfer_details.hash_lock.0.to_vec()),
-						time_lock: bridge_transfer_details.time_lock.0 as i64,
-						amount: bridge_transfer_details.amount.0.into(),
-						state: 0,
+						bridge_transfer_id: details.bridge_transfer_id.to_string(),
+						initiator: hex::encode(details.initiator.0.into()),
+						recipient: hex::encode(details.recipient.0.to_vec()),
+						amount: details.amount.0.into(),
+						nonce: details.nonce.0.into(),
 						created_at: chrono::Utc::now().naive_utc(),
 					})
 					.execute(&mut self.conn)?;
 			}
-			BridgeContractEvent::Locked(lock_details) => {
-				diesel::insert_into(locked_events::table)
-					.values(NewLockedEvent {
-						bridge_transfer_id: hex::encode(lock_details.bridge_transfer_id.0.to_vec()),
-						initiator: hex::encode::<Vec<u8>>(lock_details.initiator.0.into()),
-						recipient: hex::encode::<Vec<u8>>(lock_details.recipient.0.into()),
-						hash_lock: hex::encode(lock_details.hash_lock.0.to_vec()),
-						time_lock: lock_details.time_lock.0 as i64,
-						amount: lock_details.amount.0.into(),
-						created_at: chrono::Utc::now().naive_utc(),
-					})
-					.execute(&mut self.conn)?;
-			}
-			BridgeContractEvent::InitiatorCompleted(initiator_completed_events) => {
-				diesel::insert_into(initiator_completed_events::table)
-					.values(NewInitiatorCompletedEvent {
-						bridge_transfer_id: hex::encode(initiator_completed_events.0.to_vec()),
-						created_at: chrono::Utc::now().naive_utc(),
-					})
-					.execute(&mut self.conn)?;
-			}
-			BridgeContractEvent::CounterPartyCompleted(bridge_transfer_id, hash_lock_pre_image) => {
-				diesel::insert_into(counter_party_completed_events::table)
-					.values(NewCounterPartyCompletedEvent {
-						bridge_transfer_id: hex::encode(bridge_transfer_id.0.to_vec()),
-						pre_image: hex::encode(hash_lock_pre_image.0.to_vec()),
-						created_at: chrono::Utc::now().naive_utc(),
-					})
-					.execute(&mut self.conn)?;
-			}
-			BridgeContractEvent::Cancelled(bridge_transfer_id) => {
-				diesel::insert_into(cancelled_events::table)
-					.values(NewCancelledEvent {
-						bridge_transfer_id: hex::encode(bridge_transfer_id.0.to_vec()),
-						created_at: chrono::Utc::now().naive_utc(),
-					})
-					.execute(&mut self.conn)?;
-			}
-			BridgeContractEvent::Refunded(bridge_transfer_id) => {
-				diesel::insert_into(refunded_events::table)
-					.values(NewRefundedEvent {
-						bridge_transfer_id: hex::encode(bridge_transfer_id.0.to_vec()),
+			BridgeContractEvent::Completed(details) => {
+				diesel::insert_into(completed_events::table)
+					.values(NewCompletedEvent {
+						bridge_transfer_id: details.bridge_transfer_id.to_string(),
+						initiator: hex::encode::<Vec<u8>>(details.initiator.0.into()),
+						recipient: hex::encode::<Vec<u8>>(details.recipient.0.into()),
+						amount: details.amount.0.into(),
+						nonce: details.nonce.0.into(),
 						created_at: chrono::Utc::now().naive_utc(),
 					})
 					.execute(&mut self.conn)?;
@@ -178,42 +78,17 @@ impl Client {
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
 	) -> Result<BridgeEventPackage, diesel::result::Error> {
-		let bridge_transfer_id = hex::encode(bridge_transfer_id.0.to_vec());
+		let bridge_transfer_id = bridge_transfer_id.to_string();
 
 		let initiated_events = initiated_events::table
 			.filter(initiated_events::bridge_transfer_id.eq(bridge_transfer_id.clone()))
 			.load::<InitiatedEvent>(&mut self.conn)?;
 
-		let locked_events = locked_events::table
-			.filter(locked_events::bridge_transfer_id.eq(bridge_transfer_id.clone()))
-			.load::<LockedEvent>(&mut self.conn)?;
+		let completed_events = completed_events::table
+			.filter(completed_events::bridge_transfer_id.eq(bridge_transfer_id.clone()))
+			.load::<CompletedEvent>(&mut self.conn)?;
 
-		let initiator_completed_events = initiator_completed_events::table
-			.filter(initiator_completed_events::bridge_transfer_id.eq(bridge_transfer_id.clone()))
-			.load::<InitiatorCompletedEvent>(&mut self.conn)?;
-
-		let counter_party_completed_events = counter_party_completed_events::table
-			.filter(
-				counter_party_completed_events::bridge_transfer_id.eq(bridge_transfer_id.clone()),
-			)
-			.load::<CounterPartyCompletedEvent>(&mut self.conn)?;
-
-		let cancelled_events = cancelled_events::table
-			.filter(cancelled_events::bridge_transfer_id.eq(bridge_transfer_id.clone()))
-			.load::<CancelledEvent>(&mut self.conn)?;
-
-		let refunded_events = refunded_events::table
-			.filter(refunded_events::bridge_transfer_id.eq(bridge_transfer_id.clone()))
-			.load::<RefundedEvent>(&mut self.conn)?;
-
-		Ok(BridgeEventPackage {
-			initiated_events,
-			locked_events,
-			initiator_completed_events,
-			counter_party_completed_events,
-			cancelled_events,
-			refunded_events,
-		})
+		Ok(BridgeEventPackage { initiated_events, completed_events })
 	}
 }
 

@@ -10,8 +10,6 @@ use bridge_util::{
 };
 use futures::stream::FuturesUnordered;
 use std::sync::Arc;
-use tokio::sync::mpsc;
-use tokio::sync::oneshot;
 use tokio::{select, sync::Mutex};
 use tokio_stream::StreamExt;
 
@@ -21,11 +19,8 @@ pub async fn run_relayer_one_direction<
 >(
 	direction: &str,
 	mut stream_source: impl BridgeContractMonitoring<Address = SOURCE>,
-	healthcheck_source: mpsc::Sender<oneshot::Sender<bool>>,
 	client_target: impl BridgeRelayerContract<TARGET> + 'static,
 	mut stream_target: impl BridgeContractMonitoring<Address = TARGET>,
-	mut healthcheck_request_rx: mpsc::Receiver<oneshot::Sender<bool>>,
-	//	indexer_db_client: Option<IndexerClient>,
 ) -> Result<(), anyhow::Error>
 where
 	Vec<u8>: From<SOURCE>,
@@ -38,11 +33,7 @@ where
 	//only one client can use at a time.
 	let client_lock = Arc::new(Mutex::new(()));
 
-	let mut tranfer_log_interval = tokio::time::interval(tokio::time::Duration::from_secs(60));
-	let mut monitoring_health_check_interval =
-		tokio::time::interval(tokio::time::Duration::from_secs(5));
-	let mut health_status = true; // init health check with alive status.
-	let mut health_check_result_futures = FuturesUnordered::new();
+	let mut transfer_log_interval = tokio::time::interval(tokio::time::Duration::from_secs(60));
 
 	loop {
 		select! {
@@ -87,43 +78,8 @@ where
 					}
 				}
 			}
-			// Health Check routine.
-			// Manage REST HealthCheck request
-			Some(oneshot_tx) = healthcheck_request_rx.recv() => {
-				if let Err(err) = oneshot_tx.send(health_status){
-					tracing::warn!("Heal check {direction} oneshot channel closed abnormally :{err:?}");
-				}
-
-			}
-			// Verify that monitoring heath check still works.
-			_ = monitoring_health_check_interval.tick() => {
-				//Chain one monitoring health check.
-				let jh = tokio::spawn({
-					let healthcheck_tx = healthcheck_source.clone();
-					async move {
-						check_monitoring_loop_heath(healthcheck_tx).await
-					}
-				});
-				health_check_result_futures.push(jh);
-			}
-			// Process health check result.
-			Some(res) = health_check_result_futures.next() => {
-				match res {
-					//Client execution ok.
-					Ok(Ok(status)) => health_status = status,
-					Ok(Err(err)) => {
-						tracing::warn!("Relayer:{direction}  monitoring health check fail with an error:{err}",);
-						health_status = false;
-					},
-					Err(err)=>{
-						// Tokio execution fail. Process should exit.
-						tracing::error!("Relayer:{direction} , Error during health check tokio task execution exiting: {err}");
-						return Err(err.into());
-					}
-				}
-			}
 			// Log all current transfer
-			_ = tranfer_log_interval.tick() => {
+			_ = transfer_log_interval.tick() => {
 				//format logs
 				let logs: Vec<_> = state_runtime.iter_state().map(|state| state.to_string()).collect();
 				tokio::spawn({
@@ -184,26 +140,4 @@ fn execute_action<
 		});
 		client_exec_result_futures_one.push(jh);
 	}
-}
-
-async fn check_monitoring_loop_heath(
-	healthcheck_tx: mpsc::Sender<oneshot::Sender<bool>>,
-) -> Result<bool, String> {
-	let (tx, rx) = oneshot::channel();
-	healthcheck_tx
-		.send(tx)
-		.await
-		.map_err(|err| format!("Health check send error: {}", err))?;
-	let res = match tokio::time::timeout(tokio::time::Duration::from_secs(5), rx).await {
-		Ok(Ok(res)) => res,
-		Ok(Err(err)) => {
-			tracing::warn!("Monitoring health check return an error:{err}");
-			false
-		}
-		Err(_) => {
-			tracing::warn!("Monitoring health check timeout. Monitoring is idle.");
-			false
-		}
-	};
-	Ok(res)
 }
