@@ -306,7 +306,7 @@ jobs:
             forge test --fork-url https://ethereum-sepolia-rpc.publicnode.com -vv
         "
 
-  test-bridge-mvt-client:
+  test-bridge-integration-and-e2e:
     strategy:
       matrix:
         include:
@@ -332,9 +332,11 @@ jobs:
         name: movementlabs
         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
-    - name: Run Movement Client tests
+    - name: Run bridge client integration and E2E tests
       # adjust the log level while debugging
-      run: CELESTIA_LOG_LEVEL=FATAL nix develop --command bash  -c "just bridge native build.setup.eth-local.celestia-local.bridge.test-mvt-client -t=false"  
+      run: | 
+        CELESTIA_LOG_LEVEL=FATAL nix develop --command bash  -c "just bridge native build.setup.eth-local.celestia-local.bridge -t=false" 
+        DOT_MOVEMENT_PATH="$(pwd)/.movement" cargo test -p bridge-integration-tests -- --nocapture --test-threads=1
 
   test-bridge-eth-client:
     strategy:
