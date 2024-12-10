@@ -62,7 +62,7 @@ async fn main() -> Result<()> {
 	tracing::info!("Bridge Eth and Movement Inited. Starting bridge loop.");
 
 	// Start indexer
-	let indexer_jh = tokio::spawn(run_indexer_client(bridge_config, eth_stream, mvt_stream));
+	let indexer_jh = tokio::spawn(run_indexer_client(bridge_config, eth_stream, mvt_stream, None));
 
 	tokio::select! {
 		res = eth_healh_check_jh => {

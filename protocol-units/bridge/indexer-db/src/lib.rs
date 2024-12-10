@@ -1,7 +1,10 @@
 use crate::client::Client;
 use bridge_config::Config;
 use bridge_util::chains::bridge_contracts::BridgeContractMonitoring;
+use bridge_util::types::BridgeTransferId;
+use bridge_util::TransferActionType;
 use tokio::select;
+use tokio::sync::mpsc;
 use tokio_stream::StreamExt;
 
 pub mod client;
@@ -16,6 +19,7 @@ pub async fn run_indexer_client<
 	config: Config,
 	mut stream_source: impl BridgeContractMonitoring<Address = SOURCE>,
 	mut stream_target: impl BridgeContractMonitoring<Address = TARGET>,
+	relayer_actions: Option<mpsc::Sender<(BridgeTransferId, TransferActionType)>>,
 ) -> Result<(), anyhow::Error>
 where
 	Vec<u8>: From<SOURCE>,
