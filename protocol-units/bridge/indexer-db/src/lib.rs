@@ -44,7 +44,7 @@ where
 						.insert_bridge_contract_event(event)
 						.map_err(|err| err.to_string())
 				}) {
-					tracing::error!("Indexer: new event integration return an error:{err}")
+					tracing::error!("Indexer: Source event integration return an error:{err}")
 				}
 			}
 			// Wait on chain target events.
@@ -54,7 +54,7 @@ where
 						.insert_bridge_contract_event(event)
 						.map_err(|err| err.to_string())
 				}) {
-					tracing::error!("Indexer: new event integration return an error:{err}")
+					tracing::error!("Indexer: Target event integration return an error:{err}")
 				}
 			}
 		}

@@ -48,7 +48,7 @@ impl Client {
 			BridgeContractEvent::Initiated(details) => {
 				diesel::insert_into(initiated_events::table)
 					.values(NewInitiatedEvent {
-						bridge_transfer_id: details.bridge_transfer_id.to_string(),
+						bridge_transfer_id: hex::encode(details.bridge_transfer_id.0.to_vec()),
 						initiator: hex::encode(details.initiator.0.into()),
 						recipient: hex::encode(details.recipient.0.to_vec()),
 						amount: details.amount.0.into(),
@@ -60,7 +60,7 @@ impl Client {
 			BridgeContractEvent::Completed(details) => {
 				diesel::insert_into(completed_events::table)
 					.values(NewCompletedEvent {
-						bridge_transfer_id: details.bridge_transfer_id.to_string(),
+						bridge_transfer_id: hex::encode(details.bridge_transfer_id.0.to_vec()),
 						initiator: hex::encode::<Vec<u8>>(details.initiator.0.into()),
 						recipient: hex::encode::<Vec<u8>>(details.recipient.0.into()),
 						amount: details.amount.0.into(),
@@ -79,7 +79,7 @@ impl Client {
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
 	) -> Result<BridgeEventPackage, diesel::result::Error> {
-		let bridge_transfer_id = bridge_transfer_id.to_string();
+		let bridge_transfer_id = hex::encode(bridge_transfer_id.0.to_vec());
 
 		let initiated_events = initiated_events::table
 			.filter(initiated_events::bridge_transfer_id.eq(bridge_transfer_id.clone()))
@@ -108,7 +108,7 @@ impl Client {
 			} => {
 				diesel::insert_into(complete_bridge_transfers::table)
 					.values(CompleteBridgeTransferAction {
-						bridge_transfer_id: bridge_transfer_id.to_string(),
+						bridge_transfer_id: hex::encode(bridge_transfer_id.0.to_vec()),
 						initiator: hex::encode(initiator.0.to_vec()),
 						recipient: hex::encode(recipient.0.to_vec()),
 						amount: amount.0.into(),
@@ -120,7 +120,7 @@ impl Client {
 			TransferActionType::CompletedRemoveState => {
 				diesel::insert_into(completed_remove_state::table)
 					.values(CompletedRemoveStateAction {
-						bridge_transfer_id: bridge_transfer_id.to_string(),
+						bridge_transfer_id: hex::encode(bridge_transfer_id.0.to_vec()),
 						created_at: chrono::Utc::now().naive_utc(),
 					})
 					.execute(&mut self.conn)?;
@@ -135,7 +135,7 @@ impl Client {
 			} => {
 				diesel::insert_into(abort_replay_transfers::table)
 					.values(AbortReplayTransferAction {
-						bridge_transfer_id: bridge_transfer_id.to_string(),
+						bridge_transfer_id: hex::encode(bridge_transfer_id.0.to_vec()),
 						initiator: hex::encode(initiator.0.to_vec()),
 						recipient: hex::encode(recipient.0.to_vec()),
 						amount: amount.0.into(),

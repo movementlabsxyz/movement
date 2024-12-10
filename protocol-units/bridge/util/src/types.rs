@@ -59,7 +59,7 @@ impl TryFrom<Vec<u8>> for BridgeTransferId {
 
 impl fmt::Display for BridgeTransferId {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		write!(f, "Bid: {}", hex::encode(self.0))
+		write!(f, "{}", hex::encode(self.0))
 	}
 }
 
