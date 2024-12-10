@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -e
+set -x
 set -euo pipefail
 
 if [ "$#" -lt 3 ]; then
