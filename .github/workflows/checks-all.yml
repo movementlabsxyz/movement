@@ -366,8 +366,7 @@ jobs:
 
     - name: Run Eth Client tests
       run: |
-        CELESTIA_LOG_LEVEL=FATAL nix develop --command bash -c "just bridge native build.setup.eth-local.test-eth-client -t=false" > eth_client_tests.log 2>&1
-        cat eth_client_tests.log
+        CELESTIA_LOG_LEVEL=FATAL nix develop --command bash -c "just bridge native build.setup.eth-local.test-eth-client -t=false"
 
   test-bridge-e2e:
     strategy:
