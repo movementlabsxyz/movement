@@ -35,7 +35,7 @@ contract MOVEFaucetTest is Test {
         faucet.faucet{value: 10**17}();
         assertEq(token.balanceOf(address(0x1337)), 10 * 10 ** token.decimals());
 
-        vm.expectRevert("MOVEFaucet: balance must be less than 1 MOVE");
+        vm.expectRevert("MOVEFaucet: balance must be less than determine amount of MOVE");
         faucet.faucet{value: 10**17}();
 
         token.transfer(address(0xdead), token.balanceOf(address(0x1337)));

@@ -16,7 +16,7 @@ maptos-dof-execution = { workspace = true }
 prost = { workspace = true }
 movement-da-light-node-proto = { workspace = true, features = ["client"] }
 movement-celestia-da-util = { workspace = true }
-mcr-settlement-client = { workspace = true, features = ["mock"] }
+mcr-settlement-client = { workspace = true, features = ["eth"] }
 mcr-settlement-manager = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
@@ -39,6 +39,9 @@ bcs = { workspace = true }
 zstd = { workspace = true }
 hyper = { workspace = true }
 hex = { workspace = true }
+mcr-settlement-config = { workspace = true }
+clap = { workspace =  true }
+movement-da-light-node-client = { workspace = true}
 
 [features]
 default = []

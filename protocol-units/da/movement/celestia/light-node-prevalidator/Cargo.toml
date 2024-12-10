@@ -1,0 +1,43 @@
+[package]
+name = "movement-celestia-da-light-node-prevalidator"
+version = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+authors = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
+publish = { workspace = true }
+rust-version = { workspace = true }
+
+[features]
+default = ["aptos"]
+aptos = ["aptos-types"]
+integration-tests = []
+
+[dependencies]
+tokio = { workspace = true }
+tokio-stream = { workspace = true }
+tonic = { workspace = true }
+prost = { workspace = true }
+movement-da-light-node-proto = { workspace = true, features = [] }
+movement-celestia-da-util = { workspace = true }
+anyhow = { workspace = true }
+hex = { workspace = true }
+async-stream = { workspace = true }
+thiserror = { workspace = true }
+serde_json = { workspace = true }
+ecdsa = { workspace = true, features = ["signing", "verifying", "der"] }
+tracing = { workspace = true }
+movement-types = { workspace = true}
+bcs = { workspace = true }
+aptos-types = { workspace = true, optional = true}
+
+[dev-dependencies]
+movement-celestia-da-light-node-setup = { workspace = true }
+dot-movement = { workspace = true }
+k256 = { workspace = true }
+rand = { workspace = true }
+
+
+[lints]
+workspace = true

@@ -6,7 +6,7 @@ processes:
 
   complex-alice-tests:
     command: |
-      cargo test -p movement-tests test_complex_alice -- --nocapture
+      cargo test -p movement-client test_complex_alice -- --nocapture
     depends_on:
       movement-full-node:
         condition: process_healthy

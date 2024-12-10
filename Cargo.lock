@@ -823,6 +823,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "aptos-account-whitelist"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "aptos-types",
+ "godfig",
+ "serde",
+ "whitelist",
+]
+
+[[package]]
 name = "aptos-accumulator"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=53b1f0586b36a2659b84c65cea50b2946b8fa730#53b1f0586b36a2659b84c65cea50b2946b8fa730"
@@ -8779,6 +8790,7 @@ name = "maptos-execution-util"
 version = "0.0.2"
 dependencies = [
  "anyhow",
+ "aptos-account-whitelist",
  "aptos-crypto",
  "aptos-sdk",
  "aptos-types",
@@ -8790,6 +8802,7 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "tempfile",
+ "tokio",
  "toml 0.8.19",
 ]
 
@@ -8819,6 +8832,7 @@ name = "maptos-opt-executor"
 version = "0.0.2"
 dependencies = [
  "anyhow",
+ "aptos-account-whitelist",
  "aptos-api",
  "aptos-api-types",
  "aptos-bitvec",
@@ -9901,6 +9915,7 @@ dependencies = [
  "k256",
  "memseq",
  "movement-algs",
+ "movement-celestia-da-light-node-prevalidator",
  "movement-celestia-da-light-node-verifier",
  "movement-celestia-da-util",
  "movement-da-light-node-proto",
@@ -9916,6 +9931,32 @@ dependencies = [
  "tonic-reflection 0.12.3",
  "tracing",
  "zstd 0.13.2",
+]
+
+[[package]]
+name = "movement-celestia-da-light-node-prevalidator"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "aptos-types",
+ "async-stream",
+ "bcs 0.1.4",
+ "dot-movement",
+ "ecdsa 0.16.9",
+ "hex",
+ "k256",
+ "movement-celestia-da-light-node-setup",
+ "movement-celestia-da-util",
+ "movement-da-light-node-proto",
+ "movement-types",
+ "prost 0.13.3",
+ "rand 0.7.3",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tonic 0.12.3",
+ "tracing",
 ]
 
 [[package]]
@@ -10008,6 +10049,8 @@ version = "0.0.2"
 dependencies = [
  "alloy",
  "anyhow",
+ "aptos-account-whitelist",
+ "aptos-types",
  "async-stream",
  "bcs 0.1.4",
  "celestia-rpc",
@@ -10036,6 +10079,45 @@ dependencies = [
 ]
 
 [[package]]
+name = "movement-client"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "aptos-protos 1.3.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=53b1f0586b36a2659b84c65cea50b2946b8fa730)",
+ "aptos-sdk",
+ "aptos-types",
+ "async-trait",
+ "bcs 0.1.4",
+ "buildtime-helpers",
+ "chrono",
+ "commander",
+ "dot-movement",
+ "futures",
+ "itertools 0.12.1",
+ "maptos-execution-util",
+ "mcr-settlement-client",
+ "movement-config",
+ "movement-da-light-node-client",
+ "movement-da-light-node-proto",
+ "movement-tracing",
+ "movement-types",
+ "once_cell",
+ "rand 0.7.3",
+ "rayon",
+ "reqwest 0.12.9",
+ "serde",
+ "serde_json",
+ "serde_yaml 0.9.34+deprecated",
+ "thiserror",
+ "tokio",
+ "tonic 0.12.3",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "tracing-test",
+ "url",
+]
+
+[[package]]
 name = "movement-collections"
 version = "0.0.2"
 dependencies = [
@@ -10061,6 +10143,20 @@ dependencies = [
  "tokio",
  "toml 0.8.19",
  "tracing",
+]
+
+[[package]]
+name = "movement-da-light-node-client"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "bytes 1.8.0",
+ "http-body-util",
+ "hyper-util",
+ "movement-da-light-node-proto",
+ "tonic 0.12.3",
+ "tonic-web",
+ "tower 0.5.1",
 ]
 
 [[package]]
@@ -10095,6 +10191,7 @@ version = "0.0.2"
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
+ "clap 4.5.21",
  "console-subscriber",
  "dot-movement",
  "futures",
@@ -10103,9 +10200,11 @@ dependencies = [
  "hyper 1.5.0",
  "maptos-dof-execution",
  "mcr-settlement-client",
+ "mcr-settlement-config",
  "mcr-settlement-manager",
  "movement-celestia-da-util",
  "movement-config",
+ "movement-da-light-node-client",
  "movement-da-light-node-proto",
  "movement-rest",
  "movement-tracing",
@@ -10127,6 +10226,7 @@ name = "movement-full-node-setup"
 version = "0.0.2"
 dependencies = [
  "anyhow",
+ "aptos-sdk",
  "async-recursion",
  "celestia-rpc",
  "celestia-types",
@@ -10184,41 +10284,6 @@ dependencies = [
  "poem",
  "tokio",
  "tracing",
-]
-
-[[package]]
-name = "movement-tests"
-version = "0.0.2"
-dependencies = [
- "anyhow",
- "aptos-protos 1.3.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=53b1f0586b36a2659b84c65cea50b2946b8fa730)",
- "aptos-sdk",
- "aptos-types",
- "async-trait",
- "bcs 0.1.4",
- "buildtime-helpers",
- "chrono",
- "commander",
- "dot-movement",
- "futures",
- "itertools 0.12.1",
- "maptos-execution-util",
- "mcr-settlement-client",
- "movement-config",
- "movement-tracing",
- "once_cell",
- "rand 0.7.3",
- "rayon",
- "reqwest 0.12.9",
- "serde",
- "serde_json",
- "serde_yaml 0.9.34+deprecated",
- "thiserror",
- "tokio",
- "tonic 0.12.3",
- "tracing",
- "tracing-subscriber 0.3.18",
- "url",
 ]
 
 [[package]]
@@ -14750,6 +14815,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "tonic-web"
+version = "0.12.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5299dd20801ad736dccb4a5ea0da7376e59cd98f213bf1c3d478cf53f4834b58"
+dependencies = [
+ "base64 0.22.1",
+ "bytes 1.8.0",
+ "http 1.1.0",
+ "http-body 1.0.1",
+ "http-body-util",
+ "pin-project 1.1.7",
+ "tokio-stream",
+ "tonic 0.12.3",
+ "tower-http",
+ "tower-layer",
+ "tower-service",
+ "tracing",
+]
+
+[[package]]
 name = "tower"
 version = "0.4.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -14779,6 +14864,22 @@ dependencies = [
  "futures-util",
  "pin-project-lite",
  "sync_wrapper 0.1.2",
+ "tower-layer",
+ "tower-service",
+]
+
+[[package]]
+name = "tower-http"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e9cd434a998747dd2c4276bc96ee2e0c7a2eadf3cae88e52be55a05fa9053f5"
+dependencies = [
+ "bitflags 2.6.0",
+ "bytes 1.8.0",
+ "http 1.1.0",
+ "http-body 1.0.1",
+ "http-body-util",
+ "pin-project-lite",
  "tower-layer",
  "tower-service",
 ]
@@ -15565,6 +15666,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "841c67bff177718f1d4dfefde8d8f0e78f9b6589319ba88312f567fc5841a958"
 dependencies = [
  "rustls-pki-types",
+]
+
+[[package]]
+name = "whitelist"
+version = "0.0.2"
+dependencies = [
+ "prost 0.13.3",
+ "thiserror",
+ "tonic 0.12.3",
 ]
 
 [[package]]

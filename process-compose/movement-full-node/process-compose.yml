@@ -37,13 +37,13 @@ processes:
       celestia-light-node-synced:
         condition: process_completed_successfully
     readiness_probe:
-      initial_delay_seconds: 3
+      initial_delay_seconds: 5
       exec:
         command: grpcurl -plaintext 0.0.0.0:30730 list
     
   movement-full-node:
     command: |
-      movement-full-node
+      movement-full-node run
     depends_on:
       movement-celestia-da-light-node:
         condition: process_healthy

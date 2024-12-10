@@ -2,8 +2,8 @@ use crate::config::common::{
 	default_celestia_rpc_connection_hostname, default_celestia_rpc_connection_port,
 	default_celestia_rpc_connection_protocol, default_celestia_websocket_connection_hostname,
 	default_celestia_websocket_connection_port, default_movement_da_light_node_connection_hostname,
-	default_movement_da_light_node_connection_port, default_movement_da_light_node_listen_hostname,
-	default_movement_da_light_node_listen_port,
+	default_movement_da_light_node_connection_port, default_movement_da_light_node_http1,
+	default_movement_da_light_node_listen_hostname, default_movement_da_light_node_listen_port,
 };
 use ecdsa::SigningKey;
 use k256::Secp256k1;
@@ -133,6 +133,10 @@ pub struct Config {
 	#[serde(default = "default_movement_da_light_node_connection_port")]
 	pub movement_da_light_node_connection_port: u16,
 
+	/// Whether to use HTTP/1.1 for the movement-da-light-node service
+	#[serde(default = "default_movement_da_light_node_http1")]
+	pub movement_da_light_node_http1: bool,
+
 	/// The DA signers
 	#[serde(default = "default_da_signers")]
 	pub da_signers: DaSigners,
@@ -155,6 +159,7 @@ impl Default for Config {
 				default_movement_da_light_node_connection_hostname(),
 			movement_da_light_node_connection_port: default_movement_da_light_node_connection_port(
 			),
+			movement_da_light_node_http1: default_movement_da_light_node_http1(),
 			da_signers: default_da_signers(),
 		}
 	}
