@@ -64,6 +64,7 @@ services:
   movement-full-node:
     image: ghcr.io/movementlabsxyz/movement-full-node:${CONTAINER_REV}
     container_name: movement-full-node
+    command: run
     environment:
       - DOT_MOVEMENT_PATH=/.movement
       - MOVEMENT_TIMING=info
