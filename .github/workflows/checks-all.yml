@@ -306,7 +306,7 @@ jobs:
             forge test --fork-url https://ethereum-sepolia-rpc.publicnode.com -vv
         "
 
-    test-bridge-mvt-client:
+  test-bridge-mvt-client:
     strategy:
       matrix:
         include:
