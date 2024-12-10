@@ -4,6 +4,7 @@ use crate::schema::*;
 use bridge_config::Config;
 use bridge_util::chains::bridge_contracts::BridgeContractEvent;
 use bridge_util::types::BridgeTransferId;
+use bridge_util::TransferActionType;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 
@@ -89,6 +90,65 @@ impl Client {
 			.load::<CompletedEvent>(&mut self.conn)?;
 
 		Ok(BridgeEventPackage { initiated_events, completed_events })
+	}
+
+	/// Inserts a new transfer action into the database.
+	pub fn insert_transfer_action(
+		&mut self,
+		bridge_transfer_id: BridgeTransferId,
+		action_type: TransferActionType,
+	) -> Result<(), diesel::result::Error> {
+		match action_type {
+			TransferActionType::CompleteBridgeTransfer {
+				bridge_transfer_id,
+				initiator,
+				recipient,
+				amount,
+				nonce,
+			} => {
+				diesel::insert_into(complete_bridge_transfers::table)
+					.values(CompleteBridgeTransferAction {
+						bridge_transfer_id: bridge_transfer_id.to_string(),
+						initiator: hex::encode(initiator.0.to_vec()),
+						recipient: hex::encode(recipient.0.to_vec()),
+						amount: amount.0.into(),
+						nonce: nonce.0.into(),
+						created_at: chrono::Utc::now().naive_utc(),
+					})
+					.execute(&mut self.conn)?;
+			}
+			TransferActionType::CompletedRemoveState => {
+				diesel::insert_into(completed_remove_state::table)
+					.values(CompletedRemoveStateAction {
+						bridge_transfer_id: bridge_transfer_id.to_string(),
+						created_at: chrono::Utc::now().naive_utc(),
+					})
+					.execute(&mut self.conn)?;
+			}
+			TransferActionType::AbortedReplay {
+				bridge_transfer_id,
+				initiator,
+				recipient,
+				amount,
+				nonce,
+				wait_time_sec,
+			} => {
+				diesel::insert_into(abort_replay_transfers::table)
+					.values(AbortReplayTransferAction {
+						bridge_transfer_id: bridge_transfer_id.to_string(),
+						initiator: hex::encode(initiator.0.to_vec()),
+						recipient: hex::encode(recipient.0.to_vec()),
+						amount: amount.0.into(),
+						nonce: nonce.0.into(),
+						wait_time_sec: wait_time_sec.into(),
+						created_at: chrono::Utc::now().naive_utc(),
+					})
+					.execute(&mut self.conn)?;
+			}
+			TransferActionType::NoAction => (),
+		}
+
+		Ok(())
 	}
 }
 

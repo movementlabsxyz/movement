@@ -38,7 +38,7 @@ members = [
     "protocol-units/bridge/service",
     "protocol-units/bridge/grpc",
     "protocol-units/bridge/integration-tests",
-    "protocol-units/bridge/indexer-db",
+    #"protocol-units/bridge/indexer-db",
     "protocol-units/bridge/util",
     "benches/*",
 ]
