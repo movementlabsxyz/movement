@@ -5,7 +5,7 @@ environment:
 processes:
   bridge_test_eth_client:
     command: |
-      RUST_BACKTRACE=1 DOT_MOVEMENT_PATH="$(pwd)/.movement" cargo test --test test_eth_client -- --nocapture --test-threads=1
+      RUST_BACKTRACE=1 DOT_MOVEMENT_PATH="$(pwd)/.movement" cargo test --test test_eth_client -- --nocapture --test-threads=1  > cargo_test_output.log 2>&1
     depends_on:
       eth-local:
         condition: process_healthy
