@@ -360,7 +360,7 @@ jobs:
 
     - name: Run Eth Client tests
       # adjust the log level while debugging
-      run: CELESTIA_LOG_LEVEL=FATAL nix develop --command bash  -c "just bridge native build.setup.eth-locl.test-eth-client -t=false"  
+      run: CELESTIA_LOG_LEVEL=FATAL nix develop --command bash  -c "just bridge native build.setup.eth-local.test-eth-client -t=false"  
 
   # ## any use of Move CLI requires ubuntu-24.04 and to not run on buildjet
   # bridge-client-integration-and-e2e-tests:
