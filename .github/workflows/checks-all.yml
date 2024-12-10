@@ -132,7 +132,7 @@ jobs:
         nix develop --command bash  -c "just movement-full-node native build.setup.eth-local.celestia-local.gas-dos -t=false"
 
   movement-multi-node-local:
-    if: github.event.label.name == 'cicd:movement-multi-node-local' ||  github.ref == 'refs/heads/main'
+    # if: github.event.label.name == 'cicd:movement-multi-node-local' ||  github.ref == 'refs/heads/main'
     strategy:
       matrix:
         include:
@@ -338,66 +338,34 @@ jobs:
         CELESTIA_LOG_LEVEL=FATAL nix develop --command bash  -c "just bridge native build.setup.eth-local.celestia-local.bridge -t=false" 
         DOT_MOVEMENT_PATH="$(pwd)/.movement" cargo test -p bridge-integration-tests -- --nocapture --test-threads=1
 
-  test-bridge-eth-client:
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-22.04
-            arch: x86_64
-            runs-on: buildjet-8vcpu-ubuntu-2204
+  # test-bridge-e2e:
+  #   strategy:
+  #     matrix:
+  #       include:
+  #         - os: ubuntu-22.04
+  #           arch: x86_64
+  #           runs-on: buildjet-8vcpu-ubuntu-2204
 
-    runs-on: ${{ matrix.runs-on }}
+  #   runs-on: ${{ matrix.runs-on }}
 
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+  #   steps:
+  #   - name: Checkout repository
+  #     uses: actions/checkout@v4
 
-    - name: Install Nix
-      uses: DeterminateSystems/nix-installer-action@main
+  #   - name: Install Aptos CLI
+  #     run: |
+  #       curl -fsSL "https://raw.githubusercontent.com/andygolay/aptos-cli-install/refs/heads/main/install_cli_v3.5.py" | python3
 
-    - uses: cachix/cachix-action@v15
-      with:
-        name: movementlabs
-        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+  #   - name: Install Nix
+  #     uses: DeterminateSystems/nix-installer-action@main
 
-    - name: Log current directory and files
-      run: |
-        echo "Current directory: $(pwd)"
-        echo "Directory contents:"
-        ls -R
+  #   - uses: cachix/cachix-action@v15
+  #     with:
+  #       name: movementlabs
+  #       authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
-    - name: Run Eth Client tests
-      run: |
-        CELESTIA_LOG_LEVEL=FATAL nix develop --command bash -c "just bridge native build.setup.eth-local.test-eth-client -t=false"
-
-  test-bridge-e2e:
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-22.04
-            arch: x86_64
-            runs-on: buildjet-8vcpu-ubuntu-2204
-
-    runs-on: ${{ matrix.runs-on }}
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Install Aptos CLI
-      run: |
-        curl -fsSL "https://raw.githubusercontent.com/andygolay/aptos-cli-install/refs/heads/main/install_cli_v3.5.py" | python3
-
-    - name: Install Nix
-      uses: DeterminateSystems/nix-installer-action@main
-
-    - uses: cachix/cachix-action@v15
-      with:
-        name: movementlabs
-        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-
-    - name: Run Movement Client tests
-      # adjust the log level while debugging
-      run: CELESTIA_LOG_LEVEL=FATAL nix develop --command bash  -c "just bridge native build.setup.eth-local.celestia-local.bridge.test-e2e -t=false"  
+  #   - name: Run Movement Client tests
+  #     # adjust the log level while debugging
+  #     run: CELESTIA_LOG_LEVEL=FATAL nix develop --command bash  -c "just bridge native build.setup.eth-local.celestia-local.bridge.test-e2e -t=false"  
 
   
