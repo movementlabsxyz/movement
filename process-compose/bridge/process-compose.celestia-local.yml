@@ -16,7 +16,7 @@ processes:
       build:
         condition: process_completed_successfully
     readiness_probe:
-      initial_delay_seconds: 3
+      initial_delay_seconds: 10
       exec:
         command: echo "true"
 
