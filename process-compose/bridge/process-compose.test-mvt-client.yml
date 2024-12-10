@@ -3,9 +3,9 @@ version: "3"
 environment:
 
 processes:
-  bridge_e2e-tests:
+  bridge_test_mvt-client:
     command: |
-      RUST_BACKTRACE=1 DOT_MOVEMENT_PATH="$(pwd)/.movement" cargo test --test client_mvt_tests test_movement_client_complete_transfer -- --nocapture --test-threads=1
+      RUST_BACKTRACE=1 DOT_MOVEMENT_PATH="$(pwd)/.movement" cargo test --test client_mvt_tests -- --nocapture --test-threads=1
     depends_on:
       bridge:
         condition: process_healthy
