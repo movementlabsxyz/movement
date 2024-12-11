@@ -11,9 +11,9 @@ use bridge_service::chains::ethereum::{
 use hex::ToHex;
 use std::io::BufRead;
 use std::{
+	env,
 	io::Write,
 	process::{Command, Stdio},
-	env
 };
 
 // Proxy contract to be able to call bridge contract.
@@ -203,7 +203,7 @@ pub fn deploy_local_movement_node(config: &mut MovementConfig) -> Result<(), any
 
 pub fn init_movement_node(config: &mut MovementConfig) -> Result<(), anyhow::Error> {
 	tracing::info!("Start deploy_local_movement_node rpc url:{}", config.mvt_rpc_connection_url());
-	let mut process = Command::new("movement") //--network
+	let mut process = Command::new("aptos") //--network
 		.args(&[
 			"init",
 			"--network",
@@ -257,8 +257,10 @@ pub fn init_movement_node(config: &mut MovementConfig) -> Result<(), anyhow::Err
 
 pub fn deploy_on_movement_framework(config: &mut MovementConfig) -> Result<(), anyhow::Error> {
 	tracing::info!("Before compile move modules");
-	let compile_output = Command::new("movement")
-		.args(&["move", "compile", "--package-dir", "protocol-units/bridge/move-modules/"])
+	let root_path = std::env::current_dir().unwrap();
+	std::env::set_current_dir(&root_path.join("protocol-units/bridge/move-modules"))?;
+	let compile_output = Command::new("aptos")
+		.args(&["move", "compile"])
 		.stdout(Stdio::piped())
 		.stderr(Stdio::piped())
 		.output()?;
@@ -269,19 +271,19 @@ pub fn deploy_on_movement_framework(config: &mut MovementConfig) -> Result<(), a
 	if !compile_output.stderr.is_empty() {
 		tracing::info!("move compile stderr: {}", String::from_utf8_lossy(&compile_output.stderr));
 	}
-	let enable_bridge_feature_output = Command::new("movement")
-			.args(&[
-				"move",
-				"run-script",
-				"--compiled-script-path",
-				"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/enable_bridge_feature.mv",
-				"--profile",
-				"default",
-				"--assume-yes",
-			])
-			.stdout(Stdio::piped())
-			.stderr(Stdio::piped())
-			.output()?;
+	let enable_bridge_feature_output = Command::new("aptos")
+		.args(&[
+			"move",
+			"run-script",
+			"--compiled-script-path",
+			"build/bridge-modules/bytecode_scripts/enable_bridge_feature.mv",
+			"--profile",
+			"default",
+			"--assume-yes",
+		])
+		.stdout(Stdio::piped())
+		.stderr(Stdio::piped())
+		.output()?;
 
 	if !enable_bridge_feature_output.stdout.is_empty() {
 		println!(
@@ -296,19 +298,19 @@ pub fn deploy_on_movement_framework(config: &mut MovementConfig) -> Result<(), a
 		);
 	}
 
-	let store_mint_burn_caps_output = Command::new("movement")
-			.args(&[
-				"move",
-				"run-script",
-				"--compiled-script-path",
-				"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/store_mint_burn_caps.mv",
-				"--profile",
-				"default",
-				"--assume-yes",
-			])
-			.stdout(Stdio::piped())
-			.stderr(Stdio::piped())
-			.output()?;
+	let store_mint_burn_caps_output = Command::new("aptos")
+		.args(&[
+			"move",
+			"run-script",
+			"--compiled-script-path",
+			"build/bridge-modules/bytecode_scripts/store_mint_burn_caps.mv",
+			"--profile",
+			"default",
+			"--assume-yes",
+		])
+		.stdout(Stdio::piped())
+		.stderr(Stdio::piped())
+		.output()?;
 
 	if !store_mint_burn_caps_output.stdout.is_empty() {
 		println!(
@@ -323,21 +325,21 @@ pub fn deploy_on_movement_framework(config: &mut MovementConfig) -> Result<(), a
 		);
 	}
 
-	let update_bridge_relayer_output = Command::new("movement")
-			.args(&[
-				"move",
-				"run-script",
-				"--compiled-script-path",
-				"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/update_bridge_relayer.mv",
-				"--args",
-				"address:0xf90391c81027f03cdea491ed8b36ffaced26b6df208a9b569e5baf2590eb9b16",
-				"--profile",
-				"default",
-				"--assume-yes",
-			])
-			.stdout(Stdio::piped())
-			.stderr(Stdio::piped())
-			.output()?;
+	let update_bridge_relayer_output = Command::new("aptos")
+		.args(&[
+			"move",
+			"run-script",
+			"--compiled-script-path",
+			"build/bridge-modules/bytecode_scripts/update_bridge_relayer.mv",
+			"--args",
+			"address:0xf90391c81027f03cdea491ed8b36ffaced26b6df208a9b569e5baf2590eb9b16",
+			"--profile",
+			"default",
+			"--assume-yes",
+		])
+		.stdout(Stdio::piped())
+		.stderr(Stdio::piped())
+		.output()?;
 
 	if !update_bridge_relayer_output.stdout.is_empty() {
 		println!(
@@ -352,12 +354,12 @@ pub fn deploy_on_movement_framework(config: &mut MovementConfig) -> Result<(), a
 		);
 	}
 
-	let set_initiator_time_lock_script_output = Command::new("movement")
+	let set_initiator_time_lock_script_output = Command::new("aptos")
 		.args(&[
 			"move",
 			"run-script",
 			"--compiled-script-path",
-			"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/set_initiator_time_lock_duration.mv",
+			"build/bridge-modules/bytecode_scripts/set_initiator_time_lock_duration.mv",
 			"--args",
 			"u64: 11",
 			"--profile",
@@ -381,12 +383,12 @@ pub fn deploy_on_movement_framework(config: &mut MovementConfig) -> Result<(), a
 		);
 	}
 
-	let set_counterparty_time_lock_script_output = Command::new("movement")
+	let set_counterparty_time_lock_script_output = Command::new("aptos")
 		.args(&[
 			"move",
 			"run-script",
 			"--compiled-script-path",
-			"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/set_counterparty_time_lock_duration.mv",
+			"build/bridge-modules/bytecode_scripts/set_counterparty_time_lock_duration.mv",
 			"--args",
 			"u64: 5",
 			"--profile",
@@ -411,6 +413,8 @@ pub fn deploy_on_movement_framework(config: &mut MovementConfig) -> Result<(), a
 	}
 
 	println!("Mvt framework deployed.");
+
+	std::env::set_current_dir(&root_path)?;
 
 	Ok(())
 }
