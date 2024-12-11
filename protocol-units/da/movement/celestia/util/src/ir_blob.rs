@@ -246,4 +246,47 @@ pub mod celestia {
 				.map_err(|e| anyhow::anyhow!(e))?)
 		}
 	}
+
+	#[cfg(test)]
+	mod tests {
+		use super::*;
+		use crate::ir_blob::{InnerSignedBlobV1, InnerSignedBlobV1Data};
+		use std::io::{self, prelude::*};
+
+		#[test]
+		fn zstd_bomb() -> anyhow::Result<()> {
+			let bomb = zstd::encode_all(io::repeat(0).take(2u64.pow(32)), 0)?;
+			let blob =
+				CelestiaBlob::new(Namespace::new_v0(b"movement").unwrap(), bomb, AppVersion::V2)?;
+			<CelestiaBlob as TryInto<IntermediateBlobRepresentation>>::try_into(blob).unwrap_err();
+			Ok(())
+		}
+
+		fn dummy_ir_blob(len: usize) -> CelestiaIntermediateBlobRepresentation {
+			let blob_data = InnerSignedBlobV1Data { blob: vec![0; len], timestamp: 1733879282 };
+			// It's no fun to compute -- not Kraftwerk
+			let test_blob = InnerSignedBlobV1 {
+				data: blob_data,
+				signature: vec![0xfa; 64],
+				signer: vec![0xaf; 32],
+				id: vec![0xad; 32].into(),
+			};
+			CelestiaIntermediateBlobRepresentation(
+				test_blob.into(),
+				Namespace::new_v0(b"movement").unwrap(),
+			)
+		}
+
+		#[test]
+		#[ignore = "allocates, compresses, and decompresses 2 GiB of data"]
+		fn blob_size_limit_imposed_by_bcs() -> anyhow::Result<()> {
+			CelestiaBlob::try_from(dummy_ir_blob(bcs::MAX_SEQUENCE_LENGTH + 1))
+				.expect_err("should be rejected");
+
+			let celestia_blob: CelestiaBlob = dummy_ir_blob(bcs::MAX_SEQUENCE_LENGTH).try_into()?;
+			let blob_ir: IntermediateBlobRepresentation = celestia_blob.try_into()?;
+			assert_eq!(blob_ir.blob().len(), bcs::MAX_SEQUENCE_LENGTH);
+			Ok(())
+		}
+	}
 }
