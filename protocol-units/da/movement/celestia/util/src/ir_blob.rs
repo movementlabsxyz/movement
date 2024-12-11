@@ -253,11 +253,21 @@ pub mod celestia {
 	mod tests {
 		use super::*;
 		use crate::ir_blob::{InnerSignedBlobV1, InnerSignedBlobV1Data};
-		use std::io::{self, prelude::*};
 
 		#[test]
 		fn zstd_bomb() -> anyhow::Result<()> {
-			let bomb = zstd::encode_all(io::repeat(0).take(2u64.pow(32)), 0)?;
+			// MAGIC + header with max window size
+			let mut bomb = vec![0x28, 0xb5, 0x2f, 0xfd, 0x0, 0x7f];
+			let n_blocks = 0x530000;
+			for _ in 0..n_blocks {
+				// RLE block encoding 0xff byte repeated 0x8000 times
+				bomb.extend([0x02, 0x00, 0x10, 0xff]);
+			}
+			// Block to finish the data
+			bomb.extend(&[0x01, 0x00, 0x00]);
+			// Check that we fit in celestia limits
+			assert!(bomb.len() < 0x1_500_000);
+
 			let blob =
 				CelestiaBlob::new(Namespace::new_v0(b"movement").unwrap(), bomb, AppVersion::V2)?;
 			<CelestiaBlob as TryInto<IntermediateBlobRepresentation>>::try_into(blob).unwrap_err();
