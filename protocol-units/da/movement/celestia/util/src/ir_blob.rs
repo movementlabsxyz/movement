@@ -233,12 +233,14 @@ pub mod celestia {
 			// Extract the inner blob and namespace
 			let CelestiaIntermediateBlobRepresentation(ir_blob, namespace) = ir_blob;
 
-			// Serialize the inner blob with bcs
-			let serialized_blob = bcs::to_bytes(&ir_blob).context("failed to serialize blob")?;
+			let mut encoder =
+				zstd::Encoder::new(vec![], 0).context("failed to initialize zstd encoder")?;
 
-			// Compress the serialized data with zstd
-			let compressed_blob = zstd::encode_all(serialized_blob.as_slice(), 0)
-				.context("failed to compress blob")?;
+			// Serialize the inner blob with bcs and compress with zstd
+			bcs::serialize_into(&mut encoder, &ir_blob).context("failed to serialize blob")?;
+
+			let compressed_blob =
+				encoder.finish().context("failed to finish compression of blob")?;
 
 			// Construct the final CelestiaBlob by assigning the compressed data
 			// and associating it with the provided namespace
