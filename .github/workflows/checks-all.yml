@@ -69,7 +69,8 @@ jobs:
             -p memseq \
             -p move-rocks \
             -p movement-types \
-            -p movement-config
+            -p movement-config \
+            -p movement-celestia-da-util \
         EOF
 
   movement-full-node-local:
