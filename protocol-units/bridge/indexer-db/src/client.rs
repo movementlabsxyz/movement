@@ -92,8 +92,8 @@ impl Client {
 		Ok(BridgeEventPackage { initiated_events, completed_events })
 	}
 
-	/// Inserts a new transfer action into the database.
-	pub fn insert_transfer_action(
+	/// Inserts a new relayer action into the database.
+	pub fn insert_relayer_actions(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
 		action_type: TransferActionType,

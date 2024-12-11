@@ -19,7 +19,7 @@ pub async fn run_indexer_client<
 	config: Config,
 	mut stream_source: impl BridgeContractMonitoring<Address = SOURCE>,
 	mut stream_target: impl BridgeContractMonitoring<Address = TARGET>,
-	relayer_actions: Option<mpsc::Sender<(BridgeTransferId, TransferActionType)>>,
+	mut relayer_actions_rx: Option<mpsc::Receiver<(BridgeTransferId, TransferActionType)>>,
 ) -> Result<(), anyhow::Error>
 where
 	Vec<u8>: From<SOURCE>,
@@ -57,6 +57,25 @@ where
 					tracing::error!("Indexer: Target event integration return an error:{err}")
 				}
 			}
+			// Wait for relayer source and target processed action.
+			Some((transfer_id, action)) = conditional_relayer_recv(&mut relayer_actions_rx) =>{
+				if let Err(err) = indexer_db_client
+						.insert_relayer_actions(transfer_id, action)
+						.map_err(|err| err.to_string())
+				{
+					tracing::error!("Indexer: Target event integration return an error:{err}")
+				}
+			}
 		}
+	}
+}
+
+//Adapt optional relayer future to be pooled by select.
+async fn conditional_relayer_recv(
+	rx: &mut Option<mpsc::Receiver<(BridgeTransferId, TransferActionType)>>,
+) -> Option<(BridgeTransferId, TransferActionType)> {
+	match rx {
+		Some(ref mut rx) => rx.recv().await,
+		None => None,
 	}
 }

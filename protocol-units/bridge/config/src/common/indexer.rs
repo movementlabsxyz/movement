@@ -15,6 +15,8 @@ pub struct IndexerConfig {
 	pub rest_listener_hostname: String,
 	#[serde(default = "default_rest_listener_port")]
 	pub rest_port: u16,
+	#[serde(default = "default_start_indexer_with_relayer")]
+	pub start_indexer_with_relayer: bool,
 }
 
 impl Default for IndexerConfig {
@@ -23,6 +25,7 @@ impl Default for IndexerConfig {
 			indexer_url: default_database_url(),
 			rest_listener_hostname: default_rest_listener_hostname(),
 			rest_port: default_rest_listener_port(),
+			start_indexer_with_relayer: default_start_indexer_with_relayer(),
 		}
 	}
 }
@@ -30,6 +33,8 @@ impl Default for IndexerConfig {
 fn default_database_url() -> String {
 	"postgresql://postgres:password@localhost:5432".to_string()
 }
+
+env_default!(default_start_indexer_with_relayer, "RELAYER_START_INDEXER", bool, false);
 
 env_default!(
 	default_rest_listener_hostname,

@@ -4,6 +4,7 @@ use bridge_grpc::{
 	bridge_server::BridgeServer, health_check_response::ServingStatus, health_server::HealthServer,
 };
 use bridge_util::chains::check_monitoring_health;
+use std::error::Error;
 //use bridge_indexer_db::client::Client;
 use bridge_service::{
 	chains::{
@@ -43,6 +44,8 @@ async fn main() -> Result<()> {
 	let bridge_config: Config = godfig.try_wait_for_ready().await?;
 
 	tracing::info!("Bridge config loaded: {bridge_config:?}");
+
+	tracing::info!("RELAYER_START_INDEXER :{:?}", std::env::var("RELAYER_START_INDEXER"));
 
 	let (eth_client_health_tx, eth_client_health_rx) = tokio::sync::mpsc::channel(10);
 	let (mvt_client_health_tx, mvt_client_health_rx) = tokio::sync::mpsc::channel(10);
@@ -96,6 +99,18 @@ async fn main() -> Result<()> {
 		tokio::spawn(check_monitoring_health("Eth", eth_client_health_tx, eth_rest_health_rx));
 	let mvt_healh_check_jh =
 		tokio::spawn(check_monitoring_health("Mvt", mvt_client_health_tx, mvt_rest_health_rx));
+
+	// If needed start indexer to relay actions
+	if bridge_config.indexer.start_indexer_with_relayer {
+		tokio::spawn({
+			let eth_stream = eth_stream.child().await;
+			let mvt_stream = mvt_stream.child().await;
+			async move {
+				bridge_indexer_db::run_indexer_client(bridge_config, eth_stream, mvt_stream, None)
+					.await
+			}
+		});
+	};
 
 	// Start relay in L1-> L2 direction
 	let loop_jh1 = tokio::spawn({

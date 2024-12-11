@@ -1,6 +1,5 @@
 use anyhow::Result;
 use bridge_config::Config;
-use bridge_indexer_db::run_indexer_client;
 use bridge_service::chains::ethereum::event_monitoring::EthMonitoring;
 use bridge_service::chains::movement::event_monitoring::MovementMonitoring;
 use bridge_service::rest::BridgeRest;
@@ -62,7 +61,12 @@ async fn main() -> Result<()> {
 	tracing::info!("Bridge Eth and Movement Inited. Starting bridge loop.");
 
 	// Start indexer
-	let indexer_jh = tokio::spawn(run_indexer_client(bridge_config, eth_stream, mvt_stream, None));
+	let indexer_jh = tokio::spawn(bridge_indexer_db::run_indexer_client(
+		bridge_config,
+		eth_stream,
+		mvt_stream,
+		None,
+	));
 
 	tokio::select! {
 		res = eth_healh_check_jh => {
