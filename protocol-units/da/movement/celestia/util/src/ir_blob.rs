@@ -213,7 +213,7 @@ pub mod celestia {
 		// todo: it would be nice to have this be self describing over the compression and serialization format
 		fn try_from(blob: CelestiaBlob) -> Result<Self, Self::Error> {
 			// decompress the blob and deserialize the data with bcs
-			let decoder = zstd::Decoder::new(blob.data.as_slice())?;
+			let decoder = zstd::Decoder::with_buffer(blob.data.as_slice())?;
 			let blob = bcs::from_reader(decoder).context("failed to deserialize blob")?;
 
 			Ok(blob)
