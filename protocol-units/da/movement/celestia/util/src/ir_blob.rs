@@ -212,13 +212,9 @@ pub mod celestia {
 
 		// todo: it would be nice to have this be self describing over the compression and serialization format
 		fn try_from(blob: CelestiaBlob) -> Result<Self, Self::Error> {
-			// decompress blob.data with zstd
-			let decompressed =
-				zstd::decode_all(blob.data.as_slice()).context("failed to decompress blob")?;
-
-			// deserialize the decompressed data with bcs
-			let blob =
-				bcs::from_bytes(decompressed.as_slice()).context("failed to deserialize blob")?;
+			// decompress the blob and deserialize the data with bcs
+			let decoder = zstd::Decoder::with_buffer(blob.data.as_slice())?;
+			let blob = bcs::from_reader(decoder).context("failed to deserialize blob")?;
 
 			Ok(blob)
 		}
@@ -237,17 +233,72 @@ pub mod celestia {
 			// Extract the inner blob and namespace
 			let CelestiaIntermediateBlobRepresentation(ir_blob, namespace) = ir_blob;
 
-			// Serialize the inner blob with bcs
-			let serialized_blob = bcs::to_bytes(&ir_blob).context("failed to serialize blob")?;
+			let mut encoder =
+				zstd::Encoder::new(vec![], 0).context("failed to initialize zstd encoder")?;
 
-			// Compress the serialized data with zstd
-			let compressed_blob = zstd::encode_all(serialized_blob.as_slice(), 0)
-				.context("failed to compress blob")?;
+			// Serialize the inner blob with bcs and compress with zstd
+			bcs::serialize_into(&mut encoder, &ir_blob).context("failed to serialize blob")?;
+
+			let compressed_blob =
+				encoder.finish().context("failed to finish compression of blob")?;
 
 			// Construct the final CelestiaBlob by assigning the compressed data
 			// and associating it with the provided namespace
 			Ok(CelestiaBlob::new(namespace, compressed_blob, AppVersion::V2)
 				.map_err(|e| anyhow::anyhow!(e))?)
+		}
+	}
+
+	#[cfg(test)]
+	mod tests {
+		use super::*;
+		use crate::ir_blob::{InnerSignedBlobV1, InnerSignedBlobV1Data};
+
+		#[test]
+		fn zstd_bomb() -> anyhow::Result<()> {
+			// MAGIC + header with max window size
+			let mut bomb = vec![0x28, 0xb5, 0x2f, 0xfd, 0x0, 0x7f];
+			let n_blocks = 0x530000;
+			for _ in 0..n_blocks {
+				// RLE block encoding 0xff byte repeated 0x8000 times
+				bomb.extend([0x02, 0x00, 0x10, 0xff]);
+			}
+			// Block to finish the data
+			bomb.extend(&[0x01, 0x00, 0x00]);
+			// Check that we fit in celestia limits
+			assert!(bomb.len() < 0x1_500_000);
+
+			let blob =
+				CelestiaBlob::new(Namespace::new_v0(b"movement").unwrap(), bomb, AppVersion::V2)?;
+			<CelestiaBlob as TryInto<IntermediateBlobRepresentation>>::try_into(blob).unwrap_err();
+			Ok(())
+		}
+
+		fn dummy_ir_blob(len: usize) -> CelestiaIntermediateBlobRepresentation {
+			let blob_data = InnerSignedBlobV1Data { blob: vec![0; len], timestamp: 1733879282 };
+			// It's no fun to compute -- not Kraftwerk
+			let test_blob = InnerSignedBlobV1 {
+				data: blob_data,
+				signature: vec![0xfa; 64],
+				signer: vec![0xaf; 32],
+				id: vec![0xad; 32].into(),
+			};
+			CelestiaIntermediateBlobRepresentation(
+				test_blob.into(),
+				Namespace::new_v0(b"movement").unwrap(),
+			)
+		}
+
+		#[test]
+		#[ignore = "allocates, compresses, and decompresses 2 GiB of data"]
+		fn blob_size_limit_imposed_by_bcs() -> anyhow::Result<()> {
+			CelestiaBlob::try_from(dummy_ir_blob(bcs::MAX_SEQUENCE_LENGTH + 1))
+				.expect_err("should be rejected");
+
+			let celestia_blob: CelestiaBlob = dummy_ir_blob(bcs::MAX_SEQUENCE_LENGTH).try_into()?;
+			let blob_ir: IntermediateBlobRepresentation = celestia_blob.try_into()?;
+			assert_eq!(blob_ir.blob().len(), bcs::MAX_SEQUENCE_LENGTH);
+			Ok(())
 		}
 	}
 }
