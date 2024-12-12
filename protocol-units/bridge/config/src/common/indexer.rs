@@ -15,8 +15,6 @@ pub struct IndexerConfig {
 	pub rest_listener_hostname: String,
 	#[serde(default = "default_rest_listener_port")]
 	pub rest_port: u16,
-	#[serde(default = "default_start_indexer_with_relayer")]
-	pub start_indexer_with_relayer: bool,
 }
 
 impl Default for IndexerConfig {
@@ -25,21 +23,12 @@ impl Default for IndexerConfig {
 			indexer_url: default_database_url(),
 			rest_listener_hostname: default_rest_listener_hostname(),
 			rest_port: default_rest_listener_port(),
-			start_indexer_with_relayer: default_start_indexer_with_relayer(),
 		}
 	}
 }
 
 fn default_database_url() -> String {
 	"postgresql://postgres:password@localhost:5432".to_string()
-}
-
-pub fn default_start_indexer_with_relayer() -> bool {
-	tracing::info!("RELAYER_START_INDEXER :{:?}", std::env::var("RELAYER_START_INDEXER"));
-	match std::env::var("RELAYER_START_INDEXER") {
-		Ok(str_value) => str_value.parse::<bool>().unwrap_or(false),
-		Err(_) => false,
-	}
 }
 
 env_default!(

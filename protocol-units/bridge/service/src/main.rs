@@ -45,8 +45,6 @@ async fn main() -> Result<()> {
 
 	tracing::info!("Bridge config loaded: {bridge_config:?}");
 
-	tracing::info!("RELAYER_START_INDEXER :{:?}", std::env::var("RELAYER_START_INDEXER"));
-
 	let (eth_client_health_tx, eth_client_health_rx) = tokio::sync::mpsc::channel(10);
 	let (mvt_client_health_tx, mvt_client_health_rx) = tokio::sync::mpsc::channel(10);
 	let eth_stream = EthMonitoring::build(&bridge_config.eth, eth_client_health_rx).await.unwrap();
@@ -101,24 +99,43 @@ async fn main() -> Result<()> {
 		tokio::spawn(check_monitoring_health("Mvt", mvt_client_health_tx, mvt_rest_health_rx));
 
 	// If needed start indexer to relay actions
-	if bridge_config.indexer.start_indexer_with_relayer {
+
+	tracing::info!("RELAYER_START_INDEXER :{:?}", std::env::var("RELAYER_START_INDEXER"));
+	let action_sender = if std::env::var("RELAYER_START_INDEXER")
+		.map(|val| val.trim().to_lowercase() == "true")
+		.unwrap_or(false)
+	{
+		let (action_tx, action_rx) = tokio::sync::mpsc::channel(100);
 		tokio::spawn({
 			let eth_stream = eth_stream.child().await;
 			let mvt_stream = mvt_stream.child().await;
 			async move {
-				bridge_indexer_db::run_indexer_client(bridge_config, eth_stream, mvt_stream, None)
-					.await
+				bridge_indexer_db::run_indexer_client(
+					bridge_config,
+					eth_stream,
+					mvt_stream,
+					Some(action_rx),
+				)
+				.await
 			}
 		});
+		Some(action_tx)
+	} else {
+		None
 	};
 
 	// Start relay in L1-> L2 direction
 	let loop_jh1 = tokio::spawn({
 		let eth_stream = eth_stream.child().await;
 		let mvt_stream = mvt_stream.child().await;
+		let action_sender = action_sender.clone();
 		async move {
 			bridge_service::relayer::run_relayer_one_direction(
-				"Eth->Mvt", eth_stream, mvt_client, mvt_stream,
+				"Eth->Mvt",
+				eth_stream,
+				mvt_client,
+				mvt_stream,
+				action_sender.clone(),
 			)
 			.await
 		}
@@ -127,7 +144,11 @@ async fn main() -> Result<()> {
 	// Start relay in L2-> L1 direction
 	let loop_jh2 = tokio::spawn(async move {
 		bridge_service::relayer::run_relayer_one_direction(
-			"Mvt->Eth", mvt_stream, eth_client, eth_stream,
+			"Mvt->Eth",
+			mvt_stream,
+			eth_client,
+			eth_stream,
+			action_sender,
 		)
 		.await
 	});

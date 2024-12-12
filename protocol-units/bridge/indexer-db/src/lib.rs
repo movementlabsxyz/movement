@@ -1,8 +1,7 @@
 use crate::client::Client;
 use bridge_config::Config;
 use bridge_util::chains::bridge_contracts::BridgeContractMonitoring;
-use bridge_util::types::BridgeTransferId;
-use bridge_util::TransferActionType;
+use bridge_util::TransferAction;
 use tokio::select;
 use tokio::sync::mpsc;
 use tokio_stream::StreamExt;
@@ -19,12 +18,13 @@ pub async fn run_indexer_client<
 	config: Config,
 	mut stream_source: impl BridgeContractMonitoring<Address = SOURCE>,
 	mut stream_target: impl BridgeContractMonitoring<Address = TARGET>,
-	mut relayer_actions_rx: Option<mpsc::Receiver<(BridgeTransferId, TransferActionType)>>,
+	mut relayer_actions_rx: Option<mpsc::Receiver<TransferAction>>,
 ) -> Result<(), anyhow::Error>
 where
 	Vec<u8>: From<SOURCE>,
 	Vec<u8>: From<TARGET>,
 {
+	tracing::info!("Starting bridge indexer.");
 	let mut indexer_db_client = match Client::from_bridge_config(&config) {
 		Ok(mut client) => {
 			client.run_migrations()?;
@@ -58,9 +58,9 @@ where
 				}
 			}
 			// Wait for relayer source and target processed action.
-			Some((transfer_id, action)) = conditional_relayer_recv(&mut relayer_actions_rx) =>{
+			Some(action) = conditional_relayer_recv(&mut relayer_actions_rx) =>{
 				if let Err(err) = indexer_db_client
-						.insert_relayer_actions(transfer_id, action)
+						.insert_relayer_actions(action.transfer_id, action.kind)
 						.map_err(|err| err.to_string())
 				{
 					tracing::error!("Indexer: Target event integration return an error:{err}")
@@ -72,8 +72,8 @@ where
 
 //Adapt optional relayer future to be pooled by select.
 async fn conditional_relayer_recv(
-	rx: &mut Option<mpsc::Receiver<(BridgeTransferId, TransferActionType)>>,
-) -> Option<(BridgeTransferId, TransferActionType)> {
+	rx: &mut Option<mpsc::Receiver<TransferAction>>,
+) -> Option<TransferAction> {
 	match rx {
 		Some(ref mut rx) => rx.recv().await,
 		None => None,

@@ -10,6 +10,7 @@ use bridge_util::{
 };
 use futures::stream::FuturesUnordered;
 use std::sync::Arc;
+use tokio::sync::mpsc;
 use tokio::{select, sync::Mutex};
 use tokio_stream::StreamExt;
 
@@ -21,6 +22,7 @@ pub async fn run_relayer_one_direction<
 	mut stream_source: impl BridgeContractMonitoring<Address = SOURCE>,
 	client_target: impl BridgeRelayerContract<TARGET> + 'static,
 	mut stream_target: impl BridgeContractMonitoring<Address = TARGET>,
+	action_sender: Option<mpsc::Sender<TransferAction>>,
 ) -> Result<(), anyhow::Error>
 where
 	Vec<u8>: From<SOURCE>,
@@ -43,7 +45,7 @@ where
 					Ok(BridgeContractEvent::Initiated(detail)) => {
 						let event : TransferEvent<SOURCE> = BridgeContractEvent::Initiated(detail).into();
 						tracing::info!("Relayer:{direction}, receive Initiated event :{} ", event.contract_event);
-						process_event(event, &mut state_runtime, client_target.clone(), client_lock.clone(), &mut client_exec_result_futures);
+						process_event(event, &mut state_runtime, client_target.clone(), client_lock.clone(), &mut client_exec_result_futures, action_sender.as_ref().cloned()).await;
 					}
 					Ok(_) => (), //do nothing for other event.
 					Err(err) => tracing::error!("Relayer:{direction} event stream return an error:{err}"),
@@ -54,7 +56,7 @@ where
 					Ok(BridgeContractEvent::Completed(detail)) => {
 						let event : TransferEvent<TARGET> = BridgeContractEvent::Completed(detail).into();
 						tracing::info!("Relayer:{direction}, receive Completed event :{} ", event.contract_event);
-						process_event(event, &mut state_runtime, client_target.clone(), client_lock.clone(), &mut client_exec_result_futures);
+						process_event(event, &mut state_runtime, client_target.clone(), client_lock.clone(), &mut client_exec_result_futures, action_sender.as_ref().cloned()).await;
 					}
 					Ok(_) => (), //do nothing for other event.
 					Err(err) => tracing::error!("Relayer:{direction} event stream return an error:{err}"),
@@ -93,7 +95,7 @@ where
 	}
 }
 
-fn process_event<
+async fn process_event<
 	A: std::clone::Clone + std::fmt::Debug,
 	TARGET: Send + TryFrom<Vec<u8>> + std::clone::Clone + 'static + std::fmt::Debug,
 >(
@@ -104,17 +106,31 @@ fn process_event<
 	client_exec_result_futures_one: &mut FuturesUnordered<
 		tokio::task::JoinHandle<Result<(), ActionExecError>>,
 	>,
+	action_sender: Option<mpsc::Sender<TransferAction>>,
 ) where
 	Vec<u8>: From<A>,
 {
 	match state_runtime.process_event(event) {
-		Ok(action) => execute_action(
-			action,
-			state_runtime,
-			client_target,
-			tx_lock,
-			client_exec_result_futures_one,
-		),
+		Ok(action) => {
+			if let Some(sender) = action_sender {
+				// Send in its own task so that the main processing task is never blocked if the send blocks.
+				tokio::spawn({
+					let action = action.clone();
+					async move {
+						if let Err(err) = sender.send(action).await {
+							tracing::info!("Erreur when sending action to indexer sink: {err}",);
+						}
+					}
+				});
+			}
+			execute_action(
+				action,
+				state_runtime,
+				client_target,
+				tx_lock,
+				client_exec_result_futures_one,
+			)
+		}
 		Err(err) => tracing::warn!("Received an invalid event: {err}"),
 	}
 }
