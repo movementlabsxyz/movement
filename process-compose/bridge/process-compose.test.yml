@@ -3,15 +3,29 @@ version: "3"
 environment:
 
 processes:
-  test:
+  test_e2e:
     command: |
       DOT_MOVEMENT_PATH="$(pwd)/.movement" cargo test --test bridge_e2e_test_framework -- --nocapture --test-threads=1
-    command: |  
+    depends_on:
+      bridge:
+        condition: process_healthy
+    availability:
+      exit_on_end: false
+
+  test_eth:
+    command: |
       DOT_MOVEMENT_PATH="$(pwd)/.movement" cargo test --test client_eth_tests -- --nocapture --test-threads=1
+    depends_on:
+      bridge:
+        condition: process_healthy
+    availability:
+      exit_on_end: false
+
+  test_mvt:
     command: |
       DOT_MOVEMENT_PATH="$(pwd)/.movement" cargo test --test client_mvt_tests -- --nocapture --test-threads=1
     depends_on:
       bridge:
         condition: process_healthy
     availability:
-      exit_on_end: true
+      exit_on_end: false
