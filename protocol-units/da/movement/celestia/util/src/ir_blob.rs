@@ -1,3 +1,4 @@
+use anyhow::bail;
 use ecdsa::{
 	elliptic_curve::{
 		generic_array::ArrayLength,
@@ -12,6 +13,9 @@ use ecdsa::{
 	SignatureSize, SigningKey, VerifyingKey,
 };
 use serde::{Deserialize, Serialize};
+
+/// Maximum allowed length of a blob data field.
+pub const MAX_BLOB_LEN: usize = 64 * 1_024 * 1_024;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InnerSignedBlobV1Data {
@@ -40,8 +44,11 @@ impl From<Vec<u8>> for Id {
 }
 
 impl InnerSignedBlobV1Data {
-	pub fn new(blob: Vec<u8>, timestamp: u64) -> Self {
-		Self { blob, timestamp }
+	pub fn try_new(blob: Vec<u8>, timestamp: u64) -> Result<Self, anyhow::Error> {
+		if blob.len() > MAX_BLOB_LEN {
+			bail!("blob length {} is above the limit", blob.len());
+		}
+		Ok(Self { blob, timestamp })
 	}
 
 	/// Computes the id of InnerSignedBlobV1Data
@@ -188,7 +195,7 @@ pub mod test {
 
 	#[test]
 	fn test_cannot_change_id_and_verify() -> Result<(), anyhow::Error> {
-		let blob = InnerSignedBlobV1Data::new(vec![1, 2, 3], 123);
+		let blob = InnerSignedBlobV1Data::try_new(vec![1, 2, 3], 123).unwrap();
 		let signing_key = SigningKey::<k256::Secp256k1>::random(&mut rand::thread_rng());
 		let signed_blob = blob.try_to_sign(&signing_key)?;
 
@@ -202,8 +209,7 @@ pub mod test {
 }
 
 pub mod celestia {
-
-	use super::IntermediateBlobRepresentation;
+	use super::{IntermediateBlobRepresentation, MAX_BLOB_LEN};
 	use anyhow::Context;
 	use celestia_types::{consts::appconsts::AppVersion, nmt::Namespace, Blob as CelestiaBlob};
 
@@ -213,8 +219,11 @@ pub mod celestia {
 		// todo: it would be nice to have this be self describing over the compression and serialization format
 		fn try_from(blob: CelestiaBlob) -> Result<Self, Self::Error> {
 			// decompress the blob and deserialize the data with bcs
-			let decoder = zstd::Decoder::with_buffer(blob.data.as_slice())?;
-			let blob = bcs::from_reader(decoder).context("failed to deserialize blob")?;
+			let mut decoder = zstd::Decoder::with_buffer(blob.data.as_slice())?;
+			let blob = bcs::de::Builder::new()
+				.max_sequence_length(MAX_BLOB_LEN)
+				.deserialize_reader(&mut decoder)
+				.context("failed to deserialize blob")?;
 
 			Ok(blob)
 		}
