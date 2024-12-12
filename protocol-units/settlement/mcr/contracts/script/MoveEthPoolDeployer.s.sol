@@ -20,16 +20,16 @@ contract PoolDeployer is Script {
     uint256 public moveDecimals = 8;
     uint256 public ethDecimals = 18;
     uint256 public moveTotalSupply = 10* 10**9 * 10**moveDecimals;
-    uint256 public moveAndEthDepositValue = 250_000;
+    uint256 public moveAndEthDepositValue = 600;
 
-    uint256 public targetValuation = 1_500_000_000;
-    uint256 public currentEthPrice = 4000;
+    uint256 public targetValuation = 6_000_000_000;
+    uint256 public currentEthPrice = 3600;
 
     address public deployer = 0xB2105464215716e1445367BEA5668F581eF7d063;
-    address public receiver;
 
     function run() external {
         vm.startBroadcast(privateKey);
+        address recipient = 0x706dd4707E2e84523463cCF8Ea8c49f07aA71601;
 
         uint256 ethAmount = (moveAndEthDepositValue * 1e18) / currentEthPrice;
         uint256 movePriceInEth = targetValuation * 1e18 / moveTotalSupply;
@@ -39,10 +39,10 @@ contract PoolDeployer is Script {
 
         vm.assertEq(vm.addr(privateKey), deployer);
 
-        IERC20(moveAddress).approve(address(router), moveAmount);
-        IERC20(wethAddress).approve(address(router), ethAmount);
-        pair = IUniswapV2Pair(factory.createPair(moveAddress, wethAddress));
-        router.addLiquidity(moveAddress, wethAddress, moveAmount, ethAmount, moveAmount, ethAmount, vm.addr(privateKey), block.timestamp + 1000);
+        // IERC20(moveAddress).approve(address(router), moveAmount);
+        // pair = IUniswapV2Pair(factory.createPair(moveAddress, wethAddress));
+        // console.log("pair: ", address(pair));
+        router.addLiquidityETH{value: ethAmount}(moveAddress, moveAmount, moveAmount * 9 / 10, ethAmount * 9 / 10, recipient, block.timestamp + 1000);
         vm.stopBroadcast();
     }
 }

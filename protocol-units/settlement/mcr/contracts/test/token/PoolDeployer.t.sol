@@ -8,7 +8,7 @@ import "v2-periphery/interfaces/IUniswapV2Router02.sol";
 import "forge-std/console.sol";
 
 
-contract PoolDeployer is Test {
+contract PoolDeployerTest is Test {
 
     IUniswapV2Router02 public router = IUniswapV2Router02(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
     IUniswapV2Factory public factory = IUniswapV2Factory(0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f);
@@ -23,7 +23,7 @@ contract PoolDeployer is Test {
     uint256 public moveTotalSupply = 10* 10**9 * 10**moveDecimals;
     uint256 public moveAndEthDepositValue = 250_000;
 
-    uint256 public targetValuation = 500_000_000;
+    uint256 public targetValuation = 4_000_000_000;
     uint256 public currentEthPrice = 4000;
 
     function testDeploy() external {
@@ -36,12 +36,12 @@ contract PoolDeployer is Test {
         console.log("ethAmount: ", ethAmount);
 
         deal(moveAddress, deployer, moveAmount);
-        deal(wethAddress, deployer, ethAmount);
+        deal(deployer, ethAmount);
 
         IERC20(moveAddress).approve(address(router), moveAmount);
         IERC20(wethAddress).approve(address(router), ethAmount);
         pair = IUniswapV2Pair(factory.createPair(moveAddress, wethAddress));
-        router.addLiquidity(moveAddress, wethAddress, moveAmount, ethAmount, moveAmount, ethAmount, deployer, block.timestamp + 1000);
+        router.addLiquidityETH{value: ethAmount}(moveAddress, moveAmount, moveAmount, ethAmount, deployer, block.timestamp + 1000);
         vm.stopPrank();
     }
 }
