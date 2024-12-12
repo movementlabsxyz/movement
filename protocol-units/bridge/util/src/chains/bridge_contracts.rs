@@ -1,11 +1,8 @@
-use crate::types::{BridgeTransferDetailsCounterparty, LockDetails};
+use crate::types::{Amount, BridgeAddress, BridgeTransferId, Nonce};
+use serde::Deserialize;
 use std::fmt;
 use thiserror::Error;
 use tokio_stream::Stream;
-
-use crate::types::{
-	Amount, BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage,
-};
 
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
 pub enum BridgeContractError {
@@ -88,32 +85,20 @@ pub type BridgeContractWETH9Result<T> = Result<T, BridgeContractWETH9Error>;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum BridgeContractEventType {
 	Initiated,
-	Locked,
-	InitiatorCompleted,
-	CounterPartyCompleted,
-	Cancelled,
-	Refunded,
+	Completed,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum BridgeContractEvent<A> {
-	Initiated(BridgeTransferDetails<A>),
-	Locked(LockDetails<A>),
-	InitiatorCompleted(BridgeTransferId),
-	CounterPartyCompleted(BridgeTransferId, HashLockPreImage),
-	Cancelled(BridgeTransferId),
-	Refunded(BridgeTransferId),
+	Initiated(BridgeTransferInitiatedDetails<A>),
+	Completed(BridgeTransferCompletedDetails<A>),
 }
 
 impl<A> BridgeContractEvent<A> {
 	pub fn bridge_transfer_id(&self) -> BridgeTransferId {
 		match self {
 			Self::Initiated(details) => details.bridge_transfer_id,
-			Self::Locked(details) => details.bridge_transfer_id,
-			Self::InitiatorCompleted(id)
-			| Self::CounterPartyCompleted(id, _)
-			| Self::Cancelled(id)
-			| Self::Refunded(id) => *id,
+			Self::Completed(details) => details.bridge_transfer_id,
 		}
 	}
 
@@ -130,14 +115,28 @@ impl<A> fmt::Display for BridgeContractEvent<A> {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		let kind = match self {
 			Self::Initiated(_) => "Initiated",
-			Self::Locked(_) => "Locked",
-			Self::InitiatorCompleted(_) => "InitiatorCompleted",
-			Self::CounterPartyCompleted(_, _) => "CounterPartyCompleted",
-			Self::Cancelled(_) => "Cancelled",
-			Self::Refunded(_) => "Refunded",
+			Self::Completed(_) => "Completed",
 		};
 		write!(f, "Contract event: {}/ transfer id: {}", kind, self.bridge_transfer_id(),)
 	}
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Deserialize)]
+pub struct BridgeTransferInitiatedDetails<A> {
+	pub bridge_transfer_id: BridgeTransferId,
+	pub initiator: BridgeAddress<A>,
+	pub recipient: BridgeAddress<Vec<u8>>,
+	pub amount: Amount,
+	pub nonce: Nonce,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Deserialize)]
+pub struct BridgeTransferCompletedDetails<A> {
+	pub bridge_transfer_id: BridgeTransferId,
+	pub initiator: BridgeAddress<Vec<u8>>,
+	pub recipient: BridgeAddress<A>,
+	pub amount: Amount,
+	pub nonce: Nonce,
 }
 
 pub trait BridgeContractMonitoring:
@@ -147,55 +146,38 @@ pub trait BridgeContractMonitoring:
 }
 
 #[async_trait::async_trait]
-pub trait BridgeContract<A>: Clone + Unpin + Send + Sync {
+pub trait BridgeClientContract<A>: Clone + Unpin + Send + Sync {
 	async fn initiate_bridge_transfer(
 		&mut self,
-		initiator: BridgeAddress<A>,
 		recipient: BridgeAddress<Vec<u8>>,
-		hash_lock: HashLock,
 		amount: Amount,
 	) -> BridgeContractResult<()>;
-
-	async fn initiator_complete_bridge_transfer(
+	async fn get_bridge_transfer_details(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
-		secret: HashLockPreImage,
-	) -> BridgeContractResult<()>;
+	) -> BridgeContractResult<Option<BridgeTransferInitiatedDetails<A>>>;
+}
 
-	async fn counterparty_complete_bridge_transfer(
+#[async_trait::async_trait]
+pub trait BridgeRelayerContract<A>: Clone + Unpin + Send + Sync {
+	async fn complete_bridge_transfer(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
-		secret: HashLockPreImage,
-	) -> BridgeContractResult<()>;
-
-	async fn refund_bridge_transfer(
-		&mut self,
-		bridge_transfer_id: BridgeTransferId,
-	) -> BridgeContractResult<()>;
-
-	async fn get_bridge_transfer_details_initiator(
-		&mut self,
-		bridge_transfer_id: BridgeTransferId,
-	) -> BridgeContractResult<Option<BridgeTransferDetails<A>>>;
-
-	async fn get_bridge_transfer_details_counterparty(
-		&mut self,
-		bridge_transfer_id: BridgeTransferId,
-	) -> BridgeContractResult<Option<BridgeTransferDetailsCounterparty<A>>>;
-
-	async fn lock_bridge_transfer(
-		&mut self,
-		bridge_transfer_id: BridgeTransferId,
-		hash_lock: HashLock,
 		initiator: BridgeAddress<Vec<u8>>,
 		recipient: BridgeAddress<A>,
 		amount: Amount,
+		nonce: Nonce,
 	) -> BridgeContractResult<()>;
 
-	async fn abort_bridge_transfer(
+	async fn get_bridge_transfer_details_with_nonce(
+		&mut self,
+		nonce: Nonce,
+	) -> BridgeContractResult<Option<BridgeTransferInitiatedDetails<A>>>;
+
+	async fn is_bridge_transfer_completed(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
-	) -> BridgeContractResult<()>;
+	) -> BridgeContractResult<bool>;
 }
 
 #[async_trait::async_trait]

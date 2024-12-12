@@ -1,6 +1,5 @@
 use super::types::EthAddress;
-use crate::chains::ethereum::types::AtomicBridgeCounterpartyMOVE;
-use crate::chains::ethereum::types::AtomicBridgeInitiatorMOVE;
+use crate::chains::ethereum::types::NativeBridge;
 use alloy::eips::BlockNumberOrTag;
 use alloy::primitives::Address;
 use alloy::providers::Provider;
@@ -11,24 +10,89 @@ use bridge_util::chains::bridge_contracts::BridgeContractError;
 use bridge_util::chains::bridge_contracts::BridgeContractEvent;
 use bridge_util::chains::bridge_contracts::BridgeContractMonitoring;
 use bridge_util::chains::bridge_contracts::BridgeContractResult;
-use bridge_util::types::HashLockPreImage;
-use bridge_util::types::LockDetails;
-use bridge_util::types::{BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock};
+use bridge_util::chains::bridge_contracts::BridgeTransferCompletedDetails;
+use bridge_util::chains::bridge_contracts::BridgeTransferInitiatedDetails;
+use bridge_util::types::Nonce;
+use bridge_util::types::{BridgeAddress, BridgeTransferId};
 use futures::SinkExt;
-use futures::{channel::mpsc::UnboundedReceiver, Stream, StreamExt};
+use futures::{
+	channel::mpsc::{UnboundedReceiver, UnboundedSender},
+	Stream, StreamExt,
+};
+use std::sync::Arc;
 use std::{pin::Pin, task::Poll};
+use tokio::sync::RwLock;
 use tokio::sync::{mpsc, oneshot};
 
 pub struct EthMonitoring {
+	pulling_task: Option<PullMonitoring>,
 	listener: UnboundedReceiver<BridgeContractResult<BridgeContractEvent<EthAddress>>>,
+}
+impl EthMonitoring {
+	pub async fn build(
+		config: &EthConfig,
+		health_check_rx: mpsc::Receiver<oneshot::Sender<bool>>,
+	) -> Result<Self, anyhow::Error> {
+		let pulling_task = PullMonitoring::start_pulling(config, health_check_rx).await?;
+		let listener = pulling_task.add_notification_channel().await;
+
+		Ok(Self { pulling_task: Some(pulling_task), listener })
+	}
+
+	pub async fn child(&self) -> Self {
+		let listener = self
+			.pulling_task
+			.as_ref()
+			.expect("EthMonitoring Clone on non initial object.")
+			.add_notification_channel()
+			.await;
+		Self { pulling_task: None, listener }
+	}
 }
 
 impl BridgeContractMonitoring for EthMonitoring {
 	type Address = EthAddress;
 }
 
-impl EthMonitoring {
-	pub async fn build(
+impl Stream for EthMonitoring {
+	type Item = BridgeContractResult<BridgeContractEvent<EthAddress>>;
+
+	fn poll_next(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Option<Self::Item>> {
+		let this = self.get_mut();
+		this.listener.poll_next_unpin(cx)
+	}
+}
+
+pub struct PullMonitoring {
+	notification_channel_list:
+		Arc<RwLock<Vec<UnboundedSender<BridgeContractResult<BridgeContractEvent<EthAddress>>>>>>,
+}
+
+impl PullMonitoring {
+	pub async fn add_notification_channel(
+		&self,
+	) -> UnboundedReceiver<BridgeContractResult<BridgeContractEvent<EthAddress>>> {
+		let (sender, listener) = futures::channel::mpsc::unbounded::<
+			BridgeContractResult<BridgeContractEvent<EthAddress>>,
+		>();
+		let mut list = self.notification_channel_list.write().await;
+		list.push(sender);
+		listener
+	}
+
+	async fn notify_event(
+		list: &Vec<UnboundedSender<BridgeContractResult<BridgeContractEvent<EthAddress>>>>,
+		event: BridgeContractResult<BridgeContractEvent<EthAddress>>,
+	) {
+		for ref mut notif in list {
+			if notif.send(event.clone()).await.is_err() {
+				tracing::error!("Eth Monitor Failed to send event to listener channel");
+				break;
+			}
+		}
+	}
+
+	pub async fn start_pulling(
 		config: &EthConfig,
 		mut health_check_rx: mpsc::Receiver<oneshot::Sender<bool>>,
 	) -> Result<Self, anyhow::Error> {
@@ -39,25 +103,16 @@ impl EthMonitoring {
 			.on_builtin(client_config.rpc_url.as_str())
 			.await?;
 
-		tracing::info!(
-			"Start Eth monitoring with initiator:{} counterpart:{}",
-			config.eth_initiator_contract,
-			config.eth_counterparty_contract
-		);
+		let notification_channel_list = Arc::new(RwLock::new(vec![]));
 
-		let (mut sender, listener) = futures::channel::mpsc::unbounded::<
-			BridgeContractResult<BridgeContractEvent<EthAddress>>,
-		>();
+		tracing::info!("Start Eth monitoring with initiator:{}", config.eth_native_contract,);
 
 		tokio::spawn({
 			let config = config.clone();
+			let notification_channel_list = notification_channel_list.clone();
 			async move {
-				let initiator_contract = AtomicBridgeInitiatorMOVE::new(
-					config.eth_initiator_contract.parse().unwrap(), //If unwrap start fail. Config must be updated.
-					rpc_provider.clone(),
-				);
-				let counterpart_contract = AtomicBridgeCounterpartyMOVE::new(
-					config.eth_counterparty_contract.parse().unwrap(), //If unwrap start fail. Config must be updated.
+				let native_contract = NativeBridge::new(
+					config.eth_native_contract.parse().unwrap(), //If unwrap start fail. Config must be updated.
 					rpc_provider.clone(),
 				);
 				let mut last_processed_block = 0;
@@ -86,62 +141,42 @@ impl EthMonitoring {
 					{
 						Ok(Ok(block_number)) => block_number,
 						Ok(Err(err)) => {
-							if sender
-								.send(Err(BridgeContractError::OnChainError(format!(
+							PullMonitoring::notify_event(
+								&*notification_channel_list.read().await,
+								Err(BridgeContractError::OnChainError(format!(
 									"Eth get blocknumber request failed: {err}"
-								))))
-								.await
-								.is_err()
-							{
-								tracing::error!("Failed to send event to listener channel");
-								break;
-							}
+								))),
+							)
+							.await;
+
 							let _ = tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
 							continue;
 						}
 						Err(err) => {
-							if sender
-								.send(Err(BridgeContractError::OnChainError(format!(
+							PullMonitoring::notify_event(
+								&*notification_channel_list.read().await,
+								Err(BridgeContractError::OnChainError(format!(
 									"Eth get blocknumber timeout: {err}"
-								))))
-								.await
-								.is_err()
-							{
-								tracing::error!("Failed to send event to listener channel");
-								break;
-							}
+								))),
+							)
+							.await;
 							let _ = tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
 							continue;
 						}
 					};
 					if last_processed_block < block_number {
 						last_processed_block = block_number;
-						let initiator_initiate_event_filter = initiator_contract
+						let initiate_event_filter = native_contract
 							.BridgeTransferInitiated_filter()
 							.from_block(BlockNumberOrTag::Number(last_processed_block));
 						// event BridgeTransferCompleted(bytes32 indexed _bridgeTransferId, bytes32 pre_image);
-						let initiator_trcompleted_event_filter = initiator_contract
+						let completed_event_filter = native_contract
 							.BridgeTransferCompleted_filter()
 							.from_block(BlockNumberOrTag::Number(last_processed_block));
-						// event BridgeTransferRefunded(bytes32 indexed _bridgeTransferId);
-						let initiator_trrefund_event_filter = initiator_contract
-							.BridgeTransferRefunded_filter()
-							.from_block(BlockNumberOrTag::Number(last_processed_block));
-						let counterpart_trlocked_event_filter = counterpart_contract
-							.BridgeTransferLocked_filter()
-							.from_block(BlockNumberOrTag::Number(last_processed_block));
-						let counterpart_trcompleted_event_filter = counterpart_contract
-							.BridgeTransferCompleted_filter()
-							.from_block(BlockNumberOrTag::Number(last_processed_block));
-						//event BridgeTransferAborted(bytes32 indexed bridgeTransferId);
-						let counterpart_trcaborted_event_filter = counterpart_contract
-							.BridgeTransferAborted_filter()
-							.from_block(BlockNumberOrTag::Number(last_processed_block));
-
 						//Initiator event stream
 						match tokio::time::timeout(
 							tokio::time::Duration::from_secs(config.rest_connection_timeout_secs),
-							initiator_initiate_event_filter.query(),
+							initiate_event_filter.query(),
 						)
 						.await
 						{
@@ -149,285 +184,99 @@ impl EthMonitoring {
 								for (initiated, _log) in events {
 									let event = {
 										// BridgeTransferInitiated(bridgeTransferId, originator, recipient, totalAmount, hashLock, initiatorTimeLockDuration);
-										let details: BridgeTransferDetails<EthAddress> =
-											BridgeTransferDetails {
+										let details: BridgeTransferInitiatedDetails<EthAddress> =
+											BridgeTransferInitiatedDetails {
 												bridge_transfer_id: BridgeTransferId(
-													*initiated._bridgeTransferId,
+													*initiated.bridgeTransferId,
 												),
 												initiator: BridgeAddress(EthAddress(
-													Address::from(initiated._originator),
+													Address::from(initiated.originator),
 												)),
 												recipient: BridgeAddress(
-													initiated._recipient.to_vec(),
+													initiated.recipient.to_vec(),
 												),
-												hash_lock: HashLock(*initiated._hashLock),
-												time_lock: initiated._timeLock.into(),
+												nonce: Nonce(initiated.nonce.wrapping_to::<u128>()),
 												amount: initiated.amount.into(),
-												state: 0,
 											};
 										BridgeContractEvent::Initiated(details)
 									};
-									if sender.send(Ok(event)).await.is_err() {
-										tracing::error!("Failed to send event to listener channel");
-										break;
-									}
+									PullMonitoring::notify_event(
+										&*notification_channel_list.read().await,
+										Ok(event),
+									)
+									.await;
 								}
 							}
 							Ok(Err(_)) => {
-								if sender
-									.send(Err(BridgeContractError::OnChainError("Eth monitoring query initiator_initiate_event_filter timeout.".to_string())))
-									.await
-									.is_err()
-								{
-									tracing::error!("Failed to send event to listener channel");
-									break;
-								}
+								PullMonitoring::notify_event(
+										&*notification_channel_list.read().await,
+										Err(BridgeContractError::OnChainError("Eth monitoring query initiator_initiate_event_filter timeout.".to_string())),
+									).await;
 							}
 							Err(err) => {
-								if sender
-									.send(Err(BridgeContractError::OnChainError(err.to_string())))
-									.await
-									.is_err()
-								{
-									tracing::error!("Failed to send event to listener channel");
-									break;
-								}
-							}
-						}
-						match tokio::time::timeout(
-							tokio::time::Duration::from_secs(config.rest_connection_timeout_secs),initiator_trcompleted_event_filter.query()).await {
-							Ok(Ok(events)) => {
-								for (completed, _log) in events {
-									if sender
-										.send(Ok(BridgeContractEvent::InitiatorCompleted(
-											BridgeTransferId(*completed._bridgeTransferId),
-										)))
-										.await
-										.is_err()
-									{
-										tracing::error!("Failed to send event to listener channel");
-										break;
-									}
-								}
-							}
-							Ok(Err(_)) => {
-								if sender
-									.send(Err(BridgeContractError::OnChainError("Eth monitoring query initiator_trcompleted_event_filter timeout.".to_string())))
-									.await
-									.is_err()
-								{
-									tracing::error!("Failed to send event to listener channel");
-									break;
-								}
-							}
-							Err(err) => {
-								if sender
-									.send(Err(BridgeContractError::OnChainError(err.to_string())))
-									.await
-									.is_err()
-								{
-									tracing::error!("Failed to send event to listener channel");
-									break;
-								}
+								PullMonitoring::notify_event(
+									&*notification_channel_list.read().await,
+									Err(BridgeContractError::OnChainError(err.to_string())),
+								)
+								.await;
 							}
 						}
 						match tokio::time::timeout(
 							tokio::time::Duration::from_secs(config.rest_connection_timeout_secs),
-							initiator_trrefund_event_filter.query(),
+							completed_event_filter.query(),
 						)
 						.await
 						{
 							Ok(Ok(events)) => {
-								for (refund, _log) in events {
-									if sender
-										.send(Ok(BridgeContractEvent::Refunded(BridgeTransferId(
-											*refund._bridgeTransferId,
-										))))
-										.await
-										.is_err()
-									{
-										tracing::error!("Failed to send event to listener channel");
-										break;
-									}
-								}
-							}
-							Ok(Err(_)) => {
-								if sender
-									.send(Err(BridgeContractError::OnChainError("Eth monitoring query initiator_trrefund_event_filter timeout.".to_string())))
-									.await
-									.is_err()
-								{
-									tracing::error!("Failed to send event to listener channel");
-									break;
-								}
-							}
-							Err(err) => {
-								if sender
-									.send(Err(BridgeContractError::OnChainError(err.to_string())))
-									.await
-									.is_err()
-								{
-									tracing::error!("Failed to send event to listener channel");
-									break;
-								}
-							}
-						}
-						tracing::info!("Querying counterpart_trlocked_event_filter");
-						let start_time = tokio::time::Instant::now();
-						match tokio::time::timeout(
-							tokio::time::Duration::from_secs(30),
-							counterpart_trlocked_event_filter.query(),
-						)
-						.await
-						{
-							Ok(Ok(events)) => {
-								tracing::info!(
-									"Query completed for counterpart_trlocked_event_filter in {:?}",
-									start_time.elapsed()
-								);
-								for (trlocked, _log) in events {
+								for (completed, _log) in events {
 									let event = {
-										// BridgeTransferLocked(bridgeTransferId, originator, recipient, totalAmount, hashLock, initiatorTimeLockDuration);
-										let details: LockDetails<EthAddress> = LockDetails {
-											bridge_transfer_id: BridgeTransferId(
-												*trlocked.bridgeTransferId,
-											),
-											initiator: BridgeAddress([0, 32].into()), // TODO add the originator fields. trlocked.originator.to_vec()
-											recipient: BridgeAddress(EthAddress(Address::from(
-												trlocked.recipient,
-											))),
-											amount: trlocked.amount.into(),
-											hash_lock: HashLock(*trlocked.hashLock),
-											time_lock: trlocked.timeLock.into(),
-										};
-										BridgeContractEvent::Locked(details)
+										// BridgeTransferInitiated(bridgeTransferId, originator, recipient, totalAmount, hashLock, initiatorTimeLockDuration);
+										let details: BridgeTransferCompletedDetails<EthAddress> =
+											BridgeTransferCompletedDetails {
+												bridge_transfer_id: BridgeTransferId(
+													*completed.bridgeTransferId,
+												),
+												initiator: BridgeAddress(
+													completed.originator.to_vec(),
+												),
+												recipient: BridgeAddress(EthAddress(
+													Address::from(completed.recipient),
+												)),
+												nonce: bridge_util::types::Nonce(
+													completed.nonce.wrapping_to::<u128>(),
+												),
+												amount: completed.amount.into(),
+											};
+										BridgeContractEvent::Completed(details)
 									};
-									if sender.send(Ok(event)).await.is_err() {
-										tracing::error!("Failed to send event to listener channel");
-										break;
-									}
+									PullMonitoring::notify_event(
+										&*notification_channel_list.read().await,
+										Ok(event),
+									)
+									.await;
 								}
 							}
 							Ok(Err(_)) => {
-								if sender
-									.send(Err(BridgeContractError::OnChainError("Eth monitoring query counterpart_trlocked_event_filter timeout.".to_string())))
-									.await
-									.is_err()
-								{
-									tracing::error!("Failed to send event to listener channel");
-									break;
-								}
+								PullMonitoring::notify_event(
+										&*notification_channel_list.read().await,
+										Err(BridgeContractError::OnChainError("Eth monitoring query initiator_trcompleted_event_filter timeout.".to_string())),
+									).await;
 							}
 							Err(err) => {
-								if sender
-									.send(Err(BridgeContractError::OnChainError(err.to_string())))
-									.await
-									.is_err()
-								{
-									tracing::error!("Failed to send event to listener channel");
-									break;
-								}
+								PullMonitoring::notify_event(
+									&*notification_channel_list.read().await,
+									Err(BridgeContractError::OnChainError(err.to_string())),
+								)
+								.await;
 							}
 						}
-						match tokio::time::timeout(
-							tokio::time::Duration::from_secs(config.rest_connection_timeout_secs),
-							counterpart_trcompleted_event_filter.query(),
-						)
-						.await
-						{
-							Ok(Ok(events)) => {
-								for (completed, _log) in events {
-									if sender
-										.send(Ok(BridgeContractEvent::CounterPartyCompleted(
-											BridgeTransferId(*completed.bridgeTransferId),
-											HashLockPreImage(*completed.pre_image),
-										)))
-										.await
-										.is_err()
-									{
-										tracing::error!("Failed to send event to listener channel");
-										break;
-									}
-								}
-							}
-							Ok(Err(_)) => {
-								if sender
-									.send(Err(BridgeContractError::OnChainError("Eth monitoring query counterpart_trcompleted_event_filter timeout.".to_string())))
-									.await
-									.is_err()
-								{
-									tracing::error!("Failed to send event to listener channel");
-									break;
-								}
-							}
-							Err(err) => {
-								if sender
-									.send(Err(BridgeContractError::OnChainError(err.to_string())))
-									.await
-									.is_err()
-								{
-									tracing::error!("Failed to send event to listener channel");
-									break;
-								}
-							}
-						}
-						match tokio::time::timeout(
-							tokio::time::Duration::from_secs(config.rest_connection_timeout_secs),
-							counterpart_trcaborted_event_filter.query(),
-						)
-						.await
-						{
-							Ok(Ok(events)) => {
-								for (aborted, _log) in events {
-									if sender
-										.send(Ok(BridgeContractEvent::Cancelled(BridgeTransferId(
-											*aborted.bridgeTransferId,
-										))))
-										.await
-										.is_err()
-									{
-										tracing::error!("Failed to send event to listener channel");
-										break;
-									}
-								}
-							}
-							Ok(Err(_)) => {
-								if sender
-									.send(Err(BridgeContractError::OnChainError("Eth monitoring query counterpart_trcaborted_event_filter timeout.".to_string())))
-									.await
-									.is_err()
-								{
-									tracing::error!("Failed to send event to listener channel");
-									break;
-								}
-							}
-							Err(err) => {
-								if sender
-									.send(Err(BridgeContractError::OnChainError(err.to_string())))
-									.await
-									.is_err()
-								{
-									tracing::error!("Failed to send event to listener channel");
-									break;
-								}
-							}
-						}
-					} // end match
+					} // end if
 
 					let _ = tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
 				} // end loop
 			} // End spawn
 		});
 
-		Ok(Self { listener })
-	}
-}
-
-impl Stream for EthMonitoring {
-	type Item = BridgeContractResult<BridgeContractEvent<EthAddress>>;
-
-	fn poll_next(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Option<Self::Item>> {
-		let this = self.get_mut();
-		this.listener.poll_next_unpin(cx)
+		Ok(PullMonitoring { notification_channel_list })
 	}
 }

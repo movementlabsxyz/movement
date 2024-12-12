@@ -15,7 +15,7 @@ processes:
       - "MAYBE_DEPLOY_MCR=true"
 
     command: |
-      movement-full-node-setup
+      movement-full-node-setup 
     depends_on:
       build:
         condition: process_completed_successfully

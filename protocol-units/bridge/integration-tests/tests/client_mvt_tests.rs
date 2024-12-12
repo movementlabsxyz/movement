@@ -1,167 +1,80 @@
-use alloy::primitives::keccak256;
 use anyhow::Result;
 use aptos_sdk::coin_client::CoinClient;
-use aptos_sdk::types::account_address::AccountAddress;
-use bridge_integration_tests::utils as test_utils;
-use bridge_integration_tests::{EthToMovementCallArgs, MovementToEthCallArgs, TestHarness};
-use bridge_service::chains::bridge_contracts::BridgeContractEvent;
+use bridge_integration_tests::HarnessEthClient;
+use bridge_integration_tests::HarnessMvtClient;
+use bridge_integration_tests::TestHarness;
 use bridge_service::chains::movement::event_monitoring::MovementMonitoring;
 use bridge_service::{
-	chains::{
-		bridge_contracts::BridgeContract,
-		movement::utils::{MovementAddress, MovementHash},
-	},
-	types::{Amount, BridgeAddress, BridgeTransferId, HashLock, HashLockPreImage},
+	chains::{ethereum::types::EthAddress, movement::utils::MovementAddress},
+	types::{Amount, BridgeAddress},
 };
-use chrono::Utc;
+use bridge_util::BridgeClientContract;
+use bridge_util::BridgeContractEvent;
+use bridge_util::BridgeRelayerContract;
 use futures::StreamExt;
-use tokio::time::{sleep, Duration};
 use tokio::{self};
-use tracing::info;
-
-#[tokio::test]
-async fn test_movement_client_counterparty_complete_transfer() -> Result<(), anyhow::Error> {
-	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::INFO).try_init();
-	let (mut mvt_client_harness, _config) =
-		TestHarness::new_with_movement().await.expect("Bridge config file not set");
-	let hash_lock_pre_image = HashLockPreImage::random();
-	let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
-	let amount = Amount(1);
-	let transfer_id = BridgeTransferId::gen_unique_hash(&mut rand::rngs::OsRng);
-	let initiator = b"32Be343B94f860124dC4fEe278FDCBD38C102D88".to_vec();
-	let recipient = AccountAddress::new(*b"0x00000000000000000000000000face");
-
-	let coin_client = CoinClient::new(&mvt_client_harness.rest_client);
-	let movement_client_signer = mvt_client_harness.movement_client.signer();
-	{
-		let faucet_client = mvt_client_harness.faucet_client.write().unwrap();
-		faucet_client.fund(movement_client_signer.address(), 100_000_000).await?;
-		faucet_client.fund(recipient, 100_000_000).await?;
-	}
-	let balance = coin_client.get_account_balance(&movement_client_signer.address()).await?;
-	assert!(
-		balance >= 100_000_000,
-		"Expected Movement Client to have at least 100_000_000, but found {}",
-		balance
-	);
-
-	mvt_client_harness
-		.movement_client
-		.lock_bridge_transfer(
-			transfer_id,
-			hash_lock,
-			BridgeAddress(initiator.clone()),
-			BridgeAddress(MovementAddress(recipient.clone())),
-			amount,
-		)
-		.await
-		.expect("Failed to lock bridge transfer");
-
-	let details = BridgeContract::get_bridge_transfer_details_counterparty(
-		&mut mvt_client_harness.movement_client,
-		transfer_id,
-	)
-	.await
-	.expect("Failed to get bridge transfer details")
-	.expect("Expected to find bridge transfer details, but got None");
-
-	assert_eq!(details.state, 1, "Bridge transfer should be pending.");
-	info!("Bridge transfer details: {:?}", details);
-
-	let secret = b"secret";
-	let mut padded_secret = [0u8; 32];
-	padded_secret[..secret.len()].copy_from_slice(secret);
-
-	BridgeContract::counterparty_complete_bridge_transfer(
-		&mut mvt_client_harness.movement_client,
-		transfer_id,
-		hash_lock_pre_image,
-	)
-	.await
-	.expect("Failed to complete bridge transfer");
-
-	let details = BridgeContract::get_bridge_transfer_details_counterparty(
-		&mut mvt_client_harness.movement_client,
-		transfer_id,
-	)
-	.await
-	.expect("Failed to get bridge transfer details")
-	.expect("Expected to find bridge transfer details, but got None");
-
-	assert_eq!(details.bridge_transfer_id.0, transfer_id.0);
-	assert_eq!(details.hash_lock.0, hash_lock.0);
-	assert_eq!(&details.initiator.0, &initiator, "Initiator address does not match");
-	assert_eq!(details.recipient.0, MovementAddress(recipient));
-	assert_eq!(details.amount.0, *amount);
-	assert_eq!(details.state, 2, "Bridge transfer is supposed to be completed but it's not.");
-
-	Ok(())
-}
 
 #[tokio::test]
 async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::INFO).try_init();
 	let (mut mvt_client_harness, config) =
 		TestHarness::new_with_movement().await.expect("Bridge config file not set");
-	let args = MovementToEthCallArgs::default();
+	let (_mvt_health_tx, mvt_health_rx) = tokio::sync::mpsc::channel(10);
+	let mut mvt_monitoring =
+		MovementMonitoring::build(&config.movement, mvt_health_rx).await.unwrap();
+	let recipient_address = HarnessEthClient::get_recipient_address(&config).to_vec();
 
 	let test_result = async {
-		test_utils::fund_and_check_balance_framework(&mut mvt_client_harness, 100_000_000_000)
+		mvt_client_harness
+			.fund_signer_and_check_balance_framework(100_000_000_000)
 			.await?;
-
 		{
-			let res = BridgeContract::initiate_bridge_transfer(
+			tracing::info!("Before initiate_bridge_transfer");
+			let res = BridgeClientContract::initiate_bridge_transfer(
 				&mut mvt_client_harness.movement_client,
-				BridgeAddress(MovementAddress(args.initiator.0)),
-				BridgeAddress(args.recipient.clone()),
-				HashLock(args.hash_lock.0),
-				Amount(args.amount),
+				BridgeAddress(recipient_address.clone()),
+				Amount(100_000_000_000),
 			)
 			.await?;
 
 			tracing::info!("Initiate result: {:?}", res);
 		}
 
-		// Wait for the tx to be executed
-		tracing::info!("Wait for the Movement Initiated event.");
-		let (_, mvt_health_rx) = tokio::sync::mpsc::channel(10);
-		let mut mvt_monitoring =
-			MovementMonitoring::build(&config.movement, mvt_health_rx).await.unwrap();
+		let bridge_fee = mvt_client_harness.get_bridge_fee().await?;
 
-		// Use timeout to wait for the next event
-		let event_option =
-			tokio::time::timeout(std::time::Duration::from_secs(30), mvt_monitoring.next())
-				.await
-				.expect("Timeout while waiting for the Movement Initiated event");
+		// Wait for the Movement Initiated event
+		tracing::info!("Wait for Movement-side Initiated event.");
+		let mut received_event = None;
 
-		// Check if we received an event (Option) and handle the Result inside it
-		let bridge_transfer_id = match event_option {
-			Some(Ok(BridgeContractEvent::Initiated(detail))) => detail.bridge_transfer_id,
-			Some(Err(e)) => panic!("Error in bridge contract event: {:?}", e),
-			None => panic!("No event received"),
-			_ => panic!("Not a an Initiated event: {:?}", event_option),
-		};
+		// Use a loop to wait for the Initiated event
+		loop {
+			let event =
+				tokio::time::timeout(std::time::Duration::from_secs(30), mvt_monitoring.next())
+					.await
+					.expect("Wait for initiated event timeout.");
+
+			if let Some(Ok(BridgeContractEvent::Initiated(detail))) = event {
+				tracing::info!("Initiated details: {:?}", detail);
+
+				received_event = Some((
+					detail.bridge_transfer_id,
+					detail.initiator,
+					detail.recipient,
+					detail.amount,
+					detail.nonce,
+				));
+				break;
+			}
+		}
+
+		let (bridge_transfer_id, initiator, recipient, amount, _nonce) =
+			received_event.expect("No initiated event received");
 
 		tracing::info!("Received bridge_transfer_id: {:?}", bridge_transfer_id);
 
-		let details = BridgeContract::get_bridge_transfer_details_initiator(
-			&mut mvt_client_harness.movement_client,
-			bridge_transfer_id,
-		)
-		.await
-		.expect("Failed to get bridge transfer details")
-		.expect("Expected to find bridge transfer details, but got None");
-
-		assert_eq!(details.state, 1, "Bridge transfer should be initiated.");
-
-		test_utils::assert_counterparty_bridge_transfer_details_framework(
-			&details,
-			details.initiator.to_string(),
-			details.recipient.to_vec(),
-			details.amount.0,
-			details.hash_lock.0,
-			details.time_lock.0,
-		);
+		assert_eq!(initiator.0 .0, mvt_client_harness.signer_address());
+		assert_eq!(recipient, BridgeAddress(recipient_address));
+		assert_eq!(amount, Amount(100_000_000_000 - bridge_fee));
 
 		Ok(())
 	}
@@ -171,19 +84,44 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 }
 
 #[tokio::test]
-async fn test_movement_client_abort_transfer() -> Result<(), anyhow::Error> {
+async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::INFO).try_init();
-	let (mut mvt_client_harness, _config) =
+	let (mut mvt_client_harness, config) =
 		TestHarness::new_with_movement().await.expect("Bridge config file not set");
-	let args = EthToMovementCallArgs::default();
+	let (_mvt_health_tx, mvt_health_rx) = tokio::sync::mpsc::channel(10);
+	let mut mvt_monitoring =
+		MovementMonitoring::build(&config.movement, mvt_health_rx).await.unwrap();
+
+	// Set initiator as bytes
+	let initiator = EthAddress(HarnessEthClient::get_initiator_address(&config));
+
+	// Set recipient address
+	let recipient = HarnessMvtClient::gen_aptos_account().address();
+
+	// Set amount to 1
+	let amount = Amount(100_000_000_000);
+
+	// Random nonce
+	let incoming_nonce = TestHarness::create_nonce();
+
+	let bridge_transfer_id = HarnessMvtClient::calculate_bridge_transfer_id(
+		initiator.clone().0,
+		recipient,
+		amount,
+		incoming_nonce,
+	);
+
 	let coin_client = CoinClient::new(&mvt_client_harness.rest_client);
 	let movement_client_signer = mvt_client_harness.movement_client.signer();
 
+	// Fund accounts
 	{
 		let faucet_client = mvt_client_harness.faucet_client.write().unwrap();
 		faucet_client.fund(movement_client_signer.address(), 100_000_000).await?;
+		faucet_client.fund(recipient, 100_000_000).await?;
 	}
 
+	// Assert the balance is sufficient
 	let balance = coin_client.get_account_balance(&movement_client_signer.address()).await?;
 	assert!(
 		balance >= 100_000_000,
@@ -191,199 +129,44 @@ async fn test_movement_client_abort_transfer() -> Result<(), anyhow::Error> {
 		balance
 	);
 
-	mvt_client_harness
-		.movement_client
-		.lock_bridge_transfer(
-			BridgeTransferId(args.bridge_transfer_id.0),
-			HashLock(args.hash_lock.0),
-			BridgeAddress(args.initiator.clone()),
-			BridgeAddress(args.recipient.clone().into()),
-			Amount(args.amount),
-		)
-		.await
-		.expect("Failed to lock bridge transfer");
-
-	let details = BridgeContract::get_bridge_transfer_details_counterparty(
+	// Call the complete_bridge_transfer function
+	BridgeRelayerContract::complete_bridge_transfer(
 		&mut mvt_client_harness.movement_client,
-		BridgeTransferId(args.bridge_transfer_id.0),
-	)
-	.await
-	.expect("Failed to get bridge transfer details")
-	.expect("Expected to find bridge transfer details, but got None");
-
-	assert_eq!(details.state, 1, "Bridge transfer should be pending.");
-
-	sleep(Duration::from_secs(20)).await;
-
-	let secret = b"secret";
-	let mut padded_secret = [0u8; 32];
-	padded_secret[..secret.len()].copy_from_slice(secret);
-
-	BridgeContract::abort_bridge_transfer(
-		&mut mvt_client_harness.movement_client,
-		BridgeTransferId(args.bridge_transfer_id.0),
+		bridge_transfer_id,
+		BridgeAddress(initiator.clone().to_vec()),
+		BridgeAddress(MovementAddress(recipient)),
+		amount,
+		incoming_nonce,
 	)
 	.await
 	.expect("Failed to complete bridge transfer");
 
-	let details = BridgeContract::get_bridge_transfer_details_counterparty(
-		&mut mvt_client_harness.movement_client,
-		BridgeTransferId(args.bridge_transfer_id.0),
-	)
-	.await
-	.expect("Failed to get bridge transfer details")
-	.expect("Expected to find bridge transfer details, but got None");
-
-	assert_eq!(details.bridge_transfer_id.0, args.bridge_transfer_id.0);
-	assert_eq!(details.hash_lock.0, args.hash_lock.0);
-	assert_eq!(&details.initiator.0, &args.initiator, "Initiator address does not match");
-	assert_eq!(details.recipient.0, args.recipient);
-	assert_eq!(details.amount.0, args.amount);
-	assert_eq!(details.state, 3, "Bridge transfer is supposed to be cancelled but it's not.");
-
-	Ok(())
-}
-
-// Failing with EINVALID_PRE_IMAGE(0x1). Client and unit tests for modules used in client_movement_eth pass.
-#[tokio::test]
-async fn test_movement_client_initiator_complete_transfer() -> Result<(), anyhow::Error> {
-	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::INFO).try_init();
-	let (mut mvt_client_harness, config) =
-		TestHarness::new_with_movement().await.expect("Bridge config file not set");
-	let args = MovementToEthCallArgs::default();
-	test_utils::fund_and_check_balance_framework(&mut mvt_client_harness, 100_000_000_000).await?;
-	{
-		let res = BridgeContract::initiate_bridge_transfer(
-			&mut mvt_client_harness.movement_client,
-			BridgeAddress(MovementAddress(args.initiator.0)),
-			BridgeAddress(args.recipient.clone()),
-			HashLock(args.hash_lock.0),
-			Amount(args.amount),
-		)
-		.await?;
-
-		tracing::info!("Initiate result: {:?}", res);
-	}
-
-	// Wait for the tx to be executed
-	tracing::info!("Wait for the Movement Initiated event.");
-	let (_, mvt_health_rx) = tokio::sync::mpsc::channel(10);
-	let mut mvt_monitoring =
-		MovementMonitoring::build(&config.movement, mvt_health_rx).await.unwrap();
-
-	// Use timeout to wait for the next event
-	let event_option =
-		tokio::time::timeout(std::time::Duration::from_secs(30), mvt_monitoring.next())
+	// Wait for the Movement-side Completed event
+	tracing::info!("Wait for Movement-side Completed event.");
+	loop {
+		let event = tokio::time::timeout(std::time::Duration::from_secs(30), mvt_monitoring.next())
 			.await
-			.expect("Timeout while waiting for the Movement Initiated event");
-
-	// Check if we received an event (Option) and handle the Result inside it
-	let bridge_transfer_id = match event_option {
-		Some(Ok(BridgeContractEvent::Initiated(detail))) => detail.bridge_transfer_id,
-		Some(Err(e)) => panic!("Error in bridge contract event: {:?}", e),
-		None => panic!("No event received"),
-		_ => panic!("Not a an Initiated event: {:?}", event_option),
-	};
-
-	tracing::info!("Received bridge_transfer_id: {:?}", bridge_transfer_id);
-
-	BridgeContract::initiator_complete_bridge_transfer(
-		&mut mvt_client_harness.movement_client,
-		BridgeTransferId(bridge_transfer_id.0),
-		HashLockPreImage(args.pre_image),
-	)
-	.await
-	.expect("Failed to complete bridge transfer");
-
-	let details = BridgeContract::get_bridge_transfer_details_initiator(
-		&mut mvt_client_harness.movement_client,
-		BridgeTransferId(bridge_transfer_id.0),
-	)
-	.await
-	.expect("Failed to get bridge transfer details")
-	.expect("Expected to find bridge transfer details, but got None");
-
-	info!("Bridge transfer details: {:?}", details);
-
-	test_utils::assert_counterparty_bridge_transfer_details_framework(
-		&details,
-		details.initiator.to_string(),
-		details.recipient.to_vec(),
-		details.amount.0,
-		details.hash_lock.0,
-		details.time_lock.0,
-	);
-
-	assert_eq!(details.state, 2, "Bridge transfer should be completed.");
-
-	Ok(())
-}
-
-#[tokio::test]
-async fn test_movement_client_refund_transfer() -> Result<(), anyhow::Error> {
-	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::INFO).try_init();
-	let (mut mvt_client_harness, config) =
-		TestHarness::new_with_movement().await.expect("Bridge config file not set");
-	let args = MovementToEthCallArgs::default();
-	test_utils::fund_and_check_balance_framework(&mut mvt_client_harness, 100_000_000_000).await?;
-
-	{
-		let res = BridgeContract::initiate_bridge_transfer(
-			&mut mvt_client_harness.movement_client,
-			BridgeAddress(MovementAddress(args.initiator.0)),
-			BridgeAddress(args.recipient.clone()),
-			HashLock(args.hash_lock.0),
-			Amount(args.amount),
-		)
-		.await?;
-
-		tracing::info!("Initiate result: {:?}", res);
+			.expect("Wait for completed event timeout.");
+		if let Some(Ok(BridgeContractEvent::Completed(detail))) = event {
+			tracing::info!("Completed details: {:?}", detail);
+			assert_eq!(
+				detail.bridge_transfer_id, bridge_transfer_id,
+				"Bad transfer id in completed event"
+			);
+			assert_eq!(detail.nonce, incoming_nonce, "Bad nonce in completed event");
+			assert_eq!(detail.amount, amount, "Bad amount in completed event");
+			assert_eq!(
+				detail.initiator,
+				BridgeAddress(initiator.to_vec()),
+				"Bad initiator address in completed event"
+			);
+			assert_eq!(
+				detail.recipient.0 .0, recipient,
+				"Bad recipient address in completed event"
+			);
+			break;
+		}
 	}
-
-	// Wait for the tx to be executed
-	tracing::info!("Wait for the Movement Initiated event.");
-	let (_, mvt_health_rx) = tokio::sync::mpsc::channel(10);
-	let mut mvt_monitoring =
-		MovementMonitoring::build(&config.movement, mvt_health_rx).await.unwrap();
-
-	// Use timeout to wait for the next event
-	let event_option =
-		tokio::time::timeout(std::time::Duration::from_secs(120), mvt_monitoring.next())
-			.await
-			.expect("Timeout while waiting for the Movement Initiated event");
-
-	// Check if we received an event (Option) and handle the Result inside it
-	let bridge_transfer_id = match event_option {
-		Some(Ok(BridgeContractEvent::Initiated(detail))) => detail.bridge_transfer_id,
-		Some(Err(e)) => panic!("Error in bridge contract event: {:?}", e),
-		None => panic!("No event received"),
-		_ => panic!("Not a an Initiated event: {:?}", event_option),
-	};
-
-	tracing::info!("Received bridge_transfer_id: {:?}", bridge_transfer_id);
-
-	sleep(Duration::from_secs(15)).await;
-
-	info!("Current timestamp: {:?}", Utc::now().timestamp());
-
-	BridgeContract::refund_bridge_transfer(
-		&mut mvt_client_harness.movement_client,
-		bridge_transfer_id,
-	)
-	.await
-	.expect("Failed to refund bridge transfer");
-
-	let details = BridgeContract::get_bridge_transfer_details_initiator(
-		&mut mvt_client_harness.movement_client,
-		bridge_transfer_id,
-	)
-	.await
-	.expect("Failed to get bridge transfer details")
-	.expect("Expected to find bridge transfer details, but got None");
-
-	tracing::info!("Transfer details after refund: {:?}", details);
-
-	assert_eq!(details.state, 3, "Bridge transfer should be refunded.");
 
 	Ok(())
 }
