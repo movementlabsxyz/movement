@@ -34,7 +34,13 @@ fn default_database_url() -> String {
 	"postgresql://postgres:password@localhost:5432".to_string()
 }
 
-env_default!(default_start_indexer_with_relayer, "RELAYER_START_INDEXER", bool, false);
+pub fn default_start_indexer_with_relayer() -> bool {
+	tracing::info!("RELAYER_START_INDEXER :{:?}", std::env::var("RELAYER_START_INDEXER"));
+	match std::env::var("RELAYER_START_INDEXER") {
+		Ok(str_value) => str_value.parse::<bool>().unwrap_or(false),
+		Err(_) => false,
+	}
+}
 
 env_default!(
 	default_rest_listener_hostname,

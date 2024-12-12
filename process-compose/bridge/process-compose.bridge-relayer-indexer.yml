@@ -12,7 +12,7 @@ processes:
         command: echo "true"
   bridge:
     command: |
-      RUST_BACKTRACE=1 RELAYER_START_INDEXER=true bridge-service
+      RUST_BACKTRACE=1 bridge-service
     readiness_probe:
       initial_delay_seconds: 5
       exec:
