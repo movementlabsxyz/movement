@@ -24,9 +24,8 @@ use bridge_service::types::Nonce;
 use bridge_util::chains::bridge_contracts::BridgeClientContract;
 use ethabi;
 use godfig::{backend::config_file::ConfigFile, Godfig};
-use rand::{distributions::Alphanumeric, thread_rng, Rng, SeedableRng};
+use rand::SeedableRng;
 use std::{
-	convert::TryInto,
 	str::FromStr,
 	sync::{Arc, RwLock},
 };
@@ -245,7 +244,7 @@ impl HarnessMvtClient {
 	fn normalize_to_32_bytes(value: u64) -> Vec<u8> {
 		// Convert the u64 value to a u256 (as bytes)
 		let bytes = ethabi::encode(&[ethabi::Token::Uint(ethabi::Uint::from(value as u128))]);
-	
+
 		bytes
 	}
 

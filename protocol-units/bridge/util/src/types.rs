@@ -22,32 +22,9 @@ pub enum AddressError {
 	AddressConvertionlError(String),
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, PartialOrd, Ord, Hash)]
-pub enum ChainId {
-	ONE,
-	TWO,
-}
-
-impl ChainId {
-	pub fn other(&self) -> ChainId {
-		match self {
-			ChainId::ONE => ChainId::TWO,
-			ChainId::TWO => ChainId::ONE,
-		}
-	}
-}
-
-impl fmt::Display for ChainId {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		let s = match self {
-			ChainId::ONE => "ONE",
-			ChainId::TWO => "TWO",
-		};
-		write!(f, "{}", s)
-	}
-}
-
-#[derive(Debug, Clone, Copy, Eq, PartialEq, PartialOrd, Ord, Hash, Deserialize, serde::Serialize)]
+#[derive(
+	Debug, Clone, Copy, Eq, PartialEq, PartialOrd, Ord, Hash, Deserialize, serde::Serialize,
+)]
 pub struct Nonce(pub u128);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Deserialize)]
@@ -82,7 +59,7 @@ impl TryFrom<Vec<u8>> for BridgeTransferId {
 
 impl fmt::Display for BridgeTransferId {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		write!(f, "Bid: {}", hex::encode(self.0))
+		write!(f, "{}", hex::encode(self.0))
 	}
 }
 

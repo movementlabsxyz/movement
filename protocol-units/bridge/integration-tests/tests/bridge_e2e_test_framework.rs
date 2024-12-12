@@ -1,22 +1,15 @@
-use alloy_primitives::Address;
 use anyhow::Result;
-use aptos_types::account_address::AccountAddress;
 use bridge_integration_tests::{HarnessEthClient, TestHarness};
-use bridge_service::chains::movement::client_framework::FRAMEWORK_ADDRESS;
 use bridge_service::{
 	chains::{
 		ethereum::{event_monitoring::EthMonitoring, types::EthAddress},
-		movement::{
-			client_framework::MovementClientFramework, event_monitoring::MovementMonitoring,
-			utils::MovementAddress,
-		},
+		movement::{event_monitoring::MovementMonitoring, utils::MovementAddress},
 	},
 	types::{Amount, BridgeAddress},
 };
 use bridge_util::BridgeClientContract;
 use bridge_util::BridgeContractEvent;
 use futures::StreamExt;
-use tracing_subscriber::EnvFilter;
 
 #[tokio::test]
 async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Error> {
@@ -77,7 +70,8 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 			tokio::time::timeout(std::time::Duration::from_secs(30), mvt_monitoring.next()).await?;
 		if let Some(Ok(BridgeContractEvent::Completed(detail))) = event {
 			assert_eq!(detail.bridge_transfer_id, bridge_transfer_id);
-			let addr_vec: Vec<u8> = EthAddress(HarnessEthClient::get_initiator_address(&config)).into();
+			let addr_vec: Vec<u8> =
+				EthAddress(HarnessEthClient::get_initiator_address(&config)).into();
 			assert_eq!(detail.initiator.0, addr_vec);
 			assert_eq!(detail.recipient, BridgeAddress(recipient));
 			assert_eq!(detail.amount, amount);
@@ -98,7 +92,7 @@ async fn test_bridge_transfer_movement_eth_happy_path() -> Result<(), anyhow::Er
 	// 	)
 	// 	.init();
 
-	let (mut eth_client_harness, mut mvt_client_harness, config) =
+	let (_eth_client_harness, mut mvt_client_harness, config) =
 		TestHarness::new_with_eth_and_movement().await?;
 	// must include name of sender channel to avoid it being dropped
 	let (_mvt_health_tx, mvt_health_rx) = tokio::sync::mpsc::channel(10);
@@ -152,7 +146,7 @@ async fn test_bridge_transfer_movement_eth_happy_path() -> Result<(), anyhow::Er
 		if let Some(Ok(BridgeContractEvent::Completed(detail))) = event {
 			assert_eq!(detail.bridge_transfer_id, bridge_transfer_id);
 			// assert_eq!(detail.initiator.0, initiator_address.0.to_vec());
-			assert_eq!(detail.recipient.0.0.to_vec(), recipient_address);
+			assert_eq!(detail.recipient.0 .0.to_vec(), recipient_address);
 			assert_eq!(detail.amount, Amount(100_000_000_000 - bridge_fee));
 			assert_eq!(detail.nonce, nonce);
 			break;

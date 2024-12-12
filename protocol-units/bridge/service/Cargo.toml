@@ -9,11 +9,16 @@ homepage.workspace = true
 publish.workspace = true
 rust-version.workspace = true
 
+[[bin]]
+name = "start_indexer"
+path = "bin/start_indexer.rs"
+
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 bridge-grpc = { workspace = true, features = ["server"] }
 bridge-util = { workspace = true }
-#bridge-indexer-db = { workspace = true }
+bridge-indexer-db = { workspace = true }
 bridge-config = { workspace = true }
 alloy-primitives = { workspace = true }
 anyhow = { workspace = true }
@@ -25,7 +30,7 @@ futures-timer = "3.0.3"
 hex = { workspace = true }
 thiserror.workspace = true
 tokio = { workspace = true, features = ["full"] }
-tokio-stream = "0.1.16"
+tokio-stream = { workspace = true }
 tracing.workspace = true
 rand.workspace = true
 rand_chacha = "0.2.2"

@@ -1,4 +1,5 @@
 //use crate::chains::movement::utils as movement_utils;
+use crate::runtime::Runtime;
 use bridge_util::chains::bridge_contracts::BridgeContractError;
 use bridge_util::chains::bridge_contracts::BridgeRelayerContract;
 use bridge_util::types::BridgeAddress;
@@ -10,6 +11,7 @@ use std::pin::Pin;
 
 pub fn process_action<A>(
 	action: TransferAction,
+	state_runtime: &mut Runtime,
 	mut client: impl BridgeRelayerContract<A> + 'static,
 ) -> Option<Pin<Box<dyn Future<Output = Result<(), ActionExecError>> + Send>>>
 where
@@ -25,7 +27,6 @@ where
 			nonce,
 		} => {
 			let future = async move {
-				tracing::info!("Before client.complete_bridge_transfer");
 				client
 					.complete_bridge_transfer(
 						bridge_transfer_id,
@@ -54,7 +55,8 @@ where
 		} => {
 			let future = async move {
 				if wait_time_sec != 0 {
-					let _ = tokio::time::sleep(tokio::time::Duration::from_secs(wait_time_sec));
+					let _ =
+						tokio::time::sleep(tokio::time::Duration::from_secs(wait_time_sec)).await;
 				}
 				client
 					.complete_bridge_transfer(
@@ -74,7 +76,10 @@ where
 			};
 			Some(Box::pin(future))
 		}
-		TransferActionType::CompletedRemoveState => None, //TODO
+		TransferActionType::CompletedRemoveState => {
+			state_runtime.remove_transfer(action.transfer_id);
+			None
+		}
 		TransferActionType::NoAction => None,
 	}
 }
