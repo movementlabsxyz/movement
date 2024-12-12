@@ -120,10 +120,11 @@ where
 		let timestamp = chrono::Utc::now().timestamp_micros() as u64;
 
 		// sign the blob data and the timestamp
-		let data = InnerSignedBlobV1Data::new(data, timestamp).try_to_sign(&self.signing_key)?;
+		let data = InnerSignedBlobV1Data::try_new(data, timestamp)?;
+		let signed_data = data.try_to_sign(&self.signing_key)?;
 
 		// create the celestia blob
-		CelestiaIntermediateBlobRepresentation(data.into(), self.celestia_namespace.clone())
+		CelestiaIntermediateBlobRepresentation(signed_data.into(), self.celestia_namespace.clone())
 			.try_into()
 	}
 
