@@ -19,9 +19,13 @@ bridge-config = { workspace = true }
 anyhow = { workspace = true }
 hex = { workspace = true }
 chrono = { workspace = true }
+tracing.workspace = true
+godfig = { workspace = true }
+tokio = { workspace = true }
+tokio-stream = { workspace = true }
 
 [dev-dependencies]
-tokio = { workspace = true }
+
 
 [features]
 default = []

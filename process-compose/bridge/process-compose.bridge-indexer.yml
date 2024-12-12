@@ -11,9 +11,13 @@ processes:
       exec:
         command: echo "true"
     
-  bridge:
+  bridge_indexer:
+    command: |
+      RUST_BACKTRACE=1 start_indexer
     depends_on:
       postgres:
+        condition: process_healthy
+      bridge:
         condition: process_healthy
     environment: 
       - BRIDGE_INDEXER_DATABASE_URL="postgresql://postgres:password@localhost:5432"

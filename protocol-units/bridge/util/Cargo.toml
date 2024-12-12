@@ -11,10 +11,14 @@ rust-version.workspace = true
 
 [dependencies]
 thiserror = { workspace = true }
-tokio-stream = { workspace = true }
 async-trait = { workspace = true }
 rand = { workspace = true }
 serde = { workspace = true }
 hex = { workspace = true }
 derive_more = { workspace = true }
 alloy = { workspace = true, features = ["serde"]}
+tokio = { workspace = true, features = ["full"] }
+tokio-stream = { workspace = true }
+tracing.workspace = true
+futures.workspace = true
+anyhow = { workspace = true }
