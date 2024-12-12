@@ -45,7 +45,15 @@ where
 					Ok(BridgeContractEvent::Initiated(detail)) => {
 						let event : TransferEvent<SOURCE> = BridgeContractEvent::Initiated(detail).into();
 						tracing::info!("Relayer:{direction}, receive Initiated event :{} ", event.contract_event);
-						process_event(event, &mut state_runtime, client_target.clone(), client_lock.clone(), &mut client_exec_result_futures, action_sender.as_ref().cloned()).await;
+						process_event(
+							event,
+							&mut state_runtime,
+							client_target.clone(),
+							client_lock.clone(),
+							&mut client_exec_result_futures,
+							action_sender.as_ref().cloned(),
+						)
+						.await;
 					}
 					Ok(_) => (), //do nothing for other event.
 					Err(err) => tracing::error!("Relayer:{direction} event stream return an error:{err}"),
@@ -56,7 +64,15 @@ where
 					Ok(BridgeContractEvent::Completed(detail)) => {
 						let event : TransferEvent<TARGET> = BridgeContractEvent::Completed(detail).into();
 						tracing::info!("Relayer:{direction}, receive Completed event :{} ", event.contract_event);
-						process_event(event, &mut state_runtime, client_target.clone(), client_lock.clone(), &mut client_exec_result_futures, action_sender.as_ref().cloned()).await;
+						process_event(
+							event,
+							&mut state_runtime,
+							client_target.clone(),
+							client_lock.clone(),
+							&mut client_exec_result_futures,
+							action_sender.as_ref().cloned(),
+						)
+						.await;
 					}
 					Ok(_) => (), //do nothing for other event.
 					Err(err) => tracing::error!("Relayer:{direction} event stream return an error:{err}"),
@@ -70,7 +86,13 @@ where
 					Ok(Err(err)) => {
 						// Manage Tx execution error
 						if let Some(action) = state_runtime.process_action_exec_error(err) {
-							execute_action(action, &mut state_runtime, client_target.clone(), client_lock.clone(), &mut client_exec_result_futures);
+							execute_action(
+								action,
+								&mut state_runtime,
+								client_target.clone(),
+								client_lock.clone(),
+								&mut client_exec_result_futures,
+							);
 						}
 					}
 					Err(err)=>{

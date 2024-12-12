@@ -255,7 +255,7 @@ impl HarnessMvtClient {
 				module: MoveModuleId {
 					address: FRAMEWORK_ADDRESS.clone().into(),
 					name: aptos_api_types::IdentifierWrapper(
-						Identifier::new("native_bridge_configuration").map_err(|_| {
+						Identifier::new("native_bridge").map_err(|_| {
 							anyhow::anyhow!("Failed to create module name identifier")
 						})?,
 					),

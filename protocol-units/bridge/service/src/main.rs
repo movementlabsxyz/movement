@@ -99,8 +99,6 @@ async fn main() -> Result<()> {
 		tokio::spawn(check_monitoring_health("Mvt", mvt_client_health_tx, mvt_rest_health_rx));
 
 	// If needed start indexer to relay actions
-
-	tracing::info!("RELAYER_START_INDEXER :{:?}", std::env::var("RELAYER_START_INDEXER"));
 	let action_sender = if std::env::var("RELAYER_START_INDEXER")
 		.map(|val| val.trim().to_lowercase() == "true")
 		.unwrap_or(false)
