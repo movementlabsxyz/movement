@@ -2,7 +2,7 @@
 Follower Nodes are nodes that are configured to sync with a Leader Node and are used to test the Movement Testnet. This document provides instructions on how to set up a Follower Node to sync with a Leader Node.
 
 ## Hardware Recommendations
-By running the a Follower Node locally, you will be able to gauge the performance on a given network. If you are joining a network with high load, like the Movement Testnet, we recommend the following:
+By running the Follower Node locally, you will be able to gauge the performance on a given network. If you are joining a network with high load, like the Movement Testnet, we recommend the following:
 - 32 cores
 - 64 GB RAM
 - 2 TB SSD w/ 60K IOPS and 200 MiB/s throughput
