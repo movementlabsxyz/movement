@@ -172,7 +172,7 @@ module resource_roulette::resource_roulette {
     
     init_module(account);
     bid(bidder_one, 10);
-    spin();
+    spin(account);
 
     // spin empties the bids
     let i = 0;
@@ -222,7 +222,7 @@ module resource_roulette::resource_roulette {
     let i : u64 = 0;
     while (i < 1_000) {
       bid(bidder_one, 7);
-      spin();
+      spin(account);
 
       let winnings = borrow_global<RouletteWinnings>(signer::address_of(bidder_one));
       if (winnings.amount > 0) {
@@ -247,7 +247,7 @@ module resource_roulette::resource_roulette {
       bid(bidder_one, 2);
       bid(bidder_two, 2);
       bid(bidder_three, 4);
-      spin();
+      spin(account);
 
       let winnings_one = borrow_global<RouletteWinnings>(signer::address_of(bidder_one));
       let winnings_two = borrow_global<RouletteWinnings>(signer::address_of(bidder_two));
