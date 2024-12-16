@@ -177,16 +177,7 @@ ethabi = "18.0.0"
 move-binary-format = { git = "https://github.com/diem/move" }
 move-table-extension = { git = "https://github.com/diem/move" }
 move-core-types = { git = "https://github.com/diem/move" }
-### https://github.com/paradigmxyz/reth/tree/c0655fed8915490f82d4acf8900a16a10554cbfb
-reth-interfaces = { git = "https://github.com/paradigmxyz/reth", rev = "c0655fed8915490f82d4acf8900a16a10554cbfb" }
-reth-primitives = { git = "https://github.com/paradigmxyz/reth", rev = "c0655fed8915490f82d4acf8900a16a10554cbfb", default-features = false }
-reth-revm = { git = "https://github.com/paradigmxyz/reth", rev = "c0655fed8915490f82d4acf8900a16a10554cbfb" }
-reth-rpc-types = { git = "https://github.com/paradigmxyz/reth", rev = "c0655fed8915490f82d4acf8900a16a10554cbfb" }
-reth-rpc-types-compat = { git = "https://github.com/paradigmxyz/reth", rev = "c0655fed8915490f82d4acf8900a16a10554cbfb" }
-### Matches reth dependency. Using exact revision for matching our tightly coupled usage of both reth and revm crates
-revm = { version = "8.0.0", default-features = false, features = ["serde"] }
-### Used just to be safe about breaking changes
-revm-primitives = { version = "=2.0.0", default-features = false }
+
 secp256k1 = { version = "0.27", default-features = false, features = [
     "global-context",
     "rand-std",
@@ -359,3 +350,4 @@ opt-level = 3
 [patch.crates-io]
 merlin = { git = "https://github.com/aptos-labs/merlin" }
 x25519-dalek = { git = "https://github.com/aptos-labs/x25519-dalek", branch = "zeroize_v1" }
+
