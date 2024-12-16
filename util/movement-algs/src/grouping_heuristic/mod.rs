@@ -10,7 +10,7 @@ use std::fmt::Debug;
 /// A failure type for a single member of the heuristically formed group.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ElementalFailure<T> {
-	/// An instrumental failure is intended to be be passed on in future iterations.
+	/// An instrumental failure is intended to be passed on in future iterations.
 	Instrumental(T),
 	/// A terminal failure is intended to be dropped or pause the execution altogether.
 	Terminal(T),

@@ -85,14 +85,14 @@ impl TransferState {
 				// already present invalid
 				Err(InvalidEventError::InitAnAlreadyExist)
 			}
-			// Lock event must on on the counter part chain.
+			// Lock event must on the counter part chain.
 			(BridgeContractEvent::Locked(_), TransferStateType::Initialized) => (event.chain
 				!= self.init_chain)
 				.then_some(())
 				.ok_or(InvalidEventError::BadChain),
 			// Lock event is only applied on Initialized swap state
 			(BridgeContractEvent::Locked(details), _) => Err(InvalidEventError::BadEvent(format!("Received a locked event with state not Initialized, transfer_id: {} state:{} details: {details:?}", self.transfer_id, self.state))),
-			// CounterPartCompleted event must on on the counter part chain.
+			// CounterPartCompleted event must on the counter part chain.
 			(BridgeContractEvent::CounterPartyCompleted(_, _), TransferStateType::Locked) => {
 				(event.chain != self.init_chain)
 					.then_some(())
@@ -102,7 +102,7 @@ impl TransferState {
 			(BridgeContractEvent::CounterPartyCompleted(_, _), _) => {
 				Err(InvalidEventError::BadEvent(format!("Received a CounterPartCompleted event with state not Locked, transfer_id: {} state:{}", self.transfer_id, self.state)))
 			}
-			// InitiatorCompleted event must on on the init chain.
+			// InitiatorCompleted event must on the init chain.
 			(BridgeContractEvent::InitiatorCompleted(_), TransferStateType::SecretReceived) => {
 				(event.chain == self.init_chain)
 					.then_some(())
