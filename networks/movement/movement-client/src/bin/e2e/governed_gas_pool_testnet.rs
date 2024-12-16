@@ -79,6 +79,13 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	// TODO: run some methods, collect some gas, and check the balance of the governed gas pool
 
+	let amount = 100_000; // TODO: replace with appropriate amount w.r.t. gas collection.
+
+	let pre_beneficiary_balance = coin_client
+		.get_account_balance(&beneficiary.address())
+		.await
+		.context("Failed to get beneficiary's account balance")?;
+
 	// Build the move script payload
 	let fund_from_governed_gas_pool_script = format!(
 		r#"
@@ -93,11 +100,24 @@ script {{
 		governed_gas_pool::fund(
 			&framework_signer,
 			@0x{beneficiary_address},
+			{amount}
 		);
 		
 	}}
 }}
 "#
+	);
+
+	// Assert the emission of the governed gas pool
+	let post_beneficiary_balance = coin_client
+		.get_account_balance(&beneficiary.address())
+		.await
+		.context("Failed to get beneficiary's account balance")?;
+	assert_eq!(
+		post_beneficiary_balance,
+		pre_beneficiary_balance + amount,
+		"Beneficiary's balance should be increased by {}",
+		amount
 	);
 
 	Ok(())
