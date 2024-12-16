@@ -35,6 +35,10 @@ path = "src/bin/e2e/followers_consistent.rs"
 name = "movement-tests-e2e-whitelist"
 path = "src/bin/e2e/whitelist.rs"
 
+[[bin]]
+name = "movement-tests-e2e-governed-gas-pool-testnet"
+path = "src/bin/e2e/governed_gas_pool_testnet.rs"
+
 [dependencies]
 aptos-sdk = { workspace = true }
 aptos-types = { workspace = true }

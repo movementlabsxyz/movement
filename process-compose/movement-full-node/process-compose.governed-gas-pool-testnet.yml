@@ -1,0 +1,14 @@
+version: "3"
+
+environment:
+
+processes:
+
+  test-governed-gas-pool-testnet:
+    command: |
+      cargo run --bin movement-tests-e2e-government-gas-pool-testnet
+    depends_on:
+      movement-full-node:
+        condition: process_healthy
+      movement-faucet:
+        condition: process_healthy
