@@ -246,18 +246,14 @@ async fn test_relayer_logic() -> Result<(), anyhow::Error> {
 	let (_l2_health_tx, l2_health_rx) = tokio::sync::mpsc::channel(10);
 	let l2_monitor = MockMonitoring::build(l2_listener, l2_health_rx);
 
-	let (_health_tx, health_rx) = tokio::sync::mpsc::channel(10);
-
 	// Start relay in L1-> L2 direction
 	let _ = tokio::spawn({
 		async move {
 			bridge_service::relayer::run_relayer_one_direction(
 				"L1->L2",
 				l1_monitor,
-				l1_health_tx,
 				l2_relayer_client,
 				l2_monitor,
-				health_rx,
 			)
 			.await
 		}

@@ -41,7 +41,9 @@ impl Runtime {
 			}
 			BridgeContractEvent::Completed(_detail) => {
 				// Unwrap tested before in validate_state() state can be unwrap
-				let state = state_opt.unwrap();
+				let state = state_opt.ok_or(InvalidEventError::BadEvent(
+					"Receive an invalid even after validation.".to_string(),
+				))?;
 				let (new_state, action_kind) = state.transition_from_completed(event_transfer_id);
 				let action =
 					TransferAction { transfer_id: new_state.transfer_id, kind: action_kind };
