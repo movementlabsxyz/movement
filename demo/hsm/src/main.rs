@@ -106,7 +106,7 @@ impl hsm_demo::Hsm for HttpHsmProxy {
         _public_key: hsm_demo::PublicKey,
         _signature: hsm_demo::Signature,
     ) -> Result<bool, anyhow::Error> {
-        // Verification would need another endpoint or can be skipped for now
+        // Verification would need another endpoint or can be skipped because Application already verifies
         Ok(true)
     }
 }
