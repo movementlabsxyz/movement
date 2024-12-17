@@ -19,12 +19,20 @@ interface INativeBridge {
         uint256 nonce
     );
 
+    event InsuranceFundUpdated(address insuranceFund);
+    event PauseToggled(bool paused);
+    event RiskDenominatorUpdated(uint256 riskDenominator);
+
     error ZeroAmount();
     error MOVETransferFailed();
     error ZeroAddress();
     error InvalidLenghts();
     error InvalidBridgeTransferId();
     error CompletedBridgeTransferId();
+    error InvalidNonce();
+    error OutboundRateLimitExceeded();
+    error InboundRateLimitExceeded();
+    error InvalidRiskDenominator();
 
     /**
      * @dev Creates a new bridge

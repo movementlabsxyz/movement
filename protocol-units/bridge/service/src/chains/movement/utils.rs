@@ -23,7 +23,7 @@ use aptos_sdk::{
 };
 use bridge_util::{
 	chains::bridge_contracts::BridgeContractError,
-	types::{AddressError, BridgeAddress, HashLockPreImage},
+	types::{AddressError, BridgeAddress},
 };
 use derive_new::new;
 use rand::{rngs::StdRng, Rng, RngCore, SeedableRng};
@@ -130,26 +130,6 @@ impl TryFrom<&str> for MovementAddress {
 	}
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]
-pub struct MovementHash(pub [u8; 32]);
-
-impl MovementHash {
-	pub fn random() -> Self {
-		let mut rng = TestRng::seed_from_u64(0);
-		let mut hash = [0u8; 32];
-		rng.fill_bytes(&mut hash);
-		Self(hash)
-	}
-}
-
-impl From<HashLockPreImage> for MovementHash {
-	fn from(preimage: HashLockPreImage) -> Self {
-		let mut hash = [0u8; 32];
-		hash.copy_from_slice(&preimage.0);
-		Self(hash)
-	}
-}
-
 /// limit of gas unit
 const GAS_UNIT_LIMIT: u64 = 100000;
 /// minimum price of gas unit of aptos chains
@@ -195,7 +175,7 @@ pub async fn send_and_confirm_aptos_transaction(
 
 	let signed_tx = signer.sign_transaction(raw_tx);
 
-	//info!("Signed TX: {:?}", signed_tx);
+	info!("Signed TX: {:?}", signed_tx);
 
 	let response = rest_client.submit_and_wait(&signed_tx).await.map_err(|e| {
 		let err_msg = format!("Transaction submission error: {}", e.to_string());
@@ -204,7 +184,7 @@ pub async fn send_and_confirm_aptos_transaction(
 	})?;
 
 	let txn = response.into_inner();
-	//info!("Response: {:?}", txn);
+	info!("Response: {:?}", txn);
 
 	match &txn {
 		Transaction::UserTransaction(user_txn) => {
@@ -278,11 +258,15 @@ pub fn serialize_vec<T: serde::Serialize + ?Sized>(
 	bcs::to_bytes(value).map_err(|_| BridgeContractError::SerializationError)
 }
 
-pub fn serialize_u64_initiator(value: &u64) -> Result<Vec<u8>, BridgeContractError> {
-	bcs::to_bytes(value).map_err(|_| BridgeContractError::SerializationError)
+pub fn serialize_u64_initiator(value: u64) -> Result<Vec<u8>, BridgeContractError> {
+	bcs::to_bytes(&value).map_err(|_| BridgeContractError::SerializationError)
 }
 
-pub fn serialize_address_initiator(
+pub fn serialize_u128_initiator(value: u128) -> Result<Vec<u8>, BridgeContractError> {
+	bcs::to_bytes(&value).map_err(|_| BridgeContractError::SerializationError)
+}
+
+pub fn serialize_address(
 	address: &AccountAddress,
 ) -> Result<Vec<u8>, BridgeContractError> {
 	bcs::to_bytes(address).map_err(|_| BridgeContractError::SerializationError)
