@@ -3,6 +3,7 @@ use anyhow::Context;
 use aws_sdk_kms::primitives::Blob;
 use aws_sdk_kms::types::{KeySpec, KeyUsageType, SigningAlgorithmSpec};
 use aws_sdk_kms::Client;
+use dotenv::dotenv;
 use k256::ecdsa::{self, VerifyingKey};
 use k256::pkcs8::DecodePublicKey;
 use ring_compat::signature::Verifier;
@@ -22,6 +23,7 @@ impl AwsKms {
 
 	/// Tries to create a new AWS KMS HSM from the environment
 	pub async fn try_from_env() -> Result<Self, anyhow::Error> {
+		dotenv().ok();
 		let key_id = std::env::var("AWS_KMS_KEY_ID").context("AWS_KMS_KEY_ID not set")?;
 		let public_key = std::env::var("AWS_KMS_PUBLIC_KEY").unwrap_or_default();
 

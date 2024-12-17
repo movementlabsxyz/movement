@@ -7528,6 +7528,7 @@ dependencies = [
  "aws-sdk-kms",
  "axum 0.6.20",
  "base64 0.13.1",
+ "dotenv",
  "ed25519 2.2.3",
  "google-cloud-kms",
  "k256",

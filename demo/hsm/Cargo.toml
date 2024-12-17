@@ -18,6 +18,7 @@ aws-sdk-kms = { workspace = true }
 aws-config = { workspace = true }
 rand = { workspace = true }
 base64 = { workspace = true }
+dotenv = "0.15"
 ed25519 = { workspace = true }
 ring-compat = { workspace = true }
 k256 = { workspace = true, features = ["ecdsa", "pkcs8"] }
