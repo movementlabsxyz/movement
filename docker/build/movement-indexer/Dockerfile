@@ -19,6 +19,7 @@ FROM alpine:latest
 
 # Copy the build artifact from the builder stage
 COPY --from=builder /tmp/build/target/release/movement-indexer-service /app/movement-indexer-service
+COPY --from=builder /tmp/build/target/release/load_metadata /app/load_metadata
 COPY --from=builder /tmp/runtime/nix/store /nix/store
 
 # Set the binary as the entrypoint
