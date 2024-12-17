@@ -1,0 +1,14 @@
+# Basic
+edition = "2021"
+hard_tabs = true
+max_width = 100
+use_small_heuristics = "Max"
+
+# Imports
+reorder_imports = true
+
+# Consistency
+newline_style = "Unix"
+
+# Misc
+chain_width = 80

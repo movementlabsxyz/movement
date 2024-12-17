@@ -1,0 +1,16 @@
+[package]
+name = "eth_secure_sign"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+vaultrs = "0.7.3"
+async-trait = "0.1.71"
+tokio = { version = "1.35.1", features = ["full", "tracing"] }
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+anyhow = "1.0"
+hex = "0.4"
+base64 = "0.22.1"
+aws-sdk-kms = "0.23.0"
+aws-smithy-types = "0.42.0" # For Blob handling

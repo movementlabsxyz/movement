@@ -43,6 +43,10 @@ members = [
     "benches/*",
 ]
 
+exclude = [
+    "eth_secure_sign",
+]
+
 [workspace.package]
 version = "0.0.2"
 edition = "2021"
