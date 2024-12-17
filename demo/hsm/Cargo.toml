@@ -1,0 +1,21 @@
+[package]
+name = "hsm-demo"
+version = { workspace = true }
+edition  = { workspace = true }
+license  = { workspace = true }
+authors = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
+publish = { workspace = true }
+rust-version = { workspace = true }
+
+[dependencies]
+tokio = { workspace = true }
+async-trait = { workspace = true }
+anyhow = { workspace = true }
+vaultrs = { workspace = true }
+rand = { workspace = true }
+base64 = { workspace = true }
+
+[lints]
+workspace = true

@@ -3,6 +3,7 @@
 resolver = "2"
 
 members = [
+    "demo/hsm",
     "protocol-units/bridge/config",
     "protocol-units/bridge/setup",
     "protocol-units/execution/maptos/dof",
@@ -112,6 +113,10 @@ movement-collections = { path = "util/collections" }
 whitelist = { path = "util/whitelist" }
 ## access control
 aptos-account-whitelist = { path = "protocol-units/access-control/aptos/account-whitelist" }
+
+## vault
+vaultrs = { version = "0.7.3" }
+base64 = { version = "0.13.0" }
 
 # Serialization and Deserialization
 borsh = { version = "0.10" } # todo: internalize jmt and bump
