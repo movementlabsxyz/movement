@@ -132,7 +132,7 @@ fn build_processor_conf(
 	let indexer_config_content = format!(
 		"processor_config:
   type: {}
-postgres_connection_string: {}/postgres
+postgres_connection_string: {}
 indexer_grpc_data_service_address: {}
 indexer_grpc_http2_ping_interval_in_secs: {}
 indexer_grpc_http2_ping_timeout_in_secs: {}
