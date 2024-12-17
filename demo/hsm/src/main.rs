@@ -95,7 +95,7 @@ impl hsm_demo::Hsm for HttpHsmProxy {
             .await?;
 
         let signature = hsm_demo::Signature(Bytes(response.signature));
-        let public_key = hsm_demo::PublicKey(Bytes(vec![])); // Public key is not returned here
+        let public_key = hsm_demo::PublicKey(Bytes(vec![])); // Public key is not returned here... maybe not necessary?
 
         Ok((message, public_key, signature))
     }
