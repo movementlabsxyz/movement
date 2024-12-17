@@ -161,17 +161,30 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
         emit BridgeTransferCompleted(bridgeTransferId, initiator, recipient, amount, nonce);
     }
 
+    /**
+     * @dev Sets the insurance fund address for rate limiting purposes
+     * @param _insuranceFund The new insurance fund address
+     */
     function setInsuranceFund(address _insuranceFund) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(_insuranceFund != address(0), ZeroAddress());
         insuranceFund = _insuranceFund;
         emit InsuranceFundUpdated(_insuranceFund);
     }
 
+    /**
+     * @dev Sets the risk denominator for the bridge
+     * @param _riskDenominator The new risk denominator
+     */
     function setRiskDenominator(uint256 _riskDenominator) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        // risk denominator must be at least 4
         require(_riskDenominator > MINIMUM_RISK_DENOMINATOR, InvalidRiskDenominator());
         riskDenominator = _riskDenominator;
         emit RiskDenominatorUpdated(_riskDenominator);
     }
 
+    /**
+     * @dev Toggles the paused state of the contract
+     */
     function togglePause() external onlyRole(DEFAULT_ADMIN_ROLE) {
         paused() ? _pause() : _unpause();
         emit PauseToggled(paused());

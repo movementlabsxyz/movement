@@ -77,32 +77,35 @@ contract NativeBridgeTest is Test {
         vm.stopPrank();
     }
 
-    function testInboundRateLimitFuzz(address receiver, uint256 _amount, uint256 _denominator) public {
+    function testInboundRateLimitFuzz(address receiver, uint256 _amount, uint256 _denominator, uint256 _divisor) public {
         uint256 insuranceBalance = moveToken.balanceOf(insuranceFund);
 
+        // amount has to be divisible by 4
          _amount = bound(_amount, 3, insuranceBalance);
+         // fund bridge with sufficient funds
         moveToken.transfer(address(nativeBridge), _amount);
-        _denominator = bound(_denominator, 4, type(uint256).max - 1);
+        // risk denominator has to be between 4 and move total supply
+        _denominator = bound(_denominator, 4, moveToken.totalSupply());
+        _divisor = bound(_divisor, 4, 20);
 
-        uint256 initial = 1;
+        uint256 perTransfer = _amount / _divisor;
 
-        uint256 perTransfer = _amount - initial;
-
-        bytes32 tx1BridgeTransferId = keccak256(abi.encodePacked(keccak256(abi.encodePacked(receiver)), receiver, initial, uint256(1)));
+        bytes32 tx1BridgeTransferId = keccak256(abi.encodePacked(keccak256(abi.encodePacked(receiver)), receiver, perTransfer, uint256(1)));
         bytes32 tx2BridgeTransferId = keccak256(abi.encodePacked(keccak256(abi.encodePacked(receiver)), receiver, perTransfer, uint256(2)));
         
 
         vm.startPrank(relayer);
-        nativeBridge.completeBridgeTransfer(tx1BridgeTransferId, keccak256(abi.encodePacked(receiver)), receiver, initial, 1);
+        nativeBridge.completeBridgeTransfer(tx1BridgeTransferId, keccak256(abi.encodePacked(receiver)), receiver, perTransfer, 1);
         vm.warp(1 days - 1);
 
         uint256 snapshot = vm.snapshot();
 
-        if (perTransfer >= insuranceBalance / 4) {
+        // if the sum of the two transfers is below the rate limit, the second transfer should go through, else it fails
+        if (perTransfer * 2 >= insuranceBalance / 4) {
             vm.expectRevert(INativeBridge.InboundRateLimitExceeded.selector);
             nativeBridge.completeBridgeTransfer(tx2BridgeTransferId, keccak256(abi.encodePacked(receiver)), receiver, perTransfer, 2);
             vm.warp(1 days + 1);
-            if (_amount >= insuranceBalance / 4) {
+            if (perTransfer >= insuranceBalance / 4) {
                 // unable to bridge above rate limit
                 vm.expectRevert(INativeBridge.InboundRateLimitExceeded.selector);
                 nativeBridge.completeBridgeTransfer(tx2BridgeTransferId, keccak256(abi.encodePacked(receiver)), receiver, perTransfer, 2);
@@ -121,15 +124,16 @@ contract NativeBridgeTest is Test {
         vm.startPrank(relayer);
 
         tx2BridgeTransferId = keccak256(abi.encodePacked(keccak256(abi.encodePacked(receiver)), receiver, perTransfer, uint256(2)));
-
-        if (perTransfer >= insuranceBalance / _denominator) {
+        
+        // if the sum of the two transfers is below the rate limit with altered denominator, the second transfer should go through, else it fails
+        if (perTransfer * 2 >= insuranceBalance / _denominator) {
             vm.expectRevert(INativeBridge.InboundRateLimitExceeded.selector);
             nativeBridge.completeBridgeTransfer(
                 tx2BridgeTransferId, keccak256(abi.encodePacked(receiver)), receiver, perTransfer, 2
             );
             // Warp to the next period and retry the transfer
             vm.warp(1 days + 1);
-            if (_amount >= insuranceBalance / _denominator) {
+            if (perTransfer >= insuranceBalance / _denominator) {
                 // unable to bridge above rate limit
                 vm.expectRevert(INativeBridge.InboundRateLimitExceeded.selector);
                 nativeBridge.completeBridgeTransfer(
@@ -145,6 +149,28 @@ contract NativeBridgeTest is Test {
             nativeBridge.completeBridgeTransfer(
                 tx2BridgeTransferId, keccak256(abi.encodePacked(receiver)), receiver, perTransfer, 2
             );
+        }
+        vm.stopPrank();
+
+        vm.revertTo(snapshot);
+        vm.warp(1 days - 1);
+        // test accumulation against the rate limiter
+        vm.startPrank(relayer);
+        uint256 rateLimitBudgetTracker = perTransfer;
+
+        // for divisor amount of transfers, the rate limit should be enforced
+        for (uint256 i = 1; i < _divisor; i++) {
+            if (_amount / _divisor + rateLimitBudgetTracker < insuranceBalance / 4) {
+                nativeBridge.completeBridgeTransfer(
+                keccak256(abi.encodePacked(keccak256(abi.encodePacked(receiver)), receiver, _amount / _divisor, uint256(i + 1))),
+                keccak256(abi.encodePacked(receiver)), receiver, _amount / _divisor, i + 1);
+                rateLimitBudgetTracker += _amount / _divisor;
+            } else {
+                vm.expectRevert(INativeBridge.InboundRateLimitExceeded.selector);
+                nativeBridge.completeBridgeTransfer(
+                    keccak256(abi.encodePacked(keccak256(abi.encodePacked(receiver)), receiver, _amount / _divisor, uint256(i + 1))),
+                    keccak256(abi.encodePacked(receiver)), receiver, _amount / _divisor, i + 1);
+            }
         }
         vm.stopPrank();
     }
