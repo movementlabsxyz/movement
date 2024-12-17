@@ -21,7 +21,9 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
     mapping(uint256 day => uint256 amount) public inboundRateLimitBudget;
 
     bytes32 public constant RELAYER_ROLE = keccak256(abi.encodePacked("RELAYER_ROLE"));
-    uint256 public constant MINIMUM_RISK_DENOMINATOR = 3;
+
+    // Risk denominator must be above 3
+    uint256 public constant RISK_DENOMINATOR_LOWER_BOUND = 3;
     IERC20 public moveToken;
     address public insuranceFund;
     uint256 public riskDenominator;
@@ -54,7 +56,7 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
 
         // Set insurance fund
         insuranceFund = _insuranceFund;
-        riskDenominator = MINIMUM_RISK_DENOMINATOR + 1;
+        riskDenominator = RISK_DENOMINATOR_LOWER_BOUND + 1;
 
         // Maintainer is optional
         _grantRole(RELAYER_ROLE, _maintainer);
@@ -72,7 +74,7 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
         whenNotPaused
         returns (bytes32 bridgeTransferId)
     {
-        // Ensure there is a valid amount
+        // Ensure there is a valid amount`
         require(amount > 0, ZeroAmount());
         address initiator = msg.sender;
 
@@ -177,7 +179,7 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
      */
     function setRiskDenominator(uint256 _riskDenominator) external onlyRole(DEFAULT_ADMIN_ROLE) {
         // risk denominator must be at least 4
-        require(_riskDenominator > MINIMUM_RISK_DENOMINATOR, InvalidRiskDenominator());
+        require(_riskDenominator > RISK_DENOMINATOR_LOWER_BOUND, InvalidRiskDenominator());
         riskDenominator = _riskDenominator;
         emit RiskDenominatorUpdated(_riskDenominator);
     }
