@@ -116,6 +116,8 @@ aptos-account-whitelist = { path = "protocol-units/access-control/aptos/account-
 
 ## vault
 vaultrs = { version = "0.7.3" }
+aws-sdk-kms = "1.51.0"
+google-cloud-kms = "0.6.0"
 base64 = { version = "0.13.0" }
 
 # Serialization and Deserialization
@@ -306,6 +308,8 @@ tracing-test = "0.2.5"
 trie-db = "0.28.0"
 url = "2.2.2"
 x25519-dalek = "1.0.1"
+ed25519 = "2.2.3"
+ring-compat = "0.8.0"
 zstd-sys = "2.0.9"
 zstd = "0.13"
 inotify = "0.10.2"
