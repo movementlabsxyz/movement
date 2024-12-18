@@ -44,7 +44,7 @@ impl SigningService {
 
 	/// Sign the provided message with the current key identified with the keyId.
 	/// Return the Signature and the version of the key used to sign.
-	async fn sign(
+	pub async fn sign(
 		&self,
 		message: Bytes,
 		key: KeyId,
@@ -53,7 +53,7 @@ impl SigningService {
 	}
 
 	/// Get the public key associated with the specified key and version.
-	async fn get_public_key(
+	pub async fn get_public_key(
 		&self,
 		key: KeyId,
 		version: KeyVersion,
