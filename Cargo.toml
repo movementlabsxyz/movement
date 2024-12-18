@@ -42,7 +42,9 @@ members = [
     "protocol-units/bridge/indexer-db",
     "protocol-units/bridge/util",
     "benches/*",
-    "util/signing",
+    "util/signing/signer",
+    "util/signing/aws-kms",
+    "util/signing/hashicorp-vault",
 ]
 
 [workspace.package]
@@ -114,6 +116,11 @@ movement-collections = { path = "util/collections" }
 whitelist = { path = "util/whitelist" }
 ## access control
 aptos-account-whitelist = { path = "protocol-units/access-control/aptos/account-whitelist" }
+
+# signing
+signer = { path = "util/signing/signer" }
+aws-kms-signer = { path = "util/signing/aws-kms" }
+hashicorp-vault-signer = { path = "util/signing/hashicorp-vault" }
 
 ## vault
 vaultrs = { version = "0.7.3" }
