@@ -19,11 +19,26 @@ pub struct KeyVersion(pub String);
 #[derive(Debug, Clone)]
 pub struct KeyId(pub String);
 
+/// Errors thrown by SigningService.
+#[derive(Debug, thiserror::Error)]
+pub enum SignerError {
+	#[error("Error during signing : {0}")]
+	Sign(String),
+	#[error("Error during public key retrieval : {0}")]
+	GetPublicKey(String),
+	#[error("Error can't decode provided hex data : {0}")]
+	Hex(String),
+	#[error("Signature not found.")]
+	SignatureNotFound,
+	#[error("public key not found.")]
+	PublicKeyNotFound,
+}
+
 pub struct SigningService;
 
 impl SigningService {
 	/// Create the service with environment variable.
-	pub fn try_from_env() -> Result<Self, anyhow::Error> {
+	pub fn try_from_env() -> Result<Self, SignerError> {
 		todo!()
 	}
 
@@ -33,7 +48,7 @@ impl SigningService {
 		&self,
 		message: Bytes,
 		key: KeyId,
-	) -> Result<(KeyVersion, Signature), anyhow::Error> {
+	) -> Result<(KeyVersion, Signature), SignerError> {
 		todo!();
 	}
 
@@ -42,7 +57,7 @@ impl SigningService {
 		&self,
 		key: KeyId,
 		version: KeyVersion,
-	) -> Result<PublicKey, anyhow::Error> {
+	) -> Result<PublicKey, SignerError> {
 		todo!();
 	}
 }
