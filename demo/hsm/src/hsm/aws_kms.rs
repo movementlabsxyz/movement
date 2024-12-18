@@ -7,6 +7,7 @@ use aws_sdk_kms::Client;
 use dotenv::dotenv;
 
 /// A AWS KMS HSM.
+#[derive(Debug, Clone)]
 pub struct AwsKms<C: AwsKmsCryptography> {
 	client: Client,
 	key_id: String,
