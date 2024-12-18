@@ -14,7 +14,7 @@ thiserror = { workspace = true }
 async-trait = { workspace = true }
 ed25519 = { workspace = true }
 ring-compat = { workspace = true }
-k256 = { workspace = true, features = ["ecdsa", "pkcs8"] }
+k256 = { workspace = true, features = ["ecdsa"] }
 anyhow = { workspace = true }
 
 

@@ -1,17 +1,5 @@
 pub mod cryptography;
 
-/// A collection of bytes.
-#[derive(Debug, Clone)]
-pub struct Bytes(pub Vec<u8>);
-
-/// A signature.
-#[derive(Debug, Clone)]
-pub struct Signature(pub Bytes);
-
-/// A public key.
-#[derive(Debug, Clone)]
-pub struct PublicKey(pub Bytes);
-
 /// Version of a key.
 /// Default mean the current key.
 #[derive(Debug, Clone, Default)]
@@ -39,10 +27,10 @@ pub enum SignerError {
 #[async_trait::async_trait]
 pub trait SignerOperations<C: cryptography::Curve> {
 	/// Signs some bytes.
-	async fn sign(&self, message: Bytes) -> Result<Signature, SignerError>;
+	async fn sign(&self, message: &[u8]) -> Result<C::Signature, SignerError>;
 
 	/// Gets the public key.
-	async fn public_key(&self) -> Result<PublicKey, SignerError>;
+	async fn public_key(&self) -> Result<C::PublicKey, SignerError>;
 }
 
 pub struct Signer<O, C>
@@ -65,12 +53,12 @@ where
 	}
 
 	/// Signs some bytes.
-	pub async fn sign(&self, message: Bytes) -> Result<Signature, SignerError> {
+	pub async fn sign(&self, message: &[u8]) -> Result<C::Signature, SignerError> {
 		self.operations.sign(message).await
 	}
 
 	/// Gets the public key.
-	pub async fn public_key(&self) -> Result<PublicKey, SignerError> {
+	pub async fn public_key(&self) -> Result<C::PublicKey, SignerError> {
 		self.operations.public_key().await
 	}
 }
@@ -87,9 +75,9 @@ pub trait VerifierOperations<C: cryptography::Curve> {
 	/// Verifies a signature.
 	async fn verify(
 		&self,
-		message: Bytes,
-		signature: Signature,
-		public_key: PublicKey,
+		message: &[u8],
+		signature: &C::Signature,
+		public_key: &C::PublicKey,
 	) -> Result<bool, VerifierError>;
 }
 
@@ -115,9 +103,9 @@ where
 	/// Verifies a signature.
 	pub async fn verify(
 		&self,
-		message: Bytes,
-		signature: Signature,
-		public_key: PublicKey,
+		message: &[u8],
+		signature: &C::Signature,
+		public_key: &C::PublicKey,
 	) -> Result<bool, VerifierError> {
 		self.operations.verify(message, signature, public_key).await
 	}
