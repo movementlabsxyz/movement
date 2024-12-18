@@ -134,6 +134,7 @@ impl Executor {
 
 		// replace the db path with the temporary directory
 		maptos_config.chain.maptos_db_path.replace(tempdir.path().to_path_buf());
+
 		let executor = Self::try_from_config(maptos_config)?;
 		Ok((executor, tempdir))
 	}
