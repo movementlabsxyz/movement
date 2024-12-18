@@ -13915,6 +13915,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "signer"
+version = "0.0.2"
+dependencies = [
+ "async-trait",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "simd-adler32"
 version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"

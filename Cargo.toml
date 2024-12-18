@@ -42,7 +42,7 @@ members = [
     "protocol-units/bridge/indexer-db",
     "protocol-units/bridge/util",
     "benches/*",
-    "util/signing",
+    "util/signing/signer",
 ]
 
 [workspace.package]
@@ -114,6 +114,9 @@ movement-collections = { path = "util/collections" }
 whitelist = { path = "util/whitelist" }
 ## access control
 aptos-account-whitelist = { path = "protocol-units/access-control/aptos/account-whitelist" }
+
+# signing
+signer = { path = "util/signing/signer" }
 
 ## vault
 vaultrs = { version = "0.7.3" }

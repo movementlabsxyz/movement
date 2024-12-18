@@ -1,5 +1,5 @@
 [package]
-name = "signing"
+name = "signer"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -10,7 +10,9 @@ publish.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-thiserror.workspace = true
+thiserror = { workspace = true }
+async-trait = { workspace = true }
+
 
 [lints]
 workspace = true
