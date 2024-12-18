@@ -53,10 +53,10 @@ services:
     environment:
       HASURA_GRAPHQL_SERVER_PORT: 8085
       ## postgres database to store Hasura metadata
-      HASURA_GRAPHQL_METADATA_DATABASE_URL: ${INDEXER_PROCESSOR_POSTGRES_CONNECTION_STRING}/postgres
-      HASURA_GRAPHQL_DATABASE_URL: ${INDEXER_PROCESSOR_POSTGRES_CONNECTION_STRING}/postgres
+      HASURA_GRAPHQL_METADATA_DATABASE_URL: ${INDEXER_PROCESSOR_POSTGRES_CONNECTION_STRING}
+      HASURA_GRAPHQL_DATABASE_URL: ${INDEXER_PROCESSOR_POSTGRES_CONNECTION_STRING}
       ## this env var can be used to add the above postgres database to Hasura as a data source. this can be removed/updated based on your needs
-      PG_DATABASE_URL: ${INDEXER_PROCESSOR_POSTGRES_CONNECTION_STRING}/postgres
+      PG_DATABASE_URL: ${INDEXER_PROCESSOR_POSTGRES_CONNECTION_STRING}
       ## enable the console served by server
       HASURA_GRAPHQL_ENABLE_CONSOLE: "true" # set to "false" to disable console
       ## enable debugging mode. It is recommended to disable this in production
