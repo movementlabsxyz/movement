@@ -15,7 +15,7 @@ pub struct HashiCorpVault {
 	client: VaultClient,
 	key_name: String,
 	mount_name: String,
-	public_key: PublicKey,
+	pub public_key: PublicKey,
 }
 
 impl HashiCorpVault {

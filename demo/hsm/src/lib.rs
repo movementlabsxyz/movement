@@ -1,5 +1,6 @@
 pub mod action_stream;
 pub mod hsm;
+pub mod server;
 
 /// A collection of bytes.
 #[derive(Debug, Clone)]
