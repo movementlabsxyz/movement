@@ -6,24 +6,42 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::task;
+use dotenv::dotenv;
 
 use hsm_demo::{action_stream, Application};
 use hsm_demo::server::create_server;
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
-    // Initialize AWS KMS HSM
-    let aws_kms_hsm = hsm::aws_kms::AwsKms::try_from_env()
-        .await?
-        .create_key()
-        .await?
-        .fill_with_public_key()
-        .await?;
-
-    let shared_hsm = Arc::new(Mutex::new(aws_kms_hsm));
+    dotenv().ok(); // Load environment variables from .env file
+    
+    // Initialize HSM based on PROVIDER
+    let provider = std::env::var("PROVIDER").unwrap_or_else(|_| "AWS".to_string());
+    let hsm = match provider.as_str() {
+        "AWS" => {
+            let aws_kms_hsm = hsm::aws_kms::AwsKms::try_from_env()
+                .await?
+                .create_key()
+                .await?
+                .fill_with_public_key()
+                .await?;
+            Arc::new(Mutex::new(aws_kms_hsm)) as Arc<Mutex<dyn hsm_demo::Hsm + Send + Sync>>
+        }
+        "VAULT" => {
+            let vault_hsm = hsm::hashi_corp_vault::HashiCorpVault::try_from_env()?
+                .create_key()
+                .await?
+                .fill_with_public_key()
+                .await?;
+            Arc::new(Mutex::new(vault_hsm)) as Arc<Mutex<dyn hsm_demo::Hsm + Send + Sync>>
+        }
+        _ => {
+            return Err(anyhow::anyhow!("Unsupported provider: {}", provider));
+        }
+    };
 
     // Start the server task
-    let server_hsm = shared_hsm.clone();
+    let server_hsm = hsm.clone();
     let server_task = task::spawn(async move {
         let app = create_server(server_hsm);
         let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
@@ -95,7 +113,7 @@ impl hsm_demo::Hsm for HttpHsmProxy {
             .await?;
 
         let signature = hsm_demo::Signature(Bytes(response.signature));
-        let public_key = hsm_demo::PublicKey(Bytes(vec![])); // Public key is not returned here... maybe not necessary?
+        let public_key = hsm_demo::PublicKey(Bytes(vec![])); // Public key is not returned here
 
         Ok((message, public_key, signature))
     }

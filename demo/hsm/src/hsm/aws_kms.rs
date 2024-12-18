@@ -51,6 +51,7 @@ impl AwsKms {
 	/// Fills the public key from the key id
 	pub async fn fill_with_public_key(mut self) -> Result<Self, anyhow::Error> {
 		let res = self.client.get_public_key().key_id(&self.key_id).send().await?;
+		println!("AWS KMS Response: {:?}", res);
 		let public_key = PublicKey(Bytes(
 			res.public_key().context("No public key available")?.as_ref().to_vec(),
 		));
