@@ -12,7 +12,7 @@ use ring_compat::signature::Verifier;
 pub struct AwsKms {
 	client: Client,
 	key_id: String,
-	public_key: PublicKey,
+	pub public_key: PublicKey,
 }
 
 impl AwsKms {

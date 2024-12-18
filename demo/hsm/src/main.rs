@@ -1,5 +1,5 @@
 use axum::Server;
-use hsm_demo::{hsm, Bytes};
+use hsm_demo::{hsm, Bytes, Hsm, PublicKey, Signature};
 use reqwest::Client;
 use serde::Serialize;
 use std::net::SocketAddr;
@@ -14,10 +14,10 @@ use hsm_demo::server::create_server;
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
     dotenv().ok(); // Load environment variables from .env file
-    
+
     // Initialize HSM based on PROVIDER
     let provider = std::env::var("PROVIDER").unwrap_or_else(|_| "AWS".to_string());
-    let hsm = match provider.as_str() {
+    let (hsm, public_key) = match provider.as_str() {
         "AWS" => {
             let aws_kms_hsm = hsm::aws_kms::AwsKms::try_from_env()
                 .await?
@@ -25,7 +25,8 @@ async fn main() -> Result<(), anyhow::Error> {
                 .await?
                 .fill_with_public_key()
                 .await?;
-            Arc::new(Mutex::new(aws_kms_hsm)) as Arc<Mutex<dyn hsm_demo::Hsm + Send + Sync>>
+            let public_key = aws_kms_hsm.public_key.clone();
+            (Arc::new(Mutex::new(aws_kms_hsm)) as Arc<Mutex<dyn hsm_demo::Hsm + Send + Sync>>, public_key)
         }
         "VAULT" => {
             let vault_hsm = hsm::hashi_corp_vault::HashiCorpVault::try_from_env()?
@@ -33,7 +34,8 @@ async fn main() -> Result<(), anyhow::Error> {
                 .await?
                 .fill_with_public_key()
                 .await?;
-            Arc::new(Mutex::new(vault_hsm)) as Arc<Mutex<dyn hsm_demo::Hsm + Send + Sync>>
+            let public_key = vault_hsm.public_key.clone();
+            (Arc::new(Mutex::new(vault_hsm)) as Arc<Mutex<dyn hsm_demo::Hsm + Send + Sync>>, public_key)
         }
         _ => {
             return Err(anyhow::anyhow!("Unsupported provider: {}", provider));
@@ -65,7 +67,7 @@ async fn main() -> Result<(), anyhow::Error> {
     ]);
 
     // Replace HSM with the HTTP client that sends requests to the server
-    let hsm_proxy = HttpHsmProxy::new(client, "http://127.0.0.1:3000/sign".to_string());
+    let hsm_proxy = HttpHsmProxy::new(client, "http://127.0.0.1:3000/sign".to_string(), public_key);
     let mut app = Application::new(Box::new(hsm_proxy), Box::new(join_stream));
 
     app.run().await?;
@@ -84,23 +86,28 @@ struct SignedResponse {
     signature: Vec<u8>,
 }
 
-struct HttpHsmProxy {
+pub struct HttpHsmProxy {
     client: Client,
     server_url: String,
+    public_key: PublicKey,
 }
 
 impl HttpHsmProxy {
-    pub fn new(client: Client, server_url: String) -> Self {
-        Self { client, server_url }
+    pub fn new(client: Client, server_url: String, public_key: PublicKey) -> Self {
+        Self { client, server_url, public_key }
+    }
+
+    pub fn get_public_key(&self) -> PublicKey {
+        self.public_key.clone()
     }
 }
 
 #[async_trait::async_trait]
-impl hsm_demo::Hsm for HttpHsmProxy {
+impl Hsm for HttpHsmProxy {
     async fn sign(
         &self,
         message: Bytes,
-    ) -> Result<(Bytes, hsm_demo::PublicKey, hsm_demo::Signature), anyhow::Error> {
+    ) -> Result<(Bytes, PublicKey, Signature), anyhow::Error> {
         let payload = SignRequest { message: message.0.clone() };
 
         let response = self
@@ -112,19 +119,20 @@ impl hsm_demo::Hsm for HttpHsmProxy {
             .json::<SignedResponse>()
             .await?;
 
-        let signature = hsm_demo::Signature(Bytes(response.signature));
-        let public_key = hsm_demo::PublicKey(Bytes(vec![])); // Public key is not returned here
+        let signature = Signature(Bytes(response.signature));
 
-        Ok((message, public_key, signature))
+        // Return the stored public key along with the signature
+        Ok((message, self.public_key.clone(), signature))
     }
 
     async fn verify(
         &self,
         _message: Bytes,
-        _public_key: hsm_demo::PublicKey,
-        _signature: hsm_demo::Signature,
+        _public_key: PublicKey,
+        _signature: Signature,
     ) -> Result<bool, anyhow::Error> {
         // Verification would need another endpoint or can be skipped because Application already verifies
         Ok(true)
     }
 }
+
