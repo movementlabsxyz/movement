@@ -42,6 +42,7 @@ members = [
     "protocol-units/bridge/indexer-db",
     "protocol-units/bridge/util",
     "benches/*",
+    "util/signing",
 ]
 
 [workspace.package]
