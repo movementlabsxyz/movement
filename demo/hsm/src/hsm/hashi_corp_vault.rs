@@ -1,24 +1,25 @@
+use crate::cryptography::hashicorp_vault::HashiCorpVaultCryptography;
+use crate::cryptography::verifier::LocalVerifier;
 use crate::{Bytes, Hsm, PublicKey, Signature};
 use anyhow::Context;
-use ring_compat::signature::{
-	ed25519::{self, VerifyingKey},
-	Verifier,
-};
-use vaultrs::api::transit::KeyType;
 use vaultrs::api::transit::{requests::CreateKeyRequest, responses::ReadKeyData};
 use vaultrs::client::{VaultClient, VaultClientSettingsBuilder};
 use vaultrs::transit::data;
 use vaultrs::transit::key;
 
 /// A HashiCorp Vault HSM.
-pub struct HashiCorpVault {
+pub struct HashiCorpVault<C: HashiCorpVaultCryptography> {
 	client: VaultClient,
 	key_name: String,
 	mount_name: String,
 	pub public_key: PublicKey,
+	_cryptography_marker: std::marker::PhantomData<C>,
 }
 
-impl HashiCorpVault {
+impl<C> HashiCorpVault<C>
+where
+	C: HashiCorpVaultCryptography,
+{
 	/// Creates a new HashiCorp Vault HSM
 	pub fn new(
 		client: VaultClient,
@@ -26,7 +27,13 @@ impl HashiCorpVault {
 		mount_name: String,
 		public_key: PublicKey,
 	) -> Self {
-		Self { client, key_name, mount_name, public_key }
+		Self {
+			client,
+			key_name,
+			mount_name,
+			public_key,
+			_cryptography_marker: std::marker::PhantomData,
+		}
 	}
 
 	/// Tries to create a new HashiCorp Vault HSM from the environment
@@ -60,7 +67,7 @@ impl HashiCorpVault {
 			&self.client,
 			self.mount_name.as_str(),
 			self.key_name.as_str(),
-			Some(CreateKeyRequest::builder().key_type(KeyType::Ed25519).derived(false)),
+			Some(CreateKeyRequest::builder().key_type(C::key_type()).derived(false)),
 		)
 		.await
 		.context("Failed to create key")?;
@@ -91,7 +98,10 @@ impl HashiCorpVault {
 }
 
 #[async_trait::async_trait]
-impl Hsm for HashiCorpVault {
+impl<C> Hsm for HashiCorpVault<C>
+where
+	C: HashiCorpVaultCryptography + LocalVerifier + Send + Sync,
+{
 	async fn sign(&self, message: Bytes) -> Result<(Bytes, PublicKey, Signature), anyhow::Error> {
 		let res = data::sign(
 			&self.client,
@@ -125,12 +135,6 @@ impl Hsm for HashiCorpVault {
 		public_key: PublicKey,
 		signature: Signature,
 	) -> Result<bool, anyhow::Error> {
-		let verifying_key = VerifyingKey::from_slice(public_key.0 .0.as_slice())
-			.context("Failed to create verifying key")?;
-
-		let signature = ed25519::Signature::from_slice(signature.0 .0.as_slice())
-			.context("Failed to create signature")?;
-
-		Ok(verifying_key.verify(message.0.as_slice(), &signature).is_ok())
+		C::verify(message, public_key, signature).await
 	}
 }

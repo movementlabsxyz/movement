@@ -1,4 +1,6 @@
 pub mod action_stream;
+pub mod cli;
+pub mod cryptography;
 pub mod hsm;
 pub mod server;
 

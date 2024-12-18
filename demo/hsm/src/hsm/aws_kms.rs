@@ -1,24 +1,26 @@
+use crate::cryptography::aws_kms::AwsKmsCryptography;
+use crate::cryptography::verifier::LocalVerifier;
 use crate::{Bytes, Hsm, PublicKey, Signature};
 use anyhow::Context;
 use aws_sdk_kms::primitives::Blob;
-use aws_sdk_kms::types::{KeySpec, KeyUsageType, SigningAlgorithmSpec};
 use aws_sdk_kms::Client;
 use dotenv::dotenv;
-use k256::ecdsa::{self, VerifyingKey};
-use k256::pkcs8::DecodePublicKey;
-use ring_compat::signature::Verifier;
 
 /// A AWS KMS HSM.
-pub struct AwsKms {
+pub struct AwsKms<C: AwsKmsCryptography> {
 	client: Client,
 	key_id: String,
-	pub public_key: PublicKey,
+	public_key: PublicKey,
+	_cryptography_marker: std::marker::PhantomData<C>,
 }
 
-impl AwsKms {
+impl<C> AwsKms<C>
+where
+	C: AwsKmsCryptography,
+{
 	/// Creates a new AWS KMS HSM
 	pub fn new(client: Client, key_id: String, public_key: PublicKey) -> Self {
-		Self { client, key_id, public_key }
+		Self { client, key_id, public_key, _cryptography_marker: std::marker::PhantomData }
 	}
 
 	/// Tries to create a new AWS KMS HSM from the environment
@@ -38,8 +40,8 @@ impl AwsKms {
 		let res = self
 			.client
 			.create_key()
-			.key_spec(KeySpec::EccSecgP256K1)
-			.key_usage(KeyUsageType::SignVerify)
+			.key_spec(C::key_spec())
+			.key_usage(C::key_usage_type())
 			.send()
 			.await?;
 
@@ -58,17 +60,25 @@ impl AwsKms {
 		self.public_key = public_key;
 		Ok(self)
 	}
+
+	/// Gets a reference to the public key
+	pub fn public_key(&self) -> &PublicKey {
+		&self.public_key
+	}
 }
 
 #[async_trait::async_trait]
-impl Hsm for AwsKms {
+impl<C> Hsm for AwsKms<C>
+where
+	C: AwsKmsCryptography + LocalVerifier + Send + Sync,
+{
 	async fn sign(&self, message: Bytes) -> Result<(Bytes, PublicKey, Signature), anyhow::Error> {
 		let blob = Blob::new(message.clone().0);
 		let request = self
 			.client
 			.sign()
 			.key_id(&self.key_id)
-			.signing_algorithm(SigningAlgorithmSpec::EcdsaSha256)
+			.signing_algorithm(C::signing_algorithm_spec())
 			.message(blob);
 
 		let res = request.send().await?;
@@ -85,18 +95,6 @@ impl Hsm for AwsKms {
 		public_key: PublicKey,
 		signature: Signature,
 	) -> Result<bool, anyhow::Error> {
-		let verifying_key = VerifyingKey::from_public_key_der(&public_key.0 .0)
-			.context("Failed to create verifying key")?;
-
-		let signature =
-			ecdsa::Signature::from_der(&signature.0 .0).context("Failed to create signature")?;
-
-		match verifying_key.verify(message.0.as_slice(), &signature) {
-			Ok(_) => Ok(true),
-			Err(e) => {
-				println!("Error verifying signature: {:?}", e);
-				Ok(false)
-			}
-		}
+		C::verify(message, public_key, signature).await
 	}
 }
