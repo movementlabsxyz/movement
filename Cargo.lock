@@ -3222,6 +3222,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "aws-kms-signer"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "aws-config",
+ "aws-sdk-kms",
+ "axum 0.6.20",
+ "base64 0.13.1",
+ "clap 4.5.21",
+ "dotenv",
+ "ed25519 2.2.3",
+ "google-cloud-kms",
+ "k256",
+ "rand 0.7.3",
+ "reqwest 0.12.9",
+ "ring-compat",
+ "serde",
+ "serde_json",
+ "signer",
+ "tokio",
+ "vaultrs",
+]
+
+[[package]]
 name = "aws-runtime"
 version = "1.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7304,6 +7329,31 @@ dependencies = [
  "allocator-api2",
  "equivalent",
  "foldhash",
+]
+
+[[package]]
+name = "hashicorp-vault-signer"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "aws-config",
+ "aws-sdk-kms",
+ "axum 0.6.20",
+ "base64 0.13.1",
+ "clap 4.5.21",
+ "dotenv",
+ "ed25519 2.2.3",
+ "google-cloud-kms",
+ "k256",
+ "rand 0.7.3",
+ "reqwest 0.12.9",
+ "ring-compat",
+ "serde",
+ "serde_json",
+ "signer",
+ "tokio",
+ "vaultrs",
 ]
 
 [[package]]
@@ -13919,7 +13969,11 @@ dependencies = [
 name = "signer"
 version = "0.0.2"
 dependencies = [
+ "anyhow",
  "async-trait",
+ "ed25519 2.2.3",
+ "k256",
+ "ring-compat",
  "thiserror 1.0.69",
 ]
 

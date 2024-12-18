@@ -12,6 +12,10 @@ rust-version.workspace = true
 [dependencies]
 thiserror = { workspace = true }
 async-trait = { workspace = true }
+ed25519 = { workspace = true }
+ring-compat = { workspace = true }
+k256 = { workspace = true, features = ["ecdsa", "pkcs8"] }
+anyhow = { workspace = true }
 
 
 [lints]
