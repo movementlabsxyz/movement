@@ -38,7 +38,11 @@ impl SigningService {
 	}
 
 	/// Get the public key associated with the specified key and version.
-	async fn get_public_key(&self, key: KeyId, version: KeyVersion) -> Result<bool, anyhow::Error> {
+	async fn get_public_key(
+		&self,
+		key: KeyId,
+		version: KeyVersion,
+	) -> Result<PublicKey, anyhow::Error> {
 		todo!();
 	}
 }
