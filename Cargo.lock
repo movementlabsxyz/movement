@@ -10517,6 +10517,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "movement-signing-alloy"
+version = "0.0.2"
+dependencies = [
+ "alloy-consensus",
+ "alloy-network",
+ "alloy-primitives 0.7.7",
+ "alloy-signer",
+ "async-trait",
+ "k256",
+ "signer",
+ "spki 0.7.3",
+]
+
+[[package]]
 name = "movement-tracing"
 version = "0.0.2"
 dependencies = [

@@ -45,6 +45,7 @@ members = [
     "util/signing/signer",
     "util/signing/aws-kms",
     "util/signing/hashicorp-vault",
+    "util/signing/integrations/alloy",
 ]
 
 [workspace.package]
@@ -227,6 +228,7 @@ alloy-eips = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b17258
 alloy-contract = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
 alloy-network = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
 alloy-primitives = { version = "0.7.2", default-features = false }
+alloy-consensus = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
 alloy-provider = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2", features = [
     "ws",
 ] }
