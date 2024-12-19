@@ -1,0 +1,25 @@
+[package]
+name = "movement-signing-alloy"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+signer = { workspace = true }
+async-trait.workspace = true
+
+# Alloy needed crates
+alloy-primitives.workspace = true
+alloy-signer.workspace = true
+alloy-network.workspace = true
+alloy-consensus.workspace = true
+spki = "0.7.3"
+k256 = "0.13.4"
+
+[lints]
+workspace = true
