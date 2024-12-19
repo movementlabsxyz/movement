@@ -1,14 +1,4 @@
 use super::utils::{self, MovementAddress};
-use crate::chains::bridge_contracts::BridgeContract;
-use crate::chains::bridge_contracts::BridgeContractError;
-use crate::chains::bridge_contracts::BridgeContractResult;
-use crate::types::BridgeTransferDetailsCounterparty;
-use crate::types::{
-	Amount, AssetType, BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock,
-	HashLockPreImage, TimeLock,
-};
-use alloy_primitives::Address;
-use alloy_primitives::FixedBytes;
 use anyhow::{Context, Result};
 use aptos_api_types::{EntryFunctionId, MoveModuleId, ViewRequest};
 use aptos_sdk::{
@@ -18,19 +8,25 @@ use aptos_sdk::{
 };
 use aptos_types::account_address::AccountAddress;
 use bridge_config::common::movement::MovementConfig;
+use bridge_util::{
+	chains::bridge_contracts::{BridgeContract, BridgeContractError, BridgeContractResult},
+	types::{
+		Amount, BridgeAddress, BridgeTransferDetails, BridgeTransferDetailsCounterparty,
+		BridgeTransferId, HashLock, HashLockPreImage, TimeLock,
+	},
+};
 use hex;
 use rand::prelude::*;
-use std::path::Path;
-use std::str::FromStr;
-use std::sync::Arc;
+use std::{path::Path, str::FromStr, sync::Arc};
 use tracing::{debug, info};
 use url::Url;
 
 pub const FRAMEWORK_ADDRESS: AccountAddress = AccountAddress::new([
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
 ]);
-const INITIATOR_MODULE_NAME: &str = "atomic_bridge_initiator";
-const COUNTERPARTY_MODULE_NAME: &str = "atomic_bridge_counterparty";
+
+pub const INITIATOR_MODULE_NAME: &str = "atomic_bridge_initiator";
+pub const COUNTERPARTY_MODULE_NAME: &str = "atomic_bridge_counterparty";
 const DUMMY_ADDRESS: AccountAddress = AccountAddress::new([0; 32]);
 
 #[allow(dead_code)]
@@ -41,13 +37,11 @@ enum Call {
 	GetDetails,
 }
 
-#[allow(dead_code)]
+/// The Client for making calls to the atomic bridge framework modules
 #[derive(Clone)]
 pub struct MovementClientFramework {
 	///Native Address of the
 	pub native_address: AccountAddress,
-	/// Bytes of the non-native (external) chain.
-	pub non_native_address: Vec<u8>,
 	///The Apotos Rest Client
 	pub rest_client: Client,
 	///The signer account
@@ -64,12 +58,7 @@ impl MovementClientFramework {
 		let signer =
 			utils::create_local_account(config.movement_signer_key.clone(), &rest_client).await?;
 		let native_address = AccountAddress::from_hex_literal(&config.movement_native_address)?;
-		Ok(MovementClientFramework {
-			native_address,
-			non_native_address: Vec::new(), //dummy for now
-			rest_client,
-			signer: Arc::new(signer),
-		})
+		Ok(MovementClientFramework { native_address, rest_client, signer: Arc::new(signer) })
 	}
 
 	pub fn rest_client(&self) -> &Client {
@@ -132,16 +121,14 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 		hash_lock: HashLock,
 		amount: Amount,
 	) -> BridgeContractResult<()> {
-		let amount_value = match amount.0 {
-			AssetType::Moveth(value) => value,
-			_ => return Err(BridgeContractError::ConversionFailed("Amount".to_string())),
-		};
-		debug!("Amount value: {:?}", amount_value);
+		debug!("Amount value: {:?}", amount);
+
+		let serialized_hash_lock = utils::serialize_vec_initiator(&hash_lock.0[..])?;
 
 		let args = vec![
 			utils::serialize_vec_initiator(&recipient.0)?,
-			utils::serialize_vec_initiator(&hash_lock.0[..])?,
-			utils::serialize_u64_initiator(&amount_value)?,
+			serialized_hash_lock,
+			utils::serialize_u64_initiator(&amount)?,
 		];
 
 		let payload = utils::make_aptos_payload(
@@ -244,7 +231,7 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 
 		Ok(())
 	}
-	
+
 	async fn lock_bridge_transfer(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
@@ -254,19 +241,15 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 		amount: Amount,
 	) -> BridgeContractResult<()> {
 		debug!("Starting lock bridge transfer");
-		let amount_value = match amount.0 {
-			AssetType::Moveth(value) => value,
-			_ => return Err(BridgeContractError::SerializationError),
-		};
 		debug!("Initiator: {:?}", initiator.0);
+
 		let args = vec![
 			utils::serialize_vec(&initiator.0)?,
 			utils::serialize_vec(&bridge_transfer_id.0[..])?,
 			utils::serialize_vec(&hash_lock.0[..])?,
 			utils::serialize_vec(&recipient.0)?,
-			utils::serialize_u64(&amount_value)?,
+			utils::serialize_u64(&amount)?,
 		];
-		
 
 		let payload = utils::make_aptos_payload(
 			FRAMEWORK_ADDRESS,
@@ -275,7 +258,7 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 			Vec::new(),
 			args,
 		);
-	
+
 		let _ = utils::send_and_confirm_aptos_transaction(
 			&self.rest_client,
 			self.signer.as_ref(),
@@ -283,7 +266,7 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 		)
 		.await
 		.map_err(|_| BridgeContractError::LockTransferError)?;
-	
+
 		Ok(())
 	}
 
@@ -320,16 +303,9 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 			Vec::new(),
 			args3,
 		);
-		let result = utils::send_and_confirm_aptos_transaction(
-			&self.rest_client,
-			self.signer.as_ref(),
-			payload,
-		)
-		.await
-		.map_err(|_| BridgeContractError::AbortTransferError);
-
-		info!("Abort bridge transfer result: {:?}", &result);
-
+		utils::send_and_confirm_aptos_transaction(&self.rest_client, self.signer.as_ref(), payload)
+			.await
+			.map_err(|_| BridgeContractError::AbortTransferError)?;
 		Ok(())
 	}
 
@@ -338,7 +314,7 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 		bridge_transfer_id: BridgeTransferId,
 	) -> BridgeContractResult<Option<BridgeTransferDetails<MovementAddress>>> {
 		let bridge_transfer_id_hex = format!("0x{}", hex::encode(bridge_transfer_id.0));
-	
+
 		let view_request = ViewRequest {
 			function: EntryFunctionId {
 				module: MoveModuleId {
@@ -356,60 +332,66 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 			type_arguments: vec![],
 			arguments: vec![serde_json::json!(bridge_transfer_id_hex)],
 		};
-	
+
 		let response: Response<Vec<serde_json::Value>> = self
 			.rest_client
 			.view(&view_request, None)
 			.await
 			.map_err(|_| BridgeContractError::CallError)?;
-	
+
 		let values = response.inner();
-	
+
 		if values.len() != 1 {
 			return Err(BridgeContractError::InvalidResponseLength);
 		}
-	
+
 		let value = &values[0];
-	
+
 		let originator_address = AccountAddress::from_hex_literal(
-			value["addresses"]["initiator"].as_str().ok_or(BridgeContractError::SerializationError)?
-		).map_err(|_| BridgeContractError::SerializationError)?;
-	
-		let recipient_address_bytes = hex::decode(
-			&value["addresses"]["recipient"]["inner"].as_str().ok_or(BridgeContractError::SerializationError)?[2..]
-		).map_err(|_| BridgeContractError::SerializationError)?;
-	
+			value["addresses"]["initiator"]
+				.as_str()
+				.ok_or(BridgeContractError::SerializationError)?,
+		)
+		.map_err(|_| BridgeContractError::SerializationError)?;
+
+		let recipient_bytes = hex::decode(
+			&value["addresses"]["recipient"]["inner"]
+				.as_str()
+				.ok_or(BridgeContractError::SerializationError)?[2..],
+		)
+		.map_err(|_| BridgeContractError::SerializationError)?;
+
 		let amount = value["amount"]
 			.as_str()
 			.ok_or(BridgeContractError::SerializationError)?
 			.parse::<u64>()
 			.map_err(|_| BridgeContractError::SerializationError)?;
-	
+
 		let hash_lock_array: [u8; 32] = hex::decode(
-			&value["hash_lock"].as_str().ok_or(BridgeContractError::SerializationError)?[2..]
-		).map_err(|_| BridgeContractError::SerializationError)?.try_into()
-			.map_err(|_| BridgeContractError::SerializationError)?;
-	
+			&value["hash_lock"].as_str().ok_or(BridgeContractError::SerializationError)?[2..],
+		)
+		.map_err(|_| BridgeContractError::SerializationError)?
+		.try_into()
+		.map_err(|_| BridgeContractError::SerializationError)?;
+
 		let time_lock = value["time_lock"]
 			.as_str()
 			.ok_or(BridgeContractError::SerializationError)?
 			.parse::<u64>()
 			.map_err(|_| BridgeContractError::SerializationError)?;
-	
-		let state = value["state"]
-			.as_u64()
-			.ok_or(BridgeContractError::SerializationError)? as u8;
-	
+
+		let state = value["state"].as_u64().ok_or(BridgeContractError::SerializationError)? as u8;
+
 		let details = BridgeTransferDetails {
 			bridge_transfer_id,
-			initiator_address: BridgeAddress(MovementAddress(originator_address)),
-			recipient_address: BridgeAddress(recipient_address_bytes),
-			amount: Amount(AssetType::Moveth(amount)),
+			initiator: BridgeAddress(MovementAddress(originator_address)),
+			recipient: BridgeAddress(recipient_bytes),
+			amount: Amount(amount),
 			hash_lock: HashLock(hash_lock_array),
 			time_lock: TimeLock(time_lock),
 			state,
 		};
-	
+
 		Ok(Some(details))
 	}
 
@@ -418,7 +400,7 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 		bridge_transfer_id: BridgeTransferId,
 	) -> BridgeContractResult<Option<BridgeTransferDetailsCounterparty<MovementAddress>>> {
 		let bridge_transfer_id_hex = format!("0x{}", hex::encode(bridge_transfer_id.0));
-	
+
 		let view_request = ViewRequest {
 			function: EntryFunctionId {
 				module: MoveModuleId {
@@ -436,71 +418,71 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 			type_arguments: vec![],
 			arguments: vec![serde_json::json!(bridge_transfer_id_hex)],
 		};
-	
+
 		let response: Response<Vec<serde_json::Value>> = self
 			.rest_client
 			.view(&view_request, None)
 			.await
 			.map_err(|_| BridgeContractError::CallError)?;
-	
+
 		let values = response.inner();
-	
+
 		if values.len() != 1 {
 			return Err(BridgeContractError::InvalidResponseLength);
 		}
-	
+
 		let value = &values[0];
-	
+
 		let originator_address_bytes = hex::decode(
 			&value["addresses"]["initiator"]["inner"]
 				.as_str()
 				.ok_or(BridgeContractError::SerializationError)?[2..],
 		)
 		.map_err(|_| BridgeContractError::SerializationError)?;
-	
-		let recipient_address = AccountAddress::from_hex_literal(
-			value["addresses"]["recipient"].as_str().ok_or(BridgeContractError::SerializationError)?,
+
+		let recipient = AccountAddress::from_hex_literal(
+			value["addresses"]["recipient"]
+				.as_str()
+				.ok_or(BridgeContractError::SerializationError)?,
 		)
 		.map_err(|_| BridgeContractError::SerializationError)?;
-	
+
 		let amount = value["amount"]
 			.as_str()
 			.ok_or(BridgeContractError::SerializationError)?
 			.parse::<u64>()
 			.map_err(|_| BridgeContractError::SerializationError)?;
-	
+
 		let hash_lock_array: [u8; 32] = hex::decode(
-			&value["hash_lock"]
-				.as_str()
-				.ok_or(BridgeContractError::SerializationError)?[2..],
+			&value["hash_lock"].as_str().ok_or(BridgeContractError::SerializationError)?[2..],
 		)
 		.map_err(|_| BridgeContractError::SerializationError)?
 		.try_into()
 		.map_err(|_| BridgeContractError::SerializationError)?;
-	
+
 		let time_lock = value["time_lock"]
 			.as_str()
 			.ok_or(BridgeContractError::SerializationError)?
 			.parse::<u64>()
 			.map_err(|_| BridgeContractError::SerializationError)?;
-	
-		let state = value["state"]
-			.as_u64()
-			.ok_or(BridgeContractError::SerializationError)? as u8;
-	
+
+		let state = value["state"].as_u64().ok_or(BridgeContractError::SerializationError)? as u8;
+
 		let details = BridgeTransferDetailsCounterparty {
 			bridge_transfer_id,
-			initiator_address: BridgeAddress(originator_address_bytes),
-			recipient_address: BridgeAddress(MovementAddress(recipient_address)),
-			amount: Amount(AssetType::Moveth(amount)),
+			initiator: BridgeAddress(originator_address_bytes),
+			recipient: BridgeAddress(MovementAddress(recipient)),
+			amount: Amount(amount),
 			hash_lock: HashLock(hash_lock_array),
 			time_lock: TimeLock(time_lock),
 			state,
 		};
-	
+
 		Ok(Some(details))
 	}
 }
+
+//@TODO: feature flag from here for testing only
 
 use std::{
 	env, fs,
@@ -524,12 +506,7 @@ impl MovementClientFramework {
 			.context("Failed to change directory to project root")?;
 
 		let compile_output = Command::new("movement")
-			.args(&[
-				"move", 
-				"compile", 
-				"--package-dir", 
-				"protocol-units/bridge/move-modules/"
-			])
+			.args(&["move", "compile", "--package-dir", "protocol-units/bridge/move-modules/"])
 			.stdout(Stdio::piped())
 			.stderr(Stdio::piped())
 			.output()?;
@@ -970,7 +947,6 @@ impl MovementClientFramework {
 		Ok((
 			MovementClientFramework {
 				native_address: DUMMY_ADDRESS,
-				non_native_address: Vec::new(),
 				rest_client,
 				signer: Arc::new(LocalAccount::generate(&mut rng)),
 			},

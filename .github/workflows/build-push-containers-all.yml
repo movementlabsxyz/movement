@@ -12,8 +12,8 @@ on:
 
 jobs:
 
-  m1-da-light-node-build:
-    if: github.event.label.name == 'cicd:suzuka-containers' ||  github.ref == 'refs/heads/main'
+  movement-celestia-da-light-node-build:
+    if: github.event.label.name == 'cicd:movement-containers' ||  github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write
@@ -45,13 +45,13 @@ jobs:
 
     - name: Build and Push Docker image movement
       run: |
-        ./scripts/movement/build-push-image m1-da-light-node
+        ./scripts/movement/build-push-image movement-celestia-da-light-node
 
-  m1-da-light-node-manifest:
+  movement-celestia-da-light-node-manifest:
     permissions:
       contents: read
       packages: write
-    needs: m1-da-light-node-build
+    needs: movement-celestia-da-light-node-build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -75,10 +75,10 @@ jobs:
 
       - name: Build and Push Docker image movement
         run: |
-          ./scripts/movement/manifest m1-da-light-node
+          ./scripts/movement/manifest movement-celestia-da-light-node
 
-  m1-da-light-node-celestia-appd-build:
-    if: github.event.label.name == 'cicd:suzuka-containers' ||  github.ref == 'refs/heads/main'
+  movement-celestia-appd-build:
+    if: github.event.label.name == 'cicd:movement-containers' ||  github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write
@@ -110,13 +110,13 @@ jobs:
 
     - name: Build and Push Docker image movement
       run: |
-        ./scripts/movement/build-push-image m1-da-light-node-celestia-appd
+        ./scripts/movement/build-push-image movement-celestia-appd
 
-  m1-da-light-node-celestia-appd-manifest:
+  movement-celestia-appd-manifest:
     permissions:
       contents: read
       packages: write
-    needs: m1-da-light-node-celestia-appd-build
+    needs: movement-celestia-appd-build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -140,10 +140,10 @@ jobs:
 
       - name: Build and Push Docker image movement
         run: |
-          ./scripts/movement/manifest m1-da-light-node-celestia-appd
+          ./scripts/movement/manifest movement-celestia-appd
 
-  m1-da-light-node-celestia-bridge-build:
-    if: github.event.label.name == 'cicd:suzuka-containers' ||  github.ref == 'refs/heads/main'
+  movement-celestia-bridge-build:
+    if: github.event.label.name == 'cicd:movement-containers' ||  github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write
@@ -175,13 +175,13 @@ jobs:
 
     - name: Build and Push Docker image movement
       run: |
-        ./scripts/movement/build-push-image m1-da-light-node-celestia-bridge
+        ./scripts/movement/build-push-image movement-celestia-bridge
 
-  m1-da-light-node-celestia-bridge-manifest:
+  movement-celestia-bridge-manifest:
     permissions:
       contents: read
       packages: write
-    needs: m1-da-light-node-celestia-bridge-build
+    needs: movement-celestia-bridge-build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -205,10 +205,10 @@ jobs:
 
       - name: Build and Push Docker image movement
         run: |
-          ./scripts/movement/manifest m1-da-light-node-celestia-bridge
+          ./scripts/movement/manifest movement-celestia-bridge
 
-  suzuka-full-node-setup-build:
-    if: github.event.label.name == 'cicd:suzuka-containers' ||  github.ref == 'refs/heads/main'
+  movement-full-node-setup-build:
+    if: github.event.label.name == 'cicd:movement-containers' ||  github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write
@@ -240,13 +240,13 @@ jobs:
 
     - name: Build and Push Docker image movement
       run: |
-        ./scripts/movement/build-push-image suzuka-full-node-setup
+        ./scripts/movement/build-push-image movement-full-node-setup
 
-  suzuka-full-node-setup-manifest:
+  movement-full-node-setup-manifest:
     permissions:
       contents: read
       packages: write
-    needs: suzuka-full-node-setup-build
+    needs: movement-full-node-setup-build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -270,10 +270,10 @@ jobs:
 
       - name: Build and Push Docker image movement
         run: |
-          ./scripts/movement/manifest suzuka-full-node-setup
+          ./scripts/movement/manifest movement-full-node-setup
 
   wait-for-celestia-light-node-build:
-    if: github.event.label.name == 'cicd:suzuka-containers' ||  github.ref == 'refs/heads/main'
+    if: github.event.label.name == 'cicd:movement-containers' ||  github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write
@@ -337,8 +337,8 @@ jobs:
         run: |
           ./scripts/movement/manifest wait-for-celestia-light-node
 
-  suzuka-full-node-build:
-    if: github.event.label.name == 'cicd:suzuka-containers' ||  github.ref == 'refs/heads/main'
+  movement-full-node-build:
+    if: github.event.label.name == 'cicd:movement-containers' ||  github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write
@@ -370,13 +370,13 @@ jobs:
 
     - name: Build and Push Docker image movement
       run: |
-        ./scripts/movement/build-push-image suzuka-full-node
+        ./scripts/movement/build-push-image movement-full-node
 
-  suzuka-full-node-manifest:
+  movement-full-node-manifest:
     permissions:
       contents: read
       packages: write
-    needs: suzuka-full-node-build
+    needs: movement-full-node-build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -400,10 +400,10 @@ jobs:
 
       - name: Build and Push Docker image movement
         run: |
-          ./scripts/movement/manifest suzuka-full-node
+          ./scripts/movement/manifest movement-full-node
 
-  suzuka-faucet-service-build:
-    if: github.event.label.name == 'cicd:suzuka-containers' ||  github.ref == 'refs/heads/main'
+  movement-faucet-service-build:
+    if: github.event.label.name == 'cicd:movement-containers' ||  github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write
@@ -435,13 +435,13 @@ jobs:
 
     - name: Build and Push Docker image movement
       run: |
-        ./scripts/movement/build-push-image suzuka-faucet-service
+        ./scripts/movement/build-push-image movement-faucet-service
 
-  suzuka-faucet-service-manifest:
+  movement-faucet-service-manifest:
     permissions:
       contents: read
       packages: write
-    needs: suzuka-faucet-service-build
+    needs: movement-faucet-service-build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -465,9 +465,10 @@ jobs:
 
       - name: Build and Push Docker image movement
         run: |
-          ./scripts/movement/manifest suzuka-faucet-service
+          ./scripts/movement/manifest movement-faucet-service
 
-  suzuka-client-e2e-simple-interaction-build:
+  movement-tests-e2e-simple-interaction-build:
+    if: github.event.label.name == 'cicd:movement-containers' ||  github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write
@@ -499,14 +500,13 @@ jobs:
 
     - name: Build and Push Docker image movement
       run: |
-        ./scripts/movement/build-push-image suzuka-client-e2e-simple-interaction
+        ./scripts/movement/build-push-image movement-tests-e2e-simple-interaction
 
-  suzuka-client-e2e-simple-interaction-manifest:
-    if: github.event.label.name == 'cicd:suzuka-containers' ||  github.ref == 'refs/heads/main'
+  movement-tests-e2e-simple-interaction-manifest:
     permissions:
       contents: read
       packages: write
-    needs: suzuka-client-e2e-simple-interaction-build
+    needs: movement-tests-e2e-simple-interaction-build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -530,9 +530,10 @@ jobs:
 
       - name: Build and Push Docker image movement
         run: |
-          ./scripts/movement/manifest suzuka-client-e2e-simple-interaction
+          ./scripts/movement/manifest movement-tests-e2e-simple-interaction
 
-  suzuka-indexer-build:
+  movement-indexer-build:
+    if: github.event.label.name == 'cicd:movement-containers' ||  github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write
@@ -564,13 +565,13 @@ jobs:
 
     - name: Build and Push Docker image movement
       run: |
-        ./scripts/movement/build-push-image suzuka-indexer
+        ./scripts/movement/build-push-image movement-indexer
 
-  suzuka-indexer-manifest:
+  movement-indexer-manifest:
     permissions:
       contents: read
       packages: write
-    needs: suzuka-indexer-build
+    needs: movement-indexer-build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -594,9 +595,10 @@ jobs:
 
       - name: Build and Push Docker image movement
         run: |
-          ./scripts/movement/manifest suzuka-indexer
+          ./scripts/movement/manifest movement-indexer
 
-  suzuka-client-e2e-followers-consistent-build:
+  movement-tests-e2e-followers-consistent-build:
+    if: github.event.label.name == 'cicd:movement-containers' ||  github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write
@@ -628,14 +630,13 @@ jobs:
 
     - name: Build and Push Docker image movement
       run: |
-        ./scripts/movement/build-push-image suzuka-client-e2e-followers-consistent
+        ./scripts/movement/build-push-image movement-tests-e2e-followers-consistent
 
-  suzuka-client-e2e-followers-consistent-manifest:
-    if: github.event.label.name == 'cicd:suzuka-containers' ||  github.ref == 'refs/heads/main'
+  movement-tests-e2e-followers-consistent-manifest:
     permissions:
       contents: read
       packages: write
-    needs: suzuka-client-e2e-followers-consistent-build
+    needs: movement-tests-e2e-followers-consistent-build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -659,22 +660,89 @@ jobs:
 
       - name: Build and Push Docker image movement
         run: |
-          ./scripts/movement/manifest suzuka-client-e2e-followers-consistent
+          ./scripts/movement/manifest movement-tests-e2e-followers-consistent
+
+
+  movement-util-build:
+    if: github.event.label.name == 'cicd:movement-containers' ||  github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        architecture: [x86_64, arm64]
+        
+    runs-on: ${{ matrix.architecture == 'x86_64' && 'buildjet-8vcpu-ubuntu-2204' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with: 
+        submodules: true
+        ref: ${{ github.event.pull_request.head.ref || github.ref }}
+    
+    - name: Login to GHCR
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Login to Docker Hub to Avoid Rate Limiting
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+    - name: Build and Push Docker image movement
+      run: |
+        ./scripts/movement/build-push-image movement-util
+
+  movement-util-manifest:
+    permissions:
+      contents: read
+      packages: write
+    needs: movement-util-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with: 
+          submodules: true
+          ref: ${{ github.event.pull_request.head.ref || github.ref }}
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Login to Docker Hub to Avoid Rate Limiting
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Build and Push Docker image movement
+        run: |
+          ./scripts/movement/manifest movement-util
 
   
   container-checks:
-    if: github.event.label.name == 'cicd:suzuka-containers' ||  github.ref == 'refs/heads/main'
+    if: github.event.label.name == 'cicd:movement-containers' ||  github.ref == 'refs/heads/main'
     runs-on: buildjet-8vcpu-ubuntu-2204
     needs: 
-      - m1-da-light-node-manifest
-      - m1-da-light-node-celestia-appd-manifest
-      - m1-da-light-node-celestia-bridge-manifest
-      - suzuka-full-node-setup-manifest
+      - movement-celestia-da-light-node-manifest
+      - movement-celestia-appd-manifest
+      - movement-celestia-bridge-manifest
+      - movement-full-node-setup-manifest
       - wait-for-celestia-light-node-manifest
-      - suzuka-full-node-manifest
-      - suzuka-faucet-service-manifest
-      - suzuka-client-e2e-simple-interaction-manifest
-      - suzuka-client-e2e-followers-consistent-manifest
+      - movement-full-node-manifest
+      - movement-faucet-service-manifest
+      - movement-tests-e2e-simple-interaction-manifest
+      - movement-tests-e2e-followers-consistent-manifest
+      - movement-util-manifest
     steps:
 
       - name: Checkout repository
@@ -718,7 +786,7 @@ jobs:
 ### Unchecked containers
 
   bridge-service-build:
-    if: github.event.label.name == 'cicd:bridge-containers' ||  github.ref == 'refs/heads/main'
+    # if: github.event.label.name == 'cicd:bridge-containers' ||  github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write
@@ -777,7 +845,7 @@ jobs:
           ./scripts/movement/manifest bridge-service
 
   bridge-setup-build:
-    if: github.event.label.name == 'cicd:bridge-containers' ||  github.ref == 'refs/heads/main'
+    # if: github.event.label.name == 'cicd:bridge-containers' ||  github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write

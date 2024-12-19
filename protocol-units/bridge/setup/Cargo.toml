@@ -12,6 +12,7 @@ rust-version.workspace = true
 
 [dependencies]
 bridge-config = { workspace = true }
+bridge-util = { workspace = true }
 bridge-service = { workspace = true }
 dot-movement = { workspace = true }
 commander = { workspace = true }
@@ -31,6 +32,8 @@ maptos-execution-util = { workspace = true }
 mcr-settlement-config = { workspace = true }
 
 aptos-sdk = { workspace = true }
+
+ethabi = "18.0.0"
 
 
 [lints]

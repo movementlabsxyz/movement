@@ -16,9 +16,11 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 #[derive(Clone)]
 pub struct Memseq<T: MempoolTransactionOperations> {
+	/// The mempool to get transactions from.
 	mempool: T,
 	// this value should not be changed after initialization
 	block_size: u32,
+	/// The id of the parent block.
 	pub parent_block: Arc<RwLock<block::Id>>,
 	// this value should not be changed after initialization
 	building_time_ms: u64,
@@ -46,6 +48,21 @@ impl<T: MempoolTransactionOperations> Memseq<T> {
 
 	pub fn building_time_ms(&self) -> u64 {
 		self.building_time_ms
+	}
+
+	pub async fn parent_block(&self) -> block::Id {
+		*self.parent_block.read().await
+	}
+
+	async fn build_next_block(
+		&self,
+		metadata: block::BlockMetadata,
+		transactions: Vec<Transaction>,
+	) -> Result<Block, anyhow::Error> {
+		let mut parent_block = self.parent_block.write().await;
+		let new_block = Block::new(metadata, *parent_block, BTreeSet::from_iter(transactions));
+		*parent_block = new_block.id();
+		Ok(new_block)
 	}
 }
 
@@ -104,17 +121,8 @@ impl<T: MempoolTransactionOperations> Sequencer for Memseq<T> {
 		if transactions.is_empty() {
 			Ok(None)
 		} else {
-			let new_block = {
-				let parent_block = self.parent_block.read().await.clone();
-				Block::new(Default::default(), parent_block, BTreeSet::from_iter(transactions))
-			};
-
-			// update the parent block
-			{
-				let mut parent_block = self.parent_block.write().await;
-				*parent_block = new_block.id();
-			}
-
+			let new_block =
+				self.build_next_block(block::BlockMetadata::default(), transactions).await?;
 			Ok(Some(new_block))
 		}
 	}
@@ -156,7 +164,7 @@ pub mod test {
 
 		// Add some transactions
 		for i in 0..5 {
-			let transaction = Transaction::new(vec![i as u8], 0);
+			let transaction = Transaction::new(vec![i as u8], 0, 0);
 			memseq.publish(transaction).await?;
 		}
 
@@ -177,7 +185,7 @@ pub mod test {
 		let parent_block = Arc::new(RwLock::new(block::Id::default()));
 		let memseq = Memseq::new(mempool, 10, parent_block, 1000);
 
-		let transaction = Transaction::new(vec![1, 2, 3], 0);
+		let transaction = Transaction::new(vec![1, 2, 3], 0, 0);
 		let result = memseq.publish(transaction).await;
 		assert!(result.is_err());
 		assert_eq!(result.unwrap_err().to_string(), "Mock add_transaction");
@@ -200,7 +208,7 @@ pub mod test {
 		for i in 0..100 {
 			let memseq_clone = Arc::clone(&memseq);
 			let handle = tokio::spawn(async move {
-				let transaction = Transaction::new(vec![i as u8], 0);
+				let transaction = Transaction::new(vec![i as u8], 0, 0);
 				memseq_clone.publish(transaction).await.unwrap();
 			});
 			handles.push(handle);
@@ -225,7 +233,7 @@ pub mod test {
 			let memseq_clone = Arc::clone(&memseq);
 			let handle = async move {
 				for n in 0..10 {
-					let transaction = Transaction::new(vec![i * 10 + n as u8], 0);
+					let transaction = Transaction::new(vec![i * 10 + n as u8], 0, 0);
 					memseq_clone.publish(transaction).await?;
 				}
 				Ok::<_, anyhow::Error>(())
@@ -324,7 +332,7 @@ pub mod test {
 		let path = dir.path().to_path_buf();
 		let memseq = Memseq::try_move_rocks(path, 128, 250)?;
 
-		let transaction: Transaction = Transaction::new(vec![1, 2, 3], 0);
+		let transaction: Transaction = Transaction::new(vec![1, 2, 3], 0, 0);
 		memseq.publish(transaction.clone()).await?;
 
 		let block = memseq.wait_for_next_block().await?;
@@ -348,7 +356,7 @@ pub mod test {
 
 		let mut transactions = Vec::new();
 		for i in 0..block_size * 2 {
-			let transaction: Transaction = Transaction::new(vec![i as u8], 0);
+			let transaction: Transaction = Transaction::new(vec![i as u8], 0, 0);
 			memseq.publish(transaction.clone()).await?;
 			transactions.push(transaction);
 		}
@@ -389,7 +397,7 @@ pub mod test {
 
 			// add half of the transactions
 			for i in 0..block_size / 2 {
-				let transaction: Transaction = Transaction::new(vec![i as u8], 0);
+				let transaction: Transaction = Transaction::new(vec![i as u8], 0, 0);
 				memseq.publish(transaction.clone()).await?;
 			}
 
@@ -397,7 +405,7 @@ pub mod test {
 
 			// add the rest of the transactions
 			for i in block_size / 2..block_size - 2 {
-				let transaction: Transaction = Transaction::new(vec![i as u8], 0);
+				let transaction: Transaction = Transaction::new(vec![i as u8], 0, 0);
 				memseq.publish(transaction.clone()).await?;
 			}
 
@@ -425,6 +433,27 @@ pub mod test {
 		};
 
 		tokio::try_join!(building_task, waiting_task)?;
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_build_next_block() -> Result<(), anyhow::Error> {
+		let dir = tempdir()?;
+		let path = dir.path().to_path_buf();
+		let memseq = Memseq::try_move_rocks(path, 128, 250)?;
+
+		let transactions = vec![
+			Transaction::new(vec![1, 2, 3], 0, 0),
+			Transaction::new(vec![4, 5, 6], 0, 0),
+			Transaction::new(vec![7, 8, 9], 0, 0),
+		];
+
+		let metadata = block::BlockMetadata::default();
+		let block = memseq.build_next_block(metadata, transactions).await?;
+
+		assert_eq!(block.transactions().len(), 3);
+		assert_eq!(block.id(), memseq.parent_block().await);
 
 		Ok(())
 	}

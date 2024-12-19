@@ -1,3 +1,4 @@
+use crate::common::DEFAULT_REST_CONNECTION_TIMEOUT;
 use aptos_crypto::{ed25519::Ed25519PrivateKey, Uniform, ValidCryptoMaterialStringExt};
 use godfig::env_default;
 use serde::{Deserialize, Serialize};
@@ -49,7 +50,16 @@ pub struct MovementConfig {
 	pub grpc_listener_hostname: String,
 	#[serde(default = "default_grpc_listener_port")]
 	pub grpc_port: u16,
+	#[serde(default = "rest_connection_timeout_secs")]
+	pub rest_connection_timeout_secs: u64,
 }
+
+env_default!(
+	rest_connection_timeout_secs,
+	"MVT_REST_CONNECTION_TIMEOUT",
+	u64,
+	DEFAULT_REST_CONNECTION_TIMEOUT
+);
 
 // The default private key
 pub fn default_movement_signer_key() -> Ed25519PrivateKey {
@@ -154,7 +164,7 @@ impl MovementConfig {
 		)
 	}
 
-	pub fn suzuka_for_test() -> Self {
+	pub fn for_test() -> Self {
 		MovementConfig {
 			movement_signer_key: Ed25519PrivateKey::from_encoded_string(
 				"0x0000000000000000000000000000000000000000000000000000000000000001",
@@ -174,6 +184,7 @@ impl MovementConfig {
 			grpc_protocol: default_grpc_connection_protocol(),
 			grpc_listener_hostname: default_grpc_listener_hostname(),
 			grpc_port: default_grpc_listener_port(),
+			rest_connection_timeout_secs: rest_connection_timeout_secs(),
 		}
 	}
 }
@@ -195,6 +206,7 @@ impl Default for MovementConfig {
 			grpc_protocol: default_grpc_connection_protocol(),
 			grpc_listener_hostname: default_grpc_listener_hostname(),
 			grpc_port: default_grpc_listener_port(),
+			rest_connection_timeout_secs: rest_connection_timeout_secs(),
 		}
 	}
 }

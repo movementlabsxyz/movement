@@ -1,0 +1,35 @@
+version: "3"
+
+processes:
+
+  postgres:
+    command: |
+      ./scripts/postgres/start-dev
+
+    readiness_probe:
+      initial_delay_seconds: 5
+      exec:
+        command: echo "true"
+    
+  bridge:
+    depends_on:
+      postgres:
+        condition: process_healthy
+    environment: 
+      - BRIDGE_INDEXER_DATABASE_URL=postgresql://postgres:password@localhost:5432
+
+  hasura:
+    environment:
+      - "POSTGRES_DB_HOST=${POSTGRES_HOST_IP}"
+
+    command: |
+      docker compose -f docker/compose/movement-indexer/docker-compose.hasura.yml up --force-recreate
+    env:
+      RUST_LOG: info
+    depends_on:
+      bridge:
+        condition: process_healthy
+    readiness_probe:
+      initial_delay_seconds: 30
+      exec:
+        command: curl http://localhost:8085/console/

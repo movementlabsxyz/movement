@@ -5,6 +5,7 @@ import {IAtomicBridgeInitiatorMOVE} from "./IAtomicBridgeInitiatorMOVE.sol";
 import {MockMOVEToken} from "./MockMOVEToken.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {RateLimiter} from "./RateLimiter.sol";
 
 contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgradeable {
     enum MessageState {
@@ -29,6 +30,7 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
     uint256 public poolBalance;
 
     address public counterpartyAddress;
+    RateLimiter public rateLimiter;
     ERC20Upgradeable public moveToken;
     uint256 private nonce;
 
@@ -42,9 +44,7 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         uint256 _timeLockDuration,
         uint256 _initialPoolBalance
     ) public initializer {
-        if (_moveToken == address(0)) {
-            revert ZeroAddress();
-        }
+        require(_moveToken != address(0) && owner != address(0), "ZeroAddress");
         moveToken = ERC20Upgradeable(_moveToken);
         __Ownable_init(owner);
 
@@ -56,15 +56,23 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
     }
 
     function setCounterpartyAddress(address _counterpartyAddress) external onlyOwner {
-        if (_counterpartyAddress == address(0)) revert ZeroAddress();
+        require(_counterpartyAddress != address(0), "ZeroAddress");
         counterpartyAddress = _counterpartyAddress;
+    }
+
+    function setRateLimiter(address _rateLimiter) external onlyOwner {
+        if (_rateLimiter == address(0)) revert ZeroAddress();
+        rateLimiter = RateLimiter(_rateLimiter);
     }
 
     function initiateBridgeTransfer(uint256 moveAmount, bytes32 recipient, bytes32 hashLock)
         external
         returns (bytes32 bridgeTransferId)
     {
+        rateLimiter.rateLimitOutbound(moveAmount);
         address originator = msg.sender;
+            
+        require(moveAmount > 0, "ZeroAmount");
 
         // Ensure there is a valid amount
         if (moveAmount == 0) {
@@ -95,11 +103,14 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         return bridgeTransferId;
     }
 
-    function completeBridgeTransfer(bytes32 bridgeTransferId, bytes32 preImage) external {
+    function completeBridgeTransfer(bytes32 bridgeTransferId, bytes32 preImage) external onlyOwner {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
-        if (bridgeTransfer.state != MessageState.INITIALIZED) revert BridgeTransferHasBeenCompleted();
-        if (keccak256(abi.encodePacked(preImage)) != bridgeTransfer.hashLock) revert InvalidSecret();
-        if (block.timestamp > bridgeTransfer.timeLock) revert TimelockExpired();
+
+        rateLimiter.rateLimitInbound(bridgeTransfer.amount);
+        require(bridgeTransfer.state == MessageState.INITIALIZED, "BridgeTransferHasBeenCompleted");
+        require(keccak256(abi.encodePacked(preImage)) == bridgeTransfer.hashLock, "InvalidSecret");
+        require(block.timestamp <= bridgeTransfer.timeLock, "TimelockExpired");
+
         bridgeTransfer.state = MessageState.COMPLETED;
 
         emit BridgeTransferCompleted(bridgeTransferId, preImage);
@@ -107,13 +118,13 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
 
     function refundBridgeTransfer(bytes32 bridgeTransferId) external onlyOwner {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
-        if (bridgeTransfer.state != MessageState.INITIALIZED) revert BridgeTransferStateNotInitialized();
-        if (block.timestamp < bridgeTransfer.timeLock) revert TimeLockNotExpired();
+        rateLimiter.rateLimitInbound(bridgeTransfer.amount);
+        require(bridgeTransfer.state == MessageState.INITIALIZED, "BridgeTransferStateNotInitialized");
+        require(block.timestamp >= bridgeTransfer.timeLock, "TimeLockNotExpired");
+
         bridgeTransfer.state = MessageState.REFUNDED;
-        
-        // Decrease pool balance and transfer MOVE tokens back to the originator
-        poolBalance -= bridgeTransfer.amount;
-        if (!moveToken.transfer(bridgeTransfer.originator, bridgeTransfer.amount)) revert MOVETransferFailed();
+
+        if (!moveToken.transfer(bridgeTransfer.originator, bridgeTransfer.amount)) revert("MOVETransferFailed");
 
         emit BridgeTransferRefunded(bridgeTransferId);
     }
@@ -125,4 +136,3 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         if (!moveToken.transfer(recipient, amount)) revert MOVETransferFailed();
     }
 }
-

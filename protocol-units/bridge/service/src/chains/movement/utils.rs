@@ -1,6 +1,3 @@
-use super::client::MovementClient;
-use crate::chains::bridge_contracts::BridgeContractError;
-use crate::types::{BridgeAddress, HashLockPreImage};
 use anyhow::{Context, Result};
 use aptos_sdk::{
 	crypto::ed25519::{Ed25519PrivateKey, Ed25519Signature},
@@ -18,12 +15,15 @@ use aptos_sdk::{
 	},
 	transaction_builder::TransactionFactory,
 	types::{
-		AccountKey,
 		account_address::AccountAddress,
 		chain_id::ChainId,
 		transaction::{EntryFunction, SignedTransaction, TransactionPayload},
-		LocalAccount,
+		AccountKey, LocalAccount,
 	},
+};
+use bridge_util::{
+	chains::bridge_contracts::BridgeContractError,
+	types::{AddressError, BridgeAddress, HashLockPreImage},
 };
 use derive_new::new;
 use rand::{rngs::StdRng, Rng, RngCore, SeedableRng};
@@ -36,6 +36,7 @@ use tiny_keccak::{Hasher, Keccak};
 use tracing::log::{error, info};
 use url::Url;
 
+use super::client_framework::MovementClientFramework;
 pub type TestRng = StdRng;
 
 const MOVEMENT_RPC_URL: &str = "https://testnet.bardock.movementnetwork.xyz";
@@ -101,26 +102,31 @@ impl FromStr for MovementAddress {
 impl std::fmt::Display for MovementAddress {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		write!(f, "{}", self.0.to_standard_string())
-	} 
-}
-
-impl From<Vec<u8>> for MovementAddress {
-	fn from(vec: Vec<u8>) -> Self {
-		// Ensure the vector has the correct length
-		//TODO change to a try_from but need a rewrite of
-		// the address generic management to make try_from compatible.
-		let account_address = AccountAddress::from_bytes(vec).unwrap_or(
-			AccountAddress::from_bytes([1; AccountAddress::LENGTH]).expect("Never fail"),
-		);
-		MovementAddress(account_address)
 	}
 }
 
-impl From<&str> for MovementAddress {
-	fn from(s: &str) -> Self {
+impl TryFrom<Vec<u8>> for MovementAddress {
+	type Error = AddressError;
+
+	fn try_from(vec: Vec<u8>) -> Result<Self, Self::Error> {
+		if vec.len() != AccountAddress::LENGTH {
+			return Err(AddressError::InvalidByteLength(vec.len()));
+		}
+		AccountAddress::from_bytes(vec).map(MovementAddress).map_err(|_| {
+			AddressError::AddressConvertionlError(
+				"MovementAddress try_from AccountAddress conversion error".to_string(),
+			)
+		})
+	}
+}
+
+impl TryFrom<&str> for MovementAddress {
+	type Error = AddressError;
+
+	fn try_from(s: &str) -> Result<Self, Self::Error> {
 		let s = s.trim_start_matches("0x");
-		let bytes = hex::decode(s).expect("Invalid hex string");
-		bytes.into()
+		let bytes = hex::decode(s).map_err(|_| AddressError::InvalidHexString)?;
+		bytes.try_into()
 	}
 }
 
@@ -288,9 +294,8 @@ pub fn serialize_vec_initiator<T: serde::Serialize + ?Sized>(
 	bcs::to_bytes(value).map_err(|_| BridgeContractError::SerializationError)
 }
 
-// This is not used for now, but we may need to use it in later for estimating gas.
 pub async fn simulate_aptos_transaction(
-	aptos_client: &MovementClient,
+	aptos_client: &MovementClientFramework,
 	signer: &mut LocalAccount,
 	payload: TransactionPayload,
 ) -> Result<TransactionInfo> {
@@ -318,7 +323,7 @@ pub async fn simulate_aptos_transaction(
 	let signed_tx = SignedTransaction::new(
 		raw_tx,
 		signer.public_key().clone(),
-		Ed25519Signature::try_from([0u8; 64].as_ref()).unwrap(),
+		Ed25519Signature::try_from([0u8; 64].as_ref())?,
 	);
 
 	let response_txns = aptos_client.rest_client.simulate(&signed_tx).await?.into_inner();
@@ -345,7 +350,7 @@ pub fn make_aptos_payload(
 
 /// Send View Request
 pub async fn send_view_request(
-	aptos_client: &MovementClient,
+	aptos_client: &MovementClientFramework,
 	package_address: String,
 	module_name: String,
 	function_name: String,
@@ -358,8 +363,7 @@ pub async fn send_view_request(
 			&ViewRequest {
 				function: EntryFunctionId::from_str(&format!(
 					"{package_address}::{module_name}::{function_name}"
-				))
-				.unwrap(),
+				))?,
 				type_arguments,
 				arguments,
 			},
@@ -421,26 +425,28 @@ pub fn to_eip55(address: &str) -> String {
 		.collect()
 }
 
-
 pub async fn fund_recipient(recipient: &BridgeAddress<Vec<u8>>) -> Result<(), BridgeContractError> {
 	// Parse URLs
-	let faucet_url = Url::parse(MOVEMENT_FAUCET_URL)
-	.map_err(|_| BridgeContractError::InvalidUrl)?;
-	let rest_url = Url::parse(MOVEMENT_RPC_URL)
-	.map_err(|_| BridgeContractError::InvalidUrl)?;
-	
+	let faucet_url =
+		Url::parse(MOVEMENT_FAUCET_URL).map_err(|_| BridgeContractError::InvalidUrl)?;
+	let rest_url = Url::parse(MOVEMENT_RPC_URL).map_err(|_| BridgeContractError::InvalidUrl)?;
+
 	// Create clients
 	let faucet_client = FaucetClient::new(faucet_url, rest_url);
 
 	// Convert recipient to AccountAddress
-	let recipient_address: [u8; 32] = recipient.0.clone().try_into()
-	.map_err(|_| BridgeContractError::SerializationError)?;
-	let account_address = AccountAddress::new(recipient_address);
+	let recipient: [u8; 32] = recipient
+		.0
+		.clone()
+		.try_into()
+		.map_err(|_| BridgeContractError::SerializationError)?;
+	let account_address = AccountAddress::new(recipient);
 
 	// Execute the funding transaction
-	faucet_client.fund(account_address, 100_000_000)
-	.await
-	.map_err(|_| BridgeContractError::FundingError)?;
+	faucet_client
+		.fund(account_address, 100_000_000)
+		.await
+		.map_err(|_| BridgeContractError::FundingError)?;
 
 	Ok(())
 }

@@ -1,3 +1,4 @@
+use crate::common::DEFAULT_REST_CONNECTION_TIMEOUT;
 use alloy::signers::local::PrivateKeySigner;
 use godfig::env_default;
 use godfig::env_short_default;
@@ -55,7 +56,17 @@ pub struct EthConfig {
 
 	#[serde(default = "default_asset")]
 	pub asset: String,
+
+	#[serde(default = "rest_connection_timeout_secs")]
+	pub rest_connection_timeout_secs: u64,
 }
+
+env_default!(
+	rest_connection_timeout_secs,
+	"ETH_REST_CONNECTION_TIMEOUT",
+	u64,
+	DEFAULT_REST_CONNECTION_TIMEOUT
+);
 
 env_default!(
 	default_eth_initiator_contract,
@@ -79,7 +90,7 @@ env_default!(
 );
 env_default!(
 	default_eth_move_token_contract,
-	"ETH_MOVETOKEN_CONTRACT",
+	"ETH_MOVE_TOKEN_CONTRACT",
 	String,
 	DEFAULT_ETH_MOVETOKEN_CONTRACT.to_string()
 );
@@ -142,20 +153,6 @@ pub fn default_signer_private_key() -> String {
 	env::var("ETH_SIGNER_PRIVATE_KEY").unwrap_or(random_wallet_string)
 }
 
-// impl EthConfig {
-// 	pub fn build_for_test() -> Self {
-// 		Config {
-// 			rpc_url: "http://localhost:8545".parse().unwrap(),
-// 			ws_url: "ws://localhost:8545".parse().unwrap(),
-// 			signer_private_key: PrivateKeySigner::random(),
-// 			initiator_contract: "0x1234567890abcdef1234567890abcdef12345678".to_string(),
-// 			counterparty_contract: "0x1234567890abcdef1234567890abcdef12345678".to_string(),
-// 			weth_contract: "0x1234567890abcdef1234567890abcdef12345678".to_string(),
-// 			gas_limit: 10_000_000_000,
-// 		}
-// 	}
-// }
-
 impl EthConfig {
 	pub fn eth_rpc_connection_url(&self) -> String {
 		format!(
@@ -200,6 +197,8 @@ impl Default for EthConfig {
 			transaction_send_retries: default_transaction_send_retries(),
 
 			asset: default_asset(),
+
+			rest_connection_timeout_secs: rest_connection_timeout_secs(),
 		}
 	}
 }

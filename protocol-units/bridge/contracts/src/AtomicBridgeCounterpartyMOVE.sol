@@ -4,6 +4,7 @@ pragma solidity ^0.8.22;
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {IAtomicBridgeCounterpartyMOVE} from "./IAtomicBridgeCounterpartyMOVE.sol";
 import {AtomicBridgeInitiatorMOVE} from "./AtomicBridgeInitiatorMOVE.sol";
+import {RateLimiter} from "./RateLimiter.sol";
 
 contract AtomicBridgeCounterpartyMOVE is IAtomicBridgeCounterpartyMOVE, OwnableUpgradeable {
     enum MessageState {
@@ -22,6 +23,7 @@ contract AtomicBridgeCounterpartyMOVE is IAtomicBridgeCounterpartyMOVE, OwnableU
     }
 
     AtomicBridgeInitiatorMOVE public atomicBridgeInitiatorMOVE;
+    RateLimiter public rateLimiter;
     mapping(bytes32 => BridgeTransferDetails) public bridgeTransfers;
 
     // Configurable time lock duration
@@ -45,15 +47,19 @@ contract AtomicBridgeCounterpartyMOVE is IAtomicBridgeCounterpartyMOVE, OwnableU
         counterpartyTimeLockDuration = _timeLockDuration;
     }
 
+    function setRateLimiter(address _rateLimiter) external onlyOwner {
+        if (_rateLimiter == address(0)) revert ZeroAddress();
+        rateLimiter = RateLimiter(_rateLimiter);
+    }
+
     function lockBridgeTransfer(
         bytes32 originator,
         bytes32 bridgeTransferId,
         bytes32 hashLock,
         address recipient,
         uint256 amount
-    ) external onlyOwner returns (bool) {
+    ) external onlyOwner {
         if (amount == 0) revert ZeroAmount();
-        if (atomicBridgeInitiatorMOVE.poolBalance() < amount) revert InsufficientMOVEBalance();
 
         // The time lock is now based on the configurable duration
         uint256 timeLock = block.timestamp + counterpartyTimeLockDuration;
@@ -68,7 +74,6 @@ contract AtomicBridgeCounterpartyMOVE is IAtomicBridgeCounterpartyMOVE, OwnableU
         });
 
         emit BridgeTransferLocked(bridgeTransferId, recipient, amount, hashLock, counterpartyTimeLockDuration);
-        return true;
     }
 
     function completeBridgeTransfer(bytes32 bridgeTransferId, bytes32 preImage) external {
@@ -79,8 +84,6 @@ contract AtomicBridgeCounterpartyMOVE is IAtomicBridgeCounterpartyMOVE, OwnableU
         if (block.timestamp > details.timeLock) revert TimeLockExpired();
 
         details.state = MessageState.COMPLETED;
-
-        atomicBridgeInitiatorMOVE.withdrawMOVE(details.recipient, details.amount);
 
         emit BridgeTransferCompleted(bridgeTransferId, preImage);
     }

@@ -19,8 +19,8 @@ message GetBridgeTransferDetailsRequest {
 }
 
 message BridgeTransferDetailsResponse {
-  string initiator_address = 1;
-  bytes recipient_address = 2;
+  string initiator = 1;
+  bytes recipient = 2;
   bytes hash_lock = 3;
   uint64 time_lock = 4;
   uint64 amount = 5;

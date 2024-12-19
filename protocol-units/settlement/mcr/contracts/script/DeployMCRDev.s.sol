@@ -14,6 +14,7 @@ contract DeployMCRDev is Script {
     function run() external {
         vm.startBroadcast();
 
+        console.log("hot: msg.sender: %s", msg.sender);
         MintableToken moveTokenImplementation = new MintableToken();
         MovementStaking stakingImplementation = new MovementStaking();
         MCR mcrImplementation = new MCR();
@@ -34,6 +35,8 @@ contract DeployMCRDev is Script {
             MCR.initialize, (IMovementStaking(address(movementStakingProxy)), 0, 10, 4 seconds, custodians)
         );
         address mcrProxy = address(new ERC1967Proxy(address(mcrImplementation), mcrData));
+        MCR mcr = MCR(mcrProxy);
+        mcr.grantCommitmentAdmin(msg.sender);
 
         console.log("Move Token Proxy: %s", moveTokenProxy);
         console.log("MCR Proxy: %s", mcrProxy);

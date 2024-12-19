@@ -1,0 +1,28 @@
+version: "3"
+
+environment:
+
+processes:
+  otlp-collector:
+    is_daemon: true
+    command: |
+      docker run -d --rm --name suzuka-otlp-collector -p16686:16686 -p4317:4317 -e COLLECTOR_OTLP_ENABLED=true jaegertracing/all-in-one:latest
+    shutdown:
+      command: |
+        docker stop suzuka-otlp-collector
+    readiness_probe:
+      initial_delay_seconds: 3
+      exec:
+        command: curl http://localhost:16686/api/traces
+  movement-full-node:
+    depends_on:
+      otlp-collector:
+        condition: process_started
+    environment:
+      - MOVEMENT_OTLP=http://localhost:4317
+  movement-celestia-da-light-node:
+    depends_on:
+      otlp-collector:
+        condition: process_started
+    environment:
+      - MOVEMENT_OTLP=http://localhost:4317
