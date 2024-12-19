@@ -1,5 +1,5 @@
 use aws_sdk_kms::types::{KeySpec, KeyUsageType, SigningAlgorithmSpec};
-use signer::cryptography::secp256k1::Secp256k1;
+use movement_signer::cryptography::secp256k1::Secp256k1;
 
 /// Defines the needed methods for providing a definition of cryptography used with AWS KMS
 pub trait AwsKmsCryptography {

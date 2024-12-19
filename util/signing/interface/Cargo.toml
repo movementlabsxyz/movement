@@ -1,5 +1,6 @@
 [package]
-name = "signer"
+name = "movement-signer"
+description = "Common signing API used throughout Movement"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
