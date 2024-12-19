@@ -327,19 +327,13 @@ uuid = { version = "1.10.0", features = ["v4"] }
 tar = "0.4.41"
 flate2 = "1.0.31"
 blake-3 = "1.4.0"
-ecdsa = { version = "0.16.9", features = [
-    "signing",
-    "verifying",
-    "der",
-    "pem",
-    "pkcs8",
-] }
+ecdsa = "0.16.9"
 regex = "1.10.6"
 globset = "0.4.15"
 glob = "0.3.1"
 hyper = "1.4"
-hyper-util = { version = "0.1.4"}
-tower = { version = "0.5"}
+hyper-util = { version = "0.1.4" }
+tower = { version = "0.5" }
 http-body-util = "0.1"
 
 # trying to pin diesel
