@@ -1,5 +1,5 @@
 use crate::cryptography::Curve;
-use crate::{VerifierError, VerifierOperations};
+use crate::{Verify, VerifyError};
 use anyhow::Context;
 use ring_compat::signature::{ed25519, Verifier};
 
@@ -16,21 +16,20 @@ impl Curve for Ed25519 {
 }
 
 /// Built-in verifier for Ed25519.
-#[async_trait::async_trait]
-impl VerifierOperations<Ed25519> for Ed25519 {
-	async fn verify(
+impl Verify<Ed25519> for Ed25519 {
+	fn verify(
 		&self,
 		message: &[u8],
 		signature: &Signature,
 		public_key: &PublicKey,
-	) -> Result<bool, VerifierError> {
+	) -> Result<bool, VerifyError> {
 		let verifying_key = ed25519::VerifyingKey::from_slice(&public_key.0)
-			.context("Failed to create verifying key")
-			.map_err(|e| VerifierError::Verify(e.to_string()))?;
+			.context("failed to create verifying key")
+			.map_err(|e| VerifyError(e.into()))?;
 
 		let signature = ed25519::Signature::from_slice(&signature.0)
-			.context("Failed to create signature")
-			.map_err(|e| VerifierError::Verify(e.to_string()))?;
+			.context("failed to create signature")
+			.map_err(|e| VerifyError(e.into()))?;
 
 		Ok(verifying_key.verify(message, &signature).is_ok())
 	}

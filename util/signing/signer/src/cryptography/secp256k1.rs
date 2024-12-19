@@ -1,5 +1,5 @@
 use crate::cryptography::Curve;
-use crate::{VerifierError, VerifierOperations};
+use crate::{Verify, VerifyError};
 use anyhow::Context;
 use k256::ecdsa;
 use ring_compat::signature::Verifier;
@@ -17,21 +17,20 @@ impl Curve for Secp256k1 {
 }
 
 /// Built-in verifier for secp256k1.
-#[async_trait::async_trait]
-impl VerifierOperations<Secp256k1> for Secp256k1 {
-	async fn verify(
+impl Verify<Secp256k1> for Secp256k1 {
+	fn verify(
 		&self,
 		message: &[u8],
 		signature: &Signature,
 		public_key: &PublicKey,
-	) -> Result<bool, VerifierError> {
+	) -> Result<bool, VerifyError> {
 		let verifying_key = ecdsa::VerifyingKey::from_sec1_bytes(&public_key.0)
 			.context("Failed to create verifying key")
-			.map_err(|e| VerifierError::Verify(e.to_string()))?;
+			.map_err(|e| VerifyError(e.into()))?;
 
 		let signature = ecdsa::Signature::from_slice(&signature.0)
 			.context("Failed to create signature")
-			.map_err(|e| VerifierError::Verify(e.to_string()))?;
+			.map_err(|e| VerifyError(e.into()))?;
 
 		Ok(verifying_key.verify(message, &signature).is_ok())
 	}

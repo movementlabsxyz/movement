@@ -13970,7 +13970,6 @@ name = "signer"
 version = "0.0.2"
 dependencies = [
  "anyhow",
- "async-trait",
  "ed25519 2.2.3",
  "k256",
  "ring-compat",
