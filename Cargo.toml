@@ -43,6 +43,7 @@ members = [
     "protocol-units/bridge/util",
     "benches/*",
     "util/signing/interface",
+    "util/signing/integrations/aptos",
     "util/signing/providers/aws-kms",
     "util/signing/providers/hashicorp-vault",
 ]
