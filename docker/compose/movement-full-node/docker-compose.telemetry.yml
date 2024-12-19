@@ -1,0 +1,26 @@
+services:
+  jaeger:
+    image: jaegertracing/all-in-one:1.62.0
+    container_name: jaeger
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "4317:4317"
+      - "16686:16686"
+    healthcheck:
+      test: curl http://localhost:16686/api/traces
+      start_period: 3s
+
+  movement-full-node:
+    environment:
+      - MOVEMENT_OTLP=http://jaeger:4317
+    depends_on:
+      - jaeger:
+          condition: service_healthy
+
+  movement-celestia-da-light-node:
+    environment:
+      - MOVEMENT_OTLP=http://jaeger:4317
+    depends_on:
+      - jaeger:
+          condition: service_healthy

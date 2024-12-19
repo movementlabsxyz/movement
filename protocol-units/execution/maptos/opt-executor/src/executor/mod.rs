@@ -45,7 +45,7 @@ impl Executor {
 		let mut transactions_in_flight = self.transactions_in_flight.write().unwrap();
 		let current = transactions_in_flight.get_count();
 		info!(
-			target: "movement_timing",
+			target: "movement_telemetry",
 			count,
 			current,
 			"decrementing_transactions_in_flight",

@@ -1,0 +1,35 @@
+version: "3"
+
+environment:
+
+processes:
+
+  test-telemetry:
+    command: |
+      MOVEMENT_CELESTIA_DA_LIGHT_NODE_TRACES_JSON=$(curl http://localhost:16686/api/traces?service=movement-celestia-da-light-node)
+      # expect the total field to be greater than 0
+      if [ $(echo $MOVEMENT_CELESTIA_DA_LIGHT_NODE_TRACES_JSON | jq '.total') -gt 0 ]; then
+        echo "Movement-Celestia-DA-Light-Node traces found"
+      else
+        echo "Movement-Celestia-DA-Light-Node traces not found"
+        exit 1
+      fi
+
+      MOVEMENT_TRACES_JSON=$(curl http://localhost:16686/api/traces?service=movement-full-node)
+      # expect the total field to be greater than 0
+      if [ $(echo $MOVEMENT_TRACES_JSON | jq '.total') -gt 0 ]; then
+        echo "Movement-Full-Node traces found"
+      else
+        echo "Movement-Full-Node traces not found"
+        exit 1
+      fi
+
+    depends_on:
+      otlp-collector:
+        condition: process_healthy
+      movement-full-node:
+        condition: process_healthy
+      movement-faucet:
+        condition: process_healthy
+    availability:
+      exit_on_end: true

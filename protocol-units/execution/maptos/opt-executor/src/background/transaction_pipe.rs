@@ -24,7 +24,7 @@ use movement_collections::garbage::counted::GcCounter;
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
-use tracing::{debug, info, info_span, warn, Instrument};
+use tracing::{debug, info, info_span, Instrument};
 
 const GC_INTERVAL: Duration = Duration::from_secs(30);
 const TOO_NEW_TOLERANCE: u64 = 32;
@@ -109,8 +109,11 @@ impl TransactionPipe {
 		if let Some(request) = next {
 			match request {
 				MempoolClientRequest::SubmitTransaction(transaction, callback) => {
+					// Instrumentation for aggregated metrics:
+					// Transactions per second: https://github.com/movementlabsxyz/movement/discussions/422
+					// Transaction latency: https://github.com/movementlabsxyz/movement/discussions/423
 					let span = info_span!(
-						target: "movement_timing",
+						target: "movement_telemetry",
 						"submit_transaction",
 						tx_hash = %transaction.committed_hash(),
 						sender = %transaction.sender(),
@@ -227,14 +230,18 @@ impl TransactionPipe {
 			transactions_in_flight.get_count()
 		};
 		info!(
-			target: "movement_timing",
+			target: "movement_telemetry",
 			in_flight = %in_flight,
 			"transactions_in_flight"
 		);
 		if let Some(inflight_limit) = self.in_flight_limit {
 			if in_flight >= inflight_limit {
+				// Instrumentation for aggregated metrics:
+				// Transaction failure rate: https://github.com/movementlabsxyz/movement/discussions/428
+				// The arguments for identifying the transaction are present on the current
+				// "submit_transaction" span.
 				info!(
-					target: "movement_timing",
+					target: "movement_telemetry",
 					"shedding_load"
 				);
 				let status = MempoolStatus::new(MempoolStatusCode::MempoolIsFull);
@@ -262,6 +269,16 @@ impl TransactionPipe {
 		let sequence_number = match self.has_invalid_sequence_number(&transaction)? {
 			SequenceNumberValidity::Valid(sequence_number) => sequence_number,
 			SequenceNumberValidity::Invalid(status) => {
+				// Instrumentation for aggregated metrics:
+				// Transaction failure rate: https://github.com/movementlabsxyz/movement/discussions/428
+				// The arguments for identifying the transaction are present on the current
+				// "submit_transaction" span.
+				info!(
+					target: "movement_telemetry",
+					status = %status.0,
+					code = ?status.1,
+					"sequence_number_invalid",
+				);
 				return Ok(status);
 			}
 		};
@@ -305,7 +322,11 @@ impl TransactionPipe {
 				);
 			}
 			_ => {
-				warn!("Transaction not accepted: {:?}", status);
+				// Instrumentation for aggregated metrics:
+				// Transaction failure rate: https://github.com/movementlabsxyz/movement/discussions/428
+				// The arguments for identifying the transaction are present on the current
+				// "submit_transaction" span.
+				info!(target: "movement_telemetry", %status, "rejected_by_mempool");
 			}
 		}
 
