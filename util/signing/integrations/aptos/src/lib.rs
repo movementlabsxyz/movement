@@ -6,13 +6,12 @@ use movement_signer::{cryptography::ed25519::Ed25519, Signer, SignerError};
 use std::future::Future;
 
 #[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
 pub enum Error {
 	#[error("failed to produce signing material")]
 	CryptoMaterial(#[from] CryptoMaterialError),
-	#[error("failed to obtain public key")]
-	PublicKey(#[source] SignerError),
-	#[error("failed to sign message")]
-	Signing(#[source] SignerError),
+	#[error(transparent)]
+	Signer(#[from] SignerError),
 }
 
 pub trait TransactionSigner: Sync {
@@ -41,13 +40,13 @@ where
 	T: Signer<Ed25519> + Sync,
 {
 	async fn sign_transaction_bytes(&self, bytes: &[u8]) -> Result<Ed25519Signature, Error> {
-		let signature = self.sign(bytes).await.map_err(Error::Signing)?;
+		let signature = self.sign(bytes).await?;
 		let signature = signature.as_bytes().try_into()?;
 		Ok(signature)
 	}
 
 	async fn public_key(&self) -> Result<Ed25519PublicKey, Error> {
-		let key = <Self as Signer<Ed25519>>::public_key(self).await.map_err(Error::PublicKey)?;
+		let key = <Self as Signer<Ed25519>>::public_key(self).await?;
 		let key = key.as_bytes().try_into()?;
 		Ok(key)
 	}
