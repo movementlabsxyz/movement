@@ -985,7 +985,7 @@ jobs:
         ref: main
         token: ${{ secrets.INFRA_GH_TOKEN }}
         repo: movement-infra/cdktf-mvmt-networks
-        workflow: update-container-tag.yml
+        workflow: environment-deploy.yml
         inputs: '{"environment":"devNet","containerTag":"${{ github.sha }}"}'
 
   
