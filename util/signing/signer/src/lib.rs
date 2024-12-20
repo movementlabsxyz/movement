@@ -29,7 +29,7 @@ pub struct KeyId {
 
 /// A public key.
 #[derive(Debug, Clone)]
-pub struct PublicKey<C> {
+pub struct PublicKey<C: cryptography::Curve> {
 	pub key_id: KeyId,
 	pub curve: C,
 	pub data: Bytes,
@@ -104,22 +104,6 @@ impl KeyManager {
 		&self,
 		key_id: KeyId,
 	) -> Result<Box<dyn SignerOperationsSync<C>>, SignerError> {
-		todo!()
-	}
-
-	/// Get async signer for a key.
-	pub fn get_async_verifier<C: cryptography::Curve>(
-		&self,
-		key_id: KeyId,
-	) -> Result<Box<dyn VerifierOperations<C>>, SignerError> {
-		todo!()
-	}
-
-	/// Get sync signer for a key.
-	pub fn get_sync_verifier<C: cryptography::Curve>(
-		&self,
-		key_id: KeyId,
-	) -> Result<Box<dyn VerifierOperationsSync<C>>, SignerError> {
 		todo!()
 	}
 }

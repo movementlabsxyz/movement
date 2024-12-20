@@ -13,7 +13,7 @@ impl Curve for Secp256k1 {}
 
 /// Built-in verifier for secp256k1.
 #[async_trait::async_trait]
-impl VerifierOperations<Secp256k1> for Secp256k1 {
+impl VerifierOperations<Secp256k1> for PublicKey<Secp256k1> {
 	async fn verify(
 		&self,
 		message: Bytes,

@@ -14,7 +14,7 @@ impl Curve for Ed25519 {}
 
 /// Built-in verifier for Ed25519.
 #[async_trait::async_trait]
-impl VerifierOperations<Ed25519> for Ed25519 {
+impl VerifierOperations<Ed25519> for PublicKey<Ed25519> {
 	async fn verify(
 		&self,
 		message: Bytes,
