@@ -1014,9 +1014,9 @@ jobs:
 
         # Setting the output for other steps in the same job
         echo "run_name=$run_name" >> $GITHUB_OUTPUT
-        echo "run_id=$run_id" >> $GITHUB_OUTPUT
+        echo "run_id=${run_id}" >> $GITHUB_OUTPUT
         echo "run_url=$run_url" >> $GITHUB_OUTPUT
-        echo '### [$run_name]($run_url)' >> $GITHUB_STEP_SUMMARY
+        echo "### [${run_name}](${run_url})" >> $GITHUB_STEP_SUMMARY
     - name: Wait for the deployment to complete
       id: wait
       env:
@@ -1039,10 +1039,10 @@ jobs:
               completion_msg="❌ Deployment failed, please check workflow for errors."
               # exit 1
             fi
-            echo "$completion_msg"
-            echo "completion_code=$completion_code" >> $GITHUB_OUTPUT
-            echo "completion_msg=$completion_msg" >> $GITHUB_OUTPUT
-            echo '### $completion_msg' >> $GITHUB_STEP_SUMMARY
+            echo "${completion_msg}"
+            echo "completion_code=${completion_code}" >> $GITHUB_OUTPUT
+            echo "completion_msg=${completion_msg}" >> $GITHUB_OUTPUT
+            echo '### ${completion_msg}' >> $GITHUB_STEP_SUMMARY
             break
           elif [ "$job_status" = "queued" ]; then
             echo "⚫ Job queued, waiting for it to start..."
