@@ -975,11 +975,15 @@ jobs:
         run: |
           ./scripts/movement/manifest helios
 
-  deploy-to-devNet:
+  deploy-trigger:
     # if: github.event.label.name == 'cicd:movement-containers' ||  github.ref == 'refs/heads/main'
     # needs: [container-checks]
-    name: Deploy to devNet
+    name: Trigger devNet deployment
     runs-on: ubuntu-latest
+    outputs:
+      run_id: ${{ steps.get_run_id.outputs.run_id }}
+      run_url: ${{ steps.get_run_id.outputs.run_url }}
+      run_name: ${{ steps.get_run_id.outputs.run_name }}
     steps:
     - name: Dispatch Workflow
       id: deploy
@@ -1017,12 +1021,18 @@ jobs:
         echo "run_id=${run_id}" >> $GITHUB_OUTPUT
         echo "run_url=$run_url" >> $GITHUB_OUTPUT
         echo "### [${run_name}](${run_url})" >> $GITHUB_STEP_SUMMARY
+  deploy-status:
+    # if: github.event.label.name == 'cicd:movement-containers' ||  github.ref == 'refs/heads/main'
+    needs: [deploy-trigger]
+    name: Deployment Status
+    runs-on: ubuntu-latest
+    steps:
     - name: Wait for the deployment to complete
       id: wait
       env:
         OWNER: movement-infra
         REPO: cdktf-mvmt-networks
-        RUN_ID: ${{ steps.get_run_id.outputs.run_id }}
+        RUN_ID: ${{ needs.deploy-trigger.outputs.run_id }}
         TOKEN: ${{ secrets.INFRA_GH_TOKEN }}
       run: |
         API_URL="https://api.github.com/repos/${OWNER}/${REPO}/actions/runs/${RUN_ID}"
