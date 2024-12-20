@@ -999,7 +999,7 @@ jobs:
       id: get_run_id
       run: |
         API_URL="https://api.github.com/repos/${OWNER}/${REPO}/actions/workflows/${WORKFLOW_ID}/runs?branch=${BRANCH}&status=in_progress&per_page=1"
-        sleep 15
+        sleep 30
         run_data=$(curl -sSL -H "Accept: application/vnd.github.v3+json" \
           -H "Authorization: token ${{ secrets.INFRA_GH_TOKEN }}" \
           "$API_URL")
