@@ -975,11 +975,14 @@ jobs:
         run: |
           ./scripts/movement/manifest helios
 
-  update-infra-container-tag:
-    name: Update Infra Container Tag
+  deploy-to-devNet:
+    # if: github.event.label.name == 'cicd:movement-containers' ||  github.ref == 'refs/heads/main'
+    # needs: [container-checks]
+    name: Deploy to devNet
     runs-on: ubuntu-latest
     steps:
     - name: Dispatch Workflow
+      id: deploy
       uses: benc-uk/workflow-dispatch@v1
       with:
         ref: main
@@ -987,5 +990,7 @@ jobs:
         repo: movement-infra/cdktf-mvmt-networks
         workflow: environment-deploy.yml
         inputs: '{"environment":"devNet","containerTag":"${{ github.sha }}"}'
+    - name: Add link to summary
+      run: echo "${{ steps.deploy.outputs.workflow_url }}"
 
   
