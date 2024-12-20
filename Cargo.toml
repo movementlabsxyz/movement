@@ -41,6 +41,11 @@ members = [
     "protocol-units/bridge/indexer-db",
     "protocol-units/bridge/util",
     "benches/*",
+    "util/signing/interface",
+    "util/signing/integrations/aptos",
+    "util/signing/providers/aws-kms",
+    "util/signing/providers/hashicorp-vault",
+    "demo/hsm"
 ]
 
 [workspace.package]
@@ -112,6 +117,17 @@ movement-collections = { path = "util/collections" }
 whitelist = { path = "util/whitelist" }
 ## access control
 aptos-account-whitelist = { path = "protocol-units/access-control/aptos/account-whitelist" }
+
+# signing
+movement-signer = { path = "util/signing/interface" }
+movement-signer-aws-kms = { path = "util/signing/providers/aws-kms" }
+movement-signer-hashicorp-vault = { path = "util/signing/providers/hashicorp-vault" }
+
+## vault
+vaultrs = { version = "0.7.3" }
+aws-sdk-kms = "1.51.0"
+google-cloud-kms = "0.6.0"
+base64 = { version = "0.13.0" }
 
 # Serialization and Deserialization
 borsh = { version = "0.10" } # todo: internalize jmt and bump
@@ -285,7 +301,9 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-test = "0.2.5"
 trie-db = "0.28.0"
 url = "2.2.2"
-x25519-dalek = "1.0.1"
+ed25519-dalek = "2.1"
+ed25519 = "2.2.3"
+ring-compat = "0.8.0"
 zstd-sys = "2.0.9"
 zstd = "0.13"
 inotify = "0.10.2"
@@ -295,13 +313,7 @@ uuid = { version = "1.10.0", features = ["v4"] }
 tar = "0.4.41"
 flate2 = "1.0.31"
 blake-3 = "1.4.0"
-ecdsa = { version = "0.16.9", features = [
-    "signing",
-    "verifying",
-    "der",
-    "pem",
-    "pkcs8",
-] }
+ecdsa = "0.16.9"
 regex = "1.10.6"
 globset = "0.4.15"
 glob = "0.3.1"
