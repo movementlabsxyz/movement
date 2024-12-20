@@ -4,7 +4,7 @@ use anyhow::Context;
 use ring_compat::signature::{ed25519, Verifier};
 
 /// The Ed25519 curve.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Ed25519;
 
 fixed_size!(pub struct PublicKey([u8; 32]));

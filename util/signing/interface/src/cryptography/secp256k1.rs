@@ -5,7 +5,7 @@ use k256::ecdsa;
 use ring_compat::signature::Verifier;
 
 /// The secp256k1 elliptic curve.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Secp256k1;
 
 fixed_size!(pub struct PublicKey([u8; 32]));
