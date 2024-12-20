@@ -12,11 +12,9 @@ rust-version.workspace = true
 
 [dependencies]
 thiserror = { workspace = true }
-ed25519 = { workspace = true }
-ring-compat = { workspace = true }
+ed25519-dalek = { workspace = true }
 k256 = { workspace = true, features = ["ecdsa"] }
 anyhow = { workspace = true }
-
 
 [lints]
 workspace = true

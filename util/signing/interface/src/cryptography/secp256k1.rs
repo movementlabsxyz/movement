@@ -1,8 +1,7 @@
 use crate::cryptography::Curve;
 use crate::{Verify, VerifyError};
 use anyhow::Context;
-use k256::ecdsa;
-use ring_compat::signature::Verifier;
+use k256::ecdsa::{self, signature::Verifier};
 
 /// The secp256k1 elliptic curve.
 #[derive(Debug, Clone, Copy)]

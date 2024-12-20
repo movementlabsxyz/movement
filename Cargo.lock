@@ -1134,10 +1134,10 @@ dependencies = [
  "blst",
  "bulletproofs",
  "bytes 1.8.0",
- "curve25519-dalek",
+ "curve25519-dalek 3.2.0",
  "curve25519-dalek-ng",
  "digest 0.9.0",
- "ed25519-dalek",
+ "ed25519-dalek 1.0.1",
  "ff 0.13.0",
  "hex",
  "hkdf 0.10.0",
@@ -3606,11 +3606,7 @@ dependencies = [
  "pin-project-lite",
  "rustversion",
  "serde",
- "serde_json",
- "serde_path_to_error",
- "serde_urlencoded",
  "sync_wrapper 0.1.2",
- "tokio",
  "tower 0.4.13",
  "tower-layer",
  "tower-service",
@@ -5522,6 +5518,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "curve25519-dalek"
+version = "4.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "97fb8b7c4503de7d6ae7b42ab72a5a59857b4c937ec27a3d4539dba95b5ab2be"
+dependencies = [
+ "cfg-if",
+ "cpufeatures",
+ "curve25519-dalek-derive",
+ "digest 0.10.7",
+ "fiat-crypto",
+ "rustc_version 0.4.1",
+ "subtle",
+ "zeroize",
+]
+
+[[package]]
+name = "curve25519-dalek-derive"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f46882e17999c6cc590af592290432be3bce0428cb0d5f8b6715e4dc7b383eb3"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.87",
+]
+
+[[package]]
 name = "curve25519-dalek-ng"
 version = "4.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6160,12 +6183,26 @@ version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c762bae6dcaf24c4c84667b8579785430908723d5c889f469d76a41d59cc7a9d"
 dependencies = [
- "curve25519-dalek",
+ "curve25519-dalek 3.2.0",
  "ed25519 1.5.3",
  "rand 0.7.3",
  "serde",
  "serde_bytes",
  "sha2 0.9.9",
+ "zeroize",
+]
+
+[[package]]
+name = "ed25519-dalek"
+version = "2.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4a3daa8e81a3963a60642bcc1f90a670680bd4a77535faa384e9d1c79d620871"
+dependencies = [
+ "curve25519-dalek 4.1.3",
+ "ed25519 2.2.3",
+ "serde",
+ "sha2 0.10.8",
+ "subtle",
  "zeroize",
 ]
 
@@ -6176,7 +6213,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9d2be62a4061b872c8c0873ee4fc6f101ce7b889d039f019c5fa2af471a59908"
 dependencies = [
  "derivation-path",
- "ed25519-dalek",
+ "ed25519-dalek 1.0.1",
  "hmac 0.12.1",
  "sha2 0.10.8",
 ]
@@ -6463,6 +6500,12 @@ dependencies = [
  "quote",
  "syn 1.0.109",
 ]
+
+[[package]]
+name = "fiat-crypto"
+version = "0.2.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "28dea519a9695b9977216879a3ebfddf92f1c08c05d984f8996aecd6ecdc811d"
 
 [[package]]
 name = "field_count"
@@ -6987,33 +7030,11 @@ checksum = "931bedb2264cb00f914b0a6a5c304e34865c34306632d3932e0951a073e4a67d"
 dependencies = [
  "async-trait",
  "base64 0.21.7",
- "google-cloud-metadata 0.3.2",
+ "google-cloud-metadata",
  "google-cloud-token",
  "home",
  "jsonwebtoken 8.3.0",
  "reqwest 0.11.27",
- "serde",
- "serde_json",
- "thiserror 1.0.69",
- "time",
- "tokio",
- "tracing",
- "urlencoding",
-]
-
-[[package]]
-name = "google-cloud-auth"
-version = "0.17.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e57a13fbacc5e9c41ded3ad8d0373175a6b7a6ad430d99e89d314ac121b7ab06"
-dependencies = [
- "async-trait",
- "base64 0.21.7",
- "google-cloud-metadata 0.5.0",
- "google-cloud-token",
- "home",
- "jsonwebtoken 9.3.0",
- "reqwest 0.12.9",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
@@ -7040,22 +7061,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "google-cloud-gax"
-version = "0.19.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "de13e62d7e0ffc3eb40a0113ddf753cf6ec741be739164442b08893db4f9bfca"
-dependencies = [
- "google-cloud-token",
- "http 1.1.0",
- "thiserror 1.0.69",
- "tokio",
- "tokio-retry2",
- "tonic 0.12.3",
- "tower 0.4.13",
- "tracing",
-]
-
-[[package]]
 name = "google-cloud-googleapis"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7064,34 +7069,6 @@ dependencies = [
  "prost 0.11.9",
  "prost-types 0.11.9",
  "tonic 0.9.2",
-]
-
-[[package]]
-name = "google-cloud-googleapis"
-version = "0.16.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0edfdfb507593d47605b3bb2fb36628b391e3d397e520b85852dea2412c8e2d1"
-dependencies = [
- "prost 0.13.3",
- "prost-types 0.13.3",
- "tonic 0.12.3",
-]
-
-[[package]]
-name = "google-cloud-kms"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e8842723521d34b9bf43305c84fd469c4d1858c42a630e1cb8c0d9c53781551"
-dependencies = [
- "google-cloud-auth 0.17.2",
- "google-cloud-gax 0.19.2",
- "google-cloud-googleapis 0.16.0",
- "google-cloud-token",
- "prost-types 0.13.3",
- "serde",
- "serde_json",
- "thiserror 1.0.69",
- "tracing",
 ]
 
 [[package]]
@@ -7106,17 +7083,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "google-cloud-metadata"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "04f945a208886a13d07636f38fb978da371d0abc3e34bad338124b9f8c135a8f"
-dependencies = [
- "reqwest 0.12.9",
- "thiserror 1.0.69",
- "tokio",
-]
-
-[[package]]
 name = "google-cloud-pubsub"
 version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7124,9 +7090,9 @@ checksum = "095b104502b6e1abbad9b9768af944b9202e032dbc7f0947d3c30d4191761071"
 dependencies = [
  "async-channel",
  "async-stream",
- "google-cloud-auth 0.12.0",
- "google-cloud-gax 0.15.0",
- "google-cloud-googleapis 0.10.0",
+ "google-cloud-auth",
+ "google-cloud-gax",
+ "google-cloud-googleapis",
  "google-cloud-token",
  "prost-types 0.11.9",
  "thiserror 1.0.69",
@@ -7145,8 +7111,8 @@ dependencies = [
  "base64 0.21.7",
  "bytes 1.8.0",
  "futures-util",
- "google-cloud-auth 0.12.0",
- "google-cloud-metadata 0.3.2",
+ "google-cloud-auth",
+ "google-cloud-metadata",
  "google-cloud-token",
  "hex",
  "once_cell",
@@ -7516,30 +7482,6 @@ dependencies = [
  "tracing",
  "tracing-subscriber 0.3.18",
  "url",
-]
-
-[[package]]
-name = "hsm-demo"
-version = "0.0.2"
-dependencies = [
- "anyhow",
- "async-trait",
- "aws-config",
- "aws-sdk-kms",
- "axum 0.6.20",
- "base64 0.13.1",
- "clap 4.5.21",
- "dotenv",
- "ed25519 2.2.3",
- "google-cloud-kms",
- "k256",
- "rand 0.7.3",
- "reqwest 0.12.9",
- "ring-compat",
- "serde",
- "serde_json",
- "tokio",
- "vaultrs",
 ]
 
 [[package]]
@@ -10471,9 +10413,8 @@ name = "movement-signer"
 version = "0.0.2"
 dependencies = [
  "anyhow",
- "ed25519 2.2.3",
+ "ed25519-dalek 2.1.1",
  "k256",
- "ring-compat",
  "thiserror 1.0.69",
 ]
 
@@ -12028,7 +11969,7 @@ dependencies = [
  "field_count",
  "futures",
  "futures-util",
- "google-cloud-googleapis 0.10.0",
+ "google-cloud-googleapis",
  "google-cloud-pubsub",
  "google-cloud-storage",
  "hex",
@@ -12921,25 +12862,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ring-compat"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ccce7bae150b815f0811db41b8312fcb74bffa4cab9cee5429ee00f356dd5bd4"
-dependencies = [
- "aead",
- "digest 0.10.7",
- "ecdsa 0.16.9",
- "ed25519 2.2.3",
- "generic-array",
- "p256 0.13.2",
- "p384",
- "pkcs8 0.10.2",
- "rand_core 0.6.4",
- "ring 0.17.8",
- "signature 2.2.0",
-]
-
-[[package]]
 name = "ripemd"
 version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -13669,16 +13591,6 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 1.0.69",
-]
-
-[[package]]
-name = "serde_path_to_error"
-version = "0.1.16"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af99884400da37c88f5e9146b7f1fd0fbcae8f6eec4e9da38b67d05486f814a6"
-dependencies = [
- "itoa",
- "serde",
 ]
 
 [[package]]
@@ -14900,16 +14812,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tokio-retry2"
-version = "0.5.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "903934dba1c4c2f2e9cb460ef10b5695e0b0ecad3bf9ee7c8675e540c5e8b2d1"
-dependencies = [
- "pin-project 1.1.7",
- "tokio",
-]
-
-[[package]]
 name = "tokio-rustls"
 version = "0.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -15137,7 +15039,6 @@ dependencies = [
  "axum 0.7.9",
  "base64 0.22.1",
  "bytes 1.8.0",
- "flate2",
  "h2 0.4.6",
  "http 1.1.0",
  "http-body 1.0.1",
@@ -15148,16 +15049,13 @@ dependencies = [
  "percent-encoding",
  "pin-project 1.1.7",
  "prost 0.13.3",
- "rustls-pemfile 2.2.0",
  "socket2 0.5.7",
  "tokio",
- "tokio-rustls 0.26.0",
  "tokio-stream",
  "tower 0.4.13",
  "tower-layer",
  "tower-service",
  "tracing",
- "webpki-roots 0.26.6",
 ]
 
 [[package]]
@@ -16491,7 +16389,7 @@ name = "x25519-dalek"
 version = "1.2.0"
 source = "git+https://github.com/aptos-labs/x25519-dalek?branch=zeroize_v1#762a9501668d213daa4a1864fa1f9db22716b661"
 dependencies = [
- "curve25519-dalek",
+ "curve25519-dalek 3.2.0",
  "rand_core 0.5.1",
  "zeroize",
 ]

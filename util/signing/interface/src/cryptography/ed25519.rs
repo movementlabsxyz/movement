@@ -1,7 +1,7 @@
 use crate::cryptography::Curve;
 use crate::{Verify, VerifyError};
 use anyhow::Context;
-use ring_compat::signature::{ed25519, Verifier};
+use ed25519_dalek::Verifier as _;
 
 /// The Ed25519 curve.
 #[derive(Debug, Clone, Copy)]
@@ -23,13 +23,11 @@ impl Verify<Ed25519> for Ed25519 {
 		signature: &Signature,
 		public_key: &PublicKey,
 	) -> Result<bool, VerifyError> {
-		let verifying_key = ed25519::VerifyingKey::from_slice(&public_key.0)
+		let verifying_key = ed25519_dalek::VerifyingKey::from_bytes(&public_key.0)
 			.context("failed to create verifying key")
 			.map_err(|e| VerifyError(e.into()))?;
 
-		let signature = ed25519::Signature::from_slice(&signature.0)
-			.context("failed to create signature")
-			.map_err(|e| VerifyError(e.into()))?;
+		let signature = ed25519_dalek::Signature::from_bytes(&signature.0);
 
 		Ok(verifying_key.verify(message, &signature).is_ok())
 	}
