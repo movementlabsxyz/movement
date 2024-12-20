@@ -12,6 +12,8 @@ rust-version = { workspace = true }
 [dependencies]
 movement-signer = { workspace = true }
 vaultrs = { workspace = true }
+base64 = { workspace = true }
+anyhow = { workspace = true }
 
 [lints]
 workspace = true

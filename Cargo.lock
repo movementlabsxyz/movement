@@ -10430,6 +10430,8 @@ dependencies = [
 name = "movement-signer-hashicorp-vault"
 version = "0.0.2"
 dependencies = [
+ "anyhow",
+ "base64 0.13.1",
  "movement-signer",
  "vaultrs",
 ]
