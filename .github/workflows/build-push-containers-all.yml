@@ -1010,7 +1010,6 @@ jobs:
 
         echo "Workflow Run Info"
         echo "NAME: $run_name"
-        echo "TITLE: $run_title"
         echo "ID: $run_id"
         echo "URL: $run_url"
 
@@ -1019,7 +1018,7 @@ jobs:
         echo "run_title=$run_title" >> $GITHUB_OUTPUT
         echo "run_id=$run_id" >> $GITHUB_OUTPUT
         echo "run_url=$run_url" >> $GITHUB_OUTPUT
-        echo '### [$run_title]($run_url)' >> $GITHUB_STEP_SUMMARY
+        echo '### [$run_name]($run_url)' >> $GITHUB_STEP_SUMMARY
     - name: Wait for the deployment to complete
       id: wait
       run: |
@@ -1029,9 +1028,9 @@ jobs:
             -H "Authorization: token ${{ secrets.INFRA_GH_TOKEN }}" \
             "$API_URL")
           job_status=$(echo "$job_data" | jq -r '.status')
-          echo "Waiting for job to complete..."
+          echo "Run $job_status..."
           if [ "$job_status" = "completed" ]; then
-            echo "Job completed!"
+            echo "Job $job_status with conclusion of $job_conclusion!"
             break
           fi
           sleep 10
