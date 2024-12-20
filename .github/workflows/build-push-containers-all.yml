@@ -1004,7 +1004,6 @@ jobs:
           -H "Authorization: token ${{ secrets.INFRA_GH_TOKEN }}" \
           "$API_URL")
         run_name=$(echo "$run_data" | jq -r '.workflow_runs[0].name')
-        run_title=$(echo "$run_data" | jq -r '.workflow_runs[0].display_title')
         run_id=$(echo "$run_data" | jq -r '.workflow_runs[0].id')
         run_url=$(echo "$run_data" | jq -r '.workflow_runs[0].html_url')
 
@@ -1015,43 +1014,38 @@ jobs:
 
         # Setting the output for other steps in the same job
         echo "run_name=$run_name" >> $GITHUB_OUTPUT
-        echo "run_title=$run_title" >> $GITHUB_OUTPUT
         echo "run_id=$run_id" >> $GITHUB_OUTPUT
         echo "run_url=$run_url" >> $GITHUB_OUTPUT
         echo '### [$run_name]($run_url)' >> $GITHUB_STEP_SUMMARY
     - name: Wait for the deployment to complete
       id: wait
+      env:
+        RUN_ID: ${{ steps.get_run_id.outputs.run_id }}
+        TOKEN: ${{ secrets.INFRA_GH_TOKEN }}
       run: |
-        API_URL="https://api.github.com/repos/${OWNER}/${REPO}/actions/runs/${{ steps.get_run_id.outputs.run_id }}"
+        API_URL="https://api.github.com/repos/${OWNER}/${REPO}/actions/runs/${run_id}"
         while true; do
           job_data=$(curl -sSL -H "Accept: application/vnd.github.v3+json" \
-            -H "Authorization: token ${{ secrets.INFRA_GH_TOKEN }}" \
+            -H "Authorization: token ${TOKEN}" \
             "$API_URL")
           job_status=$(echo "$job_data" | jq -r '.status')
           echo "Run $job_status..."
           if [ "$job_status" = "completed" ]; then
-            echo "Job $job_status with conclusion of $job_conclusion!"
+            completion_code=$(echo "$job_data" | jq -r '.conclusion')
+            if [ "$completion_code" = "success" ]; then
+              completion_msg="✅ Deployment was successful"
+            else
+              completion_msg="❌ Deployment failed, please check workflow for errors."
+              # exit 1
+            fi
+            echo "completion_code=$completion_code" >> $GITHUB_OUTPUT
+            echo "completion_msg=$completion_msg" >> $GITHUB_OUTPUT
+            echo '### $completion_msg' >> $GITHUB_STEP_SUMMARY
+            break
+          fi
+          if [ "$job_status" != "in_progress" ] || [ "$job_status" != "completed" ]; then
+            echo "Job failed with unknown status"
             break
           fi
           sleep 10
         done
-    - name: Get the deployment job status
-      id: get_job_status
-      run: |
-        API_URL="https://api.github.com/repos/${OWNER}/${REPO}/actions/runs/${{ steps.get_run_id.outputs.run_id }}"
-        job_data=$(curl -sSL -H "Accept: application/vnd.github.v3+json" \
-          -H "Authorization: token ${{ secrets.INFRA_GH_TOKEN }}" \
-          "$API_URL")
-        status_code=$(echo "$job_data" | jq -r '.conclusion')
-        if [ "$status_code" = "success" ]; then
-          status_msg="✅ Deployment was successful"
-          
-        else
-          status_msg="❌ Deployment failed, please check workflow for errors."
-          # exit 1
-        fi
-        echo "$status_code"
-        echo "$status_msg"
-        echo "status_code=$status_code" >> $GITHUB_OUTPUT
-        echo "status_msg=$status_msg" >> $GITHUB_OUTPUT
-        echo '### $status_msg' >> $GITHUB_STEP_SUMMARY
