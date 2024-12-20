@@ -976,8 +976,8 @@ jobs:
           ./scripts/movement/manifest helios
 
   deploy-trigger:
-    # if: github.event.label.name == 'cicd:movement-containers' ||  github.ref == 'refs/heads/main'
-    # needs: [container-checks]
+    if: github.event.label.name == 'cicd:movement-containers' ||  github.ref == 'refs/heads/main'
+    needs: [container-checks]
     name: Trigger devNet deployment
     runs-on: ubuntu-latest
     outputs:
@@ -1021,10 +1021,10 @@ jobs:
         echo "run_id=${run_id}" >> $GITHUB_OUTPUT
         echo "run_url=$run_url" >> $GITHUB_OUTPUT
         echo "### [${run_name}](${run_url})" >> $GITHUB_STEP_SUMMARY
-  deploy-status:
-    # if: github.event.label.name == 'cicd:movement-containers' ||  github.ref == 'refs/heads/main'
+  deploy-check:
+    if: github.event.label.name == 'cicd:movement-containers' ||  github.ref == 'refs/heads/main'
     needs: [deploy-trigger]
-    name: Deployment Status
+    name: Deployment Check
     runs-on: ubuntu-latest
     steps:
     - name: Wait for the deployment to complete
