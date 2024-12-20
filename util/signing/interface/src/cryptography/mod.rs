@@ -29,6 +29,8 @@ macro_rules! fixed_size {
 pub mod ed25519;
 pub mod secp256k1;
 
+use std::error::Error;
+
 pub trait TryFromBytes: Sized {
 	fn try_from_bytes(bytes: &[u8]) -> Result<Self, anyhow::Error>;
 }
@@ -41,3 +43,8 @@ pub trait Curve {
 	type PublicKey: TryFromBytes;
 	type Signature;
 }
+
+/// Errors that occur when parsing signature or key material from byte sequences.
+#[derive(Debug, thiserror::Error)]
+#[error(transparent)]
+pub struct CryptoMaterialError(Box<dyn Error + Send + Sync>);

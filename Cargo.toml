@@ -3,6 +3,8 @@
 resolver = "2"
 
 members = [
+    # FIXME: do we still need the demo?
+    "demo/hsm",
     "protocol-units/bridge/config",
     "protocol-units/bridge/setup",
     "protocol-units/execution/maptos/dof",
@@ -45,7 +47,7 @@ members = [
     "util/signing/integrations/aptos",
     "util/signing/providers/aws-kms",
     "util/signing/providers/hashicorp-vault",
-    "demo/hsm"
+    "util/signing/testing",
 ]
 
 [workspace.package]

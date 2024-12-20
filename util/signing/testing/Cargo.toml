@@ -1,0 +1,18 @@
+[package]
+name = "movement-signer-test"
+description = "Test support for Movement signing API"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+movement-signer = { workspace = true }
+ed25519-dalek = { workspace = true }
+
+[lints]
+workspace = true
