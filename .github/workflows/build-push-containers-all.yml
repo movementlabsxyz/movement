@@ -1014,7 +1014,7 @@ jobs:
         echo "run_url=$run_url" >> $GITHUB_OUTPUT
     - name: Add the url to the job summary
       run: |
-        echo "Deployment workflow run: ${{ steps.get_run_id.outputs.run_url }}"
+        echo '### [Deployment Pipeline](${{ steps.get_run_id.outputs.run_url }})' >> $GITHUB_STEP_SUMMARY
       
 
   
