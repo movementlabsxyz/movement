@@ -998,8 +998,8 @@ jobs:
         BRANCH: main
       id: get_run_id
       run: |
-        sleep 30
         API_URL="https://api.github.com/repos/${OWNER}/${REPO}/actions/workflows/${WORKFLOW_ID}/runs?branch=${BRANCH}&status=in_progress&per_page=1"
+        sleep 15
         run_data=$(curl -sSL -H "Accept: application/vnd.github.v3+json" \
           -H "Authorization: token ${{ secrets.INFRA_GH_TOKEN }}" \
           "$API_URL")
@@ -1031,7 +1031,6 @@ jobs:
             -H "Authorization: token ${TOKEN}" \
             "$API_URL")
           job_status=$(echo "$job_data" | jq -r '.status')
-          echo "Run $job_status..."
           if [ "$job_status" = "completed" ]; then
             completion_code=$(echo "$job_data" | jq -r '.conclusion')
             if [ "$completion_code" = "success" ]; then
@@ -1040,14 +1039,19 @@ jobs:
               completion_msg="❌ Deployment failed, please check workflow for errors."
               # exit 1
             fi
+            echo "$completion_msg"
             echo "completion_code=$completion_code" >> $GITHUB_OUTPUT
             echo "completion_msg=$completion_msg" >> $GITHUB_OUTPUT
             echo '### $completion_msg' >> $GITHUB_STEP_SUMMARY
             break
-          fi
-          if [ "$job_status" != "in_progress" ] || [ "$job_status" != "completed" ]; then
-            echo "Job failed with unknown status"
+          elif [ "$job_status" = "queued" ]; then
+            echo "⚫ Job queued, waiting for it to start..."
             break
+          elif [ "$job_status" != "completed" ] && [ "$job_status" != 'in_progress' ]; then
+            echo "❌ Job failed with unknown status"
+            break
+          else
+            echo "⚪ Job is still running..."
           fi
-          sleep 10
+          sleep 15
         done
