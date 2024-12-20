@@ -1,31 +1,12 @@
 pub mod cryptography;
 
-/// A collection of bytes.
-#[derive(Debug, Clone)]
-pub struct Bytes(pub Vec<u8>);
-
-/// A signature.
-#[derive(Debug, Clone)]
-pub struct Signature(pub Bytes);
-
-/// A public key.
-#[derive(Debug, Clone)]
-pub struct PublicKey(pub Bytes);
-
-/// Version of a key.
-/// Default mean the current key.
-#[derive(Debug, Clone, Default)]
-pub struct KeyVersion(pub String);
-
-/// Id that identify a Key.
-#[derive(Debug, Clone)]
-pub struct KeyId(pub String);
-
 /// Errors thrown by Signer
 #[derive(Debug, thiserror::Error)]
 pub enum SignerError {
 	#[error("Error during signing : {0}")]
 	Sign(String),
+	#[error("Error during verification : {0}")]
+	Verify(String),
 	#[error("Error during public key retrieval : {0}")]
 	PublicKey(String),
 	#[error("Error can't decode provided hex data : {0}")]
@@ -36,50 +17,46 @@ pub enum SignerError {
 	PublicKeyNotFound,
 }
 
+/// A collection of bytes.
+#[derive(Debug, Clone)]
+pub struct Bytes(pub Vec<u8>);
+
+#[derive(Debug, Clone)]
+pub struct KeyId {
+	pub id: String,
+	pub version: Option<String>,
+}
+
+/// A public key.
+#[derive(Debug, Clone)]
+pub struct PublicKey<C> {
+	pub key_id: KeyId,
+	pub curve: C,
+	pub data: Bytes,
+}
+
+/// A signature.
+#[derive(Debug, Clone)]
+pub struct Signature {
+	pub key_id: KeyId,
+	pub data: Bytes,
+}
+
 #[async_trait::async_trait]
 pub trait SignerOperations<C: cryptography::Curve> {
 	/// Signs some bytes.
 	async fn sign(&self, message: Bytes) -> Result<Signature, SignerError>;
 
 	/// Gets the public key.
-	async fn public_key(&self) -> Result<PublicKey, SignerError>;
+	async fn public_key(&self) -> Result<PublicKey<C>, SignerError>;
 }
 
-pub struct Signer<O, C>
-where
-	O: SignerOperations<C>,
-	C: cryptography::Curve,
-{
-	operations: O,
-	_curve_marker: std::marker::PhantomData<C>,
-}
-
-/// Signer wraps an implementation of [SignerOperations] and provides a simple API for signing and getting the public key.
-impl<O, C> Signer<O, C>
-where
-	O: SignerOperations<C>,
-	C: cryptography::Curve,
-{
-	pub fn new(operations: O) -> Self {
-		Self { operations, _curve_marker: std::marker::PhantomData }
-	}
-
+pub trait SignerOperationsSync<C: cryptography::Curve> {
 	/// Signs some bytes.
-	pub async fn sign(&self, message: Bytes) -> Result<Signature, SignerError> {
-		self.operations.sign(message).await
-	}
+	fn sign(&self, message: Bytes) -> Result<Signature, SignerError>;
 
 	/// Gets the public key.
-	pub async fn public_key(&self) -> Result<PublicKey, SignerError> {
-		self.operations.public_key().await
-	}
-}
-
-/// Errors thrown by the verifier.
-#[derive(Debug, thiserror::Error)]
-pub enum VerifierError {
-	#[error("Error during verification : {0}")]
-	Verify(String),
+	fn public_key(&self) -> Result<PublicKey<C>, SignerError>;
 }
 
 #[async_trait::async_trait]
@@ -89,36 +66,60 @@ pub trait VerifierOperations<C: cryptography::Curve> {
 		&self,
 		message: Bytes,
 		signature: Signature,
-		public_key: PublicKey,
-	) -> Result<bool, VerifierError>;
+		public_key: PublicKey<C>,
+	) -> Result<bool, SignerError>;
 }
 
-pub struct Verifier<O, C>
-where
-	O: VerifierOperations<C>,
-	C: cryptography::Curve,
-{
-	operations: O,
-	_curve_marker: std::marker::PhantomData<C>,
-}
-
-/// Verifier wraps an implementation of [VerifierOperations] and provides a simple API for verifying signatures.
-impl<O, C> Verifier<O, C>
-where
-	O: VerifierOperations<C>,
-	C: cryptography::Curve,
-{
-	pub fn new(operations: O) -> Self {
-		Self { operations, _curve_marker: std::marker::PhantomData }
-	}
-
+pub trait VerifierOperationsSync<C: cryptography::Curve> {
 	/// Verifies a signature.
-	pub async fn verify(
+	fn verify(
 		&self,
 		message: Bytes,
 		signature: Signature,
-		public_key: PublicKey,
-	) -> Result<bool, VerifierError> {
-		self.operations.verify(message, signature, public_key).await
+		public_key: PublicKey<C>,
+	) -> Result<bool, SignerError>;
+}
+
+pub struct SignerConfig;
+
+pub struct KeyManager {
+	pub tobedefined: String,
+}
+
+impl KeyManager {
+	pub fn build(config: SignerConfig) -> Self {
+		Self { tobedefined: String::new() }
+	}
+
+	/// Get async signer for a key.
+	pub fn get_async_signer<C: cryptography::Curve>(
+		&self,
+		key_id: KeyId,
+	) -> Result<Box<dyn SignerOperations<C>>, SignerError> {
+		todo!()
+	}
+
+	/// Get sync signer for a key.
+	pub fn get_sync_signer<C: cryptography::Curve>(
+		&self,
+		key_id: KeyId,
+	) -> Result<Box<dyn SignerOperationsSync<C>>, SignerError> {
+		todo!()
+	}
+
+	/// Get async signer for a key.
+	pub fn get_async_verifier<C: cryptography::Curve>(
+		&self,
+		key_id: KeyId,
+	) -> Result<Box<dyn VerifierOperations<C>>, SignerError> {
+		todo!()
+	}
+
+	/// Get sync signer for a key.
+	pub fn get_sync_verifier<C: cryptography::Curve>(
+		&self,
+		key_id: KeyId,
+	) -> Result<Box<dyn VerifierOperationsSync<C>>, SignerError> {
+		todo!()
 	}
 }

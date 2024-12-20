@@ -1,5 +1,5 @@
 use crate::cryptography::Curve;
-use crate::{Bytes, PublicKey, Signature, VerifierError, VerifierOperations};
+use crate::{Bytes, PublicKey, Signature, SignerError, VerifierOperations};
 use anyhow::Context;
 use k256::ecdsa::{self, VerifyingKey};
 use k256::pkcs8::DecodePublicKey;
@@ -18,15 +18,15 @@ impl VerifierOperations<Secp256k1> for Secp256k1 {
 		&self,
 		message: Bytes,
 		signature: Signature,
-		public_key: PublicKey,
-	) -> Result<bool, VerifierError> {
-		let verifying_key = VerifyingKey::from_public_key_der(&public_key.0 .0)
+		public_key: PublicKey<Secp256k1>,
+	) -> Result<bool, SignerError> {
+		let verifying_key = VerifyingKey::from_public_key_der(&public_key.data.0)
 			.context("Failed to create verifying key")
-			.map_err(|e| VerifierError::Verify(e.to_string()))?;
+			.map_err(|e| SignerError::Verify(e.to_string()))?;
 
-		let signature = ecdsa::Signature::from_der(&signature.0 .0)
+		let signature = ecdsa::Signature::from_der(&signature.data.0)
 			.context("Failed to create signature")
-			.map_err(|e| VerifierError::Verify(e.to_string()))?;
+			.map_err(|e| SignerError::Verify(e.to_string()))?;
 
 		match verifying_key.verify(message.0.as_slice(), &signature) {
 			Ok(_) => Ok(true),
