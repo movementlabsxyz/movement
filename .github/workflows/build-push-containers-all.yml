@@ -990,7 +990,31 @@ jobs:
         repo: movement-infra/cdktf-mvmt-networks
         workflow: environment-deploy.yml
         inputs: '{"environment":"devNet","containerTag":"${{ github.sha }}"}'
-    - name: Add link to summary
-      run: echo "${{ steps.deploy.outputs.workflow_url }}"
+    - name: Retrieve workflow run ID of the deployment
+      env:
+        OWNER: movement-infra
+        REPO: cdktf-mvmt-networks
+        WORKFLOW_ID: ${{ steps.deploy.outputs.workflowId }}
+        BRANCH: main
+      id: get_run_id
+      run: |
+        # API URL to get the workflow runs
+        API_URL="https://api.github.com/repos/${OWNER}/${REPO}/actions/workflows/${WORKFLOW_ID}/runs?branch=${BRANCH}&status=completed&per_page=1"
+        run_data=$(curl -sSL -H "Accept: application/vnd.github.v3+json" \
+          -H "Authorization: token ${{ secrets.INFRA_GH_TOKEN }}" \
+          "$API_URL")
+        run_id=$(echo "$run_data" | jq -r '.workflow_runs[0].id')
+        run_url=$(echo "$run_data" | jq -r '.workflow_runs[0].html_url')
+
+        echo "Latest workflow run ID is: $run_id"
+        echo "Latest workflow run URL is: $run_url"
+
+        # Setting the output for other steps in the same job
+        echo "run_id=$run_id" >> $GITHUB_OUTPUT
+        echo "run_url=$run_url" >> $GITHUB_OUTPUT
+    - name: Add the url to the job summary
+      run: |
+        echo "Deployment workflow run: ${{ steps.get_run_id.outputs.run_url }}"
+      
 
   
