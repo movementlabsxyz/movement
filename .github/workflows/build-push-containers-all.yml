@@ -1023,7 +1023,7 @@ jobs:
         RUN_ID: ${{ steps.get_run_id.outputs.run_id }}
         TOKEN: ${{ secrets.INFRA_GH_TOKEN }}
       run: |
-        API_URL="https://api.github.com/repos/${OWNER}/${REPO}/actions/runs/${run_id}"
+        API_URL="https://api.github.com/repos/${OWNER}/${REPO}/actions/runs/${RUN_ID}"
         while true; do
           job_data=$(curl -sSL -H "Accept: application/vnd.github.v3+json" \
             -H "Authorization: token ${TOKEN}" \
