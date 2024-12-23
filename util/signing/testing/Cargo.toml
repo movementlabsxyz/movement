@@ -14,5 +14,12 @@ rust-version.workspace = true
 movement-signer = { workspace = true }
 ed25519-dalek = { workspace = true }
 
+[dev-dependencies]
+anyhow = { workspace = true }
+ed25519-dalek = { workspace = true, features = ["rand_core"] }
+# Workspace is on rand 0.7 due largely to aptos-core
+rand = "0.8"
+tokio = { workspace = true, features = ["macros"] }
+
 [lints]
 workspace = true
