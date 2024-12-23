@@ -7,7 +7,7 @@ use signer::{
 use std::fmt;
 
 pub struct HsmSigner {
-    kms: Box<dyn SignerOperations<Secp256k1>+ Sync> ,
+    kms: Box<dyn SignerOperations<Secp256k1>+ Sync + Send> ,
     pubkey: VerifyingKey,
     address: Address,
     chain_id: Option<ChainId>,
@@ -64,7 +64,7 @@ impl HsmSigner {
     ///
     /// Retrieves the public key from HMS and calculates the Ethereum address.
     pub async fn new(
-        kms: Box<dyn SignerOperations<Secp256k1> + Sync>,
+        kms: Box<dyn SignerOperations<Secp256k1> + Sync+ Send>,
         chain_id: Option<ChainId>,
     ) -> Result<HsmSigner, SignerError> {
         let resp = request_get_pubkey(&*kms).await?;
@@ -73,19 +73,15 @@ impl HsmSigner {
         Ok(Self { kms, chain_id, pubkey, address })
     }
 
-    /// Fetch the pubkey associated with a key ID.
-    pub async fn get_pubkey_for_key(&self) -> Result<VerifyingKey, SignerError> {
+    /// Fetch the pubkey associated with this signer's key ID.
+    pub async fn get_pubkey(&self) -> Result<VerifyingKey, SignerError> {
         request_get_pubkey(&*self.kms).await.and_then(decode_pubkey)
     }
 
-    /// Fetch the pubkey associated with this signer's key ID.
-    pub async fn get_pubkey(&self) -> Result<VerifyingKey, SignerError> {
-        self.get_pubkey_for_key().await
-    }
-
     /// Sign a digest with this signer's key and applies EIP-155.
-    async fn sign_digest(&self, digest: &B256) -> Result<AlloySignature, SignerError> {
+    pub async fn sign_digest(&self, digest: &B256) -> Result<AlloySignature, SignerError> {
         let sig = request_sign_digest(&*self.kms, digest).await.and_then(decode_signature)?;
+        println!("MVT AWAS SIGN: {}", hex::encode(sig.to_bytes()));
         let mut sig = sig_from_digest_bytes_trial_recovery(sig, digest, &self.pubkey);
         if let Some(chain_id) = self.chain_id {
             sig = sig.with_chain_id(chain_id);
@@ -104,8 +100,7 @@ async fn request_sign_digest(
     kms: &(dyn SignerOperations<Secp256k1> + Sync),
     digest: &B256,
 ) -> Result<MvtSignature, SignerError> {
-    let signature = kms.sign(Bytes(digest.as_slice().to_vec())).await?;
-    Ok(signature)
+    kms.sign(Bytes(digest.as_slice().to_vec())).await
 }
 
 /// Decode an AWS KMS Pubkey response.

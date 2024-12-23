@@ -562,6 +562,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "alloy-signer-aws"
+version = "0.1.4"
+source = "git+https://github.com/alloy-rs/alloy.git?rev=83343b172585fe4e040fb104b4d1421f58cbf9a2#83343b172585fe4e040fb104b4d1421f58cbf9a2"
+dependencies = [
+ "alloy-consensus",
+ "alloy-network",
+ "alloy-primitives 0.7.7",
+ "alloy-signer",
+ "async-trait",
+ "aws-sdk-kms",
+ "k256",
+ "spki 0.7.3",
+ "thiserror 1.0.69",
+ "tracing",
+]
+
+[[package]]
 name = "alloy-signer-local"
 version = "0.1.4"
 source = "git+https://github.com/alloy-rs/alloy.git?rev=83343b172585fe4e040fb104b4d1421f58cbf9a2#83343b172585fe4e040fb104b4d1421f58cbf9a2"
@@ -6338,7 +6355,7 @@ version = "18.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7413c5f74cc903ea37386a8965a936cbeb334bd270862fdece542c1b2dcbc898"
 dependencies = [
- "ethereum-types",
+ "ethereum-types 0.14.1",
  "hex",
  "once_cell",
  "regex",
@@ -6347,6 +6364,19 @@ dependencies = [
  "sha3 0.10.8",
  "thiserror 1.0.69",
  "uint",
+]
+
+[[package]]
+name = "ethbloom"
+version = "0.11.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bfb684ac8fa8f6c5759f788862bb22ec6fe3cb392f6bfd08e3c64b603661e3f8"
+dependencies = [
+ "crunchy",
+ "fixed-hash 0.7.0",
+ "impl-rlp",
+ "impl-serde 0.3.2",
+ "tiny-keccak",
 ]
 
 [[package]]
@@ -6364,11 +6394,25 @@ dependencies = [
 
 [[package]]
 name = "ethereum-types"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f64b5df66a228d85e4b17e5d6c6aa43b0310898ffe8a85988c4c032357aaabfd"
+dependencies = [
+ "ethbloom 0.11.1",
+ "fixed-hash 0.7.0",
+ "impl-rlp",
+ "impl-serde 0.3.2",
+ "primitive-types 0.9.1",
+ "uint",
+]
+
+[[package]]
+name = "ethereum-types"
 version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "02d215cbf040552efcbe99a38372fe80ab9d00268e20012b79fcd0f073edd8ee"
 dependencies = [
- "ethbloom",
+ "ethbloom 0.13.0",
  "fixed-hash 0.8.0",
  "impl-rlp",
  "impl-serde 0.4.0",
@@ -10520,14 +10564,24 @@ dependencies = [
 name = "movement-signing-alloy"
 version = "0.0.2"
 dependencies = [
+ "alloy",
  "alloy-consensus",
  "alloy-network",
  "alloy-primitives 0.7.7",
  "alloy-signer",
+ "alloy-signer-aws",
+ "anyhow",
  "async-trait",
+ "aws-config",
+ "aws-sdk-kms",
+ "ethereum-types 0.11.0",
+ "hex",
  "k256",
+ "keccak-hash",
+ "sha3 0.10.8",
  "signer",
  "spki 0.7.3",
+ "tokio",
 ]
 
 [[package]]
@@ -11921,6 +11975,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "353e1ca18966c16d9deb1c69278edbc5f194139612772bd9537af60ac231e1e6"
 dependencies = [
  "elliptic-curve 0.13.8",
+]
+
+[[package]]
+name = "primitive-types"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "06345ee39fbccfb06ab45f3a1a5798d9dafa04cb8921a76d227040003a234b0e"
+dependencies = [
+ "fixed-hash 0.7.0",
+ "impl-codec 0.5.1",
+ "impl-rlp",
+ "impl-serde 0.3.2",
+ "uint",
 ]
 
 [[package]]
