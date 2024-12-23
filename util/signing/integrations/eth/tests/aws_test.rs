@@ -6,90 +6,32 @@ use alloy_network::EthereumWallet;
 use alloy_network::TransactionBuilder;
 use alloy_network::TxSigner;
 use alloy_primitives::U256;
-use anyhow::Context;
-use aws_sdk_kms::primitives::Blob;
-use aws_sdk_kms::types::MessageType;
-use aws_sdk_kms::types::{KeySpec, KeyUsageType, SigningAlgorithmSpec};
-use aws_sdk_kms::Client;
+use movement_signer::cryptography::secp256k1::Secp256k1;
+use movement_signer::Signing;
+use movement_signer::Verify;
+use movement_signer_aws_kms::hsm::AwsKmsSigner;
 use movement_signing_alloy::HsmSigner;
-use signer::{
-	cryptography::secp256k1::Secp256k1, Bytes, PublicKey, Signature, SignerError, SignerOperations,
-};
+use sha3::{Digest, Keccak256};
 use std::env;
 
-/// A AWS KMS HSM.
-#[derive(Debug, Clone)]
-pub struct AwsKms {
-	pub client: Client,
-	key_id: String,
-}
+#[tokio::test]
+async fn basic_signing_verify() -> Result<(), anyhow::Error> {
+	let message = b"Hello, world!";
+	let hasher = Keccak256::new();
+	let digest: [u8; 32] = Keccak256::new_with_prefix(&message).finalize().into();
+	let key_id = env::var("AWS_KEY_ID").expect("AWS_KEY_ID not set");
+	let aws = AwsKmsSigner::new(key_id).await;
+	let public_key = aws.public_key().await?;
+	let signature = aws.sign(&digest).await?;
 
-#[async_trait::async_trait]
-impl SignerOperations<Secp256k1> for AwsKms {
-	/// Signs some bytes.
-	async fn sign(&self, message: Bytes) -> Result<Signature, SignerError> {
-		//println!("sign message {message:?}",);
-
-		let res = self
-			.client
-			.sign()
-			.key_id(&self.key_id)
-			.message(Blob::new(message.0))
-			.message_type(MessageType::Digest)
-			.signing_algorithm(SigningAlgorithmSpec::EcdsaSha256)
-			.send()
-			.await
-			.unwrap();
-
-		//println!("sign res: {:?}", res);
-		let signature = Signature(Bytes(
-			res.signature().context("No signature available").unwrap().as_ref().to_vec(),
-		));
-		Ok(signature)
-	}
-
-	/// Gets the public key.
-	async fn public_key(&self) -> Result<PublicKey, SignerError> {
-		let res = self.client.get_public_key().key_id(&self.key_id).send().await.unwrap();
-		//println!("public_key AWS KMS Response: {:?}", res);
-		let public_key = PublicKey(Bytes(
-			res.public_key().context("No public key available").unwrap().as_ref().to_vec(),
-		));
-		Ok(public_key)
-	}
-}
-
-impl AwsKms {
-	pub async fn new(key_id: String) -> Self {
-		let config = aws_config::load_from_env().await;
-		let client = aws_sdk_kms::Client::new(&config);
-		AwsKms { client, key_id }
-	}
-
-	/// Creates in AWS KMS matching the provided key id.
-	pub async fn create_key(&self) -> Result<String, anyhow::Error> {
-		let res = self
-			.client
-			.create_key()
-			.key_spec(KeySpec::EccSecgP256K1)
-			.key_usage(KeyUsageType::SignVerify)
-			.send()
-			.await?;
-
-		let key_id = res.key_metadata().context("No key metadata available")?.key_id().to_string();
-
-		Ok(key_id)
-	}
-
-	pub fn set_key_id(&mut self, key_id: String) {
-		self.key_id = key_id;
-	}
+	assert!(Secp256k1.verify(&digest, &signature, &public_key)?);
+	Ok(())
 }
 
 #[tokio::test]
 async fn test_aws_kms_send_tx() -> Result<(), anyhow::Error> {
 	// Start Anvil
-	let mut anvil = Anvil::new().port(8545u16).arg("-vvvvv").spawn();
+	let anvil = Anvil::new().port(8545u16).arg("-vvvvv").spawn();
 	let rpc_url = anvil.endpoint_url();
 	let chain_id = anvil.chain_id();
 
@@ -100,8 +42,8 @@ async fn test_aws_kms_send_tx() -> Result<(), anyhow::Error> {
 
 	println!("key_id:{key_id}");
 
-	let aws = AwsKms::new(key_id).await;
-	let signer = HsmSigner::new(Box::new(aws), Some(chain_id)).await?;
+	let aws = AwsKmsSigner::new(key_id).await;
+	let signer = HsmSigner::new(aws, Some(chain_id)).await?;
 	let address = signer.address();
 	println!("DEEEEB Key address:{}", address);
 

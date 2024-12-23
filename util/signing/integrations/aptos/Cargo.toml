@@ -1,0 +1,19 @@
+[package]
+name = "movement-signing-aptos"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+movement-signer = { workspace = true }
+aptos-crypto = { workspace = true }
+aptos-types = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

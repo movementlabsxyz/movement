@@ -42,10 +42,11 @@ members = [
     "protocol-units/bridge/indexer-db",
     "protocol-units/bridge/util",
     "benches/*",
-    "util/signing/signer",
-    "util/signing/aws-kms",
-    "util/signing/hashicorp-vault",
-    "util/signing/integrations/alloy",
+    "util/signing/integrations/eth",
+    "util/signing/integrations/aptos",
+    "util/signing/providers/aws-kms",
+    "util/signing/providers/hashicorp-vault",
+    "demo/hsm"
 ]
 
 [workspace.package]
@@ -119,9 +120,9 @@ whitelist = { path = "util/whitelist" }
 aptos-account-whitelist = { path = "protocol-units/access-control/aptos/account-whitelist" }
 
 # signing
-signer = { path = "util/signing/signer" }
-aws-kms-signer = { path = "util/signing/aws-kms" }
-hashicorp-vault-signer = { path = "util/signing/hashicorp-vault" }
+movement-signer = { path = "util/signing/interface" }
+movement-signer-aws-kms = { path = "util/signing/providers/aws-kms" }
+movement-signer-hashicorp-vault = { path = "util/signing/providers/hashicorp-vault" }
 
 ## vault
 vaultrs = { version = "0.7.3" }
@@ -182,26 +183,11 @@ processor = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors
 server-framework = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors", rev = "7658338eb9224abd9698c1e02dbc6ca526c268ce" }
 
 bcs = { git = "https://github.com/aptos-labs/bcs.git", rev = "d31fab9d81748e2594be5cd5cdf845786a30562d" }
-ethereum-types = "0.14.1"
-ethers = "=2.0.10"
-ethers-core = { version = "=2.0.10", default-features = false }
-ethers-contract = "=2.0.10"
-ethers-providers = { version = "=2.0.10", default-features = false }
-ethers-signers = { version = "=2.0.10", default-features = false }
-ethers-middleware = { version = "=2.0.10", default-features = false }
+
 move-binary-format = { git = "https://github.com/diem/move" }
 move-table-extension = { git = "https://github.com/diem/move" }
 move-core-types = { git = "https://github.com/diem/move" }
-### https://github.com/paradigmxyz/reth/tree/c0655fed8915490f82d4acf8900a16a10554cbfb
-reth-interfaces = { git = "https://github.com/paradigmxyz/reth", rev = "c0655fed8915490f82d4acf8900a16a10554cbfb" }
-reth-primitives = { git = "https://github.com/paradigmxyz/reth", rev = "c0655fed8915490f82d4acf8900a16a10554cbfb", default-features = false }
-reth-revm = { git = "https://github.com/paradigmxyz/reth", rev = "c0655fed8915490f82d4acf8900a16a10554cbfb" }
-reth-rpc-types = { git = "https://github.com/paradigmxyz/reth", rev = "c0655fed8915490f82d4acf8900a16a10554cbfb" }
-reth-rpc-types-compat = { git = "https://github.com/paradigmxyz/reth", rev = "c0655fed8915490f82d4acf8900a16a10554cbfb" }
-### Matches reth dependency. Using exact revision for matching our tightly coupled usage of both reth and revm crates
-revm = { version = "8.0.0", default-features = false, features = ["serde"] }
-### Used just to be safe about breaking changes
-revm-primitives = { version = "=2.0.0", default-features = false }
+
 secp256k1 = { version = "0.27", default-features = false, features = [
     "global-context",
     "rand-std",
@@ -317,7 +303,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-test = "0.2.5"
 trie-db = "0.28.0"
 url = "2.2.2"
-x25519-dalek = "1.0.1"
+ed25519-dalek = "2.1"
 ed25519 = "2.2.3"
 ring-compat = "0.8.0"
 zstd-sys = "2.0.9"
@@ -329,19 +315,13 @@ uuid = { version = "1.10.0", features = ["v4"] }
 tar = "0.4.41"
 flate2 = "1.0.31"
 blake-3 = "1.4.0"
-ecdsa = { version = "0.16.9", features = [
-    "signing",
-    "verifying",
-    "der",
-    "pem",
-    "pkcs8",
-] }
+ecdsa = "0.16.9"
 regex = "1.10.6"
 globset = "0.4.15"
 glob = "0.3.1"
 hyper = "1.4"
-hyper-util = { version = "0.1.4"}
-tower = { version = "0.5"}
+hyper-util = { version = "0.1.4" }
+tower = { version = "0.5" }
 http-body-util = "0.1"
 
 # trying to pin diesel

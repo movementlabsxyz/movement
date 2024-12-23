@@ -10,7 +10,8 @@ publish.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-signer = { workspace = true }
+movement-signer = { workspace = true }
+movement-signer-aws-kms = { workspace = true }
 async-trait.workspace = true
 
 # Alloy needed crates
@@ -18,7 +19,6 @@ alloy-primitives.workspace = true
 alloy-signer.workspace = true
 alloy-network.workspace = true
 alloy-consensus.workspace = true
-spki = "0.7.3"
 k256 = "0.13.4"
 
 [dev-dependencies]
