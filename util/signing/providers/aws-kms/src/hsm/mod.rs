@@ -1,7 +1,5 @@
+use crate::cryptography::secp256k1::AwsKmsCryptography;
 use aws_sdk_kms::primitives::Blob;
-use aws_sdk_kms::types::KeySpec;
-use aws_sdk_kms::types::KeyUsageType;
-use aws_sdk_kms::types::SigningAlgorithmSpec;
 use aws_sdk_kms::Client;
 use k256::ecdsa;
 use movement_signer::cryptography::secp256k1::{self, Secp256k1};
@@ -25,7 +23,7 @@ impl Signing<Secp256k1> for AwsKmsSigner {
 			.key_id(&self.key_id)
 			.message(Blob::new(message))
 			.message_type(aws_sdk_kms::types::MessageType::Digest)
-			.signing_algorithm(SigningAlgorithmSpec::EcdsaSha256)
+			.signing_algorithm(Secp256k1::signing_algorithm_spec())
 			.send()
 			.await
 			.map_err(|e| SignerError::Internal(e.to_string()))?;
@@ -66,8 +64,8 @@ impl AwsKmsSigner {
 		let res = self
 			.client
 			.create_key()
-			.key_spec(KeySpec::EccSecgP256K1)
-			.key_usage(KeyUsageType::SignVerify)
+			.key_spec(Secp256k1::key_spec())
+			.key_usage(Secp256k1::key_usage_type())
 			.send()
 			.await
 			.map_err(|e| SignerError::Internal(e.to_string()))?;

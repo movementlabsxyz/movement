@@ -17,7 +17,6 @@ use std::env;
 #[tokio::test]
 async fn basic_signing_verify() -> Result<(), anyhow::Error> {
 	let message = b"Hello, world!";
-	let hasher = Keccak256::new();
 	let digest: [u8; 32] = Keccak256::new_with_prefix(&message).finalize().into();
 	let key_id = env::var("AWS_KEY_ID").expect("AWS_KEY_ID not set");
 	let aws = AwsKmsSigner::new(key_id).await;
