@@ -10602,7 +10602,17 @@ dependencies = [
 ]
 
 [[package]]
-name = "movement-signing-alloy"
+name = "movement-signing-aptos"
+version = "0.0.2"
+dependencies = [
+ "aptos-crypto",
+ "aptos-types",
+ "movement-signer",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "movement-signing-eth"
 version = "0.0.2"
 dependencies = [
  "alloy",
@@ -10623,16 +10633,6 @@ dependencies = [
  "movement-signer-aws-kms",
  "sha3 0.10.8",
  "tokio",
-]
-
-[[package]]
-name = "movement-signing-aptos"
-version = "0.0.2"
-dependencies = [
- "aptos-crypto",
- "aptos-types",
- "movement-signer",
- "thiserror 1.0.69",
 ]
 
 [[package]]
