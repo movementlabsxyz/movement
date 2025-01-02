@@ -6140,17 +6140,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0d6ef0072f8a535281e4876be788938b528e9a1d43900b82c2569af7da799125"
 
 [[package]]
-name = "e2e-test"
-version = "0.0.2"
-dependencies = [
- "anyhow",
- "godfig",
- "movement-signer-config",
- "movement-signer-setup",
- "tokio",
-]
-
-[[package]]
 name = "ecdsa"
 version = "0.14.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10596,6 +10585,17 @@ name = "movement-signer-config"
 version = "0.0.2"
 dependencies = [
  "serde",
+]
+
+[[package]]
+name = "movement-signer-e2e-test"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "godfig",
+ "movement-signer-config",
+ "movement-signer-setup",
+ "tokio",
 ]
 
 [[package]]

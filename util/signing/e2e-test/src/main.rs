@@ -1,3 +1,5 @@
+fn main() {}
+
 // Run the e2e signing Test.
 // e2e signing test are run using real node: 'ex Anvil and Suzuka node).
 // Depending on the executed setup it doesn't use the same key/provided..

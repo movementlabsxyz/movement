@@ -21,12 +21,13 @@ path = "bin/setup_awskms_eth_key.rs"
 [dependencies]
 movement-signer-setup = { workspace = true }
 movement-signer-config = { workspace = true }
-
 godfig = { workspace = true }
 
-[dev-dependencies]
 anyhow = { workspace = true }
 tokio = { workspace = true }
+
+
+[dev-dependencies]
 
 
 [lints]
