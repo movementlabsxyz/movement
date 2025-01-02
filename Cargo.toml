@@ -46,8 +46,10 @@ members = [
     "util/signing/integrations/aptos",
     "util/signing/providers/aws-kms",
     "util/signing/providers/hashicorp-vault",
+    "util/signing/config",
+    "util/signing/setup",
     "demo/hsm"
-]
+, "util/signing/setup", "util/signing/config", "util/signing/e2e-test"]
 
 [workspace.package]
 version = "0.0.2"
@@ -123,6 +125,8 @@ aptos-account-whitelist = { path = "protocol-units/access-control/aptos/account-
 movement-signer = { path = "util/signing/interface" }
 movement-signer-aws-kms = { path = "util/signing/providers/aws-kms" }
 movement-signer-hashicorp-vault = { path = "util/signing/providers/hashicorp-vault" }
+movement-signer-config = { path = "util/signing/config" }
+movement-signer-setup = { path = "util/signing/setup" }
 
 ## vault
 vaultrs = { version = "0.7.3" }

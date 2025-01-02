@@ -1,0 +1,33 @@
+[package]
+name = "e2e-test"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "setup_local_eth_key"
+path = "bin/setup_local_eth_key.rs"
+
+[[bin]]
+name = "setup_awskms_eth_key"
+path = "bin/setup_awskms_eth_key.rs"
+
+
+[dependencies]
+movement-signer-setup = { workspace = true }
+movement-signer-config = { workspace = true }
+
+godfig = { workspace = true }
+
+[dev-dependencies]
+anyhow = { workspace = true }
+tokio = { workspace = true }
+
+
+[lints]
+workspace = true

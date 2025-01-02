@@ -1,5 +1,5 @@
 [package]
-name = "signer"
+name = "movement-signer-config"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -10,13 +10,7 @@ publish.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-thiserror = { workspace = true }
-async-trait = { workspace = true }
-ed25519 = { workspace = true }
-ring-compat = { workspace = true }
-k256 = { workspace = true, features = ["ecdsa", "pkcs8"] }
-anyhow = { workspace = true }
-
+serde = { workspace = true , features = ["derive"] }
 
 [lints]
 workspace = true
