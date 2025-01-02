@@ -10,7 +10,7 @@ use movement_signer::cryptography::secp256k1::Secp256k1;
 use movement_signer::Signing;
 use movement_signer::Verify;
 use movement_signer_aws_kms::hsm::AwsKmsSigner;
-use movement_signing_alloy::HsmSigner;
+use movement_signing_eth::HsmSigner;
 use sha3::{Digest, Keccak256};
 use std::env;
 
@@ -42,7 +42,7 @@ async fn test_aws_kms_send_tx() -> Result<(), anyhow::Error> {
 	println!("key_id:{key_id}");
 
 	let aws = AwsKmsSigner::new(key_id).await;
-	let signer = HsmSigner::new(aws, Some(chain_id)).await?;
+	let signer = HsmSigner::try_new(aws, Some(chain_id)).await?;
 	let address = signer.address();
 	println!("DEEEEB Key address:{}", address);
 

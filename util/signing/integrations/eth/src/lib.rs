@@ -64,7 +64,7 @@ impl<S: Signing<Secp256k1> + Sync + Send> HsmSigner<S> {
     /// Instantiate a new signer from an existing `Client` and key ID.
     ///
     /// Retrieves the public key from HMS and calculates the Ethereum address.
-    pub async fn new(
+    pub async fn try_new(
         kms: S,
         chain_id: Option<ChainId>,
     ) -> Result<HsmSigner<S>, SignerError> {
