@@ -1,5 +1,5 @@
 [package]
-name = "e2e-test"
+name = "movement-signer-e2e-test"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
