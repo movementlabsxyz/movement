@@ -223,6 +223,7 @@ alloy-rpc-types = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b
 alloy-sol-types = { version = "0.7.2", features = ["json"] }
 alloy-signer = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
 alloy-transport = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
+alloy-transport-http = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2", features = ["reqwest-rustls-tls"] }
 alloy-transport-ws = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
 
 anyhow = "1.0"

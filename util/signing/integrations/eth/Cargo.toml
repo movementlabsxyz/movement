@@ -1,5 +1,5 @@
 [package]
-name = "movement-signing-alloy"
+name = "movement-signing-eth"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -19,6 +19,7 @@ alloy-primitives.workspace = true
 alloy-signer.workspace = true
 alloy-network.workspace = true
 alloy-consensus.workspace = true
+alloy-transport-http = { workspace = true, features = ["reqwest-rustls-tls"] }
 k256 = "0.13.4"
 
 [dev-dependencies]
