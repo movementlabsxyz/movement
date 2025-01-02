@@ -1,0 +1,38 @@
+version: "3"
+
+processes:
+
+  setup:
+    environment:
+      - "ETH_RPC_CONNECTION_PROTOCOL=http"
+      - "ETH_RPC_CONNECTION_HOSTNAME=0.0.0.0"
+      - "ETH_RPC_CONNECTION_PORT=8090"
+      - "ETH_WS_CONNECTION_PROTOCOL=ws"
+      - "ETH_WS_CONNECTION_HOSTNAME=0.0.0.0"
+      - "ETH_WS_CONNECTION_PORT=8090"
+      - "MAYBE_RUN_LOCAL=true"
+      - "MAYBE_TESTING_MCR=true"
+      - "MAYBE_DEPLOY_MCR=true"
+
+    command: |
+      movement-full-node-setup
+    depends_on:
+      build:
+        condition: process_completed_successfully
+    readiness_probe:
+      initial_delay_seconds: 10
+      exec:
+        command: echo "true"
+
+  signing_local_setup:
+    command: |
+      cargo run -p movement-signer-e2e-test --bin setup_local_eth_key
+    availability:
+      restart: exit_on_failure
+    depends_on:
+      movement-faucet:
+        condition: process_healthy
+    readiness_probe:
+      initial_delay_seconds: 20
+      exec:
+        command: echo "true"

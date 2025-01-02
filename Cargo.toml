@@ -127,6 +127,7 @@ movement-signer-aws-kms = { path = "util/signing/providers/aws-kms" }
 movement-signer-hashicorp-vault = { path = "util/signing/providers/hashicorp-vault" }
 movement-signer-config = { path = "util/signing/config" }
 movement-signer-setup = { path = "util/signing/setup" }
+movement-signer-e2e-test = { path = "util/signing/setup" }
 
 ## vault
 vaultrs = { version = "0.7.3" }
