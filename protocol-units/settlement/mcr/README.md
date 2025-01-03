@@ -4,7 +4,7 @@
 
 Validators stake tokens to participate in block validation. They commit to L2-blocks on L1, and the contract on L1 tracks block commitments, epochs, and stake. The contracts also manage validators and custodian staking and unstaking. The contract validates if commitments have reached two-thirds supermajority stake, and rewards or slashes validators based on their actions.
 
-For further details see the [RFC for MCR](https://github.com/movementlabsxyz/rfcs/pulls) and the [MIP-34](https://github.com/movementlabsxyz/MIP/blob/main/MIP/mip-34).
+For further details see the [RFC for MCR](https://github.com/movementlabsxyz/rfcs/pull/29) and the [MIP-34](https://github.com/movementlabsxyz/MIP/blob/main/MIP/mip-34).
 
 ## Architecture
 
