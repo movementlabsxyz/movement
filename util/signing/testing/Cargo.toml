@@ -15,10 +15,17 @@ movement-signer = { workspace = true }
 ed25519-dalek = { workspace = true }
 
 [dev-dependencies]
+maptos-dof-execution = { workspace = true }
+maptos-execution-util = { workspace = true }
+movement-signing-aptos = { workspace = true }
+aptos-crypto = { workspace = true }
+aptos-types = { workspace = true }
 anyhow = { workspace = true }
+chrono = { workspace = true }
 ed25519-dalek = { workspace = true, features = ["rand_core"] }
 # Workspace is on rand 0.7 due largely to aptos-core
 rand = "0.8"
+tempfile = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
 
 [lints]

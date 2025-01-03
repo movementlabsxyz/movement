@@ -10546,9 +10546,16 @@ name = "movement-signer-test"
 version = "0.0.2"
 dependencies = [
  "anyhow",
+ "aptos-crypto",
+ "aptos-types",
+ "chrono",
  "ed25519-dalek 2.1.1",
+ "maptos-dof-execution",
+ "maptos-execution-util",
  "movement-signer",
+ "movement-signing-aptos",
  "rand 0.8.5",
+ "tempfile",
  "tokio",
 ]
 

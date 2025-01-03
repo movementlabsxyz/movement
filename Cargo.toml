@@ -124,6 +124,7 @@ aptos-account-whitelist = { path = "protocol-units/access-control/aptos/account-
 movement-signer = { path = "util/signing/interface" }
 movement-signer-aws-kms = { path = "util/signing/providers/aws-kms" }
 movement-signer-hashicorp-vault = { path = "util/signing/providers/hashicorp-vault" }
+movement-signing-aptos = { path = "util/signing/integrations/aptos" }
 
 ## vault
 vaultrs = { version = "0.7.3" }
