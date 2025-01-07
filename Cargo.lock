@@ -7580,6 +7580,9 @@ dependencies = [
  "ed25519 2.2.3",
  "google-cloud-kms",
  "k256",
+ "movement-signer",
+ "movement-signer-aws-kms",
+ "movement-signer-hashicorp-vault",
  "rand 0.7.3",
  "reqwest 0.12.9",
  "ring-compat",
@@ -10527,6 +10530,8 @@ dependencies = [
 name = "movement-signer-aws-kms"
 version = "0.0.2"
 dependencies = [
+ "anyhow",
+ "aws-config",
  "aws-sdk-kms",
  "movement-signer",
 ]

@@ -1,16 +1,16 @@
-use crate::cryptography::HashiCorpVaultCryptography;
+pub mod key;
+
+use crate::cryptography::HashiCorpVaultCryptographySpec;
 use anyhow::Context;
 use movement_signer::cryptography::TryFromBytes;
-use movement_signer::{
-	cryptography::{ed25519::Ed25519, Curve},
-	SignerError, Signing,
-};
+use movement_signer::{cryptography::Curve, SignerError, Signing};
 use vaultrs::api::transit::{requests::CreateKeyRequest, responses::ReadKeyData};
 use vaultrs::client::{VaultClient, VaultClientSettingsBuilder};
-use vaultrs::transit::key;
+use vaultrs::transit::data;
+use vaultrs::transit::key as transit_key;
 
 /// A HashiCorp Vault HSM.
-pub struct HashiCorpVault<C: Curve + HashiCorpVaultCryptography> {
+pub struct HashiCorpVault<C: Curve + HashiCorpVaultCryptographySpec> {
 	client: VaultClient,
 	key_name: String,
 	mount_name: String,
@@ -20,7 +20,7 @@ pub struct HashiCorpVault<C: Curve + HashiCorpVaultCryptography> {
 
 impl<C> HashiCorpVault<C>
 where
-	C: Curve + HashiCorpVaultCryptography,
+	C: Curve + HashiCorpVaultCryptographySpec,
 {
 	/// Creates a new HashiCorp Vault HSM
 	pub fn new(
@@ -36,6 +36,11 @@ where
 			public_key,
 			_cryptography_marker: std::marker::PhantomData,
 		}
+	}
+
+	/// Sets the key id
+	pub fn set_key_id(&mut self, key_id: String) {
+		self.key_name = key_id;
 	}
 
 	/// Tries to create a new HashiCorp Vault HSM from the environment
@@ -65,7 +70,7 @@ where
 
 	/// Creates a new key in the transit backend
 	pub async fn create_key(self) -> Result<Self, anyhow::Error> {
-		key::create(
+		transit_key::create(
 			&self.client,
 			self.mount_name.as_str(),
 			self.key_name.as_str(),
@@ -79,10 +84,9 @@ where
 
 	/// Fills with a public key fetched from vault.
 	pub async fn fill_with_public_key(self) -> Result<Self, anyhow::Error> {
-		let res = key::read(&self.client, self.mount_name.as_str(), self.key_name.as_str())
+		let res = transit_key::read(&self.client, self.mount_name.as_str(), self.key_name.as_str())
 			.await
 			.context("Failed to read key")?;
-		println!("Read key: {:?}", res);
 
 		let public_key = match res.keys {
 			ReadKeyData::Symmetric(_) => {
@@ -94,7 +98,6 @@ where
 			}
 		};
 
-		println!("Public key: {:?}", public_key);
 		Ok(Self::new(
 			self.client,
 			self.key_name,
@@ -104,17 +107,46 @@ where
 	}
 }
 
-impl Signing<Ed25519> for HashiCorpVault<Ed25519> {
-	async fn sign(&self, _message: &[u8]) -> Result<<Ed25519 as Curve>::Signature, SignerError> {
-		unimplemented!()
+impl<C> Signing<C> for HashiCorpVault<C>
+where
+	C: Curve + HashiCorpVaultCryptographySpec + Sync,
+{
+	async fn sign(&self, message: &[u8]) -> Result<C::Signature, SignerError> {
+		let res = data::sign(
+			&self.client,
+			self.mount_name.as_str(),
+			self.key_name.as_str(),
+			// convert bytes vec<u8> to base64 string
+			base64::encode(message).as_str(),
+			None,
+		)
+		.await
+		.context("Failed to sign message")
+		.map_err(|e| SignerError::Internal(e.to_string()))?;
+
+		// the signature should be encoded valut:v1:<signature> check for match and split off the signature
+		// 1. check for match
+		if !res.signature.starts_with("vault:v1:") {
+			return Err(SignerError::Internal("Invalid signature format".to_string()));
+		}
+		// 2. split off the signature
+		let signature_str = res.signature.split_at(9).1;
+
+		// decode base64 string to vec<u8>
+		let signature = base64::decode(signature_str)
+			.context("Failed to decode signature")
+			.map_err(|e| SignerError::Internal(e.to_string()))?;
+
+		// Sign the message using HashiCorp Vault
+		Ok(C::Signature::try_from_bytes(signature.as_slice())
+			.map_err(|e| SignerError::Internal(e.to_string()))?)
 	}
 
-	async fn public_key(&self) -> Result<<Ed25519 as Curve>::PublicKey, SignerError> {
-		let res = key::read(&self.client, self.mount_name.as_str(), self.key_name.as_str())
+	async fn public_key(&self) -> Result<C::PublicKey, SignerError> {
+		let res = transit_key::read(&self.client, self.mount_name.as_str(), self.key_name.as_str())
 			.await
 			.context("Failed to read key")
 			.map_err(|e| SignerError::Internal(e.to_string()))?;
-		println!("Read key: {:?}", res);
 
 		let public_key = match res.keys {
 			ReadKeyData::Symmetric(_) => {
@@ -125,14 +157,14 @@ impl Signing<Ed25519> for HashiCorpVault<Ed25519> {
 					.values()
 					.next()
 					.context("No key found")
-					.map_err(|e| SignerError::KeyNotFound)?;
+					.map_err(|_e| SignerError::KeyNotFound)?;
 				base64::decode(key.public_key.as_str())
 					.context("Failed to decode public key")
 					.map_err(|e| SignerError::Internal(e.to_string()))?
 			}
 		};
 
-		Ok(<Ed25519 as Curve>::PublicKey::try_from_bytes(public_key.as_slice())
+		Ok(C::PublicKey::try_from_bytes(public_key.as_slice())
 			.map_err(|e| SignerError::Internal(e.to_string()))?)
 	}
 }

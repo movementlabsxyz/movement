@@ -23,6 +23,12 @@ macro_rules! fixed_size {
 				Ok(Self(inner))
 			}
 		}
+
+		impl crate::cryptography::ToBytes for $Name {
+			fn to_bytes(&self) -> Vec<u8> {
+				self.0.to_vec()
+			}
+		}
 	};
 }
 
@@ -33,11 +39,15 @@ pub trait TryFromBytes: Sized {
 	fn try_from_bytes(bytes: &[u8]) -> Result<Self, anyhow::Error>;
 }
 
+pub trait ToBytes {
+	fn to_bytes(&self) -> Vec<u8>;
+}
+
 /// A designator for an elliptic curve.
 ///
 /// This trait has no methods, but it binds the types of the public key and
 /// the signature used by the EC digital signing algorithm.
 pub trait Curve {
-	type PublicKey: TryFromBytes;
-	type Signature;
+	type PublicKey: TryFromBytes + ToBytes + Send + Sync + std::fmt::Debug;
+	type Signature: TryFromBytes + ToBytes + Send + Sync + std::fmt::Debug;
 }

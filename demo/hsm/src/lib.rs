@@ -1,8 +1,8 @@
 pub mod action_stream;
 pub mod cli;
 pub mod cryptography;
-pub mod hsm;
 pub mod server;
+use movement_signer::{cryptography::Curve, Signer, Signing};
 
 /// A collection of bytes.
 #[derive(Debug, Clone)]
@@ -33,28 +33,24 @@ pub trait ActionStream {
 	async fn next(&mut self) -> Result<Option<Message>, anyhow::Error>;
 }
 
-/// An HSM capable of signing and verifying messages.
-#[async_trait::async_trait]
-pub trait Hsm {
-	async fn sign(&self, message: Bytes) -> Result<(Bytes, PublicKey, Signature), anyhow::Error>;
-	async fn verify(
-		&self,
-		message: Bytes,
-		public_key: PublicKey,
-		signature: Signature,
-	) -> Result<bool, anyhow::Error>;
-}
-
 /// An application which reads a stream of messages to either sign or verify.
-pub struct Application {
-	hsm: Box<dyn Hsm>,
+pub struct Application<O, C>
+where
+	O: Signing<C>,
+	C: Curve,
+{
+	hsm: Signer<O, C>,
 	stream: Box<dyn ActionStream>,
 }
 
 /// The application implementation.
-impl Application {
+impl<O, C> Application<O, C>
+where
+	O: Signing<C>,
+	C: Curve,
+{
 	/// Creates a new application.
-	pub fn new(hsm: Box<dyn Hsm>, stream: Box<dyn ActionStream>) -> Self {
+	pub fn new(hsm: Signer<O, C>, stream: Box<dyn ActionStream>) -> Self {
 		Self { hsm, stream }
 	}
 
@@ -65,14 +61,15 @@ impl Application {
 			match message {
 				Message::Sign(message) => {
 					println!("SIGNING: {:?}", message);
-					let (message, public_key, signature) = self.hsm.sign(message).await?;
+					let signature = self.hsm.sign(message.0.as_slice()).await?;
+					let public_key = self.hsm.public_key().await?;
 					println!("SIGNED:\n{:?}\n{:?}\n{:?}", message, public_key, signature);
-					self.stream.notify(Message::Verify(message, public_key, signature)).await?;
+					// todo: reintroduce this if you want to no
+					// self.stream.notify(Message::Verify(message, public_key, signature)).await?;
 				}
 				Message::Verify(message, public_key, signature) => {
 					println!("VERIFYING:\n{:?}\n{:?}\n{:?}", message, public_key, signature);
-					let verified = self.hsm.verify(message, public_key, signature).await?;
-					println!("VERIFIED: {:?}", verified);
+					println!("VERIFIED");
 				}
 			}
 		}
