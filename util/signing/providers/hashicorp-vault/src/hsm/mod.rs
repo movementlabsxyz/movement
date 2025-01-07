@@ -14,7 +14,6 @@ pub struct HashiCorpVault<C: Curve + HashiCorpVaultCryptographySpec> {
 	client: VaultClient,
 	key_name: String,
 	mount_name: String,
-	pub public_key: <C as Curve>::PublicKey,
 	_cryptography_marker: std::marker::PhantomData<C>,
 }
 
@@ -23,19 +22,8 @@ where
 	C: Curve + HashiCorpVaultCryptographySpec,
 {
 	/// Creates a new HashiCorp Vault HSM
-	pub fn new(
-		client: VaultClient,
-		key_name: String,
-		mount_name: String,
-		public_key: C::PublicKey,
-	) -> Self {
-		Self {
-			client,
-			key_name,
-			mount_name,
-			public_key,
-			_cryptography_marker: std::marker::PhantomData,
-		}
+	pub fn new(client: VaultClient, key_name: String, mount_name: String) -> Self {
+		Self { client, key_name, mount_name, _cryptography_marker: std::marker::PhantomData }
 	}
 
 	/// Sets the key id
@@ -58,14 +46,8 @@ where
 
 		let key_name = std::env::var("VAULT_KEY_NAME").context("VAULT_KEY_NAME not set")?;
 		let mount_name = std::env::var("VAULT_MOUNT_NAME").context("VAULT_MOUNT_NAME not set")?;
-		let public_key = std::env::var("VAULT_PUBLIC_KEY").unwrap_or_default();
 
-		Ok(Self::new(
-			client,
-			key_name,
-			mount_name,
-			C::PublicKey::try_from_bytes(public_key.as_bytes())?,
-		))
+		Ok(Self::new(client, key_name, mount_name))
 	}
 
 	/// Creates a new key in the transit backend
@@ -77,33 +59,9 @@ where
 			Some(CreateKeyRequest::builder().key_type(C::key_type()).derived(false)),
 		)
 		.await
-		.context("Failed to create key")?;
+		.map_err(|e| anyhow::anyhow!(e))?;
 
 		Ok(self)
-	}
-
-	/// Fills with a public key fetched from vault.
-	pub async fn fill_with_public_key(self) -> Result<Self, anyhow::Error> {
-		let res = transit_key::read(&self.client, self.mount_name.as_str(), self.key_name.as_str())
-			.await
-			.context("Failed to read key")?;
-
-		let public_key = match res.keys {
-			ReadKeyData::Symmetric(_) => {
-				return Err(anyhow::anyhow!("Symmetric keys are not supported"));
-			}
-			ReadKeyData::Asymmetric(keys) => {
-				let key = keys.values().next().context("No key found")?;
-				base64::decode(key.public_key.as_str()).context("Failed to decode public key")?
-			}
-		};
-
-		Ok(Self::new(
-			self.client,
-			self.key_name,
-			self.mount_name,
-			C::PublicKey::try_from_bytes(public_key.as_slice())?,
-		))
 	}
 }
 

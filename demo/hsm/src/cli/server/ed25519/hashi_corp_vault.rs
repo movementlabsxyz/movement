@@ -14,6 +14,8 @@ use tokio::sync::Mutex;
 #[clap(rename_all = "kebab-case", about = "Runs signing app for ed25519 against HashiCorp Vault")]
 pub struct HashiCorpVault {
 	canonical_key: String,
+	#[arg(long)]
+	create_key: bool,
 }
 
 impl HashiCorpVault {
@@ -21,7 +23,7 @@ impl HashiCorpVault {
 		// build the hsm
 		let key = Key::try_from_canonical_string(self.canonical_key.as_str())
 			.map_err(|e| anyhow::anyhow!(e))?;
-		let builder = Builder::<Ed25519>::new();
+		let builder = Builder::<Ed25519>::new().create_key(self.create_key);
 		let hsm = Signer::new(builder.build(key).await?);
 
 		// build the server

@@ -10,7 +10,6 @@ pub mod key;
 pub struct AwsKms<C: Curve + AwsKmsCryptographySpec> {
 	client: Client,
 	key_id: String,
-	public_key: <C as Curve>::PublicKey,
 	_cryptography_marker: std::marker::PhantomData<C>,
 }
 
@@ -19,8 +18,8 @@ where
 	C: Curve + AwsKmsCryptographySpec,
 {
 	/// Creates a new AWS KMS HSM
-	pub fn new(client: Client, key_id: String, public_key: C::PublicKey) -> Self {
-		Self { client, key_id, public_key, _cryptography_marker: std::marker::PhantomData }
+	pub fn new(client: Client, key_id: String) -> Self {
+		Self { client, key_id, _cryptography_marker: std::marker::PhantomData }
 	}
 
 	/// Sets the key id
@@ -31,12 +30,11 @@ where
 	/// Tries to create a new AWS KMS HSM from the environment
 	pub async fn try_from_env() -> Result<Self, anyhow::Error> {
 		let key_id = std::env::var("AWS_KMS_KEY_ID").context("AWS_KMS_KEY_ID not set")?;
-		let public_key = std::env::var("AWS_KMS_PUBLIC_KEY").unwrap_or_default();
 
 		let config = aws_config::load_from_env().await;
 		let client = aws_sdk_kms::Client::new(&config);
 
-		Ok(Self::new(client, key_id, C::PublicKey::try_from_bytes(public_key.as_bytes())?))
+		Ok(Self::new(client, key_id))
 	}
 
 	/// Creates in AWS KMS matching the provided key id.
@@ -51,22 +49,7 @@ where
 
 		let key_id = res.key_metadata().context("No key metadata available")?.key_id().to_string();
 
-		Ok(Self::new(self.client, key_id, self.public_key))
-	}
-
-	/// Fills the public key from the key id
-	pub async fn fill_with_public_key(mut self) -> Result<Self, anyhow::Error> {
-		let res = self.client.get_public_key().key_id(&self.key_id).send().await?;
-		let public_key = C::PublicKey::try_from_bytes(
-			res.public_key().context("No public key available")?.as_ref(),
-		)?;
-		self.public_key = public_key;
-		Ok(self)
-	}
-
-	/// Gets a reference to the public key
-	pub fn public_key(&self) -> &C::PublicKey {
-		&self.public_key
+		Ok(Self::new(self.client, key_id))
 	}
 }
 

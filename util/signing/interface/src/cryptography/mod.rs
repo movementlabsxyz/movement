@@ -14,7 +14,13 @@ macro_rules! fixed_size {
 		impl crate::cryptography::TryFromBytes for $Name {
 			fn try_from_bytes(bytes: &[u8]) -> Result<Self, anyhow::Error> {
 				if bytes.len() != Self::BYTES_LEN {
-					Err(anyhow::anyhow!("invalid length"))?;
+					Err(anyhow::anyhow!(
+						"invalid length for {}, wants {}, got {}, for {:?}",
+						stringify!($Name),
+						Self::BYTES_LEN,
+						bytes.len(),
+						bytes
+					))?;
 				}
 
 				let mut inner = [0u8; Self::BYTES_LEN];

@@ -14,6 +14,8 @@ use tokio::sync::Mutex;
 #[clap(rename_all = "kebab-case", about = "Runs signing app for secp256k1 against AWS KMS")]
 pub struct AwsKms {
 	canonical_key: String,
+	#[arg(long)]
+	create_key: bool,
 }
 
 impl AwsKms {
@@ -21,7 +23,7 @@ impl AwsKms {
 		// build the hsm
 		let key = Key::try_from_canonical_string(self.canonical_key.as_str())
 			.map_err(|e| anyhow::anyhow!(e))?;
-		let builder = Builder::<Secp256k1>::new();
+		let builder = Builder::<Secp256k1>::new().create_key(self.create_key);
 		let hsm = Signer::new(builder.build(key).await?);
 
 		// Build the server

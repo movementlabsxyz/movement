@@ -205,6 +205,7 @@ impl Key {
 	}
 
 	/// Gets a key from a canonical string.
+	/// Example canonical string: "movement/prod/full_node/mcr_settlement/signer/validator/0"
 	pub fn try_from_canonical_string(s: &str) -> Result<Self, String> {
 		let parts: Vec<&str> = s.split('/').collect();
 		if parts.len() != 7 {
@@ -234,7 +235,7 @@ impl Key {
 pub enum SignerBuilderError {
 	#[error("building signer failed")]
 	BuildingSigner(#[source] Box<dyn error::Error + Send + Sync>),
-	#[error("internal error")]
+	#[error("internal error: {0}")]
 	Internal(String),
 }
 

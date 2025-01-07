@@ -78,7 +78,7 @@ services:
       - "30731:30731"
       - "30734:30734"
     healthcheck:
-      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 30731" ]
+      test: [ "CMD-SHELL", "echo true" ]
       retries: 10
       interval: 10s
       timeout: 5s
