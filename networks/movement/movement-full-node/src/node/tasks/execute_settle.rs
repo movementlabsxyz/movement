@@ -79,10 +79,12 @@ where
 			select! {
 				Some(res) = blocks_from_da.next() => {
 					let response = res.context("failed to get next block from DA")?;
+					debug!("Received block from DA");
 					self.process_block_from_da(response).await?;
 				}
 				Some(res) = self.commitment_events.next() => {
 					let event = res.context("failed to get commitment event")?;
+					debug!("Received commitment event");
 					self.process_commitment_event(event).await?;
 				}
 				else => break,
@@ -191,7 +193,8 @@ where
 				Ok(commitment) => return Ok(commitment),
 				Err(e) => {
 					info!("Failed to execute block: {:?}. Retrying", e);
-					block_timestamp += self.execution_extension.block_retry_increment_microseconds; // increase the timestamp by 5 ms (5000 microseconds)
+					block_timestamp += self.execution_extension.block_retry_increment_microseconds;
+					// increase the timestamp by 5 ms (5000 microseconds)
 				}
 			}
 		}
