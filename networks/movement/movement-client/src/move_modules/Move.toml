@@ -4,7 +4,7 @@ version = "1.0.0"
 authors = []
 
 [addresses]
-test_token = '_'
+test_token = "0x1"
 
 [dev-addresses]
 

@@ -1,4 +1,4 @@
-module <address>::TestToken {
+module test_token::TestToken {
     use aptos_framework::coin::{self, Coin, register, mint};
     use aptos_framework::aptos_framework::{self};
     use aptos_framework::signer;
