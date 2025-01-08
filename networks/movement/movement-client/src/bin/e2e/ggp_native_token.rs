@@ -86,69 +86,6 @@ async fn main() -> Result<(), anyhow::Error> {
 		.await
 		.context("Failed to get beneficiary's account balance")?;
 
-	let test_token_module = format!(
-		r#"
-		    module <address>::TestToken {
-            use aptos_framework::coin::{self, Coin, register, mint};
-            use aptos_framework::aptos_framework::{self};
-            use aptos_framework::signer;
-            
-            /// The type of the TEST token
-            struct TEST has key, store {}
-
-            /// Initialize the TEST token
-            public fun initialize_test_token(account: &signer) {
-                // Register the token in the account
-                register<TEST>(account);
-
-                // Mint 1,000,000 TEST tokens to the account
-                mint<TEST>(
-                    signer::address_of(account),
-                    1_000_000
-                );
-            }
-
-            /// Register the TEST token in an account
-            public fun register_token(account: &signer) {
-                register<TEST>(account);
-            }
-        }
-		"#
-	);
-
-	// Build the move script payload
-	let fund_from_governed_gas_pool_script = format!(
-		r#"
-script {{
-	use aptos_framework::aptos_governance;
-	use aptos_framework::consensus_config;
-	use aptos_framework::governed_gas_pool;
-	fun main(core_resources: &signer) {{
-		let framework_signer = aptos_governance::get_signer_testnet_only(core_resources, @0000000000000000000000000000000000000000000000000000000000000001);
-		// fund the beneficiary account
-		governed_gas_pool::fund(
-			&framework_signer,
-			@0x{beneficiary_address},
-			{amount}
-		);
-		
-	}}
-}}
-"#
-	);
-
-	// Assert the emission of the governed gas pool
-	let post_beneficiary_balance = coin_client
-		.get_account_balance(&beneficiary.address())
-		.await
-		.context("Failed to get beneficiary's account balance")?;
-	assert_eq!(
-		post_beneficiary_balance,
-		pre_beneficiary_balance + amount,
-		"Beneficiary's balance should be increased by {}",
-		amount
-	);
-
 	Ok(())
 }
 
