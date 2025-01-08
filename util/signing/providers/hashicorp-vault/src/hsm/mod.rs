@@ -70,6 +70,7 @@ where
 	C: Curve + HashiCorpVaultCryptographySpec + Sync,
 {
 	async fn sign(&self, message: &[u8]) -> Result<C::Signature, SignerError> {
+		println!("Key name: {:?}", self.key_name.as_str());
 		let res = data::sign(
 			&self.client,
 			self.mount_name.as_str(),
