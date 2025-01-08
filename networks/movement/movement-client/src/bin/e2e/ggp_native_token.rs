@@ -57,6 +57,23 @@ static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
+	let manifest_dir = env::var("CARGO_MANIFEST_DIR").expect(
+		"CARGO_MANIFEST_DIR is not set. Make sure to run this inside a Cargo build context.",
+	);
+	// Run the `movement move build` command
+	let build_status = Command::new("movement")
+		.arg("move")
+		.arg("build")
+		.status()
+		.expect("Failed to execute `movement move build` command");
+
+	// Check if the build succeeded
+	if !build_status.success() {
+		anyhow::bail!(
+			"Building Move module failed. Please check the `movement move build` command."
+		);
+	}
+
 	let rest_client = Client::new(NODE_URL.clone());
 	let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone()); // <:!:section_1a
 

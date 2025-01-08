@@ -36,8 +36,8 @@ name = "movement-tests-e2e-whitelist"
 path = "src/bin/e2e/whitelist.rs"
 
 [[bin]]
-name = "movement-tests-e2e-ggp-native-token"
-path = "src/bin/e2e/ggp_native_token.rs"
+name = "movement-tests-e2e-ggp-non-native-token"
+path = "src/bin/e2e/ggp_non_native_token.rs"
 
 
 [dependencies]
