@@ -35,6 +35,11 @@ path = "src/bin/e2e/followers_consistent.rs"
 name = "movement-tests-e2e-whitelist"
 path = "src/bin/e2e/whitelist.rs"
 
+[[bin]]
+name = "movement-tests-e2e-governed-gas-pool"
+path = "src/bin/e2e/governed_gas_pool.rs"
+
+
 [dependencies]
 aptos-sdk = { workspace = true }
 aptos-types = { workspace = true }
@@ -65,7 +70,7 @@ movement-config = { workspace = true }
 dot-movement = { workspace = true }
 tonic = { workspace = true }
 movement-da-light-node-client = { workspace = true }
-movement-da-light-node-proto = { workspace = true, features = ["client"]}
+movement-da-light-node-proto = { workspace = true, features = ["client"] }
 movement-types = { workspace = true }
 
 [dev-dependencies]
