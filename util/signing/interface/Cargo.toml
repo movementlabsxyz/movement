@@ -1,0 +1,20 @@
+[package]
+name = "movement-signer"
+description = "Common signing API used throughout Movement"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+thiserror = { workspace = true }
+ed25519-dalek = { workspace = true }
+k256 = { workspace = true, features = ["ecdsa"] }
+anyhow = { workspace = true }
+
+[lints]
+workspace = true
