@@ -82,7 +82,7 @@ where
 		.context("Failed to sign message")
 		.map_err(|e| SignerError::Internal(e.to_string()))?;
 
-		// the signature should be encoded valut:v1:<signature> check for match and split off the signature
+		// the signature should be encoded vault:v1:<signature> check for match and split off the signature
 		// 1. check for match
 		if !res.signature.starts_with("vault:v1:") {
 			return Err(SignerError::Internal("Invalid signature format".to_string()));
