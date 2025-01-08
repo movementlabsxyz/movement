@@ -64,8 +64,8 @@
         ];
 
         testDependencies = with pkgs; [
-          python311
-          poetry
+          # python311
+          # poetry
           just
           foundry-bin
           process-compose
@@ -135,7 +135,9 @@
               lld mold coreutils postgresql
 
               # test dependencies
-              python311 poetry just foundry-bin process-compose jq docker solc
+              # python311 
+              # poetry 
+              just foundry-bin process-compose jq docker solc
               grpcurl grpcui
 
               celestia-app celestia-node
