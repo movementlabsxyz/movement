@@ -1,0 +1,13 @@
+version: "3"
+
+environment:
+
+processes:
+  bridge_e2e-tests:
+    command: |
+      cargo test -p movement-signer-e2e-test e2e_eth_signing -- --nocapture --test-threads=1
+    depends_on:
+      signing_local_setup:
+        condition: process_healthy
+    availability:
+      exit_on_end: true

@@ -39,12 +39,9 @@ async fn test_aws_kms_send_tx() -> Result<(), anyhow::Error> {
 	let _secret_key = env::var("AWS_SECRET_KEY").expect("AWS_SECRET_KEY not set");
 	let key_id = env::var("AWS_KEY_ID").expect("AWS_KEY_ID not set");
 
-	println!("key_id:{key_id}");
-
 	let aws = AwsKmsSigner::new(key_id).await;
 	let signer = HsmSigner::try_new(aws, Some(chain_id)).await?;
 	let address = signer.address();
-	println!("DEEEEB Key address:{}", address);
 
 	let key_provider = ProviderBuilder::new()
 		.with_recommended_fillers()
@@ -63,39 +60,26 @@ async fn test_aws_kms_send_tx() -> Result<(), anyhow::Error> {
 	//transfer some eth to the key.
 	let tx = TransactionRequest::default()
 		.with_to(address)
-		.with_value(U256::from(1000000000));
+		.with_value(U256::from(10_000_000_000_000_000u64));
 	let receipt = admin_provider.send_transaction(tx).await?.get_receipt().await?;
-	println!("Admin -> Key receipt: {receipt:?}",);
 
-	let account = key_provider.get_accounts().await;
-	println!("Account: {:?}", account);
-	let balance = key_provider.get_balance(address).await;
-	println!("Balance: {:?}", balance);
+	let balance = key_provider.get_balance(address).await?;
 
 	//transfer back some eth.
 	let tx = TransactionRequest::default()
 		.with_from(address)
 		.with_to(admin_address)
-		.with_value(U256::from(5))
-		.gas_limit(3000000);
-	println!("Tx from {:?}", tx.from);
+		.with_value(U256::from(500))
+		.with_chain_id(chain_id)
+		.gas_limit(3_000_000);
 
-	let receipt = key_provider.send_transaction(tx).await; //.get_receipt().await?;
-	println!("Key -> Admin receipt: {receipt:?}",);
+	key_provider.send_transaction(tx).await?.get_receipt().await?;
 
-	// // Print ANvil output.
-	// use std::io;
-	// use std::io::BufRead;
-	// use std::io::BufReader;
-	// use std::io::Write;
-
-	// let anvil_out = anvil.child_mut().stdout.take().unwrap();
-	// let mut stdout_writer = io::stdout();
-	// let mut reader = BufReader::new(anvil_out).lines();
-	// while let Some(Ok(line)) = reader.next() {
-	// 	stdout_writer.write_all(line.as_bytes())?;
-	// 	stdout_writer.write_all(b"\n")?;
-	// }
+	let new_balance = key_provider.get_balance(address).await?;
+	assert!(
+		balance != new_balance,
+		"AWS account didn't change. Last transfer doesn't execute correctly."
+	);
 
 	Ok(())
 }
