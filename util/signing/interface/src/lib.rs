@@ -3,7 +3,7 @@ use std::future::Future;
 use std::marker::PhantomData;
 
 pub mod cryptography;
-pub mod manager;
+pub mod key;
 
 /// Errors thrown by Signer
 #[derive(Debug, thiserror::Error)]
@@ -49,8 +49,7 @@ where
 	C: cryptography::Curve,
 {
 	/// Binds the signing provider with the specific curve selection.
-	pub fn new(provider: O, curve: C) -> Self {
-		let _ = curve;
+	pub fn new(provider: O) -> Self {
 		Self { provider, _phantom_curve: PhantomData }
 	}
 

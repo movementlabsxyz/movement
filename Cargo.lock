@@ -7580,6 +7580,9 @@ dependencies = [
  "ed25519 2.2.3",
  "google-cloud-kms",
  "k256",
+ "movement-signer",
+ "movement-signer-aws-kms",
+ "movement-signer-hashicorp-vault",
  "rand 0.7.3",
  "reqwest 0.12.9",
  "ring-compat",
@@ -10538,8 +10541,12 @@ dependencies = [
 name = "movement-signer-aws-kms"
 version = "0.0.2"
 dependencies = [
+ "anyhow",
+ "aws-config",
  "aws-sdk-kms",
+ "aws-types",
  "movement-signer",
+ "secp256k1",
 ]
 
 [[package]]
@@ -13535,6 +13542,24 @@ dependencies = [
  "pkcs8 0.10.2",
  "subtle",
  "zeroize",
+]
+
+[[package]]
+name = "secp256k1"
+version = "0.24.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6b1629c9c557ef9b293568b338dddfc8208c98a18c59d722a9d53f859d9c9b62"
+dependencies = [
+ "secp256k1-sys",
+]
+
+[[package]]
+name = "secp256k1-sys"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "83080e2c2fc1006e625be82e5d1eb6a43b7fd9578b617fcc55814daf286bba4b"
+dependencies = [
+ "cc",
 ]
 
 [[package]]
