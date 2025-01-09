@@ -43,7 +43,11 @@ pub struct Signer<O, C> {
 	_phantom_curve: PhantomData<C>,
 }
 
-impl<O, C> Signer<O, C> {
+impl<O, C> Signer<O, C>
+where
+	O: Signing<C>,
+	C: cryptography::Curve,
+{
 	/// Binds the signing provider with the specific curve selection.
 	pub fn new(provider: O, curve: C) -> Self {
 		let _ = curve;
