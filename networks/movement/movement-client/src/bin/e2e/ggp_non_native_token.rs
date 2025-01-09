@@ -5,6 +5,8 @@ use movement_client::{
 	types::LocalAccount,
 };
 use once_cell::sync::Lazy;
+use std::env;
+use std::path::PathBuf;
 use std::str::FromStr;
 use tokio::process::Command;
 use url::Url;
@@ -61,11 +63,17 @@ async fn main() -> Result<(), anyhow::Error> {
 	let manifest_dir = env::var("CARGO_MANIFEST_DIR").expect(
 		"CARGO_MANIFEST_DIR is not set. Make sure to run this inside a Cargo build context.",
 	);
+
+	let target_dir =
+		PathBuf::from(manifest_dir).join("networks/movement/movement-client/src/move_modules");
+
 	// Run the `movement move build` command
 	let build_status = Command::new("movement")
 		.arg("move")
 		.arg("build")
+		.current_dir(target_dir)
 		.status()
+		.await
 		.expect("Failed to execute `movement move build` command");
 
 	// Check if the build succeeded
@@ -81,16 +89,16 @@ async fn main() -> Result<(), anyhow::Error> {
 	let coin_client = CoinClient::new(&rest_client); // <:!:section_1b
 
 	// Create the proposer account and fund it from the faucet
-	let mut proposer = LocalAccount::generate(&mut rand::rngs::OsRng);
+	let proposer = LocalAccount::generate(&mut rand::rngs::OsRng);
 	faucet_client
-		.fund(&proposer, 1_000_000)
+		.fund(proposer.address(), 1_000_000)
 		.await
 		.context("Failed to fund proposer account")?;
 
 	// Create the beneficiary account and fund it from the faucet
 	let beneficiary = LocalAccount::generate(&mut rand::rngs::OsRng);
 	faucet_client
-		.fund(&beneficiary, 1_000_000)
+		.fund(beneficiary.address(), 1_000_000)
 		.await
 		.context("Failed to fund beneficiary account")?;
 	let beneficiary_address = beneficiary.address().to_hex_literal();
