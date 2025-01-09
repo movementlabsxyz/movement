@@ -63,8 +63,10 @@ where
                 println!("Preparing to sign message. Message bytes: {:?}", message);
 
                 let blob = Blob::new(message);
-                let key_id = "arn:aws:kms:us-east-1:052940064682:key/9f228b96-d9f0-4597-bd7f-9f6dce6a71d9"; // Replace with dynamic key retrieval if needed
-
+                // Todo: update to use Parameter Store to fetch Key Id
+                let key_id = std::env::var("AWS_KMS_KEY_ID")
+                        .map_err(|_| SignerError::Internal("AWS_KMS_KEY_ID not set".to_string()))?;
+                println!("Using Key ID: {}", key_id);
                 let request = self
                         .client
                         .sign()
