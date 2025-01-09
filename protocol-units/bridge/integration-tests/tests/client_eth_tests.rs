@@ -131,7 +131,7 @@ async fn test_eth_client_initiator_complete_transfer() {
 		Some(Ok(BridgeContractEvent::Initiated(detail))) => detail.bridge_transfer_id,
 		Some(Err(e)) => panic!("Error in bridge contract event: {:?}", e),
 		None => panic!("No event received"),
-		_ => panic!("Not a an Initiated event: {:?}", event_option),
+		_ => panic!("Not an Initiated event: {:?}", event_option),
 	};
 
 	tracing::info!("Received bridge_transfer_id: {}", bridge_transfer_id);
@@ -196,7 +196,7 @@ async fn test_eth_client_refund_transfer() {
 		Some(Ok(BridgeContractEvent::Initiated(detail))) => detail.bridge_transfer_id,
 		Some(Err(e)) => panic!("Error in bridge contract event: {:?}", e),
 		None => panic!("No event received"),
-		_ => panic!("Not a an Initiated event: {:?}", event_option),
+		_ => panic!("Not an Initiated event: {:?}", event_option),
 	};
 
 	tracing::info!("Received bridge_transfer_id: {}", bridge_transfer_id);
