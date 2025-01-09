@@ -6,7 +6,7 @@ processes:
 
   gas-dos-test:
     command: |
-      cargo run --bin movement-tests-e2e-non-native-token
+      cargo run --bin movement-tests-e2e-ggp-non-native-token
     depends_on:
       movement-full-node:
         condition: process_healthy
