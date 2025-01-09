@@ -41,6 +41,8 @@ bcs = { workspace = true }
 zstd = { workspace = true }
 ecdsa = { workspace = true }
 k256 = { workspace = true }
+movement-celestia-light-node-signer = { workspace = true }
+movement-signer = { workspace = true }
 
 # sequencer
 memseq = { workspace = true, optional = true }

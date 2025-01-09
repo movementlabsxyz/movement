@@ -1,16 +1,4 @@
 use block::WrappedBlock;
-use ecdsa::{
-	elliptic_curve::{
-		generic_array::ArrayLength,
-		ops::Invert,
-		point::PointCompression,
-		sec1::{FromEncodedPoint, ModulusSize, ToEncodedPoint},
-		subtle::CtOption,
-		AffinePoint, CurveArithmetic, FieldBytesSize, PrimeCurve, Scalar,
-	},
-	hazmat::{DigestPrimitive, SignPrimitive, VerifyPrimitive},
-	SignatureSize,
-};
 use movement_celestia_da_light_node_prevalidator::{
 	aptos::whitelist::Validator, PrevalidatorOperations,
 };
@@ -41,43 +29,35 @@ use movement_da_light_node_proto::light_node_service_server::LightNodeService;
 use movement_types::block::Block;
 
 use crate::v1::{passthrough::LightNodeV1 as LightNodeV1PassThrough, LightNodeV1Operations};
+use movement_signer::{cryptography::Curve, Signing};
 
 const LOGGING_UID: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Clone)]
-pub struct LightNodeV1<C>
+pub struct LightNodeV1<O, C>
 where
-	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-	SignatureSize<C>: ArrayLength<u8>,
-	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-	FieldBytesSize<C>: ModulusSize,
+	O: Signing<C>,
+	C: Curve,
 {
-	pub pass_through: LightNodeV1PassThrough<C>,
+	pub pass_through: LightNodeV1PassThrough<O, C>,
 	pub memseq: Arc<memseq::Memseq<memseq::RocksdbMempool>>,
 	pub prevalidator: Option<Arc<Validator>>,
 }
 
-impl<C> Debug for LightNodeV1<C>
+impl<O, C> Debug for LightNodeV1<O, C>
 where
-	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-	SignatureSize<C>: ArrayLength<u8>,
-	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-	FieldBytesSize<C>: ModulusSize,
+	O: Signing<C>,
+	C: Curve,
 {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		f.debug_struct("LightNodeV1").field("pass_through", &self.pass_through).finish()
 	}
 }
 
-impl<C> LightNodeV1Operations for LightNodeV1<C>
+impl<O, C> LightNodeV1Operations for LightNodeV1<O, C>
 where
-	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-	SignatureSize<C>: ArrayLength<u8>,
-	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-	FieldBytesSize<C>: ModulusSize,
+	O: Signing<C>,
+	C: Curve,
 {
 	async fn try_from_config(config: Config) -> Result<Self, anyhow::Error> {
 		info!("Initializing LightNodeV1 in sequencer mode from environment.");
@@ -117,13 +97,10 @@ where
 	}
 }
 
-impl<C> LightNodeV1<C>
+impl<O, C> LightNodeV1<O, C>
 where
-	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-	SignatureSize<C>: ArrayLength<u8>,
-	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-	FieldBytesSize<C>: ModulusSize,
+	O: Signing<C>,
+	C: Curve,
 {
 	async fn tick_build_blocks(&self, sender: Sender<Block>) -> Result<(), anyhow::Error> {
 		let memseq = self.memseq.clone();
@@ -374,13 +351,10 @@ where
 }
 
 #[tonic::async_trait]
-impl<C> LightNodeService for LightNodeV1<C>
+impl<O, C> LightNodeService for LightNodeV1<O, C>
 where
-	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-	SignatureSize<C>: ArrayLength<u8>,
-	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-	FieldBytesSize<C>: ModulusSize,
+	O: Signing<C>,
+	C: Curve,
 {
 	/// Server streaming response type for the StreamReadFromHeight method.
 	type StreamReadFromHeightStream = Pin<

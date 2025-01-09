@@ -1,20 +1,8 @@
 use super::{LightNodeV1, LightNodeV1Operations};
-use ecdsa::{
-	elliptic_curve::{
-		generic_array::ArrayLength,
-		ops::Invert,
-		point::PointCompression,
-		sec1::{FromEncodedPoint, ModulusSize, ToEncodedPoint},
-		subtle::CtOption,
-		AffinePoint, CurveArithmetic, FieldBytesSize, PrimeCurve, Scalar,
-	},
-	hazmat::{DigestPrimitive, SignPrimitive, VerifyPrimitive},
-	SignatureSize,
-};
 use godfig::{backend::config_file::ConfigFile, Godfig};
 use movement_celestia_da_util::config::Config;
+use movement_signer::{cryptography::Curve, Signing};
 
-#[derive(Clone)]
 pub struct Manager<LightNode>
 where
 	LightNode: LightNodeV1Operations,
@@ -24,13 +12,10 @@ where
 }
 
 // Implements a very simple manager using a marker strategy pattern.
-impl<C> Manager<LightNodeV1<C>>
+impl<O, C> Manager<LightNodeV1<O, C>>
 where
-	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-	SignatureSize<C>: ArrayLength<u8>,
-	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-	FieldBytesSize<C>: ModulusSize,
+	O: Signing<C>,
+	C: Curve,
 {
 	pub async fn new(file: tokio::fs::File) -> Result<Self, anyhow::Error> {
 		let godfig = Godfig::new(
@@ -42,13 +27,10 @@ where
 		Ok(Self { godfig, _marker: std::marker::PhantomData })
 	}
 
-	pub async fn try_light_node(&self) -> Result<LightNodeV1<C>, anyhow::Error>
+	pub async fn try_light_node(&self) -> Result<LightNodeV1<O, C>, anyhow::Error>
 	where
-		C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-		Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-		SignatureSize<C>: ArrayLength<u8>,
-		AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
-		FieldBytesSize<C>: ModulusSize,
+		O: Signing<C>,
+		C: Curve,
 	{
 		let config = self.godfig.try_wait_for_ready().await?;
 		LightNodeV1::try_from_config(config).await

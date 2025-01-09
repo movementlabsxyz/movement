@@ -19,27 +19,14 @@ use movement_da_light_node_proto::light_node_service_server::LightNodeService;
 use movement_da_light_node_proto::*;
 
 use crate::v1::LightNodeV1Operations;
-use ecdsa::{
-	elliptic_curve::{
-		generic_array::ArrayLength,
-		ops::Invert,
-		point::PointCompression,
-		sec1::{FromEncodedPoint, ModulusSize, ToEncodedPoint},
-		subtle::CtOption,
-		AffinePoint, CurveArithmetic, FieldBytesSize, PrimeCurve, Scalar,
-	},
-	hazmat::{DigestPrimitive, SignPrimitive, VerifyPrimitive},
-	SignatureSize, SigningKey,
-};
+use movement_celestia_light_node_signer::Signer;
+use movement_signer::{cryptography::Curve, Signing};
 
 #[derive(Clone)]
-pub struct LightNodeV1<C>
+pub struct LightNodeV1<O, C>
 where
-	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-	SignatureSize<C>: ArrayLength<u8>,
-	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-	FieldBytesSize<C>: ModulusSize,
+	O: Signing<C>,
+	C: Curve,
 {
 	pub config: Config,
 	pub celestia_namespace: Namespace,
@@ -47,16 +34,13 @@ where
 	pub verifier: Arc<
 		Box<dyn VerifierOperations<CelestiaBlob, IntermediateBlobRepresentation> + Send + Sync>,
 	>,
-	pub signing_key: SigningKey<C>,
+	pub signer: Signer<O, C>,
 }
 
-impl<C> Debug for LightNodeV1<C>
+impl<O, C> Debug for LightNodeV1<O, C>
 where
-	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-	SignatureSize<C>: ArrayLength<u8>,
-	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-	FieldBytesSize<C>: ModulusSize,
+	O: Signing<C>,
+	C: Curve,
 {
 	fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
 		f.debug_struct("LightNodeV1")
@@ -65,13 +49,10 @@ where
 	}
 }
 
-impl<C> LightNodeV1Operations for LightNodeV1<C>
+impl<O, C> LightNodeV1Operations for LightNodeV1<O, C>
 where
-	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-	SignatureSize<C>: ArrayLength<u8>,
-	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-	FieldBytesSize<C>: ModulusSize,
+	O: Signing<C>,
+	C: Curve,
 {
 	/// Tries to create a new LightNodeV1 instance from the toml config file.
 	async fn try_from_config(config: Config) -> Result<Self, anyhow::Error> {
@@ -79,9 +60,6 @@ where
 
 		let signing_key_str = config.da_signing_key();
 		let hex_bytes = hex::decode(signing_key_str)?;
-
-		let signing_key = SigningKey::from_bytes(hex_bytes.as_slice().try_into()?)
-			.map_err(|e| anyhow::anyhow!("Failed to create signing key: {}", e))?;
 
 		Ok(Self {
 			config: config.clone(),
@@ -106,13 +84,10 @@ where
 	}
 }
 
-impl<C> LightNodeV1<C>
+impl<O, C> LightNodeV1<O, C>
 where
-	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-	SignatureSize<C>: ArrayLength<u8>,
-	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-	FieldBytesSize<C>: ModulusSize,
+	O: Signing<C>,
+	C: Curve,
 {
 	/// Creates a new signed blob instance with the provided data.
 	pub fn create_new_celestia_blob(&self, data: Vec<u8>) -> Result<CelestiaBlob, anyhow::Error> {
@@ -331,13 +306,10 @@ where
 }
 
 #[tonic::async_trait]
-impl<C> LightNodeService for LightNodeV1<C>
+impl<O, C> LightNodeService for LightNodeV1<O, C>
 where
-	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-	SignatureSize<C>: ArrayLength<u8>,
-	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-	FieldBytesSize<C>: ModulusSize,
+	O: Signing<C>,
+	C: Curve,
 {
 	/// Server streaming response type for the StreamReadFromHeight method.
 	type StreamReadFromHeightStream = std::pin::Pin<
