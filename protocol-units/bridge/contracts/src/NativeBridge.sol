@@ -21,6 +21,7 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
     mapping(uint256 day => uint256 amount) public inboundRateLimitBudget;
 
     bytes32 public constant RELAYER_ROLE = keccak256(abi.encodePacked("RELAYER_ROLE"));
+    bytes32 public constant PAUSER_ROLE = keccak256(abi.encodePacked("PAUSER_ROLE"));
 
     // Risk denominator must be above 3
     uint256 public constant RISK_DENOMINATOR_LOWER_BOUND = 3;
@@ -40,6 +41,7 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
      * @param _admin The address of the admin role
      * @param _relayer The address of the relayer role
      * @param _maintainer The address of the maintainer role
+     * @param _insuranceFund The address of the insurance fund
      */
     function initialize(
         address _moveToken,
@@ -59,7 +61,9 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
         riskDenominator = RISK_DENOMINATOR_LOWER_BOUND + 1;
 
         // Maintainer is optional
-        _grantRole(RELAYER_ROLE, _maintainer);
+        if (_maintainer != address(0)) {
+            _grantRole(RELAYER_ROLE, _maintainer);
+        }
     }
 
     /**
@@ -73,9 +77,12 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
         external
         whenNotPaused
         returns (bytes32 bridgeTransferId)
-    {
+    {  
         // Ensure there is a valid amount`
         require(amount > 0, ZeroAmount());
+
+        _rateLimitOutbound(amount);
+
         address initiator = msg.sender;
 
         // Transfer the MOVE tokens from the user to the contract
@@ -187,16 +194,28 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
     /**
      * @dev Toggles the paused state of the contract
      */
-    function togglePause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function togglePause() external onlyRole(PAUSER_ROLE) {
         paused() ? _pause() : _unpause();
         emit PauseToggled(paused());
+    }
+
+    /**
+     * @dev Rate limits the outboud transfers based on the insurance fund and risk denominator
+     * @param amount The amount to rate limit
+     */
+    function _rateLimitOutbound(uint256 amount) public {
+        uint256 day = block.timestamp / 1 days;
+        outboundRateLimitBudget[day] += amount;
+        require(
+            outboundRateLimitBudget[day] < moveToken.balanceOf(insuranceFund) / riskDenominator,
+            OutboundRateLimitExceeded()
+        );
     }
 
     /**
      * @dev Rate limits the inbound transfers based on the insurance fund and risk denominator
      * @param amount The amount to rate limit
      */
-
     function _rateLimitInbound(uint256 amount) public {
         uint256 day = block.timestamp / 1 days;
         inboundRateLimitBudget[day] += amount;
@@ -205,4 +224,5 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
             InboundRateLimitExceeded()
         );
     }
+
 }
