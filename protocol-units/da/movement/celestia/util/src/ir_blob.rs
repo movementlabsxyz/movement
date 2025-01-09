@@ -1,15 +1,7 @@
-use ecdsa::{
-	elliptic_curve::{
-		generic_array::ArrayLength,
-		ops::Invert,
-		point::PointCompression,
-		sec1::{FromEncodedPoint, ModulusSize, ToEncodedPoint},
-		subtle::CtOption,
-		AffinePoint, CurveArithmetic, FieldBytesSize, PrimeCurve, Scalar,
-	},
-	hazmat::{DigestPrimitive, SignPrimitive, VerifyPrimitive},
-	signature::{digest::Digest, DigestVerifier},
-	SignatureSize, SigningKey, VerifyingKey,
+use movement_celestia_light_node_signer::Signer;
+use movement_signer::{
+	cryptography::{Curve, TryFromBytes},
+	Digest, Signing, Verify,
 };
 use serde::{Deserialize, Serialize};
 
@@ -45,41 +37,21 @@ impl InnerSignedBlobV1Data {
 	}
 
 	/// Computes the id of InnerSignedBlobV1Data
-	pub fn compute_id<C>(&self) -> Id
+	pub fn compute_id<O, C>(&self) -> Id
 	where
-		C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-		Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-		SignatureSize<C>: ArrayLength<u8>,
-		AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-		FieldBytesSize<C>: ModulusSize,
+		C: Curve,
 	{
-		let mut id_hasher = C::Digest::new();
-		id_hasher.update(self.blob.as_slice());
-		id_hasher.update(&self.timestamp.to_be_bytes());
 		Id(id_hasher.finalize().to_vec())
 	}
 
-	pub fn try_to_sign<C>(
+	pub async fn try_to_sign<O, C>(
 		self,
-		signing_key: &SigningKey<C>,
+		signing_key: &Signer<O, C>,
 	) -> Result<InnerSignedBlobV1, anyhow::Error>
 	where
-		C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-		Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-		SignatureSize<C>: ArrayLength<u8>,
-		AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-		FieldBytesSize<C>: ModulusSize,
+		O: Signing<C>,
+		C: Curve,
 	{
-		let id = self.compute_id::<C>();
-		let mut hasher = C::Digest::new();
-		hasher.update(self.blob.as_slice());
-		hasher.update(&self.timestamp.to_be_bytes());
-		hasher.update(id.as_slice());
-		let prehash = hasher.finalize();
-		let prehash_bytes = prehash.as_slice();
-
-		let (signature, _recovery_id) = signing_key.sign_prehash_recoverable(prehash_bytes)?;
-
 		Ok(InnerSignedBlobV1 {
 			data: self,
 			signature: signature.to_vec(),
@@ -100,24 +72,16 @@ pub struct InnerSignedBlobV1 {
 impl InnerSignedBlobV1 {
 	pub fn try_verify<C>(&self) -> Result<(), anyhow::Error>
 	where
-		C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-		Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-		SignatureSize<C>: ArrayLength<u8>,
-		AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-		FieldBytesSize<C>: ModulusSize,
+		C: Curve + Verify<C>,
 	{
-		let mut hasher = C::Digest::new();
-		hasher.update(self.data.blob.as_slice());
-		hasher.update(&self.data.timestamp.to_be_bytes());
-		hasher.update(self.id.as_slice());
+		let public_key = C::PublicKey::try_from_bytes(self.signer.as_slice())?;
+		let signature = C::Signature::try_from_bytes(self.signature.as_slice())?;
 
-		let verifying_key = VerifyingKey::<C>::from_sec1_bytes(self.signer.as_slice())?;
-		let signature = ecdsa::Signature::from_bytes(self.signature.as_slice().into())?;
-
-		match verifying_key.verify_digest(hasher, &signature) {
-			Ok(_) => Ok(()),
-			Err(_) => Err(anyhow::anyhow!("Failed to verify signature")),
+		if !C::verify(self.data.blob.as_slice(), &signature, &public_key)? {
+			return Err(anyhow::anyhow!("signature verification failed"))?;
 		}
+
+		Ok(())
 	}
 }
 
@@ -169,11 +133,7 @@ impl IntermediateBlobRepresentation {
 
 	pub fn verify_signature<C>(&self) -> Result<(), anyhow::Error>
 	where
-		C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-		Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-		SignatureSize<C>: ArrayLength<u8>,
-		AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-		FieldBytesSize<C>: ModulusSize,
+		C: Curve,
 	{
 		match self {
 			IntermediateBlobRepresentation::SignedV1(inner) => inner.try_verify::<C>(),

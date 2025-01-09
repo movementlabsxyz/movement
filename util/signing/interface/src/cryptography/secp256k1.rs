@@ -9,16 +9,17 @@ pub struct Secp256k1;
 
 fixed_size!(pub struct PublicKey([u8; 32]));
 fixed_size!(pub struct Signature([u8; 64]));
+fixed_size!(pub struct Digest([u8; 32]));
 
 impl Curve for Secp256k1 {
 	type PublicKey = PublicKey;
 	type Signature = Signature;
+	type Digest = Digest;
 }
 
 /// Built-in verifier for secp256k1.
 impl Verify<Secp256k1> for Secp256k1 {
 	fn verify(
-		&self,
 		message: &[u8],
 		signature: &Signature,
 		public_key: &PublicKey,

@@ -90,9 +90,14 @@ pub struct VerifyError(#[source] Box<dyn error::Error + Send + Sync>);
 pub trait Verify<C: cryptography::Curve> {
 	/// Verifies a signature.
 	fn verify(
-		&self,
 		message: &[u8],
 		signature: &C::Signature,
 		public_key: &C::PublicKey,
 	) -> Result<bool, VerifyError>;
+}
+
+/// A digest constructor trait.
+pub trait Digest<C: cryptography::Curve> {
+	/// Constructs a new digest.
+	fn digest(message: &[u8]) -> C::Digest;
 }

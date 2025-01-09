@@ -25,8 +25,8 @@ use movement_signer::{cryptography::Curve, Signing};
 #[derive(Clone)]
 pub struct LightNodeV1<O, C>
 where
-	O: Signing<C>,
-	C: Curve,
+	O: Signing<C> + Send + Sync + Clone,
+	C: Curve + Send + Sync + Clone,
 {
 	pub config: Config,
 	pub celestia_namespace: Namespace,
@@ -34,13 +34,13 @@ where
 	pub verifier: Arc<
 		Box<dyn VerifierOperations<CelestiaBlob, IntermediateBlobRepresentation> + Send + Sync>,
 	>,
-	pub signer: Signer<O, C>,
+	pub signer: Arc<Signer<O, C>>,
 }
 
 impl<O, C> Debug for LightNodeV1<O, C>
 where
-	O: Signing<C>,
-	C: Curve,
+	O: Signing<C> + Send + Sync + Clone,
+	C: Curve + Send + Sync + Clone,
 {
 	fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
 		f.debug_struct("LightNodeV1")
@@ -51,8 +51,8 @@ where
 
 impl<O, C> LightNodeV1Operations for LightNodeV1<O, C>
 where
-	O: Signing<C>,
-	C: Curve,
+	O: Signing<C> + Send + Sync + Clone + 'static,
+	C: Curve + Send + Sync + Clone + 'static,
 {
 	/// Tries to create a new LightNodeV1 instance from the toml config file.
 	async fn try_from_config(config: Config) -> Result<Self, anyhow::Error> {
@@ -86,8 +86,8 @@ where
 
 impl<O, C> LightNodeV1<O, C>
 where
-	O: Signing<C>,
-	C: Curve,
+	O: Signing<C> + Send + Sync + Clone + 'static,
+	C: Curve + Send + Sync + Clone + 'static,
 {
 	/// Creates a new signed blob instance with the provided data.
 	pub fn create_new_celestia_blob(&self, data: Vec<u8>) -> Result<CelestiaBlob, anyhow::Error> {
@@ -308,8 +308,8 @@ where
 #[tonic::async_trait]
 impl<O, C> LightNodeService for LightNodeV1<O, C>
 where
-	O: Signing<C>,
-	C: Curve,
+	O: Signing<C> + Send + Sync + Clone + 'static,
+	C: Curve + Send + Sync + Clone + 'static,
 {
 	/// Server streaming response type for the StreamReadFromHeight method.
 	type StreamReadFromHeightStream = std::pin::Pin<

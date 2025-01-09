@@ -39,5 +39,6 @@ pub trait TryFromBytes: Sized {
 /// the signature used by the EC digital signing algorithm.
 pub trait Curve {
 	type PublicKey: TryFromBytes;
-	type Signature;
+	type Signature: TryFromBytes;
+	type Digest: TryFromBytes;
 }

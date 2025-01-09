@@ -9,16 +9,17 @@ pub struct Ed25519;
 
 fixed_size!(pub struct PublicKey([u8; 32]));
 fixed_size!(pub struct Signature([u8; 64]));
+fixed_size!(pub struct Digest([u8; 32]));
 
 impl Curve for Ed25519 {
 	type PublicKey = PublicKey;
 	type Signature = Signature;
+	type Digest = Digest;
 }
 
 /// Built-in verifier for Ed25519.
 impl Verify<Ed25519> for Ed25519 {
 	fn verify(
-		&self,
 		message: &[u8],
 		signature: &Signature,
 		public_key: &PublicKey,
