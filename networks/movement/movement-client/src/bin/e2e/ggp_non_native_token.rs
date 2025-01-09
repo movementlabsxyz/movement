@@ -6,6 +6,7 @@ use movement_client::{
 };
 use once_cell::sync::Lazy;
 use std::str::FromStr;
+use tokio::process::Command;
 use url::Url;
 
 static SUZUKA_CONFIG: Lazy<movement_config::Config> = Lazy::new(|| {
@@ -82,14 +83,14 @@ async fn main() -> Result<(), anyhow::Error> {
 	// Create the proposer account and fund it from the faucet
 	let mut proposer = LocalAccount::generate(&mut rand::rngs::OsRng);
 	faucet_client
-		.fund_account(&proposer, 1_000_000)
+		.fund(&proposer, 1_000_000)
 		.await
 		.context("Failed to fund proposer account")?;
 
 	// Create the beneficiary account and fund it from the faucet
 	let beneficiary = LocalAccount::generate(&mut rand::rngs::OsRng);
 	faucet_client
-		.fund_account(&beneficiary, 1_000_000)
+		.fund(&beneficiary, 1_000_000)
 		.await
 		.context("Failed to fund beneficiary account")?;
 	let beneficiary_address = beneficiary.address().to_hex_literal();
@@ -105,4 +106,3 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	Ok(())
 }
-

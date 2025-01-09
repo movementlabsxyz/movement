@@ -4,7 +4,7 @@ environment:
 
 processes:
 
-  gas-dos-test:
+  test-ggp-non-native-token:
     command: |
       cargo run --bin movement-tests-e2e-ggp-non-native-token
     depends_on:
