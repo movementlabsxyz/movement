@@ -20,19 +20,31 @@ where
 	O: Signing<C>,
 	C: Curve,
 {
+	println!("Received payload: {:?}", &payload);
+
 	let message_bytes = payload.message.as_slice();
+
+	println!(
+		"Preparing to sign message. Message bytes: {:?}",
+		message_bytes
+	);
 
 	let signature = hsm
 		.lock()
 		.await
 		.sign(message_bytes)
 		.await
-		.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+		.map_err(|e| {
+			println!("Error signing message: {:?}", e);
+			StatusCode::INTERNAL_SERVER_ERROR
+		})?;
+
+	println!("Generated signature: {:?}", signature);
 
 	Ok(Json(SignedResponse { signature: signature.to_bytes() }))
 }
 
-#[derive(serde::Deserialize)]
+#[derive(Debug, serde::Deserialize)]
 pub struct SignRequest {
 	pub message: Vec<u8>,
 }

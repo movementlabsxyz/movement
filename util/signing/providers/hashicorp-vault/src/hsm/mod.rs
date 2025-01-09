@@ -70,6 +70,7 @@ where
 	C: Curve + HashiCorpVaultCryptographySpec + Sync,
 {
 	async fn sign(&self, message: &[u8]) -> Result<C::Signature, SignerError> {
+		println!("Key name: {:?}", self.key_name.as_str());
 		let res = data::sign(
 			&self.client,
 			self.mount_name.as_str(),
@@ -82,7 +83,7 @@ where
 		.context("Failed to sign message")
 		.map_err(|e| SignerError::Internal(e.to_string()))?;
 
-		// the signature should be encoded valut:v1:<signature> check for match and split off the signature
+		// the signature should be encoded vault:v1:<signature> check for match and split off the signature
 		// 1. check for match
 		if !res.signature.starts_with("vault:v1:") {
 			return Err(SignerError::Internal("Invalid signature format".to_string()));
