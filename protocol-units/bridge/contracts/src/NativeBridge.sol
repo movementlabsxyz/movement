@@ -19,6 +19,7 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
     mapping(uint256 nonce => OutboundTransfer) public noncesToOutboundTransfers;
     mapping(bytes32 bridgeTransferId => uint256 nonce) public idsToInboundNonces;
     mapping(uint256 day => uint256 amount) public inboundRateLimitBudget;
+    mapping(uint256 day => uint256 amount) public outboundRateLimitBudget;
 
     bytes32 public constant RELAYER_ROLE = keccak256(abi.encodePacked("RELAYER_ROLE"));
     bytes32 public constant PAUSER_ROLE = keccak256(abi.encodePacked("PAUSER_ROLE"));
