@@ -44,7 +44,8 @@ where
 				.build()?,
 		)?;
 
-		let key_name = std::env::var("VAULT_KEY_NAME").context("VAULT_KEY_NAME not set")?;
+		let key_name = std::env::var("VAULT_KEY_NAME")
+			.context("VAULT_KEY_NAME not set")?;
 		let mount_name = std::env::var("VAULT_MOUNT_NAME").context("VAULT_MOUNT_NAME not set")?;
 
 		Ok(Self::new(client, key_name, mount_name))
@@ -70,18 +71,21 @@ where
 	C: Curve + HashiCorpVaultCryptographySpec + Sync,
 {
 	async fn sign(&self, message: &[u8]) -> Result<C::Signature, SignerError> {
-		println!("Key name: {:?}", self.key_name.as_str());
+		println!("Key name: {:?}", self.key_name.replace("/", "_").as_str());
 		let res = data::sign(
 			&self.client,
 			self.mount_name.as_str(),
-			self.key_name.as_str(),
+			self.key_name.replace("/", "_").as_str(),
 			// convert bytes vec<u8> to base64 string
 			base64::encode(message).as_str(),
 			None,
 		)
 		.await
-		.context("Failed to sign message")
-		.map_err(|e| SignerError::Internal(e.to_string()))?;
+		.map_err(|e| {
+			let error_msg = format!("Failed to sign message: {:?}", e);
+			println!("{}", error_msg);
+			SignerError::Internal(error_msg)
+		})?;
 
 		// the signature should be encoded vault:v1:<signature> check for match and split off the signature
 		// 1. check for match
