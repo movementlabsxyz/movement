@@ -1,4 +1,4 @@
-use axum::{extract::State, http::StatusCode, routing::post, Json, Router};
+use axum::{extract::State, http::StatusCode, routing::{post, get}, Json, Router};
 use movement_signer::cryptography::ToBytes;
 use movement_signer::{cryptography::Curve, Signer, Signing};
 use std::sync::Arc;
@@ -9,8 +9,15 @@ where
 	O: Signing<C> + Send + Sync + 'static,
 	C: Curve + Send + Sync + 'static,
 {
-	Router::new().route("/sign", post(sign_handler)).with_state(hsm)
+	Router::new()
+		.route("/sign", post(sign_handler))
+		.route("/health", get(health_handler)) 
+		.with_state(hsm)
 }
+
+async fn health_handler() -> &'static str {
+	"OK"
+    }
 
 async fn sign_handler<O, C>(
 	State(hsm): State<Arc<Mutex<Signer<O, C>>>>,
