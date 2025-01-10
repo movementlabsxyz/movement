@@ -43,6 +43,7 @@ ecdsa = { workspace = true }
 k256 = { workspace = true }
 movement-celestia-light-node-signer = { workspace = true }
 movement-signer = { workspace = true }
+movement-signer-loader = { workspace = true }
 
 # sequencer
 memseq = { workspace = true, optional = true }

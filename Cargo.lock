@@ -10151,6 +10151,7 @@ dependencies = [
  "movement-celestia-light-node-signer",
  "movement-da-light-node-proto",
  "movement-signer",
+ "movement-signer-loader",
  "movement-tracing",
  "movement-types",
  "prost 0.13.3",

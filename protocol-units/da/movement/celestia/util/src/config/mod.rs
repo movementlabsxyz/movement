@@ -2,6 +2,7 @@ use anyhow::Context;
 use aptos_types::account_address::AccountAddress;
 use celestia_rpc::Client;
 use celestia_types::nmt::Namespace;
+use movement_signer::cryptography::ed25519::Ed25519;
 use movement_signer::cryptography::{secp256k1::Secp256k1, Curve};
 use movement_signer_loader::identifiers::{Load, LoadedSigner};
 use serde::{Deserialize, Serialize};

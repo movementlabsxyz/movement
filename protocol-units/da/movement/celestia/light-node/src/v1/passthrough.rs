@@ -1,4 +1,6 @@
 use movement_celestia_da_util::ir_blob::IntermediateBlobRepresentation;
+use movement_celestia_da_util::LoadSigner;
+use movement_signer::cryptography::secp256k1::Secp256k1;
 use std::fmt::{self, Debug, Formatter};
 use std::sync::Arc;
 use tokio_stream::{Stream, StreamExt};
@@ -21,6 +23,7 @@ use movement_da_light_node_proto::*;
 use crate::v1::LightNodeV1Operations;
 use movement_celestia_light_node_signer::Signer;
 use movement_signer::{cryptography::Curve, Digester, Signing, Verify};
+use movement_signer_loader::identifiers::LoadedSigner;
 
 #[derive(Clone)]
 pub struct LightNodeV1<O, C>
@@ -49,23 +52,20 @@ where
 	}
 }
 
-impl<O, C> LightNodeV1Operations for LightNodeV1<O, C>
-where
-	O: Signing<C> + Send + Sync + Clone + 'static,
-	C: Curve + Verify<C> + Digester<C> + Send + Sync + Clone + 'static,
-{
+impl LightNodeV1Operations for LightNodeV1<LoadedSigner<Secp256k1>, Secp256k1> {
 	/// Tries to create a new LightNodeV1 instance from the toml config file.
 	async fn try_from_config(config: Config) -> Result<Self, anyhow::Error> {
 		let client = Arc::new(config.connect_celestia().await?);
 
-		let signing_key_str = config.da_signing_key();
-		let hex_bytes = hex::decode(signing_key_str)?;
+		let loaded_signer: LoadedSigner<Secp256k1> =
+			<Config as LoadSigner<Secp256k1>>::da_signer(&config).await?;
+		let signer = Arc::new(Signer::new(loaded_signer));
 
 		Ok(Self {
 			config: config.clone(),
 			celestia_namespace: config.celestia_namespace(),
 			default_client: client.clone(),
-			verifier: Arc::new(Box::new(Verifier::<C>::new(
+			verifier: Arc::new(Box::new(Verifier::<Secp256k1>::new(
 				client,
 				config.celestia_namespace(),
 				config.da_signers_sec1_keys(),

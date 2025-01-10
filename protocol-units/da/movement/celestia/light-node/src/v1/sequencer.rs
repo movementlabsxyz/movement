@@ -1,6 +1,8 @@
 use movement_celestia_da_light_node_prevalidator::{
 	aptos::whitelist::Validator, PrevalidatorOperations,
 };
+use movement_signer::cryptography::secp256k1::Secp256k1;
+use movement_signer_loader::identifiers::LoadedSigner;
 use std::boxed::Box;
 use std::fmt::Debug;
 use std::path::PathBuf;
@@ -53,11 +55,7 @@ where
 	}
 }
 
-impl<O, C> LightNodeV1Operations for LightNodeV1<O, C>
-where
-	O: Signing<C> + Send + Sync + Clone + 'static,
-	C: Curve + Verify<C> + Digester<C> + Send + Sync + Clone + 'static,
-{
+impl LightNodeV1Operations for LightNodeV1<LoadedSigner<Secp256k1>, Secp256k1> {
 	async fn try_from_config(config: Config) -> Result<Self, anyhow::Error> {
 		info!("Initializing LightNodeV1 in sequencer mode from environment.");
 

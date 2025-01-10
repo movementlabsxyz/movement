@@ -7,7 +7,7 @@ use crate::config::common::{
 };
 use ecdsa::SigningKey;
 use k256::Secp256k1;
-use movement_signer_loader::identifiers::SignerIdentifier;
+use movement_signer_loader::identifiers::{local::Local, SignerIdentifier};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
@@ -58,7 +58,9 @@ pub fn default_da_signers() -> DaSigners {
 	trusted_signers.extend(additional_signers);
 
 	DaSigners {
-		private_key_hex: hex::encode(da_signer.to_bytes().as_slice()),
+		signer_identifier: SignerIdentifier::Local(Local {
+			private_key_hex_bytes: hex::encode(da_signer.to_bytes()),
+		}),
 		public_keys_hex: trusted_signers,
 	}
 }

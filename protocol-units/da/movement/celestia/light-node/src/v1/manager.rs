@@ -1,7 +1,8 @@
 use super::{LightNodeV1, LightNodeV1Operations};
 use godfig::{backend::config_file::ConfigFile, Godfig};
 use movement_celestia_da_util::config::Config;
-use movement_signer::{cryptography::Curve, Digester, Signing, Verify};
+use movement_signer::cryptography::secp256k1::Secp256k1;
+use movement_signer_loader::identifiers::LoadedSigner;
 
 pub struct Manager<LightNode>
 where
@@ -12,11 +13,7 @@ where
 }
 
 // Implements a very simple manager using a marker strategy pattern.
-impl<O, C> Manager<LightNodeV1<O, C>>
-where
-	O: Signing<C> + Send + Sync + Clone + 'static,
-	C: Curve + Verify<C> + Digester<C> + Send + Sync + Clone + 'static,
-{
+impl Manager<LightNodeV1<LoadedSigner<Secp256k1>, Secp256k1>> {
 	pub async fn new(file: tokio::fs::File) -> Result<Self, anyhow::Error> {
 		let godfig = Godfig::new(
 			ConfigFile::new(file),
@@ -27,11 +24,9 @@ where
 		Ok(Self { godfig, _marker: std::marker::PhantomData })
 	}
 
-	pub async fn try_light_node(&self) -> Result<LightNodeV1<O, C>, anyhow::Error>
-	where
-		O: Signing<C>,
-		C: Curve,
-	{
+	pub async fn try_light_node(
+		&self,
+	) -> Result<LightNodeV1<LoadedSigner<Secp256k1>, Secp256k1>, anyhow::Error> {
 		let config = self.godfig.try_wait_for_ready().await?;
 		LightNodeV1::try_from_config(config).await
 	}
