@@ -46,6 +46,7 @@ members = [
     "util/signing/providers/aws-kms",
     "util/signing/providers/hashicorp-vault",
     "util/signing/providers/local",
+    "util/signing/util/loader",
     "demo/hsm"
 ]
 
@@ -125,6 +126,7 @@ movement-signer = { path = "util/signing/interface" }
 movement-signer-aws-kms = { path = "util/signing/providers/aws-kms" }
 movement-signer-hashicorp-vault = { path = "util/signing/providers/hashicorp-vault" }
 movement-signer-local = { path = "util/signing/providers/local" }
+movement-signer-loader = { path = "util/signing/util/loader" }
 
 ## vault
 vaultrs = { version = "0.7.3" }

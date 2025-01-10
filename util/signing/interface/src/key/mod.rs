@@ -1,4 +1,5 @@
 use crate::{cryptography, Signing};
+use serde::{Deserialize, Serialize};
 use std::error;
 use std::future::Future;
 
@@ -10,7 +11,7 @@ pub trait TryFromCanonicalString: Sized {
 	fn try_from_canonical_string(s: &str) -> Result<Self, String>;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Organization {
 	Movement,
 	Other(String),
@@ -34,7 +35,7 @@ impl TryFromCanonicalString for Organization {
 	}
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Environment {
 	Prod,
 	Dev,
@@ -62,7 +63,7 @@ impl TryFromCanonicalString for Environment {
 	}
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SoftwareUnit {
 	FullNode,
 	Other(String),
@@ -86,7 +87,7 @@ impl TryFromCanonicalString for SoftwareUnit {
 	}
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Usage {
 	McrSettlement,
 	Other(String),
@@ -110,7 +111,7 @@ impl TryFromCanonicalString for Usage {
 	}
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum AllowedRoles {
 	Signer,
 	Auditor,
@@ -137,7 +138,7 @@ impl TryFromCanonicalString for AllowedRoles {
 	}
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Key {
 	org: Organization,
 	environment: Environment,

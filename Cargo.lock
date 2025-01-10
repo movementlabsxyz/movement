@@ -10536,6 +10536,7 @@ dependencies = [
  "anyhow",
  "ed25519-dalek 2.1.1",
  "k256",
+ "serde",
  "sha2 0.10.8",
  "thiserror 1.0.69",
 ]
@@ -10560,6 +10561,19 @@ dependencies = [
  "base64 0.13.1",
  "movement-signer",
  "vaultrs",
+]
+
+[[package]]
+name = "movement-signer-loader"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "movement-signer",
+ "movement-signer-aws-kms",
+ "movement-signer-hashicorp-vault",
+ "movement-signer-local",
+ "serde",
+ "thiserror 1.0.69",
 ]
 
 [[package]]
