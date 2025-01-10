@@ -5,30 +5,15 @@ use crate::{
 use celestia_rpc::Client;
 use celestia_types::nmt::Namespace;
 use celestia_types::Blob as CelestiaBlob;
-use ecdsa::{
-	elliptic_curve::{
-		generic_array::ArrayLength,
-		ops::Invert,
-		point::PointCompression,
-		sec1::{FromEncodedPoint, ModulusSize, ToEncodedPoint},
-		subtle::CtOption,
-		AffinePoint, CurveArithmetic, FieldBytesSize, PrimeCurve, Scalar,
-	},
-	hazmat::{DigestPrimitive, SignPrimitive, VerifyPrimitive},
-	SignatureSize,
-};
 use movement_celestia_da_util::ir_blob::IntermediateBlobRepresentation;
+use movement_signer::{cryptography::Curve, Verify};
 use std::sync::Arc;
 
 /// A verifier of Celestia blobs for permissioned signers
 #[derive(Clone)]
 pub struct Verifier<C>
 where
-	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-	SignatureSize<C>: ArrayLength<u8>,
-	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-	FieldBytesSize<C>: ModulusSize,
+	C: Curve + Verify<C>,
 {
 	/// The Celestia veifier
 	pub celestia: CelestiaVerifier,
@@ -38,11 +23,7 @@ where
 
 impl<C> Verifier<C>
 where
-	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-	SignatureSize<C>: ArrayLength<u8>,
-	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-	FieldBytesSize<C>: ModulusSize,
+	C: Curve + Verify<C>,
 {
 	pub fn new<T>(
 		celestia_client: Arc<Client>,
@@ -63,13 +44,13 @@ where
 #[tonic::async_trait]
 impl<C> VerifierOperations<CelestiaBlob, IntermediateBlobRepresentation> for Verifier<C>
 where
-	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-	SignatureSize<C>: ArrayLength<u8>,
-	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-	FieldBytesSize<C>: ModulusSize,
+	C: Curve + Verify<C> + Send + Sync,
 {
-	async fn verify(&self, blob: CelestiaBlob, height: u64) -> Result<Verified<IntermediateBlobRepresentation>, Error> {
+	async fn verify(
+		&self,
+		blob: CelestiaBlob,
+		height: u64,
+	) -> Result<Verified<IntermediateBlobRepresentation>, Error> {
 		let verified_blob = self.celestia.verify(blob, height).await?;
 		self.known_signers.verify(verified_blob.into_inner(), height).await
 	}

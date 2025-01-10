@@ -10265,6 +10265,7 @@ dependencies = [
  "movement-celestia-da-light-node-setup",
  "movement-celestia-da-util",
  "movement-da-light-node-proto",
+ "movement-signer",
  "prost 0.13.3",
  "rand 0.7.3",
  "serde_json",

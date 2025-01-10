@@ -1,17 +1,6 @@
 use crate::{Error, Verified, VerifierOperations};
-use ecdsa::{
-	elliptic_curve::{
-		generic_array::ArrayLength,
-		ops::Invert,
-		point::PointCompression,
-		sec1::{FromEncodedPoint, ModulusSize, ToEncodedPoint},
-		subtle::CtOption,
-		AffinePoint, CurveArithmetic, FieldBytesSize, PrimeCurve, Scalar,
-	},
-	hazmat::{DigestPrimitive, SignPrimitive, VerifyPrimitive},
-	SignatureSize,
-};
 use movement_celestia_da_util::ir_blob::IntermediateBlobRepresentation;
+use movement_signer::{cryptography::Curve, Verify};
 use std::collections::HashSet;
 use tracing::info;
 
@@ -19,22 +8,14 @@ use tracing::info;
 #[derive(Clone)]
 pub struct Verifier<C>
 where
-	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-	SignatureSize<C>: ArrayLength<u8>,
-	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-	FieldBytesSize<C>: ModulusSize,
+	C: Curve + Verify<C>,
 {
 	pub _curve_marker: std::marker::PhantomData<C>,
 }
 
 impl<C> Verifier<C>
 where
-	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-	SignatureSize<C>: ArrayLength<u8>,
-	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-	FieldBytesSize<C>: ModulusSize,
+	C: Curve + Verify<C>,
 {
 	pub fn new() -> Self {
 		Self { _curve_marker: std::marker::PhantomData }
@@ -45,11 +26,7 @@ where
 impl<C> VerifierOperations<IntermediateBlobRepresentation, IntermediateBlobRepresentation>
 	for Verifier<C>
 where
-	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-	SignatureSize<C>: ArrayLength<u8>,
-	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-	FieldBytesSize<C>: ModulusSize,
+	C: Curve + Verify<C> + Send + Sync,
 {
 	async fn verify(
 		&self,
@@ -67,11 +44,7 @@ where
 #[derive(Clone)]
 pub struct InKnownSignersVerifier<C>
 where
-	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-	SignatureSize<C>: ArrayLength<u8>,
-	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-	FieldBytesSize<C>: ModulusSize,
+	C: Curve + Verify<C>,
 {
 	pub inner_verifier: Verifier<C>,
 	/// The set of known signers in sec1 bytes hex format.
@@ -80,11 +53,7 @@ where
 
 impl<C> InKnownSignersVerifier<C>
 where
-	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-	SignatureSize<C>: ArrayLength<u8>,
-	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-	FieldBytesSize<C>: ModulusSize,
+	C: Curve + Verify<C>,
 {
 	pub fn new<T>(known_signers_sec1_bytes_hex: T) -> Self
 	where
@@ -105,11 +74,7 @@ where
 impl<C> VerifierOperations<IntermediateBlobRepresentation, IntermediateBlobRepresentation>
 	for InKnownSignersVerifier<C>
 where
-	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-	SignatureSize<C>: ArrayLength<u8>,
-	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-	FieldBytesSize<C>: ModulusSize,
+	C: Curve + Verify<C> + Send + Sync,
 {
 	async fn verify(
 		&self,

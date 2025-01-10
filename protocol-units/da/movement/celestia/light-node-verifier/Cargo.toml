@@ -28,6 +28,7 @@ thiserror = { workspace = true }
 serde_json = { workspace = true }
 ecdsa = { workspace = true, features = ["signing", "verifying", "der"] }
 tracing = { workspace = true }
+movement-signer = { workspace = true }
 
 [dev-dependencies]
 movement-celestia-da-light-node-setup = { workspace = true }

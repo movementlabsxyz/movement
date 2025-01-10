@@ -20,7 +20,7 @@ use movement_da_light_node_proto::*;
 
 use crate::v1::LightNodeV1Operations;
 use movement_celestia_light_node_signer::Signer;
-use movement_signer::{cryptography::Curve, Signing};
+use movement_signer::{cryptography::Curve, Digester, Signing, Verify};
 
 #[derive(Clone)]
 pub struct LightNodeV1<O, C>
@@ -52,7 +52,7 @@ where
 impl<O, C> LightNodeV1Operations for LightNodeV1<O, C>
 where
 	O: Signing<C> + Send + Sync + Clone + 'static,
-	C: Curve + Send + Sync + Clone + 'static,
+	C: Curve + Verify<C> + Digester<C> + Send + Sync + Clone + 'static,
 {
 	/// Tries to create a new LightNodeV1 instance from the toml config file.
 	async fn try_from_config(config: Config) -> Result<Self, anyhow::Error> {
@@ -70,7 +70,7 @@ where
 				config.celestia_namespace(),
 				config.da_signers_sec1_keys(),
 			))),
-			signing_key,
+			signer,
 		})
 	}
 
@@ -87,15 +87,18 @@ where
 impl<O, C> LightNodeV1<O, C>
 where
 	O: Signing<C> + Send + Sync + Clone + 'static,
-	C: Curve + Send + Sync + Clone + 'static,
+	C: Curve + Verify<C> + Digester<C> + Send + Sync + Clone + 'static,
 {
 	/// Creates a new signed blob instance with the provided data.
-	pub fn create_new_celestia_blob(&self, data: Vec<u8>) -> Result<CelestiaBlob, anyhow::Error> {
+	pub async fn create_new_celestia_blob(
+		&self,
+		data: Vec<u8>,
+	) -> Result<CelestiaBlob, anyhow::Error> {
 		// mark the timestamp as now in milliseconds
 		let timestamp = chrono::Utc::now().timestamp_micros() as u64;
 
 		// sign the blob data and the timestamp
-		let data = InnerSignedBlobV1Data::new(data, timestamp).try_to_sign(&self.signing_key)?;
+		let data = InnerSignedBlobV1Data::new(data, timestamp).try_to_sign(&self.signer).await?;
 
 		// create the celestia blob
 		CelestiaIntermediateBlobRepresentation(data.into(), self.celestia_namespace.clone())
@@ -130,7 +133,7 @@ where
 
 	/// Submits a blob to the Celestia node.
 	pub async fn submit_blob(&self, data: Vec<u8>) -> Result<Blob, anyhow::Error> {
-		let celestia_blob = self.create_new_celestia_blob(data)?;
+		let celestia_blob = self.create_new_celestia_blob(data).await?;
 		let height = self.submit_celestia_blob(celestia_blob.clone()).await?;
 		Ok(Self::celestia_blob_to_blob(celestia_blob, height)?)
 	}
@@ -309,7 +312,7 @@ where
 impl<O, C> LightNodeService for LightNodeV1<O, C>
 where
 	O: Signing<C> + Send + Sync + Clone + 'static,
-	C: Curve + Send + Sync + Clone + 'static,
+	C: Curve + Verify<C> + Digester<C> + Send + Sync + Clone + 'static,
 {
 	/// Server streaming response type for the StreamReadFromHeight method.
 	type StreamReadFromHeightStream = std::pin::Pin<

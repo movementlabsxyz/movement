@@ -1,4 +1,3 @@
-use block::WrappedBlock;
 use movement_celestia_da_light_node_prevalidator::{
 	aptos::whitelist::Validator, PrevalidatorOperations,
 };
@@ -29,15 +28,15 @@ use movement_da_light_node_proto::light_node_service_server::LightNodeService;
 use movement_types::block::Block;
 
 use crate::v1::{passthrough::LightNodeV1 as LightNodeV1PassThrough, LightNodeV1Operations};
-use movement_signer::{cryptography::Curve, Signing};
+use movement_signer::{cryptography::Curve, Digester, Signing, Verify};
 
 const LOGGING_UID: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Clone)]
 pub struct LightNodeV1<O, C>
 where
-	O: Signing<C>,
-	C: Curve,
+	O: Signing<C> + Send + Sync + Clone,
+	C: Curve + Send + Sync + Clone,
 {
 	pub pass_through: LightNodeV1PassThrough<O, C>,
 	pub memseq: Arc<memseq::Memseq<memseq::RocksdbMempool>>,
@@ -46,8 +45,8 @@ where
 
 impl<O, C> Debug for LightNodeV1<O, C>
 where
-	O: Signing<C>,
-	C: Curve,
+	O: Signing<C> + Send + Sync + Clone,
+	C: Curve + Send + Sync + Clone,
 {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		f.debug_struct("LightNodeV1").field("pass_through", &self.pass_through).finish()
@@ -56,8 +55,8 @@ where
 
 impl<O, C> LightNodeV1Operations for LightNodeV1<O, C>
 where
-	O: Signing<C>,
-	C: Curve,
+	O: Signing<C> + Send + Sync + Clone + 'static,
+	C: Curve + Verify<C> + Digester<C> + Send + Sync + Clone + 'static,
 {
 	async fn try_from_config(config: Config) -> Result<Self, anyhow::Error> {
 		info!("Initializing LightNodeV1 in sequencer mode from environment.");
@@ -99,8 +98,8 @@ where
 
 impl<O, C> LightNodeV1<O, C>
 where
-	O: Signing<C>,
-	C: Curve,
+	O: Signing<C> + Send + Sync + Clone + 'static,
+	C: Curve + Verify<C> + Digester<C> + Send + Sync + Clone + 'static,
 {
 	async fn tick_build_blocks(&self, sender: Sender<Block>) -> Result<(), anyhow::Error> {
 		let memseq = self.memseq.clone();
@@ -150,17 +149,16 @@ where
 		// wrap the blocks in a struct that can be split and compressed
 		// spawn blocking because the compression is blocking and could be slow
 		let pass_through = self.pass_through.clone();
-		let blocks = tokio::task::spawn_blocking(move || {
+		let blocks = {
 			let mut wrapped_blocks = Vec::new();
 			for block in blocks {
 				let block_bytes = bcs::to_bytes(&block)?;
-				let celestia_blob = pass_through.create_new_celestia_blob(block_bytes)?;
+				let celestia_blob = pass_through.create_new_celestia_blob(block_bytes).await?;
 				let wrapped_block = block::WrappedBlock::new(block, celestia_blob);
 				wrapped_blocks.push(wrapped_block);
 			}
-			Ok::<Vec<WrappedBlock>, anyhow::Error>(wrapped_blocks)
-		})
-		.await??;
+			wrapped_blocks
+		};
 
 		let mut heuristic: GroupingHeuristicStack<block::WrappedBlock> =
 			GroupingHeuristicStack::new(vec![
@@ -353,8 +351,8 @@ where
 #[tonic::async_trait]
 impl<O, C> LightNodeService for LightNodeV1<O, C>
 where
-	O: Signing<C>,
-	C: Curve,
+	O: Signing<C> + Send + Sync + Clone + 'static,
+	C: Curve + Verify<C> + Digester<C> + Send + Sync + Clone + 'static,
 {
 	/// Server streaming response type for the StreamReadFromHeight method.
 	type StreamReadFromHeightStream = Pin<
