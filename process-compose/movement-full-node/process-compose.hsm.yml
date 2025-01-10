@@ -1,0 +1,9 @@
+version: "3"
+
+processes:
+
+  movement-full-node:
+    environment:
+      - MAPTOS_PRIVATE_KEY_IDENTIFIER=hashi_corp_vault::create::/movement/prod/full_node/genesis/signer/maptos-private-key/replica-1
+      - MCR_SETTLEMENT_KEY_IDENTIFIER=aws_kms:create::/movement/prod/full_node/genesis/signer/mcr-settlement-key/replica-1
+      - MOVEMENT_CELESTIA_DA_KEY_IDENTIFIER=aws_kms::create::/movement/prod/full_node/genesis/signer/movement-celestia-da-key/replica-1
