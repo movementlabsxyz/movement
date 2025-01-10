@@ -59,8 +59,7 @@ where
 			Some(CreateKeyRequest::builder().key_type(C::key_type()).derived(false)),
 		)
 		.await
-		.map_err(|e| anyhow::anyhow!(e))?;
-
+		.context("Failed to create key")?;
 		Ok(self)
 	}
 }
@@ -119,8 +118,8 @@ where
 					.context("No key found")
 					.map_err(|_e| SignerError::KeyNotFound)?;
 				base64::decode(key.public_key.as_str())
-					.context("Failed to decode public key")
-					.map_err(|e| SignerError::Internal(e.to_string()))?
+					.context("failed to decode public key")
+					.map_err(|e| SignerError::Decode(e.into()))?
 			}
 		};
 
