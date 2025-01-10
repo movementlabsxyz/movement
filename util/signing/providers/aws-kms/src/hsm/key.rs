@@ -26,6 +26,7 @@ where
 impl<C> SignerBuilder<C, AwsKms<C>> for Builder<C>
 where
 	C: Curve + AwsKmsCryptographySpec + Send + Sync,
+	AwsKms<C>: movement_signer::Signing<C>,
 {
 	async fn build(&self, key: Key) -> Result<AwsKms<C>, SignerBuilderError> {
 		let mut hsm = AwsKms::try_from_env()
