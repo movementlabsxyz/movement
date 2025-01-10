@@ -7,12 +7,13 @@ use crate::config::common::{
 };
 use ecdsa::SigningKey;
 use k256::Secp256k1;
+use movement_signer_loader::identifiers::SignerIdentifier;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub struct DaSigners {
-	pub private_key_hex: String,
+	pub signer_identifier: SignerIdentifier,
 	pub public_keys_hex: HashSet<String>,
 }
 

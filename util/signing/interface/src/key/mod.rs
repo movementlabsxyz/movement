@@ -11,7 +11,7 @@ pub trait TryFromCanonicalString: Sized {
 	fn try_from_canonical_string(s: &str) -> Result<Self, String>;
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub enum Organization {
 	Movement,
 	Other(String),
@@ -35,7 +35,7 @@ impl TryFromCanonicalString for Organization {
 	}
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub enum Environment {
 	Prod,
 	Dev,
@@ -63,7 +63,7 @@ impl TryFromCanonicalString for Environment {
 	}
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub enum SoftwareUnit {
 	FullNode,
 	Other(String),
@@ -87,7 +87,7 @@ impl TryFromCanonicalString for SoftwareUnit {
 	}
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub enum Usage {
 	McrSettlement,
 	Other(String),
@@ -111,7 +111,7 @@ impl TryFromCanonicalString for Usage {
 	}
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub enum AllowedRoles {
 	Signer,
 	Auditor,
@@ -138,7 +138,7 @@ impl TryFromCanonicalString for AllowedRoles {
 	}
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub struct Key {
 	org: Organization,
 	environment: Environment,

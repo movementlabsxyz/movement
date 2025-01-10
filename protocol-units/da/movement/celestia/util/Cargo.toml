@@ -47,6 +47,7 @@ aptos-account-whitelist = { workspace = true }
 aptos-types = { workspace = true }
 movement-celestia-light-node-signer = { workspace = true }
 movement-signer = { workspace = true }
+movement-signer-loader = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }

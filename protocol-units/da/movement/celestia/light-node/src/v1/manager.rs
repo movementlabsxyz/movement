@@ -1,7 +1,7 @@
 use super::{LightNodeV1, LightNodeV1Operations};
 use godfig::{backend::config_file::ConfigFile, Godfig};
 use movement_celestia_da_util::config::Config;
-use movement_signer::{cryptography::Curve, Signing};
+use movement_signer::{cryptography::Curve, Digester, Signing, Verify};
 
 pub struct Manager<LightNode>
 where
@@ -14,8 +14,8 @@ where
 // Implements a very simple manager using a marker strategy pattern.
 impl<O, C> Manager<LightNodeV1<O, C>>
 where
-	O: Signing<C>,
-	C: Curve,
+	O: Signing<C> + Send + Sync + Clone + 'static,
+	C: Curve + Verify<C> + Digester<C> + Send + Sync + Clone + 'static,
 {
 	pub async fn new(file: tokio::fs::File) -> Result<Self, anyhow::Error> {
 		let godfig = Godfig::new(

@@ -17,6 +17,7 @@ k256 = { workspace = true, features = ["ecdsa"] }
 anyhow = { workspace = true }
 sha2 = { workspace = true }
 serde = { workspace = true }
+async-trait = { workspace = true }
 
 [lints]
 workspace = true

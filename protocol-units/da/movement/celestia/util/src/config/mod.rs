@@ -2,8 +2,11 @@ use anyhow::Context;
 use aptos_types::account_address::AccountAddress;
 use celestia_rpc::Client;
 use celestia_types::nmt::Namespace;
+use movement_signer::cryptography::{secp256k1::Secp256k1, Curve};
+use movement_signer_loader::identifiers::{Load, LoadedSigner};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
+use std::future::Future;
 
 pub mod common;
 pub mod local;
@@ -209,15 +212,6 @@ impl Config {
 		}
 	}
 
-	/// Gets the da signing key as a string
-	pub fn da_signing_key(&self) -> String {
-		match self {
-			Config::Local(local) => local.da_light_node.da_signers.private_key_hex.clone(),
-			Config::Arabica(local) => local.da_light_node.da_signers.private_key_hex.clone(),
-			Config::Mocha(local) => local.da_light_node.da_signers.private_key_hex.clone(),
-		}
-	}
-
 	/// Gets the da signers sec1 keys
 	pub fn da_signers_sec1_keys(&self) -> HashSet<String> {
 		match self {
@@ -246,6 +240,48 @@ impl Config {
 			Config::Local(local) => local.access_control.whitelisted_accounts(),
 			Config::Arabica(local) => local.access_control.whitelisted_accounts(),
 			Config::Mocha(local) => local.access_control.whitelisted_accounts(),
+		}
+	}
+}
+
+pub trait LoadSigner<C>
+where
+	C: Curve,
+{
+	/// Gets the da signing key as a string
+	fn da_signer(&self) -> impl Future<Output = Result<LoadedSigner<C>, anyhow::Error>> + Send;
+}
+
+impl LoadSigner<Secp256k1> for Config {
+	async fn da_signer(&self) -> Result<LoadedSigner<Secp256k1>, anyhow::Error> {
+		match self {
+			Config::Local(local) => {
+				let identifier: Box<dyn Load<Secp256k1> + Send> =
+					Box::new(local.da_light_node.da_signers.signer_identifier.clone());
+				let signer = identifier
+					.load()
+					.await
+					.map_err(|e| anyhow::anyhow!("Failed to load signer: {}", e))?;
+				Ok(signer)
+			}
+			Config::Arabica(local) => {
+				let identifier: Box<dyn Load<Secp256k1> + Send> =
+					Box::new(local.da_light_node.da_signers.signer_identifier.clone());
+				let signer = identifier
+					.load()
+					.await
+					.map_err(|e| anyhow::anyhow!("Failed to load signer: {}", e))?;
+				Ok(signer)
+			}
+			Config::Mocha(local) => {
+				let identifier: Box<dyn Load<Secp256k1> + Send> =
+					Box::new(local.da_light_node.da_signers.signer_identifier.clone());
+				let signer = identifier
+					.load()
+					.await
+					.map_err(|e| anyhow::anyhow!("Failed to load signer: {}", e))?;
+				Ok(signer)
+			}
 		}
 	}
 }

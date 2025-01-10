@@ -17,6 +17,8 @@ movement-signer-hashicorp-vault = { workspace = true }
 movement-signer-local = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
+async-trait = { workspace = true }
+tracing = { workspace = true }
 
 [lints]
 workspace = true

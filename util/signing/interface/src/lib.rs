@@ -1,5 +1,4 @@
 use std::error;
-use std::future::Future;
 use std::marker::PhantomData;
 
 pub mod cryptography;
@@ -23,15 +22,13 @@ pub enum SignerError {
 /// Asynchronous operations of a possibly remote signing service.
 ///
 /// The type parameter defines the elliptic curve used in the ECDSA signature algorithm.
+#[async_trait::async_trait]
 pub trait Signing<C: cryptography::Curve> {
 	/// Signs some bytes.
-	fn sign(
-		&self,
-		message: &[u8],
-	) -> impl Future<Output = Result<C::Signature, SignerError>> + Send;
+	async fn sign(&self, message: &[u8]) -> Result<C::Signature, SignerError>;
 
 	/// Fetches the public key that can be used for to verify signatures made by this signer.
-	fn public_key(&self) -> impl Future<Output = Result<C::PublicKey, SignerError>> + Send;
+	async fn public_key(&self) -> Result<C::PublicKey, SignerError>;
 }
 
 /// A convenience struct to bind a signing service with the specific elliptic curve type,

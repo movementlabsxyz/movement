@@ -65,6 +65,7 @@ where
 	}
 }
 
+#[async_trait::async_trait]
 impl<C> Signing<C> for HashiCorpVault<C>
 where
 	C: Curve + HashiCorpVaultCryptographySpec + Sync,

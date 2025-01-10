@@ -16,6 +16,8 @@ k256 = { workspace = true }
 ed25519 = { workspace = true }
 ecdsa = { workspace = true }
 rand = { version = "0.8.5" }
+async-trait = { workspace = true }
+hex = { workspace = true }
 
 [lints]
 workspace = true
