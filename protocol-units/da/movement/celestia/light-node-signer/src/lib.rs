@@ -12,8 +12,8 @@ where
 	C: Curve,
 {
 	/// Creates a new [Signer] instance.
-	pub fn new(provider: O, curve: C) -> Self {
-		Self(movement_signer::Signer::new(provider, curve))
+	pub fn new(provider: O) -> Self {
+		Self(movement_signer::Signer::new(provider))
 	}
 
 	/// Returns a reference to the inner [movement_signer::Signer] instance.

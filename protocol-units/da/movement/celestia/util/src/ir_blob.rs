@@ -1,6 +1,6 @@
 use movement_celestia_light_node_signer::Signer;
 use movement_signer::{
-	cryptography::{Curve, TryFromBytes},
+	cryptography::{Curve, ToBytes, TryFromBytes},
 	Digest, Signing, Verify,
 };
 use serde::{Deserialize, Serialize};
@@ -36,28 +36,35 @@ impl InnerSignedBlobV1Data {
 		Self { blob, timestamp }
 	}
 
+	/// Gets an owned copy of the bytes to be signed
+	fn to_signing_bytes(&self) -> Vec<u8> {
+		[self.blob.as_slice(), &self.timestamp.to_be_bytes()].concat()
+	}
+
 	/// Computes the id of InnerSignedBlobV1Data
 	pub fn compute_id<O, C>(&self) -> Id
 	where
-		C: Curve,
+		C: Curve + Digest<C>,
 	{
-		Id(id_hasher.finalize().to_vec())
+		let byte_slice = self.to_signing_bytes();
+
+		Id(C::digest(&byte_slice).to_bytes())
 	}
 
 	pub async fn try_to_sign<O, C>(
 		self,
-		signing_key: &Signer<O, C>,
+		signer: &Signer<O, C>,
 	) -> Result<InnerSignedBlobV1, anyhow::Error>
 	where
 		O: Signing<C>,
-		C: Curve,
+		C: Curve + Digest<C>,
 	{
-		Ok(InnerSignedBlobV1 {
-			data: self,
-			signature: signature.to_vec(),
-			signer: signing_key.verifying_key().to_sec1_bytes().to_vec(),
-			id,
-		})
+		let id = self.compute_id::<O, C>();
+		let signing_bytes = self.to_signing_bytes();
+		let signature = signer.inner().sign(&signing_bytes).await?.to_bytes();
+		let signer = signer.inner().public_key().await?.to_bytes();
+
+		Ok(InnerSignedBlobV1 { data: self, signature, signer, id })
 	}
 }
 
@@ -133,7 +140,7 @@ impl IntermediateBlobRepresentation {
 
 	pub fn verify_signature<C>(&self) -> Result<(), anyhow::Error>
 	where
-		C: Curve,
+		C: Curve + Verify<C>,
 	{
 		match self {
 			IntermediateBlobRepresentation::SignedV1(inner) => inner.try_verify::<C>(),

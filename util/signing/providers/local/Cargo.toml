@@ -1,0 +1,19 @@
+[package]
+name = "movement-signer-local"
+version = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+authors = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
+publish = { workspace = true }
+rust-version = { workspace = true }
+
+[dependencies]
+movement-signer = { workspace = true }
+anyhow = { workspace = true }
+k256 = { workspace = true }
+ecdsa = { workspace = true }
+
+[lints]
+workspace = true

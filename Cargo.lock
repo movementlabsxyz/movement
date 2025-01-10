@@ -10560,6 +10560,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "movement-signer-local"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "ecdsa 0.16.9",
+ "k256",
+ "movement-signer",
+]
+
+[[package]]
 name = "movement-signing-aptos"
 version = "0.0.2"
 dependencies = [
