@@ -13,7 +13,9 @@ rust-version = { workspace = true }
 movement-signer = { workspace = true }
 anyhow = { workspace = true }
 k256 = { workspace = true }
+ed25519 = { workspace = true }
 ecdsa = { workspace = true }
+rand = { version = "0.8.5" }
 
 [lints]
 workspace = true

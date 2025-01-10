@@ -1,7 +1,7 @@
 use movement_celestia_light_node_signer::Signer;
 use movement_signer::{
 	cryptography::{Curve, ToBytes, TryFromBytes},
-	Digest, Signing, Verify,
+	Digester, Signing, Verify,
 };
 use serde::{Deserialize, Serialize};
 
@@ -42,13 +42,13 @@ impl InnerSignedBlobV1Data {
 	}
 
 	/// Computes the id of InnerSignedBlobV1Data
-	pub fn compute_id<O, C>(&self) -> Id
+	pub fn compute_id<O, C>(&self) -> Result<Id, anyhow::Error>
 	where
-		C: Curve + Digest<C>,
+		C: Curve + Digester<C>,
 	{
 		let byte_slice = self.to_signing_bytes();
 
-		Id(C::digest(&byte_slice).to_bytes())
+		Ok(Id(C::digest(&byte_slice)?.to_bytes()))
 	}
 
 	pub async fn try_to_sign<O, C>(
@@ -57,11 +57,10 @@ impl InnerSignedBlobV1Data {
 	) -> Result<InnerSignedBlobV1, anyhow::Error>
 	where
 		O: Signing<C>,
-		C: Curve + Digest<C>,
+		C: Curve + Digester<C>,
 	{
-		let id = self.compute_id::<O, C>();
-		let signing_bytes = self.to_signing_bytes();
-		let signature = signer.inner().sign(&signing_bytes).await?.to_bytes();
+		let id = self.compute_id::<O, C>()?;
+		let signature = signer.inner().sign(&id.as_slice()).await?.to_bytes();
 		let signer = signer.inner().public_key().await?.to_bytes();
 
 		Ok(InnerSignedBlobV1 { data: self, signature, signer, id })
@@ -152,17 +151,19 @@ impl IntermediateBlobRepresentation {
 pub mod test {
 
 	use super::*;
+	use movement_signer::cryptography::secp256k1::Secp256k1;
+	use movement_signer_local::signer::LocalSigner;
 
-	#[test]
-	fn test_cannot_change_id_and_verify() -> Result<(), anyhow::Error> {
+	#[tokio::test]
+	async fn test_cannot_change_id_and_verify() -> Result<(), anyhow::Error> {
 		let blob = InnerSignedBlobV1Data::new(vec![1, 2, 3], 123);
-		let signing_key = SigningKey::<k256::Secp256k1>::random(&mut rand::thread_rng());
-		let signed_blob = blob.try_to_sign(&signing_key)?;
+		let signer = Signer::new(LocalSigner::<Secp256k1>::random());
+		let signed_blob = blob.try_to_sign(&signer).await?;
 
 		let mut changed_blob = signed_blob.clone();
 		changed_blob.id = Id(vec![1, 2, 3, 4]);
 
-		assert!(changed_blob.try_verify::<k256::Secp256k1>().is_err());
+		assert!(changed_blob.try_verify::<Secp256k1>().is_err());
 
 		Ok(())
 	}

@@ -95,8 +95,13 @@ pub trait Verify<C: cryptography::Curve> {
 	) -> Result<bool, VerifyError>;
 }
 
+/// Errors thrown by the digest.
+#[derive(Debug, thiserror::Error)]
+#[error("failed to compute digest")]
+pub struct DigestError(#[source] Box<dyn error::Error + Send + Sync>);
+
 /// A digest constructor trait.
-pub trait Digest<C: cryptography::Curve> {
+pub trait Digester<C: cryptography::Curve> {
 	/// Constructs a new digest.
-	fn digest(message: &[u8]) -> C::Digest;
+	fn digest(message: &[u8]) -> Result<C::Digest, DigestError>;
 }

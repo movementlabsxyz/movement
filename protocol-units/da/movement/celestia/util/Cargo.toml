@@ -50,6 +50,7 @@ movement-signer = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
+movement-signer-local = { workspace = true }
 
 [lints]
 workspace = true

@@ -1,7 +1,8 @@
 use crate::cryptography::Curve;
-use crate::{Verify, VerifyError};
+use crate::{DigestError, Digester, Verify, VerifyError};
 use anyhow::Context;
 use ed25519_dalek::Verifier as _;
+use sha2::Digest as _;
 
 /// The Ed25519 curve.
 #[derive(Debug, Clone, Copy)]
@@ -9,7 +10,7 @@ pub struct Ed25519;
 
 fixed_size!(pub struct PublicKey([u8; 32]));
 fixed_size!(pub struct Signature([u8; 64]));
-fixed_size!(pub struct Digest([u8; 32]));
+fixed_size!(pub struct Digest([u8; 64]));
 
 impl Curve for Ed25519 {
 	type PublicKey = PublicKey;
@@ -31,5 +32,15 @@ impl Verify<Ed25519> for Ed25519 {
 		let signature = ed25519_dalek::Signature::from_bytes(&signature.0);
 
 		Ok(verifying_key.verify(message, &signature).is_ok())
+	}
+}
+
+/// Built-in digest for Ed25519.
+impl Digester<Ed25519> for Ed25519 {
+	fn digest(message: &[u8]) -> Result<Digest, DigestError> {
+		let digest = sha2::Sha512::digest(message);
+		let mut result = [0u8; 64];
+		result.copy_from_slice(&digest);
+		Ok(Digest(result))
 	}
 }

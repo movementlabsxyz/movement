@@ -9,10 +9,12 @@ use ecdsa::{
 		AffinePoint, CurveArithmetic, FieldBytesSize, PrimeCurve, Scalar,
 	},
 	hazmat::{DigestPrimitive, SignPrimitive, VerifyPrimitive},
-	signature::{digest::Digest, DigestVerifier},
 	SignatureSize, SigningKey, VerifyingKey,
 };
-use movement_signer::{cryptography::Curve, SignerError, Signing};
+use movement_signer::{
+	cryptography::{secp256k1::Secp256k1, Curve, TryFromBytes},
+	SignerError, Signing,
+};
 
 pub struct LocalSigner<C>
 where
@@ -27,7 +29,24 @@ where
 		+ VerifyPrimitive<<C as LocalCryptographySpec>::Curve>,
 	FieldBytesSize<<C as LocalCryptographySpec>::Curve>: ModulusSize,
 {
+	signing_key: SigningKey<<C as LocalCryptographySpec>::Curve>,
+	verifying_key: VerifyingKey<<C as LocalCryptographySpec>::Curve>,
 	__curve_marker: std::marker::PhantomData<C>,
+}
+
+impl LocalSigner<Secp256k1> {
+	pub fn new(
+		signing_key: SigningKey<k256::Secp256k1>,
+		verifying_key: VerifyingKey<k256::Secp256k1>,
+	) -> Self {
+		Self { signing_key, verifying_key, __curve_marker: std::marker::PhantomData }
+	}
+
+	pub fn random() -> Self {
+		let signing_key = SigningKey::<k256::Secp256k1>::random(&mut rand::thread_rng());
+		let verifying_key = signing_key.verifying_key().clone();
+		Self::new(signing_key, verifying_key)
+	}
 }
 
 impl<C> Signing<C> for LocalSigner<C>
@@ -43,11 +62,17 @@ where
 		+ VerifyPrimitive<<C as LocalCryptographySpec>::Curve>,
 	FieldBytesSize<<C as LocalCryptographySpec>::Curve>: ModulusSize,
 {
-	async fn sign(&self, _message: &[u8]) -> Result<C::Signature, SignerError> {
-		unimplemented!()
+	async fn sign(&self, message: &[u8]) -> Result<C::Signature, SignerError> {
+		let (signature, _recovery_id) = self
+			.signing_key
+			.sign_prehash_recoverable(message)
+			.map_err(|e| SignerError::Sign(e.into()))?;
+		Ok(C::Signature::try_from_bytes(signature.to_vec().as_slice())
+			.map_err(|e| SignerError::Sign(e.into()))?)
 	}
 
 	async fn public_key(&self) -> Result<C::PublicKey, SignerError> {
-		unimplemented!()
+		C::PublicKey::try_from_bytes(self.verifying_key.to_encoded_point(true).as_bytes())
+			.map_err(|e| SignerError::PublicKey(e.into()))
 	}
 }
