@@ -21,7 +21,7 @@ interface INativeBridge {
 
     event InsuranceFundUpdated(address insuranceFund);
     event PauseToggled(bool paused);
-    event RiskDenominatorUpdated(uint256 riskDenominator);
+    event InsuranceBudgetDividerUpdated(uint256 insuranceBudgetDivider);
 
     error ZeroAmount();
     error MOVETransferFailed();
@@ -32,7 +32,7 @@ interface INativeBridge {
     error InvalidNonce();
     error OutboundRateLimitExceeded();
     error InboundRateLimitExceeded();
-    error InvalidRiskDenominator();
+    error InvalidInsuranceBudgetDivider();
 
     /**
      * @dev Creates a new bridge
