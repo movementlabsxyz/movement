@@ -18,5 +18,9 @@ movement-signer = { workspace = true }
 secp256k1 = "0.24"
 async-trait = { workspace = true }
 
+alloy-signer = { workspace = true }
+k256 = "0.13.4"
+spki = "0.7.3"
+
 [lints]
 workspace = true

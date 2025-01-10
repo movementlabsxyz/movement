@@ -8,7 +8,7 @@ use sha2::Digest as _;
 #[derive(Debug, Clone, Copy)]
 pub struct Secp256k1;
 
-fixed_size!(pub struct PublicKey([u8; 33])); // Compressed public key
+fixed_size!(pub struct PublicKey([u8; 65])); // Compressed public key
 fixed_size!(pub struct Signature([u8; 64]));
 fixed_size!(pub struct Digest([u8; 32]));
 

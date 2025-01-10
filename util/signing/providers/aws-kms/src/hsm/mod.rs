@@ -24,6 +24,13 @@ where
 		Self { client, key_id, _cryptography_marker: std::marker::PhantomData }
 	}
 
+	/// Tries to create a new AWS KMS HSM from the environment
+	pub async fn try_from_env_with_key(key_id: String) -> Result<Self, anyhow::Error> {
+		let config = aws_config::load_from_env().await;
+		let client = aws_sdk_kms::Client::new(&config);
+		Ok(AwsKms::new(client, key_id))
+	}
+
 	/// Sets the key id
 	pub fn set_key_id(&mut self, key_id: String) {
 		self.key_id = key_id;

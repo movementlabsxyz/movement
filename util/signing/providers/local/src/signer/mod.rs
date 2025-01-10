@@ -95,7 +95,7 @@ where
 	}
 
 	async fn public_key(&self) -> Result<C::PublicKey, SignerError> {
-		C::PublicKey::try_from_bytes(self.verifying_key.to_encoded_point(true).as_bytes())
+		C::PublicKey::try_from_bytes(self.verifying_key.to_encoded_point(false).as_bytes())
 			.map_err(|e| SignerError::PublicKey(e.into()))
 	}
 }

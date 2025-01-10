@@ -3,7 +3,6 @@
 resolver = "2"
 
 members = [
-    # FIXME: do we still need the demo?
     "demo/hsm",
     "protocol-units/bridge/config",
     "protocol-units/bridge/setup",
@@ -43,7 +42,7 @@ members = [
     "protocol-units/bridge/indexer-db",
     "protocol-units/bridge/util",
     "benches/*",
-    "util/signing/interface",
+    "util/signing/integrations/eth",
     "util/signing/integrations/aptos",
     "util/signing/providers/aws-kms",
     "util/signing/providers/hashicorp-vault",
@@ -222,6 +221,7 @@ alloy-eips = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b17258
 alloy-contract = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
 alloy-network = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
 alloy-primitives = { version = "0.7.2", default-features = false }
+alloy-consensus = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
 alloy-provider = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2", features = [
     "ws",
 ] }
@@ -230,6 +230,7 @@ alloy-rpc-types = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b
 alloy-sol-types = { version = "0.7.2", features = ["json"] }
 alloy-signer = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
 alloy-transport = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
+alloy-transport-http = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2", features = ["reqwest-rustls-tls"] }
 alloy-transport-ws = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
 
 anyhow = "1.0"
