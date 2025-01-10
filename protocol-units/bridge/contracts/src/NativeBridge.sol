@@ -16,6 +16,8 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
         uint256 amount;
     }
 
+    // Inbound: Circulating token is released on the destination chain (unlock or mint).
+    // Outbound: Circulating token is taken from the source chain (lock or burn).
     mapping(uint256 nonce => OutboundTransfer) public noncesToOutboundTransfers;
     mapping(bytes32 bridgeTransferId => uint256 nonce) public idsToInboundNonces;
     mapping(uint256 day => uint256 amount) public inboundRateLimitBudget;
@@ -24,11 +26,12 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
     bytes32 public constant RELAYER_ROLE = keccak256(abi.encodePacked("RELAYER_ROLE"));
     bytes32 public constant PAUSER_ROLE = keccak256(abi.encodePacked("PAUSER_ROLE"));
 
-    // Risk denominator must be above 3
-    uint256 public constant RISK_DENOMINATOR_LOWER_BOUND = 3;
+    // The insuranceBudgetDivider determines the fraction of the insurance fund that can be used for the per day budget for a given transfer direction.
+    // inusrance budget divider must be equal or above 4
+    uint256 public constant INSURANCE_BUDGET_DIVIDER_LOWER_BOUND = 3;
     IERC20 public moveToken;
     address public insuranceFund;
-    uint256 public riskDenominator;
+    uint256 public insuranceBudgetDivider;
     uint256 private _nonce;
 
     // Prevents initialization of implementation contract exploits
@@ -59,7 +62,7 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
 
         // Set insurance fund
         insuranceFund = _insuranceFund;
-        riskDenominator = RISK_DENOMINATOR_LOWER_BOUND + 1;
+        insuranceBudgetDivider = INSURANCE_BUDGET_DIVIDER_LOWER_BOUND + 1;
 
         // Maintainer is optional
         if (_maintainer != address(0)) {
@@ -182,14 +185,14 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
     }
 
     /**
-     * @dev Sets the risk denominator for the bridge
-     * @param _riskDenominator The new risk denominator
+     * @dev Sets the insurance budget divider for the bridge
+     * @param _insuranceBudgetDivider The new insurance budget divider
      */
-    function setRiskDenominator(uint256 _riskDenominator) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        // risk denominator must be at least 4
-        require(_riskDenominator > RISK_DENOMINATOR_LOWER_BOUND, InvalidRiskDenominator());
-        riskDenominator = _riskDenominator;
-        emit RiskDenominatorUpdated(_riskDenominator);
+    function setInsuranceBudgetDivider(uint256 _insuranceBudgetDivider) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        // insurance budget divider must be at least 4
+        require(_insuranceBudgetDivider > INSURANCE_BUDGET_DIVIDER_LOWER_BOUND, InvalidInsuranceBudgetDivider());
+        insuranceBudgetDivider = _insuranceBudgetDivider;
+        emit InsuranceBudgetDividerUpdated(_insuranceBudgetDivider);
     }
 
     /**
@@ -201,27 +204,27 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
     }
 
     /**
-     * @dev Rate limits the outboud transfers based on the insurance fund and risk denominator
+     * @dev Rate limits the outboud transfers based on the insurance fund and insurance budget divider
      * @param amount The amount to rate limit
      */
     function _rateLimitOutbound(uint256 amount) public {
         uint256 day = block.timestamp / 1 days;
         outboundRateLimitBudget[day] += amount;
         require(
-            outboundRateLimitBudget[day] < moveToken.balanceOf(insuranceFund) / riskDenominator,
+            outboundRateLimitBudget[day] < moveToken.balanceOf(insuranceFund) / insuranceBudgetDivider,
             OutboundRateLimitExceeded()
         );
     }
 
     /**
-     * @dev Rate limits the inbound transfers based on the insurance fund and risk denominator
+     * @dev Rate limits the inbound transfers based on the insurance fund and insurance budget divider
      * @param amount The amount to rate limit
      */
     function _rateLimitInbound(uint256 amount) public {
         uint256 day = block.timestamp / 1 days;
         inboundRateLimitBudget[day] += amount;
         require(
-            inboundRateLimitBudget[day] < moveToken.balanceOf(insuranceFund) / riskDenominator,
+            inboundRateLimitBudget[day] < moveToken.balanceOf(insuranceFund) / insuranceBudgetDivider,
             InboundRateLimitExceeded()
         );
     }
