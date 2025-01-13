@@ -63,36 +63,54 @@ mod secp256k1 {
 	async fn aws_signing_verify() -> Result<(), anyhow::Error> {
 		let message = b"Hello, world!";
 		let digest: [u8; 32] = Keccak256::new_with_prefix(&message).finalize().into();
-		let key_id = env::var("AWS_KMS_KEY_ID").expect("AWS_KMS_KEY_ID not set");
-		let aws: AwsKms<Secp256k1> = AwsKms::try_from_env_with_key(key_id).await?;
-		let public_key = aws.public_key().await?;
-		let signature = aws.sign(&digest).await?;
+		///skip the test in Local mode
+		if env::var("AWS_KMS_KEY_ID").is_ok() {
+			let key_id = env::var("AWS_KMS_KEY_ID").expect("AWS_KMS_KEY_ID not set");
+			let aws: AwsKms<Secp256k1> = AwsKms::try_from_env_with_key(key_id).await?;
+			let public_key = aws.public_key().await?;
+			let signature = aws.sign(&digest).await?;
 
-		assert!(Secp256k1::verify(&digest, &signature, &public_key)?);
+			assert!(Secp256k1::verify(&digest, &signature, &public_key)?);
+		}
 		Ok(())
 	}
 
 	#[tokio::test]
-	async fn aws_send_tx() -> Result<(), anyhow::Error> {
+	async fn send_tx() -> Result<(), anyhow::Error> {
 		// Start Anvil
 		let anvil = Anvil::new().port(8545u16).arg("-vvvvv").spawn();
 		let rpc_url = anvil.endpoint_url();
 		let chain_id = anvil.chain_id();
 
-		// Use AWS KMS
-		let _access_key = env::var("AWS_ACCESS_KEY").expect("AWS_ACCESS_KEY not set");
-		let _secret_key = env::var("AWS_SECRET_KEY").expect("AWS_SECRET_KEY not set");
-		let key_id = env::var("AWS_KMS_KEY_ID").expect("AWS_KMS_KEY_ID not set");
-
-		let aws: AwsKms<Secp256k1> = AwsKms::try_from_env_with_key(key_id).await?;
-		let signer = HsmSigner::try_new(aws, Some(chain_id)).await?;
-		let address = signer.address();
-
-		let key_provider = ProviderBuilder::new()
-			.with_recommended_fillers()
-			.wallet(EthereumWallet::new(signer))
-			.on_builtin(&rpc_url.to_string())
-			.await?;
+		// Detect if we execute with AWS env var or not.
+		let (key_provider, address) = match env::var("AWS_KMS_KEY_ID") {
+			Ok(key_id) => {
+				// Use AWS KMS
+				let _access_key = env::var("AWS_ACCESS_KEY").expect("AWS_ACCESS_KEY not set");
+				let _secret_key = env::var("AWS_SECRET_KEY").expect("AWS_SECRET_KEY not set");
+				let aws: AwsKms<Secp256k1> = AwsKms::try_from_env_with_key(key_id).await?;
+				let signer = HsmSigner::try_new(aws, Some(chain_id)).await?;
+				let address = signer.address();
+				let key_provider = ProviderBuilder::new()
+					.with_recommended_fillers()
+					.wallet(EthereumWallet::new(signer))
+					.on_builtin(&rpc_url.to_string())
+					.await?;
+				(key_provider, address)
+			}
+			Err(_) => {
+				//Use Local KMS
+				let local = LocalSigner::<Secp256k1>::random();
+				let signer = HsmSigner::try_new(local, Some(chain_id)).await?;
+				let address = signer.address();
+				let key_provider = ProviderBuilder::new()
+					.with_recommended_fillers()
+					.wallet(EthereumWallet::new(signer))
+					.on_builtin(&rpc_url.to_string())
+					.await?;
+				(key_provider, address)
+			}
+		};
 
 		let admin: PrivateKeySigner = anvil.keys()[1].clone().into();
 		let admin_address = admin.address();
