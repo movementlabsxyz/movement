@@ -205,9 +205,15 @@ impl Key {
 		)
 	}
 
-	/// Gets a key from a canonical string.
-	/// Example canonical string: "movement/prod/full_node/mcr_settlement/signer/validator/0"
-	pub fn try_from_canonical_string(s: &str) -> Result<Self, String> {
+	/// Gets a key from a canonical string environment variable
+	pub fn try_from_env_var(var: &str) -> Result<Self, String> {
+		let s = std::env::var(var).map_err(|e| format!("{}: {}", var, e))?;
+		Self::try_from_canonical_string(&s)
+	}
+}
+
+impl TryFromCanonicalString for Key {
+	fn try_from_canonical_string(s: &str) -> Result<Self, String> {
 		let parts: Vec<&str> = s.split('/').collect();
 		if parts.len() != 7 {
 			return Err(format!("invalid key: {}", s));
@@ -222,12 +228,6 @@ impl Key {
 			key_name: parts[5].to_string(),
 			app_replica: Some(parts[6].to_string()),
 		})
-	}
-
-	/// Gets a key from a canonical string environment variable
-	pub fn try_from_env_var(var: &str) -> Result<Self, String> {
-		let s = std::env::var(var).map_err(|e| format!("{}: {}", var, e))?;
-		Self::try_from_canonical_string(&s)
 	}
 }
 
