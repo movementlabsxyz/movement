@@ -11,10 +11,14 @@ macro_rules! fixed_size {
 			}
 		}
 
-		impl crate::cryptography::TryFromBytes for $Name {
-			fn try_from_bytes(bytes: &[u8]) -> Result<Self, anyhow::Error> {
+		impl TryFrom<&[u8]> for $Name {
+			type Error = crate::cryptography::CryptoMaterialError;
+
+			fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+				use crate::cryptography::CryptoMaterialError;
+
 				if bytes.len() != Self::BYTES_LEN {
-					Err(anyhow::anyhow!("invalid length"))?;
+					Err(CryptoMaterialError("invalid length".into()))?;
 				}
 
 				let mut inner = [0u8; Self::BYTES_LEN];
@@ -29,15 +33,18 @@ macro_rules! fixed_size {
 pub mod ed25519;
 pub mod secp256k1;
 
-pub trait TryFromBytes: Sized {
-	fn try_from_bytes(bytes: &[u8]) -> Result<Self, anyhow::Error>;
-}
+use std::error::Error;
 
 /// A designator for an elliptic curve.
 ///
 /// This trait has no methods, but it binds the types of the public key and
 /// the signature used by the EC digital signing algorithm.
 pub trait Curve {
-	type PublicKey: TryFromBytes;
+	type PublicKey;
 	type Signature;
 }
+
+/// Errors that occur when parsing signature or key material from byte sequences.
+#[derive(Debug, thiserror::Error)]
+#[error(transparent)]
+pub struct CryptoMaterialError(Box<dyn Error + Send + Sync>);

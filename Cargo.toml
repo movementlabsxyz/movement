@@ -3,6 +3,8 @@
 resolver = "2"
 
 members = [
+    # FIXME: do we still need the demo?
+    "demo/hsm",
     "protocol-units/bridge/config",
     "protocol-units/bridge/setup",
     "protocol-units/execution/maptos/dof",
@@ -45,7 +47,7 @@ members = [
     "util/signing/integrations/aptos",
     "util/signing/providers/aws-kms",
     "util/signing/providers/hashicorp-vault",
-    "demo/hsm"
+    "util/signing/testing",
 ]
 
 [workspace.package]
@@ -122,6 +124,7 @@ aptos-account-whitelist = { path = "protocol-units/access-control/aptos/account-
 movement-signer = { path = "util/signing/interface" }
 movement-signer-aws-kms = { path = "util/signing/providers/aws-kms" }
 movement-signer-hashicorp-vault = { path = "util/signing/providers/hashicorp-vault" }
+movement-signing-aptos = { path = "util/signing/integrations/aptos" }
 
 ## vault
 vaultrs = { version = "0.7.3" }
@@ -267,7 +270,6 @@ proptest = { version = "1.3.1", default-features = false, features = ["alloc"] }
 proptest-derive = "0.4"
 quote = "1.0"
 rand = "0.7.3"
-rand_core = "0.5.1"
 rayon = "1.10.0"
 reqwest = "0.12.4"
 risc0-build = "0.20"
