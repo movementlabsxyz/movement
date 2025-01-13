@@ -1,7 +1,14 @@
-use movement_da_light_node_proto::Blob;
+pub mod fifo;
+
 use movement_da_util::blob::ir::blob::IntermediateBlobRepresentation;
 use std::error;
 use std::future::Future;
+use tokio_stream::{Stream, StreamExt};
+
+pub type CertificateStream =
+	std::pin::Pin<Box<dyn Stream<Item = Result<Certificate, DaError>> + Send>>;
+pub type IntermediateBlobRepresentationStream =
+	std::pin::Pin<Box<dyn Stream<Item = Result<IntermediateBlobRepresentation, DaError>> + Send>>;
 
 /// A blob meant for the DA.
 #[derive(Debug, Clone)]
@@ -20,6 +27,22 @@ impl DaBlob {
 
 	/// Consumes the [DaBlob] and returns the inner vector of bytes.
 	pub fn into_inner(self) -> Vec<u8> {
+		self.0
+	}
+}
+
+/// A height for a blob on the DA.
+#[derive(Debug, Clone)]
+pub struct DaHeight(u64);
+
+impl DaHeight {
+	/// Creates a new [DaHeight] from a u64.
+	pub fn new(height: u64) -> Self {
+		Self(height)
+	}
+
+	/// Returns the inner u64.
+	pub fn as_u64(&self) -> u64 {
 		self.0
 	}
 }
@@ -46,11 +69,17 @@ pub enum DaError {
 	Internal(String),
 }
 
-pub trait DaOperations {
+pub trait DaOperations
+where
+	Self: Send + Sync + 'static,
+{
 	/// Submits a blob to the DA.
 	///
-	/// A DA must allow for submission of raw [DaBlob]s and return a [Blob].
-	fn submit_blob(&self, data: DaBlob) -> impl Future<Output = Result<Blob, DaError>>;
+	/// A DA must allow for submission of raw [DaBlob]s and return a [IntermediateBlobRepresentation].
+	fn submit_blob(
+		&self,
+		data: DaBlob,
+	) -> impl Future<Output = Result<IntermediateBlobRepresentation, DaError>>;
 
 	/// Gets the blobs at a given height.
 	///
@@ -58,13 +87,14 @@ pub trait DaOperations {
 	fn get_ir_blobs_at_height(
 		&self,
 		height: u64,
-	) -> impl Future<Output = Result<Vec<IntermediateBlobRepresentation>, DaError>>;
+	) -> impl Future<Output = Result<Vec<IntermediateBlobRepresentation>, DaError>> + Send + Sync + 'static;
 
 	/// Gets the IR blobs at a given height as would be used by the stream.
 	fn get_ir_blobs_at_height_for_stream(
 		&self,
 		height: u64,
-	) -> impl Future<Output = Result<Vec<IntermediateBlobRepresentation>, DaError>> {
+	) -> impl Future<Output = Result<Vec<IntermediateBlobRepresentation>, DaError>> + Send + Sync + 'static
+	{
 		async move {
 			// get the blobs at a given height, if the error is NonFatal, return an empty vec
 			match self.get_ir_blobs_at_height(height).await {
@@ -78,5 +108,74 @@ pub trait DaOperations {
 	/// Streams certificates from the DA.
 	///
 	/// A DA must allow for streaming of [Certificate]s. This is used to inform [Blob] polling.
-	fn stream_certificates(&self) -> impl futures::Stream<Item = Result<Certificate, DaError>>;
+	fn stream_certificates(&self) -> impl Future<Output = Result<CertificateStream, DaError>>;
+
+	/// Streams [IntermediateBlobRepresentation]s from the between two heights.
+	///
+	/// A DA implements a standard API for streaming [IntermediateBlobRepresentation]s.
+	fn stream_ir_blobs_between_heights(
+		&self,
+		start_height: u64,
+		end_height: u64,
+	) -> impl Future<Output = Result<IntermediateBlobRepresentationStream, DaError>> {
+		async move {
+			let stream = async_stream::try_stream! {
+
+				for height in start_height..end_height {
+					let blobs = self.get_ir_blobs_at_height_for_stream(height).await?;
+					for blob in blobs {
+						yield blob;
+					}
+				}
+
+			};
+
+			Ok(Box::pin(stream) as IntermediateBlobRepresentationStream)
+		}
+	}
+
+	/// Streams ir blobs from a certain height.
+	///
+	/// A DA implements a standard API for streaming [IntermediateBlobRepresentation]s.
+	fn stream_ir_blobs_from_height(
+		&self,
+		start_height: u64,
+	) -> impl Future<Output = Result<IntermediateBlobRepresentationStream, DaError>> {
+		async move {
+			let stream = async_stream::try_stream! {
+
+				// record the last height
+				let mut last_height = start_height;
+
+				// listen to the certificate stream to find the next height
+				let mut certificate_stream = self.stream_certificates().await?;
+
+				// loop through the certificate stream
+				while let Some(certificate) = certificate_stream.next().await {
+					match certificate {
+						Ok(Certificate::Height(height)) => {
+							// if the certificate height is greater than the last height, stream the blobs between the last height and the certificate height
+							if height > last_height {
+								let blobs = self.stream_ir_blobs_between_heights(last_height, height).await?;
+								for blob in blobs {
+									yield Ok(blob);
+								}
+								last_height = height;
+							}
+
+						}
+						Ok(Certificate::Nolo) => {
+							// do nothing
+						}
+						Err(e) => {
+							yield Err(e);
+						}
+					}
+				}
+
+			};
+
+			Ok(stream)
+		}
+	}
 }

@@ -10262,10 +10262,12 @@ dependencies = [
 name = "movement-da-light-node-da"
 version = "0.0.2"
 dependencies = [
+ "async-stream",
  "futures",
  "movement-da-light-node-proto",
  "movement-da-util",
  "thiserror 1.0.69",
+ "tokio-stream",
 ]
 
 [[package]]
