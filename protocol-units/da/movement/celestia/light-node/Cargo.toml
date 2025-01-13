@@ -41,6 +41,7 @@ bcs = { workspace = true }
 zstd = { workspace = true }
 ecdsa = { workspace = true }
 k256 = { workspace = true }
+thiserror = { workspace = true }
 
 # sequencer
 memseq = { workspace = true, optional = true }
