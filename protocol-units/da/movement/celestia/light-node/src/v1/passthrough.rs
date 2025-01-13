@@ -2,7 +2,7 @@ use movement_celestia_da_util::ir_blob::IntermediateBlobRepresentation;
 use std::fmt::{self, Debug, Formatter};
 use std::sync::Arc;
 use tokio_stream::{Stream, StreamExt};
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, warn};
 
 use celestia_rpc::{BlobClient, Client, HeaderClient};
 use celestia_types::{nmt::Namespace, Blob as CelestiaBlob, TxConfig};
@@ -224,6 +224,18 @@ where
 					break;
 				}
 
+				// to avoid stopping the stream when get blobs at height fails, simply warn!
+				match me.get_blobs_at_height(height).await {
+					Ok(blobs) => {
+						for blob in blobs {
+							yield blob;
+						}
+					}
+					Err(e) => {
+						warn!(error = %e, "failed to get blobs at height");
+					}
+				}
+
 				let blobs = me.get_blobs_at_height(height).await?;
 				for blob in blobs {
 					yield blob;
@@ -272,13 +284,18 @@ where
 				}
 				first_flag = false;
 
-				let blobs = me.get_blobs_at_height(height).await?;
-				for blob in blobs {
-
-					debug!("Stream got blob: {:?}", blob);
-
-					yield blob;
+				// to avoid stopping the stream when get blobs at height fails, simply warn!
+				match me.get_blobs_at_height(height).await {
+					Ok(blobs) => {
+						for blob in blobs {
+							yield blob;
+						}
+					}
+					Err(e) => {
+						warn!(error = %e, "failed to get blobs at height");
+					}
 				}
+
 			}
 		};
 
