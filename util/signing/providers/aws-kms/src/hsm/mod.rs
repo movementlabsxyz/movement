@@ -5,8 +5,6 @@ use aws_sdk_kms::Client;
 use movement_signer::cryptography::secp256k1::{self as mvtsecp256k1, Secp256k1 as MvtSecp256k1};
 use movement_signer::cryptography::TryFromBytes;
 use movement_signer::{cryptography::Curve, SignerError, Signing};
-use secp256k1::ecdsa::Signature as Secp256k1Signature;
-use secp256k1::Error as Secp256k1Error;
 
 pub mod key;
 
@@ -88,17 +86,16 @@ impl Signing<MvtSecp256k1> for AwsKms<MvtSecp256k1> {
 			.context("No signature available")
 			.map_err(|e| SignerError::Internal(e.to_string()))?;
 
-		let secp_signature =
-			Secp256k1Signature::from_der(der_signature.as_ref()).map_err(|e: Secp256k1Error| {
-				SignerError::Internal(format!("Failed to parse DER signature: {}", e))
-			})?;
+		let secp_signature = k256::ecdsa::Signature::from_der(der_signature.as_ref())
+			.map_err(|e| SignerError::Decode(e.into()))?;
 
-		let raw_signature = secp_signature.serialize_compact();
+		let secp_signature = secp_signature.normalize_s().unwrap_or(secp_signature);
 
 		// Convert the raw signature into the appropriate curve type
-		let signature = mvtsecp256k1::Signature::try_from_bytes(&raw_signature).map_err(|e| {
-			SignerError::Internal(format!("Failed to convert signature: {}", e.to_string()))
-		})?;
+		let signature = mvtsecp256k1::Signature::try_from_bytes(&secp_signature.to_bytes())
+			.map_err(|e| {
+				SignerError::Internal(format!("Failed to convert signature: {}", e.to_string()))
+			})?;
 
 		Ok(signature)
 	}

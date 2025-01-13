@@ -66,7 +66,7 @@ impl LocalSigner<Secp256k1> {
 	}
 
 	pub fn from_signing_key_hex(hex: &str) -> Result<Self, SignerError> {
-		let bytes = hex::decode(hex).map_err(|e| SignerError::Decode(e.into()))?;
+		let bytes = hex::decode(hex).map_err(|e| SignerError::Decode(anyhow::anyhow!(e).into()))?;
 		Self::from_signing_key_bytes(&bytes)
 	}
 }
