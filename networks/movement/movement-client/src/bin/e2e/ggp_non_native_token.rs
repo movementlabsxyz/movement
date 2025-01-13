@@ -64,7 +64,19 @@ async fn main() -> Result<(), anyhow::Error> {
 		"CARGO_MANIFEST_DIR is not set. Make sure to run this inside a Cargo build context.",
 	);
 
+	let init_status = Command::new("movement")
+		.arg("init")
+		.current_dir(crate_dir.clone())
+		.status()
+		.await
+		.expect("Failed to execute `movement init` command");
+
+	if !init_status.success() {
+		anyhow::bail!("Initializing Move module failed. Please check the `movement init` command.");
+	}
+
 	let target_dir = PathBuf::from(crate_dir).join("src").join("move-modules");
+	let target_dir_clone = target_dir.clone();
 
 	println!("target_dir: {:?}", target_dir);
 
@@ -82,6 +94,22 @@ async fn main() -> Result<(), anyhow::Error> {
 	if !build_status.success() {
 		anyhow::bail!(
 			"Building Move module failed. Please check the `movement move build` command."
+		);
+	}
+
+	let publish_status = Command::new("movement")
+		.arg("move")
+		.arg("publish")
+		.arg("--skip-fetch-latest-git-deps")
+		.current_dir(target_dir_clone)
+		.status()
+		.await
+		.expect("Failed to execute `movement move publish` command");
+
+	// Check if the publish succeeded
+	if !publish_status.success() {
+		anyhow::bail!(
+			"Publishing Move module failed. Please check the `movement move publish` command."
 		);
 	}
 
