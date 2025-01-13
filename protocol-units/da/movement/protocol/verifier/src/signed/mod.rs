@@ -11,7 +11,7 @@ use ecdsa::{
 	hazmat::{DigestPrimitive, SignPrimitive, VerifyPrimitive},
 	SignatureSize,
 };
-use movement_da_util::ir_blob::IntermediateBlobRepresentation;
+use movement_da_util::blob::ir::blob::IntermediateBlobRepresentation;
 use std::collections::HashSet;
 use tracing::info;
 

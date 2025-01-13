@@ -1,7 +1,7 @@
-use crate::{Error, Verified, VerifierOperations};
 use celestia_rpc::Client;
 use celestia_types::{nmt::Namespace, Blob};
-use movement_da_util::ir_blob::IntermediateBlobRepresentation;
+use movement_da_light_node_verifier::{Error, Verified, VerifierOperations};
+use movement_da_util::blob::ir::blob::IntermediateBlobRepresentation;
 use std::sync::Arc;
 
 #[derive(Clone)]

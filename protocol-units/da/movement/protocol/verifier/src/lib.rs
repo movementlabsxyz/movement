@@ -1,4 +1,3 @@
-pub mod celestia;
 pub mod permissioned_signers;
 pub mod signed;
 

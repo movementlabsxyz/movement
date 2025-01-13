@@ -10235,7 +10235,10 @@ dependencies = [
 name = "movement-da-light-node-celestia"
 version = "0.0.2"
 dependencies = [
+ "celestia-rpc",
+ "celestia-types",
  "movement-da-light-node-da",
+ "movement-da-light-node-verifier",
  "movement-da-util",
  "prost 0.13.3",
  "tonic 0.12.3",

@@ -18,6 +18,9 @@ prost = { workspace = true }
 [build-dependencies]
 movement-da-light-node-da = { workspace = true }
 movement-da-util = { workspace = true }
+movement-da-light-node-verifier = { workspace = true }
+celestia-rpc = { workspace = true }
+celestia-types = { workspace = true }
 
 [features]
 default = []
