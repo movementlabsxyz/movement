@@ -60,20 +60,27 @@ static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
+	let rest_client = Client::new(NODE_URL.clone());
+	let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
+	let coin_client = CoinClient::new(&rest_client);
+
 	let crate_dir = env::var("CARGO_MANIFEST_DIR").expect(
 		"CARGO_MANIFEST_DIR is not set. Make sure to run this inside a Cargo build context.",
 	);
 
-	let init_status = Command::new("movement")
-		.arg("init")
-		.current_dir(crate_dir.clone())
-		.status()
-		.await
-		.expect("Failed to execute `movement init` command");
+	println!("Node URL: {:?}", NODE_URL.as_str());
+	println!("Faucet URL: {:?}", FAUCET_URL.as_str());
 
-	if !init_status.success() {
-		anyhow::bail!("Initializing Move module failed. Please check the `movement init` command.");
-	}
+	// let init_status = Command::new("movement")
+	// 	.args(["init", "--network", "local", "--rest-url", NODE_URL.as_str()])
+	// 	.current_dir(crate_dir.clone())
+	// 	.status()
+	// 	.await
+	// 	.expect("Failed to execute `movement init` command");
+
+	// if !init_status.success() {
+	// 	anyhow::bail!("Initializing Move module failed. Please check the `movement init` command.");
+	// }
 
 	let target_dir = PathBuf::from(crate_dir).join("src").join("move-modules");
 	let target_dir_clone = target_dir.clone();
@@ -114,11 +121,6 @@ async fn main() -> Result<(), anyhow::Error> {
 	}
 
 	println!("Move module build");
-
-	let rest_client = Client::new(NODE_URL.clone());
-	let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone()); // <:!:section_1a
-
-	let coin_client = CoinClient::new(&rest_client); // <:!:section_1b
 
 	// Create the proposer account and fund it from the faucet
 	let proposer = LocalAccount::generate(&mut rand::rngs::OsRng);
