@@ -1,7 +1,6 @@
 use anyhow::Context;
 use aptos_sdk::rest_client::{
 	aptos_api_types::{Address, EntryFunctionId, IdentifierWrapper, MoveModuleId, ViewRequest},
-	error::RestError,
 	Response,
 };
 use movement_client::{
