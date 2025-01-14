@@ -71,16 +71,23 @@ async fn main() -> Result<(), anyhow::Error> {
 	println!("Node URL: {:?}", NODE_URL.as_str());
 	println!("Faucet URL: {:?}", FAUCET_URL.as_str());
 
-	// let init_status = Command::new("movement")
-	// 	.args(["init", "--network", "local", "--rest-url", NODE_URL.as_str()])
-	// 	.current_dir(crate_dir.clone())
-	// 	.status()
-	// 	.await
-	// 	.expect("Failed to execute `movement init` command");
+	let init_status = Command::new("movement")
+		.args([
+			"init",
+			"--network",
+			"local",
+			"--rest-url",
+			NODE_URL.as_str(),
+			"--faucet-url",
+			FAUCET_URL.as_str(),
+		])
+		.status()
+		.await
+		.expect("Failed to execute `movement init` command");
 
-	// if !init_status.success() {
-	// 	anyhow::bail!("Initializing Move module failed. Please check the `movement init` command.");
-	// }
+	if !init_status.success() {
+		anyhow::bail!("Initializing Move module failed. Please check the `movement init` command.");
+	}
 
 	let target_dir = PathBuf::from(crate_dir).join("src").join("move-modules");
 	let target_dir_clone = target_dir.clone();
