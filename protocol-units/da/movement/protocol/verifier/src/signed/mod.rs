@@ -11,7 +11,7 @@ use ecdsa::{
 	hazmat::{DigestPrimitive, SignPrimitive, VerifyPrimitive},
 	SignatureSize,
 };
-use movement_da_util::blob::ir::blob::IntermediateBlobRepresentation;
+use movement_da_util::blob::ir::blob::DaBlob;
 use std::collections::HashSet;
 use tracing::info;
 
@@ -42,7 +42,7 @@ where
 }
 
 #[tonic::async_trait]
-impl<C> VerifierOperations<IntermediateBlobRepresentation, IntermediateBlobRepresentation>
+impl<C> VerifierOperations<DaBlob, DaBlob>
 	for Verifier<C>
 where
 	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
@@ -53,9 +53,9 @@ where
 {
 	async fn verify(
 		&self,
-		blob: IntermediateBlobRepresentation,
+		blob: DaBlob,
 		_height: u64,
-	) -> Result<Verified<IntermediateBlobRepresentation>, Error> {
+	) -> Result<Verified<DaBlob>, Error> {
 		blob.verify_signature::<C>().map_err(|e| Error::Validation(e.to_string()))?;
 
 		Ok(Verified::new(blob))
@@ -102,7 +102,7 @@ where
 }
 
 #[tonic::async_trait]
-impl<C> VerifierOperations<IntermediateBlobRepresentation, IntermediateBlobRepresentation>
+impl<C> VerifierOperations<DaBlob, DaBlob>
 	for InKnownSignersVerifier<C>
 where
 	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
@@ -113,9 +113,9 @@ where
 {
 	async fn verify(
 		&self,
-		blob: IntermediateBlobRepresentation,
+		blob: DaBlob,
 		height: u64,
-	) -> Result<Verified<IntermediateBlobRepresentation>, Error> {
+	) -> Result<Verified<DaBlob>, Error> {
 		let ir_blob = self.inner_verifier.verify(blob, height).await?;
 		info!("Verified inner blob");
 		let signer = ir_blob.inner().signer_hex();

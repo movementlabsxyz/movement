@@ -10212,6 +10212,7 @@ dependencies = [
  "k256",
  "memseq",
  "movement-algs",
+ "movement-da-light-node-da",
  "movement-da-light-node-prevalidator",
  "movement-da-light-node-proto",
  "movement-da-light-node-verifier",
@@ -10235,13 +10236,16 @@ dependencies = [
 name = "movement-da-light-node-celestia"
 version = "0.0.2"
 dependencies = [
+ "anyhow",
+ "async-stream",
+ "bcs 0.1.4",
  "celestia-rpc",
  "celestia-types",
  "movement-da-light-node-da",
- "movement-da-light-node-verifier",
  "movement-da-util",
- "prost 0.13.3",
  "tonic 0.12.3",
+ "tracing",
+ "zstd 0.13.2",
 ]
 
 [[package]]
@@ -10262,6 +10266,7 @@ dependencies = [
 name = "movement-da-light-node-da"
 version = "0.0.2"
 dependencies = [
+ "anyhow",
  "async-stream",
  "futures",
  "movement-da-light-node-proto",

@@ -1,7 +1,7 @@
-pub mod fifo;
+pub mod mock;
 
 use async_stream::try_stream;
-use movement_da_util::blob::ir::blob::IntermediateBlobRepresentation;
+use movement_da_util::blob::ir::blob::DaBlob;
 use std::future::Future;
 use std::pin::Pin;
 use tokio_stream::{Stream, StreamExt};
@@ -9,26 +9,7 @@ use tracing::warn;
 
 pub type CertificateStream<'a> =
 	Pin<Box<dyn Stream<Item = Result<Certificate, DaError>> + Send + 'a>>;
-pub type IntermediateBlobRepresentationStream<'a> =
-	Pin<Box<dyn Stream<Item = Result<IntermediateBlobRepresentation, DaError>> + Send + 'a>>;
-
-/// A blob meant for the DA.
-#[derive(Debug, Clone)]
-pub struct DaBlob(Vec<u8>);
-
-impl DaBlob {
-	pub fn new(data: Vec<u8>) -> Self {
-		Self(data)
-	}
-
-	pub fn as_ref(&self) -> &[u8] {
-		&self.0
-	}
-
-	pub fn into_inner(self) -> Vec<u8> {
-		self.0
-	}
-}
+pub type DaBlobStream<'a> = Pin<Box<dyn Stream<Item = Result<DaBlob, DaError>> + Send + 'a>>;
 
 /// A height for a blob on the DA.
 #[derive(Debug, Clone)]
@@ -58,6 +39,12 @@ pub enum DaError {
 	BlobSubmission(#[source] Box<dyn std::error::Error + Send + Sync>),
 	#[error("blobs at height error: {0}")]
 	BlobsAtHeight(#[source] Box<dyn std::error::Error + Send + Sync>),
+	#[error("non-fatal blobs at height error: {0}")]
+	NonFatalBlobsAtHeight(#[source] Box<dyn std::error::Error + Send + Sync>),
+	#[error("certificate error: {0}")]
+	Certificate(#[source] Box<dyn std::error::Error + Send + Sync>),
+	#[error("non-fatal certificate error: {0}")]
+	NonFatalCertificate(#[source] Box<dyn std::error::Error + Send + Sync>),
 	#[error("internal error: {0}")]
 	Internal(String),
 }
@@ -67,14 +54,28 @@ pub trait DaOperations: Send + Sync {
 	fn submit_blob(
 		&self,
 		data: DaBlob,
-	) -> Pin<Box<dyn Future<Output = Result<IntermediateBlobRepresentation, DaError>> + Send + '_>>;
+	) -> Pin<Box<dyn Future<Output = Result<(), DaError>> + Send + '_>>;
 
 	fn get_ir_blobs_at_height(
 		&self,
 		height: u64,
-	) -> Pin<
-		Box<dyn Future<Output = Result<Vec<IntermediateBlobRepresentation>, DaError>> + Send + '_>,
-	>;
+	) -> Pin<Box<dyn Future<Output = Result<Vec<DaBlob>, DaError>> + Send + '_>>;
+
+	fn get_ir_blobs_at_height_for_stream(
+		&self,
+		height: u64,
+	) -> Pin<Box<dyn Future<Output = Result<Vec<DaBlob>, DaError>> + Send + '_>> {
+		Box::pin(async move {
+			let result = self.get_ir_blobs_at_height(height).await;
+			match result {
+				Ok(blobs) => Ok(blobs),
+				Err(e) => {
+					warn!("failed to get blobs at height: {}", e);
+					Ok(vec![])
+				}
+			}
+		})
+	}
 
 	fn stream_certificates(
 		&self,
@@ -84,19 +85,17 @@ pub trait DaOperations: Send + Sync {
 		&self,
 		start_height: u64,
 		end_height: u64,
-	) -> Pin<
-		Box<dyn Future<Output = Result<IntermediateBlobRepresentationStream, DaError>> + Send + '_>,
-	> {
+	) -> Pin<Box<dyn Future<Output = Result<DaBlobStream, DaError>> + Send + '_>> {
 		let fut = async move {
 			let stream = try_stream! {
 				for height in start_height..end_height {
-					let blobs = self.get_ir_blobs_at_height(height).await?;
+					let blobs = self.get_ir_blobs_at_height_for_stream(height).await?;
 					for blob in blobs {
 						yield blob;
 					}
 				}
 			};
-			Ok(Box::pin(stream) as IntermediateBlobRepresentationStream)
+			Ok(Box::pin(stream) as DaBlobStream)
 		};
 		Box::pin(fut)
 	}
@@ -104,9 +103,7 @@ pub trait DaOperations: Send + Sync {
 	fn stream_ir_blobs_from_height(
 		&self,
 		start_height: u64,
-	) -> Pin<
-		Box<dyn Future<Output = Result<IntermediateBlobRepresentationStream, DaError>> + Send + '_>,
-	> {
+	) -> Pin<Box<dyn Future<Output = Result<DaBlobStream, DaError>> + Send + '_>> {
 		let fut = async move {
 			let certificate_stream = self.stream_certificates().await?;
 			let stream = try_stream! {
@@ -130,15 +127,23 @@ pub trait DaOperations: Send + Sync {
 						Ok(Certificate::Nolo) => {
 							// Ignore Nolo
 						}
-						Err(e) => {
-							warn!("failed to process stream");
+						// Warn log non-fatal certificate errors
+						Err(DaError::NonFatalCertificate(e)) => {
+							warn!("non-fatal certificate error: {}", e);
 						}
-						_ => warn!("back fetch")
+						// Exit on all other errors
+						Err(e) => {
+							yield Err(e)?;
+						}
+						// If height is less than last height, ignore
+						_ => {
+							warn!("ignoring certificate with height less than last height");
+						}
 					}
 				}
 			};
 
-			Ok(Box::pin(stream) as IntermediateBlobRepresentationStream)
+			Ok(Box::pin(stream) as DaBlobStream)
 		};
 		Box::pin(fut)
 	}

@@ -1,7 +1,7 @@
 use celestia_rpc::Client;
 use celestia_types::{nmt::Namespace, Blob};
 use movement_da_light_node_verifier::{Error, Verified, VerifierOperations};
-use movement_da_util::blob::ir::blob::IntermediateBlobRepresentation;
+use movement_da_util::blob::ir::blob::DaBlob;
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -19,15 +19,15 @@ impl Verifier {
 }
 
 #[tonic::async_trait]
-impl VerifierOperations<Blob, IntermediateBlobRepresentation> for Verifier {
-	/// Verifies a Celestia Blob as a Valid IntermediateBlobRepresentation
+impl VerifierOperations<Blob, DaBlob> for Verifier {
+	/// Verifies a Celestia Blob as a Valid DaBlob
 	async fn verify(
 		&self,
 		blob: Blob,
 		_height: u64,
-	) -> Result<Verified<IntermediateBlobRepresentation>, Error> {
-		// Only assert that we can indeed get an IntermediateBlobRepresentation from the Blob
-		let ir_blob = IntermediateBlobRepresentation::try_from(blob)
+	) -> Result<Verified<DaBlob>, Error> {
+		// Only assert that we can indeed get an DaBlob from the Blob
+		let ir_blob = DaBlob::try_from(blob)
 			.map_err(|e| Error::Internal(e.to_string()))?;
 
 		Ok(Verified::new(ir_blob))

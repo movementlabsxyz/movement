@@ -1,4 +1,4 @@
-use movement_da_util::ir_blob::IntermediateBlobRepresentation;
+use movement_da_util::ir_blob::DaBlob;
 use std::fmt::{self, Debug, Formatter};
 use std::sync::Arc;
 use tokio_stream::{Stream, StreamExt};
@@ -8,12 +8,13 @@ use celestia_rpc::{BlobClient, Client, HeaderClient};
 use celestia_types::{nmt::Namespace, Blob as CelestiaBlob, TxConfig};
 
 // FIXME: glob imports are bad style
+use movement_da_light_node_da::{DaBlob, DaOperations};
 use movement_da_light_node_proto::light_node_service_server::LightNodeService;
 use movement_da_light_node_proto::*;
 use movement_da_light_node_verifier::{permissioned_signers::Verifier, VerifierOperations};
 use movement_da_util::{
 	config::Config,
-	ir_blob::{celestia::CelestiaIntermediateBlobRepresentation, InnerSignedBlobV1Data},
+	ir_blob::{celestia::CelestiaDaBlob, InnerSignedBlobV1Data},
 };
 
 use crate::LightNodeRuntime;
@@ -31,30 +32,31 @@ use ecdsa::{
 };
 
 #[derive(Clone)]
-pub struct LightNode<C>
+pub struct LightNode<C, Da>
 where
 	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
 	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
 	SignatureSize<C>: ArrayLength<u8>,
 	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 	FieldBytesSize<C>: ModulusSize,
+	Da: DaOperations,
 {
 	pub config: Config,
-	pub celestia_namespace: Namespace,
-	pub default_client: Arc<Client>,
 	pub verifier: Arc<
-		Box<dyn VerifierOperations<CelestiaBlob, IntermediateBlobRepresentation> + Send + Sync>,
+		Box<dyn VerifierOperations<CelestiaBlob, DaBlob> + Send + Sync>,
 	>,
 	pub signing_key: SigningKey<C>,
+	pub da: Arc<Da>,
 }
 
-impl<C> Debug for LightNode<C>
+impl<C, Da> Debug for LightNode<C, Da>
 where
 	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
 	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
 	SignatureSize<C>: ArrayLength<u8>,
 	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 	FieldBytesSize<C>: ModulusSize,
+	Da: DaOperations,
 {
 	fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
 		f.debug_struct("LightNode")
@@ -63,13 +65,14 @@ where
 	}
 }
 
-impl<C> LightNodeRuntime for LightNode<C>
+impl<C, Da> LightNodeRuntime for LightNode<C, Da>
 where
 	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
 	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
 	SignatureSize<C>: ArrayLength<u8>,
 	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 	FieldBytesSize<C>: ModulusSize,
+	Da: DaOperations,
 {
 	/// Tries to create a new LightNode instance from the toml config file.
 	async fn try_from_config(config: Config) -> Result<Self, anyhow::Error> {
@@ -104,230 +107,15 @@ where
 	}
 }
 
-impl<C> LightNode<C>
+impl<C, Da> LightNode<C, Da>
 where
 	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
 	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
 	SignatureSize<C>: ArrayLength<u8>,
 	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 	FieldBytesSize<C>: ModulusSize,
+	Da: DaOperations,
 {
-	/// Creates a new signed blob instance with the provided data.
-	pub fn create_new_celestia_blob(&self, data: Vec<u8>) -> Result<CelestiaBlob, anyhow::Error> {
-		// mark the timestamp as now in milliseconds
-		let timestamp = chrono::Utc::now().timestamp_micros() as u64;
-
-		// sign the blob data and the timestamp
-		let data = InnerSignedBlobV1Data::new(data, timestamp).try_to_sign(&self.signing_key)?;
-
-		// create the celestia blob
-		CelestiaIntermediateBlobRepresentation(data.into(), self.celestia_namespace.clone())
-			.try_into()
-	}
-
-	/// Submits a CelestiaBlob to the Celestia node.
-	pub async fn submit_celestia_blob(&self, blob: CelestiaBlob) -> Result<u64, anyhow::Error> {
-		let config = TxConfig::default();
-		// config.with_gas(2);
-		let height = self.default_client.blob_submit(&[blob], config).await.map_err(|e| {
-			error!(error = %e, "failed to submit the blob");
-			anyhow::anyhow!("Failed submitting the blob: {}", e)
-		})?;
-
-		Ok(height)
-	}
-
-	/// Submits Celestia blobs to the Celestia node.
-	pub async fn submit_celestia_blobs(
-		&self,
-		blobs: &[CelestiaBlob],
-	) -> Result<u64, anyhow::Error> {
-		let height =
-			self.default_client.blob_submit(blobs, TxConfig::default()).await.map_err(|e| {
-				error!(error = %e, "failed to submit the blobs");
-				anyhow::anyhow!("Failed submitting the blob: {}", e)
-			})?;
-
-		Ok(height)
-	}
-
-	/// Submits a blob to the Celestia node.
-	pub async fn submit_blob(&self, data: Vec<u8>) -> Result<Blob, anyhow::Error> {
-		let celestia_blob = self.create_new_celestia_blob(data)?;
-		let height = self.submit_celestia_blob(celestia_blob.clone()).await?;
-		Ok(Self::celestia_blob_to_blob(celestia_blob, height)?)
-	}
-
-	/// Gets the blobs at a given height.
-	pub async fn get_ir_blobs_at_height(
-		&self,
-		height: u64,
-	) -> Result<Vec<IntermediateBlobRepresentation>, anyhow::Error> {
-		let height = if height == 0 { 1 } else { height };
-		match self.default_client.blob_get_all(height, &[self.celestia_namespace]).await {
-			Err(e) => {
-				error!(error = %e, "failed to get blobs at height {height}");
-				anyhow::bail!(e);
-			}
-			Ok(blobs) => {
-				let blobs = blobs.unwrap_or_default();
-
-				let mut verified_blobs = Vec::new();
-				for blob in blobs {
-					match self.verifier.verify(blob, height).await {
-						Ok(verified_blob) => {
-							let blob = verified_blob.into_inner();
-							info!("verified blob at height {}: {}", height, hex::encode(blob.id()));
-							verified_blobs.push(blob);
-						}
-						Err(e) => {
-							error!(error = %e, "failed to verify blob");
-						}
-					}
-				}
-
-				Ok(verified_blobs)
-			}
-		}
-	}
-
-	#[tracing::instrument(target = "movement_timing", level = "info", skip(self))]
-	async fn get_blobs_at_height(&self, height: u64) -> Result<Vec<Blob>, anyhow::Error> {
-		let ir_blobs = self.get_ir_blobs_at_height(height).await?;
-		let mut blobs = Vec::new();
-		for ir_blob in ir_blobs {
-			let blob = Self::ir_blob_to_blob(ir_blob, height)?;
-			// todo: update logging here
-			blobs.push(blob);
-		}
-		Ok(blobs)
-	}
-
-	/// Streams blobs until it can't get another one in the loop
-	pub async fn stream_blobs_in_range(
-		&self,
-		start_height: u64,
-		end_height: Option<u64>,
-	) -> Result<
-		std::pin::Pin<Box<dyn Stream<Item = Result<Blob, anyhow::Error>> + Send>>,
-		anyhow::Error,
-	> {
-		let mut height = start_height;
-		let end_height = end_height.unwrap_or_else(|| u64::MAX);
-		let me = Arc::new(self.clone());
-
-		let stream = async_stream::try_stream! {
-			loop {
-				if height > end_height {
-					break;
-				}
-
-				// to avoid stopping the stream when get blobs at height fails, simply warn!
-				match me.get_blobs_at_height(height).await {
-					Ok(blobs) => {
-						for blob in blobs {
-							yield blob;
-						}
-					}
-					Err(e) => {
-						warn!(error = %e, "failed to get blobs at height");
-					}
-				}
-
-				let blobs = me.get_blobs_at_height(height).await?;
-				for blob in blobs {
-					yield blob;
-				}
-				height += 1;
-			}
-		};
-
-		Ok(Box::pin(stream)
-			as std::pin::Pin<Box<dyn Stream<Item = Result<Blob, anyhow::Error>> + Send>>)
-	}
-
-	/// Streams the latest blobs that can subscribed to.
-	async fn stream_blobs_from_height_on(
-		&self,
-		start_height: Option<u64>,
-	) -> Result<
-		std::pin::Pin<Box<dyn Stream<Item = Result<Blob, anyhow::Error>> + Send>>,
-		anyhow::Error,
-	> {
-		let start_height = start_height.unwrap_or_else(|| u64::MAX);
-		let me = Arc::new(self.clone());
-		let mut subscription = me.default_client.header_subscribe().await?;
-
-		let stream = async_stream::try_stream! {
-			let mut first_flag = true;
-			while let Some(header_res) = subscription.next().await {
-
-				let header = header_res?;
-				let height = header.height().into();
-
-				info!("Stream got header: {:?}", header.height());
-
-				// back fetch the blobs
-				if first_flag && (height > start_height) {
-
-					let mut blob_stream = me.stream_blobs_in_range(start_height, Some(height)).await?;
-
-					while let Some(blob) = blob_stream.next().await {
-
-						debug!("Stream got blob: {:?}", blob);
-
-						yield blob?;
-					}
-
-				}
-				first_flag = false;
-
-				// to avoid stopping the stream when get blobs at height fails, simply warn!
-				match me.get_blobs_at_height(height).await {
-					Ok(blobs) => {
-						for blob in blobs {
-							yield blob;
-						}
-					}
-					Err(e) => {
-						warn!(error = %e, "failed to get blobs at height");
-					}
-				}
-
-			}
-		};
-
-		Ok(Box::pin(stream)
-			as std::pin::Pin<Box<dyn Stream<Item = Result<Blob, anyhow::Error>> + Send>>)
-	}
-
-	pub fn ir_blob_to_blob(
-		ir_blob: IntermediateBlobRepresentation,
-		height: u64,
-	) -> Result<Blob, anyhow::Error> {
-		Ok(Blob {
-			data: ir_blob.blob().to_vec(),
-			signature: ir_blob.signature().to_vec(),
-			timestamp: ir_blob.timestamp(),
-			signer: ir_blob.signer().to_vec(),
-			blob_id: ir_blob.id().to_vec(),
-			height,
-		})
-	}
-
-	pub fn celestia_blob_to_blob(blob: CelestiaBlob, height: u64) -> Result<Blob, anyhow::Error> {
-		let ir_blob: IntermediateBlobRepresentation = blob.try_into()?;
-
-		Ok(Blob {
-			data: ir_blob.blob().to_vec(),
-			signature: ir_blob.signature().to_vec(),
-			timestamp: ir_blob.timestamp(),
-			signer: ir_blob.signer().to_vec(),
-			blob_id: ir_blob.id().to_vec(),
-			height,
-		})
-	}
-
 	pub fn blob_to_blob_write_response(blob: Blob) -> Result<BlobResponse, anyhow::Error> {
 		Ok(BlobResponse { blob_type: Some(blob_response::BlobType::PassedThroughBlob(blob)) })
 	}
@@ -346,13 +134,14 @@ where
 }
 
 #[tonic::async_trait]
-impl<C> LightNodeService for LightNode<C>
+impl<C, Da> LightNodeService for LightNode<C, Da>
 where
 	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
 	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
 	SignatureSize<C>: ArrayLength<u8>,
 	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 	FieldBytesSize<C>: ModulusSize,
+	Da: DaOperations,
 {
 	/// Server streaming response type for the StreamReadFromHeight method.
 	type StreamReadFromHeightStream = std::pin::Pin<
@@ -373,7 +162,7 @@ where
 
 		let output = async_stream::try_stream! {
 
-			let mut blob_stream = me.stream_blobs_from_height_on(Some(height)).await.map_err(|e| tonic::Status::internal(e.to_string()))?;
+			let mut blob_stream = me.da.stream_ir_blobs_from_height(height).await.map_err(|e| tonic::Status::internal(e.to_string()))?;
 
 			while let Some(blob) = blob_stream.next().await {
 				let blob = blob.map_err(|e| tonic::Status::internal(e.to_string()))?;
@@ -400,22 +189,7 @@ where
 		&self,
 		_request: tonic::Request<StreamReadLatestRequest>,
 	) -> std::result::Result<tonic::Response<Self::StreamReadLatestStream>, tonic::Status> {
-		let me = Arc::new(self.clone());
-
-		let output = async_stream::try_stream! {
-
-			let mut blob_stream = me.stream_blobs_from_height_on(None).await.map_err(|e| tonic::Status::internal(e.to_string()))?;
-			while let Some(blob) = blob_stream.next().await {
-				let blob = blob.map_err(|e| tonic::Status::internal(e.to_string()))?;
-				let response = StreamReadLatestResponse {
-					blob : Some(Self::blob_to_blob_read_response(blob).map_err(|e| tonic::Status::internal(e.to_string()))?)
-				};
-				yield response;
-			}
-
-		};
-
-		Ok(tonic::Response::new(Box::pin(output) as Self::StreamReadLatestStream))
+		unimplemented!()
 	}
 	/// Server streaming response type for the StreamWriteCelestiaBlob method.
 	type StreamWriteBlobStream = std::pin::Pin<
@@ -426,85 +200,21 @@ where
 		&self,
 		request: tonic::Request<tonic::Streaming<StreamWriteBlobRequest>>,
 	) -> std::result::Result<tonic::Response<Self::StreamWriteBlobStream>, tonic::Status> {
-		let mut stream = request.into_inner();
-		let me = Arc::new(self.clone());
-
-		let output = async_stream::try_stream! {
-
-			while let Some(request) = stream.next().await {
-				let request = request?;
-				let blob_data = request.blob.ok_or(tonic::Status::invalid_argument("No blob in request"))?.data;
-
-				let blob = me.submit_blob(blob_data).await.map_err(|e| tonic::Status::internal(e.to_string()))?;
-
-				let write_response = StreamWriteBlobResponse {
-					blob : Some(Self::blob_to_blob_read_response(blob).map_err(|e| tonic::Status::internal(e.to_string()))?)
-				};
-
-				yield write_response;
-
-			}
-		};
-
-		Ok(tonic::Response::new(Box::pin(output) as Self::StreamWriteBlobStream))
+		unimplemented!()
 	}
 	/// Read blobs at a specified height.
 	async fn read_at_height(
 		&self,
 		request: tonic::Request<ReadAtHeightRequest>,
 	) -> std::result::Result<tonic::Response<ReadAtHeightResponse>, tonic::Status> {
-		let height = request.into_inner().height;
-		let blobs = self
-			.get_blobs_at_height(height)
-			.await
-			.map_err(|e| tonic::Status::internal(e.to_string()))?;
-
-		if blobs.is_empty() {
-			return Err(tonic::Status::not_found("No blobs found at the specified height"));
-		}
-
-		let mut blob_responses = Vec::new();
-		for blob in blobs {
-			blob_responses.push(
-				Self::blob_to_blob_read_response(blob)
-					.map_err(|e| tonic::Status::internal(e.to_string()))?,
-			);
-		}
-
-		Ok(tonic::Response::new(ReadAtHeightResponse {
-			// map blobs to the response type
-			blobs: blob_responses,
-		}))
+		unimplemented!()
 	}
 	/// Batch read and write operations for efficiency.
 	async fn batch_read(
 		&self,
 		request: tonic::Request<BatchReadRequest>,
 	) -> std::result::Result<tonic::Response<BatchReadResponse>, tonic::Status> {
-		let heights = request.into_inner().heights;
-		let mut responses = Vec::with_capacity(heights.len());
-		for height in heights {
-			let blobs = self
-				.get_blobs_at_height(height)
-				.await
-				.map_err(|e| tonic::Status::internal(e.to_string()))?;
-
-			if blobs.is_empty() {
-				return Err(tonic::Status::not_found("No blobs found at the specified height"));
-			}
-
-			let mut blob_responses = Vec::new();
-			for blob in blobs {
-				blob_responses.push(
-					Self::blob_to_blob_read_response(blob)
-						.map_err(|e| tonic::Status::internal(e.to_string()))?,
-				);
-			}
-
-			responses.push(ReadAtHeightResponse { blobs: blob_responses })
-		}
-
-		Ok(tonic::Response::new(BatchReadResponse { responses }))
+		unimplemented!()
 	}
 
 	/// Batch write blobs.
@@ -516,6 +226,7 @@ where
 		let mut responses = Vec::with_capacity(blobs.len());
 		for data in blobs {
 			let blob = self
+				.da
 				.submit_blob(data.data)
 				.await
 				.map_err(|e| tonic::Status::internal(e.to_string()))?;

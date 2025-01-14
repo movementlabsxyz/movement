@@ -48,38 +48,38 @@ impl InnerSignedBlobV1 {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum IntermediateBlobRepresentation {
+pub enum DaBlob {
 	SignedV1(InnerSignedBlobV1),
 }
 
-impl From<InnerSignedBlobV1> for IntermediateBlobRepresentation {
+impl From<InnerSignedBlobV1> for DaBlob {
 	fn from(inner: InnerSignedBlobV1) -> Self {
-		IntermediateBlobRepresentation::SignedV1(inner)
+		DaBlob::SignedV1(inner)
 	}
 }
 
-impl IntermediateBlobRepresentation {
+impl DaBlob {
 	pub fn blob(&self) -> &[u8] {
 		match self {
-			IntermediateBlobRepresentation::SignedV1(inner) => inner.data.blob.as_slice(),
+			DaBlob::SignedV1(inner) => inner.data.blob.as_slice(),
 		}
 	}
 
 	pub fn signature(&self) -> &[u8] {
 		match self {
-			IntermediateBlobRepresentation::SignedV1(inner) => inner.signature.as_slice(),
+			DaBlob::SignedV1(inner) => inner.signature.as_slice(),
 		}
 	}
 
 	pub fn timestamp(&self) -> u64 {
 		match self {
-			IntermediateBlobRepresentation::SignedV1(inner) => inner.data.timestamp,
+			DaBlob::SignedV1(inner) => inner.data.timestamp,
 		}
 	}
 
 	pub fn signer(&self) -> &[u8] {
 		match self {
-			IntermediateBlobRepresentation::SignedV1(inner) => inner.signer.as_slice(),
+			DaBlob::SignedV1(inner) => inner.signer.as_slice(),
 		}
 	}
 
@@ -89,7 +89,7 @@ impl IntermediateBlobRepresentation {
 
 	pub fn id(&self) -> &[u8] {
 		match self {
-			IntermediateBlobRepresentation::SignedV1(inner) => inner.id.as_slice(),
+			DaBlob::SignedV1(inner) => inner.id.as_slice(),
 		}
 	}
 
@@ -102,7 +102,7 @@ impl IntermediateBlobRepresentation {
 		FieldBytesSize<C>: ModulusSize,
 	{
 		match self {
-			IntermediateBlobRepresentation::SignedV1(inner) => inner.try_verify::<C>(),
+			DaBlob::SignedV1(inner) => inner.try_verify::<C>(),
 		}
 	}
 }

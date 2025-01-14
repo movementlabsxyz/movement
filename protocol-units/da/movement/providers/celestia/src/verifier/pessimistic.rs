@@ -1,7 +1,7 @@
 use celestia_rpc::{BlobClient, Client, HeaderClient};
 use celestia_types::{consts::appconsts::AppVersion, nmt::Namespace, Blob};
 use movement_da_light_node_verifier::{Error, Verified, VerifierOperations};
-use movement_da_util::blob::ir::blob::IntermediateBlobRepresentation;
+use movement_da_util::blob::ir::blob::DaBlob;
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -19,13 +19,13 @@ impl Verifier {
 }
 
 #[tonic::async_trait]
-impl VerifierOperations<Blob, IntermediateBlobRepresentation> for Verifier {
-	/// Verifies a Celestia Blob as a Valid IntermediateBlobRepresentation
+impl VerifierOperations<Blob, DaBlob> for Verifier {
+	/// Verifies a Celestia Blob as a Valid DaBlob
 	async fn verify(
 		&self,
 		blob: Blob,
 		height: u64,
-	) -> Result<Verified<IntermediateBlobRepresentation>, Error> {
+	) -> Result<Verified<DaBlob>, Error> {
 		//@l-monninger: the light node itself does most of the work of verify blobs. The verification under the feature flag below is useful in zero-trust environments.
 
 		blob.validate(AppVersion::V2).map_err(|e| Error::Validation(e.to_string()))?;
@@ -64,7 +64,7 @@ impl VerifierOperations<Blob, IntermediateBlobRepresentation> for Verifier {
 				})?;
 		}
 
-		let ir_blob = IntermediateBlobRepresentation::try_from(blob)
+		let ir_blob = DaBlob::try_from(blob)
 			.map_err(|e| Error::Internal(e.to_string()))?;
 
 		Ok(Verified::new(ir_blob))
