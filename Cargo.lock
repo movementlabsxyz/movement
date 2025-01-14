@@ -10537,6 +10537,7 @@ dependencies = [
  "aws-types",
  "movement-signer",
  "secp256k1",
+ "simple_asn1 0.6.2",
 ]
 
 [[package]]

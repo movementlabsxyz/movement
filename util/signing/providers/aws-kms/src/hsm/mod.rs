@@ -53,6 +53,34 @@ where
 
 		Ok(Self::new(self.client, key_id))
 	}
+
+        pub async fn resolve_key_id(&self) -> Result<String, SignerError> {
+                let alias_name = format!("alias/{}", self.key_id); // Ensure the alias format is correct
+
+                let key_metadata = self
+                        .client
+                        .describe_key()
+                        .key_id(&alias_name)
+                        .send()
+                        .await
+                        .map_err(|e| {
+                                println!("Error resolving key ID from alias: {:?}", e);
+                                SignerError::Internal(format!(
+                                        "Failed to resolve key ID: {:?}",
+                                        e
+                                ))
+                        })?;
+
+		let key_id = key_metadata
+			.key_metadata()
+			.and_then(|metadata| Some(metadata.key_id()))
+			.map(|key_id| key_id.to_string()) 
+			.ok_or_else(|| {
+			    	SignerError::Internal("Failed to retrieve key ID".to_string())
+			})?;
+
+                Ok(key_id)
+        }
 }
 
 impl<C> Signing<C> for AwsKms<C>
@@ -126,32 +154,40 @@ where
 	}
 
 	async fn public_key(&self) -> Result<C::PublicKey, SignerError> {
+		let key_id = self.resolve_key_id().await.map_err(|e| {
+			println!("Error resolving key ID: {:?}", e);
+			SignerError::Internal(format!("Failed to resolve key ID: {:?}", e))
+		})?;
+	
 		let res = self
 			.client
 			.get_public_key()
-			.key_id(&self.key_id) // Pass the alias here
+			.key_id(&key_id) // Use the resolved Key ID
 			.send()
 			.await
 			.map_err(|e| {
-				SignerError::Internal(format!("Failed to get public key: {}", e.to_string()))
+				println!("Error calling get_public_key: {:?}", e);
+				SignerError::Internal(format!("Failed to get public key: {:?}", e))
 			})?;
-
-		let public_key = C::PublicKey::try_from_bytes(
-			res.public_key()
-				.context("No public key available")
-				.map_err(|e| {
-					SignerError::Internal(format!(
-						"Failed to convert public key: {}",
-						e.to_string()
-					))
-				})?
-				.as_ref(),
-		)
-		.map_err(|e| {
-			SignerError::Internal(format!("Failed to convert public key: {}", e.to_string()))
+	
+		println!("get_public_key response: {:?}", res);
+	
+		let public_key_bytes = res
+			.public_key()
+			.context("No public key available")
+			.map_err(|e| {
+				println!("Error extracting public key: {:?}", e);
+				SignerError::Internal(e.to_string())
+			})?;
+	
+		let public_key = C::PublicKey::try_from_bytes(public_key_bytes.as_ref()).map_err(|e| {
+			println!("Error converting public key bytes: {:?}", e);
+			SignerError::Internal(e.to_string())
 		})?;
+	
 		Ok(public_key)
-	}
+	}	
+	
 }
 
 // Utility function for DER-to-raw signature conversion

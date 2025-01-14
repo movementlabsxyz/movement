@@ -82,7 +82,7 @@ where
                 .public_key()
                 .await
                 .map_err(|e| {
-                        println!("Error retrieving public key: {:?}", e);
+                        println!("Error retreiving public key: {:?}", e);
                         StatusCode::INTERNAL_SERVER_ERROR
                 })?;
 
