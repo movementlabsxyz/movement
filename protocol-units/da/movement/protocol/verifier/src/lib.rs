@@ -1,4 +1,3 @@
-pub mod permissioned_signers;
 pub mod signed;
 
 pub use movement_da_light_node_proto::*;
