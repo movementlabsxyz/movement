@@ -64,7 +64,7 @@ jobs:
     - name: Run unit tests in nix environment
       run: |
         nix develop --command bash <<EOF
-          RUST_BACKTRACE=1 cargo test \
+          cargo test \
             -p maptos-opt-executor \
             -p memseq \
             -p move-rocks \

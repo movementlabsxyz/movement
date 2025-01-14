@@ -78,7 +78,7 @@ mod secp256k1 {
 	#[tokio::test]
 	async fn send_tx() -> Result<(), anyhow::Error> {
 		// Start Anvil
-		let anvil = Anvil::new().port(8545u16).arg("-vvvvv").spawn();
+		let anvil = Anvil::new().port(8545u16).spawn();
 		let rpc_url = anvil.endpoint_url();
 		let chain_id = anvil.chain_id();
 
