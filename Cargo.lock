@@ -1728,6 +1728,9 @@ dependencies = [
  "anyhow",
  "aptos-metrics-core",
  "aptos-protos 1.3.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=8b8eb8fd0a3fa78086522bda7886ecd86fc6d24e)",
+ "anyhow",
+ "aptos-metrics-core",
+ "aptos-protos 1.3.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=8b8eb8fd0a3fa78086522bda7886ecd86fc6d24e)",
  "async-trait",
  "backoff",
  "base64 0.13.1",
@@ -2199,6 +2202,18 @@ dependencies = [
  "crossbeam",
  "proptest",
  "proptest-derive",
+]
+
+[[package]]
+name = "aptos-protos"
+version = "1.3.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=movement#6b0d39326878fb813e1b2b9e8ba1ff4f24a4cbc1"
+dependencies = [
+ "futures-core",
+ "pbjson",
+ "prost 0.12.6",
+ "serde",
+ "tonic 0.11.0",
 ]
 
 [[package]]
@@ -4202,13 +4217,17 @@ version = "0.0.2"
 dependencies = [
  "anyhow",
  "bigdecimal",
+ "bridge-config",
  "bridge-util",
  "chrono",
  "diesel",
  "diesel_migrations",
+ "godfig",
  "hex",
  "serde",
  "tokio",
+ "tokio-stream",
+ "tracing",
 ]
 
 [[package]]
@@ -4218,6 +4237,7 @@ dependencies = [
  "alloy",
  "alloy-contract",
  "alloy-network",
+ "alloy-primitives 0.7.7",
  "alloy-sol-types",
  "anyhow",
  "aptos-framework",
@@ -4230,8 +4250,10 @@ dependencies = [
  "bridge-grpc",
  "bridge-service",
  "bridge-setup",
+ "bridge-util",
  "chrono",
  "dot-movement",
+ "ethabi",
  "futures",
  "godfig",
  "hex",
@@ -4239,6 +4261,7 @@ dependencies = [
  "rand 0.7.3",
  "reqwest 0.12.9",
  "serde_json",
+ "tiny-keccak",
  "tokio",
  "tokio-stream",
  "tonic 0.12.3",
@@ -4326,13 +4349,17 @@ name = "bridge-util"
 version = "0.0.2"
 dependencies = [
  "alloy",
+ "anyhow",
  "async-trait",
  "derive_more 0.99.18",
+ "futures",
  "hex",
  "rand 0.7.3",
  "serde",
+ "tokio",
  "thiserror 1.0.69",
  "tokio-stream",
+ "tracing",
 ]
 
 [[package]]
