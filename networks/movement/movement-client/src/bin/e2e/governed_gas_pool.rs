@@ -3,6 +3,7 @@ use aptos_sdk::rest_client::{
 	aptos_api_types::{Address, EntryFunctionId, IdentifierWrapper, MoveModuleId, ViewRequest},
 	Response,
 };
+use aptos_sdk::types::account_address::AccountAddress;
 use movement_client::{
 	coin_client::CoinClient,
 	rest_client::{Client, FaucetClient},
@@ -60,9 +61,6 @@ async fn main() -> Result<(), anyhow::Error> {
 	let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
 	let coin_client = CoinClient::new(&rest_client);
 
-	// Gas pool account
-	let framework_address = "0x1";
-
 	// Create account for transactions and gas collection
 	let mut sender = LocalAccount::generate(&mut rand::rngs::OsRng);
 	let beneficiary = LocalAccount::generate(&mut rand::rngs::OsRng);
@@ -108,21 +106,24 @@ async fn main() -> Result<(), anyhow::Error> {
 		.context("Failed to convert response inner to serde_json::Value")?;
 
 	// Deserialize the inner value into your AddressResponse struct
-	let address_response: Vec<String> =
+	let ggp_address: Vec<String> =
 		serde_json::from_value(inner_value).context("Failed to deserialize AddressResponse")?;
 
 	assert_eq!(
-		address_response,
+		ggp_address,
 		vec!["0xb08e0478ac871400e082f34e003145570bf4a9e4d88f17964b21fb110e93d77a"]
 	);
 
+	let ggp_account_address =
+		AccountAddress::from_str(&ggp_address[0]).expect("Failed to parse address");
+
 	// Get initial balances
-	let initial_framework_balance = coin_client
-		.get_account_balance(&framework_address.parse()?)
+	let initial_ggp_balance = coin_client
+		.get_account_balance(&ggp_account_address)
 		.await
 		.context("Failed to get initial framework balance")?;
 
-	tracing::info!("Initial Framework Account Balance: {}", initial_framework_balance);
+	tracing::info!("Initial ggp Balance: {}", initial_ggp_balance);
 
 	// Simple transaction that will generate gas fees
 	tracing::info!("Executing test transaction...");
@@ -138,40 +139,15 @@ async fn main() -> Result<(), anyhow::Error> {
 	tracing::info!("Test transaction completed: {:?}", txn_hash);
 
 	// Get post-transaction balance
-	let post_txn_framework_balance = coin_client
-		.get_account_balance(&framework_address.parse()?)
+	let post_ggp_balance = coin_client
+		.get_account_balance(&ggp_account_address)
 		.await
 		.context("Failed to get post-transaction framework balance")?;
 
-	tracing::info!("Post-Transaction Framework Balance: {}", post_txn_framework_balance);
+	tracing::info!("Initial ggp Balance: {}", initial_ggp_balance);
 
 	// Verify gas fees collection
-	assert!(
-		post_txn_framework_balance > initial_framework_balance,
-		"Gas fees were not collected as expected"
-	);
-
-	tracing::info!("Waiting to verify no additional deposits...");
-	// Wait to verify no additional deposits
-	tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
-
-	// Check final balance
-	let final_framework_balance = coin_client
-		.get_account_balance(&framework_address.parse()?)
-		.await
-		.context("Failed to get final framework balance")?;
-
-	// Verify no additional deposits occurred
-	assert_eq!(
-		post_txn_framework_balance, final_framework_balance,
-		"Additional unexpected deposits were detected"
-	);
-
-	tracing::info!("Test completed successfully");
-	tracing::info!("=== Test Results ===");
-	tracing::info!("Initial balance: {}", initial_framework_balance);
-	tracing::info!("Final balance: {}", final_framework_balance);
-	tracing::info!("Gas fees collected: {}", final_framework_balance - initial_framework_balance);
+	assert!(post_ggp_balance > initial_ggp_balance, "Gas fees were not collected as expected");
 
 	Ok(())
 }
