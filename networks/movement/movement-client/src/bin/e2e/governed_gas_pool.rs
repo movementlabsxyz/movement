@@ -1,4 +1,8 @@
 use anyhow::Context;
+use aptos_sdk::rest_client::aptos_api_types::{
+	Address, EntryFunctionId, IdentifierWrapper, MoveModuleId, ViewRequest,
+};
+use aptos_types::PeerId;
 use movement_client::{
 	coin_client::CoinClient,
 	rest_client::{Client, FaucetClient},
@@ -56,10 +60,10 @@ async fn main() -> Result<(), anyhow::Error> {
 	let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
 	let coin_client = CoinClient::new(&rest_client);
 
-	/// Gas pool account
+	// Gas pool account
 	let framework_address = "0x1";
 
-	/// Create account for transactions and gas collection
+	// Create account for transactions and gas collection
 	let mut sender = LocalAccount::generate(&mut rand::rngs::OsRng);
 	let beneficiary = LocalAccount::generate(&mut rand::rngs::OsRng);
 
@@ -70,19 +74,31 @@ async fn main() -> Result<(), anyhow::Error> {
 		beneficiary.address()
 	);
 
-	/// Fund the sender account
+	// Fund the sender account
 	faucet_client
 		.fund(sender.address(), 1_000_000)
 		.await
 		.context("Failed to fund sender account")?;
 
-	/// Create the beneficiary account
+	// Create the beneficiary account
 	faucet_client
 		.create_account(beneficiary.address())
 		.await
 		.context("Failed to create beneficiary account")?;
 
-	/// Get initial balances
+	let view_req = ViewRequest {
+		function: EntryFunctionId {
+			module: MoveModuleId {
+				address: Address::from_str("0x1").unwrap(),
+				name: IdentifierWrapper::from_str("governed_gas_pool").unwrap(),
+			},
+			name: IdentifierWrapper::from_str("governed_gas_pool_address").unwrap(),
+		},
+		type_arguments: vec![],
+		arguments: vec![],
+	};
+
+	// Get initial balances
 	let initial_framework_balance = coin_client
 		.get_account_balance(&framework_address.parse()?)
 		.await
@@ -90,7 +106,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	tracing::info!("Initial Framework Account Balance: {}", initial_framework_balance);
 
-	/// Simple transaction that will generate gas fees
+	// Simple transaction that will generate gas fees
 	tracing::info!("Executing test transaction...");
 	let txn_hash = coin_client
 		.transfer(&mut sender, beneficiary.address(), 1_000, None)
@@ -103,7 +119,7 @@ async fn main() -> Result<(), anyhow::Error> {
 		.context("Failed when waiting for transfer transaction")?;
 	tracing::info!("Test transaction completed: {:?}", txn_hash);
 
-	/// Get post-transaction balance
+	// Get post-transaction balance
 	let post_txn_framework_balance = coin_client
 		.get_account_balance(&framework_address.parse()?)
 		.await
@@ -111,23 +127,23 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	tracing::info!("Post-Transaction Framework Balance: {}", post_txn_framework_balance);
 
-	/// Verify gas fees collection
+	// Verify gas fees collection
 	assert!(
 		post_txn_framework_balance > initial_framework_balance,
 		"Gas fees were not collected as expected"
 	);
 
 	tracing::info!("Waiting to verify no additional deposits...");
-	/// Wait to verify no additional deposits
+	// Wait to verify no additional deposits
 	tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
 
-	/// Check final balance
+	// Check final balance
 	let final_framework_balance = coin_client
 		.get_account_balance(&framework_address.parse()?)
 		.await
 		.context("Failed to get final framework balance")?;
 
-	/// Verify no additional deposits occurred
+	// Verify no additional deposits occurred
 	assert_eq!(
 		post_txn_framework_balance, final_framework_balance,
 		"Additional unexpected deposits were detected"
