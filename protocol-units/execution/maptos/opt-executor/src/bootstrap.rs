@@ -44,7 +44,7 @@ fn genesis_change_set_and_validators(
 		&GenesisConfiguration {
 			allow_new_validators: true,
 			epoch_duration_secs: EPOCH_DURATION_SECS,
-			is_test: true,
+			is_test: false,
 			min_stake: 0,
 			min_voting_threshold: 0,
 			// 1M APTOS coins (with 8 decimals).
