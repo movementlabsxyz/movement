@@ -103,7 +103,18 @@ async fn main() -> Result<(), anyhow::Error> {
 		.await
 		.context("Failed to get governed gas pool address")?;
 
-	tracing::info!("Governed Gas Pool Address: {:?}", view_res);
+	// Extract the inner field from the response
+	let inner_value = serde_json::to_value(view_res.inner())
+		.context("Failed to convert response inner to serde_json::Value")?;
+
+	// Deserialize the inner value into your AddressResponse struct
+	let address_response: Vec<String> =
+		serde_json::from_value(inner_value).context("Failed to deserialize AddressResponse")?;
+
+	assert_eq!(
+		address_response,
+		vec!["0xb08e0478ac871400e082f34e003145570bf4a9e4d88f17964b21fb110e93d77a"]
+	);
 
 	// Get initial balances
 	let initial_framework_balance = coin_client
