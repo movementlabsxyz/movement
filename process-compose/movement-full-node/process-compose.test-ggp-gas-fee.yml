@@ -3,9 +3,9 @@ version: "3"
 environment:
 
 processes:
-  test-governed-gas-pool:
+  test-ggp-gas-fee:
     command: |
-      cargo run --bin movement-tests-e2e-governed-gas-pool
+      cargo run --bin movement-tests-e2e-ggp-gas-fee
     depends_on:
       movement-full-node:
         condition: process_healthy
