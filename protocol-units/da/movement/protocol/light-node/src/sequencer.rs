@@ -11,6 +11,7 @@ use ecdsa::{
 	hazmat::{DigestPrimitive, SignPrimitive, VerifyPrimitive},
 	SignatureSize,
 };
+use movement_da_light_node_da::DaOperations;
 use movement_da_light_node_prevalidator::{aptos::whitelist::Validator, PrevalidatorOperations};
 use std::boxed::Box;
 use std::fmt::Debug;
@@ -19,14 +20,6 @@ use std::pin::Pin;
 use std::sync::{atomic::AtomicU64, Arc};
 use std::time::Duration;
 
-use tokio::{
-	sync::mpsc::{Receiver, Sender},
-	time::timeout,
-};
-use tokio_stream::Stream;
-use tracing::{debug, info};
-
-use celestia_rpc::HeaderClient;
 use memseq::{Sequencer, Transaction};
 use movement_algs::grouping_heuristic::{
 	apply::ToApply, binpacking::FirstFitBinpacking, drop_success::DropSuccess, skip::SkipFor,
@@ -37,45 +30,54 @@ use movement_da_light_node_proto::blob_response::BlobType;
 use movement_da_light_node_proto::light_node_service_server::LightNodeService;
 use movement_da_util::config::Config;
 use movement_types::block::Block;
+use tokio::{
+	sync::mpsc::{Receiver, Sender},
+	time::timeout,
+};
+use tokio_stream::Stream;
+use tracing::{debug, info};
 
 use crate::{passthrough::LightNode as LightNodePassThrough, LightNodeRuntime};
 
 const LOGGING_UID: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Clone)]
-pub struct LightNode<C>
+pub struct LightNode<C, Da>
 where
 	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
 	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
 	SignatureSize<C>: ArrayLength<u8>,
 	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 	FieldBytesSize<C>: ModulusSize,
+	Da: DaOperations,
 {
-	pub pass_through: LightNodePassThrough<C>,
+	pub pass_through: LightNodePassThrough<C, Da>,
 	pub memseq: Arc<memseq::Memseq<memseq::RocksdbMempool>>,
 	pub prevalidator: Option<Arc<Validator>>,
 }
 
-impl<C> Debug for LightNode<C>
+impl<C, Da> Debug for LightNode<C, Da>
 where
 	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
 	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
 	SignatureSize<C>: ArrayLength<u8>,
 	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 	FieldBytesSize<C>: ModulusSize,
+	Da: DaOperations,
 {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		f.debug_struct("LightNode").field("pass_through", &self.pass_through).finish()
 	}
 }
 
-impl<C> LightNodeRuntime for LightNode<C>
+impl<C, Da> LightNodeRuntime for LightNode<C, Da>
 where
 	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
 	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
 	SignatureSize<C>: ArrayLength<u8>,
 	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 	FieldBytesSize<C>: ModulusSize,
+	Da: DaOperations,
 {
 	async fn try_from_config(config: Config) -> Result<Self, anyhow::Error> {
 		info!("Initializing LightNode in sequencer mode from environment.");
@@ -115,13 +117,14 @@ where
 	}
 }
 
-impl<C> LightNode<C>
+impl<C, Da> LightNode<C, Da>
 where
 	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
 	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
 	SignatureSize<C>: ArrayLength<u8>,
 	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 	FieldBytesSize<C>: ModulusSize,
+	Da: DaOperations,
 {
 	async fn tick_build_blocks(&self, sender: Sender<Block>) -> Result<(), anyhow::Error> {
 		let memseq = self.memseq.clone();
@@ -372,13 +375,14 @@ where
 }
 
 #[tonic::async_trait]
-impl<C> LightNodeService for LightNode<C>
+impl<C, Da> LightNodeService for LightNode<C, Da>
 where
 	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
 	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
 	SignatureSize<C>: ArrayLength<u8>,
 	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 	FieldBytesSize<C>: ModulusSize,
+	Da: DaOperations + Send + Sync + 'static,
 {
 	/// Server streaming response type for the StreamReadFromHeight method.
 	type StreamReadFromHeightStream = Pin<

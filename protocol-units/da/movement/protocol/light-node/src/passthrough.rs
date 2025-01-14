@@ -1,21 +1,13 @@
-use movement_da_util::ir_blob::DaBlob;
 use std::fmt::{self, Debug, Formatter};
 use std::sync::Arc;
 use tokio_stream::{Stream, StreamExt};
-use tracing::{debug, error, info, warn};
-
-use celestia_rpc::{BlobClient, Client, HeaderClient};
-use celestia_types::{nmt::Namespace, Blob as CelestiaBlob, TxConfig};
+use tracing::info;
 
 // FIXME: glob imports are bad style
-use movement_da_light_node_da::{DaBlob, DaOperations};
+use movement_da_light_node_da::DaOperations;
 use movement_da_light_node_proto::light_node_service_server::LightNodeService;
 use movement_da_light_node_proto::*;
-use movement_da_light_node_verifier::{permissioned_signers::Verifier, VerifierOperations};
-use movement_da_util::{
-	config::Config,
-	ir_blob::{celestia::CelestiaDaBlob, InnerSignedBlobV1Data},
-};
+use movement_da_util::{blob::ir::data::InnerSignedBlobV1Data, config::Config};
 
 use crate::LightNodeRuntime;
 use ecdsa::{
@@ -42,9 +34,7 @@ where
 	Da: DaOperations,
 {
 	pub config: Config,
-	pub verifier: Arc<
-		Box<dyn VerifierOperations<CelestiaBlob, DaBlob> + Send + Sync>,
-	>,
+	// pub verifier: Arc<Box<dyn VerifierOperations<CelestiaBlob, DaBlob> + Send + Sync>>,
 	pub signing_key: SigningKey<C>,
 	pub da: Arc<Da>,
 }
@@ -75,9 +65,7 @@ where
 	Da: DaOperations,
 {
 	/// Tries to create a new LightNode instance from the toml config file.
-	async fn try_from_config(config: Config) -> Result<Self, anyhow::Error> {
-		let client = Arc::new(config.connect_celestia().await?);
-
+	async fn try_from_config(config: Config, da: Da) -> Result<Self, anyhow::Error> {
 		let signing_key_str = config.da_signing_key();
 		let hex_bytes = hex::decode(signing_key_str)?;
 
@@ -86,13 +74,12 @@ where
 
 		Ok(Self {
 			config: config.clone(),
-			celestia_namespace: config.celestia_namespace(),
-			default_client: client.clone(),
-			verifier: Arc::new(Box::new(Verifier::<C>::new(
+			/*verifier: Arc::new(Box::new(Verifier::<C>::new(
 				client,
 				config.celestia_namespace(),
 				config.da_signers_sec1_keys(),
-			))),
+			))),*/
+			da: Arc::new(da),
 			signing_key,
 		})
 	}
@@ -141,7 +128,7 @@ where
 	SignatureSize<C>: ArrayLength<u8>,
 	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 	FieldBytesSize<C>: ModulusSize,
-	Da: DaOperations,
+	Da: DaOperations + Send + Sync + 'static,
 {
 	/// Server streaming response type for the StreamReadFromHeight method.
 	type StreamReadFromHeightStream = std::pin::Pin<
@@ -165,9 +152,10 @@ where
 			let mut blob_stream = me.da.stream_ir_blobs_from_height(height).await.map_err(|e| tonic::Status::internal(e.to_string()))?;
 
 			while let Some(blob) = blob_stream.next().await {
-				let blob = blob.map_err(|e| tonic::Status::internal(e.to_string()))?;
+				let (height, da_blob) = blob.map_err(|e| tonic::Status::internal(e.to_string()))?;
+				let blob = da_blob.to_blob_passed_through_read_response(height.as_u64()).map_err(|e| tonic::Status::internal(e.to_string()))?;
 				let response = StreamReadFromHeightResponse {
-					blob : Some(Self::blob_to_blob_read_response(blob).map_err(|e| tonic::Status::internal(e.to_string()))?)
+					blob: Some(blob)
 				};
 				yield response;
 			}
@@ -198,21 +186,21 @@ where
 	/// Stream blobs out, either individually or in batches.
 	async fn stream_write_blob(
 		&self,
-		request: tonic::Request<tonic::Streaming<StreamWriteBlobRequest>>,
+		_request: tonic::Request<tonic::Streaming<StreamWriteBlobRequest>>,
 	) -> std::result::Result<tonic::Response<Self::StreamWriteBlobStream>, tonic::Status> {
 		unimplemented!()
 	}
 	/// Read blobs at a specified height.
 	async fn read_at_height(
 		&self,
-		request: tonic::Request<ReadAtHeightRequest>,
+		_request: tonic::Request<ReadAtHeightRequest>,
 	) -> std::result::Result<tonic::Response<ReadAtHeightResponse>, tonic::Status> {
 		unimplemented!()
 	}
 	/// Batch read and write operations for efficiency.
 	async fn batch_read(
 		&self,
-		request: tonic::Request<BatchReadRequest>,
+		_request: tonic::Request<BatchReadRequest>,
 	) -> std::result::Result<tonic::Response<BatchReadResponse>, tonic::Status> {
 		unimplemented!()
 	}
@@ -225,22 +213,18 @@ where
 		let blobs = request.into_inner().blobs;
 		let mut responses = Vec::with_capacity(blobs.len());
 		for data in blobs {
-			let blob = self
+			let blob = InnerSignedBlobV1Data::now(data.data)
+				.try_to_sign(&self.signing_key)
+				.map_err(|e| tonic::Status::internal(format!("Failed to sign blob: {}", e)))?;
+			let blob_response = self
 				.da
-				.submit_blob(data.data)
+				.submit_blob(blob.into())
 				.await
 				.map_err(|e| tonic::Status::internal(e.to_string()))?;
-			responses.push(blob);
+			responses.push(blob_response);
 		}
 
-		let mut blob_responses = Vec::new();
-		for blob in responses {
-			blob_responses.push(
-				Self::blob_to_blob_write_response(blob)
-					.map_err(|e| tonic::Status::internal(e.to_string()))?,
-			);
-		}
-
-		Ok(tonic::Response::new(BatchWriteResponse { blobs: blob_responses }))
+		// * We are currently not returning any blobs in the response.
+		Ok(tonic::Response::new(BatchWriteResponse { blobs: vec![] }))
 	}
 }

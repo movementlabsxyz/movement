@@ -13,6 +13,7 @@ use ecdsa::{
 	signature::{digest::Digest, DigestVerifier},
 	SignatureSize, VerifyingKey,
 };
+use movement_da_light_node_proto::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -105,6 +106,51 @@ impl DaBlob {
 			DaBlob::SignedV1(inner) => inner.try_verify::<C>(),
 		}
 	}
+
+	pub fn to_blob(self, height: u64) -> Result<Blob, anyhow::Error> {
+		Ok(Blob {
+			data: self.blob().to_vec(),
+			signature: self.signature().to_vec(),
+			timestamp: self.timestamp(),
+			signer: self.signer().to_vec(),
+			blob_id: self.id().to_vec(),
+			height,
+		})
+	}
+
+	pub fn blob_to_blob_write_response(blob: Blob) -> Result<BlobResponse, anyhow::Error> {
+		Ok(BlobResponse { blob_type: Some(blob_response::BlobType::PassedThroughBlob(blob)) })
+	}
+
+	/// Converts a [Blob] into a [BlobResponse] with the blob passed through.
+	pub fn blob_to_blob_passed_through_read_response(
+		blob: Blob,
+	) -> Result<BlobResponse, anyhow::Error> {
+		Ok(BlobResponse { blob_type: Some(blob_response::BlobType::PassedThroughBlob(blob)) })
+	}
+
+	/// Converts a [Blob] into a [BlobResponse] with the blob sequenced.
+	pub fn blob_to_blob_sequenced_read_response(blob: Blob) -> Result<BlobResponse, anyhow::Error> {
+		Ok(BlobResponse { blob_type: Some(blob_response::BlobType::SequencedBlobBlock(blob)) })
+	}
+
+	/// Converts a [DaBlob] into a [BlobResponse] with the blob passed through.
+	pub fn to_blob_passed_through_read_response(
+		self,
+		height: u64,
+	) -> Result<BlobResponse, anyhow::Error> {
+		let blob = self.to_blob(height)?;
+		Self::blob_to_blob_passed_through_read_response(blob)
+	}
+
+	/// Converts a [DaBlob] into a [BlobResponse] with the blob sequenced.
+	pub fn to_blob_sequenced_read_response(
+		self,
+		height: u64,
+	) -> Result<BlobResponse, anyhow::Error> {
+		let blob = self.to_blob(height)?;
+		Self::blob_to_blob_sequenced_read_response(blob)
+	}
 }
 
 #[cfg(test)]
@@ -125,5 +171,27 @@ pub mod test {
 		assert!(changed_blob.try_verify::<k256::Secp256k1>().is_err());
 
 		Ok(())
+	}
+}
+
+pub mod stream_read_response {
+
+	use movement_da_light_node_proto::*;
+
+	/// Converts a passed through [BlobResponse] into a sequenced [BlobResponse].
+	pub fn passed_through_to_sequenced(blob_response: BlobResponse) -> BlobResponse {
+		match blob_response.blob_type {
+			Some(blob_response::BlobType::PassedThroughBlob(blob)) => {
+				BlobResponse { blob_type: Some(blob_response::BlobType::SequencedBlobBlock(blob)) }
+			}
+			_ => blob_response,
+		}
+	}
+
+	/// Converts a passed through [StreamReadFromHeightResponse] into a sequenced [StreamReadFromHeightResponse].
+	pub fn passed_through_to_sequenced_response(
+		response: StreamReadFromHeightResponse,
+	) -> StreamReadFromHeightResponse {
+		StreamReadFromHeightResponse { blob: response.blob.map(passed_through_to_sequenced) }
 	}
 }

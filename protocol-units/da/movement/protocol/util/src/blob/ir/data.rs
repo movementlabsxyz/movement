@@ -27,6 +27,17 @@ impl InnerSignedBlobV1Data {
 		Self { blob, timestamp }
 	}
 
+	pub fn now(blob: Vec<u8>) -> Self {
+		Self {
+			blob,
+			// timestamp in microseconds
+			timestamp: std::time::SystemTime::now()
+				.duration_since(std::time::UNIX_EPOCH)
+				.unwrap()
+				.as_micros() as u64,
+		}
+	}
+
 	/// Computes the id of InnerSignedBlobV1Data
 	pub fn compute_id<C>(&self) -> Id
 	where
