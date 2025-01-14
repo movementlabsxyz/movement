@@ -27,12 +27,6 @@ pub fn default_signer_identifier() -> SignerIdentifier {
 	signer_identifier
 }
 
-// pub fn default_signer_private_key() -> String {
-// 	let random_wallet = PrivateKeySigner::random();
-// 	let random_wallet_string = random_wallet.to_bytes().to_string();
-// 	env::var("ETH_SIGNER_PRIVATE_KEY").unwrap_or(random_wallet_string)
-// }
-
 env_default!(
 	default_mcr_contract_address,
 	"MCR_CONTRACT_ADDRESS",
