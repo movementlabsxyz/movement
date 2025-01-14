@@ -1,4 +1,4 @@
-use crate::server::create_server;
+use crate::server::{create_server, AppState};
 use axum::Server;
 use clap::Parser;
 use movement_signer::cryptography::ed25519::Ed25519;
@@ -13,27 +13,27 @@ use tokio::sync::Mutex;
 #[derive(Debug, Parser, Clone)]
 #[clap(rename_all = "kebab-case", about = "Runs signing app for ed25519 against HashiCorp Vault")]
 pub struct HashiCorpVault {
-	canonical_key: String,
-	#[arg(long)]
-	create_key: bool,
+        canonical_key: String,
+        #[arg(long)]
+        create_key: bool,
 }
 
 impl HashiCorpVault {
-	pub async fn run(&self) -> Result<(), anyhow::Error> {
-		// build the hsm
-		let key = Key::try_from_canonical_string(self.canonical_key.as_str())
-			.map_err(|e| anyhow::anyhow!(e))?;
-		let builder = Builder::<Ed25519>::new().create_key(self.create_key);
-		let hsm = Signer::new(builder.build(key).await?);
+        pub async fn run(&self) -> Result<(), anyhow::Error> {
+                let key = Key::try_from_canonical_string(self.canonical_key.as_str())
+                        .map_err(|e| anyhow::anyhow!(e))?;
+                let builder = Builder::<Ed25519>::new().create_key(self.create_key);
+                let hsm = Signer::new(builder.build(key).await?);
 
-		// build the server
-		let server_hsm = Arc::new(Mutex::new(hsm));
-		let app = create_server(server_hsm);
-		let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
-		println!("Server listening on {}", addr);
+                let server_hsm = Arc::new(Mutex::new(hsm));
+                let app_state = Arc::new(AppState::new());
 
-		Server::bind(&addr).serve(app.into_make_service()).await?;
+                let app = create_server(server_hsm, app_state);
+                let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
+                println!("Server listening on {}", addr);
 
-		Ok(())
-	}
+                Server::bind(&addr).serve(app.into_make_service()).await?;
+
+                Ok(())
+        }
 }

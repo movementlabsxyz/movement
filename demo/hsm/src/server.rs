@@ -1,8 +1,5 @@
 use axum::{
-        extract::State,
-        http::StatusCode,
-        routing::{get, post},
-        Json, Router,
+        extract::State, http::StatusCode, routing::{get, post}, Extension, Json, Router
 };
 use movement_signer::cryptography::ToBytes;
 use movement_signer::{cryptography::Curve, Signer, Signing};
@@ -12,8 +9,22 @@ use tokio::sync::Mutex;
 use ed25519_dalek::{VerifyingKey, Signature, Verifier};
 
 
-// Shared backend state
-pub fn create_server<O, C>(hsm: Arc<Mutex<Signer<O, C>>>) -> Router
+pub struct AppState {
+        pub public_key: Mutex<Option<Vec<u8>>>, // Stores the public key
+}
+
+impl AppState {
+        pub fn new() -> Self {
+                Self {
+                        public_key: Mutex::new(None), // Initially unset
+                }
+        }
+}
+
+pub fn create_server<O, C>(
+        hsm: Arc<Mutex<Signer<O, C>>>,
+        app_state: Arc<AppState>,
+) -> Router
 where
         O: Signing<C> + Send + Sync + 'static,
         C: Curve + Send + Sync + 'static,
@@ -22,7 +33,10 @@ where
                 .route("/sign", post(sign_handler::<O, C>))
                 .route("/verify", post(verify_handler))
                 .route("/health", get(health_handler))
+                .route("/public_key/get", get(get_public_key))
+                .route("/public_key/set", post(set_public_key))
                 .with_state(hsm)
+                .layer(Extension(app_state))
 }
 
 // Health check endpoint
@@ -180,3 +194,30 @@ async fn verify_ed25519(payload: &VerifyRequest) -> Result<Json<VerifyResponse>,
 
         Ok(Json(VerifyResponse { valid }))
 }
+
+pub async fn get_public_key(
+        Extension(app_state): Extension<Arc<AppState>>,
+) -> Result<Json<Vec<u8>>, StatusCode> {
+        let public_key = app_state.public_key.lock().await;
+
+        if let Some(key) = &*public_key {
+                Ok(Json(key.clone()))
+        } else {
+                Err(StatusCode::NOT_FOUND)
+        }
+}
+
+#[derive(Deserialize)]
+pub struct SetPublicKeyRequest {
+        pub public_key: Vec<u8>,
+}
+
+pub async fn set_public_key(
+        Extension(app_state): Extension<Arc<AppState>>,
+        Json(payload): Json<SetPublicKeyRequest>,
+) -> StatusCode {
+        let mut public_key = app_state.public_key.lock().await;
+        *public_key = Some(payload.public_key.clone());
+        StatusCode::OK
+}
+
