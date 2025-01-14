@@ -6,9 +6,8 @@ use serde::{Deserialize, Serialize};
 pub struct Config {
 	#[serde(default = "mcr_deployment_working_directory")]
 	pub mcr_deployment_working_directory: String,
-
-	#[serde(default = "mcr_deployment_account_private_key")]
-	pub mcr_deployment_account_private_key: String,
+	#[serde(default = "mcr_local_anvil_account_private_key")]
+	pub mcr_local_anvil_account_private_key: String,
 }
 
 env_short_default!(
@@ -18,7 +17,7 @@ env_short_default!(
 );
 
 env_short_default!(
-	mcr_deployment_account_private_key,
+	mcr_local_anvil_account_private_key,
 	String,
 	PrivateKeySigner::random().to_bytes().to_string()
 );
@@ -43,7 +42,7 @@ impl Default for Config {
 	fn default() -> Self {
 		Config {
 			mcr_deployment_working_directory: mcr_deployment_working_directory(),
-			mcr_deployment_account_private_key: mcr_deployment_account_private_key(),
+			mcr_local_anvil_account_private_key: mcr_local_anvil_account_private_key(),
 		}
 	}
 }

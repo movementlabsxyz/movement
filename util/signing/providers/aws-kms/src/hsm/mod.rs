@@ -101,6 +101,7 @@ impl Signing<MvtSecp256k1> for AwsKms<MvtSecp256k1> {
 	}
 
 	async fn public_key(&self) -> Result<mvtsecp256k1::PublicKey, SignerError> {
+		println!("AwsKms public_key key_id: {:?}", self.key_id);
 		let res = self.client.get_public_key().key_id(&self.key_id).send().await.map_err(|e| {
 			SignerError::Internal(format!("failed to get public key: {}", e.to_string()))
 		})?;

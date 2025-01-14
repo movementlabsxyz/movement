@@ -9184,6 +9184,9 @@ dependencies = [
  "futures",
  "godfig",
  "mcr-settlement-config",
+ "movement-signer",
+ "movement-signer-loader",
+ "movement-signing-eth",
  "movement-types",
  "serde",
  "serde_json",
@@ -9201,6 +9204,7 @@ dependencies = [
  "alloy",
  "anyhow",
  "godfig",
+ "movement-signer-loader",
  "serde",
 ]
 
@@ -9245,6 +9249,7 @@ name = "mcr-settlement-setup"
 version = "0.0.2"
 dependencies = [
  "alloy",
+ "alloy-network",
  "alloy-primitives 0.7.7",
  "anyhow",
  "commander",
@@ -9253,6 +9258,10 @@ dependencies = [
  "k256",
  "mcr-settlement-client",
  "mcr-settlement-config",
+ "movement-signer",
+ "movement-signer-aws-kms",
+ "movement-signer-loader",
+ "movement-signing-eth",
  "rand 0.7.3",
  "serde_json",
  "tokio",
