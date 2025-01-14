@@ -111,7 +111,8 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	assert_eq!(
 		ggp_address,
-		vec!["0xb08e0478ac871400e082f34e003145570bf4a9e4d88f17964b21fb110e93d77a"]
+		vec!["0xb08e0478ac871400e082f34e003145570bf4a9e4d88f17964b21fb110e93d77a"],
+		"Governed Gas Pool Resource account is not what is expected"
 	);
 
 	let ggp_account_address =
@@ -148,6 +149,21 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	// Verify gas fees collection
 	assert!(post_ggp_balance > initial_ggp_balance, "Gas fees were not collected as expected");
+
+	// Wait to verify no additional deposits
+	tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+
+	// Check final balance
+	let final_framework_balance = coin_client
+		.get_account_balance(&ggp_account_address)
+		.await
+		.context("Failed to get final framework balance")?;
+
+	// Verify no additional deposits occurred
+	assert_eq!(
+		post_ggp_balance, final_framework_balance,
+		"Additional unexpected deposits were detected"
+	);
 
 	Ok(())
 }
