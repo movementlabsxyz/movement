@@ -8,6 +8,7 @@ use movement_signer::cryptography::TryFromBytes;
 use movement_signer::{cryptography::Curve, SignerError, Signing};
 use secp256k1::ecdsa::Signature as Secp256k1Signature;
 pub mod key;
+use simple_asn1::{ASN1Block, from_der};
 
 /// An AWS KMS HSM.
 pub struct AwsKms<C: Curve + AwsKmsCryptographySpec> {
@@ -154,11 +155,13 @@ where
 	}
 
 	async fn public_key(&self) -> Result<C::PublicKey, SignerError> {
+		// Resolve the Key ID
 		let key_id = self.resolve_key_id().await.map_err(|e| {
 			println!("Error resolving key ID: {:?}", e);
 			SignerError::Internal(format!("Failed to resolve key ID: {:?}", e))
 		})?;
 	
+		// Fetch the public key from AWS KMS
 		let res = self
 			.client
 			.get_public_key()
@@ -172,7 +175,8 @@ where
 	
 		println!("get_public_key response: {:?}", res);
 	
-		let public_key_bytes = res
+		// Extract the DER-encoded public key
+		let public_key_der = res
 			.public_key()
 			.context("No public key available")
 			.map_err(|e| {
@@ -180,13 +184,21 @@ where
 				SignerError::Internal(e.to_string())
 			})?;
 	
-		let public_key = C::PublicKey::try_from_bytes(public_key_bytes.as_ref()).map_err(|e| {
+		// Convert the DER-encoded public key to raw format
+		let raw_public_key = extract_raw_public_key(public_key_der.as_ref()).map_err(|e| {
+			println!("Error decoding DER-encoded public key: {:?}", e);
+			SignerError::Internal(e.to_string())
+		})?;
+	
+		// Convert raw public key to the required curve-specific format
+		let public_key = C::PublicKey::try_from_bytes(&raw_public_key).map_err(|e| {
 			println!("Error converting public key bytes: {:?}", e);
 			SignerError::Internal(e.to_string())
 		})?;
 	
 		Ok(public_key)
-	}	
+	}
+			
 	
 }
 
@@ -233,3 +245,25 @@ pub fn der_to_raw_signature(der: &[u8]) -> Result<[u8; 64], String> {
 
 	Ok(raw_signature)
 }
+
+fn extract_raw_public_key(der: &[u8]) -> Result<Vec<u8>, anyhow::Error> {
+        let asn1_blocks = from_der(der).context("Failed to parse DER-encoded public key")?;
+
+        if let Some(ASN1Block::Sequence(_, blocks)) = asn1_blocks.get(0) {
+                if let Some(ASN1Block::BitString(_, _, key_bytes)) = blocks.get(1) {
+                        // Ensure the key is in uncompressed format and strip the prefix
+                        if key_bytes.len() == 65 && key_bytes[0] == 4 {
+                                return Ok(key_bytes[1..33].to_vec()); // Return the X coordinate only
+                        } else {
+                                return Err(anyhow::anyhow!(
+                                        "Unexpected public key format or length: {:?}",
+                                        key_bytes
+                                ));
+                        }
+                }
+        }
+
+        Err(anyhow::anyhow!("Failed to extract raw public key from DER"))
+}
+
+
