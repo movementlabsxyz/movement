@@ -10,13 +10,13 @@ use ed25519_dalek::{VerifyingKey, Signature, Verifier};
 
 
 pub struct AppState {
-        pub public_key: Mutex<Option<Vec<u8>>>, // Stores the public key
+        pub public_key: Mutex<Option<Vec<u8>>>, 
 }
 
 impl AppState {
         pub fn new() -> Self {
                 Self {
-                        public_key: Mutex::new(None), // Initially unset
+                        public_key: Mutex::new(None), 
                 }
         }
 }
