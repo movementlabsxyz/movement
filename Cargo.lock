@@ -10267,7 +10267,9 @@ dependencies = [
  "movement-da-light-node-proto",
  "movement-da-util",
  "thiserror 1.0.69",
+ "tokio",
  "tokio-stream",
+ "tracing",
 ]
 
 [[package]]

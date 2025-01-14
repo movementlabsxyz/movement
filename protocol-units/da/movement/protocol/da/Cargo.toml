@@ -19,6 +19,8 @@ movement-da-light-node-proto = { workspace = true }
 futures = { workspace = true }
 tokio-stream = { workspace = true }
 async-stream = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
 
 [lints]
 workspace = true
