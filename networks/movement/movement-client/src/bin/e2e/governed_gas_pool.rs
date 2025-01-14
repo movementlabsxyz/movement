@@ -1,8 +1,9 @@
 use anyhow::Context;
-use aptos_sdk::rest_client::aptos_api_types::{
-	Address, EntryFunctionId, IdentifierWrapper, MoveModuleId, ViewRequest,
+use aptos_sdk::rest_client::{
+	aptos_api_types::{Address, EntryFunctionId, IdentifierWrapper, MoveModuleId, ViewRequest},
+	error::RestError,
+	Response,
 };
-use aptos_types::PeerId;
 use movement_client::{
 	coin_client::CoinClient,
 	rest_client::{Client, FaucetClient},
@@ -97,6 +98,13 @@ async fn main() -> Result<(), anyhow::Error> {
 		type_arguments: vec![],
 		arguments: vec![],
 	};
+
+	let view_res: Response<Vec<serde_json::Value>> = rest_client
+		.view(&view_req, None)
+		.await
+		.context("Failed to get governed gas pool address")?;
+
+	tracing::info!("Governed Gas Pool Address: {:?}", view_res);
 
 	// Get initial balances
 	let initial_framework_balance = coin_client
