@@ -97,19 +97,6 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	println!("target_dir: {:?}", target_dir);
 
-	let clean_status = Command::new("movement")
-		.args(["move", "clean", "--assume-yes"])
-		.current_dir(target_dir)
-		.status()
-		.await
-		.expect("Failed to execute `movement move clean` command");
-
-	if !clean_status.success() {
-		anyhow::bail!(
-			"Cleaning Move module failed. Please check the `movement move clean` command."
-		);
-	}
-
 	let publish_status = Command::new("movement")
 		.args(["move", "publish", "--skip-fetch-latest-git-deps"])
 		.current_dir(target_dir_clone)
