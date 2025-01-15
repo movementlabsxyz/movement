@@ -9,7 +9,11 @@ use movement_da_light_node_da::DaOperations;
 use movement_da_light_node_digest_store::da::Da as DigestStoreDa;
 use movement_da_light_node_proto::light_node_service_server::LightNodeService;
 use movement_da_light_node_proto::*;
-use movement_da_util::{blob::ir::data::InnerSignedBlobV1Data, config::Config};
+use movement_da_light_node_verifier::signed::InKnownSignersVerifier;
+use movement_da_light_node_verifier::VerifierOperations;
+use movement_da_util::{
+	blob::ir::blob::DaBlob, blob::ir::data::InnerSignedBlobV1Data, config::Config,
+};
 
 use crate::LightNodeRuntime;
 use ecdsa::{
@@ -26,7 +30,7 @@ use ecdsa::{
 };
 
 #[derive(Clone)]
-pub struct LightNode<C, Da>
+pub struct LightNode<C, Da, V>
 where
 	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
 	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
@@ -34,14 +38,15 @@ where
 	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 	FieldBytesSize<C>: ModulusSize,
 	Da: DaOperations,
+	V: VerifierOperations<DaBlob, DaBlob>,
 {
 	pub config: Config,
-	// pub verifier: Arc<Box<dyn VerifierOperations<CelestiaBlob, DaBlob> + Send + Sync>>,
 	pub signing_key: SigningKey<C>,
 	pub da: Arc<Da>,
+	pub verifier: Arc<V>,
 }
 
-impl<C, Da> Debug for LightNode<C, Da>
+impl<C, Da, V> Debug for LightNode<C, Da, V>
 where
 	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
 	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
@@ -49,6 +54,7 @@ where
 	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 	FieldBytesSize<C>: ModulusSize,
 	Da: DaOperations,
+	V: VerifierOperations<DaBlob, DaBlob>,
 {
 	fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
 		f.debug_struct("LightNode")
@@ -57,7 +63,7 @@ where
 	}
 }
 
-impl<C> LightNodeRuntime for LightNode<C, DigestStoreDa<CelestiaDa>>
+impl<C> LightNodeRuntime for LightNode<C, DigestStoreDa<CelestiaDa>, InKnownSignersVerifier<C>>
 where
 	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
 	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
@@ -77,7 +83,9 @@ where
 		let celestia_da = CelestiaDa::new(config.celestia_namespace(), client);
 		let digest_store_da = DigestStoreDa::try_new(celestia_da, config.digest_store_db_path())?;
 
-		Ok(Self { config: config.clone(), da: Arc::new(digest_store_da), signing_key })
+		let verifier = Arc::new(InKnownSignersVerifier::<C>::new(config.da_signers_sec1_keys()));
+
+		Ok(Self { config: config.clone(), da: Arc::new(digest_store_da), signing_key, verifier })
 	}
 
 	fn try_service_address(&self) -> Result<String, anyhow::Error> {
@@ -91,7 +99,7 @@ where
 }
 
 #[tonic::async_trait]
-impl<C, Da> LightNodeService for LightNode<C, Da>
+impl<C, Da, V> LightNodeService for LightNode<C, Da, V>
 where
 	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
 	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
@@ -99,6 +107,7 @@ where
 	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 	FieldBytesSize<C>: ModulusSize,
 	Da: DaOperations + Send + Sync + 'static,
+	V: VerifierOperations<DaBlob, DaBlob> + Send + Sync + 'static,
 {
 	/// Server streaming response type for the StreamReadFromHeight method.
 	type StreamReadFromHeightStream = std::pin::Pin<
@@ -115,6 +124,7 @@ where
 		info!("Stream read from height request: {:?}", request);
 
 		let da = self.da.clone();
+		let verifier = self.verifier.clone();
 		let height = request.into_inner().height;
 
 		let output = async_stream::try_stream! {
@@ -123,7 +133,8 @@ where
 
 			while let Some(blob) = blob_stream.next().await {
 				let (height, da_blob) = blob.map_err(|e| tonic::Status::internal(e.to_string()))?;
-				let blob = da_blob.to_blob_passed_through_read_response(height.as_u64()).map_err(|e| tonic::Status::internal(e.to_string()))?;
+				let verifed_blob = verifier.verify(da_blob, height.as_u64()).await.map_err(|e| tonic::Status::internal(e.to_string()))?;
+				let blob = verifed_blob.into_inner().to_blob_passed_through_read_response(height.as_u64()).map_err(|e| tonic::Status::internal(e.to_string()))?;
 				let response = StreamReadFromHeightResponse {
 					blob: Some(blob)
 				};

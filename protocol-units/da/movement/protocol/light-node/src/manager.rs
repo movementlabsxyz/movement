@@ -14,6 +14,7 @@ use ecdsa::{
 use godfig::{backend::config_file::ConfigFile, Godfig};
 use movement_da_light_node_celestia::da::Da as CelestiaDa;
 use movement_da_light_node_digest_store::da::Da as DigestStoreDa;
+use movement_da_light_node_verifier::signed::InKnownSignersVerifier;
 use movement_da_util::config::Config;
 
 #[derive(Clone)]
@@ -26,7 +27,7 @@ where
 }
 
 // Implements a very simple manager using a marker strategy pattern.
-impl<C> Manager<LightNode<C, DigestStoreDa<CelestiaDa>>>
+impl<C> Manager<LightNode<C, DigestStoreDa<CelestiaDa>, InKnownSignersVerifier<C>>>
 where
 	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
 	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
@@ -46,7 +47,7 @@ where
 
 	pub async fn try_light_node(
 		&self,
-	) -> Result<LightNode<C, DigestStoreDa<CelestiaDa>>, anyhow::Error>
+	) -> Result<LightNode<C, DigestStoreDa<CelestiaDa>, InKnownSignersVerifier<C>>, anyhow::Error>
 	where
 		C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
 		Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,

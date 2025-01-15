@@ -25,7 +25,11 @@ use movement_da_light_node_digest_store::da::Da as DigestStoreDa;
 use movement_da_light_node_proto as grpc;
 use movement_da_light_node_proto::blob_response::BlobType;
 use movement_da_light_node_proto::light_node_service_server::LightNodeService;
-use movement_da_util::{blob::ir::data::InnerSignedBlobV1Data, config::Config};
+use movement_da_light_node_verifier::{signed::InKnownSignersVerifier, VerifierOperations};
+use movement_da_util::{
+	blob::ir::{blob::DaBlob, data::InnerSignedBlobV1Data},
+	config::Config,
+};
 use movement_types::block::Block;
 use tokio::{
 	sync::mpsc::{Receiver, Sender},
@@ -39,7 +43,7 @@ use crate::{passthrough::LightNode as LightNodePassThrough, LightNodeRuntime};
 const LOGGING_UID: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Clone)]
-pub struct LightNode<C, Da>
+pub struct LightNode<C, Da, V>
 where
 	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
 	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
@@ -47,13 +51,14 @@ where
 	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 	FieldBytesSize<C>: ModulusSize,
 	Da: DaOperations,
+	V: VerifierOperations<DaBlob, DaBlob>,
 {
-	pub pass_through: LightNodePassThrough<C, Da>,
+	pub pass_through: LightNodePassThrough<C, Da, V>,
 	pub memseq: Arc<memseq::Memseq<memseq::RocksdbMempool>>,
 	pub prevalidator: Option<Arc<Validator>>,
 }
 
-impl<C, Da> Debug for LightNode<C, Da>
+impl<C, Da, V> Debug for LightNode<C, Da, V>
 where
 	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
 	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
@@ -61,13 +66,14 @@ where
 	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 	FieldBytesSize<C>: ModulusSize,
 	Da: DaOperations,
+	V: VerifierOperations<DaBlob, DaBlob>,
 {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		f.debug_struct("LightNode").field("pass_through", &self.pass_through).finish()
 	}
 }
 
-impl<C> LightNodeRuntime for LightNode<C, DigestStoreDa<CelestiaDa>>
+impl<C> LightNodeRuntime for LightNode<C, DigestStoreDa<CelestiaDa>, InKnownSignersVerifier<C>>
 where
 	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
 	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
@@ -113,7 +119,7 @@ where
 	}
 }
 
-impl<C, Da> LightNode<C, Da>
+impl<C, Da, V> LightNode<C, Da, V>
 where
 	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
 	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
@@ -121,6 +127,7 @@ where
 	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 	FieldBytesSize<C>: ModulusSize,
 	Da: DaOperations,
+	V: VerifierOperations<DaBlob, DaBlob>,
 {
 	async fn tick_build_blocks(&self, sender: Sender<Block>) -> Result<(), anyhow::Error> {
 		let memseq = self.memseq.clone();
@@ -282,7 +289,7 @@ where
 }
 
 #[tonic::async_trait]
-impl<C, Da> LightNodeService for LightNode<C, Da>
+impl<C, Da, V> LightNodeService for LightNode<C, Da, V>
 where
 	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
 	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
@@ -290,6 +297,7 @@ where
 	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 	FieldBytesSize<C>: ModulusSize,
 	Da: DaOperations + Send + Sync + 'static,
+	V: VerifierOperations<DaBlob, DaBlob> + Send + Sync + 'static,
 {
 	/// Server streaming response type for the StreamReadFromHeight method.
 	type StreamReadFromHeightStream = Pin<
