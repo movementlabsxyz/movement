@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Log the event
-        run: echo ${{ github.event }}
+        run: echo '${{ toJson(github.event) }}'
 
   movement-celestia-da-light-node-build:
     if:  contains(github.event.pull_request.labels.*.name, 'cicd:movement-containers') ||  github.ref == 'refs/heads/main' || github.event.label.name == 'cicd:movement-containers'
