@@ -91,13 +91,6 @@ where
 
         println!("Retrieved public key: {:?}", public_key.to_bytes());
 
-        // Update the app state with the retrieved public key
-        {
-                let mut app_public_key = app_state.public_key.lock().await;
-                *app_public_key = Some(public_key.to_bytes());
-                println!("Public key updated in AppState: {:?}", public_key.to_bytes());
-        }
-
         // Return both the signature and public key
         Ok(Json(SignedResponse {
                 signature: signature.to_bytes(),
@@ -230,7 +223,24 @@ pub async fn set_public_key(
         Json(payload): Json<SetPublicKeyRequest>,
 ) -> StatusCode {
         let mut public_key = app_state.public_key.lock().await;
-        *public_key = Some(payload.public_key.clone());
-        StatusCode::OK
+
+        // Check if the public key matches the one in the app state
+        if let Some(existing_key) = &*public_key {
+                if *existing_key == payload.public_key {
+                        println!("Public key matches the existing key in AppState.");
+                        StatusCode::OK
+                } else {
+                        println!(
+                                "Public key mismatch. Existing: {:?}, Provided: {:?}",
+                                existing_key, payload.public_key
+                        );
+                        StatusCode::FORBIDDEN
+                }
+        } else {
+                // No public key set, update with the provided key
+                println!("No existing public key. Setting new key: {:?}", payload.public_key);
+                *public_key = Some(payload.public_key.clone());
+                StatusCode::OK
+        }
 }
 
