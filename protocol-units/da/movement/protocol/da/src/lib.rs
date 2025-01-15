@@ -5,7 +5,7 @@ use movement_da_util::blob::ir::blob::DaBlob;
 use std::future::Future;
 use std::pin::Pin;
 use tokio_stream::{Stream, StreamExt};
-use tracing::warn;
+use tracing::{info, warn};
 
 pub type CertificateStream<'a> =
 	Pin<Box<dyn Stream<Item = Result<Certificate, DaError>> + Send + 'a>>;
@@ -82,11 +82,12 @@ pub trait DaOperations: Send + Sync {
 		&self,
 	) -> Pin<Box<dyn Future<Output = Result<CertificateStream, DaError>> + Send + '_>>;
 
-	fn stream_ir_blobs_between_heights(
+	fn stream_da_blobs_between_heights(
 		&self,
 		start_height: u64,
 		end_height: u64,
 	) -> Pin<Box<dyn Future<Output = Result<DaBlobStream, DaError>> + Send + '_>> {
+		info!("streaming IR blobs between heights {} and {}", start_height, end_height);
 		let fut = async move {
 			let stream = try_stream! {
 				for height in start_height..end_height {
@@ -101,7 +102,7 @@ pub trait DaOperations: Send + Sync {
 		Box::pin(fut)
 	}
 
-	fn stream_ir_blobs_from_height(
+	fn stream_da_blobs_from_height(
 		&self,
 		start_height: u64,
 	) -> Pin<Box<dyn Future<Output = Result<DaBlobStream, DaError>> + Send + '_>> {
@@ -112,10 +113,13 @@ pub trait DaOperations: Send + Sync {
 				let mut certificate_stream = certificate_stream;
 
 				while let Some(certificate) = certificate_stream.next().await {
+
+					info!("certificate: {:?}", certificate);
+
 					match certificate {
 						Ok(Certificate::Height(height)) if height > last_height => {
 							let blob_stream = self
-								.stream_ir_blobs_between_heights(last_height, height)
+								.stream_da_blobs_between_heights(last_height, height)
 								.await?;
 							tokio::pin!(blob_stream);
 
@@ -138,7 +142,7 @@ pub trait DaOperations: Send + Sync {
 						}
 						// If height is less than last height, ignore
 						_ => {
-							warn!("ignoring certificate with height less than last height");
+							warn!("ignoring certificate");
 						}
 					}
 				}

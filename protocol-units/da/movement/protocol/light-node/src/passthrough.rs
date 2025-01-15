@@ -129,7 +129,7 @@ where
 
 		let output = async_stream::try_stream! {
 
-			let mut blob_stream = da.stream_ir_blobs_from_height(height).await.map_err(|e| tonic::Status::internal(e.to_string()))?;
+			let mut blob_stream = da.stream_da_blobs_from_height(height).await.map_err(|e| tonic::Status::internal(e.to_string()))?;
 
 			while let Some(blob) = blob_stream.next().await {
 				let (height, da_blob) = blob.map_err(|e| tonic::Status::internal(e.to_string()))?;
