@@ -74,12 +74,13 @@ async fn main() -> Result<(), anyhow::Error> {
 	let init_status = Command::new("movement")
 		.args([
 			"init",
-			"--network",
+			"--custom",
 			"local",
 			"--rest-url",
 			NODE_URL.as_str(),
 			"--faucet-url",
 			FAUCET_URL.as_str(),
+			"--assume-yes",
 		])
 		.status()
 		.await
@@ -94,27 +95,21 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	println!("target_dir: {:?}", target_dir);
 
-	// Run the `movement move build` command
-	let build_status = Command::new("movement")
-		.arg("move")
-		.arg("build")
-		.arg("--skip-fetch-latest-git-deps")
+	let clean_status = Command::new("movement")
+		.args(["move", "clean", "--assume-yes"])
 		.current_dir(target_dir)
 		.status()
 		.await
-		.expect("Failed to execute `movement move build` command");
+		.expect("Failed to execute `movement move clean` command");
 
-	// Check if the build succeeded
-	if !build_status.success() {
+	if !clean_status.success() {
 		anyhow::bail!(
-			"Building Move module failed. Please check the `movement move build` command."
+			"Cleaning Move module failed. Please check the `movement move clean` command."
 		);
 	}
 
 	let publish_status = Command::new("movement")
-		.arg("move")
-		.arg("publish")
-		.arg("--skip-fetch-latest-git-deps")
+		.args(["move", "publish"])
 		.current_dir(target_dir_clone)
 		.status()
 		.await
