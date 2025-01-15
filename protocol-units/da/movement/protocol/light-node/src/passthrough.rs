@@ -94,32 +94,6 @@ where
 	}
 }
 
-impl<C, Da> LightNode<C, Da>
-where
-	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-	SignatureSize<C>: ArrayLength<u8>,
-	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-	FieldBytesSize<C>: ModulusSize,
-	Da: DaOperations,
-{
-	pub fn blob_to_blob_write_response(blob: Blob) -> Result<BlobResponse, anyhow::Error> {
-		Ok(BlobResponse { blob_type: Some(blob_response::BlobType::PassedThroughBlob(blob)) })
-	}
-
-	pub fn blob_to_blob_read_response(blob: Blob) -> Result<BlobResponse, anyhow::Error> {
-		#[cfg(feature = "sequencer")]
-		{
-			Ok(BlobResponse { blob_type: Some(blob_response::BlobType::SequencedBlobBlock(blob)) })
-		}
-
-		#[cfg(not(feature = "sequencer"))]
-		{
-			Ok(BlobResponse { blob_type: Some(blob_response::BlobType::PassedThroughBlob(blob)) })
-		}
-	}
-}
-
 #[tonic::async_trait]
 impl<C, Da> LightNodeService for LightNode<C, Da>
 where
@@ -144,12 +118,12 @@ where
 	) -> std::result::Result<tonic::Response<Self::StreamReadFromHeightStream>, tonic::Status> {
 		info!("Stream read from height request: {:?}", request);
 
-		let me = Arc::new(self.clone());
+		let da = self.da.clone();
 		let height = request.into_inner().height;
 
 		let output = async_stream::try_stream! {
 
-			let mut blob_stream = me.da.stream_ir_blobs_from_height(height).await.map_err(|e| tonic::Status::internal(e.to_string()))?;
+			let mut blob_stream = da.stream_ir_blobs_from_height(height).await.map_err(|e| tonic::Status::internal(e.to_string()))?;
 
 			while let Some(blob) = blob_stream.next().await {
 				let (height, da_blob) = blob.map_err(|e| tonic::Status::internal(e.to_string()))?;
@@ -211,17 +185,10 @@ where
 		request: tonic::Request<BatchWriteRequest>,
 	) -> std::result::Result<tonic::Response<BatchWriteResponse>, tonic::Status> {
 		let blobs = request.into_inner().blobs;
-		let mut responses = Vec::with_capacity(blobs.len());
 		for data in blobs {
 			let blob = InnerSignedBlobV1Data::now(data.data)
 				.try_to_sign(&self.signing_key)
 				.map_err(|e| tonic::Status::internal(format!("Failed to sign blob: {}", e)))?;
-			let blob_response = self
-				.da
-				.submit_blob(blob.into())
-				.await
-				.map_err(|e| tonic::Status::internal(e.to_string()))?;
-			responses.push(blob_response);
 		}
 
 		// * We are currently not returning any blobs in the response.

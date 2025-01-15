@@ -57,17 +57,17 @@ pub trait DaOperations: Send + Sync {
 		data: DaBlob,
 	) -> Pin<Box<dyn Future<Output = Result<(), DaError>> + Send + '_>>;
 
-	fn get_ir_blobs_at_height(
+	fn get_da_blobs_at_height(
 		&self,
 		height: u64,
 	) -> Pin<Box<dyn Future<Output = Result<Vec<DaBlob>, DaError>> + Send + '_>>;
 
-	fn get_ir_blobs_at_height_for_stream(
+	fn get_da_blobs_at_height_for_stream(
 		&self,
 		height: u64,
 	) -> Pin<Box<dyn Future<Output = Result<Vec<DaBlob>, DaError>> + Send + '_>> {
 		Box::pin(async move {
-			let result = self.get_ir_blobs_at_height(height).await;
+			let result = self.get_da_blobs_at_height(height).await;
 			match result {
 				Ok(blobs) => Ok(blobs),
 				Err(e) => {
@@ -90,7 +90,7 @@ pub trait DaOperations: Send + Sync {
 		let fut = async move {
 			let stream = try_stream! {
 				for height in start_height..end_height {
-					let blobs = self.get_ir_blobs_at_height_for_stream(height).await?;
+					let blobs = self.get_da_blobs_at_height_for_stream(height).await?;
 					for blob in blobs {
 						yield (DaHeight(height), blob);
 					}

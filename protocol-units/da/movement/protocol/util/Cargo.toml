@@ -45,6 +45,7 @@ k256 = { workspace = true }
 rand = { version = "0.8.5" }
 aptos-account-whitelist = { workspace = true }
 aptos-types = { workspace = true }
+movement-types = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }

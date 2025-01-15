@@ -82,3 +82,36 @@ impl InnerSignedBlobV1Data {
 		})
 	}
 }
+
+pub mod block {
+
+	use super::*;
+	use movement_types::block;
+
+	impl TryFrom<block::Block> for InnerSignedBlobV1Data {
+		type Error = anyhow::Error;
+
+		fn try_from(block: block::Block) -> Result<Self, Self::Error> {
+			let blob = bcs::to_bytes(&block)?;
+			Ok(Self::now(blob))
+		}
+	}
+
+	impl TryFrom<block::Id> for InnerSignedBlobV1Data {
+		type Error = anyhow::Error;
+
+		fn try_from(id: block::Id) -> Result<Self, Self::Error> {
+			let blob = id.as_bytes().to_vec();
+			Ok(Self::now(blob))
+		}
+	}
+
+	impl TryFrom<Vec<block::Id>> for InnerSignedBlobV1Data {
+		type Error = anyhow::Error;
+
+		fn try_from(ids: Vec<block::Id>) -> Result<Self, Self::Error> {
+			let blob = bcs::to_bytes(&ids)?;
+			Ok(Self::now(blob))
+		}
+	}
+}

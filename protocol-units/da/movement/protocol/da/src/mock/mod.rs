@@ -12,7 +12,7 @@ pub struct Mock {
 	// A queue for certificates.
 	certificate_queue: Arc<Mutex<VecDeque<Result<Certificate, DaError>>>>,
 
-	// Map for mocking results of `get_ir_blobs_at_height`.
+	// Map for mocking results of `get_da_blobs_at_height`.
 	height_results: Arc<Mutex<HashMap<u64, Result<Vec<DaBlob>, DaError>>>>,
 
 	// Collection to store submitted blobs.
@@ -79,7 +79,7 @@ impl DaOperations for Mock {
 		})
 	}
 
-	fn get_ir_blobs_at_height(
+	fn get_da_blobs_at_height(
 		&self,
 		height: u64,
 	) -> Pin<Box<dyn Future<Output = Result<Vec<DaBlob>, DaError>> + Send + '_>> {

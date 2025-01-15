@@ -51,6 +51,7 @@ impl InnerSignedBlobV1 {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum DaBlob {
 	SignedV1(InnerSignedBlobV1),
+	DigestV1(Vec<u8>),
 }
 
 impl From<InnerSignedBlobV1> for DaBlob {
@@ -63,24 +64,28 @@ impl DaBlob {
 	pub fn blob(&self) -> &[u8] {
 		match self {
 			DaBlob::SignedV1(inner) => inner.data.blob.as_slice(),
+			DaBlob::DigestV1(digest) => digest.as_slice(),
 		}
 	}
 
 	pub fn signature(&self) -> &[u8] {
 		match self {
 			DaBlob::SignedV1(inner) => inner.signature.as_slice(),
+			DaBlob::DigestV1(_) => &[],
 		}
 	}
 
 	pub fn timestamp(&self) -> u64 {
 		match self {
 			DaBlob::SignedV1(inner) => inner.data.timestamp,
+			DaBlob::DigestV1(_) => 0,
 		}
 	}
 
 	pub fn signer(&self) -> &[u8] {
 		match self {
 			DaBlob::SignedV1(inner) => inner.signer.as_slice(),
+			DaBlob::DigestV1(_) => &[],
 		}
 	}
 
@@ -91,6 +96,7 @@ impl DaBlob {
 	pub fn id(&self) -> &[u8] {
 		match self {
 			DaBlob::SignedV1(inner) => inner.id.as_slice(),
+			DaBlob::DigestV1(digest) => digest.as_slice(),
 		}
 	}
 
@@ -104,6 +110,7 @@ impl DaBlob {
 	{
 		match self {
 			DaBlob::SignedV1(inner) => inner.try_verify::<C>(),
+			DaBlob::DigestV1(_) => Ok(()),
 		}
 	}
 

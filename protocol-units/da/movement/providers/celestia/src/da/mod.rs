@@ -61,7 +61,7 @@ impl DaOperations for Da {
 		})
 	}
 
-	fn get_ir_blobs_at_height(
+	fn get_da_blobs_at_height(
 		&self,
 		height: u64,
 	) -> Pin<Box<dyn Future<Output = Result<Vec<DaBlob>, DaError>> + Send + '_>> {
