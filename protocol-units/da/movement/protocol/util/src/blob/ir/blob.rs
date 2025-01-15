@@ -19,11 +19,7 @@ pub struct InnerSignedBlobV1 {
 impl InnerSignedBlobV1 {
 	pub fn try_verify<C>(&self) -> Result<(), anyhow::Error>
 	where
-		C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-		Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-		SignatureSize<C>: ArrayLength<u8>,
-		AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-		FieldBytesSize<C>: ModulusSize,
+		C: Curve + Verify<C>,
 	{
 		let mut hasher = C::Digest::new();
 		hasher.update(self.data.blob.as_slice());

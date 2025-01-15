@@ -3,7 +3,7 @@ use aptos_types::account_address::AccountAddress;
 use celestia_rpc::Client;
 use celestia_types::nmt::Namespace;
 use movement_signer::cryptography::{secp256k1::Secp256k1, Curve};
-use movement_signer_loader::identifiers::{Load, LoadedSigner};
+use movement_signer_loader::{Load, LoadedSigner};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::future::Future;
