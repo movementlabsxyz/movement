@@ -131,20 +131,17 @@ google-cloud-kms = "0.6.0"
 base64 = { version = "0.13.0" }
 
 # Serialization and Deserialization
-
-
-
-
-
-
-<<<<<<< HEAD
-aptos-api = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "8b8eb8fd0a3fa78086522bda7886ecd86fc6d24e" }## Aptos dependencies# External Dependenciesborsh = { version = "0.10" } # todo: internalize jmt and bump
 serde = "1.0"
 serde_json = "1.0"
 serde_derive = "1.0"
 serde_yaml = "0.9.34"
+borsh = { version = "0.10" } # todo: internalize jmt and bump
+
+## Aptos dependencies
+
 ### We use a forked version so that we can override dependency versions. This is required
 ### to be avoid dependency conflicts with other Sovereign Labs crates.
+aptos-api = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "8b8eb8fd0a3fa78086522bda7886ecd86fc6d24e" }
 aptos-api-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "8b8eb8fd0a3fa78086522bda7886ecd86fc6d24e" }
 aptos-bitvec = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "8b8eb8fd0a3fa78086522bda7886ecd86fc6d24e" }
 aptos-block-executor = { git = "https://github.com/movementlabsxyz/aptos-core.git", rev = "8b8eb8fd0a3fa78086522bda7886ecd86fc6d24e" }
@@ -205,6 +202,8 @@ secp256k1 = { version = "0.27", default-features = false, features = [
 ## Celestia Dependencies
 celestia-rpc = { git = "https://github.com/movementlabsxyz/lumina", rev = "2d16e6733949f6bf70849eb60c14114e6d8ea63e" }   #{ version = "0.7.0" }
 celestia-types = { git = "https://github.com/movementlabsxyz/lumina", rev = "2d16e6733949f6bf70849eb60c14114e6d8ea63e" } #{ version = "0.7.0" }
+
+# External Dependencies
 
 alloy = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2", features = [
   "node-bindings",
