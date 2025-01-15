@@ -1,5 +1,5 @@
 [package]
-name = "aws-kms-signer"
+name = "movement-aws-kms-signer"
 version = { workspace = true }
 edition  = { workspace = true }
 license  = { workspace = true }

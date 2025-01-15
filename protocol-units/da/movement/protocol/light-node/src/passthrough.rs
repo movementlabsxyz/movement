@@ -16,27 +16,15 @@ use movement_da_util::{
 };
 
 use crate::LightNodeRuntime;
-use ecdsa::{
-	elliptic_curve::{
-		generic_array::ArrayLength,
-		ops::Invert,
-		point::PointCompression,
-		sec1::{FromEncodedPoint, ModulusSize, ToEncodedPoint},
-		subtle::CtOption,
-		AffinePoint, CurveArithmetic, FieldBytesSize, PrimeCurve, Scalar,
-	},
-	hazmat::{DigestPrimitive, SignPrimitive, VerifyPrimitive},
-	SignatureSize, SigningKey,
-};
+use movement_da_light_node_signer::Signer;
+use movement_signer::{cryptography::Curve, Digester, Signing, Verify};
+use movement_signer_loader::identifiers::LoadedSigner;
 
 #[derive(Clone)]
-pub struct LightNode<C, Da, V>
+pub struct LightNode<O, C, Da, V>
 where
-	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-	SignatureSize<C>: ArrayLength<u8>,
-	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-	FieldBytesSize<C>: ModulusSize,
+	O: Signing<C> + Send + Sync + Clone,
+	C: Curve + Verify<C> + Digester<C> + Send + Sync + Clone,
 	Da: DaOperations,
 	V: VerifierOperations<DaBlob, DaBlob>,
 {
@@ -46,13 +34,10 @@ where
 	pub verifier: Arc<V>,
 }
 
-impl<C, Da, V> Debug for LightNode<C, Da, V>
+impl<O, C, Da, V> Debug for LightNode<O, C, Da, V>
 where
-	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-	SignatureSize<C>: ArrayLength<u8>,
-	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-	FieldBytesSize<C>: ModulusSize,
+	O: Signing<C> + Send + Sync + Clone,
+	C: Curve + Verify<C> + Digester<C> + Send + Sync + Clone,
 	Da: DaOperations,
 	V: VerifierOperations<DaBlob, DaBlob>,
 {
@@ -63,13 +48,11 @@ where
 	}
 }
 
-impl<C> LightNodeRuntime for LightNode<C, DigestStoreDa<CelestiaDa>, InKnownSignersVerifier<C>>
+impl<O, C> LightNodeRuntime
+	for LightNode<O, C, DigestStoreDa<CelestiaDa>, InKnownSignersVerifier<C>>
 where
-	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-	SignatureSize<C>: ArrayLength<u8>,
-	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-	FieldBytesSize<C>: ModulusSize,
+	O: Signing<C> + Send + Sync + Clone,
+	C: Curve + Verify<C> + Digester<C> + Send + Sync + Clone,
 {
 	/// Tries to create a new LightNode instance from the toml config file.
 	async fn try_from_config(config: Config) -> Result<Self, anyhow::Error> {
@@ -99,13 +82,10 @@ where
 }
 
 #[tonic::async_trait]
-impl<C, Da, V> LightNodeService for LightNode<C, Da, V>
+impl<O, C, Da, V> LightNodeService for LightNode<O, C, Da, V>
 where
-	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-	SignatureSize<C>: ArrayLength<u8>,
-	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-	FieldBytesSize<C>: ModulusSize,
+	O: Signing<C> + Send + Sync + Clone + 'static,
+	C: Curve + Verify<C> + Digester<C> + Send + Sync + Clone + 'static,
 	Da: DaOperations + Send + Sync + 'static,
 	V: VerifierOperations<DaBlob, DaBlob> + Send + Sync + 'static,
 {

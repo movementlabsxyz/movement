@@ -1,22 +1,6 @@
 use crate::{Error, Verified, VerifierOperations};
-<<<<<<< HEAD:protocol-units/da/movement/celestia/light-node-verifier/src/signed/mod.rs
-use movement_celestia_da_util::ir_blob::IntermediateBlobRepresentation;
+use movement_celestia_da_util::ir_blob::DaBlob;
 use movement_signer::{cryptography::Curve, Verify};
-=======
-use ecdsa::{
-	elliptic_curve::{
-		generic_array::ArrayLength,
-		ops::Invert,
-		point::PointCompression,
-		sec1::{FromEncodedPoint, ModulusSize, ToEncodedPoint},
-		subtle::CtOption,
-		AffinePoint, CurveArithmetic, FieldBytesSize, PrimeCurve, Scalar,
-	},
-	hazmat::{DigestPrimitive, SignPrimitive, VerifyPrimitive},
-	SignatureSize,
-};
-use movement_da_util::blob::ir::blob::DaBlob;
->>>>>>> l-monninger/stream-size-fix:protocol-units/da/movement/protocol/verifier/src/signed/mod.rs
 use std::collections::HashSet;
 use tracing::info;
 
@@ -39,16 +23,11 @@ where
 }
 
 #[tonic::async_trait]
-impl<C> VerifierOperations<DaBlob, DaBlob>
-	for Verifier<C>
+impl<C> VerifierOperations<DaBlob, DaBlob> for Verifier<C>
 where
 	C: Curve + Verify<C> + Send + Sync,
 {
-	async fn verify(
-		&self,
-		blob: DaBlob,
-		_height: u64,
-	) -> Result<Verified<DaBlob>, Error> {
+	async fn verify(&self, blob: DaBlob, _height: u64) -> Result<Verified<DaBlob>, Error> {
 		blob.verify_signature::<C>().map_err(|e| Error::Validation(e.to_string()))?;
 
 		Ok(Verified::new(blob))
@@ -87,16 +66,11 @@ where
 }
 
 #[tonic::async_trait]
-impl<C> VerifierOperations<DaBlob, DaBlob>
-	for InKnownSignersVerifier<C>
+impl<C> VerifierOperations<DaBlob, DaBlob> for InKnownSignersVerifier<C>
 where
 	C: Curve + Verify<C> + Send + Sync,
 {
-	async fn verify(
-		&self,
-		blob: DaBlob,
-		height: u64,
-	) -> Result<Verified<DaBlob>, Error> {
+	async fn verify(&self, blob: DaBlob, height: u64) -> Result<Verified<DaBlob>, Error> {
 		let ir_blob = self.inner_verifier.verify(blob, height).await?;
 		info!("Verified inner blob");
 		let signer = ir_blob.inner().signer_hex();

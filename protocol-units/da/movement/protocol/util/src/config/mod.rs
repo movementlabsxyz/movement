@@ -6,11 +6,8 @@ use movement_signer::cryptography::{secp256k1::Secp256k1, Curve};
 use movement_signer_loader::identifiers::{Load, LoadedSigner};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
-<<<<<<< HEAD:protocol-units/da/movement/celestia/util/src/config/mod.rs
 use std::future::Future;
-=======
 use std::path::PathBuf;
->>>>>>> l-monninger/stream-size-fix:protocol-units/da/movement/protocol/util/src/config/mod.rs
 
 pub mod common;
 pub mod local;

@@ -1,8 +1,5 @@
 use crate::{cryptography, Signing};
-<<<<<<< HEAD
 use serde::{Deserialize, Serialize};
-=======
->>>>>>> l-monninger/stream-size-fix
 use std::error;
 use std::future::Future;
 
@@ -14,11 +11,7 @@ pub trait TryFromCanonicalString: Sized {
 	fn try_from_canonical_string(s: &str) -> Result<Self, String>;
 }
 
-<<<<<<< HEAD
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
-=======
-#[derive(Debug)]
->>>>>>> l-monninger/stream-size-fix
 pub enum Organization {
 	Movement,
 	Other(String),
@@ -42,11 +35,7 @@ impl TryFromCanonicalString for Organization {
 	}
 }
 
-<<<<<<< HEAD
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
-=======
-#[derive(Debug)]
->>>>>>> l-monninger/stream-size-fix
 pub enum Environment {
 	Prod,
 	Dev,
@@ -74,11 +63,7 @@ impl TryFromCanonicalString for Environment {
 	}
 }
 
-<<<<<<< HEAD
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
-=======
-#[derive(Debug)]
->>>>>>> l-monninger/stream-size-fix
 pub enum SoftwareUnit {
 	FullNode,
 	Other(String),
@@ -102,11 +87,7 @@ impl TryFromCanonicalString for SoftwareUnit {
 	}
 }
 
-<<<<<<< HEAD
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
-=======
-#[derive(Debug)]
->>>>>>> l-monninger/stream-size-fix
 pub enum Usage {
 	McrSettlement,
 	Other(String),
@@ -130,11 +111,7 @@ impl TryFromCanonicalString for Usage {
 	}
 }
 
-<<<<<<< HEAD
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
-=======
-#[derive(Debug)]
->>>>>>> l-monninger/stream-size-fix
 pub enum AllowedRoles {
 	Signer,
 	Auditor,
@@ -161,11 +138,7 @@ impl TryFromCanonicalString for AllowedRoles {
 	}
 }
 
-<<<<<<< HEAD
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
-=======
-#[derive(Debug)]
->>>>>>> l-monninger/stream-size-fix
 pub struct Key {
 	org: Organization,
 	environment: Environment,
@@ -232,7 +205,6 @@ impl Key {
 		)
 	}
 
-<<<<<<< HEAD
 	/// Gets a key from a canonical string environment variable
 	pub fn try_from_env_var(var: &str) -> Result<Self, String> {
 		let s = std::env::var(var).map_err(|e| format!("{}: {}", var, e))?;
@@ -242,11 +214,6 @@ impl Key {
 
 impl TryFromCanonicalString for Key {
 	fn try_from_canonical_string(s: &str) -> Result<Self, String> {
-=======
-	/// Gets a key from a canonical string.
-	/// Example canonical string: "movement/prod/full_node/mcr_settlement/signer/validator/0"
-	pub fn try_from_canonical_string(s: &str) -> Result<Self, String> {
->>>>>>> l-monninger/stream-size-fix
 		let parts: Vec<&str> = s.split('/').collect();
 		if parts.len() != 7 {
 			return Err(format!("invalid key: {}", s));
@@ -262,15 +229,6 @@ impl TryFromCanonicalString for Key {
 			app_replica: Some(parts[6].to_string()),
 		})
 	}
-<<<<<<< HEAD
-=======
-
-	/// Gets a key from a canonical string environment variable
-	pub fn try_from_env_var(var: &str) -> Result<Self, String> {
-		let s = std::env::var(var).map_err(|e| format!("{}: {}", var, e))?;
-		Self::try_from_canonical_string(&s)
-	}
->>>>>>> l-monninger/stream-size-fix
 }
 
 /// Errors thrown by [SignerBuilder].

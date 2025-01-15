@@ -1,25 +1,10 @@
-<<<<<<< HEAD:protocol-units/da/movement/celestia/light-node/src/v1/sequencer.rs
 use movement_celestia_da_light_node_prevalidator::{
 	aptos::whitelist::Validator, PrevalidatorOperations,
 };
-use movement_signer::cryptography::secp256k1::Secp256k1;
-use movement_signer_loader::identifiers::LoadedSigner;
-=======
-use ecdsa::{
-	elliptic_curve::{
-		generic_array::ArrayLength,
-		ops::Invert,
-		point::PointCompression,
-		sec1::{FromEncodedPoint, ModulusSize, ToEncodedPoint},
-		subtle::CtOption,
-		AffinePoint, CurveArithmetic, FieldBytesSize, PrimeCurve, Scalar,
-	},
-	hazmat::{DigestPrimitive, SignPrimitive, VerifyPrimitive},
-	SignatureSize,
-};
 use movement_da_light_node_da::DaOperations;
 use movement_da_light_node_prevalidator::{aptos::whitelist::Validator, PrevalidatorOperations};
->>>>>>> l-monninger/stream-size-fix:protocol-units/da/movement/protocol/light-node/src/sequencer.rs
+use movement_signer::cryptography::secp256k1::Secp256k1;
+use movement_signer_loader::identifiers::LoadedSigner;
 use std::boxed::Box;
 use std::fmt::Debug;
 use std::path::PathBuf;
@@ -46,86 +31,43 @@ use tokio::{
 use tokio_stream::Stream;
 use tracing::{debug, info};
 
-<<<<<<< HEAD:protocol-units/da/movement/celestia/light-node/src/v1/sequencer.rs
-use celestia_rpc::HeaderClient;
-use memseq::{Sequencer, Transaction};
-use movement_algs::grouping_heuristic::{
-	apply::ToApply, binpacking::FirstFitBinpacking, drop_success::DropSuccess, skip::SkipFor,
-	splitting::Splitting, GroupingHeuristicStack, GroupingOutcome,
-};
-use movement_celestia_da_util::config::Config;
-use movement_da_light_node_proto as grpc;
-use movement_da_light_node_proto::blob_response::BlobType;
-use movement_da_light_node_proto::light_node_service_server::LightNodeService;
-use movement_types::block::Block;
-
-use crate::v1::{passthrough::LightNodeV1 as LightNodeV1PassThrough, LightNodeV1Operations};
-use movement_signer::{cryptography::Curve, Digester, Signing, Verify};
-=======
 use crate::{passthrough::LightNode as LightNodePassThrough, LightNodeRuntime};
->>>>>>> l-monninger/stream-size-fix:protocol-units/da/movement/protocol/light-node/src/sequencer.rs
 
 const LOGGING_UID: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Clone)]
-<<<<<<< HEAD:protocol-units/da/movement/celestia/light-node/src/v1/sequencer.rs
-pub struct LightNodeV1<O, C>
+pub struct LightNode<O, C, Da, V>
 where
 	O: Signing<C> + Send + Sync + Clone,
-	C: Curve + Send + Sync + Clone,
-{
-	pub pass_through: LightNodeV1PassThrough<O, C>,
-=======
-pub struct LightNode<C, Da, V>
-where
-	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-	SignatureSize<C>: ArrayLength<u8>,
-	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-	FieldBytesSize<C>: ModulusSize,
+	C: Curve + Verify<C> + Digester<C> + Send + Sync + Clone,
 	Da: DaOperations,
 	V: VerifierOperations<DaBlob, DaBlob>,
 {
-	pub pass_through: LightNodePassThrough<C, Da, V>,
->>>>>>> l-monninger/stream-size-fix:protocol-units/da/movement/protocol/light-node/src/sequencer.rs
+	pub pass_through: LightNodePassThrough<O, C, Da, V>,
 	pub memseq: Arc<memseq::Memseq<memseq::RocksdbMempool>>,
 	pub prevalidator: Option<Arc<Validator>>,
 }
 
-<<<<<<< HEAD:protocol-units/da/movement/celestia/light-node/src/v1/sequencer.rs
-impl<O, C> Debug for LightNodeV1<O, C>
+impl<O, C, Da, V> Debug for LightNode<O, C, Da, V>
 where
 	O: Signing<C> + Send + Sync + Clone,
-	C: Curve + Send + Sync + Clone,
-=======
-impl<C, Da, V> Debug for LightNode<C, Da, V>
-where
-	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-	SignatureSize<C>: ArrayLength<u8>,
-	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-	FieldBytesSize<C>: ModulusSize,
+	C: Curve + Verify<C> + Digester<C> + Send + Sync + Clone,
 	Da: DaOperations,
 	V: VerifierOperations<DaBlob, DaBlob>,
->>>>>>> l-monninger/stream-size-fix:protocol-units/da/movement/protocol/light-node/src/sequencer.rs
 {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		f.debug_struct("LightNode").field("pass_through", &self.pass_through).finish()
 	}
 }
 
-<<<<<<< HEAD:protocol-units/da/movement/celestia/light-node/src/v1/sequencer.rs
-impl LightNodeV1Operations for LightNodeV1<LoadedSigner<Secp256k1>, Secp256k1> {
-=======
-impl<C> LightNodeRuntime for LightNode<C, DigestStoreDa<CelestiaDa>, InKnownSignersVerifier<C>>
+impl<O, C> LightNodeRuntime
+	for LightNode<O, C, DigestStoreDa<CelestiaDa>, InKnownSignersVerifier<C>>
 where
-	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-	SignatureSize<C>: ArrayLength<u8>,
-	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-	FieldBytesSize<C>: ModulusSize,
+	O: Signing<C> + Send + Sync + Clone,
+	C: Curve + Verify<C> + Digester<C> + Send + Sync + Clone,
+	Da: DaOperations,
+	V: VerifierOperations<DaBlob, DaBlob>,
 {
->>>>>>> l-monninger/stream-size-fix:protocol-units/da/movement/protocol/light-node/src/sequencer.rs
 	async fn try_from_config(config: Config) -> Result<Self, anyhow::Error> {
 		info!("Initializing LightNode in sequencer mode from environment.");
 
@@ -164,22 +106,12 @@ where
 	}
 }
 
-<<<<<<< HEAD:protocol-units/da/movement/celestia/light-node/src/v1/sequencer.rs
-impl<O, C> LightNodeV1<O, C>
+impl<O, C, Da, V> LightNodeV1<O, C>
 where
-	O: Signing<C> + Send + Sync + Clone + 'static,
-	C: Curve + Verify<C> + Digester<C> + Send + Sync + Clone + 'static,
-=======
-impl<C, Da, V> LightNode<C, Da, V>
-where
-	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-	SignatureSize<C>: ArrayLength<u8>,
-	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-	FieldBytesSize<C>: ModulusSize,
+	O: Signing<C> + Send + Sync + Clone,
+	C: Curve + Verify<C> + Digester<C> + Send + Sync + Clone,
 	Da: DaOperations,
 	V: VerifierOperations<DaBlob, DaBlob>,
->>>>>>> l-monninger/stream-size-fix:protocol-units/da/movement/protocol/light-node/src/sequencer.rs
 {
 	async fn tick_build_blocks(&self, sender: Sender<Block>) -> Result<(), anyhow::Error> {
 		let memseq = self.memseq.clone();
@@ -206,87 +138,9 @@ where
 	/// Submits blocks to the pass through.
 	async fn submit_blocks(&self, blocks: Vec<Block>) -> Result<(), anyhow::Error> {
 		for block in blocks {
-<<<<<<< HEAD:protocol-units/da/movement/celestia/light-node/src/v1/sequencer.rs
-			info!(target: "movement_timing", block_id = %block.block.id(), "inner_submitting_block");
-		}
-		// get references to celestia blobs in the wrapped blocks
-		let block_blobs = blocks
-			.iter()
-			.map(|wrapped_block| &wrapped_block.blob)
-			.cloned() // hopefully, the compiler optimizes this out
-			.collect::<Vec<_>>();
-		// use deref on the wrapped block to get the blob
-		self.pass_through.submit_celestia_blobs(&block_blobs).await?;
-		for block in blocks {
-			info!(target: "movement_timing", block_id = %block.block.id(), "inner_submitted_block");
-		}
-		Ok(())
-	}
-
-	pub async fn submit_with_heuristic(&self, blocks: Vec<Block>) -> Result<(), anyhow::Error> {
-		for block in &blocks {
-			info!(target: "movement_timing", block_id = %block.id(), "submitting_block");
-		}
-
-		// wrap the blocks in a struct that can be split and compressed
-		// spawn blocking because the compression is blocking and could be slow
-		let pass_through = self.pass_through.clone();
-		let blocks = {
-			let mut wrapped_blocks = Vec::new();
-			for block in blocks {
-				let block_bytes = bcs::to_bytes(&block)?;
-				let celestia_blob = pass_through.create_new_celestia_blob(block_bytes).await?;
-				let wrapped_block = block::WrappedBlock::new(block, celestia_blob);
-				wrapped_blocks.push(wrapped_block);
-			}
-			wrapped_blocks
-		};
-
-		let mut heuristic: GroupingHeuristicStack<block::WrappedBlock> =
-			GroupingHeuristicStack::new(vec![
-				DropSuccess::boxed(),
-				ToApply::boxed(),
-				SkipFor::boxed(1, Splitting::boxed(2)),
-				FirstFitBinpacking::boxed(1_700_000),
-			]);
-
-		let start_distribution = GroupingOutcome::new_apply_distribution(blocks);
-		let block_group_results = heuristic
-			.run_async_sequential_with_metadata(
-				start_distribution,
-				|index, grouping, mut flag| async move {
-					if index == 0 {
-						flag = false;
-					}
-
-					// if the flag is set then we are going to change this grouping outcome to failures and not run anything
-					if flag {
-						return Ok((grouping.to_failures_prefer_instrumental(), flag));
-					}
-
-					let blocks = grouping.into_original();
-					let outcome = match self.submit_blocks(&blocks).await {
-						Ok(_) => GroupingOutcome::new_all_success(blocks.len()),
-						Err(_) => {
-							flag = true;
-							GroupingOutcome::new_apply(blocks)
-						}
-					};
-
-					Ok((outcome, flag))
-				},
-				false,
-			)
-			.await?;
-
-		info!("block group results: {:?}", block_group_results);
-		for block_group_result in &block_group_results {
-			info!(target: "movement_timing", block_group_result = ?block_group_result, "block_group_result");
-=======
 			let data: InnerSignedBlobV1Data = block.try_into()?;
 			let blob = data.try_to_sign(&self.pass_through.signing_key)?;
 			self.pass_through.da.submit_blob(blob.into()).await?;
->>>>>>> l-monninger/stream-size-fix:protocol-units/da/movement/protocol/light-node/src/sequencer.rs
 		}
 
 		Ok(())
@@ -419,22 +273,12 @@ where
 }
 
 #[tonic::async_trait]
-<<<<<<< HEAD:protocol-units/da/movement/celestia/light-node/src/v1/sequencer.rs
 impl<O, C> LightNodeService for LightNodeV1<O, C>
 where
 	O: Signing<C> + Send + Sync + Clone + 'static,
 	C: Curve + Verify<C> + Digester<C> + Send + Sync + Clone + 'static,
-=======
-impl<C, Da, V> LightNodeService for LightNode<C, Da, V>
-where
-	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-	SignatureSize<C>: ArrayLength<u8>,
-	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-	FieldBytesSize<C>: ModulusSize,
 	Da: DaOperations + Send + Sync + 'static,
 	V: VerifierOperations<DaBlob, DaBlob> + Send + Sync + 'static,
->>>>>>> l-monninger/stream-size-fix:protocol-units/da/movement/protocol/light-node/src/sequencer.rs
 {
 	/// Server streaming response type for the StreamReadFromHeight method.
 	type StreamReadFromHeightStream = Pin<
