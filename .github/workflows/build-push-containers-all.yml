@@ -19,7 +19,7 @@ jobs:
         run: echo '${{ toJson(github.event) }}'
 
   movement-celestia-da-light-node-build:
-    if:  contains(github.event.pull_request.labels.*.name, 'cicd:movement-containers') ||  github.ref == 'refs/heads/main' || github.event.label.name == 'cicd:movement-containers'
+    # if:  contains(github.event.pull_request.labels.*.name, 'cicd:movement-containers') ||  github.ref == 'refs/heads/main' || github.event.label.name == 'cicd:movement-containers'
     permissions:
       contents: read
       packages: write
@@ -84,7 +84,7 @@ jobs:
           ./scripts/movement/manifest movement-celestia-da-light-node
 
   movement-celestia-appd-build:
-    if: contains(github.event.pull_request.labels.*.name, 'cicd:movement-containers') ||  github.ref == 'refs/heads/main' || github.event.label.name == 'cicd:movement-containers'
+    # if: contains(github.event.pull_request.labels.*.name, 'cicd:movement-containers') ||  github.ref == 'refs/heads/main' || github.event.label.name == 'cicd:movement-containers'
     permissions:
       contents: read
       packages: write
@@ -149,7 +149,7 @@ jobs:
           ./scripts/movement/manifest movement-celestia-appd
 
   movement-celestia-bridge-build:
-    if: contains(github.event.pull_request.labels.*.name, 'cicd:movement-containers') ||  github.ref == 'refs/heads/main' || github.event.label.name == 'cicd:movement-containers'
+    # if: contains(github.event.pull_request.labels.*.name, 'cicd:movement-containers') ||  github.ref == 'refs/heads/main' || github.event.label.name == 'cicd:movement-containers'
     permissions:
       contents: read
       packages: write
@@ -214,7 +214,7 @@ jobs:
           ./scripts/movement/manifest movement-celestia-bridge
 
   movement-full-node-setup-build:
-    if: contains(github.event.pull_request.labels.*.name, 'cicd:movement-containers') ||  github.ref == 'refs/heads/main' || github.event.label.name == 'cicd:movement-containers'
+    # if: contains(github.event.pull_request.labels.*.name, 'cicd:movement-containers') ||  github.ref == 'refs/heads/main' || github.event.label.name == 'cicd:movement-containers'
     permissions:
       contents: read
       packages: write
@@ -279,7 +279,7 @@ jobs:
           ./scripts/movement/manifest movement-full-node-setup
 
   wait-for-celestia-light-node-build:
-    if: contains(github.event.pull_request.labels.*.name, 'cicd:movement-containers') ||  github.ref == 'refs/heads/main' || github.event.label.name == 'cicd:movement-containers'
+    # if: contains(github.event.pull_request.labels.*.name, 'cicd:movement-containers') ||  github.ref == 'refs/heads/main' || github.event.label.name == 'cicd:movement-containers'
     permissions:
       contents: read
       packages: write
@@ -344,7 +344,7 @@ jobs:
           ./scripts/movement/manifest wait-for-celestia-light-node
 
   movement-full-node-build:
-    if: contains(github.event.pull_request.labels.*.name, 'cicd:movement-containers') ||  github.ref == 'refs/heads/main' || github.event.label.name == 'cicd:movement-containers'
+    # if: contains(github.event.pull_request.labels.*.name, 'cicd:movement-containers') ||  github.ref == 'refs/heads/main' || github.event.label.name == 'cicd:movement-containers'
     permissions:
       contents: read
       packages: write
@@ -409,7 +409,7 @@ jobs:
           ./scripts/movement/manifest movement-full-node
 
   movement-faucet-service-build:
-    if: contains(github.event.pull_request.labels.*.name, 'cicd:movement-containers') ||  github.ref == 'refs/heads/main' || github.event.label.name == 'cicd:movement-containers'
+    # if: contains(github.event.pull_request.labels.*.name, 'cicd:movement-containers') ||  github.ref == 'refs/heads/main' || github.event.label.name == 'cicd:movement-containers'
     permissions:
       contents: read
       packages: write
@@ -474,7 +474,7 @@ jobs:
           ./scripts/movement/manifest movement-faucet-service
 
   movement-tests-e2e-simple-interaction-build:
-    if: contains(github.event.pull_request.labels.*.name, 'cicd:movement-containers') ||  github.ref == 'refs/heads/main' || github.event.label.name == 'cicd:movement-containers'
+    # if: contains(github.event.pull_request.labels.*.name, 'cicd:movement-containers') ||  github.ref == 'refs/heads/main' || github.event.label.name == 'cicd:movement-containers'
     permissions:
       contents: read
       packages: write
@@ -539,7 +539,7 @@ jobs:
           ./scripts/movement/manifest movement-tests-e2e-simple-interaction
 
   movement-indexer-build:
-    if: contains(github.event.pull_request.labels.*.name, 'cicd:movement-containers') ||  github.ref == 'refs/heads/main' || github.event.label.name == 'cicd:movement-containers'
+    # if: contains(github.event.pull_request.labels.*.name, 'cicd:movement-containers') ||  github.ref == 'refs/heads/main' || github.event.label.name == 'cicd:movement-containers'
     permissions:
       contents: read
       packages: write
@@ -604,7 +604,7 @@ jobs:
           ./scripts/movement/manifest movement-indexer
 
   movement-tests-e2e-followers-consistent-build:
-    if: contains(github.event.pull_request.labels.*.name, 'cicd:movement-containers') ||  github.ref == 'refs/heads/main' || github.event.label.name == 'cicd:movement-containers'
+    # if: contains(github.event.pull_request.labels.*.name, 'cicd:movement-containers') ||  github.ref == 'refs/heads/main' || github.event.label.name == 'cicd:movement-containers'
     permissions:
       contents: read
       packages: write
@@ -670,7 +670,7 @@ jobs:
 
 
   movement-util-build:
-    if: contains(github.event.pull_request.labels.*.name, 'cicd:movement-containers') ||  github.ref == 'refs/heads/main' || github.event.label.name == 'cicd:movement-containers'
+    # if: contains(github.event.pull_request.labels.*.name, 'cicd:movement-containers') ||  github.ref == 'refs/heads/main' || github.event.label.name == 'cicd:movement-containers'
     permissions:
       contents: read
       packages: write
