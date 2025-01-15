@@ -222,25 +222,11 @@ pub async fn set_public_key(
         Extension(app_state): Extension<Arc<AppState>>,
         Json(payload): Json<SetPublicKeyRequest>,
 ) -> StatusCode {
+        // Lock the public key mutex and set the new public key
         let mut public_key = app_state.public_key.lock().await;
+        *public_key = Some(payload.public_key.clone());
 
-        // Check if the public key matches the one in the app state
-        if let Some(existing_key) = &*public_key {
-                if *existing_key == payload.public_key {
-                        println!("Public key matches the existing key in AppState.");
-                        StatusCode::OK
-                } else {
-                        println!(
-                                "Public key mismatch. Existing: {:?}, Provided: {:?}",
-                                existing_key, payload.public_key
-                        );
-                        StatusCode::FORBIDDEN
-                }
-        } else {
-                // No public key set, update with the provided key
-                println!("No existing public key. Setting new key: {:?}", payload.public_key);
-                *public_key = Some(payload.public_key.clone());
-                StatusCode::OK
-        }
+        println!("Public key has been set to: {:?}", payload.public_key);
+        StatusCode::OK
 }
 
