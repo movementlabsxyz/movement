@@ -74,8 +74,8 @@ async fn main() -> Result<(), anyhow::Error> {
 	let init_status = Command::new("movement")
 		.args([
 			"init",
-			"--custom",
-			"local",
+			"--network",
+			"custom",
 			"--rest-url",
 			NODE_URL.as_str(),
 			"--faucet-url",
