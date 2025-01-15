@@ -1,10 +1,10 @@
 [package]
-name = "test_token"
+name = "test-token"
 version = "1.0.0"
 authors = []
 
 [addresses]
-test_token = "0x1"
+test_token = "_"
 
 [dev-addresses]
 

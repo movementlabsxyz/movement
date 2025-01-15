@@ -71,24 +71,26 @@ async fn main() -> Result<(), anyhow::Error> {
 	println!("Node URL: {:?}", NODE_URL.as_str());
 	println!("Faucet URL: {:?}", FAUCET_URL.as_str());
 
-	let init_status = Command::new("movement")
-		.args([
-			"init",
-			"--network",
-			"custom",
-			"--rest-url",
-			NODE_URL.as_str(),
-			"--faucet-url",
-			FAUCET_URL.as_str(),
-			"--assume-yes",
-		])
-		.status()
-		.await
-		.expect("Failed to execute `movement init` command");
+	// let init_status = Command::new("movement")
+	// 	.args([
+	// 		"init",
+	// 		"--network",
+	// 		"custom",
+	// 		"--rest-url",
+	// 		NODE_URL.as_str(),
+	// 		"--faucet-url",
+	// 		FAUCET_URL.as_str(),
+	// 		"--assume-no",
+	// 	])
+	// 	.status()
+	// 	.await
+	// 	.expect("Failed to execute `movement init` command");
+	//
+	// if !init_status.success() {
+	// 	anyhow::bail!("Initializing Move module failed. Please check the `movement init` command.");
+	// }
 
-	if !init_status.success() {
-		anyhow::bail!("Initializing Move module failed. Please check the `movement init` command.");
-	}
+	//println!("init status: {:?}", init_status);
 
 	let target_dir = PathBuf::from(crate_dir).join("src").join("move-modules");
 	let target_dir_clone = target_dir.clone();
@@ -109,7 +111,7 @@ async fn main() -> Result<(), anyhow::Error> {
 	}
 
 	let publish_status = Command::new("movement")
-		.args(["move", "publish"])
+		.args(["move", "publish", "--skip-fetch-latest-git-deps"])
 		.current_dir(target_dir_clone)
 		.status()
 		.await
