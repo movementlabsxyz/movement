@@ -104,12 +104,15 @@ where
 			.blob_type
 			.ok_or(anyhow::anyhow!("No blob type in response"))?
 		{
+			// To allow for DA migrations we accept both sequenced and passed through blobs
 			blob_response::BlobType::SequencedBlobBlock(blob) => {
 				(blob.data, blob.timestamp, blob.blob_id, blob.height)
 			}
-			_ => {
-				anyhow::bail!("Invalid blob type in response")
+			// To allow for DA migrations we accept both sequenced and passed through blobs
+			blob_response::BlobType::PassedThroughBlob(blob) => {
+				(blob.data, blob.timestamp, blob.blob_id, blob.height)
 			}
+			_ => anyhow::bail!("Invalid blob type"),
 		};
 
 		info!(
