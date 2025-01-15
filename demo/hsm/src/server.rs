@@ -33,10 +33,10 @@ where
                 .route("/sign", post(sign_handler::<O, C>))
                 .route("/verify", post(verify_handler))
                 .route("/health", get(health_handler))
-                .route("/public_key/get", get(get_public_key)) // AppState only
-                .route("/public_key/set", post(set_public_key)) // AppState only
-                .layer(Extension(hsm))                         // Add HSM as a separate layer
-                .layer(Extension(app_state))                   // Add AppState as a separate layer
+                .route("/public_key/get", get(get_public_key)) 
+                .route("/public_key/set", post(set_public_key)) 
+                .layer(Extension(hsm))                         
+                .layer(Extension(app_state))                   
 }
 
     
