@@ -4,7 +4,6 @@ use clap::Parser;
 use movement_da_light_node_client::MovementDaLightNodeClient;
 use movement_da_light_node_proto::{blob_response, StreamReadFromHeightRequest};
 use tokio_stream::StreamExt;
-use tracing::info;
 
 #[derive(Debug, Parser, Clone)]
 #[clap(rename_all = "kebab-case", about = "Streams the DA blocks")]
@@ -19,7 +18,8 @@ impl StreamBlocks {
 	pub async fn execute(&self) -> Result<(), anyhow::Error> {
 		// Get the config
 
-		let mut client = MovementDaLightNodeClient::try_http1(self.light_node_url.as_str())
+		let mut client = MovementDaLightNodeClient::try_http2(self.light_node_url.as_str())
+			.await
 			.context("Failed to connect to light node")?;
 
 		let mut blocks_from_da = client
@@ -27,7 +27,7 @@ impl StreamBlocks {
 			.await
 			.context("Failed to stream blocks from DA")?;
 
-		info!("streaming blocks from DA");
+		println!("streaming blocks from DA");
 
 		while let Some(block_res) = blocks_from_da.next().await {
 			let response = block_res.context("Failed to get block")?;
@@ -40,14 +40,17 @@ impl StreamBlocks {
 				blob_response::BlobType::SequencedBlobBlock(blob) => {
 					(blob.data, blob.timestamp, blob.blob_id, blob.height)
 				}
+				blob_response::BlobType::PassedThroughBlob(blob) => {
+					(blob.data, blob.timestamp, blob.blob_id, blob.height)
+				}
 				_ => {
-					anyhow::bail!("Invalid blob type in response")
+					return Err(anyhow::anyhow!("Unknown blob type"));
 				}
 			};
-			info!("{} {}  {}", hex::encode(block_id), block_timestamp, da_height);
+			println!("{} {}  {}", hex::encode(block_id), block_timestamp, da_height);
 		}
 
-		info!("Finished streaming blocks from DA");
+		println!("Finished streaming blocks from DA");
 
 		Ok(())
 	}

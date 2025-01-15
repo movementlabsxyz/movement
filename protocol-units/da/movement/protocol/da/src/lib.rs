@@ -87,10 +87,11 @@ pub trait DaOperations: Send + Sync {
 		start_height: u64,
 		end_height: u64,
 	) -> Pin<Box<dyn Future<Output = Result<DaBlobStream, DaError>> + Send + '_>> {
-		info!("streaming IR blobs between heights {} and {}", start_height, end_height);
+		info!("streaming da blobs between heights {} and {}", start_height, end_height);
 		let fut = async move {
 			let stream = try_stream! {
 				for height in start_height..end_height {
+					info!("getting blobs at height {}", height);
 					let blobs = self.get_da_blobs_at_height_for_stream(height).await?;
 					for blob in blobs {
 						yield (DaHeight(height), blob);

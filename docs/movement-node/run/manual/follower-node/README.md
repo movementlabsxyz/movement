@@ -30,7 +30,7 @@ DOT_MOVEMENT_PATH=./.movement
 MAPTOS_CHAIN_ID=250 # change this to the chain id of the network you are running
 MOVEMENT_SYNC="follower::mtnet-l-sync-bucket-sync<=>{maptos,maptos-storage,movement-da-db}/**" # change to the sync bucket for the network you are running
 MOVEMENT_DA_LIGHT_NODE_CONNECTION_PROTOCOL=https
-MOVEMENT_DA_LIGHT_NODE_CONNECTION_HOSTNAME="movement-celestia-da-light-node.testnet.bardock.movementlabs.xyz" # change this to the hostname of the Movement DA Light Node service on network you are running
+MOVEMENT_DA_LIGHT_NODE_CONNECTION_HOSTNAME="m1-da-light-node.testnet.bardock.movementlabs.xyz" # change this to the hostname of the Movement DA Light Node service on network you are running
 MOVEMENT_DA_LIGHT_NODE_CONNECTION_PORT=443
 # you may need to provide AWS credentials for the Amazon SDK to properly interact with the sync bucket
 # often this will be picked up appropriately if your environment is configured to use AWS
@@ -66,11 +66,14 @@ You should see a `ledger_version` field CLOSE to the other values on the network
 For deployment and advanced usage, we recommend you use our [provided Ansible scripts](../../ansible/follower-node/README.md).
 
 ## Transports
-By default, Movement Full Node Followers will use `http1` for the connection to the light node service. You can toggle `http1` or `http2` with:
+By default, Movement Full Node Followers will use `http2` for the connection to the light node service. You can toggle `http1` or `http2` with:
 
 ```shell
 MOVEMENT_DA_LIGHT_NODE_HTTP1=true
 ```
+
+> [!WARNING]
+> We have found an issue with streams over `http1` that can cause the follower node connection with the light node service to drop unexpectedly. We recommend using `http2` for the time being.
 
 ## Movement Mainnet
 Movement Mainnet Follower operations are the same as other networks. However, we encourage you to also sync the `default_signer_address_whitelist` which is available to reject disallowed signers in the mempool instead of at the DA. 
