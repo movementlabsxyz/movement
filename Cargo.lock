@@ -10128,6 +10128,67 @@ dependencies = [
 ]
 
 [[package]]
+name = "movement-celestia-da-light-node"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "async-stream",
+ "bcs 0.1.4",
+ "celestia-rpc",
+ "celestia-types",
+ "chrono",
+ "dot-movement",
+ "ecdsa 0.16.9",
+ "futures",
+ "godfig",
+ "hex",
+ "k256",
+ "memseq",
+ "movement-algs",
+ "movement-da-light-node-celestia",
+ "movement-da-light-node-da",
+ "movement-da-light-node-digest-store",
+ "movement-da-light-node-prevalidator",
+ "movement-da-light-node-proto",
+ "movement-da-light-node-verifier",
+ "movement-da-util",
+ "movement-tracing",
+ "movement-types",
+ "prost 0.13.3",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 1.0.69",
+ "tokio",
+ "tokio-stream",
+ "tonic 0.12.3",
+ "tonic-reflection 0.12.3",
+ "tracing",
+ "zstd 0.13.2",
+]
+
+[[package]]
+name = "movement-celestia-da-light-node-runners"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "commander",
+ "dot-movement",
+ "godfig",
+ "hex",
+ "movement-da-util",
+ "rand 0.7.3",
+ "reqwest 0.12.9",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+]
+
+[[package]]
 name = "movement-client"
 version = "0.0.2"
 dependencies = [
@@ -10192,46 +10253,6 @@ dependencies = [
  "tokio",
  "toml 0.8.19",
  "tracing",
-]
-
-[[package]]
-name = "movement-da-light-node"
-version = "0.0.2"
-dependencies = [
- "anyhow",
- "async-stream",
- "bcs 0.1.4",
- "celestia-rpc",
- "celestia-types",
- "chrono",
- "dot-movement",
- "ecdsa 0.16.9",
- "futures",
- "godfig",
- "hex",
- "k256",
- "memseq",
- "movement-algs",
- "movement-da-light-node-celestia",
- "movement-da-light-node-da",
- "movement-da-light-node-digest-store",
- "movement-da-light-node-prevalidator",
- "movement-da-light-node-proto",
- "movement-da-light-node-verifier",
- "movement-da-util",
- "movement-tracing",
- "movement-types",
- "prost 0.13.3",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror 1.0.69",
- "tokio",
- "tokio-stream",
- "tonic 0.12.3",
- "tonic-reflection 0.12.3",
- "tracing",
- "zstd 0.13.2",
 ]
 
 [[package]]
@@ -10328,27 +10349,6 @@ dependencies = [
  "prost 0.13.3",
  "tonic 0.12.3",
  "tonic-build",
-]
-
-[[package]]
-name = "movement-da-light-node-runners"
-version = "0.0.2"
-dependencies = [
- "anyhow",
- "commander",
- "dot-movement",
- "godfig",
- "hex",
- "movement-da-util",
- "rand 0.7.3",
- "reqwest 0.12.9",
- "serde",
- "serde_json",
- "tempfile",
- "tokio",
- "tokio-stream",
- "tracing",
- "tracing-subscriber 0.3.18",
 ]
 
 [[package]]

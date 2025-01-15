@@ -1,5 +1,5 @@
 use k256::Secp256k1;
-use movement_da_light_node::{LightNode, Manager};
+use movement_celestia_da_light_node::{LightNode, Manager};
 use movement_da_light_node_celestia::da::Da as CelestiaDa;
 use movement_da_light_node_digest_store::da::Da as DigestStoreDa;
 

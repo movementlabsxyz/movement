@@ -1,5 +1,5 @@
 use godfig::{backend::config_file::ConfigFile, Godfig};
-use movement_da_light_node_runners::{celestia_appd::CelestiaAppd, Runner};
+use movement_celestia_da_light_node_runners::{celestia_bridge::CelestiaBridge, Runner};
 use movement_da_util::CelestiaDaLightNodeConfig;
 
 #[tokio::main]
@@ -12,7 +12,6 @@ async fn main() -> Result<(), anyhow::Error> {
 		)
 		.init();
 
-	// get the config file
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
 	let mut config_file = dot_movement.try_get_or_create_config_file().await?;
 
@@ -21,8 +20,8 @@ async fn main() -> Result<(), anyhow::Error> {
 		Godfig::new(ConfigFile::new(config_file), vec![]);
 	let config = godfig.try_wait_for_ready().await?;
 
-	let celestia_appd = CelestiaAppd {};
-	celestia_appd.run(dot_movement, config).await?;
+	let celestia_bridge = CelestiaBridge {};
+	celestia_bridge.run(dot_movement, config).await?;
 
 	Ok(())
 }

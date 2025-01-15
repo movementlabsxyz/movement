@@ -1,5 +1,5 @@
 [package]
-name = "movement-da-light-node-runners"
+name = "movement-celestia-da-light-node-runners"
 version = { workspace = true }
 edition = { workspace = true }
 license = { workspace = true }

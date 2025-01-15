@@ -1,5 +1,5 @@
 use godfig::{backend::config_file::ConfigFile, Godfig};
-use movement_da_light_node_runners::{celestia_light::CelestiaLight, Runner};
+use movement_celestia_da_light_node_runners::{celestia_light::CelestiaLight, Runner};
 use movement_da_util::CelestiaDaLightNodeConfig;
 
 #[tokio::main]
