@@ -18,8 +18,7 @@ impl StreamBlocks {
 	pub async fn execute(&self) -> Result<(), anyhow::Error> {
 		// Get the config
 
-		let mut client = MovementDaLightNodeClient::try_http2(self.light_node_url.as_str())
-			.await
+		let mut client = MovementDaLightNodeClient::try_http1(self.light_node_url.as_str())
 			.context("Failed to connect to light node")?;
 
 		let mut blocks_from_da = client
