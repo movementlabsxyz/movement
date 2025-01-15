@@ -786,7 +786,7 @@ jobs:
 ### Unchecked containers
 
   bridge-service-build:
-    # if: github.event.label.name == 'cicd:bridge-containers' ||  github.ref == 'refs/heads/main'
+    if: github.event.label.name == 'cicd:bridge-containers' ||  github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write
@@ -845,7 +845,7 @@ jobs:
           ./scripts/movement/manifest bridge-service
 
   bridge-setup-build:
-    # if: github.event.label.name == 'cicd:bridge-containers' ||  github.ref == 'refs/heads/main'
+    if: github.event.label.name == 'cicd:bridge-containers' ||  github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write
