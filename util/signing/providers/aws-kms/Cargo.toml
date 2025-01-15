@@ -12,6 +12,8 @@ rust-version = { workspace = true }
 [dependencies]
 movement-signer = { workspace = true }
 aws-sdk-kms = { workspace = true }
+aws-config = { workspace = true }
+anyhow = { workspace = true }
 
 [lints]
 workspace = true

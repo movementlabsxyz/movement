@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use maptos_execution_util::config::MaptosConfig;
 use mcr_settlement_config::Config as McrConfig;
-use movement_celestia_da_util::config::CelestiaDaLightNodeConfig;
+use movement_da_util::config::CelestiaDaLightNodeConfig;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {

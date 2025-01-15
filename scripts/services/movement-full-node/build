@@ -25,5 +25,5 @@ echo "Built movement-full-node-setup!"
 echo "Bulding movement-util..."
 cargo build $CARGO_PROFILE_FLAGS -p movement-util
 echo "Built movement-util!"
-cargo build $CARGO_PROFILE_FLAGS -p movement-celestia-da-util --bin wait-for-celestia-light-node
+cargo build $CARGO_PROFILE_FLAGS -p movement-da-util --bin wait-for-celestia-light-node
 echo "Built wait-for-celestia-light-node!"

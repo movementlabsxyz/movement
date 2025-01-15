@@ -33,7 +33,7 @@ processes:
     
   movement-full-node:
     command: |
-      movement-full-node
+      movement-full-node run
     depends_on:
       movement-celestia-da-light-node:
         condition: process_healthy

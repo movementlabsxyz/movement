@@ -114,6 +114,7 @@ impl MovementPartialNode<Executor> {
 			.celestia_da_light_node_config
 			.movement_da_light_node_http1()
 		{
+			debug!("Creating the http1 client");
 			MovementDaLightNodeClient::try_http1(
 				format!(
 					"{}://{}:{}",
@@ -125,6 +126,7 @@ impl MovementPartialNode<Executor> {
 			)
 			.context("Failed to connect to light node")?
 		} else {
+			debug!("Creating the http2 client");
 			MovementDaLightNodeClient::try_http2(
 				format!(
 					"{}://{}:{}",

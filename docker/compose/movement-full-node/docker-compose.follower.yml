@@ -14,6 +14,7 @@ services:
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       MOVEMENT_SYNC: ${MOVEMENT_SYNC:?MOVEMENT_SYNC is not set}
       MAYBE_RUN_LOCAL: "false"
+      RUST_LOG: info,aws_sdk_s3=debug
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement
       # mount if exists

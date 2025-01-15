@@ -25,7 +25,7 @@ impl Local {
 	> {
 		let da_light_node_config = config.celestia_da_light_node.clone();
 
-		let new_da_light_node_config = movement_celestia_da_light_node_setup::setup(
+		let new_da_light_node_config = movement_da_light_node_setup::setup(
 			dot_movement.clone(),
 			da_light_node_config,
 		)

@@ -1,7 +1,7 @@
 //! Task to process incoming transactions and write to DA
 
 use maptos_dof_execution::SignedTransaction;
-use movement_celestia_da_util::config::Config as LightNodeConfig;
+use movement_da_util::config::Config as LightNodeConfig;
 use movement_da_light_node_client::MovementDaLightNodeClient;
 use movement_da_light_node_proto::{BatchWriteRequest, BlobWrite};
 
