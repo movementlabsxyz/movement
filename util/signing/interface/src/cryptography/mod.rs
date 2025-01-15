@@ -18,7 +18,17 @@ macro_rules! fixed_size {
 				use crate::cryptography::CryptoMaterialError;
 
 				if bytes.len() != Self::BYTES_LEN {
+<<<<<<< HEAD
 					Err(CryptoMaterialError("invalid length".into()))?;
+=======
+					Err(anyhow::anyhow!(
+						"invalid length for {}, wants {}, got {}, for {:?}",
+						stringify!($Name),
+						Self::BYTES_LEN,
+						bytes.len(),
+						bytes
+					))?;
+>>>>>>> l-monninger/stream-size-fix
 				}
 
 				let mut inner = [0u8; Self::BYTES_LEN];
@@ -28,6 +38,7 @@ macro_rules! fixed_size {
 			}
 		}
 
+<<<<<<< HEAD
 		impl crate::cryptography::TryFromBytes for $Name {
 			fn try_from_bytes(bytes: &[u8]) -> Result<Self, anyhow::Error> {
 				if bytes.len() != Self::BYTES_LEN {
@@ -47,6 +58,8 @@ macro_rules! fixed_size {
 			}
 		}
 
+=======
+>>>>>>> l-monninger/stream-size-fix
 		impl crate::cryptography::ToBytes for $Name {
 			fn to_bytes(&self) -> Vec<u8> {
 				self.0.to_vec()
@@ -74,7 +87,10 @@ pub trait ToBytes {
 pub trait Curve {
 	type PublicKey: TryFromBytes + ToBytes + Send + Sync + std::fmt::Debug;
 	type Signature: TryFromBytes + ToBytes + Send + Sync + std::fmt::Debug;
+<<<<<<< HEAD
 	type Digest: TryFromBytes + ToBytes + Send + Sync + std::fmt::Debug;
+=======
+>>>>>>> l-monninger/stream-size-fix
 }
 
 /// Errors that occur when parsing signature or key material from byte sequences.

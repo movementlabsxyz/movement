@@ -1,0 +1,27 @@
+[package]
+name = "movement-da-light-node-da"
+version = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+authors = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
+publish = { workspace = true }
+rust-version = { workspace = true }
+
+[features]
+integration-tests = []
+
+[dependencies]
+thiserror = { workspace = true }
+movement-da-util = { workspace = true }
+movement-da-light-node-proto = { workspace = true }
+futures = { workspace = true }
+tokio-stream = { workspace = true }
+async-stream = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+anyhow = { workspace = true }
+
+[lints]
+workspace = true

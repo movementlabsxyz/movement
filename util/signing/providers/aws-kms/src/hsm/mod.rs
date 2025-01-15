@@ -4,8 +4,11 @@ use aws_sdk_kms::primitives::Blob;
 use aws_sdk_kms::Client;
 use movement_signer::cryptography::TryFromBytes;
 use movement_signer::{cryptography::Curve, SignerError, Signing};
+<<<<<<< HEAD
 use secp256k1::ecdsa::Signature as Secp256k1Signature;
 use secp256k1::Error as Secp256k1Error;
+=======
+>>>>>>> l-monninger/stream-size-fix
 pub mod key;
 
 /// An AWS KMS HSM.
@@ -24,6 +27,7 @@ where
 		Self { client, key_id, _cryptography_marker: std::marker::PhantomData }
 	}
 
+<<<<<<< HEAD
 	/// Tries to create a new AWS KMS HSM from the environment
 	pub async fn try_from_env_with_key(key_id: String) -> Result<Self, anyhow::Error> {
 		let config = aws_config::load_from_env().await;
@@ -31,6 +35,8 @@ where
 		Ok(AwsKms::new(client, key_id))
 	}
 
+=======
+>>>>>>> l-monninger/stream-size-fix
 	/// Sets the key id
 	pub fn set_key_id(&mut self, key_id: String) {
 		self.key_id = key_id;
@@ -62,12 +68,16 @@ where
 	}
 }
 
+<<<<<<< HEAD
 #[async_trait::async_trait]
+=======
+>>>>>>> l-monninger/stream-size-fix
 impl<C> Signing<C> for AwsKms<C>
 where
 	C: Curve + AwsKmsCryptographySpec + Sync,
 {
 	async fn sign(&self, message: &[u8]) -> Result<C::Signature, SignerError> {
+<<<<<<< HEAD
 		println!("Preparing to sign message. Message bytes: {:?}", message);
 
 		let blob = Blob::new(message);
@@ -79,6 +89,13 @@ where
 			.client
 			.sign()
 			.key_id(key_id)
+=======
+		let blob = Blob::new(message);
+		let request = self
+			.client
+			.sign()
+			.key_id(&self.key_id)
+>>>>>>> l-monninger/stream-size-fix
 			.signing_algorithm(C::signing_algorithm_spec())
 			.message(blob);
 
@@ -87,6 +104,7 @@ where
 			.await
 			.map_err(|e| SignerError::Internal(format!("Failed to sign: {}", e.to_string())))?;
 
+<<<<<<< HEAD
 		println!("Response signature (DER format): {:?}", res.signature());
 
 		// Convert DER signature to raw format using secp256k1
@@ -105,6 +123,17 @@ where
 
 		// Convert the raw signature into the appropriate curve type
 		let signature = <C as Curve>::Signature::try_from_bytes(&raw_signature).map_err(|e| {
+=======
+		let signature = <C as Curve>::Signature::try_from_bytes(
+			res.signature()
+				.context("No signature available")
+				.map_err(|e| {
+					SignerError::Internal(format!("Failed to convert signature: {}", e.to_string()))
+				})?
+				.as_ref(),
+		)
+		.map_err(|e| {
+>>>>>>> l-monninger/stream-size-fix
 			SignerError::Internal(format!("Failed to convert signature: {}", e.to_string()))
 		})?;
 
@@ -132,6 +161,7 @@ where
 		Ok(public_key)
 	}
 }
+<<<<<<< HEAD
 
 // Utility function for DER-to-raw signature conversion
 pub fn der_to_raw_signature(der: &[u8]) -> Result<[u8; 64], String> {
@@ -176,3 +206,5 @@ pub fn der_to_raw_signature(der: &[u8]) -> Result<[u8; 64], String> {
 
 	Ok(raw_signature)
 }
+=======
+>>>>>>> l-monninger/stream-size-fix

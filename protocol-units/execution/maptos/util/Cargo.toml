@@ -15,7 +15,7 @@ path = "src/lib.rs"
 [dependencies]
 aptos-types = { workspace = true }
 aptos-account-whitelist = { workspace = true }
-movement-celestia-da-util = { workspace = true }
+movement-da-util = { workspace = true }
 anyhow = { workspace = true }
 aptos-crypto = { workspace = true, features = ["cloneable-private-keys"] }
 rand = { workspace = true }
