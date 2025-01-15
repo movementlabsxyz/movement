@@ -4,6 +4,7 @@ use clap::Parser;
 use movement_da_light_node_client::MovementDaLightNodeClient;
 use movement_da_light_node_proto::{blob_response, StreamReadFromHeightRequest};
 use tokio_stream::StreamExt;
+use tracing::info;
 
 #[derive(Debug, Parser, Clone)]
 #[clap(rename_all = "kebab-case", about = "Streams the DA blocks")]
@@ -26,7 +27,7 @@ impl StreamBlocks {
 			.await
 			.context("Failed to stream blocks from DA")?;
 
-		println!("Streaming blocks from DA");
+		info!("streaming blocks from DA");
 
 		while let Some(block_res) = blocks_from_da.next().await {
 			let response = block_res.context("Failed to get block")?;
@@ -43,10 +44,10 @@ impl StreamBlocks {
 					anyhow::bail!("Invalid blob type in response")
 				}
 			};
-			println!("{} {}  {}", hex::encode(block_id), block_timestamp, da_height);
+			info!("{} {}  {}", hex::encode(block_id), block_timestamp, da_height);
 		}
 
-		println!("Finished streaming blocks from DA");
+		info!("Finished streaming blocks from DA");
 
 		Ok(())
 	}
