@@ -20,6 +20,8 @@ use std::sync::{atomic::AtomicU64, Arc};
 use std::time::Duration;
 
 use memseq::{Sequencer, Transaction};
+use movement_da_light_node_celestia::da::Da as CelestiaDa;
+use movement_da_light_node_digest_store::da::Da as DigestStoreDa;
 use movement_da_light_node_proto as grpc;
 use movement_da_light_node_proto::blob_response::BlobType;
 use movement_da_light_node_proto::light_node_service_server::LightNodeService;
@@ -65,14 +67,13 @@ where
 	}
 }
 
-impl<C, Da> LightNodeRuntime for LightNode<C, Da>
+impl<C> LightNodeRuntime for LightNode<C, DigestStoreDa<CelestiaDa>>
 where
 	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
 	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
 	SignatureSize<C>: ArrayLength<u8>,
 	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 	FieldBytesSize<C>: ModulusSize,
-	Da: DaOperations,
 {
 	async fn try_from_config(config: Config) -> Result<Self, anyhow::Error> {
 		info!("Initializing LightNode in sequencer mode from environment.");

@@ -81,6 +81,8 @@ movement-da-light-node-setup = { path = "protocol-units/da/movement/protocol/set
 movement-da-light-node-verifier = { path = "protocol-units/da/movement/protocol/verifier" }
 movement-da-light-node-prevalidator = { path = "protocol-units/da/movement/protocol/prevalidator" }
 movement-da-light-node-da = { path = "protocol-units/da/movement/protocol/da" }
+movement-da-light-node-celestia = { path = "protocol-units/da/movement/providers/celestia" }
+movement-da-light-node-digest-store = { path = "protocol-units/da/movement/providers/digest-store" }
 ## execution
 maptos-dof-execution = { path = "protocol-units/execution/maptos/dof" }
 maptos-opt-executor = { path = "protocol-units/execution/maptos/opt-executor" }

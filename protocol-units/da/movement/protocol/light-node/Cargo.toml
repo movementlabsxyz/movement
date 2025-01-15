@@ -43,6 +43,8 @@ ecdsa = { workspace = true }
 k256 = { workspace = true }
 thiserror = { workspace = true }
 movement-da-light-node-da = { workspace = true }
+movement-da-light-node-celestia = { workspace = true }
+movement-da-light-node-digest-store = { workspace = true }
 
 # sequencer
 memseq = { workspace = true, optional = true }

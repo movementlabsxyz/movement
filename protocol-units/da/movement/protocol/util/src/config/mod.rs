@@ -4,6 +4,7 @@ use celestia_rpc::Client;
 use celestia_types::nmt::Namespace;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
+use std::path::PathBuf;
 
 pub mod common;
 pub mod local;
@@ -246,6 +247,14 @@ impl Config {
 			Config::Local(local) => local.access_control.whitelisted_accounts(),
 			Config::Arabica(local) => local.access_control.whitelisted_accounts(),
 			Config::Mocha(local) => local.access_control.whitelisted_accounts(),
+		}
+	}
+
+	pub fn digest_store_db_path(&self) -> PathBuf {
+		match self {
+			Config::Local(local) => local.digest_store.digest_store_db_path.clone(),
+			Config::Arabica(local) => local.digest_store.digest_store_db_path.clone(),
+			Config::Mocha(local) => local.digest_store.digest_store_db_path.clone(),
 		}
 	}
 }

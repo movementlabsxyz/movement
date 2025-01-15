@@ -1,5 +1,7 @@
 use k256::Secp256k1;
 use movement_da_light_node::{LightNode, Manager};
+use movement_da_light_node_celestia::da::Da as CelestiaDa;
+use movement_da_light_node_digest_store::da::Da as DigestStoreDa;
 
 use std::env;
 
@@ -15,7 +17,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 	let config_path = dot_movement.get_config_json_path();
 	let config_file = tokio::fs::File::open(config_path).await?;
 	// todo: consider whether LightNode implementation should encapsulate signing type
-	let manager = Manager::<LightNode<Secp256k1>>::new(config_file).await?;
+	let manager =
+		Manager::<LightNode<Secp256k1, DigestStoreDa<CelestiaDa>>>::new(config_file).await?;
 	manager.try_run().await?;
 
 	Ok(())

@@ -4,7 +4,9 @@ use tokio_stream::{Stream, StreamExt};
 use tracing::info;
 
 // FIXME: glob imports are bad style
+use movement_da_light_node_celestia::da::Da as CelestiaDa;
 use movement_da_light_node_da::DaOperations;
+use movement_da_light_node_digest_store::da::Da as DigestStoreDa;
 use movement_da_light_node_proto::light_node_service_server::LightNodeService;
 use movement_da_light_node_proto::*;
 use movement_da_util::{blob::ir::data::InnerSignedBlobV1Data, config::Config};
@@ -55,33 +57,27 @@ where
 	}
 }
 
-impl<C, Da> LightNodeRuntime for LightNode<C, Da>
+impl<C> LightNodeRuntime for LightNode<C, DigestStoreDa<CelestiaDa>>
 where
 	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
 	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
 	SignatureSize<C>: ArrayLength<u8>,
 	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 	FieldBytesSize<C>: ModulusSize,
-	Da: DaOperations,
 {
 	/// Tries to create a new LightNode instance from the toml config file.
-	async fn try_from_config(config: Config, da: Da) -> Result<Self, anyhow::Error> {
+	async fn try_from_config(config: Config) -> Result<Self, anyhow::Error> {
 		let signing_key_str = config.da_signing_key();
 		let hex_bytes = hex::decode(signing_key_str)?;
 
 		let signing_key = SigningKey::from_bytes(hex_bytes.as_slice().try_into()?)
 			.map_err(|e| anyhow::anyhow!("Failed to create signing key: {}", e))?;
 
-		Ok(Self {
-			config: config.clone(),
-			/*verifier: Arc::new(Box::new(Verifier::<C>::new(
-				client,
-				config.celestia_namespace(),
-				config.da_signers_sec1_keys(),
-			))),*/
-			da: Arc::new(da),
-			signing_key,
-		})
+		let client = Arc::new(config.connect_celestia().await?);
+		let celestia_da = CelestiaDa::new(config.celestia_namespace(), client);
+		let digest_store_da = DigestStoreDa::try_new(celestia_da, config.digest_store_db_path())?;
+
+		Ok(Self { config: config.clone(), da: Arc::new(digest_store_da), signing_key })
 	}
 
 	fn try_service_address(&self) -> Result<String, anyhow::Error> {
