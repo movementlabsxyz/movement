@@ -4,6 +4,7 @@ environment:
 
 processes:
 
+  # Test whether the full node is resistant to Gas DOS
   gas-dos-test:
     command: |
       cargo run --bin movement-tests-gas-dos
