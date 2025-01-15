@@ -1,5 +1,5 @@
 use axum::{
-        extract::State, http::StatusCode, routing::{get, post}, Extension, Json, Router
+        http::StatusCode, routing::{get, post}, Extension, Json, Router
 };
 use movement_signer::cryptography::ToBytes;
 use movement_signer::{cryptography::Curve, Signer, Signing};
@@ -33,11 +33,13 @@ where
                 .route("/sign", post(sign_handler::<O, C>))
                 .route("/verify", post(verify_handler))
                 .route("/health", get(health_handler))
-                .route("/public_key/get", get(get_public_key))
-                .route("/public_key/set", post(set_public_key))
-                .with_state(hsm)
-                .layer(Extension(app_state))
+                .route("/public_key/get", get(get_public_key)) // AppState only
+                .route("/public_key/set", post(set_public_key)) // AppState only
+                .layer(Extension(hsm))                         // Add HSM as a separate layer
+                .layer(Extension(app_state))                   // Add AppState as a separate layer
 }
+
+    
 
 // Health check endpoint
 async fn health_handler() -> &'static str {
@@ -46,7 +48,8 @@ async fn health_handler() -> &'static str {
 
 // /sign endpoint for signing a message
 async fn sign_handler<O, C>(
-        State(hsm): State<Arc<Mutex<Signer<O, C>>>>,
+        Extension(hsm): Extension<Arc<Mutex<Signer<O, C>>>>,
+        Extension(app_state): Extension<Arc<AppState>>,
         Json(payload): Json<SignRequest>,
 ) -> Result<Json<SignedResponse>, StatusCode>
 where
@@ -88,12 +91,20 @@ where
 
         println!("Retrieved public key: {:?}", public_key.to_bytes());
 
+        // Update the app state with the retrieved public key
+        {
+                let mut app_public_key = app_state.public_key.lock().await;
+                *app_public_key = Some(public_key.to_bytes());
+                println!("Public key updated in AppState: {:?}", public_key.to_bytes());
+        }
+
         // Return both the signature and public key
         Ok(Json(SignedResponse {
                 signature: signature.to_bytes(),
                 public_key: public_key.to_bytes(),
         }))
 }
+    
 
 // Request and response types for /sign
 #[derive(Debug, Deserialize)]
@@ -206,6 +217,8 @@ pub async fn get_public_key(
                 Err(StatusCode::NOT_FOUND)
         }
 }
+
+
 
 #[derive(Deserialize)]
 pub struct SetPublicKeyRequest {

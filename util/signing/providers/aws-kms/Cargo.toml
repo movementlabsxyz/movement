@@ -16,6 +16,7 @@ aws-types = { workspace = true }
 aws-config = { workspace = true }
 movement-signer = { workspace = true }
 secp256k1 = "0.24"
+simple_asn1 = "0.6"
 
 [lints]
 workspace = true
