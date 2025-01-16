@@ -12,27 +12,27 @@ on:
 
 jobs:
   m1-da-light-node:
-    uses: ./.github/workflows/reusable-build-push.yml
+    uses: ./.github/workflows/container-build-push.yml
     with:
       image_name: m1-da-light-node
     secrets: inherit
 
   m1-da-light-node-manifest:
     needs: m1-da-light-node
-    uses: ./.github/workflows/reusable-manifest.yml
+    uses: ./.github/workflows/container-manifest.yml
     with:
       image_name: m1-da-light-node
     secrets: inherit
 
   m1-da-light-node-celestia-appd:
-    uses: ./.github/workflows/reusable-build-push.yml
+    uses: ./.github/workflows/container-build-push.yml
     with:
       image_name: m1-da-light-node-celestia-appd
     secrets: inherit
 
   m1-da-light-node-celestia-appd-manifest:
     needs: m1-da-light-node-celestia-appd
-    uses: ./.github/workflows/reusable-manifest.yml
+    uses: ./.github/workflows/container-manifest.yml
     with:
       image_name: m1-da-light-node-celestia-appd
     secrets: inherit
@@ -41,14 +41,14 @@ jobs:
 
   # Example for suzuka-full-node-setup
   suzuka-full-node-setup:
-    uses: ./.github/workflows/reusable-build-push.yml
+    uses: ./.github/workflows/container-build-push.yml
     with:
       image_name: suzuka-full-node-setup
     secrets: inherit
 
   suzuka-full-node-setup-manifest:
     needs: suzuka-full-node-setup
-    uses: ./.github/workflows/reusable-manifest.yml
+    uses: ./.github/workflows/container-manifest.yml
     with:
       image_name: suzuka-full-node-setup
     secrets: inherit
