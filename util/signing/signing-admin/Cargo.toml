@@ -8,13 +8,15 @@ license = "MIT"
 repository = "https://github.com/your/repo"
 
 [dependencies]
+anyhow = "1.0"
 async-trait = { workspace = true }
 base64 = { workspace = true }
 clap = { version = "4.0", features = ["derive"] }
-anyhow = "1.0"
 tokio = { version = "1", features = ["full"] }
 reqwest = { version = "0.11", features = ["json"] }
 serde_json = { workspace = true }
+simple_asn1 = "0.6"
+uuid = { workspace = true }
 
 [[bin]]
 name = "signing-admin"

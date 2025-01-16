@@ -2,7 +2,6 @@ use clap::{Parser, Subcommand};
 use anyhow::Result;
 use signing_admin::{aws::AwsKey, key_manager::KeyManager, vault::VaultKey, notify::notify_application};
 
-
 #[derive(Parser, Debug)]
 #[clap(name = "signing-admin", about = "CLI for managing signing keys")]
 struct CLI {
@@ -22,9 +21,6 @@ enum Commands {
 
                 #[clap(long, help = "Backend to use (e.g., 'vault', 'aws')")]
                 backend: String,
-
-                #[clap(long, help = "Key ID (required for AWS key rotation)")]
-                key_id: Option<String>, // Optional for Vault, required for AWS
         },
 }
 
@@ -37,9 +33,8 @@ async fn main() -> Result<()> {
                         canonical_string,
                         application_url,
                         backend,
-                        key_id,
                 } => {
-                        rotate_key(canonical_string, application_url, backend, key_id).await?;
+                        rotate_key(canonical_string, application_url, backend).await?;
                 }
         }
 
@@ -50,16 +45,10 @@ async fn rotate_key(
         canonical_string: String,
         application_url: String,
         backend: String,
-        key_id: Option<String>,
 ) -> Result<()> {
         // Select the appropriate key manager based on the backend
         let key_manager: Box<dyn KeyManager<PublicKey = Vec<u8>>> = match backend.as_str() {
-                "aws" => {
-                        let key_id = key_id.ok_or_else(|| {
-                                anyhow::anyhow!("Key ID is required for AWS key rotation")
-                        })?;
-                        Box::new(AwsKey::new(key_id))
-                }
+                "aws" => Box::new(AwsKey::new()),
                 "vault" => Box::new(VaultKey::new()),
                 _ => return Err(anyhow::anyhow!("Unsupported backend: {}", backend)),
         };
@@ -78,4 +67,3 @@ async fn rotate_key(
 
         Ok(())
 }
-
