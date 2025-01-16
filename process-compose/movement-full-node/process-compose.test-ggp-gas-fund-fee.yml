@@ -5,7 +5,7 @@ environment:
 processes:
   test-ggp-gas-fund-fee:
     command: |
-      cargo run --bin movement-tests-e2e-ggp-gas-fund-fee
+      cargo run --bin movement-tests-e2e-ggp-fund-fee
     depends_on:
       movement-full-node:
         condition: process_healthy
