@@ -146,8 +146,9 @@ pub struct Config {
 impl Default for Config {
 	fn default() -> Self {
 		Self {
-			movement_da_light_node_connection_protocol: default_celestia_rpc_connection_protocol(),
-			celestia_rpc_connection_protocol: default_movement_da_light_node_connection_protocol(),
+			movement_da_light_node_connection_protocol:
+				default_movement_da_light_node_connection_protocol(),
+			celestia_rpc_connection_protocol: default_celestia_rpc_connection_protocol(),
 			celestia_rpc_connection_hostname: default_celestia_rpc_connection_hostname(),
 			celestia_rpc_connection_port: default_celestia_rpc_connection_port(),
 			celestia_websocket_connection_hostname: default_celestia_websocket_connection_hostname(
