@@ -8,6 +8,102 @@ async fn test_lock_mint() -> Result<()> {
     // Define bridge config path
     let mock_config = Config::default();
 
+    // tracing::info!("Before compile move modules");
+	// let compile_output = Command::new("movement")
+	// 	.args(&["move", "compile", "--package-dir", "protocol-units/bridge/move-modules/"])
+	// 	.stdout(Stdio::piped())
+	// 	.stderr(Stdio::piped())
+	// 	.output()?;
+
+	// if !compile_output.stdout.is_empty() {
+	// 	tracing::info!("move compile stdout: {}", String::from_utf8_lossy(&compile_output.stdout));
+	// }
+	// if !compile_output.stderr.is_empty() {
+	// 	tracing::info!("move compile stderr: {}", String::from_utf8_lossy(&compile_output.stderr));
+	// }
+	// let enable_bridge_feature_output = Command::new("movement")
+	// 		.args(&[
+	// 			"move",
+	// 			"run-script",
+	// 			"--compiled-script-path",
+	// 			"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/enable_bridge_feature.mv",
+	// 			"--profile",
+	// 			"default",
+	// 			"--assume-yes",
+	// 		])
+	// 		.stdout(Stdio::piped())
+	// 		.stderr(Stdio::piped())
+	// 		.output()?;
+
+	// if !enable_bridge_feature_output.stdout.is_empty() {
+	// 	println!(
+	// 		"run-script enable_bridge_feature stdout: {}",
+	// 		String::from_utf8_lossy(&enable_bridge_feature_output.stdout)
+	// 	);
+	// }
+	// if !enable_bridge_feature_output.stderr.is_empty() {
+	// 	eprintln!(
+	// 		"run-script enable_bridge_feature stderr: {}",
+	// 		String::from_utf8_lossy(&enable_bridge_feature_output.stderr)
+	// 	);
+	// }
+
+	// let store_mint_burn_caps_output = Command::new("movement")
+	// 		.args(&[
+	// 			"move",
+	// 			"run-script",
+	// 			"--compiled-script-path",
+	// 			"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/store_mint_burn_caps.mv",
+	// 			"--profile",
+	// 			"default",
+	// 			"--assume-yes",
+	// 		])
+	// 		.stdout(Stdio::piped())
+	// 		.stderr(Stdio::piped())
+	// 		.output()?;
+
+	// if !store_mint_burn_caps_output.stdout.is_empty() {
+	// 	println!(
+	// 		"run-script store_mint_burn_caps stdout: {}",
+	// 		String::from_utf8_lossy(&store_mint_burn_caps_output.stdout)
+	// 	);
+	// }
+	// if !store_mint_burn_caps_output.stderr.is_empty() {
+	// 	eprintln!(
+	// 		"run-script store_mint_burn_caps stderr: {}",
+	// 		String::from_utf8_lossy(&store_mint_burn_caps_output.stderr)
+	// 	);
+	// }
+
+	// let update_bridge_relayer_output = Command::new("movement")
+	// 		.args(&[
+	// 			"move",
+	// 			"run-script",
+	// 			"--compiled-script-path",
+	// 			"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/update_bridge_relayer.mv",
+	// 			"--args",
+	// 			"address:0xf90391c81027f03cdea491ed8b36ffaced26b6df208a9b569e5baf2590eb9b16",
+	// 			"--profile",
+	// 			"default",
+	// 			"--assume-yes",
+	// 		])
+	// 		.stdout(Stdio::piped())
+	// 		.stderr(Stdio::piped())
+	// 		.output()?;
+
+	// if !update_bridge_relayer_output.stdout.is_empty() {
+	// 	println!(
+	// 		"run-script update_bridge_relayer stdout: {}",
+	// 		String::from_utf8_lossy(&update_bridge_relayer_output.stdout)
+	// 	);
+	// }
+	// if !update_bridge_relayer_output.stderr.is_empty() {
+	// 	eprintln!(
+	// 		"run-script update_bridge_relayer update_bridge_relayer stderr: {}",
+	// 		String::from_utf8_lossy(&update_bridge_relayer_output.stderr)
+	// 	);
+	// }
+
     tracing::info!("sending 1 coin to dead");
 
     // Transfer 1 coin to 0x...dead
@@ -74,22 +170,22 @@ async fn test_lock_mint() -> Result<()> {
     tracing::info!("get bridge relayer");
 
     // Get the bridge relayer address
-    let bridge_relayer_output = Command::new("movement")
-        .args(&[
-            "move",
-            "view",
-            "--function-id",
-            "0x1::native_bridge::get_bridge_relayer",
-        ])
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()
-        .context("Failed to view bridge relayer")?;
+    // let bridge_relayer_output = Command::new("movement")
+    //     .args(&[
+    //         "move",
+    //         "view",
+    //         "--function-id",
+    //         "0x1::native_bridge::get_bridge_relayer",
+    //     ])
+    //     .stdin(Stdio::piped())
+    //     .stdout(Stdio::piped())
+    //     .stderr(Stdio::piped())
+    //     .output()
+    //     .context("Failed to view bridge relayer")?;
 
-    let bridge_relayer = extract_result_value(&bridge_relayer_output.stdout)?;
+    // let bridge_relayer = extract_result_value(&bridge_relayer_output.stdout)?;
 
-    tracing::info!("get bridge relayer balance");
+    // tracing::info!("get bridge relayer balance");
 
     // let balance_output = Command::new("movement")
     //     .args(&[
