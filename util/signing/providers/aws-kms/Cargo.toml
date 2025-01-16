@@ -10,8 +10,13 @@ publish = { workspace = true }
 rust-version = { workspace = true }
 
 [dependencies]
-movement-signer = { workspace = true }
+anyhow = { workspace = true }
 aws-sdk-kms = { workspace = true }
+aws-types = { workspace = true }
+aws-config = { workspace = true }
+movement-signer = { workspace = true }
+secp256k1 = "0.24"
+simple_asn1 = "0.6"
 
 [lints]
 workspace = true
