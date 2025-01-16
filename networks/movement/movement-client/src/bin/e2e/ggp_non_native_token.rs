@@ -1,4 +1,9 @@
 use anyhow::Context;
+use aptos_sdk::rest_client::Transaction;
+use aptos_sdk::types::account_address::AccountAddress;
+use aptos_sdk::{move_types::language_storage::TypeTag, transaction_builder::TransactionFactory};
+use aptos_types::chain_id::ChainId;
+use aptos_types::transaction::TransactionPayload;
 use movement_client::{
 	coin_client::CoinClient,
 	rest_client::{Client, FaucetClient},
@@ -10,6 +15,11 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use tokio::process::Command;
 use url::Url;
+
+/// limit of gas unit
+const GAS_UNIT_LIMIT: u64 = 100000;
+/// minimum price of gas unit of aptos chains
+pub const GAS_UNIT_PRICE: u64 = 100;
 
 static SUZUKA_CONFIG: Lazy<movement_config::Config> = Lazy::new(|| {
 	let dot_movement = dot_movement::DotMovement::try_from_env().unwrap();
@@ -123,8 +133,6 @@ async fn main() -> Result<(), anyhow::Error> {
 		);
 	}
 
-	println!("Move module build");
-
 	// Create the proposer account and fund it from the faucet
 	let proposer = LocalAccount::generate(&mut rand::rngs::OsRng);
 	faucet_client
@@ -150,4 +158,29 @@ async fn main() -> Result<(), anyhow::Error> {
 		.context("Failed to get beneficiary's account balance")?;
 
 	Ok(())
+}
+
+pub async fn send_aptos_transaction(
+	client: &Client,
+	signer: &mut LocalAccount,
+	payload: TransactionPayload,
+) -> anyhow::Result<Transaction> {
+	let state = client
+		.get_ledger_information()
+		.await
+		.context("Failed in getting chain id")?
+		.into_inner();
+
+	let transaction_factory = TransactionFactory::new(ChainId::new(state.chain_id))
+		.with_gas_unit_price(100)
+		.with_max_gas_amount(GAS_UNIT_LIMIT);
+
+	let signed_tx = signer.sign_with_transaction_builder(transaction_factory.payload(payload));
+
+	let response = client
+		.submit_and_wait(&signed_tx)
+		.await
+		.map_err(|e| anyhow::anyhow!(e.to_string()))?
+		.into_inner();
+	Ok(response)
 }

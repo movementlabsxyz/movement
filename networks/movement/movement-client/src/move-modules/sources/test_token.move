@@ -9,6 +9,7 @@ module test_token::TestToken {
     struct MintCapability has store, key {}
 
     /// Initialize the TEST token
+    // In real world this wouldn't be public! 
     public fun initialize_test_token(account: &signer) acquires MintCapability {
         // Register the token in the account
         register<TEST>(account);
