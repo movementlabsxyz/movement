@@ -14,6 +14,10 @@ pub enum MovementDaLightNodeClient {
 
 impl MovementDaLightNodeClient {
 	/// Creates an http1 connection to the light node service.
+	#[deprecated(
+		since = "0.1.0",
+		note = "Please use `try_http2` instead. This function will remain deprecated until [tonic_web] stream bugs are fixed."
+	)]
 	pub fn try_http1(connection_string: &str) -> Result<Self, anyhow::Error> {
 		Ok(Self::Http1(http1::Http1::try_new(connection_string)?))
 	}

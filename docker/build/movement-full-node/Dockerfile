@@ -21,6 +21,8 @@ FROM alpine:latest
 COPY --from=builder /tmp/build/target/release/movement-full-node /app/movement-full-node
 COPY --from=builder /tmp/runtime/nix/store /nix/store
 
+RUN apk add --upgrade --no-cache ca-certificates && update-ca-certificates
+
 # Set the binary as the entrypoint
 ENTRYPOINT ["/app/movement-full-node"]
 
