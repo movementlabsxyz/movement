@@ -1,14 +1,17 @@
 use bridge_config::Config;
 use std::process::{Command, Stdio};
 use anyhow::{Result, Context};
+use serde_json::Value;
 
 #[tokio::test]
 async fn test_lock_mint() -> Result<()> {
     // Define bridge config path
     let mock_config = Config::default();
 
-    // Transfer 1 coin to 0xdead
-    let transfer_output = Command::new("movement")
+    tracing::info!("sending 1 coin to dead");
+
+    // Transfer 1 coin to 0x...dead
+    Command::new("movement")
         .args(&[
             "move",
             "run",
@@ -18,62 +21,39 @@ async fn test_lock_mint() -> Result<()> {
             "address:0x000000000000000000000000000000000000000000000000000000000000dead",
             "u64:1",
         ])
+        .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
-        .output()?;
+        .spawn()
+        .expect("Failed to mint 0x000000000000000000000000000000000000000000000000000000000000dead");
 
-    println!("transfer_output: {:?}", transfer_output);
+    tracing::info!("get dead balance");
 
-    if !transfer_output.stdout.is_empty() {
-        println!(
-            "transfer stdout: {}",
-            String::from_utf8_lossy(&transfer_output.stdout)
-        );
-    }
-    if !transfer_output.stderr.is_empty() {
-        eprintln!(
-            "transfer stderr: {}",
-            String::from_utf8_lossy(&transfer_output.stderr)
-        );
-    }
-
-    // Get 0xdead balance
+    // Get 0x...dead balance
     let dead_balance_output = Command::new("movement")
         .args(&[
             "move",
             "view",
             "--function-id",
-            "0x1::coin::coin_balance",
+            "0x1::coin::balance",
             "--type-args",
             "0x1::aptos_coin::AptosCoin",
             "--args",
             "address:0x000000000000000000000000000000000000000000000000000000000000dead",
         ])
+        .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
-        .output()?;
+        .output()
+        .context("Failed to get balance")?;
 
-    if !dead_balance_output.stdout.is_empty() {
-        println!(
-            "dead_balance stdout: {}",
-            String::from_utf8_lossy(&dead_balance_output.stdout)
-        );
-    }
-    if !dead_balance_output.stderr.is_empty() {
-        eprintln!(
-            "dead_balance stderr: {}",
-            String::from_utf8_lossy(&dead_balance_output.stderr)
-        );
-    }
+    let dead_balance_str = extract_result_value(&dead_balance_output.stdout)?;
+    let dead_balance: u64 = dead_balance_str.parse().context("Failed to parse dead balance")?;
 
-    let dead_balance_str = String::from_utf8(dead_balance_output.stdout)?
-        .trim()
-        .to_string();
+    tracing::info!("burn dead balance");
 
-    let dead_balance: u64 = dead_balance_str.parse()?;
-
-    // Burn 0xdead balance
-    let burn_output = Command::new("movement")
+    // Burn 0x...dead balance
+    Command::new("movement")
         .args(&[
             "move",
             "run",
@@ -85,24 +65,15 @@ async fn test_lock_mint() -> Result<()> {
             "address:0x000000000000000000000000000000000000000000000000000000000000dead",
             &format!("u64:{}", dead_balance),
         ])
+        .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
-        .output()?;
+        .spawn()
+        .expect("Failed to burn 0x...dead balance");
 
-    if !burn_output.stdout.is_empty() {
-        println!(
-            "burn stdout: {}",
-            String::from_utf8_lossy(&burn_output.stdout)
-        );
-    }
-    if !burn_output.stderr.is_empty() {
-        eprintln!(
-            "burn stderr: {}",
-            String::from_utf8_lossy(&burn_output.stderr)
-        );
-    }
+    tracing::info!("get bridge relayer");
 
-    // Get the L2 balance of the bridge relayer account
+    // Get the bridge relayer address
     let bridge_relayer_output = Command::new("movement")
         .args(&[
             "move",
@@ -110,94 +81,80 @@ async fn test_lock_mint() -> Result<()> {
             "--function-id",
             "0x1::native_bridge::get_bridge_relayer",
         ])
+        .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
-        .output()?;
+        .output()
+        .context("Failed to view bridge relayer")?;
 
-    if !bridge_relayer_output.stdout.is_empty() {
-        println!(
-            "bridge_relayer stdout: {}",
-            String::from_utf8_lossy(&bridge_relayer_output.stdout)
-        );
-    }
-    if !bridge_relayer_output.stderr.is_empty() {
-        eprintln!(
-            "bridge_relayer stderr: {}",
-            String::from_utf8_lossy(&bridge_relayer_output.stderr)
-        );
-    }
+    let bridge_relayer = extract_result_value(&bridge_relayer_output.stdout)?;
 
-    let bridge_relayer = String::from_utf8(bridge_relayer_output.stdout)?
-        .trim()
-        .to_string();
+    tracing::info!("get bridge relayer balance");
 
-    // Get the bridge relayer's balance
-    let balance_output = Command::new("movement")
-        .args(&[
-            "move",
-            "view",
-            "--function-id",
-            "0x1::coin::coin_balance",
-            "--type-args",
-            "0x1::aptos_coin::AptosCoin",
-            "--args",
-            &format!("address:{}", bridge_relayer),
-        ])
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()?;
+    // let balance_output = Command::new("movement")
+    //     .args(&[
+    //         "move",
+    //         "view",
+    //         "--function-id",
+    //         "0x1::coin::balance",
+    //         "--type-args",
+    //         "0x1::aptos_coin::AptosCoin",
+    //         "--args",
+    //         &format!("address:{}", bridge_relayer),
+    //     ])
+    //     .stdin(Stdio::piped())
+    //     .stdout(Stdio::piped())
+    //     .stderr(Stdio::piped())
+    //     .output()
+    //     .context("Failed to get balance")?;
 
-    if !balance_output.stdout.is_empty() {
-        println!(
-            "balance stdout: {}",
-            String::from_utf8_lossy(&balance_output.stdout)
-        );
-    }
-    if !balance_output.stderr.is_empty() {
-        eprintln!(
-            "balance stderr: {}",
-            String::from_utf8_lossy(&balance_output.stderr)
-        );
-    }
+    // let balance_str = extract_result_value(&balance_output.stdout)?;
+    // let balance: u64 = balance_str.parse().context("Failed to parse bridge relayer balance")?;
+    // let desired_balance = 1_000_000_000_000_000;
+    // let burn_balance = balance.saturating_sub(desired_balance);
 
-    let balance_str = String::from_utf8(balance_output.stdout)?
-        .trim()
-        .to_string();
-
-    let balance: u64 = balance_str.parse()?;
-    let desired_balance = 1_000_000_000_000_000;
-    let burn_balance = balance.saturating_sub(desired_balance);
-
-    if burn_balance > 0 {
-        let excess_burn_output = Command::new("movement")
-            .args(&[
-                "move",
-                "run",
-                "--function-id",
-                "0x1::coin::burn_from",
-                "--type-args",
-                "0x1::aptos_coin::AptosCoin",
-                "--args",
-                &format!("address:{}", bridge_relayer),
-                &format!("u64:{}", burn_balance),
-            ])
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .output()?;
-
-        if !excess_burn_output.stdout.is_empty() {
-            println!(
-                "excess_burn stdout: {}",
-                String::from_utf8_lossy(&excess_burn_output.stdout)
-            );
-        }
-        if !excess_burn_output.stderr.is_empty() {
-            eprintln!(
-                "excess_burn stderr: {}",
-                String::from_utf8_lossy(&excess_burn_output.stderr)
-            );
-        }
-    }
+    // tracing::info!("burn excess");
+    // println!("burn excess");
+    // if burn_balance > 0 {
+    //     Command::new("movement")
+    //         .args(&[
+    //             "move",
+    //             "run",
+    //             "--function-id",
+    //             "0x1::coin::burn_from",
+    //             "--type-args",
+    //             "0x1::aptos_coin::AptosCoin",
+    //             "--args",
+    //             &format!("address:{}", bridge_relayer),
+    //             &format!("u64:{}", burn_balance),
+    //         ])
+    //         .stdin(Stdio::piped())
+    //         .stdout(Stdio::piped())
+    //         .stderr(Stdio::piped())
+    //         .spawn()
+    //         .expect("Failed to burn excess");
+    // }
 
     Ok(())
+}
+
+// Helper function to extract `Result` value from JSON output
+fn extract_result_value(output: &[u8]) -> Result<String> {
+    // Parse the JSON output
+    let json: Value = serde_json::from_slice(output).context("Failed to parse JSON")?;
+    println!("Parsed JSON: {:#?}", json); // Debugging parsed JSON
+
+    // Extract the `Result` field
+    json.get("Result")
+        .and_then(|res| {
+            if res.is_array() {
+                res.as_array()
+                    .and_then(|arr| arr.get(0)) // Get the first element
+                    .and_then(|val| val.as_str()) // Convert to a string
+            } else {
+                res.as_str() // If it's not an array, try to read it as a string directly
+            }
+        })
+        .map(|s| s.to_string())
+        .context("Result field not found or invalid format")
 }

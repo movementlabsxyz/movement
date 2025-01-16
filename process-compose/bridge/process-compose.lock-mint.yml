@@ -5,7 +5,7 @@ environment:
 processes:
   lock-mint-test:
     command: |
-      cargo test --test lock_mint -- test_lock_mint -- --nocapture --test-threads=1
+      cargo test -p bridge-integration-tests test_lock_mint -- --nocapture --test-threads=1
     depends_on:
       bridge:
         condition: process_healthy
