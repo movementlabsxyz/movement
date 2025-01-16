@@ -88,7 +88,7 @@ where
 		})?;
 	
 		// Log the full response
-		println!("Signature response: {:?}", res.signature);
+		println!("Signature response: {:?}", res);
 	
 		if !res.signature.starts_with("vault") {
 			return Err(SignerError::Internal("Invalid signature format".to_string()));
@@ -118,20 +118,24 @@ where
 	async fn public_key(&self) -> Result<C::PublicKey, SignerError> {
 		println!("Attempting to read key: {}", self.key_name);
 	
-		// Try to read the key from Vault
-		let res = transit_key::read(&self.client, self.mount_name.as_str(), self.key_name.replace("/", "_").as_str())
-			.await
-			.map_err(|e| {
-				println!(
-					"Error reading key '{}' from mount '{}': {:?}",
-					self.key_name, self.mount_name, e
-				);
-				SignerError::Internal(format!("Failed to read key '{}': {:?}", self.key_name, e))
-			})?;
+		// Read the key from Vault
+		let res = transit_key::read(
+			&self.client,
+			self.mount_name.as_str(),
+			self.key_name.replace("/", "_").as_str(),
+		)
+		.await
+		.map_err(|e| {
+			println!(
+				"Error reading key '{}' from mount '{}': {:?}",
+				self.key_name, self.mount_name, e
+			);
+			SignerError::Internal(format!("Failed to read key '{}': {:?}", self.key_name, e))
+		})?;
 	
 		println!("Key read successfully: {:?}", res);
 	
-		// Match the key type and process accordingly
+		// Match the key type and determine the latest version
 		let public_key = match res.keys {
 			ReadKeyData::Symmetric(_) => {
 				println!("Key '{}' is symmetric and not supported", self.key_name);
@@ -140,35 +144,31 @@ where
 				));
 			}
 			ReadKeyData::Asymmetric(keys) => {
-				println!("Key '{}' is asymmetric: {:?}", self.key_name, keys);
+				// Use the number of items in the map as the version
+				let latest_version = keys.len().to_string();
+				println!("Using key version: {}", latest_version);
 	
-				let key = keys
-					.values()
-					.next()
-					.context("No key found in response")
-					.map_err(|e| {
-						println!("No key found in Vault response: {:?}", e);
-						SignerError::KeyNotFound
-					})?;
-				println!("Public key (base64): {}", key.public_key);
+				let key = keys.get(&latest_version).context("Key version not found").map_err(|e| {
+					println!("Key version '{}' not found: {:?}", latest_version, e);
+					SignerError::KeyNotFound
+				})?;
+				println!("Using public key for version {}: {}", latest_version, key.public_key);
 	
-				base64::decode(key.public_key.as_str())
-					.map_err(|e| {
-						println!("Failed to decode public key (base64): {:?}", e);
-						SignerError::Internal(e.to_string())
-					})?
+				base64::decode(&key.public_key).map_err(|e| {
+					println!("Failed to decode public key: {:?}", e);
+					SignerError::Internal(e.to_string())
+				})?
 			}
 		};
 	
-		println!("Decoded public key bytes: {:?}", public_key);
-	
-		// Convert the public key bytes to the specific curve type
-		Ok(C::PublicKey::try_from_bytes(public_key.as_slice()).map_err(|e| {
+		Ok(C::PublicKey::try_from_bytes(&public_key).map_err(|e| {
 			println!(
 				"Error converting public key to curve type: {:?}. Bytes: {:?}",
 				e, public_key
 			);
 			SignerError::Internal(e.to_string())
 		})?)
-	}	
+	}
+	
+		
 }
