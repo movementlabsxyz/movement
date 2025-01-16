@@ -2,7 +2,8 @@ use crate::config::common::{
 	default_celestia_rpc_connection_hostname, default_celestia_rpc_connection_port,
 	default_celestia_rpc_connection_protocol, default_celestia_websocket_connection_hostname,
 	default_celestia_websocket_connection_port, default_movement_da_light_node_connection_hostname,
-	default_movement_da_light_node_connection_port, default_movement_da_light_node_http1,
+	default_movement_da_light_node_connection_port,
+	default_movement_da_light_node_connection_protocol, default_movement_da_light_node_http1,
 	default_movement_da_light_node_listen_hostname, default_movement_da_light_node_listen_port,
 };
 use ecdsa::SigningKey;
@@ -122,7 +123,7 @@ pub struct Config {
 	pub movement_da_light_node_listen_port: u16,
 
 	/// The protocol for movement-celestia-da-light-node connection
-	#[serde(default = "default_celestia_rpc_connection_protocol")]
+	#[serde(default = "default_movement_da_light_node_connection_protocol")]
 	pub movement_da_light_node_connection_protocol: String,
 
 	/// The hostname for movement-celestia-da-light-node connection
