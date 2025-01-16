@@ -71,34 +71,46 @@ async fn main() -> Result<(), anyhow::Error> {
 	println!("Node URL: {:?}", NODE_URL.as_str());
 	println!("Faucet URL: {:?}", FAUCET_URL.as_str());
 
-	// let init_status = Command::new("movement")
-	// 	.args([
-	// 		"init",
-	// 		"--network",
-	// 		"custom",
-	// 		"--rest-url",
-	// 		NODE_URL.as_str(),
-	// 		"--faucet-url",
-	// 		FAUCET_URL.as_str(),
-	// 		"--assume-no",
-	// 	])
-	// 	.status()
-	// 	.await
-	// 	.expect("Failed to execute `movement init` command");
-	//
-	// if !init_status.success() {
-	// 	anyhow::bail!("Initializing Move module failed. Please check the `movement init` command.");
-	// }
+	// Use the account value generated from the init command
+	// found in ./movement/config.yaml
+	// NB: This is a determinisitic privake key generated from the init command
+	// used for testing purposes only
+	let init_status = Command::new("movement")
+		.args([
+			"init",
+			"--network",
+			"custom",
+			"--rest-url",
+			NODE_URL.as_str(),
+			"--faucet-url",
+			FAUCET_URL.as_str(),
+			"--assume-yes",
+			"--private-key",
+			"0x97121e4f94695b6fb65a24899c5cce23cc0dad5a1c07caaeb6dd555078d14ba7",
+		])
+		.status()
+		.await
+		.expect("Failed to execute `movement init` command");
 
-	//println!("init status: {:?}", init_status);
+	if !init_status.success() {
+		anyhow::bail!("Initializing Move module failed. Please check the `movement init` command.");
+	}
 
 	let target_dir = PathBuf::from(crate_dir).join("src").join("move-modules");
 	let target_dir_clone = target_dir.clone();
 
 	println!("target_dir: {:?}", target_dir);
 
+	// account associated with private key used for init
 	let publish_status = Command::new("movement")
-		.args(["move", "publish", "--skip-fetch-latest-git-deps"])
+		.args([
+			"move",
+			"publish",
+			"--skip-fetch-latest-git-deps",
+			"--sender-account",
+			"30005dbbb9b324b18bed15aca87770512ec7807410fabb0420494d9865e56fa4",
+			"--assume-yes",
+		])
 		.current_dir(target_dir_clone)
 		.status()
 		.await
