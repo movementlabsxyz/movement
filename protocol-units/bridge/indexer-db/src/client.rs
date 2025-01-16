@@ -92,12 +92,13 @@ impl Client {
 		Ok(BridgeEventPackage { initiated_events, completed_events })
 	}
 
-	/// Inserts a new transfer action into the database.
-	pub fn insert_transfer_action(
+	/// Inserts a new relayer actions into the database.
+	pub fn insert_relayer_actions(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
 		action_type: TransferActionType,
 	) -> Result<(), diesel::result::Error> {
+		tracing::info!("Indexer insert_relayer_actions bridge_transfer_id:{bridge_transfer_id} action_type: {action_type}");
 		match action_type {
 			TransferActionType::CompleteBridgeTransfer {
 				bridge_transfer_id,

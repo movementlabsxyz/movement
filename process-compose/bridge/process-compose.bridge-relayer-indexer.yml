@@ -1,0 +1,26 @@
+version: "3"
+
+processes:
+
+  postgres:
+    command: |
+      ./scripts/postgres/start-dev
+
+    readiness_probe:
+      initial_delay_seconds: 5
+      exec:
+        command: echo "true"
+  bridge:
+    command: |
+      RUST_BACKTRACE=1 bridge-service
+    readiness_probe:
+      initial_delay_seconds: 5
+      exec:
+        command: echo "true"
+    depends_on:
+      postgres:
+        condition: process_healthy
+      bridge_setup:
+        condition: process_healthy
+    environment: 
+      - "RELAYER_START_INDEXER=true"
