@@ -14,3 +14,4 @@ rev = "movement"
 subdir = "aptos-move/framework/aptos-framework"
 
 [dev-dependencies]
+hex = { workspace = true }

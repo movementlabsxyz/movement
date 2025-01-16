@@ -1,9 +1,11 @@
 use anyhow::Context;
+use aptos_sdk::move_types::ident_str;
+use aptos_sdk::move_types::language_storage::ModuleId;
 use aptos_sdk::rest_client::Transaction;
 use aptos_sdk::types::account_address::AccountAddress;
 use aptos_sdk::{move_types::language_storage::TypeTag, transaction_builder::TransactionFactory};
 use aptos_types::chain_id::ChainId;
-use aptos_types::transaction::TransactionPayload;
+use aptos_types::transaction::{EntryFunction, TransactionPayload};
 use movement_client::{
 	coin_client::CoinClient,
 	rest_client::{Client, FaucetClient},
@@ -20,6 +22,11 @@ use url::Url;
 const GAS_UNIT_LIMIT: u64 = 100000;
 /// minimum price of gas unit of aptos chains
 pub const GAS_UNIT_PRICE: u64 = 100;
+const ACCOUNT_ADDRESS: &str = "30005dbbb9b324b18bed15aca87770512ec7807410fabb0420494d9865e56fa4";
+//
+// NB: This is a determinisitic privake key generated from the init command
+// used for testing purposes only
+const PRIVATE_KEY: &str = "0x97121e4f94695b6fb65a24899c5cce23cc0dad5a1c07caaeb6dd555078d14ba7";
 
 static SUZUKA_CONFIG: Lazy<movement_config::Config> = Lazy::new(|| {
 	let dot_movement = dot_movement::DotMovement::try_from_env().unwrap();
@@ -66,7 +73,6 @@ static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
 
 	Url::from_str(faucet_listen_url.as_str()).unwrap()
 });
-// <:!:section_1c
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
@@ -83,8 +89,6 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	// Use the account value generated from the init command
 	// found in ./movement/config.yaml
-	// NB: This is a determinisitic privake key generated from the init command
-	// used for testing purposes only
 	let init_status = Command::new("movement")
 		.args([
 			"init",
@@ -96,7 +100,7 @@ async fn main() -> Result<(), anyhow::Error> {
 			FAUCET_URL.as_str(),
 			"--assume-yes",
 			"--private-key",
-			"0x97121e4f94695b6fb65a24899c5cce23cc0dad5a1c07caaeb6dd555078d14ba7",
+			PRIVATE_KEY,
 		])
 		.status()
 		.await
@@ -118,7 +122,7 @@ async fn main() -> Result<(), anyhow::Error> {
 			"publish",
 			"--skip-fetch-latest-git-deps",
 			"--sender-account",
-			"30005dbbb9b324b18bed15aca87770512ec7807410fabb0420494d9865e56fa4",
+			ACCOUNT_ADDRESS,
 			"--assume-yes",
 		])
 		.current_dir(target_dir_clone)
@@ -132,6 +136,33 @@ async fn main() -> Result<(), anyhow::Error> {
 			"Publishing Move module failed. Please check the `movement move publish` command."
 		);
 	}
+
+	let args = vec![bcs::to_bytes(
+		&AccountAddress::from_hex_literal(&format!(
+			"0x{}",
+			hex::encode(&AccountAddress::from_str(ACCOUNT_ADDRESS).unwrap().to_vec())
+		))
+		.unwrap(),
+	)
+	.unwrap()];
+
+	let init_payload = make_aptos_payload(
+		AccountAddress::from_str(
+			"0x97121e4f94695b6fb65a24899c5cce23cc0dad5a1c07caaeb6dd555078d14ba7",
+		)
+		.unwrap(),
+		"test_token",
+		"initialize_test_token",
+		vec![],
+		args,
+	);
+
+	let tx_response = send_aptos_transaction(
+		&rest_client,
+		&mut LocalAccount::from_private_key(PRIVATE_KEY, 0)?,
+		init_payload,
+	)
+	.await?;
 
 	// Create the proposer account and fund it from the faucet
 	let proposer = LocalAccount::generate(&mut rand::rngs::OsRng);
@@ -160,7 +191,8 @@ async fn main() -> Result<(), anyhow::Error> {
 	Ok(())
 }
 
-pub async fn send_aptos_transaction(
+#[allow(dead_code)]
+async fn send_aptos_transaction(
 	client: &Client,
 	signer: &mut LocalAccount,
 	payload: TransactionPayload,
@@ -183,4 +215,19 @@ pub async fn send_aptos_transaction(
 		.map_err(|e| anyhow::anyhow!(e.to_string()))?
 		.into_inner();
 	Ok(response)
+}
+
+fn make_aptos_payload(
+	package_address: AccountAddress,
+	module_name: &'static str,
+	function_name: &'static str,
+	ty_args: Vec<TypeTag>,
+	args: Vec<Vec<u8>>,
+) -> TransactionPayload {
+	TransactionPayload::EntryFunction(EntryFunction::new(
+		ModuleId::new(package_address, ident_str!(module_name).to_owned()),
+		ident_str!(function_name).to_owned(),
+		ty_args,
+		args,
+	))
 }
