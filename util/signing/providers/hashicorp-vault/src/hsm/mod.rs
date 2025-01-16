@@ -72,11 +72,11 @@ where
 {
 	async fn sign(&self, message: &[u8]) -> Result<C::Signature, SignerError> {
 		println!("Key name: {:?}", self.key_name.replace("/", "_").as_str());
+	
 		let res = data::sign(
 			&self.client,
 			self.mount_name.as_str(),
 			self.key_name.replace("/", "_").as_str(),
-			// convert bytes vec<u8> to base64 string
 			base64::encode(message).as_str(),
 			None,
 		)
@@ -86,48 +86,89 @@ where
 			println!("{}", error_msg);
 			SignerError::Internal(error_msg)
 		})?;
-
-		// the signature should be encoded vault:v1:<signature> check for match and split off the signature
-		// 1. check for match
-		if !res.signature.starts_with("vault:v1:") {
+	
+		// Log the full response
+		println!("Signature response: {:?}", res);
+	
+		if !res.signature.starts_with("vault") {
 			return Err(SignerError::Internal("Invalid signature format".to_string()));
 		}
-		// 2. split off the signature
+	
 		let signature_str = res.signature.split_at(9).1;
-
-		// decode base64 string to vec<u8>
+	
 		let signature = base64::decode(signature_str)
-			.context("Failed to decode signature")
+			.context("Failed to decode base64 signature from Vault")
 			.map_err(|e| SignerError::Internal(e.to_string()))?;
-
-		// Sign the message using HashiCorp Vault
-		Ok(C::Signature::try_from_bytes(signature.as_slice())
-			.map_err(|e| SignerError::Internal(e.to_string()))?)
+	
+		if signature.len() != 64 {
+			return Err(SignerError::Internal(format!(
+				"Unexpected signature length: {} bytes",
+				signature.len()
+			)));
+		}
+	
+		let parsed_signature = C::Signature::try_from_bytes(&signature).map_err(|e| {
+			SignerError::Internal(format!("Failed to parse signature into expected format: {:?}", e))
+		})?;
+	
+		Ok(parsed_signature)
 	}
+	
 
 	async fn public_key(&self) -> Result<C::PublicKey, SignerError> {
-		let res = transit_key::read(&self.client, self.mount_name.as_str(), self.key_name.as_str())
-			.await
-			.context("Failed to read key")
-			.map_err(|e| SignerError::Internal(e.to_string()))?;
-
+		println!("Attempting to read key: {}", self.key_name);
+	
+		// Read the key from Vault
+		let res = transit_key::read(
+			&self.client,
+			self.mount_name.as_str(),
+			self.key_name.replace("/", "_").as_str(),
+		)
+		.await
+		.map_err(|e| {
+			println!(
+				"Error reading key '{}' from mount '{}': {:?}",
+				self.key_name, self.mount_name, e
+			);
+			SignerError::Internal(format!("Failed to read key '{}': {:?}", self.key_name, e))
+		})?;
+	
+		println!("Key read successfully: {:?}", res);
+	
+		// Match the key type and determine the latest version
 		let public_key = match res.keys {
 			ReadKeyData::Symmetric(_) => {
-				return Err(SignerError::Internal("Symmetric keys are not supported".to_string()));
+				println!("Key '{}' is symmetric and not supported", self.key_name);
+				return Err(SignerError::Internal(
+					"Symmetric keys are not supported".to_string(),
+				));
 			}
 			ReadKeyData::Asymmetric(keys) => {
-				let key = keys
-					.values()
-					.next()
-					.context("No key found")
-					.map_err(|_e| SignerError::KeyNotFound)?;
-				base64::decode(key.public_key.as_str())
-					.context("Failed to decode public key")
-					.map_err(|e| SignerError::Internal(e.to_string()))?
+				// Use the number of items in the map as the version
+				let latest_version = keys.len().to_string();
+				println!("Using key version: {}", latest_version);
+	
+				let key = keys.get(&latest_version).context("Key version not found").map_err(|e| {
+					println!("Key version '{}' not found: {:?}", latest_version, e);
+					SignerError::KeyNotFound
+				})?;
+				println!("Using public key for version {}: {}", latest_version, key.public_key);
+	
+				base64::decode(&key.public_key).map_err(|e| {
+					println!("Failed to decode public key: {:?}", e);
+					SignerError::Internal(e.to_string())
+				})?
 			}
 		};
-
-		Ok(C::PublicKey::try_from_bytes(public_key.as_slice())
-			.map_err(|e| SignerError::Internal(e.to_string()))?)
+	
+		Ok(C::PublicKey::try_from_bytes(&public_key).map_err(|e| {
+			println!(
+				"Error converting public key to curve type: {:?}. Bytes: {:?}",
+				e, public_key
+			);
+			SignerError::Internal(e.to_string())
+		})?)
 	}
+	
+		
 }
