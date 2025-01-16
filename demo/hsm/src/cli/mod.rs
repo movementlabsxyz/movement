@@ -1,6 +1,4 @@
 pub mod server;
-pub mod rotate_key;
-
 use clap::Parser;
 
 #[derive(Parser)]
