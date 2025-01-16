@@ -14028,6 +14028,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "signing-admin"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap 4.5.21",
+ "reqwest 0.11.27",
+ "tokio",
+]
+
+[[package]]
 name = "simd-adler32"
 version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
