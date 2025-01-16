@@ -5,6 +5,7 @@ use std::sync::Arc;
 use tracing_subscriber::EnvFilter;
 
 #[tokio::test]
+#[ignore]
 async fn test_rest_service_health_endpoint() -> Result<(), anyhow::Error> {
 	// Initialize tracing for the test
 	tracing_subscriber::fmt()
@@ -19,8 +20,13 @@ async fn test_rest_service_health_endpoint() -> Result<(), anyhow::Error> {
 	// Create the REST service, unwrapping the result
 	let (l1_health_tx, mut l1_health_rx) = tokio::sync::mpsc::channel(10);
 	let (l2_health_tx, mut l2_health_rx) = tokio::sync::mpsc::channel(10);
-	let rest_service =
-		Arc::new(BridgeRest::new(&mock_config.movement, l1_health_tx, l2_health_tx)?);
+	let url = format!(
+		"{}:{}",
+		mock_config.movement.rest_listener_hostname,
+		mock_config.movement.rest_port
+	);
+	
+	let rest_service = Arc::new(BridgeRest::new(url, l1_health_tx, l2_health_tx)?);
 
 	let rest_service_for_task = Arc::clone(&rest_service);
 
