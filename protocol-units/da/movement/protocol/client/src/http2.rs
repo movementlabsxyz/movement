@@ -15,7 +15,7 @@ impl Http2 {
 		// Dynamically configure TLS based on the scheme (http or https)
 		let endpoint = if connection_string.starts_with("https://") {
 			endpoint
-				.tls_config(ClientTlsConfig::new().with_native_roots())?
+				.tls_config(ClientTlsConfig::new().with_enabled_roots())?
 				.http2_keep_alive_interval(Duration::from_secs(10))
 		} else {
 			endpoint

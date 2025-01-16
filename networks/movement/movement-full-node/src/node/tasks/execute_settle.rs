@@ -73,18 +73,22 @@ where
 		let mut blocks_from_da = self
 			.da_light_node_client
 			.stream_read_from_height(StreamReadFromHeightRequest { height: synced_height })
-			.await?;
+			.await
+			.map_err(|e| {
+				error!("Failed to stream blocks from DA: {:?}", e);
+				e
+			})?;
 
 		loop {
 			select! {
 				Some(res) = blocks_from_da.next() => {
 					let response = res.context("failed to get next block from DA")?;
-					debug!("Received block from DA");
+					info!("Received block from DA");
 					self.process_block_from_da(response).await?;
 				}
 				Some(res) = self.commitment_events.next() => {
 					let event = res.context("failed to get commitment event")?;
-					debug!("Received commitment event");
+					info!("Received commitment event");
 					self.process_commitment_event(event).await?;
 				}
 				else => break,

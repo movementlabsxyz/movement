@@ -11,7 +11,7 @@ use movement_rest::MovementRest;
 use anyhow::Context;
 use tokio::sync::mpsc;
 use tokio::try_join;
-use tracing::debug;
+use tracing::{debug, info};
 
 pub struct MovementPartialNode<T> {
 	executor: T,
@@ -114,30 +114,26 @@ impl MovementPartialNode<Executor> {
 			.celestia_da_light_node_config
 			.movement_da_light_node_http1()
 		{
-			debug!("Creating the http1 client");
-			MovementDaLightNodeClient::try_http1(
-				format!(
-					"{}://{}:{}",
-					light_node_connection_protocol,
-					light_node_connection_hostname,
-					light_node_connection_port
-				)
-				.as_str(),
-			)
-			.context("Failed to connect to light node")?
+			let connection_string = format!(
+				"{}://{}:{}",
+				light_node_connection_protocol,
+				light_node_connection_hostname,
+				light_node_connection_port
+			);
+			info!("Creating the http1 client {}", connection_string);
+			MovementDaLightNodeClient::try_http1(connection_string.as_str())
+				.context("Failed to connect to light node")?
 		} else {
-			debug!("Creating the http2 client");
-			MovementDaLightNodeClient::try_http2(
-				format!(
-					"{}://{}:{}",
-					light_node_connection_protocol,
-					light_node_connection_hostname,
-					light_node_connection_port
-				)
-				.as_str(),
-			)
-			.await
-			.context("Failed to connect to light node")?
+			let connection_string = format!(
+				"{}://{}:{}",
+				light_node_connection_protocol,
+				light_node_connection_hostname,
+				light_node_connection_port
+			);
+			info!("Creating the http2 client {}", connection_string);
+			MovementDaLightNodeClient::try_http2(connection_string.as_str())
+				.await
+				.context("Failed to connect to light node")?
 		};
 
 		debug!("Creating the executor");
