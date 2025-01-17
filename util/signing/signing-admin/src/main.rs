@@ -1,6 +1,6 @@
+use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
-use anyhow::Result;
-use signing_admin::{aws::AwsKey, key_manager::KeyManager, vault::VaultKey, notify::notify_application};
+use signing_admin::{aws::AwsKey, key_manager::KeyManager, notify::notify_application, vault::VaultKey};
 
 #[derive(Parser, Debug)]
 #[clap(name = "signing-admin", about = "CLI for managing signing keys")]
@@ -46,22 +46,20 @@ async fn rotate_key(
         application_url: String,
         backend: String,
 ) -> Result<()> {
-        // Select the appropriate key manager based on the backend
         let key_manager: Box<dyn KeyManager<PublicKey = Vec<u8>>> = match backend.as_str() {
-                "aws" => Box::new(AwsKey::new()),
                 "vault" => Box::new(VaultKey::new()),
+                "aws" => {
+                        Box::new(AwsKey::new())
+                },
                 _ => return Err(anyhow::anyhow!("Unsupported backend: {}", backend)),
         };
 
-        // Rotate the key
-        let new_key_id = key_manager.rotate_key(&canonical_string)?;
+        let new_key_id = key_manager.rotate_key(&canonical_string).await?;
         println!("Key rotated. New Key ID: {}", new_key_id);
 
-        // Fetch the new public key
-        let new_public_key = key_manager.fetch_public_key(&new_key_id)?;
+        let new_public_key = key_manager.fetch_public_key(&new_key_id).await?;
         println!("Retrieved public key: {:?}", new_public_key);
 
-        // Notify the application
         notify_application(&application_url, &new_public_key).await?;
         println!("Application updated with new public key: {:?}", new_public_key);
 

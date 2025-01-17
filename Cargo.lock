@@ -14033,6 +14033,8 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "aws-config",
+ "aws-sdk-kms",
  "base64 0.13.1",
  "clap 4.5.21",
  "reqwest 0.11.27",
@@ -14040,6 +14042,7 @@ dependencies = [
  "simple_asn1 0.6.2",
  "tokio",
  "uuid",
+ "vaultrs",
 ]
 
 [[package]]
