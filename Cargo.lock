@@ -4194,13 +4194,17 @@ version = "0.0.2"
 dependencies = [
  "anyhow",
  "bigdecimal",
+ "bridge-config",
  "bridge-util",
  "chrono",
  "diesel",
  "diesel_migrations",
+ "godfig",
  "hex",
  "serde",
  "tokio",
+ "tokio-stream",
+ "tracing",
 ]
 
 [[package]]
@@ -4210,6 +4214,7 @@ dependencies = [
  "alloy",
  "alloy-contract",
  "alloy-network",
+ "alloy-primitives 0.7.7",
  "alloy-sol-types",
  "anyhow",
  "aptos-framework",
@@ -4222,8 +4227,10 @@ dependencies = [
  "bridge-grpc",
  "bridge-service",
  "bridge-setup",
+ "bridge-util",
  "chrono",
  "dot-movement",
+ "ethabi",
  "futures",
  "godfig",
  "hex",
@@ -4231,6 +4238,7 @@ dependencies = [
  "rand 0.7.3",
  "reqwest 0.12.9",
  "serde_json",
+ "tiny-keccak",
  "tokio",
  "tokio-stream",
  "tonic 0.12.3",
@@ -4318,13 +4326,17 @@ name = "bridge-util"
 version = "0.0.2"
 dependencies = [
  "alloy",
+ "anyhow",
  "async-trait",
  "derive_more 0.99.18",
+ "futures",
  "hex",
  "rand 0.7.3",
  "serde",
  "thiserror 1.0.69",
+ "tokio",
  "tokio-stream",
+ "tracing",
 ]
 
 [[package]]
@@ -7681,7 +7693,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2 0.4.10",
+ "socket2 0.5.7",
  "tokio",
  "tower-service",
  "tracing",
@@ -15817,7 +15829,7 @@ dependencies = [
  "errno",
  "js-sys",
  "libc",
- "rustix 0.37.27",
+ "rustix 0.38.40",
  "wasi 0.11.0+wasi-snapshot-preview1",
  "wasm-bindgen",
  "winapi 0.3.9",
