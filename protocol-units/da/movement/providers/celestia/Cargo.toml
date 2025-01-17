@@ -23,6 +23,7 @@ async-stream = { workspace = true }
 anyhow = { workspace = true }
 tracing = { workspace = true }
 tonic = { workspace = true }
+movement-signer = { workspace = true }
 
 [features]
 default = []

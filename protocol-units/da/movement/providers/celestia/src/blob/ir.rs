@@ -1,9 +1,13 @@
 use anyhow::Context;
 use celestia_types::{consts::appconsts::AppVersion, nmt::Namespace, Blob as CelestiaBlob};
 use movement_da_util::blob::ir::blob::DaBlob;
+use movement_signer::cryptography::Curve;
 
 /// Converts a [CelestiaBlob] into a [DaBlob].
-pub fn into_da_blob(blob: CelestiaBlob) -> Result<DaBlob, anyhow::Error> {
+pub fn into_da_blob<C>(blob: CelestiaBlob) -> Result<DaBlob<C>, anyhow::Error>
+where
+	C: Curve,
+{
 	// decompress blob.data with zstd
 	let decompressed =
 		zstd::decode_all(blob.data.as_slice()).context("failed to decompress blob")?;
@@ -14,13 +18,18 @@ pub fn into_da_blob(blob: CelestiaBlob) -> Result<DaBlob, anyhow::Error> {
 	Ok(blob)
 }
 
-pub struct CelestiaDaBlob(pub DaBlob, pub Namespace);
+pub struct CelestiaDaBlob<C>(pub DaBlob<C>, pub Namespace)
+where
+	C: Curve;
 
 /// Tries to form a CelestiaBlob from a CelestiaDaBlob
-impl TryFrom<CelestiaDaBlob> for CelestiaBlob {
+impl<C> TryFrom<CelestiaDaBlob<C>> for CelestiaBlob
+where
+	C: Curve,
+{
 	type Error = anyhow::Error;
 
-	fn try_from(ir_blob: CelestiaDaBlob) -> Result<Self, Self::Error> {
+	fn try_from(ir_blob: CelestiaDaBlob<C>) -> Result<Self, Self::Error> {
 		// Extract the inner blob and namespace
 		let CelestiaDaBlob(ir_blob, namespace) = ir_blob;
 

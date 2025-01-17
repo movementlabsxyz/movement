@@ -1,54 +1,70 @@
 use crate::blob::ir::data::InnerSignedBlobV1Data;
 use crate::blob::ir::id::Id;
-use movement_celestia_light_node_signer::Signer;
 use movement_da_light_node_proto::*;
 use movement_signer::{
-	cryptography::{Curve, ToBytes, TryFromBytes},
-	Digester, Signing, Verify,
+	cryptography::{Curve, TryFromBytes},
+	Digester, Verify,
 };
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct InnerSignedBlobV1 {
-	pub data: InnerSignedBlobV1Data,
+pub struct InnerSignedBlobV1<C>
+where
+	C: Curve,
+{
+	pub data: InnerSignedBlobV1Data<C>,
 	pub signature: Vec<u8>,
 	pub signer: Vec<u8>,
 	pub id: Id,
 }
 
-impl InnerSignedBlobV1 {
-	pub fn try_verify<C>(&self) -> Result<(), anyhow::Error>
-	where
-		C: Curve + Verify<C>,
-	{
-		let mut hasher = C::Digest::new();
-		hasher.update(self.data.blob.as_slice());
-		hasher.update(&self.data.timestamp.to_be_bytes());
-		hasher.update(self.id.as_slice());
+impl<C> InnerSignedBlobV1<C>
+where
+	C: Curve + Verify<C> + Digester<C>,
+{
+	pub fn new(
+		data: InnerSignedBlobV1Data<C>,
+		signature: Vec<u8>,
+		signer: Vec<u8>,
+		id: Id,
+	) -> Self {
+		Self { data, signature, signer, id }
+	}
 
-		let verifying_key = VerifyingKey::<C>::from_sec1_bytes(self.signer.as_slice())?;
-		let signature = ecdsa::Signature::from_bytes(self.signature.as_slice().into())?;
+	pub fn try_verify(&self) -> Result<(), anyhow::Error> {
+		let public_key = C::PublicKey::try_from_bytes(self.signer.as_slice())?;
+		let signature = C::Signature::try_from_bytes(self.signature.as_slice())?;
 
-		match verifying_key.verify_digest(hasher, &signature) {
-			Ok(_) => Ok(()),
-			Err(_) => Err(anyhow::anyhow!("Failed to verify signature")),
+		if !C::verify(self.data.blob.as_slice(), &signature, &public_key)? {
+			return Err(anyhow::anyhow!("signature verification failed"))?;
 		}
+
+		Ok(())
 	}
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum DaBlob {
-	SignedV1(InnerSignedBlobV1),
+pub enum DaBlob<C>
+where
+	C: Curve,
+{
+	SignedV1(InnerSignedBlobV1<C>),
 	DigestV1(Vec<u8>),
 }
 
-impl From<InnerSignedBlobV1> for DaBlob {
-	fn from(inner: InnerSignedBlobV1) -> Self {
+impl<C> From<InnerSignedBlobV1<C>> for DaBlob<C>
+where
+	C: Curve,
+{
+	fn from(inner: InnerSignedBlobV1<C>) -> Self {
 		DaBlob::SignedV1(inner)
 	}
 }
 
-impl DaBlob {
+impl<C> DaBlob<C>
+where
+	C: Curve + Verify<C> + Digester<C>,
+{
 	pub fn blob(&self) -> &[u8] {
 		match self {
 			DaBlob::SignedV1(inner) => inner.data.blob.as_slice(),
@@ -88,16 +104,9 @@ impl DaBlob {
 		}
 	}
 
-	pub fn verify_signature<C>(&self) -> Result<(), anyhow::Error>
-	where
-		C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
-		Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
-		SignatureSize<C>: ArrayLength<u8>,
-		AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-		FieldBytesSize<C>: ModulusSize,
-	{
+	pub fn verify_signature(&self) -> Result<(), anyhow::Error> {
 		match self {
-			DaBlob::SignedV1(inner) => inner.try_verify::<C>(),
+			DaBlob::SignedV1(inner) => inner.try_verify(),
 			DaBlob::DigestV1(_) => Ok(()),
 		}
 	}
@@ -152,18 +161,20 @@ impl DaBlob {
 pub mod test {
 
 	use super::*;
-	use ecdsa::SigningKey;
+	use movement_da_light_node_signer::Signer;
+	use movement_signer::cryptography::secp256k1::Secp256k1;
+	use movement_signer_local::signer::LocalSigner;
 
-	#[test]
-	fn test_cannot_change_id_and_verify() -> Result<(), anyhow::Error> {
+	#[tokio::test]
+	async fn test_cannot_change_id_and_verify() -> Result<(), anyhow::Error> {
 		let blob = InnerSignedBlobV1Data::new(vec![1, 2, 3], 123);
-		let signing_key = SigningKey::<k256::Secp256k1>::random(&mut rand::thread_rng());
-		let signed_blob = blob.try_to_sign(&signing_key)?;
+		let signer = Signer::new(LocalSigner::<Secp256k1>::random());
+		let signed_blob = blob.try_to_sign(&signer).await?;
 
 		let mut changed_blob = signed_blob.clone();
 		changed_blob.id = Id::new(vec![1, 2, 3, 4]);
 
-		assert!(changed_blob.try_verify::<k256::Secp256k1>().is_err());
+		assert!(changed_blob.try_verify().is_err());
 
 		Ok(())
 	}

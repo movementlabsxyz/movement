@@ -1,5 +1,6 @@
 use crate::{Certificate, CertificateStream, DaError, DaOperations};
 use movement_da_util::blob::ir::blob::DaBlob;
+use movement_signer::cryptography::Curve;
 use std::collections::{HashMap, VecDeque};
 use std::future::Future;
 use std::pin::Pin;
@@ -8,18 +9,24 @@ use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 
 /// A mock DA implementation, useful for testing.
-pub struct Mock {
+pub struct Mock<C>
+where
+	C: Curve,
+{
 	// A queue for certificates.
 	certificate_queue: Arc<Mutex<VecDeque<Result<Certificate, DaError>>>>,
 
 	// Map for mocking results of `get_da_blobs_at_height`.
-	height_results: Arc<Mutex<HashMap<u64, Result<Vec<DaBlob>, DaError>>>>,
+	height_results: Arc<Mutex<HashMap<u64, Result<Vec<DaBlob<C>>, DaError>>>>,
 
 	// Collection to store submitted blobs.
-	submitted_blobs: Arc<Mutex<Vec<DaBlob>>>,
+	submitted_blobs: Arc<Mutex<Vec<DaBlob<C>>>>,
 }
 
-impl Mock {
+impl<C> Mock<C>
+where
+	C: Curve,
+{
 	/// Creates a new `Mock` instance.
 	pub fn new() -> Self {
 		Self {
@@ -45,7 +52,7 @@ impl Mock {
 	pub fn set_height_result(
 		&self,
 		height: u64,
-		result: Result<Vec<DaBlob>, DaError>,
+		result: Result<Vec<DaBlob<C>>, DaError>,
 	) -> Result<(), DaError> {
 		let mut height_results = self.height_results.lock().map_err(|_| {
 			DaError::Internal("Failed to acquire lock for height results".to_string())
@@ -53,19 +60,15 @@ impl Mock {
 		height_results.insert(height, result);
 		Ok(())
 	}
-
-	/// Gets all submitted blobs.
-	pub fn get_submitted_blobs(&self) -> Result<Vec<DaBlob>, DaError> {
-		self.submitted_blobs.lock().map(|blobs| blobs.clone()).map_err(|_| {
-			DaError::Internal("Failed to acquire lock for submitted blobs".to_string())
-		})
-	}
 }
 
-impl DaOperations for Mock {
+impl<C> DaOperations<C> for Mock<C>
+where
+	C: Curve + Send + Sync + 'static,
+{
 	fn submit_blob(
 		&self,
-		data: DaBlob,
+		data: DaBlob<C>,
 	) -> Pin<Box<dyn Future<Output = Result<(), DaError>> + Send + '_>> {
 		let submitted_blobs = self.submitted_blobs.clone();
 		Box::pin(async move {
@@ -82,7 +85,7 @@ impl DaOperations for Mock {
 	fn get_da_blobs_at_height(
 		&self,
 		height: u64,
-	) -> Pin<Box<dyn Future<Output = Result<Vec<DaBlob>, DaError>> + Send + '_>> {
+	) -> Pin<Box<dyn Future<Output = Result<Vec<DaBlob<C>>, DaError>> + Send + '_>> {
 		let height_results = self.height_results.clone();
 		Box::pin(async move {
 			height_results
@@ -137,12 +140,13 @@ impl DaOperations for Mock {
 pub mod test {
 
 	use super::*;
+	use movement_signer::cryptography::ed25519::Ed25519;
 	use tokio_stream::StreamExt;
 
 	#[tokio::test]
 	async fn test_stream_stays_open_with_non_fatal_certificate() -> Result<(), anyhow::Error> {
 		// Create a mock DA instance.
-		let mock = Mock::new();
+		let mock = Mock::<Ed25519>::new();
 
 		// Add a mix of valid certificates and a non-fatal error to the queue.
 		mock.add_certificate(Ok(Certificate::Height(1)))?;
@@ -182,7 +186,7 @@ pub mod test {
 	#[tokio::test]
 	async fn test_stream_closes_with_fatal() -> Result<(), anyhow::Error> {
 		// Create a mock DA instance.
-		let mock = Mock::new();
+		let mock = Mock::<Ed25519>::new();
 
 		// Add a mix of valid certificates and a fatal error to the queue.
 		mock.add_certificate(Ok(Certificate::Height(1)))?;

@@ -2,6 +2,7 @@ pub mod db;
 
 use movement_da_light_node_da::{Certificate, CertificateStream, DaError, DaOperations};
 use movement_da_util::blob::ir::blob::DaBlob;
+use movement_signer::cryptography::Curve;
 use std::future::Future;
 use std::path::Path;
 use std::pin::Pin;
@@ -11,14 +12,20 @@ use tokio_stream::wrappers::BroadcastStream;
 use tokio_stream::StreamExt;
 
 #[derive(Clone)]
-pub struct Da {
+pub struct Da<C>
+where
+	C: Curve + Send + Sync + Clone + 'static,
+{
 	/// The RocksDB instance.
-	db: db::DaDb,
+	db: db::DaDb<C>,
 	/// The broadcast channel for certificate notifications.
 	cert_tx: Arc<broadcast::Sender<Certificate>>,
 }
 
-impl Da {
+impl<C> Da<C>
+where
+	C: Curve + Send + Sync + Clone + 'static,
+{
 	/// Creates a new Da instance with the provided Celestia namespace and RPC client.
 	pub fn try_new(db_path: impl AsRef<Path>) -> Result<Self, anyhow::Error> {
 		let (cert_tx, _cert_rx) = broadcast::channel(100); // Create a broadcast channel with a buffer size of 100
@@ -26,10 +33,13 @@ impl Da {
 	}
 }
 
-impl DaOperations for Da {
+impl<C> DaOperations<C> for Da<C>
+where
+	C: Curve + Send + Sync + Clone + 'static,
+{
 	fn submit_blob(
 		&self,
-		data: DaBlob,
+		data: DaBlob<C>,
 	) -> Pin<Box<dyn Future<Output = Result<(), DaError>> + Send + '_>> {
 		let db = self.db.clone();
 		let cert_tx = self.cert_tx.clone();
@@ -55,7 +65,7 @@ impl DaOperations for Da {
 	fn get_da_blobs_at_height(
 		&self,
 		height: u64,
-	) -> Pin<Box<dyn Future<Output = Result<Vec<DaBlob>, DaError>> + Send + '_>> {
+	) -> Pin<Box<dyn Future<Output = Result<Vec<DaBlob<C>>, DaError>> + Send + '_>> {
 		let db = self.db.clone();
 
 		Box::pin(async move {

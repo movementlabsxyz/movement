@@ -2,39 +2,50 @@ pub mod db;
 
 use movement_da_light_node_da::{CertificateStream, DaError, DaOperations};
 use movement_da_util::blob::ir::blob::DaBlob;
+use movement_signer::cryptography::Curve;
+use movement_signer::{Digester, Verify};
 use std::future::Future;
 use std::path::Path;
 use std::pin::Pin;
 use std::sync::Arc;
 
 #[derive(Clone)]
-pub struct Da<D>
+pub struct Da<C, D>
 where
-	D: DaOperations,
+	C: Curve + Send + Sync + Clone + 'static,
+	D: DaOperations<C>,
 {
 	/// The namespace on Celestia which the Da will use.
 	inner: Arc<D>,
 	/// The RocksDB instance.
-	db: db::DaDB,
+	db: db::DaDB<C>,
+	/// The curve marker.
+	_curve_marker: std::marker::PhantomData<C>,
 }
 
-impl<D> Da<D>
+impl<C, D> Da<C, D>
 where
-	D: DaOperations,
+	C: Curve + Send + Sync + Clone + 'static,
+	D: DaOperations<C>,
 {
 	/// Creates a new Da instance with the provided Celestia namespace and RPC client.
 	pub fn try_new(inner: D, db_path: impl AsRef<Path>) -> Result<Self, anyhow::Error> {
-		Ok(Self { inner: Arc::new(inner), db: db::DaDB::open(db_path)? })
+		Ok(Self {
+			inner: Arc::new(inner),
+			db: db::DaDB::open(db_path)?,
+			_curve_marker: std::marker::PhantomData,
+		})
 	}
 }
 
-impl<D> DaOperations for Da<D>
+impl<C, D> DaOperations<C> for Da<C, D>
 where
-	D: DaOperations,
+	C: Curve + Verify<C> + Digester<C> + Send + Sync + Clone + 'static,
+	D: DaOperations<C>,
 {
 	fn submit_blob(
 		&self,
-		data: DaBlob,
+		data: DaBlob<C>,
 	) -> Pin<Box<dyn Future<Output = Result<(), DaError>> + Send + '_>> {
 		Box::pin(async move {
 			// get the digest
@@ -59,7 +70,7 @@ where
 	fn get_da_blobs_at_height(
 		&self,
 		height: u64,
-	) -> Pin<Box<dyn Future<Output = Result<Vec<DaBlob>, DaError>> + Send + '_>> {
+	) -> Pin<Box<dyn Future<Output = Result<Vec<DaBlob<C>>, DaError>> + Send + '_>> {
 		Box::pin(async move {
 			// get the blobs from the inner da
 			let inner_blobs = self.inner.get_da_blobs_at_height(height).await?;

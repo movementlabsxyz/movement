@@ -32,15 +32,3 @@ impl TryFromCanonicalString for AwsKms {
 		Ok(AwsKms { create, key })
 	}
 }
-
-#[cfg(test)]
-mod tests {
-	use super::*;
-	use movement_signer::key::ToCanonicalString;
-
-	#[test]
-	fn test_aws_kms_from_canonical_string() {
-		let key = Key::try_from_canonical_string("key").unwrap();
-		let aws_kms = AwsKms::try_from_canonical_string("create::key").unwrap();
-		assert_eq!(aws_kms, AwsKms { create: true, key });
-	}

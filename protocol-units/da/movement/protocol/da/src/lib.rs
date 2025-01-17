@@ -2,6 +2,7 @@ pub mod mock;
 
 use async_stream::try_stream;
 use movement_da_util::blob::ir::blob::DaBlob;
+use movement_signer::cryptography::Curve;
 use std::future::Future;
 use std::pin::Pin;
 use tokio_stream::{Stream, StreamExt};
@@ -9,8 +10,8 @@ use tracing::{info, warn};
 
 pub type CertificateStream<'a> =
 	Pin<Box<dyn Stream<Item = Result<Certificate, DaError>> + Send + 'a>>;
-pub type DaBlobStream<'a> =
-	Pin<Box<dyn Stream<Item = Result<(DaHeight, DaBlob), DaError>> + Send + 'a>>;
+pub type DaBlobStream<'a, C> =
+	Pin<Box<dyn Stream<Item = Result<(DaHeight, DaBlob<C>), DaError>> + Send + 'a>>;
 
 /// A height for a blob on the DA.
 #[derive(Debug, Clone)]
@@ -51,21 +52,24 @@ pub enum DaError {
 }
 
 /// Trait for DA operations.
-pub trait DaOperations: Send + Sync {
+pub trait DaOperations<C>: Send + Sync
+where
+	C: Curve + Send + Sync + 'static,
+{
 	fn submit_blob(
 		&self,
-		data: DaBlob,
+		data: DaBlob<C>,
 	) -> Pin<Box<dyn Future<Output = Result<(), DaError>> + Send + '_>>;
 
 	fn get_da_blobs_at_height(
 		&self,
 		height: u64,
-	) -> Pin<Box<dyn Future<Output = Result<Vec<DaBlob>, DaError>> + Send + '_>>;
+	) -> Pin<Box<dyn Future<Output = Result<Vec<DaBlob<C>>, DaError>> + Send + '_>>;
 
 	fn get_da_blobs_at_height_for_stream(
 		&self,
 		height: u64,
-	) -> Pin<Box<dyn Future<Output = Result<Vec<DaBlob>, DaError>> + Send + '_>> {
+	) -> Pin<Box<dyn Future<Output = Result<Vec<DaBlob<C>>, DaError>> + Send + '_>> {
 		Box::pin(async move {
 			let result = self.get_da_blobs_at_height(height).await;
 			match result {
@@ -86,7 +90,7 @@ pub trait DaOperations: Send + Sync {
 		&self,
 		start_height: u64,
 		end_height: u64,
-	) -> Pin<Box<dyn Future<Output = Result<DaBlobStream, DaError>> + Send + '_>> {
+	) -> Pin<Box<dyn Future<Output = Result<DaBlobStream<C>, DaError>> + Send + '_>> {
 		info!("streaming IR blobs between heights {} and {}", start_height, end_height);
 		let fut = async move {
 			let stream = try_stream! {
@@ -97,7 +101,7 @@ pub trait DaOperations: Send + Sync {
 					}
 				}
 			};
-			Ok(Box::pin(stream) as DaBlobStream)
+			Ok(Box::pin(stream) as DaBlobStream<C>)
 		};
 		Box::pin(fut)
 	}
@@ -105,7 +109,7 @@ pub trait DaOperations: Send + Sync {
 	fn stream_da_blobs_from_height(
 		&self,
 		start_height: u64,
-	) -> Pin<Box<dyn Future<Output = Result<DaBlobStream, DaError>> + Send + '_>> {
+	) -> Pin<Box<dyn Future<Output = Result<DaBlobStream<C>, DaError>> + Send + '_>> {
 		let fut = async move {
 			let certificate_stream = self.stream_certificates().await?;
 			let stream = try_stream! {
@@ -148,7 +152,7 @@ pub trait DaOperations: Send + Sync {
 				}
 			};
 
-			Ok(Box::pin(stream) as DaBlobStream)
+			Ok(Box::pin(stream) as DaBlobStream<C>)
 		};
 		Box::pin(fut)
 	}

@@ -1,4 +1,5 @@
 use movement_da_util::blob::ir::blob::DaBlob;
+use movement_signer::cryptography::Curve;
 use rocksdb::{ColumnFamilyDescriptor, Options, TransactionDB, TransactionDBOptions};
 use std::path::Path;
 use std::sync::Arc;
@@ -14,11 +15,18 @@ use column_families::*;
 ///
 /// Methods are designed to work within a Tokio runtime.
 #[derive(Clone)]
-pub struct DaDb {
+pub struct DaDb<C>
+where
+	C: Curve,
+{
 	inner: Arc<TransactionDB>,
+	__curve_marker: std::marker::PhantomData<C>,
 }
 
-impl DaDb {
+impl<C> DaDb<C>
+where
+	C: Curve + Send + Sync + Clone + 'static,
+{
 	/// Opens or creates the transactional database at the given path.
 	pub fn open(path: impl AsRef<Path>) -> anyhow::Result<Self> {
 		let mut options = Options::default();
@@ -36,11 +44,11 @@ impl DaDb {
 		)
 		.map_err(|e| anyhow::anyhow!("Failed to open transactional database: {:?}", e))?;
 
-		Ok(Self { inner: Arc::new(db) })
+		Ok(Self { inner: Arc::new(db), __curve_marker: std::marker::PhantomData })
 	}
 
 	/// Adds a blob at the next height, using a transaction to ensure consistency.
-	pub async fn add_blob(&self, blob: DaBlob) -> anyhow::Result<u64> {
+	pub async fn add_blob(&self, blob: DaBlob<C>) -> anyhow::Result<u64> {
 		let db = self.inner.clone();
 
 		task::spawn_blocking(move || {
@@ -88,7 +96,7 @@ impl DaDb {
 	}
 
 	/// Retrieves a blob at the specified height.
-	pub async fn get_blob_at_height(&self, height: u64) -> anyhow::Result<Option<DaBlob>> {
+	pub async fn get_blob_at_height(&self, height: u64) -> anyhow::Result<Option<DaBlob<C>>> {
 		let db = self.inner.clone();
 
 		task::spawn_blocking(move || {

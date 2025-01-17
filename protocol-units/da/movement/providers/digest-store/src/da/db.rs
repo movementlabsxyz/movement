@@ -1,4 +1,5 @@
 use movement_da_util::blob::ir::blob::DaBlob;
+use movement_signer::cryptography::Curve;
 use rocksdb::{ColumnFamilyDescriptor, Options, DB};
 use std::path::Path;
 use std::sync::Arc;
@@ -13,11 +14,18 @@ use column_families::*;
 /// An async access API is provided to avoid blocking async tasks.
 /// The methods must be executed in the context of a Tokio runtime.
 #[derive(Clone, Debug)]
-pub struct DaDB {
+pub struct DaDB<C>
+where
+	C: Curve + Send + Sync + Clone + 'static,
+{
 	inner: Arc<DB>,
+	__curve_marker: std::marker::PhantomData<C>,
 }
 
-impl DaDB {
+impl<C> DaDB<C>
+where
+	C: Curve + Send + Sync + Clone + 'static,
+{
 	pub fn open(path: impl AsRef<Path>) -> anyhow::Result<Self> {
 		let mut options = Options::default();
 		options.create_if_missing(true);
@@ -27,11 +35,15 @@ impl DaDB {
 
 		let db = DB::open_cf_descriptors(&options, path, vec![synced_height])
 			.map_err(|e| anyhow::anyhow!("Failed to open DA DB: {:?}", e))?;
-		Ok(Self { inner: Arc::new(db) })
+		Ok(Self { inner: Arc::new(db), __curve_marker: std::marker::PhantomData })
 	}
 
 	/// Adds a digested blob to the database.
-	pub async fn add_digested_blob(&self, id: Vec<u8>, blob: DaBlob) -> Result<(), anyhow::Error> {
+	pub async fn add_digested_blob(
+		&self,
+		id: Vec<u8>,
+		blob: DaBlob<C>,
+	) -> Result<(), anyhow::Error> {
 		let da_db = self.inner.clone();
 		tokio::task::spawn_blocking(move || {
 			let cf = da_db
@@ -48,7 +60,7 @@ impl DaDB {
 	}
 
 	/// Gets a digested blob from the database.
-	pub async fn get_digested_blob(&self, id: Vec<u8>) -> Result<Option<DaBlob>, anyhow::Error> {
+	pub async fn get_digested_blob(&self, id: Vec<u8>) -> Result<Option<DaBlob<C>>, anyhow::Error> {
 		let da_db = self.inner.clone();
 		let blob = tokio::task::spawn_blocking(move || {
 			let cf = da_db
@@ -63,7 +75,7 @@ impl DaDB {
 				})?),
 				None => None,
 			};
-			Ok::<Option<DaBlob>, anyhow::Error>(blob)
+			Ok::<Option<DaBlob<C>>, anyhow::Error>(blob)
 		})
 		.await??;
 		Ok(blob)

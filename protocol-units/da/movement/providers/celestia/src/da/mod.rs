@@ -3,27 +3,36 @@ use celestia_rpc::{BlobClient, Client, HeaderClient};
 use celestia_types::{nmt::Namespace, Blob as CelestiaBlob, TxConfig};
 use movement_da_light_node_da::{Certificate, CertificateStream, DaError, DaOperations};
 use movement_da_util::blob::ir::blob::DaBlob;
+use movement_signer::cryptography::Curve;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 use tracing::error;
 
 #[derive(Clone)]
-pub struct Da {
+pub struct Da<C>
+where
+	C: Curve + Send + Sync + Clone + 'static,
+{
 	/// The namespace on Celestia which the Da will use.
 	celestia_namespace: Namespace,
 	/// The Celestia RPC client
 	default_client: Arc<Client>,
+	/// The curve marker.
+	__curve_marker: std::marker::PhantomData<C>,
 }
 
-impl Da {
+impl<C> Da<C>
+where
+	C: Curve + Send + Sync + Clone + 'static,
+{
 	/// Creates a new Da instance with the provided Celestia namespace and RPC client.
 	pub fn new(celestia_namespace: Namespace, default_client: Arc<Client>) -> Self {
-		Self { celestia_namespace, default_client }
+		Self { celestia_namespace, default_client, __curve_marker: std::marker::PhantomData }
 	}
 
 	/// Creates a new signed blob instance with the provided DaBlob data.
-	pub fn create_new_celestia_blob(&self, data: DaBlob) -> Result<CelestiaBlob, anyhow::Error> {
+	pub fn create_new_celestia_blob(&self, data: DaBlob<C>) -> Result<CelestiaBlob, anyhow::Error> {
 		// create the celestia blob
 		CelestiaDaBlob(data.into(), self.celestia_namespace.clone()).try_into()
 	}
@@ -41,10 +50,13 @@ impl Da {
 	}
 }
 
-impl DaOperations for Da {
+impl<C> DaOperations<C> for Da<C>
+where
+	C: Curve + Send + Sync + Clone + 'static,
+{
 	fn submit_blob(
 		&self,
-		data: DaBlob,
+		data: DaBlob<C>,
 	) -> Pin<Box<dyn Future<Output = Result<(), DaError>> + Send + '_>> {
 		Box::pin(async move {
 			// create the blob
@@ -64,7 +76,7 @@ impl DaOperations for Da {
 	fn get_da_blobs_at_height(
 		&self,
 		height: u64,
-	) -> Pin<Box<dyn Future<Output = Result<Vec<DaBlob>, DaError>> + Send + '_>> {
+	) -> Pin<Box<dyn Future<Output = Result<Vec<DaBlob<C>>, DaError>> + Send + '_>> {
 		Box::pin(async move {
 			let height = if height == 0 { 1 } else { height };
 

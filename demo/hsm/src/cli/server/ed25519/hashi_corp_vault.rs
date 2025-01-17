@@ -4,6 +4,7 @@ use clap::Parser;
 use movement_signer::cryptography::ed25519::Ed25519;
 use movement_signer::key::Key;
 use movement_signer::key::SignerBuilder;
+use movement_signer::key::TryFromCanonicalString;
 use movement_signer::Signer;
 use movement_signer_hashicorp_vault::hsm::key::Builder;
 use std::net::SocketAddr;
