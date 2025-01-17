@@ -3,6 +3,15 @@ version: "3"
 processes:
 
   setup:
+    environment:
+      - "ETH_RPC_CONNECTION_PROTOCOL=http"
+      - "ETH_RPC_CONNECTION_HOSTNAME=0.0.0.0"
+      - "ETH_RPC_CONNECTION_PORT=8090"
+      - "ETH_WS_CONNECTION_PROTOCOL=ws"
+      - "ETH_WS_CONNECTION_HOSTNAME=0.0.0.0"
+      - "ETH_WS_CONNECTION_PORT=8090"
+      - "MAYBE_RUN_LOCAL=true"
+      - "MOVEMENT_DA_LIGHT_NODE_HTTP1=true"
     command: |
       export AWS_REGION=us-west-2
       export MOVEMENT_SYNC="leader::follower-test-$MOVEMENT_SHARED_RANDOM_1<=>{default_signer_address_whitelist,maptos,maptos-storage,movement-da-db}/**"

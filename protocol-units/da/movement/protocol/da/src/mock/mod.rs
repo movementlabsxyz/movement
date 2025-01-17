@@ -210,6 +210,7 @@ pub mod test {
 			vec![
 				Ok(1),                                          // First certificate
 				Err("internal error: fatal error".to_string()), // Fatal error
+				Ok(2),
 			]
 		);
 

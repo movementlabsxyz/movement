@@ -130,6 +130,22 @@ pub trait DaOperations: Send + Sync {
 
 							last_height = height;
 						}
+						// Already executed Height are use to send Heartbeat.
+						Ok(Certificate::Height(height)) => {
+							//old certificate, use to send Heartbeat block.
+							let blob_stream = self
+								.stream_da_blobs_between_heights(height, height)
+								.await?;
+							tokio::pin!(blob_stream);
+
+							while let Some(blob_res) = blob_stream.next().await {
+								let (_, blob) = blob_res?;
+								// Ack use heigth zero to identify heart beat block.
+								// Should be changed to a type.
+								let heart_blob = (DaHeight(0u64), blob);
+								yield heart_blob;
+							}
+						}
 						Ok(Certificate::Nolo) => {
 							// Ignore Nolo
 						}
@@ -142,9 +158,9 @@ pub trait DaOperations: Send + Sync {
 							yield Err(e)?;
 						}
 						// If height is less than last height, ignore
-						_ => {
-							warn!("ignoring certificate");
-						}
+						// _ => {
+						// 	warn!("ignoring certificate");
+						// }
 					}
 				}
 			};

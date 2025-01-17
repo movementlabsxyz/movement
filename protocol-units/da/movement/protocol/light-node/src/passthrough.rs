@@ -133,8 +133,14 @@ where
 
 			while let Some(blob) = blob_stream.next().await {
 				let (height, da_blob) = blob.map_err(|e| tonic::Status::internal(e.to_string()))?;
-				let verifed_blob = verifier.verify(da_blob, height.as_u64()).await.map_err(|e| tonic::Status::internal(e.to_string()))?;
-				let blob = verifed_blob.into_inner().to_blob_passed_through_read_response(height.as_u64()).map_err(|e| tonic::Status::internal(e.to_string()))?;
+				let blob = if height.as_u64() == 0 {
+					//Heart beat blob
+					// No need to verify the data are removed.
+					da_blob.to_blob_heartbeat_response()
+				} else {
+					let verifed_blob = verifier.verify(da_blob, height.as_u64()).await.map_err(|e| tonic::Status::internal(e.to_string()))?;
+					verifed_blob.into_inner().to_blob_passed_through_read_response(height.as_u64()).map_err(|e| tonic::Status::internal(e.to_string()))?
+				};
 				let response = StreamReadFromHeightResponse {
 					blob: Some(blob)
 				};

@@ -27,7 +27,7 @@ impl StreamBlocks {
 			.await
 			.context("Failed to stream blocks from DA")?;
 
-		println!("Streaming blocks from DA");
+		tracing::info!("Streaming blocks from DA");
 
 		while let Some(block_res) = blocks_from_da.next().await {
 			let response = block_res.context("Failed to get block")?;
@@ -43,13 +43,17 @@ impl StreamBlocks {
 				blob_response::BlobType::PassedThroughBlob(blob) => {
 					(blob.data, blob.timestamp, blob.blob_id, blob.height)
 				}
+				blob_response::BlobType::HeartbeatBlob(_) => {
+					tracing::info!("Receive heartbeat blob");
+					continue;
+				}
 				_ => {
 					return Err(anyhow::anyhow!("Unknown blob type"));
 				}
 			};
 
 			// pretty print (with labels) the block_id, block_timestamp, and da_height
-			println!(
+			tracing::info!(
 				"Block ID: {}, Block Timestamp: {}, DA Height: {}",
 				hex::encode(block_id),
 				// unix date string from the block timestamp which is in microseconds

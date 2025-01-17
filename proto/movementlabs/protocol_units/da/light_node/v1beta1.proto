@@ -17,6 +17,7 @@ message BlobResponse {
       Blob passed_through_blob = 1;
       Blob sequenced_blob_intent = 2;
       Blob sequenced_blob_block = 3;
+      Blob heartbeat_blob = 4;
     }
 }
 
