@@ -1,6 +1,7 @@
 use anyhow::bail;
 use ecdsa::{
 	elliptic_curve::{
+		generic_array::typenum::Unsigned,
 		generic_array::ArrayLength,
 		ops::Invert,
 		point::PointCompression,
@@ -119,6 +120,9 @@ impl InnerSignedBlobV1 {
 		hasher.update(self.id.as_slice());
 
 		let verifying_key = VerifyingKey::<C>::from_sec1_bytes(self.signer.as_slice())?;
+		if self.signature.len() != SignatureSize::<C>::to_usize() {
+			return Err(anyhow::anyhow!("invalid signature length"));
+		}
 		let signature = ecdsa::Signature::from_bytes(self.signature.as_slice().into())?;
 
 		match verifying_key.verify_digest(hasher, &signature) {
@@ -203,6 +207,23 @@ pub mod test {
 		changed_blob.id = Id(vec![1, 2, 3, 4]);
 
 		assert!(changed_blob.try_verify::<k256::Secp256k1>().is_err());
+
+		Ok(())
+	}
+
+	#[test]
+	fn poc_verify_does_not_panic_on_wrong_signature_len() -> Result<(), anyhow::Error> {
+		let s = InnerSignedBlobV1 {
+			data: InnerSignedBlobV1Data::try_new(vec![1, 2, 3], 123).unwrap(),
+			signature: vec![],
+			signer: vec![
+				2, 130, 130, 130, 130, 130, 130, 130, 82, 130, 130, 130, 130, 255, 255, 130, 130,
+				130, 130, 130, 130, 130, 130, 130, 130, 130, 130, 130, 130, 130, 130, 130, 130,
+			],
+			id: Id(vec![1, 2, 3, 4]),
+		};
+
+		s.try_verify::<k256::Secp256k1>().unwrap_err();
 
 		Ok(())
 	}
