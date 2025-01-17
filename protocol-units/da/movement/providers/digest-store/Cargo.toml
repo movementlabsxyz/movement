@@ -23,6 +23,7 @@ tonic = { workspace = true }
 rocksdb = { workspace = true }
 tokio = { workspace = true }
 movement-signer = { workspace = true }
+serde = { workspace = true }
 
 [features]
 default = []

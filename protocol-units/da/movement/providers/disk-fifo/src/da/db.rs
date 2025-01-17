@@ -1,6 +1,7 @@
 use movement_da_util::blob::ir::blob::DaBlob;
 use movement_signer::cryptography::Curve;
 use rocksdb::{ColumnFamilyDescriptor, Options, TransactionDB, TransactionDBOptions};
+use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::sync::Arc;
 use tokio::task;
@@ -25,7 +26,7 @@ where
 
 impl<C> DaDb<C>
 where
-	C: Curve + Send + Sync + Clone + 'static,
+	C: Curve + Send + Sync + Clone + Serialize + for<'de> Deserialize<'de> + 'static,
 {
 	/// Opens or creates the transactional database at the given path.
 	pub fn open(path: impl AsRef<Path>) -> anyhow::Result<Self> {

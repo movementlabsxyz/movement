@@ -1,6 +1,7 @@
 use movement_da_util::blob::ir::blob::DaBlob;
 use movement_signer::cryptography::Curve;
 use rocksdb::{ColumnFamilyDescriptor, Options, DB};
+use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::sync::Arc;
 
@@ -24,7 +25,7 @@ where
 
 impl<C> DaDB<C>
 where
-	C: Curve + Send + Sync + Clone + 'static,
+	C: Curve + Send + Sync + Clone + Serialize + for<'de> Deserialize<'de> + 'static,
 {
 	pub fn open(path: impl AsRef<Path>) -> anyhow::Result<Self> {
 		let mut options = Options::default();

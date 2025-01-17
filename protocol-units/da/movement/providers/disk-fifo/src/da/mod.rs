@@ -3,6 +3,7 @@ pub mod db;
 use movement_da_light_node_da::{Certificate, CertificateStream, DaError, DaOperations};
 use movement_da_util::blob::ir::blob::DaBlob;
 use movement_signer::cryptography::Curve;
+use serde::{Deserialize, Serialize};
 use std::future::Future;
 use std::path::Path;
 use std::pin::Pin;
@@ -24,7 +25,7 @@ where
 
 impl<C> Da<C>
 where
-	C: Curve + Send + Sync + Clone + 'static,
+	C: Curve + Send + Sync + Clone + Serialize + for<'de> Deserialize<'de> + 'static,
 {
 	/// Creates a new Da instance with the provided Celestia namespace and RPC client.
 	pub fn try_new(db_path: impl AsRef<Path>) -> Result<Self, anyhow::Error> {
@@ -35,7 +36,7 @@ where
 
 impl<C> DaOperations<C> for Da<C>
 where
-	C: Curve + Send + Sync + Clone + 'static,
+	C: Curve + Send + Sync + Clone + Serialize + for<'de> Deserialize<'de> + 'static,
 {
 	fn submit_blob(
 		&self,

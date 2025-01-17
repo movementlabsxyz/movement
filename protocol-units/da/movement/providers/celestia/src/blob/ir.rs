@@ -2,11 +2,12 @@ use anyhow::Context;
 use celestia_types::{consts::appconsts::AppVersion, nmt::Namespace, Blob as CelestiaBlob};
 use movement_da_util::blob::ir::blob::DaBlob;
 use movement_signer::cryptography::Curve;
+use serde::{Deserialize, Serialize};
 
 /// Converts a [CelestiaBlob] into a [DaBlob].
 pub fn into_da_blob<C>(blob: CelestiaBlob) -> Result<DaBlob<C>, anyhow::Error>
 where
-	C: Curve,
+	C: Curve + for<'de> Deserialize<'de>,
 {
 	// decompress blob.data with zstd
 	let decompressed =
@@ -25,7 +26,7 @@ where
 /// Tries to form a CelestiaBlob from a CelestiaDaBlob
 impl<C> TryFrom<CelestiaDaBlob<C>> for CelestiaBlob
 where
-	C: Curve,
+	C: Curve + Serialize,
 {
 	type Error = anyhow::Error;
 
