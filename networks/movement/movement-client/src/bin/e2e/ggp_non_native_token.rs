@@ -140,7 +140,7 @@ async fn main() -> Result<(), anyhow::Error> {
 	let args = vec![bcs::to_bytes(
 		&AccountAddress::from_hex_literal(&format!(
 			"0x{}",
-			hex::encode(&AccountAddress::from_str(ACCOUNT_ADDRESS).unwrap().to_vec())
+			hex::encode(AccountAddress::from_str(ACCOUNT_ADDRESS).unwrap().to_vec())
 		))
 		.unwrap(),
 	)
@@ -163,6 +163,8 @@ async fn main() -> Result<(), anyhow::Error> {
 		init_payload,
 	)
 	.await?;
+
+	println!("Transaction response: {:?}", tx_response);
 
 	// Create the proposer account and fund it from the faucet
 	let proposer = LocalAccount::generate(&mut rand::rngs::OsRng);
