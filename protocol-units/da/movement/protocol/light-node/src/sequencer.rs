@@ -1,10 +1,7 @@
-use movement_celestia_da_light_node_prevalidator::{
-	aptos::whitelist::Validator, PrevalidatorOperations,
-};
 use movement_da_light_node_da::DaOperations;
 use movement_da_light_node_prevalidator::{aptos::whitelist::Validator, PrevalidatorOperations};
 use movement_signer::cryptography::secp256k1::Secp256k1;
-use movement_signer_loader::identifiers::LoadedSigner;
+use movement_signer_loader::LoadedSigner;
 use std::boxed::Box;
 use std::fmt::Debug;
 use std::path::PathBuf;
@@ -23,7 +20,9 @@ use movement_da_util::{
 	blob::ir::{blob::DaBlob, data::InnerSignedBlobV1Data},
 	config::Config,
 };
+use movement_signer::{cryptography::Curve, Digester, Signing, Verify};
 use movement_types::block::Block;
+use serde::{Deserialize, Serialize};
 use tokio::{
 	sync::mpsc::{Receiver, Sender},
 	time::timeout,
@@ -39,9 +38,17 @@ const LOGGING_UID: AtomicU64 = AtomicU64::new(0);
 pub struct LightNode<O, C, Da, V>
 where
 	O: Signing<C> + Send + Sync + Clone,
-	C: Curve + Verify<C> + Digester<C> + Send + Sync + Clone,
-	Da: DaOperations,
-	V: VerifierOperations<DaBlob, DaBlob>,
+	C: Curve
+		+ Verify<C>
+		+ Digester<C>
+		+ Send
+		+ Sync
+		+ Serialize
+		+ for<'de> Deserialize<'de>
+		+ Clone
+		+ 'static,
+	Da: DaOperations<C>,
+	V: VerifierOperations<DaBlob<C>, DaBlob<C>>,
 {
 	pub pass_through: LightNodePassThrough<O, C, Da, V>,
 	pub memseq: Arc<memseq::Memseq<memseq::RocksdbMempool>>,
@@ -51,22 +58,30 @@ where
 impl<O, C, Da, V> Debug for LightNode<O, C, Da, V>
 where
 	O: Signing<C> + Send + Sync + Clone,
-	C: Curve + Verify<C> + Digester<C> + Send + Sync + Clone,
-	Da: DaOperations,
-	V: VerifierOperations<DaBlob, DaBlob>,
+	C: Curve
+		+ Verify<C>
+		+ Digester<C>
+		+ Send
+		+ Sync
+		+ Serialize
+		+ for<'de> Deserialize<'de>
+		+ Clone
+		+ 'static,
+	Da: DaOperations<C>,
+	V: VerifierOperations<DaBlob<C>, DaBlob<C>>,
 {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		f.debug_struct("LightNode").field("pass_through", &self.pass_through).finish()
 	}
 }
 
-impl<O, C> LightNodeRuntime
-	for LightNode<O, C, DigestStoreDa<CelestiaDa>, InKnownSignersVerifier<C>>
-where
-	O: Signing<C> + Send + Sync + Clone,
-	C: Curve + Verify<C> + Digester<C> + Send + Sync + Clone,
-	Da: DaOperations,
-	V: VerifierOperations<DaBlob, DaBlob>,
+impl LightNodeRuntime
+	for LightNode<
+		LoadedSigner<Secp256k1>,
+		Secp256k1,
+		DigestStoreDa<Secp256k1, CelestiaDa<Secp256k1>>,
+		InKnownSignersVerifier<Secp256k1>,
+	>
 {
 	async fn try_from_config(config: Config) -> Result<Self, anyhow::Error> {
 		info!("Initializing LightNode in sequencer mode from environment.");
@@ -106,12 +121,20 @@ where
 	}
 }
 
-impl<O, C, Da, V> LightNodeV1<O, C>
+impl<O, C, Da, V> LightNode<O, C, Da, V>
 where
 	O: Signing<C> + Send + Sync + Clone,
-	C: Curve + Verify<C> + Digester<C> + Send + Sync + Clone,
-	Da: DaOperations,
-	V: VerifierOperations<DaBlob, DaBlob>,
+	C: Curve
+		+ Verify<C>
+		+ Digester<C>
+		+ Send
+		+ Sync
+		+ Serialize
+		+ for<'de> Deserialize<'de>
+		+ Clone
+		+ 'static,
+	Da: DaOperations<C>,
+	V: VerifierOperations<DaBlob<C>, DaBlob<C>>,
 {
 	async fn tick_build_blocks(&self, sender: Sender<Block>) -> Result<(), anyhow::Error> {
 		let memseq = self.memseq.clone();
@@ -138,8 +161,8 @@ where
 	/// Submits blocks to the pass through.
 	async fn submit_blocks(&self, blocks: Vec<Block>) -> Result<(), anyhow::Error> {
 		for block in blocks {
-			let data: InnerSignedBlobV1Data = block.try_into()?;
-			let blob = data.try_to_sign(&self.pass_through.signing_key)?;
+			let data: InnerSignedBlobV1Data<C> = block.try_into()?;
+			let blob = data.try_to_sign(&self.pass_through.signer).await?;
 			self.pass_through.da.submit_blob(blob.into()).await?;
 		}
 
@@ -273,12 +296,20 @@ where
 }
 
 #[tonic::async_trait]
-impl<O, C> LightNodeService for LightNodeV1<O, C>
+impl<O, C, Da, V> LightNodeService for LightNode<O, C, Da, V>
 where
 	O: Signing<C> + Send + Sync + Clone + 'static,
-	C: Curve + Verify<C> + Digester<C> + Send + Sync + Clone + 'static,
-	Da: DaOperations + Send + Sync + 'static,
-	V: VerifierOperations<DaBlob, DaBlob> + Send + Sync + 'static,
+	C: Curve
+		+ Verify<C>
+		+ Digester<C>
+		+ Send
+		+ Sync
+		+ Serialize
+		+ for<'de> Deserialize<'de>
+		+ Clone
+		+ 'static,
+	Da: DaOperations<C> + 'static,
+	V: VerifierOperations<DaBlob<C>, DaBlob<C>> + Send + Sync + 'static,
 {
 	/// Server streaming response type for the StreamReadFromHeight method.
 	type StreamReadFromHeightStream = Pin<

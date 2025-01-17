@@ -17,19 +17,30 @@ use movement_da_util::{
 
 use crate::LightNodeRuntime;
 use movement_da_light_node_signer::Signer;
+use movement_da_util::LoadSigner;
+use movement_signer::cryptography::secp256k1::Secp256k1;
 use movement_signer::{cryptography::Curve, Digester, Signing, Verify};
-use movement_signer_loader::identifiers::LoadedSigner;
+use movement_signer_loader::LoadedSigner;
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone)]
 pub struct LightNode<O, C, Da, V>
 where
 	O: Signing<C> + Send + Sync + Clone,
-	C: Curve + Verify<C> + Digester<C> + Send + Sync + Clone,
-	Da: DaOperations,
-	V: VerifierOperations<DaBlob, DaBlob>,
+	C: Curve
+		+ Verify<C>
+		+ Digester<C>
+		+ Send
+		+ Sync
+		+ Serialize
+		+ for<'de> Deserialize<'de>
+		+ Clone
+		+ 'static,
+	Da: DaOperations<C>,
+	V: VerifierOperations<DaBlob<C>, DaBlob<C>>,
 {
 	pub config: Config,
-	pub signing_key: SigningKey<C>,
+	pub signer: Arc<Signer<O, C>>,
 	pub da: Arc<Da>,
 	pub verifier: Arc<V>,
 }
@@ -37,9 +48,17 @@ where
 impl<O, C, Da, V> Debug for LightNode<O, C, Da, V>
 where
 	O: Signing<C> + Send + Sync + Clone,
-	C: Curve + Verify<C> + Digester<C> + Send + Sync + Clone,
-	Da: DaOperations,
-	V: VerifierOperations<DaBlob, DaBlob>,
+	C: Curve
+		+ Verify<C>
+		+ Digester<C>
+		+ Send
+		+ Sync
+		+ Serialize
+		+ for<'de> Deserialize<'de>
+		+ Clone
+		+ 'static,
+	Da: DaOperations<C>,
+	V: VerifierOperations<DaBlob<C>, DaBlob<C>>,
 {
 	fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
 		f.debug_struct("LightNode")
@@ -48,27 +67,28 @@ where
 	}
 }
 
-impl<O, C> LightNodeRuntime
-	for LightNode<O, C, DigestStoreDa<CelestiaDa>, InKnownSignersVerifier<C>>
-where
-	O: Signing<C> + Send + Sync + Clone,
-	C: Curve + Verify<C> + Digester<C> + Send + Sync + Clone,
+impl LightNodeRuntime
+	for LightNode<
+		LoadedSigner<Secp256k1>,
+		Secp256k1,
+		DigestStoreDa<Secp256k1, CelestiaDa<Secp256k1>>,
+		InKnownSignersVerifier<Secp256k1>,
+	>
 {
 	/// Tries to create a new LightNode instance from the toml config file.
 	async fn try_from_config(config: Config) -> Result<Self, anyhow::Error> {
-		let signing_key_str = config.da_signing_key();
-		let hex_bytes = hex::decode(signing_key_str)?;
-
-		let signing_key = SigningKey::from_bytes(hex_bytes.as_slice().try_into()?)
-			.map_err(|e| anyhow::anyhow!("Failed to create signing key: {}", e))?;
+		let loaded_signer: LoadedSigner<Secp256k1> =
+			<Config as LoadSigner<Secp256k1>>::da_signer(&config).await?;
+		let signer = Arc::new(Signer::new(loaded_signer));
 
 		let client = Arc::new(config.connect_celestia().await?);
 		let celestia_da = CelestiaDa::new(config.celestia_namespace(), client);
 		let digest_store_da = DigestStoreDa::try_new(celestia_da, config.digest_store_db_path())?;
 
-		let verifier = Arc::new(InKnownSignersVerifier::<C>::new(config.da_signers_sec1_keys()));
+		let verifier =
+			Arc::new(InKnownSignersVerifier::<Secp256k1>::new(config.da_signers_sec1_keys()));
 
-		Ok(Self { config: config.clone(), da: Arc::new(digest_store_da), signing_key, verifier })
+		Ok(Self { config: config.clone(), da: Arc::new(digest_store_da), signer, verifier })
 	}
 
 	fn try_service_address(&self) -> Result<String, anyhow::Error> {
@@ -85,9 +105,17 @@ where
 impl<O, C, Da, V> LightNodeService for LightNode<O, C, Da, V>
 where
 	O: Signing<C> + Send + Sync + Clone + 'static,
-	C: Curve + Verify<C> + Digester<C> + Send + Sync + Clone + 'static,
-	Da: DaOperations + Send + Sync + 'static,
-	V: VerifierOperations<DaBlob, DaBlob> + Send + Sync + 'static,
+	C: Curve
+		+ Verify<C>
+		+ Digester<C>
+		+ Send
+		+ Sync
+		+ Serialize
+		+ for<'de> Deserialize<'de>
+		+ Clone
+		+ 'static,
+	Da: DaOperations<C> + 'static,
+	V: VerifierOperations<DaBlob<C>, DaBlob<C>> + Send + Sync + 'static,
 {
 	/// Server streaming response type for the StreamReadFromHeight method.
 	type StreamReadFromHeightStream = std::pin::Pin<
@@ -174,8 +202,14 @@ where
 		let blobs = request.into_inner().blobs;
 		for data in blobs {
 			let blob = InnerSignedBlobV1Data::now(data.data)
-				.try_to_sign(&self.signing_key)
+				.map_err(|e| tonic::Status::internal(format!("Failed to create blob data: {}", e)))?
+				.try_to_sign(&self.signer)
+				.await
 				.map_err(|e| tonic::Status::internal(format!("Failed to sign blob: {}", e)))?;
+			self.da
+				.submit_blob(blob.into())
+				.await
+				.map_err(|e| tonic::Status::internal(e.to_string()))?;
 		}
 
 		// * We are currently not returning any blobs in the response.

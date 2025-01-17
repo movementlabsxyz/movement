@@ -5,7 +5,7 @@ use movement_da_light_node_digest_store::da::Da as DigestStoreDa;
 use movement_da_light_node_verifier::signed::InKnownSignersVerifier;
 use movement_da_util::config::Config;
 use movement_signer::cryptography::secp256k1::Secp256k1;
-use movement_signer_loader::identifiers::LoadedSigner;
+use movement_signer_loader::LoadedSigner;
 
 pub struct Manager<LightNode>
 where
@@ -19,10 +19,10 @@ where
 
 impl
 	Manager<
-		LightNodeV1<
+		LightNode<
 			LoadedSigner<Secp256k1>,
 			Secp256k1,
-			DigestStoreDa<CelestiaDa>,
+			DigestStoreDa<Secp256k1, CelestiaDa<Secp256k1>>,
 			InKnownSignersVerifier<Secp256k1>,
 		>,
 	>
@@ -40,10 +40,10 @@ impl
 	pub async fn try_light_node(
 		&self,
 	) -> Result<
-		LightNodeV1<
+		LightNode<
 			LoadedSigner<Secp256k1>,
 			Secp256k1,
-			DigestStoreDa<CelestiaDa>,
+			DigestStoreDa<Secp256k1, CelestiaDa<Secp256k1>>,
 			InKnownSignersVerifier<Secp256k1>,
 		>,
 		anyhow::Error,

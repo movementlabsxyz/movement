@@ -47,6 +47,7 @@ movement-da-light-node-celestia = { workspace = true }
 movement-da-light-node-digest-store = { workspace = true }
 movement-signer = { workspace = true }
 movement-signer-loader = { workspace = true }
+movement-da-light-node-signer = { workspace = true }
 
 # sequencer
 memseq = { workspace = true, optional = true }

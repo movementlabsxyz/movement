@@ -15,14 +15,14 @@ pub struct LoadedSigner<C>
 where
 	C: Curve,
 {
-	signer: Arc<Box<dyn Signing<C> + Send + Sync>>,
+	signer: Arc<dyn Signing<C> + Send + Sync>,
 }
 
 impl<C> LoadedSigner<C>
 where
 	C: Curve,
 {
-	pub fn new(signer: Arc<Box<dyn Signing<C> + Send + Sync>>) -> Self {
+	pub fn new(signer: Arc<dyn Signing<C> + Send + Sync>) -> Self {
 		Self { signer }
 	}
 }
@@ -78,17 +78,13 @@ impl Load<Secp256k1> for SignerIdentifier {
 					&local.private_key_hex_bytes,
 				)
 				.map_err(|_e| LoaderError::InvalidSigner)?;
-				Ok(LoadedSigner::new(Arc::new(
-					Box::new(signer) as Box<dyn Signing<Secp256k1> + Send + Sync>
-				)))
+				Ok(LoadedSigner::new(Arc::new(signer) as Arc<dyn Signing<Secp256k1> + Send + Sync>))
 			}
 			SignerIdentifier::AwsKms(aws_kms) => {
 				let builder = movement_signer_aws_kms::hsm::key::Builder::new();
 				let key = aws_kms.key.clone();
 				let signer = builder.build(key).await.map_err(|_e| LoaderError::InvalidSigner)?;
-				Ok(LoadedSigner::new(Arc::new(
-					Box::new(signer) as Box<dyn Signing<Secp256k1> + Send + Sync>
-				)))
+				Ok(LoadedSigner::new(Arc::new(signer) as Arc<dyn Signing<Secp256k1> + Send + Sync>))
 			}
 			SignerIdentifier::HashiCorpVault(_hashi_corp_vault) => Err(LoaderError::InvalidCurve),
 		}
@@ -105,9 +101,7 @@ impl Load<Ed25519> for SignerIdentifier {
 				let builder = movement_signer_hashicorp_vault::hsm::key::Builder::new();
 				let key = hashi_corp_vault.key.clone();
 				let signer = builder.build(key).await.map_err(|_e| LoaderError::InvalidSigner)?;
-				Ok(LoadedSigner::new(Arc::new(
-					Box::new(signer) as Box<dyn Signing<Ed25519> + Send + Sync>
-				)))
+				Ok(LoadedSigner::new(Arc::new(signer) as Arc<dyn Signing<Ed25519> + Send + Sync>))
 			}
 		}
 	}

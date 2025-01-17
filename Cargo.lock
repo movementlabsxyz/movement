@@ -10194,6 +10194,7 @@ dependencies = [
  "movement-da-light-node-digest-store",
  "movement-da-light-node-prevalidator",
  "movement-da-light-node-proto",
+ "movement-da-light-node-signer",
  "movement-da-light-node-verifier",
  "movement-da-util",
  "movement-signer",

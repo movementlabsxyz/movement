@@ -1,10 +1,9 @@
-use movement_celestia_da_light_node::v1::{LightNodeV1, Manager};
 use movement_celestia_da_light_node::{LightNode, Manager};
 use movement_da_light_node_celestia::da::Da as CelestiaDa;
 use movement_da_light_node_digest_store::da::Da as DigestStoreDa;
 use movement_da_light_node_verifier::signed::InKnownSignersVerifier;
 use movement_signer::cryptography::secp256k1::Secp256k1;
-use movement_signer_loader::identifiers::LoadedSigner;
+use movement_signer_loader::LoadedSigner;
 
 use std::env;
 
@@ -25,7 +24,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 		LightNode<
 			LoadedSigner<Secp256k1>,
 			Secp256k1,
-			DigestStoreDa<CelestiaDa>,
+			DigestStoreDa<Secp256k1, CelestiaDa<Secp256k1>>,
 			InKnownSignersVerifier<Secp256k1>,
 		>,
 	>::new(config_file)
