@@ -16,9 +16,6 @@ on:
 
 jobs:
   build-and-push:
-    permissions:
-      contents: read
-      packages: write
     strategy:
       matrix:
         architecture: [x86_64, arm64]
