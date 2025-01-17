@@ -23,5 +23,3 @@ pub enum Commands {
                 backend: String,
         },
 }
-
-pub use rotate_key::rotate_key;

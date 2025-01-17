@@ -1,8 +1,6 @@
 use anyhow::{Context, Result};
-use base64;
-use vaultrs::api::transit::responses::ReadKeyData;
 use vaultrs::client::{VaultClient, VaultClientSettingsBuilder};
-use vaultrs::transit::key::{read, rotate};
+use vaultrs::transit::key::rotate;
 use super::key_manager::KeyManager;
 
 pub struct VaultKey;

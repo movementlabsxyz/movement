@@ -1,8 +1,7 @@
 use anyhow::{Context, Result};
 use aws_config;
-use aws_sdk_kms::{Client as KmsClient};
+use aws_sdk_kms::Client as KmsClient;
 use aws_sdk_kms::types::Tag;
-use base64;
 use simple_asn1::{ASN1Block, from_der};
 use super::key_manager::KeyManager;
 

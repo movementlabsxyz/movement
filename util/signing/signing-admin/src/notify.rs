@@ -1,7 +1,6 @@
 use anyhow::Result;
 use reqwest::Client;
 use serde_json;
-use base64;
 
 /// Notifies the application by sending the public key to the specified endpoint.
 pub async fn notify_application(app_url: &str, public_key: &[u8]) -> Result<()> {
