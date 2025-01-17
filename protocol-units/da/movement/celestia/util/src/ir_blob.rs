@@ -42,7 +42,7 @@ impl InnerSignedBlobV1Data {
 	}
 
 	/// Computes the id of InnerSignedBlobV1Data
-	pub fn compute_id<O, C>(&self) -> Result<Id, anyhow::Error>
+	pub fn compute_id<C>(&self) -> Result<Id, anyhow::Error>
 	where
 		C: Curve + Digester<C>,
 	{
@@ -59,7 +59,7 @@ impl InnerSignedBlobV1Data {
 		O: Signing<C>,
 		C: Curve + Digester<C>,
 	{
-		let id = self.compute_id::<O, C>()?;
+		let id = self.compute_id::<C>()?;
 		let signature = signer.inner().sign(&id.as_slice()).await?.to_bytes();
 		let signer = signer.inner().public_key().await?.to_bytes();
 
@@ -78,12 +78,13 @@ pub struct InnerSignedBlobV1 {
 impl InnerSignedBlobV1 {
 	pub fn try_verify<C>(&self) -> Result<(), anyhow::Error>
 	where
-		C: Curve + Verify<C>,
+		C: Curve + Digester<C> + Verify<C>,
 	{
 		let public_key = C::PublicKey::try_from_bytes(self.signer.as_slice())?;
 		let signature = C::Signature::try_from_bytes(self.signature.as_slice())?;
+		let id = self.data.compute_id::<C>()?;
 
-		if !C::verify(self.data.blob.as_slice(), &signature, &public_key)? {
+		if !C::verify(id.as_slice(), &signature, &public_key)? {
 			return Err(anyhow::anyhow!("signature verification failed"))?;
 		}
 
@@ -139,7 +140,7 @@ impl IntermediateBlobRepresentation {
 
 	pub fn verify_signature<C>(&self) -> Result<(), anyhow::Error>
 	where
-		C: Curve + Verify<C>,
+		C: Curve + Digester<C> + Verify<C>,
 	{
 		match self {
 			IntermediateBlobRepresentation::SignedV1(inner) => inner.try_verify::<C>(),

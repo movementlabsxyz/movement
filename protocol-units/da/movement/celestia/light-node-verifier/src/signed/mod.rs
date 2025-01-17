@@ -1,6 +1,6 @@
 use crate::{Error, Verified, VerifierOperations};
 use movement_celestia_da_util::ir_blob::IntermediateBlobRepresentation;
-use movement_signer::{cryptography::Curve, Verify};
+use movement_signer::{cryptography::Curve, Digester, Verify};
 use std::collections::HashSet;
 use tracing::info;
 
@@ -26,7 +26,7 @@ where
 impl<C> VerifierOperations<IntermediateBlobRepresentation, IntermediateBlobRepresentation>
 	for Verifier<C>
 where
-	C: Curve + Verify<C> + Send + Sync,
+	C: Curve + Verify<C> + Digester<C> + Send + Sync,
 {
 	async fn verify(
 		&self,
@@ -74,7 +74,7 @@ where
 impl<C> VerifierOperations<IntermediateBlobRepresentation, IntermediateBlobRepresentation>
 	for InKnownSignersVerifier<C>
 where
-	C: Curve + Verify<C> + Send + Sync,
+	C: Curve + Verify<C> + Digester<C> + Send + Sync,
 {
 	async fn verify(
 		&self,

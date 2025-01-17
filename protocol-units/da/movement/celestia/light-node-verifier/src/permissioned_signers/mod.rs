@@ -6,7 +6,7 @@ use celestia_rpc::Client;
 use celestia_types::nmt::Namespace;
 use celestia_types::Blob as CelestiaBlob;
 use movement_celestia_da_util::ir_blob::IntermediateBlobRepresentation;
-use movement_signer::{cryptography::Curve, Verify};
+use movement_signer::{cryptography::Curve, Digester, Verify};
 use std::sync::Arc;
 
 /// A verifier of Celestia blobs for permissioned signers
@@ -44,7 +44,7 @@ where
 #[tonic::async_trait]
 impl<C> VerifierOperations<CelestiaBlob, IntermediateBlobRepresentation> for Verifier<C>
 where
-	C: Curve + Verify<C> + Send + Sync,
+	C: Curve + Verify<C> + Digester<C> + Send + Sync,
 {
 	async fn verify(
 		&self,
