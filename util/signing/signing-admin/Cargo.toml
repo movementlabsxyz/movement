@@ -14,10 +14,13 @@ aws-config = { workspace = true }
 aws-sdk-kms = { workspace = true }
 base64 = { workspace = true }
 clap = { version = "4.0", features = ["derive"] }
-tokio = { version = "1", features = ["full"] }
+movement-signer = { workspace = true }
+movement-signer-aws-kms = { workspace = true }
+movement-signer-hashicorp-vault = { workspace = true }
 reqwest = { version = "0.11", features = ["json"] }
 serde_json = { workspace = true }
 simple_asn1 = "0.6"
+tokio = { version = "1", features = ["full"] }
 uuid = { workspace = true }
 vaultrs = { workspace = true }
 

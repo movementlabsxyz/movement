@@ -128,7 +128,7 @@ where
 	}
 	
 	async fn public_key(&self) -> Result<C::PublicKey, SignerError> {
-		println!("Attempting to read key: {}", self.key_name);
+		println!("Attempting to read Vault key: {}", self.key_name);
 	
 		// Read the key from Vault
 		let res = transit_key::read(

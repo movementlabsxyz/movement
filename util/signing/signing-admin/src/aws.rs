@@ -109,26 +109,4 @@ impl KeyManager for AwsKey {
                 println!("Successfully rotated key for alias: {}", full_alias);
                 Ok(new_key_id)
         }
-
-        /// Fetch the public key from AWS KMS
-        async fn fetch_public_key(&self, key_id: &str) -> Result<Self::PublicKey> {
-                let client = Self::create_client().await?;
-                println!("Fetching public key for AWS Key ID: {}", key_id);
-
-                let response = client
-                        .get_public_key()
-                        .key_id(key_id)
-                        .send()
-                        .await
-                        .context("Failed to fetch public key from AWS KMS")?;
-
-                if let Some(public_key_der) = response.public_key() {
-                        let raw_public_key = Self::extract_raw_public_key(public_key_der.as_ref())
-                                .context("Failed to extract raw public key from DER")?;
-                        println!("Successfully extracted raw public key: {:?}", raw_public_key);
-                        Ok(raw_public_key)
-                } else {
-                        anyhow::bail!("Public key not found in AWS response");
-                }
-        }
 }
