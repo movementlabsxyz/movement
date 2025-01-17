@@ -2,10 +2,11 @@ use crate::cryptography::Curve;
 use crate::{DigestError, Digester, Verify, VerifyError};
 use anyhow::Context;
 use k256::ecdsa::{self, signature::Verifier};
+use serde::{Deserialize, Serialize};
 use sha2::Digest as _;
 
 /// The secp256k1 elliptic curve.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Secp256k1;
 
 fixed_size!(pub struct PublicKey([u8; 65])); // Compressed public key
