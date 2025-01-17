@@ -1,7 +1,7 @@
 use crate::cryptography::Curve;
 use crate::{DigestError, Digester, Verify, VerifyError};
 use anyhow::Context;
-use ed25519_dalek::ed25519::signature::hazmat::PrehashVerifier;
+use ed25519_dalek::Verifier;
 use k256::ecdsa::{self};
 use sha2::Digest as _;
 
@@ -34,7 +34,7 @@ impl Verify<Secp256k1> for Secp256k1 {
 			.context("Failed to create signature")
 			.map_err(|e| VerifyError(e.into()))?;
 
-		Ok(verifying_key.verify_prehash(message, &signature).is_ok())
+		Ok(verifying_key.verify(message, &signature).is_ok())
 	}
 }
 
