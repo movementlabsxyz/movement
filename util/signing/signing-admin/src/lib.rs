@@ -1,4 +1,4 @@
-pub mod aws;
+pub mod application;
+pub mod backend;
 pub mod key_manager;
-pub mod notify;
-pub mod vault;
+

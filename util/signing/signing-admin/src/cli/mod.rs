@@ -11,7 +11,6 @@ pub struct CLI {
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
-        /// Rotate a signing key
         RotateKey {
                 #[clap(long, help = "Canonical string of the key (alias for the backend key)")]
                 canonical_string: String,

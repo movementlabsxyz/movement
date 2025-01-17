@@ -4,79 +4,102 @@ use movement_signer::{
         Signing,
 };
 use signing_admin::{
-        aws::AwsKey,
+        application::{Application, HttpApplication},
+        backend::{aws::AwsBackend, vault::VaultBackend, Backend},
         key_manager::KeyManager,
-        notify::notify_application,
-        vault::VaultKey,
 };
 use movement_signer_aws_kms::hsm::AwsKms;
 use movement_signer_hashicorp_vault::hsm::HashiCorpVault;
+use vaultrs::client::{VaultClient, VaultClientSettingsBuilder};
+
+/// Enum to encapsulate different signers
+enum SignerBackend {
+        Vault(HashiCorpVault<Ed25519>),
+        Aws(AwsKms<Secp256k1>),
+}
+
+impl SignerBackend {
+        /// Retrieve the public key from the signer
+        async fn public_key(&self) -> Result<Vec<u8>> {
+                match self {
+                        SignerBackend::Vault(signer) => {
+                                let public_key = signer.public_key().await?;
+                                Ok(public_key.as_bytes().to_vec())
+                        }
+                        SignerBackend::Aws(signer) => {
+                                let public_key = signer.public_key().await?;
+                                Ok(public_key.as_bytes().to_vec())
+                        }
+                }
+        }
+}
 
 pub async fn rotate_key(
         canonical_string: String,
         application_url: String,
-        backend: String,
+        backend_name: String,
 ) -> Result<()> {
-        // Use KeyManager for key rotation
-        let key_manager: Box<dyn KeyManager<PublicKey = Vec<u8>>> = match backend.as_str() {
-                "vault" => Box::new(VaultKey::new()),
-                "aws" => Box::new(AwsKey::new()),
-                _ => return Err(anyhow::anyhow!("Unsupported backend: {}", backend)),
+        let application = HttpApplication::new(application_url);
+
+        let backend = match backend_name.as_str() {
+                "vault" => Backend::Vault(VaultBackend::new()),
+                "aws" => Backend::Aws(AwsBackend::new()),
+                _ => return Err(anyhow::anyhow!("Unsupported backend: {}", backend_name)),
         };
 
-        // Rotate the key using KeyManager
-        let new_key_id = key_manager
-                .rotate_key(&canonical_string)
-                .await
-                .context("Failed to rotate key")?;
-        println!("Key rotated successfully. New Key ID: {}", new_key_id);
-
-        // Fetch the public key using the Signing trait
-        match backend.as_str() {
+        let signer = match backend_name.as_str() {
                 "vault" => {
-                        // Create a Vault client
                         let vault_url = std::env::var("VAULT_URL")
                                 .context("Missing VAULT_URL environment variable")?;
                         let vault_token = std::env::var("VAULT_TOKEN")
                                 .context("Missing VAULT_TOKEN environment variable")?;
-                        let client = vaultrs::client::VaultClient::new(
-                                vaultrs::client::VaultClientSettingsBuilder::default()
+
+                        let client = VaultClient::new(
+                                VaultClientSettingsBuilder::default()
                                         .address(vault_url)
                                         .token(vault_token)
-                                        .namespace(Some("admin".to_string())) // Adjust namespace if necessary
+                                        .namespace(Some("admin".to_string()))
                                         .build()
                                         .context("Failed to build Vault client settings")?,
                         )
                         .context("Failed to create Vault client")?;
 
-                        // Sanitize and log the key name
-                        let sanitized_key_name = canonical_string.replace("/", "_");
-                        println!("Attempting to read key: {}", sanitized_key_name);
-                        let signer = HashiCorpVault::<Ed25519>::new(client, sanitized_key_name.clone(), "transit".to_string());
-                        let public_key = signer
-                                .public_key()
-                                .await
-                                .context("Failed to fetch Vault public key")?;
-                        println!("Retrieved public key: {:?}", public_key.as_bytes());
-                        
-                        // Notify the application with the new public key
-                        notify_application(&application_url, &public_key.as_bytes()).await?;
+                        SignerBackend::Vault(HashiCorpVault::<Ed25519>::new(
+                                client,
+                                canonical_string.clone(),
+                                "transit".to_string(),
+                        ))
                 }
                 "aws" => {
-                        // Create an AWS KMS client
                         let aws_config = aws_config::load_from_env().await;
                         let client = aws_sdk_kms::Client::new(&aws_config);
-                        let signer = AwsKms::<Secp256k1>::new(client, canonical_string.clone());
-                        let public_key = signer
-                                .public_key()
-                                .await
-                                .context("Failed to fetch AWS public key")?;
-                        println!("Retrieved public key: {:?}", public_key.as_bytes());
-                        notify_application(&application_url, &public_key.as_bytes()).await?;
-                }
-                _ => return Err(anyhow::anyhow!("Unsupported backend: {}", backend)),
-        }
 
-        println!("Application successfully updated with the new public key.");
+                        SignerBackend::Aws(AwsKms::<Secp256k1>::new(
+                                client,
+                                canonical_string.clone(),
+                        ))
+                }
+                _ => return Err(anyhow::anyhow!("Unsupported signer backend: {}", backend_name)),
+        };
+
+        let key_manager = KeyManager::new(application, backend);
+
+        key_manager
+                .rotate_key(&canonical_string)
+                .await
+                .context("Failed to rotate the key")?;
+
+        let public_key = signer
+                .public_key()
+                .await
+                .context("Failed to fetch the public key from signer")?;
+
+        key_manager
+                .application
+                .notify_public_key(public_key)
+                .await
+                .context("Failed to notify the application with the public key")?;
+
+        println!("Key rotation and notification completed successfully.");
         Ok(())
 }
