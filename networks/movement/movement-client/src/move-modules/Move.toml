@@ -10,7 +10,7 @@ test_token = "0x30005dbbb9b324b18bed15aca87770512ec7807410fabb0420494d9865e56fa4
 
 [dependencies.AptosFramework]
 git = "https://github.com/movementlabsxyz/aptos-core.git"
-rev = "movement"
+rev = "governed-gas-pool"
 subdir = "aptos-move/framework/aptos-framework"
 
 [dev-dependencies]

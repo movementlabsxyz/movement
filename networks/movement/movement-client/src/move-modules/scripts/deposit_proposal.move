@@ -1,8 +1,9 @@
 script {
     use aptos_framework::aptos_governance;
     use aptos_framework::governed_gas_pool;
+    use aptos_framework::signer;
 
-    fun main(core_resources: &signer, beneficiary_address: address, amount: u64) {
+    fun main(core_resources: &signer, amount: u64) {
         // Get the framework signer
         let framework_signer = aptos_governance::get_signer_testnet_only(
             core_resources,
@@ -10,9 +11,8 @@ script {
         );
 
         // Deposit tokens into the governed gas pool for the beneficiary account
-        governed_gas_pool::deposit_from(
-            &framework_signer,
-            beneficiary_address,
+        governed_gas_pool::deposit_from<aptos_framework::AptosCoin>(
+            signer::address_of(&framework_signer),
             amount
         );
     }
