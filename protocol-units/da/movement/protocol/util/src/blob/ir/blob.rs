@@ -142,20 +142,6 @@ impl DaBlob {
 	}
 
 	/// Converts a [DaBlob] into a [BlobResponse] with the blob passed through.
-	pub fn to_blob_heartbeat_response(self) -> BlobResponse {
-		//for heartbeat blob the data are removed.
-		let blob = Blob {
-			data: vec![],
-			signature: self.signature().to_vec(),
-			timestamp: self.timestamp(),
-			signer: self.signer().to_vec(),
-			blob_id: self.id().to_vec(),
-			height: 0,
-		};
-		BlobResponse { blob_type: Some(blob_response::BlobType::HeartbeatBlob(blob)) }
-	}
-
-	/// Converts a [DaBlob] into a [BlobResponse] with the blob passed through.
 	pub fn to_blob_passed_through_read_response(
 		self,
 		height: u64,

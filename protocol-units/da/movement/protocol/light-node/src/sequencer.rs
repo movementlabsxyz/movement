@@ -279,7 +279,7 @@ where
 		let sequenced_block = match blob_type {
 			BlobType::PassedThroughBlob(blob) => BlobType::SequencedBlobBlock(blob),
 			BlobType::SequencedBlobBlock(blob) => BlobType::SequencedBlobBlock(blob),
-			BlobType::HeartbeatBlob(blob) => BlobType::HeartbeatBlob(blob),
+			BlobType::HeartbeatBlob(val) => BlobType::HeartbeatBlob(val),
 			_ => {
 				anyhow::bail!("Invalid blob type")
 			}
