@@ -108,7 +108,7 @@ async fn main() -> Result<(), anyhow::Error> {
 			"--private-key",
 			PRIVATE_KEY,
 		])
-		.current_dir(target_di)
+		.current_dir(target_dir)
 		.status()
 		.await
 		.expect("Failed to execute `movement init` command");
@@ -116,11 +116,6 @@ async fn main() -> Result<(), anyhow::Error> {
 	if !init_status.success() {
 		anyhow::bail!("Initializing Move module failed. Please check the `movement init` command.");
 	}
-
-	let target_dir = PathBuf::from(crate_dir).join("src").join("move-modules");
-	let target_dir_clone = target_dir.clone();
-
-	println!("target_dir: {:?}", target_dir);
 
 	// account associated with private key used for init
 	let publish_status = Command::new("movement")
@@ -168,7 +163,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	//If you don't remove .movement/ between runs this value will increment
 	//by one and you'll get an error.
-	let sequence_number = 0;
+	let sequence_number = 1;
 
 	let tx_response = send_aptos_transaction(
 		&rest_client,
