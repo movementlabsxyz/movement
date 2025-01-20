@@ -176,11 +176,26 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	let crate_dir = PathBuf::from(crate_dir_clone);
 
-	let code = fs::read(crate_dir.join("src").join("move-modules").join("build"))?;
+	let code = fs::read(
+		crate_dir
+			.join("src")
+			.join("move-modules")
+			.join("build")
+			.join("bytecode_scripts")
+			.join("main.mv"),
+	)?;
 	let args = vec![TransactionArgument::U64(42)];
 
-	let script_payload = make_script_payload(code, vec![], args);
-	println!("Script payload: {:?}", script_payload);
+	let script_payload = TransactionPayload::Script(Script::new(code, vec![], args));
+
+	let tx_response = send_aptos_transaction(
+		&rest_client,
+		&mut LocalAccount::from_private_key(PRIVATE_KEY, sequence_number)?,
+		script_payload,
+	)
+	.await?;
+
+	println!("tx_response: {:?}", tx_response);
 
 	Ok(())
 }
@@ -223,12 +238,4 @@ fn make_entry_function_payload(
 		ty_args,
 		args,
 	))
-}
-
-fn make_script_payload(
-	code: Vec<u8>,
-	ty_args: Vec<TypeTag>,
-	args: Vec<TransactionArgument>,
-) -> TransactionPayload {
-	TransactionPayload::Script(Script);
 }
