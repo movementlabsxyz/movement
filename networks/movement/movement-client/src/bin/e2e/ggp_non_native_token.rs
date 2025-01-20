@@ -86,6 +86,10 @@ async fn main() -> Result<(), anyhow::Error> {
 	);
 	let crate_dir_clone = crate_dir.clone();
 
+	let target_dir = PathBuf::from(crate_dir).join("src").join("move-modules");
+	let target_dir_clone = target_dir.clone();
+
+	println!("target_dir: {:?}", target_dir);
 	println!("Node URL: {:?}", NODE_URL.as_str());
 	println!("Faucet URL: {:?}", FAUCET_URL.as_str());
 
@@ -104,6 +108,7 @@ async fn main() -> Result<(), anyhow::Error> {
 			"--private-key",
 			PRIVATE_KEY,
 		])
+		.current_dir(target_di)
 		.status()
 		.await
 		.expect("Failed to execute `movement init` command");
