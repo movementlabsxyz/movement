@@ -1,4 +1,5 @@
 script {
+    use aptos_framework::aptos_coin::AptosCoin;
     use aptos_framework::aptos_governance;
     use aptos_framework::governed_gas_pool;
     use aptos_framework::signer;
@@ -11,7 +12,7 @@ script {
         );
 
         // Deposit tokens into the governed gas pool for the beneficiary account
-        governed_gas_pool::deposit_from<aptos_framework::AptosCoin>(
+        governed_gas_pool::deposit_from<AptosCoin>(
             signer::address_of(&framework_signer),
             amount
         );

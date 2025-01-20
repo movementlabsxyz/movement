@@ -5,7 +5,7 @@ use aptos_sdk::rest_client::Transaction;
 use aptos_sdk::types::account_address::AccountAddress;
 use aptos_sdk::{move_types::language_storage::TypeTag, transaction_builder::TransactionFactory};
 use aptos_types::chain_id::ChainId;
-use aptos_types::transaction::{EntryFunction, TransactionPayload};
+use aptos_types::transaction::{EntryFunction, Script, TransactionArgument, TransactionPayload};
 use movement_client::{
 	coin_client::CoinClient,
 	rest_client::{Client, FaucetClient},
@@ -13,6 +13,7 @@ use movement_client::{
 };
 use once_cell::sync::Lazy;
 use std::env;
+use std::fs;
 use std::path::PathBuf;
 use std::str::FromStr;
 use tokio::process::Command;
@@ -83,6 +84,7 @@ async fn main() -> Result<(), anyhow::Error> {
 	let crate_dir = env::var("CARGO_MANIFEST_DIR").expect(
 		"CARGO_MANIFEST_DIR is not set. Make sure to run this inside a Cargo build context.",
 	);
+	let crate_dir_clone = crate_dir.clone();
 
 	println!("Node URL: {:?}", NODE_URL.as_str());
 	println!("Faucet URL: {:?}", FAUCET_URL.as_str());
@@ -146,7 +148,7 @@ async fn main() -> Result<(), anyhow::Error> {
 	)
 	.unwrap()];
 
-	let init_payload = make_aptos_payload(
+	let init_payload = make_entry_function_payload(
 		AccountAddress::from_str(
 			"0x97121e4f94695b6fb65a24899c5cce23cc0dad5a1c07caaeb6dd555078d14ba7",
 		)
@@ -157,43 +159,32 @@ async fn main() -> Result<(), anyhow::Error> {
 		args,
 	);
 
+	println!("Init payload: {:?}", init_payload);
+
+	//If you don't remove .movement/ between runs this value will increment
+	//by one and you'll get an error.
+	let sequence_number = 0;
+
 	let tx_response = send_aptos_transaction(
 		&rest_client,
-		&mut LocalAccount::from_private_key(PRIVATE_KEY, 0)?,
+		&mut LocalAccount::from_private_key(PRIVATE_KEY, sequence_number)?,
 		init_payload,
 	)
 	.await?;
 
 	println!("Transaction response: {:?}", tx_response);
 
-	// Create the proposer account and fund it from the faucet
-	let proposer = LocalAccount::generate(&mut rand::rngs::OsRng);
-	faucet_client
-		.fund(proposer.address(), 1_000_000)
-		.await
-		.context("Failed to fund proposer account")?;
+	let crate_dir = PathBuf::from(crate_dir_clone);
 
-	// Create the beneficiary account and fund it from the faucet
-	let beneficiary = LocalAccount::generate(&mut rand::rngs::OsRng);
-	faucet_client
-		.fund(beneficiary.address(), 1_000_000)
-		.await
-		.context("Failed to fund beneficiary account")?;
-	let beneficiary_address = beneficiary.address().to_hex_literal();
+	let code = fs::read(crate_dir.join("src").join("move-modules").join("build"))?;
+	let args = vec![TransactionArgument::U64(42)];
 
-	// TODO: run some methods, collect some gas, and check the balance of the governed gas pool
-
-	let amount = 100_000; // TODO: replace with appropriate amount w.r.t. gas collection.
-
-	let pre_beneficiary_balance = coin_client
-		.get_account_balance(&beneficiary.address())
-		.await
-		.context("Failed to get beneficiary's account balance")?;
+	let script_payload = make_script_payload(code, vec![], args);
+	println!("Script payload: {:?}", script_payload);
 
 	Ok(())
 }
 
-#[allow(dead_code)]
 async fn send_aptos_transaction(
 	client: &Client,
 	signer: &mut LocalAccount,
@@ -219,7 +210,7 @@ async fn send_aptos_transaction(
 	Ok(response)
 }
 
-fn make_aptos_payload(
+fn make_entry_function_payload(
 	package_address: AccountAddress,
 	module_name: &'static str,
 	function_name: &'static str,
@@ -232,4 +223,12 @@ fn make_aptos_payload(
 		ty_args,
 		args,
 	))
+}
+
+fn make_script_payload(
+	code: Vec<u8>,
+	ty_args: Vec<TypeTag>,
+	args: Vec<TransactionArgument>,
+) -> TransactionPayload {
+	TransactionPayload::Script(Script);
 }
