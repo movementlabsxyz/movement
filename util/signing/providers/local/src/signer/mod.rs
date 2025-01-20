@@ -89,7 +89,7 @@ where
 	async fn sign(&self, message: &[u8]) -> Result<C::Signature, SignerError> {
 		let (signature, _recovery_id) = self
 			.signing_key
-			.sign_prehash_recoverable(message)
+			.sign_recoverable(message)
 			.map_err(|e| SignerError::Sign(e.into()))?;
 		Ok(C::Signature::try_from_bytes(signature.to_vec().as_slice())
 			.map_err(|e| SignerError::Sign(e.into()))?)
