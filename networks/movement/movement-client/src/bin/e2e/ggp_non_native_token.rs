@@ -161,16 +161,11 @@ async fn main() -> Result<(), anyhow::Error> {
 		vec![],
 	);
 
-	//If you don't remove .movement/ between runs this value will increment
-	//by one and you'll get an error.
-	let sequence_number = 2;
-
-	let tx_response = send_aptos_transaction(
-		&rest_client,
-		&mut LocalAccount::from_private_key(PRIVATE_KEY, sequence_number)?,
-		init_payload,
-	)
-	.await?;
+	//If you don't remove .movement/ between runs this seq number will be wrong
+	let sequence_number = 1;
+	let signer = &mut LocalAccount::from_private_key(PRIVATE_KEY, sequence_number)?;
+	println!("sending initialize_test_token tx with payload {:?}", init_payload);
+	let tx_response = send_aptos_transaction(&rest_client, signer, init_payload).await?;
 
 	println!("Transaction response: {:?}", tx_response);
 
@@ -185,12 +180,9 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	let script_payload = TransactionPayload::Script(Script::new(code, vec![], args));
 
-	let tx_response = send_aptos_transaction(
-		&rest_client,
-		&mut LocalAccount::from_private_key(PRIVATE_KEY, sequence_number)?,
-		script_payload,
-	)
-	.await?;
+	println!("script_payload: {:?}", script_payload);
+
+	let tx_response = send_aptos_transaction(&rest_client, signer, script_payload).await?;
 
 	println!("tx_response: {:?}", tx_response);
 
