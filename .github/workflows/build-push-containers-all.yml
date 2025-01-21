@@ -15,256 +15,81 @@ jobs:
   build-push-tested-containers:
     uses: ./.github/workflows/build-push-container.yml
     secrets: inherit
+    strategy:
+      matrix:
+        container_name:
+          - movement-celestia-da-light-node
+          - movement-celestia-appd
+          - movement-celestia-bridge
+          - movement-full-node-setup
+          - wait-for-celestia-light-node
+          - movement-full-node
+          - movement-faucet-service
+          - movement-tests-e2e-simple-interaction
+          - movement-indexer
+          - movement-tests-e2e-followers-consistent
+          - movement-util
     with:
       container_name: movement-full-node
 
   
 
   
-#   container-checks:
-#     if: github.event.label.name == 'cicd:movement-containers' ||  github.ref == 'refs/heads/main'
-#     runs-on: buildjet-8vcpu-ubuntu-2204
-#     needs: 
-#       - movement-celestia-da-light-node-manifest
-#       - movement-celestia-appd-manifest
-#       - movement-celestia-bridge-manifest
-#       - movement-full-node-setup-manifest
-#       - wait-for-celestia-light-node-manifest
-#       - movement-full-node-manifest
-#       - movement-faucet-service-manifest
-#       - movement-tests-e2e-simple-interaction-manifest
-#       - movement-tests-e2e-followers-consistent-manifest
-#       - movement-util-manifest
-#     steps:
+  container-checks:
+    if: github.event.label.name == 'cicd:movement-containers' ||  github.ref == 'refs/heads/main'
+    runs-on: buildjet-8vcpu-ubuntu-2204
+    needs: 
+      - build-push-tested-containers
+    steps:
 
-#       - name: Checkout repository
-#         uses: actions/checkout@v4
-#         with: 
-#           submodules: true
-#           ref: ${{ github.event.pull_request.head.ref || github.ref }}
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with: 
+          submodules: true
+          ref: ${{ github.event.pull_request.head.ref || github.ref }}
   
-#       - name: Install Nix
-#         uses: DeterminateSystems/nix-installer-action@main
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
   
-#       - name: Read the commit SHA
-#         id: vars
-#         run: echo "CONTAINER_REV=${{ github.ref }}" >> .env
+      - name: Read the commit SHA
+        id: vars
+        run: echo "CONTAINER_REV=${{ github.ref }}" >> .env
 
-#       - name: Display .env file
-#         run: cat .env
+      - name: Display .env file
+        run: cat .env
 
-#       - name: Install dependencies
-#         run: |
-#           sudo apt-get update
-#           sudo apt-get install -y wget
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget
   
   
-#       - name: Install docker-ce-cli
-#         run: |
-#           sudo apt-get install -y docker-ce-cli
+      - name: Install docker-ce-cli
+        run: |
+          sudo apt-get install -y docker-ce-cli
   
-#       - name: Verify Docker Installation
-#         run: |
-#           docker compose version
-#           docker --version
-#           docker version
+      - name: Verify Docker Installation
+        run: |
+          docker compose version
+          docker --version
+          docker version
 
-#       - name: Run docker-compose local.setup.test
-#         run: |
-#           nix develop --command bash  -c "just container-tests"  
-#           # run again to test restarts
-#           # nix develop --command bash  -c "just container-tests"  
+      - name: Run docker-compose local.setup.test
+        run: |
+          nix develop --command bash  -c "just container-tests"  
+          # run again to test restarts
+          # nix develop --command bash  -c "just container-tests"  
 
 # ### Unchecked containers
 
-#   bridge-service-build:
-#     # if: github.event.label.name == 'cicd:bridge-containers' ||  github.ref == 'refs/heads/main'
-#     permissions:
-#       contents: read
-#       packages: write
-#     strategy:
-#       matrix:
-#         architecture: [x86_64, arm64]
-        
-#     runs-on: ${{ matrix.architecture == 'x86_64' && 'buildjet-8vcpu-ubuntu-2204' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
-
-#     steps:
-#     - name: Checkout repository
-#       uses: actions/checkout@v4
-    
-#     - name: Login to Docker Hub
-#       uses: docker/login-action@v3
-#       with:
-#         registry: ghcr.io
-#         username: ${{ github.repository_owner }}
-#         password: ${{ secrets.GITHUB_TOKEN }}
-
-#     - name: Login to Docker Hub to Avoid Rate Limiting
-#       uses: docker/login-action@v3
-#       with:
-#         username: ${{ secrets.DOCKER_HUB_USERNAME }}
-#         password: ${{ secrets.DOCKER_HUB_TOKEN }}
-
-#     - name: Build and Push Docker image movement
-#       run: |
-#         ./scripts/movement/build-push-image bridge-service
-
-#   bridge-service-manifest:
-#     permissions:
-#       contents: read
-#       packages: write
-#     needs: bridge-service-build
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Checkout repository
-#         uses: actions/checkout@v4
-
-#       - name: Login to Docker Hub
-#         uses: docker/login-action@v3
-#         with:
-#           registry: ghcr.io
-#           username: ${{ github.repository_owner }}
-#           password: ${{ secrets.GITHUB_TOKEN }}
-      
-#       - name: Login to Docker Hub to Avoid Rate Limiting
-#         uses: docker/login-action@v3
-#         with:
-#           username: ${{ secrets.DOCKER_HUB_USERNAME }}
-#           password: ${{ secrets.DOCKER_HUB_TOKEN }}
-
-#       - name: Build and Push Docker image movement
-#         run: |
-#           ./scripts/movement/manifest bridge-service
-
-#   bridge-setup-build:
-#     # if: github.event.label.name == 'cicd:bridge-containers' ||  github.ref == 'refs/heads/main'
-#     permissions:
-#       contents: read
-#       packages: write
-#     strategy:
-#       matrix:
-#         architecture: [x86_64, arm64]
-        
-#     runs-on: ${{ matrix.architecture == 'x86_64' && 'buildjet-8vcpu-ubuntu-2204' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
-
-#     steps:
-#     - name: Checkout repository
-#       uses: actions/checkout@v4
-#       with: 
-#         submodules: true
-#         ref: ${{ github.event.pull_request.head.ref || github.ref }}
-    
-#     - name: Login to Docker Hub
-#       uses: docker/login-action@v3
-#       with:
-#         registry: ghcr.io
-#         username: ${{ github.repository_owner }}
-#         password: ${{ secrets.GITHUB_TOKEN }}
-
-#     - name: Login to Docker Hub to Avoid Rate Limiting
-#       uses: docker/login-action@v3
-#       with:
-#         username: ${{ secrets.DOCKER_HUB_USERNAME }}
-#         password: ${{ secrets.DOCKER_HUB_TOKEN }}
-
-#     - name: Build and Push Docker image movement
-#       run: |
-#         ./scripts/movement/build-push-image bridge-setup
-
-#   bridge-setup-manifest:
-#     permissions:
-#       contents: read
-#       packages: write
-#     needs: bridge-setup-build
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Checkout repository
-#         uses: actions/checkout@v4
-#         with: 
-#           submodules: true
-#           ref: ${{ github.event.pull_request.head.ref || github.ref }}
-
-#       - name: Login to Docker Hub
-#         uses: docker/login-action@v3
-#         with:
-#           registry: ghcr.io
-#           username: ${{ github.repository_owner }}
-#           password: ${{ secrets.GITHUB_TOKEN }}
-      
-#       - name: Login to Docker Hub to Avoid Rate Limiting
-#         uses: docker/login-action@v3
-#         with:
-#           username: ${{ secrets.DOCKER_HUB_USERNAME }}
-#           password: ${{ secrets.DOCKER_HUB_TOKEN }}
-
-#       - name: Build and Push Docker image movement
-#         run: |
-#           ./scripts/movement/manifest bridge-setup
-
-#   helios-build:
-#     if: false
-#     # if: github.event.label.name == 'cicd:bridge-containers' ||  github.ref == 'refs/heads/main'
-#     permissions:
-#       contents: read
-#       packages: write
-#     strategy:
-#       matrix:
-#         architecture: [x86_64, arm64]
-        
-#     runs-on: ${{ matrix.architecture == 'x86_64' && 'buildjet-8vcpu-ubuntu-2204' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
-
-#     steps:
-#     - name: Checkout repository
-#       uses: actions/checkout@v4
-#       with: 
-#         submodules: true
-#         ref: ${{ github.event.pull_request.head.ref || github.ref }}
-    
-#     - name: Login to Docker Hub
-#       uses: docker/login-action@v3
-#       with:
-#         registry: ghcr.io
-#         username: ${{ github.repository_owner }}
-#         password: ${{ secrets.GITHUB_TOKEN }}
-
-#     - name: Login to Docker Hub to Avoid Rate Limiting
-#       uses: docker/login-action@v3
-#       with:
-#         username: ${{ secrets.DOCKER_HUB_USERNAME }}
-#         password: ${{ secrets.DOCKER_HUB_TOKEN }}
-
-#     - name: Build and Push Docker image movement
-#       run: |
-#         ./scripts/movement/build-push-image helios
-
-#   helios-manifest:
-#     permissions:
-#       contents: read
-#       packages: write
-#     needs: helios-build
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Checkout repository
-#         uses: actions/checkout@v4
-#         with: 
-#           submodules: true
-#           ref: ${{ github.event.pull_request.head.ref || github.ref }}
-
-#       - name: Login to Docker Hub
-#         uses: docker/login-action@v3
-#         with:
-#           registry: ghcr.io
-#           username: ${{ github.repository_owner }}
-#           password: ${{ secrets.GITHUB_TOKEN }}
-      
-#       - name: Login to Docker Hub to Avoid Rate Limiting
-#         uses: docker/login-action@v3
-#         with:
-#           username: ${{ secrets.DOCKER_HUB_USERNAME }}
-#           password: ${{ secrets.DOCKER_HUB_TOKEN }}
-
-#       - name: Build and Push Docker image movement
-#         run: |
-#           ./scripts/movement/manifest helios
-
-  
+  build-push-untested-containers:
+    uses: ./.github/workflows/build-push-container.yml
+    secrets: inherit
+    strategy:
+      matrix:
+        container_name:
+          - bridge-service
+          - bridge-setup
+          - helios
+    with:
+      container_name: movement-full-node
