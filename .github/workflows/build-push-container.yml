@@ -17,6 +17,7 @@ on:
 
 jobs:
   container-build:
+    name: Build ${{ inputs.container_name }}
     strategy:
       matrix:
         architecture: [x86_64, arm64]        
@@ -46,6 +47,7 @@ jobs:
         ./scripts/docker/build-push-container -n ${{ inputs.container_name }}
 
   container-manifest:
+    name: Manifest ${{ inputs.container_name }}
     needs: container-build
     runs-on: ubuntu-latest
     steps:

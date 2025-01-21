@@ -13,8 +13,9 @@ on:
 
 jobs:
 
-  build-push-tested-containers:
+  build-push-checked-containers:
     uses: ./.github/workflows/build-push-container.yml
+    name: Build Push Checked Containers
     secrets: inherit
     strategy:
       matrix:
@@ -31,7 +32,7 @@ jobs:
           - movement-tests-e2e-followers-consistent
           - movement-util
     with:
-      container_name: movement-full-node
+      container_name: ${{ matrix.container_name }}
 
   
 
@@ -40,7 +41,7 @@ jobs:
     if: github.event.label.name == 'cicd:movement-containers' ||  github.ref == 'refs/heads/main'
     runs-on: buildjet-8vcpu-ubuntu-2204
     needs: 
-      - build-push-tested-containers
+      - build-push-checked-containers
     steps:
 
       - name: Checkout repository
@@ -81,10 +82,11 @@ jobs:
           # run again to test restarts
           # nix develop --command bash  -c "just container-tests"  
 
-# ### Unchecked containers
+### Unchecked containers
 
-  build-push-untested-containers:
+  build-push-unchecked-containers:
     uses: ./.github/workflows/build-push-container.yml
+    name: Build Push Unchecked Containers
     secrets: inherit
     strategy:
       matrix:
@@ -93,4 +95,4 @@ jobs:
           - bridge-setup
           - helios
     with:
-      container_name: movement-full-node
+      container_name: ${{ matrix.container_name }}
