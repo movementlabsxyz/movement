@@ -1,0 +1,73 @@
+name: Build/Push Container
+
+on:
+  workflow_call:
+    inputs:
+      container_name:
+        type: string
+        description: The name of the container to build
+        required: true
+    secrets:
+      INFRA_GH_TOKEN:
+        required: true
+      DOCKER_HUB_USERNAME:
+        required: true
+      DOCKER_HUB_TOKEN:
+        required: true
+
+jobs:
+  container-build:
+    strategy:
+      matrix:
+        architecture: [x86_64, arm64]        
+    runs-on: ${{ matrix.architecture == 'x86_64' && 'buildjet-8vcpu-ubuntu-2204' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with: 
+        submodules: true
+        ref: ${{ github.event.pull_request.head.ref || github.ref }}
+    
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.INFRA_GH_TOKEN }}
+
+    - name: Login to Docker Hub to Avoid Rate Limiting
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+    - name: Build and Push Docker image movement
+      run: |
+        ./scripts/movement/build-push-image ${{ inputs.container_name }}
+
+  container-manifest:
+    needs: container-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with: 
+          submodules: true
+          ref: ${{ github.event.pull_request.head.ref || github.ref }}
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.INFRA_GH_TOKEN }}
+      
+      - name: Login to Docker Hub to Avoid Rate Limiting
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Build and Push Docker image movement
+        run: |
+          ./scripts/movement/manifest ${{ inputs.container_name }}
