@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# check if git is installed
+if ! command -v git &> /dev/null; then
+    echo "git is not installed"
+    exit 1
+fi
+
+# check if cog is installed
+if ! command -v cog &> /dev/null; then
+    echo "cocogitto (cog) is not installed"
+    exit 1
+fi
+
+echo "Checking for conventional commits"
+
+# get current commit hash
+COMMIT_HASH_CURRENT=$(git rev-parse HEAD)
+
+# check for conventional commits
+CONVENTIONAL_COMMITS=$(cog check)
+
+if echo "$CONVENTIONAL_COMMITS" | grep -qi "Error:"; then
+    echo "Failures found in conventional commit"
+    exit 1
+fi
+
+exit 0
+
