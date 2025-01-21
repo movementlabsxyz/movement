@@ -88,4 +88,4 @@ jobs:
 
       - name: Build and push container manifest
         run: |
-          ./scripts/docker/build-push-manifest ${{ inputs.container_name }}
+          ./scripts/docker/build-push-manifest -n ${{ inputs.container_name }}
