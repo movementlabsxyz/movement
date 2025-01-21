@@ -78,8 +78,8 @@ static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
 	let rest_client = Client::new(NODE_URL.clone());
-	let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
-	let coin_client = CoinClient::new(&rest_client);
+	let _faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
+	let _coin_client = CoinClient::new(&rest_client);
 
 	let crate_dir = env::var("CARGO_MANIFEST_DIR").expect(
 		"CARGO_MANIFEST_DIR is not set. Make sure to run this inside a Cargo build context.",
@@ -176,14 +176,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	let crate_dir = PathBuf::from(crate_dir_clone);
 
-	let code = fs::read(
-		crate_dir
-			.join("src")
-			.join("move-modules")
-			.join("build")
-			.join("bytecode_scripts")
-			.join("main.mv"),
-	)?;
+	let code = fs::read(crate_dir.join("build").join("bytecode_scripts").join("main.mv"))?;
 	let args = vec![TransactionArgument::U64(42)];
 
 	let script_payload = TransactionPayload::Script(Script::new(code, vec![], args));
