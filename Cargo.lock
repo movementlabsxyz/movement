@@ -10325,7 +10325,7 @@ dependencies = [
  "aptos-protos 1.3.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=a22a721f036c03e1e9109d8f62f7bcc5be144fcb)",
  "aptos-sdk",
  "aptos-types",
- "aptos-vm",
+ "aptos-vm-genesis",
  "async-trait",
  "bcs 0.1.4",
  "buildtime-helpers",

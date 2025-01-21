@@ -8,6 +8,7 @@ use aptos_sdk::{move_types::language_storage::TypeTag, transaction_builder::Tran
 use aptos_types::account_config::aptos_test_root_address;
 use aptos_types::chain_id::ChainId;
 use aptos_types::transaction::{EntryFunction, Script, TransactionArgument, TransactionPayload};
+use aptos_vm::aptos_vm;
 use movement_client::{
 	coin_client::CoinClient,
 	rest_client::{Client, FaucetClient},
