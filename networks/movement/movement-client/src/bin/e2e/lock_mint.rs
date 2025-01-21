@@ -1,10 +1,10 @@
 #![allow(unused_imports)]
 use anyhow::Context;
 use aptos_sdk::move_types::{
-	identifier::Identifier, language_storage::ModuleId, language_storage::TypeTag,
+	identifier::Identifier, language_storage::{ModuleId, StructTag}, language_storage::TypeTag,
 };
 use aptos_sdk::types::{
-	account_address::AccountAddress, chain_id::ChainId, transaction::EntryFunction, LocalAccount,
+	account_address::AccountAddress, chain_id::ChainId, transaction::{EntryFunction, TransactionArgument, Script}, LocalAccount,
 };
 use aptos_sdk::{
 	rest_client::{
@@ -22,10 +22,13 @@ use movement_client::{
 	rest_client::{Client, FaucetClient},
 };
 use once_cell::sync::Lazy;
+use rayon::vec;
 use std::str::FromStr;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tracing;
 use url::Url;
+use std::process::Command;
+use std::{env, fs};
 
 static SUZUKA_CONFIG: Lazy<movement_config::Config> = Lazy::new(|| {
 	let dot_movement = dot_movement::DotMovement::try_from_env().unwrap();
@@ -153,24 +156,48 @@ async fn main() -> Result<(), anyhow::Error> {
 		dead_balance
 	);
 
-	// Burn coins from the dead account
-	let burn_transaction =
-		core_resources_account.sign_with_transaction_builder(TransactionBuilder::new(
-			TransactionPayload::EntryFunction(EntryFunction::new(
-				ModuleId::new(AccountAddress::from_hex_literal("0x1")?, Identifier::new("coin")?),
-				Identifier::new("burn_frozen")?,
-				vec![TypeTag::from_str("0x1::aptos_coin::AptosCoin")?],
-				vec![bcs::to_bytes(&dead_address)?, bcs::to_bytes(&1u64)?],
-			)),
+	let compile_status = Command::new("movement")
+		.args([
+			"move",
+			"compile",
+			"--package-dir",
+			"protocol-units/bridge/move-modules",
+		])
+		.status()
+		.expect("Failed to execute `movement compile` command");
+
+	let code = fs::read("protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/burn_from.mv")?;
+	let args = vec![TransactionArgument::Address(dead_address), TransactionArgument::U64(1)];
+	let script_payload = TransactionPayload::Script(Script::new(code, vec![], args));
+
+	let tx_response = rest_client.submit_and_wait(&core_resources_account.sign_with_transaction_builder(
+		TransactionBuilder::new(
+			script_payload,
 			SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60,
 			ChainId::new(chain_id),
-		).sequence_number(core_resources_account.sequence_number()));
+		).sequence_number(core_resources_account.sequence_number())
+	)).await?;
+
+	println!("tx_response: {:?}", tx_response);
+
+	// // Burn coins from the dead account
+	// let burn_transaction =
+	// 	core_resources_account.sign_with_transaction_builder(TransactionBuilder::new(
+	// 		TransactionPayload::EntryFunction(EntryFunction::new(
+	// 			ModuleId::new(AccountAddress::from_hex_literal("0x1")?, Identifier::new("coin")?),
+	// 			Identifier::new("burn_frozen")?,
+	// 			vec![TypeTag::from_str("0x1::aptos_coin::AptosCoin")?],
+	// 			vec![bcs::to_bytes(&dead_address)?, bcs::to_bytes(&1u64)?],
+	// 		)),
+	// 		SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60,
+	// 		ChainId::new(chain_id),
+	// 	).sequence_number(core_resources_account.sequence_number()));
 
 
-	rest_client
-		.submit_and_wait(&burn_transaction)
-		.await
-		.context("Failed to burn coins from dead account")?;
+	// rest_client
+	// 	.submit_and_wait(&burn_transaction)
+	// 	.await
+	// 	.context("Failed to burn coins from dead account")?;
 
 	tracing::info!("Burn transaction successfully executed.");
 
