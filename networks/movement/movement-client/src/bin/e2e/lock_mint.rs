@@ -94,7 +94,7 @@ async fn main() -> Result<(), anyhow::Error> {
 		.maptos_private_key
 		.to_string();
 	let mut core_resources_account: LocalAccount = LocalAccount::from_private_key(
-		"000000000000000000000000000000000000000000000000000000000000dead",
+		"0000000000000000000000000000000000000000000000000000000000000001",
 		0,
 	)?;
 
@@ -168,9 +168,13 @@ async fn main() -> Result<(), anyhow::Error> {
 		.status()
 		.expect("Failed to execute `movement compile` command");
 
-	let code = fs::read("protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/burn_from.mv")?;
+	println!({"compile_status: {:?}", compile_status});
+
+	let code = fs::read("protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/main.mv")?;
 	let args = vec![TransactionArgument::Address(dead_address), TransactionArgument::U64(1)];
 	let script_payload = TransactionPayload::Script(Script::new(code, vec![], args));
+
+	// println!("{:?}", script_payload);
 
 	let tx_response = rest_client.submit_and_wait(&core_resources_account.sign_with_transaction_builder(
 		TransactionBuilder::new(
