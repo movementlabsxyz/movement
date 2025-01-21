@@ -93,7 +93,7 @@ async fn main() -> Result<(), anyhow::Error> {
 		.chain
 		.maptos_private_key
 		.to_string();
-	let mut core_resources_account = LocalAccount::from_private_key(
+	let mut core_resources_account: LocalAccount = LocalAccount::from_private_key(
 		"0x0000000000000000000000000000000000000000000000000000000000000001",
 		0,
 	)?;
@@ -167,7 +167,7 @@ async fn main() -> Result<(), anyhow::Error> {
 		.expect("Failed to execute `movement compile` command");
 
 	let code = fs::read("protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/burn_from.mv")?;
-	let args = vec![TransactionArgument::Address(dead_address), TransactionArgument::U64(1), TransactionArgument::Struct(StructTag {
+	let args = vec![TransactionArgument::Address(dead_address), TransactionArgument::U64(1), TransactionArgument::U8Vector(StructTag {
 		address: AccountAddress::from_hex_literal("0x1")?,
 		module: Identifier::new("coin")?,
 		name: Identifier::new("BurnCapability")?,
@@ -176,8 +176,8 @@ async fn main() -> Result<(), anyhow::Error> {
 			module: Identifier::new("aptos_coin")?,
 			name: Identifier::new("AptosCoin")?,
 			type_args: vec![],
-		}],
-	})];
+		}.into()],
+	}.access_vector())];
 	let script_payload = TransactionPayload::Script(Script::new(code, vec![], args));
 
 	let tx_response = rest_client.submit_and_wait(&core_resources_account.sign_with_transaction_builder(
