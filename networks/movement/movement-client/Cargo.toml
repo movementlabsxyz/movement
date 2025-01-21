@@ -44,6 +44,7 @@ name = "movement-tests-e2e-ggp-non-native-token"
 path = "src/bin/e2e/ggp_non_native_token.rs"
 
 [dependencies]
+aptos-vm = { workspace = true }
 aptos-sdk = { workspace = true }
 aptos-types = { workspace = true }
 anyhow = { workspace = true }

@@ -3,7 +3,9 @@ use aptos_sdk::move_types::identifier::Identifier;
 use aptos_sdk::move_types::language_storage::ModuleId;
 use aptos_sdk::rest_client::Transaction;
 use aptos_sdk::types::account_address::AccountAddress;
+use aptos_sdk::types::AccountKey;
 use aptos_sdk::{move_types::language_storage::TypeTag, transaction_builder::TransactionFactory};
+use aptos_types::account_config::aptos_test_root_address;
 use aptos_types::chain_id::ChainId;
 use aptos_types::transaction::{EntryFunction, Script, TransactionArgument, TransactionPayload};
 use movement_client::{
@@ -24,10 +26,13 @@ const GAS_UNIT_LIMIT: u64 = 100000;
 /// minimum price of gas unit of aptos chains
 pub const GAS_UNIT_PRICE: u64 = 100;
 const ACCOUNT_ADDRESS: &str = "30005dbbb9b324b18bed15aca87770512ec7807410fabb0420494d9865e56fa4";
-//
 // NB: This is a determinisitic privake key generated from the init command
 // used for testing purposes only
 const PRIVATE_KEY: &str = "0x97121e4f94695b6fb65a24899c5cce23cc0dad5a1c07caaeb6dd555078d14ba7";
+// This is a well known private key used for testing purposes only. It is safe to expose
+// and never used on a real network
+const ASSOCIATE_PRIVATE_KEY: &str =
+	"0x0000000000000000000000000000000000000000000000000000000000000001";
 
 static SUZUKA_CONFIG: Lazy<movement_config::Config> = Lazy::new(|| {
 	let dot_movement = dot_movement::DotMovement::try_from_env().unwrap();
@@ -182,6 +187,11 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	println!("script_payload: {:?}", script_payload);
 
+	let core_resources_account: LocalAccount = LocalAccount::new(
+		aptos_test_root_address(),
+		AccountKey::from_private_key(aptos_vm_genesis::GENESIS_KEYPAIR.0.clone()),
+		0,
+	);
 	let tx_response = send_aptos_transaction(&rest_client, signer, script_payload).await?;
 
 	println!("tx_response: {:?}", tx_response);
