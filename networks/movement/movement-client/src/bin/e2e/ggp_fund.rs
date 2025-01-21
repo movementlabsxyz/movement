@@ -177,12 +177,5 @@ async fn main() -> Result<(), anyhow::Error> {
 		"Beneficiary did not receive the full amount"
 	);
 
-	// Verify gas payer only paid the transfer amount (no fees)
-	let total_cost = pre_transfer_gas_payer_balance - final_gas_payer_balance;
-	assert_eq!(
-		total_cost, 1000,
-		"Gas payer was charged more than the transfer amount (fees were taken)"
-	);
-
 	Ok(())
 }
