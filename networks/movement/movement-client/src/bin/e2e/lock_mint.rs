@@ -1,9 +1,9 @@
 #![allow(unused_imports)]
 use anyhow::Context;
 use movement_client::crypto::ValidCryptoMaterialStringExt;
-use aptos_sdk::move_types::{
-	identifier::Identifier, language_storage::{ModuleId, StructTag}, language_storage::TypeTag,
-};
+use aptos_sdk::{move_types::{
+	identifier::Identifier, language_storage::{ModuleId, StructTag, TypeTag},
+}, rest_client::Account};
 use aptos_sdk::types::{
 	account_address::AccountAddress, chain_id::ChainId, transaction::{EntryFunction, TransactionArgument, Script}, LocalAccount,
 };
@@ -124,7 +124,7 @@ async fn main() -> Result<(), anyhow::Error> {
 			)),
 			SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60,
 			ChainId::new(chain_id),
-		).sequence_number(core_resources_account.sequence_number()));
+		).sender(relayer_address).sequence_number(core_resources_account.sequence_number()));
 
 	rest_client
 		.submit_and_wait(&create_dead_transaction)
@@ -183,7 +183,7 @@ async fn main() -> Result<(), anyhow::Error> {
 			script_payload,
 			SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60,
 			ChainId::new(chain_id),
-		).sequence_number(core_resources_account.sequence_number())
+		).sender(relayer_address).sequence_number(core_resources_account.sequence_number())
 	)).await.context("Failed to execute burn dead balance script transaction")?;
 
 	// transfer to relayer address the desired amount
