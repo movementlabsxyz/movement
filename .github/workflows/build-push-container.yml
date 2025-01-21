@@ -43,7 +43,7 @@ jobs:
 
     - name: Build and Push Docker image movement
       run: |
-        ./scripts/movement/build-push-image ${{ inputs.container_name }}
+        ./scripts/docker/build-push-container -n ${{ inputs.container_name }}
 
   container-manifest:
     needs: container-build

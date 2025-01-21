@@ -116,13 +116,8 @@ docker build $git_root \
     -f $dockerfile_path \
     $(for tag in "${container_tags[@]}"; do echo -n " -t $tag"; done)
 
-# # Tag and build the Docker image
-# IMG_NAME_TAG_COMMIT="${REPOSITORY}/${IMAGE_NAME}:${COMMIT_HASH}${PLATFORM_SUFFIX}"
-# echo "Building docker image with tags ${IMG_NAME_TAG_COMMIT}"
-
-# docker build $GIT_ROOT \
-#         -f "${DOKERFILE}" \
-#         -t "${IMG_NAME_TAG_COMMIT}"
-
-# # Push the Docker images
-# docker push "${IMG_NAME_TAG_COMMIT}"
+# Push the Docker images
+for tag in "${container_tags[@]}"; do
+    docker push $tag
+done
+    
