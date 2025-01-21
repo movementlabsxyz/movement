@@ -2,7 +2,10 @@ use anyhow::{anyhow, Context};
 use commander::run_command;
 use dot_movement::DotMovement;
 use mcr_settlement_config::Config;
-
+use movement_signer::key::Key;
+use movement_signer::key::TryFromCanonicalString;
+use movement_signer_loader::identifiers::aws_kms::AwsKms;
+use movement_signer_loader::identifiers::{local::Local as SignerLocal, SignerIdentifier};
 use tracing::info;
 
 /// The local setup strategy for MCR settlement
@@ -97,7 +100,7 @@ impl Local {
 			mcr_settlement_client::eth_client::read_anvil_json_file_addresses(&*anvil_path)
 				.context("Failed to read Anvil addresses")?;
 		if let Some(deploy) = &mut config.deploy {
-			deploy.mcr_deployment_account_private_key = anvil_addresses
+			deploy.mcr_local_anvil_account_private_key = anvil_addresses
 				.get(0)
 				.ok_or(anyhow!("Failed to get Anvil address"))?
 				.private_key
@@ -107,7 +110,33 @@ impl Local {
 				.ok_or(anyhow!("Failed to get Anvil address"))?
 				.address
 				.clone();
-			info!("Deployer address: {}", deployer_address)
+			info!("Deployer address: {}", deployer_address);
+
+			// Detect if we execute with AWS from AWS_KMS_KEY_ID env var or not.
+			config.settle.signer_identifier = match std::env::var("AWS_KMS_KEY_ID") {
+				Ok(key_id) => {
+					info!("Use AWS Signer with key_id: {key_id}");
+					//For Aws set identifier to AWS and key_id
+					SignerIdentifier::AwsKms(AwsKms {
+						key: Key::try_from_canonical_string(&format!(
+							"movement/dev/full_node/mcr_settlement/signer/{}/0",
+							key_id
+						))
+						.map_err(|err| anyhow::anyhow!(err))?,
+						// todo: for non-local setups or where the signer is hardcoded, already configured, etc., we should not create the key
+						create: true,
+					})
+				}
+				Err(_) => {
+					// Createa new random key to sign settlement.
+					let private_key_hex = deploy.mcr_local_anvil_account_private_key.to_string();
+					//remove the Ox at the beginning
+					let private_key_hex_bytes = (&private_key_hex[2..]).to_string();
+
+					info!("Use Local Signer.");
+					SignerIdentifier::Local(SignerLocal { private_key_hex_bytes })
+				}
+			};
 		}
 		if let Some(testing) = &mut config.testing {
 			// Remove the old one if the config was existing.

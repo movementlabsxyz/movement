@@ -15,7 +15,7 @@ pub enum SignerError {
 	Decode(#[source] Box<dyn error::Error + Send + Sync>),
 	#[error("signing key not found")]
 	KeyNotFound,
-	#[error("failed to sign")]
+	#[error("failed to sign: {0}")]
 	Internal(String),
 }
 

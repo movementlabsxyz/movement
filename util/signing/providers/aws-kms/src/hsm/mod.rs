@@ -2,10 +2,10 @@ use crate::cryptography::AwsKmsCryptographySpec;
 use anyhow::Context;
 use aws_sdk_kms::primitives::Blob;
 use aws_sdk_kms::Client;
+use movement_signer::cryptography::secp256k1::{self as mvtsecp256k1, Secp256k1 as MvtSecp256k1};
 use movement_signer::cryptography::TryFromBytes;
 use movement_signer::{cryptography::Curve, SignerError, Signing};
-use secp256k1::ecdsa::Signature as Secp256k1Signature;
-use secp256k1::Error as Secp256k1Error;
+
 pub mod key;
 
 /// An AWS KMS HSM.
@@ -62,24 +62,17 @@ where
 	}
 }
 
+// The implementation is specific to Secp256k1 for the signature and private key.
 #[async_trait::async_trait]
-impl<C> Signing<C> for AwsKms<C>
-where
-	C: Curve + AwsKmsCryptographySpec + Sync,
-{
-	async fn sign(&self, message: &[u8]) -> Result<C::Signature, SignerError> {
-		println!("Preparing to sign message. Message bytes: {:?}", message);
-
+impl Signing<MvtSecp256k1> for AwsKms<MvtSecp256k1> {
+	async fn sign(&self, message: &[u8]) -> Result<mvtsecp256k1::Signature, SignerError> {
 		let blob = Blob::new(message);
-		// Todo: update to use Parameter Store to fetch Key Id
-		let key_id = std::env::var("AWS_KMS_KEY_ID")
-			.map_err(|_| SignerError::Internal("AWS_KMS_KEY_ID not set".to_string()))?;
-		println!("Using Key ID: {}", key_id);
 		let request = self
 			.client
 			.sign()
-			.key_id(key_id)
-			.signing_algorithm(C::signing_algorithm_spec())
+			.key_id(self.key_id.clone())
+			.message_type(aws_sdk_kms::types::MessageType::Digest)
+			.signing_algorithm(MvtSecp256k1::signing_algorithm_spec())
 			.message(blob);
 
 		let res = request
@@ -87,42 +80,47 @@ where
 			.await
 			.map_err(|e| SignerError::Internal(format!("Failed to sign: {}", e.to_string())))?;
 
-		println!("Response signature (DER format): {:?}", res.signature());
-
 		// Convert DER signature to raw format using secp256k1
 		let der_signature = res
 			.signature()
 			.context("No signature available")
 			.map_err(|e| SignerError::Internal(e.to_string()))?;
 
-		let secp_signature =
-			Secp256k1Signature::from_der(der_signature.as_ref()).map_err(|e: Secp256k1Error| {
-				SignerError::Internal(format!("Failed to parse DER signature: {}", e))
-			})?;
+		let secp_signature = k256::ecdsa::Signature::from_der(der_signature.as_ref())
+			.map_err(|e| SignerError::Decode(e.into()))?;
 
-		let raw_signature = secp_signature.serialize_compact();
-		println!("Raw signature: {:?}", raw_signature);
+		let secp_signature = secp_signature.normalize_s().unwrap_or(secp_signature);
 
 		// Convert the raw signature into the appropriate curve type
-		let signature = <C as Curve>::Signature::try_from_bytes(&raw_signature).map_err(|e| {
-			SignerError::Internal(format!("Failed to convert signature: {}", e.to_string()))
-		})?;
+		let signature = mvtsecp256k1::Signature::try_from_bytes(&secp_signature.to_bytes())
+			.map_err(|e| {
+				SignerError::Internal(format!("Failed to convert signature: {}", e.to_string()))
+			})?;
 
 		Ok(signature)
 	}
 
-	async fn public_key(&self) -> Result<C::PublicKey, SignerError> {
+	async fn public_key(&self) -> Result<mvtsecp256k1::PublicKey, SignerError> {
+		println!("AwsKms public_key key_id: {:?}", self.key_id);
 		let res = self.client.get_public_key().key_id(&self.key_id).send().await.map_err(|e| {
 			SignerError::Internal(format!("failed to get public key: {}", e.to_string()))
 		})?;
-		let public_key = C::PublicKey::try_from_bytes(
+		let public_key = mvtsecp256k1::PublicKey::try_from_bytes(
 			res.public_key()
 				.context("No public key available")
+				//Decode pubic key
 				.map_err(|e| {
-					SignerError::Internal(format!(
-						"failed to convert public key: {}",
-						e.to_string()
-					))
+					SignerError::Internal(format!("failed to read public key: {}", e.to_string()))
+				})
+				.and_then(|key| {
+					spki::SubjectPublicKeyInfoRef::try_from(key.as_ref())
+						.map(|spki| spki.subject_public_key.raw_bytes())
+						.map_err(|e| {
+							SignerError::Internal(format!(
+								"failed to convert public key: {}",
+								e.to_string()
+							))
+						})
 				})?
 				.as_ref(),
 		)
@@ -134,6 +132,7 @@ where
 }
 
 // Utility function for DER-to-raw signature conversion
+// It' never used?
 pub fn der_to_raw_signature(der: &[u8]) -> Result<[u8; 64], String> {
 	if der.len() < 8 || der[0] != 0x30 {
 		return Err("Invalid DER signature".to_string());

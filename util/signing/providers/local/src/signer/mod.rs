@@ -46,6 +46,7 @@ impl LocalSigner<Secp256k1> {
 	/// Constructs a new [LocalSigner] with a random key pair.
 	pub fn random() -> Self {
 		let signing_key = SigningKey::<k256::Secp256k1>::random(&mut rand::thread_rng());
+
 		let verifying_key = signing_key.verifying_key().clone();
 		Self::new(signing_key, verifying_key)
 	}
@@ -67,7 +68,7 @@ impl LocalSigner<Secp256k1> {
 
 	/// Constructs a new [LocalSigner] from a hex string.
 	pub fn from_signing_key_hex(hex: &str) -> Result<Self, SignerError> {
-		let bytes = hex::decode(hex).map_err(|e| SignerError::Decode(e.into()))?;
+		let bytes = hex::decode(hex).map_err(|e| SignerError::Decode(anyhow::anyhow!(e).into()))?;
 		Self::from_signing_key_bytes(&bytes)
 	}
 }
