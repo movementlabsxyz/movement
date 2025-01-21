@@ -61,7 +61,7 @@ async fn main() -> Result<(), anyhow::Error> {
 	let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
 	let coin_client = CoinClient::new(&rest_client);
 
-	// Create a gas payer account (to fund the pool) and beneficiary account
+	// Create accounts
 	let mut gas_payer = LocalAccount::generate(&mut rand::rngs::OsRng);
 	let beneficiary = LocalAccount::generate(&mut rand::rngs::OsRng);
 
@@ -72,17 +72,30 @@ async fn main() -> Result<(), anyhow::Error> {
 		beneficiary.address()
 	);
 
-	// Fund the gas payer account
+	// Fund gas payer and get initial balance
 	faucet_client
 		.fund(gas_payer.address(), 1_000_000)
 		.await
 		.context("Failed to fund gas payer account")?;
 
-	// Create and register the beneficiary account for APT
+	let initial_gas_payer_balance = coin_client
+		.get_account_balance(&gas_payer.address())
+		.await
+		.context("Failed to get initial gas payer balance")?;
+	tracing::info!("Initial gas payer balance: {}", initial_gas_payer_balance);
+
+	// Fund beneficiary account
 	faucet_client
 		.create_account(beneficiary.address())
 		.await
 		.context("Failed to create beneficiary account")?;
+
+	// Get initial beneficiary balance
+	let initial_beneficiary_balance = coin_client
+		.get_account_balance(&beneficiary.address())
+		.await
+		.context("Failed to get initial beneficiary balance")?;
+	tracing::info!("Initial beneficiary balance: {}", initial_beneficiary_balance);
 
 	// Get the governed gas pool address
 	let view_req = ViewRequest {
@@ -111,37 +124,72 @@ async fn main() -> Result<(), anyhow::Error> {
 	let ggp_account_address =
 		AccountAddress::from_str(&ggp_address[0]).expect("Failed to parse address");
 
-	// Make a transaction to generate gas fees that will go to the pool
+	// Get initial gas pool balance
+	let initial_pool_balance = coin_client
+		.get_account_balance(&ggp_account_address)
+		.await
+		.context("Failed to get initial gas pool balance")?;
+	tracing::info!("Initial gas pool balance: {}", initial_pool_balance);
+
+	// Get gas payer balance before transfer
+	let pre_transfer_gas_payer_balance = coin_client
+		.get_account_balance(&gas_payer.address())
+		.await
+		.context("Failed to get pre-transfer gas payer balance")?;
+	tracing::info!("Gas payer balance before transfer: {}", pre_transfer_gas_payer_balance);
+
+	// Make the transfer
 	let txn_hash = coin_client
 		.transfer(&mut gas_payer, beneficiary.address(), 1_000, None)
 		.await
 		.context("Failed to submit transfer transaction")?;
 
+	// Wait for transaction and get detailed info
 	rest_client
 		.wait_for_transaction(&txn_hash)
 		.await
 		.context("Failed when waiting for transfer transaction")?;
 
-	// Get initial balances before fund distribution
-	let initial_pool_balance = coin_client
-		.get_account_balance(&ggp_account_address)
+	// Get all final balances
+	let final_gas_payer_balance = coin_client
+		.get_account_balance(&gas_payer.address())
 		.await
-		.context("Failed to get initial gas pool balance")?;
+		.context("Failed to get final gas payer balance")?;
 
-	let initial_beneficiary_balance = coin_client
+	let final_beneficiary_balance = coin_client
 		.get_account_balance(&beneficiary.address())
 		.await
-		.context("Failed to get initial beneficiary balance")?;
-
-	tracing::info!("Initial gas pool balance: {}", initial_pool_balance);
-	tracing::info!("Initial beneficiary balance: {}", initial_beneficiary_balance);
+		.context("Failed to get final beneficiary balance")?;
 
 	let final_pool_balance = coin_client
 		.get_account_balance(&ggp_account_address)
 		.await
 		.context("Failed to get final gas pool balance")?;
 
-	assert!(final_pool_balance > initial_pool_balance, "Gas fees were not collected by the pool");
+	tracing::info!("Final gas pool balance: {}", final_pool_balance);
+	tracing::info!("Final beneficiary balance: {}", final_beneficiary_balance);
+	tracing::info!("Final gas payer balance: {}", final_gas_payer_balance);
+
+	// Verify beneficiary received full amount
+	assert_eq!(
+		final_beneficiary_balance - initial_beneficiary_balance,
+		1000,
+		"Beneficiary did not receive the full amount"
+	);
+
+	// Verify gas pool didn't collect any fees
+	assert_eq!(
+		final_pool_balance, initial_pool_balance,
+		"Gas pool collected fees when it shouldn't have"
+	);
+
+	// Verify gas payer only paid the transfer amount (no fees)
+	let total_cost = pre_transfer_gas_payer_balance - final_gas_payer_balance;
+	assert_eq!(
+		total_cost, 1000,
+		"Gas payer was charged more than the transfer amount (fees were taken)"
+	);
 
 	Ok(())
 }
+
