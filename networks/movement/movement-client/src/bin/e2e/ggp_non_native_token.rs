@@ -163,7 +163,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	//If you don't remove .movement/ between runs this value will increment
 	//by one and you'll get an error.
-	let sequence_number = 1;
+	let sequence_number = 2;
 
 	let tx_response = send_aptos_transaction(
 		&rest_client,
@@ -174,9 +174,13 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	println!("Transaction response: {:?}", tx_response);
 
-	let crate_dir = PathBuf::from(crate_dir_clone);
-
-	let code = fs::read(crate_dir.join("build").join("bytecode_scripts").join("main.mv"))?;
+	let code = fs::read(
+		std::env::current_dir()?
+			.join("build")
+			.join("GGPTestToken")
+			.join("bytecode_scripts")
+			.join("main.mv"),
+	)?;
 	let args = vec![TransactionArgument::U64(42)];
 
 	let script_payload = TransactionPayload::Script(Script::new(code, vec![], args));
