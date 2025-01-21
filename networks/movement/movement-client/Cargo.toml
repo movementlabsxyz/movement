@@ -45,6 +45,7 @@ path = "src/bin/e2e/lock_mint.rs"
 
 
 [dependencies]
+aptos-vm-genesis = { workspace = true}
 aptos-sdk = { workspace = true }
 aptos-types = { workspace = true }
 anyhow = { workspace = true }

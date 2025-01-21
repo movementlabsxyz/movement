@@ -1,11 +1,12 @@
 #![allow(unused_imports)]
-use anyhow::Context;
+use anyhow::{Chain, Context};
 use movement_client::crypto::ValidCryptoMaterialStringExt;
+
 use aptos_sdk::{move_types::{
 	identifier::Identifier, language_storage::{ModuleId, StructTag, TypeTag},
 }, rest_client::Account};
 use aptos_sdk::types::{
-	account_address::AccountAddress, chain_id::ChainId, transaction::{EntryFunction, TransactionArgument, Script}, LocalAccount,
+	account_address::AccountAddress, chain_id::ChainId, transaction::{EntryFunction, TransactionArgument, Script}, LocalAccount, AccountKey
 };
 use aptos_sdk::{
 	rest_client::{
@@ -17,7 +18,7 @@ use aptos_sdk::{
 	},
 	transaction_builder::TransactionBuilder,
 };
-use aptos_types::transaction::TransactionPayload;
+use aptos_types::{transaction::TransactionPayload, account_config::aptos_test_root_address, test_helpers::transaction_test_helpers};
 use movement_client::{
 	coin_client::CoinClient,
 	rest_client::{Client, FaucetClient},
@@ -80,7 +81,7 @@ async fn main() -> Result<(), anyhow::Error> {
 	let dead_address = AccountAddress::from_str(
 		"000000000000000000000000000000000000000000000000000000000000dead")?;
 	let relayer_address = AccountAddress::from_str(
-		"000000000000000000000000000000000000000000000000000000000a550c18")?;
+		"0x000000000000000000000000000000000000000000000000000000000a550c18")?;
 	let chain_id = rest_client
 		.get_index()
 		.await
@@ -89,42 +90,64 @@ async fn main() -> Result<(), anyhow::Error> {
 		.chain_id;
 
 	// Create core resources account
-	let mut core_resources_account = LocalAccount::from_private_key(
-		SUZUKA_CONFIG
-			.execution_config
-			.maptos_config
-			.chain
-			.maptos_private_key
-			.to_encoded_string()?
-			.as_str(),
-		0,
-	)?;
-
+	// let mut core_resources_account = LocalAccount::from_private_key(
+	// 	SUZUKA_CONFIG
+	// 		.execution_config
+	// 		.maptos_config
+	// 		.chain
+	// 		.maptos_private_key
+	// 		.to_encoded_string()?
+	// 		.as_str(),
+	// 	0,
+	// )?;
+	let mut core_resources_account: LocalAccount = LocalAccount::new(
+        aptos_test_root_address(),
+        AccountKey::from_private_key(aptos_vm_genesis::GENESIS_KEYPAIR.0.clone()),
+        0,
+    );
+	
 	println!("Core Resources Account address: {}", core_resources_account.address());
 
 	tracing::info!("Created core resources account");
 	tracing::debug!("core_resources_account address: {}", core_resources_account.address());
 
-	// Fund the core_resources_account account
-	faucet_client
-		.fund(core_resources_account.address(), 1_000_000_000_000_000)
-		.await
-		.context("Failed to fund core_resources_account account")?;
+	// core_resources_account is already funded with u64 max value
+	// Create dead account
+	let create_dead_transaction = transaction_test_helpers::get_test_signed_transaction_with_chain_id(
+        core_resources_account.address(),
+        core_resources_account.sequence_number(),
+        &aptos_vm_genesis::GENESIS_KEYPAIR.0,
+        aptos_vm_genesis::GENESIS_KEYPAIR.1.clone(),
+        Some(TransactionPayload::EntryFunction(EntryFunction::new(
+			ModuleId::new(
+				AccountAddress::from_hex_literal("0x1")?,
+				Identifier::new("aptos_account")?,
+			),
+			Identifier::new("create_account")?,
+			vec![],
+			vec![bcs::to_bytes(&dead_address)?],
+		))),
+		SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60,
+		100,
+		None,
+		ChainId::new(chain_id),
+    );
+    // let ret = vm_validator.validate_transaction(transaction).unwrap();
 
-	let create_dead_transaction =
-		core_resources_account.sign_with_transaction_builder(TransactionBuilder::new(
-			TransactionPayload::EntryFunction(EntryFunction::new(
-				ModuleId::new(
-					AccountAddress::from_hex_literal("0x1")?,
-					Identifier::new("aptos_account")?,
-				),
-				Identifier::new("create_account")?,
-				vec![],
-				vec![bcs::to_bytes(&dead_address)?],
-			)),
-			SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60,
-			ChainId::new(chain_id),
-		).sender(relayer_address).sequence_number(core_resources_account.sequence_number()));
+	// let create_dead_transaction =
+	// 	core_resources_account.sign_with_transaction_builder(TransactionBuilder::new(
+	// 		TransactionPayload::EntryFunction(EntryFunction::new(
+	// 			ModuleId::new(
+	// 				AccountAddress::from_hex_literal("0x1")?,
+	// 				Identifier::new("aptos_account")?,
+	// 			),
+	// 			Identifier::new("create_account")?,
+	// 			vec![],
+	// 			vec![bcs::to_bytes(&dead_address)?],
+	// 		)),
+	// 		SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60,
+	// 		ChainId::new(chain_id),
+	// 	).sender(relayer_address).sequence_number(core_resources_account.sequence_number()));
 
 	rest_client
 		.submit_and_wait(&create_dead_transaction)
@@ -221,6 +244,7 @@ async fn main() -> Result<(), anyhow::Error> {
 	// )).await.context("Failed to execute burn dead balance script transaction")?;
 
 	tracing::info!("Burn transactions successfully executed.");
+
 
 	// Transfer L1 move desired amount to L1 bridge address
 	
