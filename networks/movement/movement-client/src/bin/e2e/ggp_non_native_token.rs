@@ -108,7 +108,7 @@ async fn main() -> Result<(), anyhow::Error> {
 			"--private-key",
 			PRIVATE_KEY,
 		])
-		.current_dir(target_dir)
+		.current_dir(target_dir) // think this is wrong .. check
 		.status()
 		.await
 		.expect("Failed to execute `movement init` command");
@@ -116,6 +116,11 @@ async fn main() -> Result<(), anyhow::Error> {
 	if !init_status.success() {
 		anyhow::bail!("Initializing Move module failed. Please check the `movement init` command.");
 	}
+
+	env::set_current_dir(&target_dir_clone).expect("Failed to set current directory");
+
+	//check current_dir println
+	println!("current_dir: {:?}", env::current_dir().unwrap());
 
 	// account associated with private key used for init
 	let publish_status = Command::new("movement")
@@ -127,10 +132,11 @@ async fn main() -> Result<(), anyhow::Error> {
 			ACCOUNT_ADDRESS,
 			"--assume-yes",
 		])
-		.current_dir(target_dir_clone)
 		.status()
 		.await
 		.expect("Failed to execute `movement move publish` command");
+
+	println!("publish_status: {:?}", publish_status);
 
 	// Check if the publish succeeded
 	if !publish_status.success() {
@@ -138,6 +144,15 @@ async fn main() -> Result<(), anyhow::Error> {
 			"Publishing Move module failed. Please check the `movement move publish` command."
 		);
 	}
+
+	// Validate it is published at the expected address
+	// let _ = Command::new("movement")
+	// 	.args(["account", "list", "--account", ACCOUNT_ADDRESS])
+	// 	.status()
+	// 	.await
+	// 	.expect("Failed to execute `movement move resource` command");
+
+	//println!("resource_check: {:?}", resource_check);
 
 	let args = vec![bcs::to_bytes(
 		&AccountAddress::from_hex_literal(&format!(
@@ -149,17 +164,13 @@ async fn main() -> Result<(), anyhow::Error> {
 	.unwrap()];
 
 	let init_payload = make_entry_function_payload(
-		AccountAddress::from_str(
-			"0x97121e4f94695b6fb65a24899c5cce23cc0dad5a1c07caaeb6dd555078d14ba7",
-		)
-		.unwrap(),
-		"test_token",
+		//NB: package address arg, this is the account address of the sender
+		AccountAddress::from_hex_literal(&format!("0x{}", ACCOUNT_ADDRESS)).unwrap(),
+		"test-token",
 		"initialize_test_token",
-		vec![],
+		vec![TypeTag::Address],
 		args,
 	);
-
-	println!("Init payload: {:?}", init_payload);
 
 	//If you don't remove .movement/ between runs this value will increment
 	//by one and you'll get an error.
@@ -232,6 +243,7 @@ fn make_entry_function_payload(
 	ty_args: Vec<TypeTag>,
 	args: Vec<Vec<u8>>,
 ) -> TransactionPayload {
+	println!("package_address: {:?}", package_address);
 	TransactionPayload::EntryFunction(EntryFunction::new(
 		ModuleId::new(package_address, ident_str!(module_name).to_owned()),
 		ident_str!(function_name).to_owned(),
