@@ -1,0 +1,19 @@
+[package]
+# TestToken is already deployed by default, 
+# so GGPTestToken used to avoid namespace conflict 
+
+name = "GGPTestToken"
+version = "1.0.0"
+authors = []
+
+[addresses]
+test_token = "0x30005dbbb9b324b18bed15aca87770512ec7807410fabb0420494d9865e56fa4"
+
+[dev-addresses]
+
+[dependencies.AptosFramework]
+git = "https://github.com/movementlabsxyz/aptos-core.git"
+rev = "governed-gas-pool"
+subdir = "aptos-move/framework/aptos-framework"
+
+[dev-dependencies]
