@@ -1,14 +1,14 @@
 use anyhow::Context;
+use aptos_sdk::crypto::ValidCryptoMaterialStringExt;
 use aptos_sdk::move_types::identifier::Identifier;
 use aptos_sdk::move_types::language_storage::ModuleId;
 use aptos_sdk::rest_client::Transaction;
 use aptos_sdk::types::account_address::AccountAddress;
-use aptos_sdk::types::AccountKey;
 use aptos_sdk::{move_types::language_storage::TypeTag, transaction_builder::TransactionFactory};
-use aptos_types::account_config::aptos_test_root_address;
 use aptos_types::chain_id::ChainId;
 use aptos_types::transaction::{EntryFunction, Script, TransactionArgument, TransactionPayload};
-use aptos_vm::aptos_vm;
+
+use e2e_move_tests::MoveHarness;
 use movement_client::{
 	coin_client::CoinClient,
 	rest_client::{Client, FaucetClient},
@@ -32,8 +32,8 @@ const ACCOUNT_ADDRESS: &str = "30005dbbb9b324b18bed15aca87770512ec7807410fabb042
 const PRIVATE_KEY: &str = "0x97121e4f94695b6fb65a24899c5cce23cc0dad5a1c07caaeb6dd555078d14ba7";
 // This is a well known private key used for testing purposes only. It is safe to expose
 // and never used on a real network
-const ASSOCIATE_PRIVATE_KEY: &str =
-	"0x0000000000000000000000000000000000000000000000000000000000000001";
+//const ASSOCIATE_PRIVATE_KEY: &str =
+//	"0x0000000000000000000000000000000000000000000000000000000000000001";
 
 static SUZUKA_CONFIG: Lazy<movement_config::Config> = Lazy::new(|| {
 	let dot_movement = dot_movement::DotMovement::try_from_env().unwrap();
@@ -168,9 +168,11 @@ async fn main() -> Result<(), anyhow::Error> {
 	);
 
 	//If you don't remove .movement/ between runs this seq number will be wrong
-	let sequence_number = 1;
+	let mut sequence_number = 1;
 	let signer = &mut LocalAccount::from_private_key(PRIVATE_KEY, sequence_number)?;
+
 	println!("sending initialize_test_token tx with payload {:?}", init_payload);
+
 	let tx_response = send_aptos_transaction(&rest_client, signer, init_payload).await?;
 
 	println!("Transaction response: {:?}", tx_response);
@@ -188,14 +190,46 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	println!("script_payload: {:?}", script_payload);
 
-	let core_resources_account: LocalAccount = LocalAccount::new(
-		aptos_test_root_address(),
-		AccountKey::from_private_key(aptos_vm_genesis::GENESIS_KEYPAIR.0.clone()),
-		0,
-	);
-	let tx_response = send_aptos_transaction(&rest_client, signer, script_payload).await?;
+	// let core_resource_signer = &mut LocalAccount::new(
+	// 	aptos_test_root_address(),
+	// 	AccountKey::from_private_key(aptos_vm_genesis::GENESIS_KEYPAIR.0.clone()),
+	// 	sequence_number,
+	// );
 
-	println!("tx_response: {:?}", tx_response);
+	let core_resources_signer = &mut LocalAccount::from_private_key(
+		SUZUKA_CONFIG
+			.execution_config
+			.maptos_config
+			.chain
+			.maptos_private_key
+			.to_encoded_string()?
+			.as_str(),
+		sequence_number,
+	)?;
+
+	println!("core_resource_signer: {:?}", core_resources_signer);
+
+	let mut harness = MoveHarness::new();
+
+	let core_resources =
+		harness.new_account_at(AccountAddress::from_hex_literal("0xA550C18").unwrap());
+
+	let state = rest_client
+		.get_ledger_information()
+		.await
+		.context("Failed in getting chain id")?
+		.into_inner();
+
+	let tx_builder = core_resources.transaction();
+
+	let signed_tx = tx_builder
+		.chain_id(ChainId::new(state.chain_id))
+		.payload(script_payload.clone())
+		.sign();
+
+	let response = rest_client.submit_and_wait(&signed_tx).await?;
+
+	println!("tx_response: {:?}", response);
 
 	Ok(())
 }

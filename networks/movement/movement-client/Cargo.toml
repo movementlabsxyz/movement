@@ -47,6 +47,8 @@ path = "src/bin/e2e/ggp_non_native_token.rs"
 aptos-vm-genesis = { workspace = true }
 aptos-sdk = { workspace = true }
 aptos-types = { workspace = true }
+e2e-move-tests = { workspace = true }
+
 anyhow = { workspace = true }
 async-trait = { workspace = true }
 futures = { workspace = true }
