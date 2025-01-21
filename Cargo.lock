@@ -14028,6 +14028,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "signing_admin"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "aws-config",
+ "aws-sdk-kms",
+ "base64 0.13.1",
+ "clap 4.5.21",
+ "movement-signer",
+ "movement-signer-aws-kms",
+ "movement-signer-hashicorp-vault",
+ "reqwest 0.11.27",
+ "serde_json",
+ "simple_asn1 0.6.2",
+ "tokio",
+ "uuid",
+ "vaultrs",
+]
+
+[[package]]
 name = "simd-adler32"
 version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"

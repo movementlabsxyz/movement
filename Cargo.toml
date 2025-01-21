@@ -45,6 +45,7 @@ members = [
     "util/signing/integrations/aptos",
     "util/signing/providers/aws-kms",
     "util/signing/providers/hashicorp-vault",
+    "util/signing/signing-admin",
     "demo/hsm"
 ]
 

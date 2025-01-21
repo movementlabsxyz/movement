@@ -94,7 +94,17 @@ where
 			return Err(SignerError::Internal("Invalid signature format".to_string()));
 		}
 	
-		let signature_str = res.signature.split_at(9).1;
+		// Extract the key version from the signature
+		let version_end_index = res.signature[6..]
+			.find(':')
+			.ok_or_else(|| SignerError::Internal("Invalid signature format".to_string()))?
+			+ 6;
+
+		// Determine split index dynamically
+		let split_index = version_end_index + 1; 
+	
+		// Split and decode the signature
+		let signature_str = &res.signature[split_index..];
 	
 		let signature = base64::decode(signature_str)
 			.context("Failed to decode base64 signature from Vault")
@@ -108,15 +118,17 @@ where
 		}
 	
 		let parsed_signature = C::Signature::try_from_bytes(&signature).map_err(|e| {
-			SignerError::Internal(format!("Failed to parse signature into expected format: {:?}", e))
+			SignerError::Internal(format!(
+				"Failed to parse signature into expected format: {:?}",
+				e
+			))
 		})?;
 	
 		Ok(parsed_signature)
 	}
 	
-
 	async fn public_key(&self) -> Result<C::PublicKey, SignerError> {
-		println!("Attempting to read key: {}", self.key_name);
+		println!("Attempting to read Vault key: {}", self.key_name);
 	
 		// Read the key from Vault
 		let res = transit_key::read(
@@ -146,13 +158,11 @@ where
 			ReadKeyData::Asymmetric(keys) => {
 				// Use the number of items in the map as the version
 				let latest_version = keys.len().to_string();
-				println!("Using key version: {}", latest_version);
 	
 				let key = keys.get(&latest_version).context("Key version not found").map_err(|e| {
 					println!("Key version '{}' not found: {:?}", latest_version, e);
 					SignerError::KeyNotFound
 				})?;
-				println!("Using public key for version {}: {}", latest_version, key.public_key);
 	
 				base64::decode(&key.public_key).map_err(|e| {
 					println!("Failed to decode public key: {:?}", e);
