@@ -225,6 +225,7 @@ async fn main() -> Result<(), anyhow::Error> {
 	let signed_tx = tx_builder
 		.chain_id(ChainId::new(state.chain_id))
 		.sequence_number(sequence_number)
+		.gas_unit_price(GAS_UNIT_PRICE)
 		.payload(script_payload.clone())
 		.sign();
 
