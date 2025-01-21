@@ -4,6 +4,7 @@ use clap::Parser;
 use movement_signer::cryptography::secp256k1::Secp256k1;
 use movement_signer::key::Key;
 use movement_signer::key::SignerBuilder;
+use movement_signer::key::TryFromCanonicalString;
 use movement_signer::Signer;
 use movement_signer_aws_kms::hsm::key::Builder;
 use std::net::SocketAddr;

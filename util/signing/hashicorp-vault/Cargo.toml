@@ -1,5 +1,5 @@
 [package]
-name = "hashicorp-vault-signer"
+name = "movement-hashicorp-vault-signer"
 version = { workspace = true }
 edition  = { workspace = true }
 license  = { workspace = true }

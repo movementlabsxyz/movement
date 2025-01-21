@@ -66,6 +66,7 @@ impl LocalSigner<Secp256k1> {
 		Ok(Self::from_signing_key(signing_key))
 	}
 
+	/// Constructs a new [LocalSigner] from a hex string.
 	pub fn from_signing_key_hex(hex: &str) -> Result<Self, SignerError> {
 		let bytes = hex::decode(hex).map_err(|e| SignerError::Decode(anyhow::anyhow!(e).into()))?;
 		Self::from_signing_key_bytes(&bytes)
@@ -89,14 +90,14 @@ where
 	async fn sign(&self, message: &[u8]) -> Result<C::Signature, SignerError> {
 		let (signature, _recovery_id) = self
 			.signing_key
-			.sign_recoverable(message)
+			.sign_prehash_recoverable(message)
 			.map_err(|e| SignerError::Sign(e.into()))?;
 		Ok(C::Signature::try_from_bytes(signature.to_vec().as_slice())
 			.map_err(|e| SignerError::Sign(e.into()))?)
 	}
 
 	async fn public_key(&self) -> Result<C::PublicKey, SignerError> {
-		C::PublicKey::try_from_bytes(self.verifying_key.to_encoded_point(false).as_bytes())
+		C::PublicKey::try_from_bytes(self.verifying_key.to_sec1_bytes().as_ref())
 			.map_err(|e| SignerError::PublicKey(e.into()))
 	}
 }

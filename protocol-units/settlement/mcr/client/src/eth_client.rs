@@ -22,7 +22,7 @@ use alloy_transport_ws::WsConnect;
 use anyhow::Context;
 use mcr_settlement_config::Config;
 use movement_signer::cryptography::secp256k1::Secp256k1;
-use movement_signer_loader::identifiers::Load;
+use movement_signer_loader::Load;
 use movement_signing_eth::HsmSigner;
 use movement_types::block::{BlockCommitment, Commitment, Id};
 use serde_json::Value as JsonValue;

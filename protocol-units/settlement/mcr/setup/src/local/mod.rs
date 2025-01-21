@@ -3,6 +3,7 @@ use commander::run_command;
 use dot_movement::DotMovement;
 use mcr_settlement_config::Config;
 use movement_signer::key::Key;
+use movement_signer::key::TryFromCanonicalString;
 use movement_signer_loader::identifiers::aws_kms::AwsKms;
 use movement_signer_loader::identifiers::{local::Local as SignerLocal, SignerIdentifier};
 use tracing::info;
@@ -122,6 +123,8 @@ impl Local {
 							key_id
 						))
 						.map_err(|err| anyhow::anyhow!(err))?,
+						// todo: for non-local setups or where the signer is hardcoded, already configured, etc., we should not create the key
+						create: true,
 					})
 				}
 				Err(_) => {

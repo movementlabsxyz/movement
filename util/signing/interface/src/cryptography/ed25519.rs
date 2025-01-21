@@ -2,10 +2,11 @@ use crate::cryptography::Curve;
 use crate::{DigestError, Digester, Verify, VerifyError};
 use anyhow::Context;
 use ed25519_dalek::Verifier as _;
+use serde::{Deserialize, Serialize};
 use sha2::Digest as _;
 
 /// The Ed25519 curve.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Ed25519;
 
 fixed_size!(pub struct PublicKey([u8; 32]));

@@ -9044,7 +9044,7 @@ dependencies = [
  "aptos-types",
  "godfig",
  "hex",
- "movement-celestia-da-util",
+ "movement-da-util",
  "rand 0.7.3",
  "serde",
  "serde_derive",
@@ -10171,11 +10171,14 @@ dependencies = [
  "k256",
  "memseq",
  "movement-algs",
- "movement-celestia-da-light-node-prevalidator",
- "movement-celestia-da-light-node-verifier",
- "movement-celestia-da-util",
- "movement-celestia-light-node-signer",
+ "movement-da-light-node-celestia",
+ "movement-da-light-node-da",
+ "movement-da-light-node-digest-store",
+ "movement-da-light-node-prevalidator",
  "movement-da-light-node-proto",
+ "movement-da-light-node-signer",
+ "movement-da-light-node-verifier",
+ "movement-da-util",
  "movement-signer",
  "movement-signer-loader",
  "movement-tracing",
@@ -10184,38 +10187,13 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
+ "thiserror 1.0.69",
  "tokio",
  "tokio-stream",
  "tonic 0.12.3",
  "tonic-reflection 0.12.3",
  "tracing",
  "zstd 0.13.2",
-]
-
-[[package]]
-name = "movement-celestia-da-light-node-prevalidator"
-version = "0.0.2"
-dependencies = [
- "anyhow",
- "aptos-types",
- "async-stream",
- "bcs 0.1.4",
- "dot-movement",
- "ecdsa 0.16.9",
- "hex",
- "k256",
- "movement-celestia-da-light-node-setup",
- "movement-celestia-da-util",
- "movement-da-light-node-proto",
- "movement-types",
- "prost 0.13.3",
- "rand 0.7.3",
- "serde_json",
- "thiserror 1.0.69",
- "tokio",
- "tokio-stream",
- "tonic 0.12.3",
- "tracing",
 ]
 
 [[package]]
@@ -10227,7 +10205,7 @@ dependencies = [
  "dot-movement",
  "godfig",
  "hex",
- "movement-celestia-da-util",
+ "movement-da-util",
  "rand 0.7.3",
  "reqwest 0.12.9",
  "serde",
@@ -10237,116 +10215,6 @@ dependencies = [
  "tokio-stream",
  "tracing",
  "tracing-subscriber 0.3.18",
-]
-
-[[package]]
-name = "movement-celestia-da-light-node-setup"
-version = "0.0.2"
-dependencies = [
- "anyhow",
- "async-recursion",
- "celestia-rpc",
- "celestia-types",
- "commander",
- "dot-movement",
- "godfig",
- "hex",
- "movement-celestia-da-util",
- "rand 0.7.3",
- "reqwest 0.12.9",
- "serde",
- "serde_json",
- "tempfile",
- "tokio",
- "tokio-stream",
- "tracing",
- "tracing-subscriber 0.3.18",
-]
-
-[[package]]
-name = "movement-celestia-da-light-node-tests"
-version = "0.0.2"
-dependencies = [
- "anyhow",
- "ecdsa 0.16.9",
- "movement-da-light-node-proto",
- "movement-types",
- "serde_json",
- "tokio",
- "tokio-stream",
- "tonic 0.12.3",
-]
-
-[[package]]
-name = "movement-celestia-da-light-node-verifier"
-version = "0.0.2"
-dependencies = [
- "anyhow",
- "async-stream",
- "celestia-rpc",
- "celestia-types",
- "dot-movement",
- "ecdsa 0.16.9",
- "hex",
- "k256",
- "movement-celestia-da-light-node-setup",
- "movement-celestia-da-util",
- "movement-da-light-node-proto",
- "movement-signer",
- "prost 0.13.3",
- "rand 0.7.3",
- "serde_json",
- "thiserror 1.0.69",
- "tokio",
- "tokio-stream",
- "tonic 0.12.3",
- "tracing",
-]
-
-[[package]]
-name = "movement-celestia-da-util"
-version = "0.0.2"
-dependencies = [
- "alloy",
- "anyhow",
- "aptos-account-whitelist",
- "aptos-types",
- "async-stream",
- "bcs 0.1.4",
- "celestia-rpc",
- "celestia-types",
- "dot-movement",
- "ecdsa 0.16.9",
- "godfig",
- "hex",
- "jsonrpsee 0.20.4",
- "k256",
- "memseq-util",
- "movement-celestia-light-node-signer",
- "movement-da-light-node-proto",
- "movement-signer",
- "movement-signer-loader",
- "movement-signer-local",
- "prost 0.13.3",
- "rand 0.8.5",
- "serde",
- "serde_derive",
- "serde_json",
- "tempfile",
- "tokio",
- "tokio-stream",
- "toml 0.8.19",
- "tonic 0.12.3",
- "tracing",
- "tracing-subscriber 0.3.18",
- "zstd 0.13.2",
-]
-
-[[package]]
-name = "movement-celestia-light-node-signer"
-version = "0.0.2"
-dependencies = [
- "movement-signer",
 ]
 
 [[package]]
@@ -10406,7 +10274,7 @@ dependencies = [
  "maptos-execution-util",
  "mcr-settlement-client",
  "mcr-settlement-config",
- "movement-celestia-da-util",
+ "movement-da-util",
  "movement-types",
  "serde",
  "serde_derive",
@@ -10414,6 +10282,24 @@ dependencies = [
  "tokio",
  "toml 0.8.19",
  "tracing",
+]
+
+[[package]]
+name = "movement-da-light-node-celestia"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "async-stream",
+ "bcs 0.1.4",
+ "celestia-rpc",
+ "celestia-types",
+ "movement-da-light-node-da",
+ "movement-da-util",
+ "movement-signer",
+ "serde",
+ "tonic 0.12.3",
+ "tracing",
+ "zstd 0.13.2",
 ]
 
 [[package]]
@@ -10431,6 +10317,83 @@ dependencies = [
 ]
 
 [[package]]
+name = "movement-da-light-node-da"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "async-stream",
+ "futures",
+ "movement-da-light-node-proto",
+ "movement-da-util",
+ "movement-signer",
+ "thiserror 1.0.69",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+]
+
+[[package]]
+name = "movement-da-light-node-digest-store"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "async-stream",
+ "bcs 0.1.4",
+ "movement-da-light-node-da",
+ "movement-da-util",
+ "movement-signer",
+ "rocksdb",
+ "serde",
+ "tokio",
+ "tonic 0.12.3",
+ "tracing",
+]
+
+[[package]]
+name = "movement-da-light-node-disk-fifo"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "async-stream",
+ "bcs 0.1.4",
+ "movement-da-light-node-da",
+ "movement-da-util",
+ "movement-signer",
+ "rocksdb",
+ "serde",
+ "tokio",
+ "tokio-stream",
+ "tonic 0.12.3",
+ "tracing",
+]
+
+[[package]]
+name = "movement-da-light-node-prevalidator"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "aptos-types",
+ "async-stream",
+ "bcs 0.1.4",
+ "dot-movement",
+ "ecdsa 0.16.9",
+ "hex",
+ "k256",
+ "movement-da-light-node-proto",
+ "movement-da-light-node-setup",
+ "movement-da-util",
+ "movement-types",
+ "prost 0.13.3",
+ "rand 0.7.3",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tokio-stream",
+ "tonic 0.12.3",
+ "tracing",
+]
+
+[[package]]
 name = "movement-da-light-node-proto"
 version = "0.0.2"
 dependencies = [
@@ -10438,6 +10401,117 @@ dependencies = [
  "prost 0.13.3",
  "tonic 0.12.3",
  "tonic-build",
+]
+
+[[package]]
+name = "movement-da-light-node-setup"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "async-recursion",
+ "celestia-rpc",
+ "celestia-types",
+ "commander",
+ "dot-movement",
+ "godfig",
+ "hex",
+ "movement-da-util",
+ "rand 0.7.3",
+ "reqwest 0.12.9",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+]
+
+[[package]]
+name = "movement-da-light-node-signer"
+version = "0.0.2"
+dependencies = [
+ "movement-signer",
+]
+
+[[package]]
+name = "movement-da-light-node-tests"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "ecdsa 0.16.9",
+ "movement-da-light-node-proto",
+ "movement-types",
+ "serde_json",
+ "tokio",
+ "tokio-stream",
+ "tonic 0.12.3",
+]
+
+[[package]]
+name = "movement-da-light-node-verifier"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "async-stream",
+ "celestia-rpc",
+ "celestia-types",
+ "dot-movement",
+ "ecdsa 0.16.9",
+ "hex",
+ "k256",
+ "movement-da-light-node-proto",
+ "movement-da-light-node-setup",
+ "movement-da-util",
+ "movement-signer",
+ "prost 0.13.3",
+ "rand 0.7.3",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tokio-stream",
+ "tonic 0.12.3",
+ "tracing",
+]
+
+[[package]]
+name = "movement-da-util"
+version = "0.0.2"
+dependencies = [
+ "alloy",
+ "anyhow",
+ "aptos-account-whitelist",
+ "aptos-types",
+ "async-stream",
+ "bcs 0.1.4",
+ "celestia-rpc",
+ "celestia-types",
+ "dot-movement",
+ "ecdsa 0.16.9",
+ "godfig",
+ "hex",
+ "jsonrpsee 0.20.4",
+ "k256",
+ "memseq-util",
+ "movement-da-light-node-proto",
+ "movement-da-light-node-signer",
+ "movement-signer",
+ "movement-signer-loader",
+ "movement-signer-local",
+ "movement-types",
+ "prost 0.13.3",
+ "rand 0.8.5",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "tokio-stream",
+ "toml 0.8.19",
+ "tonic 0.12.3",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "zstd 0.13.2",
 ]
 
 [[package]]
@@ -10473,10 +10547,10 @@ dependencies = [
  "mcr-settlement-client",
  "mcr-settlement-config",
  "mcr-settlement-manager",
- "movement-celestia-da-util",
  "movement-config",
  "movement-da-light-node-client",
  "movement-da-light-node-proto",
+ "movement-da-util",
  "movement-rest",
  "movement-tracing",
  "movement-types",
@@ -10508,9 +10582,9 @@ dependencies = [
  "hex",
  "mcr-settlement-config",
  "mcr-settlement-setup",
- "movement-celestia-da-light-node-setup",
- "movement-celestia-da-util",
  "movement-config",
+ "movement-da-light-node-setup",
+ "movement-da-util",
  "movement-types",
  "rand 0.7.3",
  "serde",
@@ -10568,6 +10642,7 @@ dependencies = [
  "serde",
  "sha2 0.10.8",
  "thiserror 1.0.69",
+ "tracing",
 ]
 
 [[package]]
@@ -10720,9 +10795,9 @@ dependencies = [
  "maptos-dof-execution",
  "mcr-settlement-client",
  "mcr-settlement-manager",
- "movement-celestia-da-util",
  "movement-config",
  "movement-da-light-node-proto",
+ "movement-da-util",
  "movement-rest",
  "movement-tracing",
  "movement-types",

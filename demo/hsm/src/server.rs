@@ -24,20 +24,12 @@ where
 
 	let message_bytes = payload.message.as_slice();
 
-	println!(
-		"Preparing to sign message. Message bytes: {:?}",
-		message_bytes
-	);
+	println!("Preparing to sign message. Message bytes: {:?}", message_bytes);
 
-	let signature = hsm
-		.lock()
-		.await
-		.sign(message_bytes)
-		.await
-		.map_err(|e| {
-			println!("Error signing message: {:?}", e);
-			StatusCode::INTERNAL_SERVER_ERROR
-		})?;
+	let signature = hsm.lock().await.sign(message_bytes).await.map_err(|e| {
+		println!("Error signing message: {:?}", e);
+		StatusCode::INTERNAL_SERVER_ERROR
+	})?;
 
 	println!("Generated signature: {:?}", signature);
 

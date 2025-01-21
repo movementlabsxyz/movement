@@ -1,15 +1,17 @@
 use crate::cryptography::Curve;
 use crate::{DigestError, Digester, Verify, VerifyError};
 use anyhow::Context;
-use ed25519_dalek::Verifier;
-use k256::ecdsa::{self};
+use ed25519_dalek::ed25519::signature::hazmat::PrehashVerifier;
+use k256::ecdsa;
+use serde::{Deserialize, Serialize};
 use sha2::Digest as _;
+use tracing::info;
 
 /// The secp256k1 elliptic curve.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Secp256k1;
 
-fixed_size!(pub struct PublicKey([u8; 65])); // Compressed public key
+fixed_size!(pub struct PublicKey([u8; 33])); // Compressed public key
 fixed_size!(pub struct Signature([u8; 64]));
 fixed_size!(pub struct Digest([u8; 32]));
 
@@ -34,7 +36,13 @@ impl Verify<Secp256k1> for Secp256k1 {
 			.context("Failed to create signature")
 			.map_err(|e| VerifyError(e.into()))?;
 
-		Ok(verifying_key.verify(message, &signature).is_ok())
+		match verifying_key.verify_prehash(message, &signature) {
+			Ok(_) => Ok(true),
+			Err(e) => {
+				info!("Failed to verify signature: {:?}", e);
+				Ok(false)
+			}
+		}
 	}
 }
 
