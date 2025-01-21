@@ -1,5 +1,5 @@
 use anyhow::Context;
-use aptos_sdk::move_types::ident_str;
+use aptos_sdk::move_types::identifier::Identifier;
 use aptos_sdk::move_types::language_storage::ModuleId;
 use aptos_sdk::rest_client::Transaction;
 use aptos_sdk::types::account_address::AccountAddress;
@@ -145,31 +145,20 @@ async fn main() -> Result<(), anyhow::Error> {
 		);
 	}
 
-	// Validate it is published at the expected address
-	// let _ = Command::new("movement")
-	// 	.args(["account", "list", "--account", ACCOUNT_ADDRESS])
-	// 	.status()
-	// 	.await
-	// 	.expect("Failed to execute `movement move resource` command");
-
-	//println!("resource_check: {:?}", resource_check);
-
-	let args = vec![bcs::to_bytes(
-		&AccountAddress::from_hex_literal(&format!(
-			"0x{}",
-			hex::encode(AccountAddress::from_str(ACCOUNT_ADDRESS).unwrap().to_vec())
-		))
-		.unwrap(),
-	)
-	.unwrap()];
+	//Validate it is published at the expected address
+	let _ = Command::new("movement")
+		.args(["account", "list", "--account", ACCOUNT_ADDRESS])
+		.status()
+		.await
+		.expect("Failed to execute `movement move resource` command");
 
 	let init_payload = make_entry_function_payload(
 		//NB: package address arg, this is the account address of the sender
 		AccountAddress::from_hex_literal(&format!("0x{}", ACCOUNT_ADDRESS)).unwrap(),
-		"test-token",
+		"GGPTestToken",
 		"initialize_test_token",
-		vec![TypeTag::Address],
-		args,
+		vec![],
+		vec![],
 	);
 
 	//If you don't remove .movement/ between runs this value will increment
@@ -245,8 +234,8 @@ fn make_entry_function_payload(
 ) -> TransactionPayload {
 	println!("package_address: {:?}", package_address);
 	TransactionPayload::EntryFunction(EntryFunction::new(
-		ModuleId::new(package_address, ident_str!(module_name).to_owned()),
-		ident_str!(function_name).to_owned(),
+		ModuleId::new(package_address, Identifier::new(module_name).unwrap()),
+		Identifier::new(function_name).unwrap(),
 		ty_args,
 		args,
 	))

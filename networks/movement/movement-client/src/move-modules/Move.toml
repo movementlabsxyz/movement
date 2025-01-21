@@ -1,5 +1,8 @@
 [package]
-name = "test-token"
+# TestToken is already deployed by default, 
+# so GGPTestToken used to avoid namespace conflict 
+
+name = "GGPTestToken"
 version = "1.0.0"
 authors = []
 

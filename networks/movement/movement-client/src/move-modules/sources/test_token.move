@@ -1,4 +1,4 @@
-module test_token::TestToken {
+module test_token::GGPTestToken {
     use aptos_framework::coin::{Coin, register};
     use aptos_framework::signer;
 
