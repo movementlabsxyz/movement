@@ -1,5 +1,5 @@
 name: 🔎 Conventional Commit Checks
-run-name: 🔎 Checking conventional commit on ${{ github.sha }}
+run-name: Checking conventional commit on ${{ github.sha }}
 
 on:
   push:

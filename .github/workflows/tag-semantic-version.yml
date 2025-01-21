@@ -1,5 +1,5 @@
 name: 🏷️ Tag Semantic Version
-run-name: ${{ (github.event.inputs.dry_run == 'true') && '🏷️ Tagging new semantic version [DRY RUN]' || '🏷️ Tagging new semantic version' }}
+run-name: ${{ (github.event.inputs.dry_run == 'true') && 'Tagging new semantic version [DRY RUN]' || 'Tagging new semantic version' }}
 
 on:
   workflow_dispatch:

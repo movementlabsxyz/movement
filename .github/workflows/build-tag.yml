@@ -1,5 +1,5 @@
 name: 🏗️ Build Tag
-run-name: 🏗️ Building Tag ${{ github.ref_name }}
+run-name: Building Tag ${{ github.ref_name }}
 
 on:
   push:
