@@ -143,6 +143,7 @@ where
 				let response = StreamReadFromHeightResponse {
 					blob: Some(response_content)
 				};
+				tracing::info!("TEST passthrough LightNode stream_read_from_height send blob");
 				yield response;
 			}
 

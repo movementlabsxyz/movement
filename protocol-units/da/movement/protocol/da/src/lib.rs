@@ -107,6 +107,7 @@ pub trait DaOperations: Send + Sync {
 		&self,
 		start_height: u64,
 	) -> Pin<Box<dyn Future<Output = Result<DaBlobStream, DaError>> + Send + '_>> {
+		tracing::info!("TEST Da lib DaOperations stream_da_blobs_from_height start");
 		let fut = async move {
 			let certificate_stream = self.stream_certificates().await?;
 			let stream = try_stream! {
@@ -119,12 +120,14 @@ pub trait DaOperations: Send + Sync {
 
 					match certificate {
 						Ok(Certificate::Height(height)) if height > last_height => {
+							tracing::info!("TEST Da lib DaOperations stream_da_blobs_from_height got new accepted blob at height:{height}");
 							let blob_stream = self
 								.stream_da_blobs_between_heights(last_height, height)
 								.await?;
 							tokio::pin!(blob_stream);
 
 							while let Some(blob) = blob_stream.next().await {
+								tracing::info!("TEST Da lib DaOperations stream_da_blobs_from_height send new accepted blob at height:{height}");
 								yield blob?;
 							}
 
@@ -132,6 +135,7 @@ pub trait DaOperations: Send + Sync {
 						}
 						// Already executed Height are use to send Heartbeat.
 						Ok(Certificate::Height(height)) => {
+							tracing::info!("TEST Da lib DaOperations stream_da_blobs_from_height got old height:{height}");
 							//old certificate, use to send Heartbeat block.
 							let blob_stream = self
 								.stream_da_blobs_between_heights(height, height)
@@ -143,10 +147,12 @@ pub trait DaOperations: Send + Sync {
 								// Ack use heigth zero to identify heart beat block.
 								// Should be changed to a type.
 								let heart_blob = (DaHeight(0u64), blob);
+								tracing::info!("TEST Da lib DaOperations stream_da_blobs_from_height got old height:{height} send heartbeat.");
 								yield heart_blob;
 							}
 						}
 						Ok(Certificate::Nolo) => {
+							tracing::info!("TEST Da lib DaOperations stream_da_blobs_from_height got Certificate::Nolo");
 							// Ignore Nolo
 						}
 						// Warn log non-fatal certificate errors

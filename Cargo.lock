@@ -10203,7 +10203,6 @@ dependencies = [
  "commander",
  "dot-movement",
  "futures",
- "hex",
  "itertools 0.12.1",
  "maptos-execution-util",
  "mcr-settlement-client",
