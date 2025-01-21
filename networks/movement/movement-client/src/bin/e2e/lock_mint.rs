@@ -1,5 +1,6 @@
 #![allow(unused_imports)]
 use anyhow::Context;
+use movement_client::crypto::ValidCryptoMaterialStringExt;
 use aptos_sdk::move_types::{
 	identifier::Identifier, language_storage::{ModuleId, StructTag}, language_storage::TypeTag,
 };
@@ -77,8 +78,9 @@ async fn main() -> Result<(), anyhow::Error> {
 	let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
 	let coin_client = CoinClient::new(&rest_client);
 	let dead_address = AccountAddress::from_str(
-		"000000000000000000000000000000000000000000000000000000000000dead",
-	)?;
+		"000000000000000000000000000000000000000000000000000000000000dead")?;
+	let relayer_address = AccountAddress::from_str(
+		"000000000000000000000000000000000000000000000000000000000a550c18")?;
 	let chain_id = rest_client
 		.get_index()
 		.await
@@ -86,15 +88,15 @@ async fn main() -> Result<(), anyhow::Error> {
 		.inner()
 		.chain_id;
 
-	// Create account for transactions and gas collection
-	let private_key = SUZUKA_CONFIG
-		.execution_config
-		.maptos_config
-		.chain
-		.maptos_private_key
-		.to_string();
-	let mut core_resources_account: LocalAccount = LocalAccount::from_private_key(
-		"0000000000000000000000000000000000000000000000000000000000000001",
+	// Create core resources account
+	let mut core_resources_account = LocalAccount::from_private_key(
+		SUZUKA_CONFIG
+			.execution_config
+			.maptos_config
+			.chain
+			.maptos_private_key
+			.to_encoded_string()?
+			.as_str(),
 		0,
 	)?;
 
@@ -152,6 +154,9 @@ async fn main() -> Result<(), anyhow::Error> {
 		.await
 		.context("Failed to retrieve core resources account balance")?;
 
+	// assert_eq!(core_resorces_balance, 999_999_999_999_999, "Core resources account balance is not what is expected");
+	// assert_eq!(dead_balance, 1, "Dead account balance is not what is expected");
+
 	tracing::info!(
 		"Core account balance: {}, Dead account balance: {}",
 		core_balance,
@@ -173,132 +178,56 @@ async fn main() -> Result<(), anyhow::Error> {
 	let args = vec![TransactionArgument::Address(dead_address), TransactionArgument::U64(1)];
 	let script_payload = TransactionPayload::Script(Script::new(code, vec![], args));
 
-
-	let tx_response = rest_client.submit_and_wait(&core_resources_account.sign_with_transaction_builder(
+	rest_client.submit_and_wait(&core_resources_account.sign_with_transaction_builder(
 		TransactionBuilder::new(
 			script_payload,
 			SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60,
 			ChainId::new(chain_id),
 		).sequence_number(core_resources_account.sequence_number())
-	)).await?;
+	)).await.context("Failed to execute burn dead balance script transaction")?;
 
-	println!("tx_response: {:?}", tx_response);
+	// transfer to relayer address the desired amount
+	// let desired_amount = 1_000_000;
+	// coin_client
+	// 	.transfer(
+	// 		&mut core_resources_account,
+	// 		AccountAddress::from_str(
+	// 			"000000000000000000000000000000000000000000000000000000000a550c18",
+	// 		)
+	// 		.unwrap(),
+	// 		desired_amount,
+	// 		None,
+	// 	)
+	// 	.await
+	// 	.context("Failed to transfer coins to relayer account")?;
 
-	// // Burn coins from the dead account
-	// let burn_transaction =
-	// 	core_resources_account.sign_with_transaction_builder(TransactionBuilder::new(
-	// 		TransactionPayload::EntryFunction(EntryFunction::new(
-	// 			ModuleId::new(AccountAddress::from_hex_literal("0x1")?, Identifier::new("coin")?),
-	// 			Identifier::new("burn_frozen")?,
-	// 			vec![TypeTag::from_str("0x1::aptos_coin::AptosCoin")?],
-	// 			vec![bcs::to_bytes(&dead_address)?, bcs::to_bytes(&1u64)?],
-	// 		)),
+	// reset core_balance
+	// core_balance = coin_client
+	// 	.get_account_balance(&core_resources_account.address())
+	// 	.await
+	// 	.context("Failed to retrieve core resources account balance")?;
+
+	// // Burn coins from the core resource account
+	// let code = fs::read("protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/main.mv")?;
+	// let args = vec![TransactionArgument::Address(core_resources_account.address()), TransactionArgument::U64(core_balance)];
+	// let script_payload = TransactionPayload::Script(Script::new(code, vec![], args));
+	
+	// rest_client.submit_and_wait(&core_resources_account.sign_with_transaction_builder(
+	// 	TransactionBuilder::new(
+	// 		script_payload,
 	// 		SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60,
 	// 		ChainId::new(chain_id),
-	// 	).sequence_number(core_resources_account.sequence_number()));
+	// 	).sequence_number(core_resources_account.sequence_number())
+	// )).await.context("Failed to execute burn dead balance script transaction")?;
 
+	tracing::info!("Burn transactions successfully executed.");
 
-	// rest_client
-	// 	.submit_and_wait(&burn_transaction)
-	// 	.await
-	// 	.context("Failed to burn coins from dead account")?;
+	// Transfer L1 move desired amount to L1 bridge address
+	
 
-	tracing::info!("Burn transaction successfully executed.");
-
-	// assert_eq!(core_resorces_balance, 999_999_999_999_999, "Core resources account balance is not what is expected");
-	// assert_eq!(dead_balance, 1, "Dead account balance is not what is expected");
-
-	// rest_client.submit_and_wait(
-	// 	&core_resources_account.sign_with_transaction_builder(
-	// 		core_resources_account.transaction_builder().burn_from(1, 0),
-	// 	),
-	// ).await;
-
-	// let view_req = ViewRequest {
-	// 	function: EntryFunctionId {
-	// 		module: MoveModuleId {
-	// 			address: Address::from_str("0x1").unwrap(),
-	// 			name: IdentifierWrapper::from_str("coin").unwrap(),
-	// 		},
-	// 		name: IdentifierWrapper::from_str("balance").unwrap(),
-	// 	},
-	// 	type_arguments: vec![MoveType::Struct(MoveStructTag::new(
-	//         Address::from_str("0x1").unwrap(),
-	//         IdentifierWrapper::from_str("aptos_coin").unwrap(),
-	//         IdentifierWrapper::from_str("AptosCoin").unwrap(),
-	//         vec![],
-	//     ))],
-	// 	arguments: vec!["0xdead".into()],
-	// };
-
-	// let view_res: Response<Vec<serde_json::Value>> = rest_client
-	// 	.view(&view_req, None)
-	// 	.await
-	// 	.context("Failed to get dead address balance")?;
-
-	// // Extract the inner field from the response
-	// let inner_value = serde_json::to_value(view_res.inner())
-	// 	.context("Failed to convert response inner to serde_json::Value")?;
-
-	// // Deserialize the inner value into your AddressResponse struct
-	// let ggp_address: Vec<String> =
-	// 	serde_json::from_value(inner_value).context("Failed to deserialize AddressResponse")?;
-
-	// assert_eq!(
-	// 	ggp_address,
-	// 	vec!["0xb08e0478ac871400e082f34e003145570bf4a9e4d88f17964b21fb110e93d77a"],
-	// 	"Governed Gas Pool Resource account is not what is expected"
-	// );
-
-	// let ggp_account_address =
-	// 	AccountAddress::from_str(&ggp_address[0]).expect("Failed to parse address");
-
-	// // Get initial balances
-	// let initial_ggp_balance = coin_client
-	// 	.get_account_balance(&ggp_account_address)
-	// 	.await
-	// 	.context("Failed to get initial framework balance")?;
-
-	// tracing::info!("Initial ggp Balance: {}", initial_ggp_balance);
-
-	// // Simple transaction that will generate gas fees
-	// tracing::info!("Executing test transaction...");
-	// let txn_hash = coin_client
-	// 	.transfer(&mut core_resources_account, beneficiary.address(), 1_000, None)
-	// 	.await
-	// 	.context("Failed to submit transfer transaction")?;
-
-	// rest_client
-	// 	.wait_for_transaction(&txn_hash)
-	// 	.await
-	// 	.context("Failed when waiting for transfer transaction")?;
-	// tracing::info!("Test transaction completed: {:?}", txn_hash);
-
-	// // Get post-transaction balance
-	// let post_ggp_balance = coin_client
-	// 	.get_account_balance(&ggp_account_address)
-	// 	.await
-	// 	.context("Failed to get post-transaction framework balance")?;
-
-	// tracing::info!("Initial ggp Balance: {}", initial_ggp_balance);
-
-	// // Verify gas fees collection
-	// assert!(post_ggp_balance > initial_ggp_balance, "Gas fees were not collected as expected");
-
-	// // Wait to verify no additional deposits
-	// tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
-
-	// // Check final balance
-	// let final_framework_balance = coin_client
-	// 	.get_account_balance(&ggp_account_address)
-	// 	.await
-	// 	.context("Failed to get final framework balance")?;
-
-	// // Verify no additional deposits occurred
-	// assert_eq!(
-	// 	post_ggp_balance, final_framework_balance,
-	// 	"Additional unexpected deposits were detected"
-	// );
+	
+	// Check if Relayer address balance on L2 equals to L1 bridge address
+	
 
 	Ok(())
 }

@@ -4,14 +4,14 @@ version = "1.0.0"
 authors = []
 
 [addresses]
-resource_addr = "0xf90391c81027f03cdea491ed8b36ffaced26b6df208a9b569e5baf2590eb9b16"
+resource_addr = "0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5"
 origin_addr = "0xcafe"
-atomic_bridge = "0xf90391c81027f03cdea491ed8b36ffaced26b6df208a9b569e5baf2590eb9b16"
-moveth = "0xf90391c81027f03cdea491ed8b36ffaced26b6df208a9b569e5baf2590eb9b16"
-move_fa = "0xf90391c81027f03cdea491ed8b36ffaced26b6df208a9b569e5baf2590eb9b16"
-master_minter = "0xf90391c81027f03cdea491ed8b36ffaced26b6df208a9b569e5baf2590eb9b16"
-minter = "0xf90391c81027f03cdea491ed8b36ffaced26b6df208a9b569e5baf2590eb9b16"
-admin = "0xf90391c81027f03cdea491ed8b36ffaced26b6df208a9b569e5baf2590eb9b16"
+atomic_bridge = "0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5"
+moveth = "0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5"
+move_fa = "0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5"
+master_minter = "0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5"
+minter = "0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5"
+admin = "0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5"
 pauser = "0xdafe"
 denylister = "0xcade"
 
