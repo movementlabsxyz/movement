@@ -93,8 +93,8 @@ async fn main() -> Result<(), anyhow::Error> {
 		.chain
 		.maptos_private_key
 		.to_string();
-	let mut core_resources_account = LocalAccount::from_private_key(
-		"0x0000000000000000000000000000000000000000000000000000000000000001",
+	let mut core_resources_account: LocalAccount = LocalAccount::from_private_key(
+		"000000000000000000000000000000000000000000000000000000000A550C18",
 		0,
 	)?;
 
