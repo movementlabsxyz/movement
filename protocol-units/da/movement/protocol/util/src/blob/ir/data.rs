@@ -6,6 +6,7 @@ use movement_signer::{
 	Digester, Signing, Verify,
 };
 use serde::{Deserialize, Serialize};
+use tracing::info;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InnerSignedBlobV1Data<C>
@@ -54,6 +55,7 @@ where
 		C: Curve + Digester<C>,
 	{
 		let id = self.compute_id()?;
+		info!("Signing blob with id {:?}", id);
 		let signature = signer.inner().sign(&id.as_slice()).await?.to_bytes();
 		let signer = signer.inner().public_key().await?.to_bytes();
 

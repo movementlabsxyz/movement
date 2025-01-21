@@ -30,12 +30,12 @@ where
 {
 	type Error = anyhow::Error;
 
-	fn try_from(ir_blob: CelestiaDaBlob<C>) -> Result<Self, Self::Error> {
+	fn try_from(da_blob: CelestiaDaBlob<C>) -> Result<Self, Self::Error> {
 		// Extract the inner blob and namespace
-		let CelestiaDaBlob(ir_blob, namespace) = ir_blob;
+		let CelestiaDaBlob(da_blob, namespace) = da_blob;
 
 		// Serialize the inner blob with bcs
-		let serialized_blob = bcs::to_bytes(&ir_blob).context("failed to serialize blob")?;
+		let serialized_blob = bcs::to_bytes(&da_blob).context("failed to serialize blob")?;
 
 		// Compress the serialized data with zstd
 		let compressed_blob =

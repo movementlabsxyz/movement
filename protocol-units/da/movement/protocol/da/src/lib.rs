@@ -91,7 +91,7 @@ where
 		start_height: u64,
 		end_height: u64,
 	) -> Pin<Box<dyn Future<Output = Result<DaBlobStream<C>, DaError>> + Send + '_>> {
-		info!("streaming IR blobs between heights {} and {}", start_height, end_height);
+		info!("streaming DA blobs between heights {} and {}", start_height, end_height);
 		let fut = async move {
 			let stream = try_stream! {
 				for height in start_height..end_height {

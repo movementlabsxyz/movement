@@ -7,6 +7,7 @@ use crate::config::common::{
 };
 use ecdsa::SigningKey;
 use k256::Secp256k1;
+use movement_signer::key::TryFromCanonicalString;
 use movement_signer_loader::identifiers::{local::Local, SignerIdentifier};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -45,7 +46,7 @@ pub fn default_da_signers_sec1_keys() -> HashSet<String> {
 	}
 }
 
-pub fn default_da_signers() -> DaSigners {
+pub fn default_da_signers_from_env() -> DaSigners {
 	let da_signer = default_da_signing_private_key();
 
 	// always trust yourself
@@ -62,6 +63,20 @@ pub fn default_da_signers() -> DaSigners {
 			private_key_hex_bytes: hex::encode(da_signer.to_bytes()),
 		}),
 		public_keys_hex: trusted_signers,
+	}
+}
+
+pub fn default_da_signers() -> DaSigners {
+	match std::env::var("DA_SIGNERS") {
+		Ok(maybe_canonical_string) => {
+			let signer_identifier =
+				SignerIdentifier::try_from_canonical_string(&maybe_canonical_string)
+					.expect("Invalid signer identifier");
+			let public_keys_hex = default_da_signers_sec1_keys();
+			DaSigners { signer_identifier, public_keys_hex }
+		}
+		Err(std::env::VarError::NotPresent) => default_da_signers_from_env(),
+		Err(_) => panic!("Invalid DA_SIGNERS"),
 	}
 }
 

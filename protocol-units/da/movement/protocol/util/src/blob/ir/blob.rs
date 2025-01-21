@@ -6,6 +6,7 @@ use movement_signer::{
 	Digester, Verify,
 };
 use serde::{Deserialize, Serialize};
+use tracing::info;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InnerSignedBlobV1<C>
@@ -34,8 +35,10 @@ where
 	pub fn try_verify(&self) -> Result<(), anyhow::Error> {
 		let public_key = C::PublicKey::try_from_bytes(self.signer.as_slice())?;
 		let signature = C::Signature::try_from_bytes(self.signature.as_slice())?;
+		let message = self.data.compute_id()?;
+		info!("verifying signature for message {:?}", message);
 
-		if !C::verify(self.data.blob.as_slice(), &signature, &public_key)? {
+		if !C::verify(message.as_slice(), &signature, &public_key)? {
 			return Err(anyhow::anyhow!("signature verification failed"))?;
 		}
 

@@ -71,14 +71,14 @@ where
 	C: Curve + Verify<C> + Digester<C> + Send + Sync + 'static,
 {
 	async fn verify(&self, blob: DaBlob<C>, height: u64) -> Result<Verified<DaBlob<C>>, Error> {
-		let ir_blob = self.inner_verifier.verify(blob, height).await?;
+		let da_blob = self.inner_verifier.verify(blob, height).await?;
 		info!("Verified inner blob");
-		let signer = ir_blob.inner().signer_hex();
+		let signer = da_blob.inner().signer_hex();
 		if !self.known_signers_sec1_bytes_hex.contains(&signer) {
 			return Err(Error::Validation("signer not in known signers".to_string()));
 		}
 
-		Ok(ir_blob)
+		Ok(da_blob)
 	}
 }
 

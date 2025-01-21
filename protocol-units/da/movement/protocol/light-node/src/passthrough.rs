@@ -10,7 +10,7 @@ use movement_da_light_node_digest_store::da::Da as DigestStoreDa;
 use movement_da_light_node_proto::light_node_service_server::LightNodeService;
 use movement_da_light_node_proto::*;
 use movement_da_light_node_verifier::signed::InKnownSignersVerifier;
-use movement_da_light_node_verifier::VerifierOperations;
+use movement_da_light_node_verifier::{Error as VerifierError, VerifierOperations};
 use movement_da_util::{
 	blob::ir::blob::DaBlob, blob::ir::data::InnerSignedBlobV1Data, config::Config,
 };
@@ -141,12 +141,21 @@ where
 
 			while let Some(blob) = blob_stream.next().await {
 				let (height, da_blob) = blob.map_err(|e| tonic::Status::internal(e.to_string()))?;
-				let verifed_blob = verifier.verify(da_blob, height.as_u64()).await.map_err(|e| tonic::Status::internal(e.to_string()))?;
-				let blob = verifed_blob.into_inner().to_blob_passed_through_read_response(height.as_u64()).map_err(|e| tonic::Status::internal(e.to_string()))?;
-				let response = StreamReadFromHeightResponse {
-					blob: Some(blob)
-				};
-				yield response;
+				match verifier.verify(da_blob, height.as_u64()).await {
+					Ok(verifed_blob) => {
+						let blob = verifed_blob.into_inner().to_blob_passed_through_read_response(height.as_u64()).map_err(|e| tonic::Status::internal(e.to_string()))?;
+						let response = StreamReadFromHeightResponse {
+							blob: Some(blob)
+						};
+						yield response;
+					},
+					Err(VerifierError::Validation(e)) => {
+						info!("Failed to verify blob: {}", e);
+					},
+					Err(VerifierError::Internal(e)) => {
+						Err(tonic::Status::internal(e.to_string()))?;
+					}
+				}
 			}
 
 			info!("Stream read from height closed for height: {}", height);

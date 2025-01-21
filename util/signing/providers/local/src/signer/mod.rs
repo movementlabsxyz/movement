@@ -65,6 +65,7 @@ impl LocalSigner<Secp256k1> {
 		Ok(Self::from_signing_key(signing_key))
 	}
 
+	/// Constructs a new [LocalSigner] from a hex string.
 	pub fn from_signing_key_hex(hex: &str) -> Result<Self, SignerError> {
 		let bytes = hex::decode(hex).map_err(|e| SignerError::Decode(e.into()))?;
 		Self::from_signing_key_bytes(&bytes)
@@ -95,7 +96,7 @@ where
 	}
 
 	async fn public_key(&self) -> Result<C::PublicKey, SignerError> {
-		C::PublicKey::try_from_bytes(self.verifying_key.to_encoded_point(false).as_bytes())
+		C::PublicKey::try_from_bytes(self.verifying_key.to_sec1_bytes().as_ref())
 			.map_err(|e| SignerError::PublicKey(e.into()))
 	}
 }

@@ -8,6 +8,7 @@ use movement_signer::{
 };
 use std::sync::Arc;
 use tracing::debug;
+use tracing::info;
 
 /// A signer loaded dynamically.
 #[derive(Clone)]
@@ -72,6 +73,7 @@ where
 #[async_trait::async_trait]
 impl Load<Secp256k1> for SignerIdentifier {
 	async fn load(&self) -> Result<LoadedSigner<Secp256k1>, LoaderError> {
+		info!("loading a secp256k1 signer {:?}", self);
 		match self {
 			SignerIdentifier::Local(local) => {
 				let signer = movement_signer_local::signer::LocalSigner::from_signing_key_hex(
@@ -81,7 +83,8 @@ impl Load<Secp256k1> for SignerIdentifier {
 				Ok(LoadedSigner::new(Arc::new(signer) as Arc<dyn Signing<Secp256k1> + Send + Sync>))
 			}
 			SignerIdentifier::AwsKms(aws_kms) => {
-				let builder = movement_signer_aws_kms::hsm::key::Builder::new();
+				let builder =
+					movement_signer_aws_kms::hsm::key::Builder::new().create_key(aws_kms.create);
 				let key = aws_kms.key.clone();
 				let signer = builder.build(key).await.map_err(|_e| LoaderError::InvalidSigner)?;
 				Ok(LoadedSigner::new(Arc::new(signer) as Arc<dyn Signing<Secp256k1> + Send + Sync>))
@@ -94,11 +97,13 @@ impl Load<Secp256k1> for SignerIdentifier {
 #[async_trait::async_trait]
 impl Load<Ed25519> for SignerIdentifier {
 	async fn load(&self) -> Result<LoadedSigner<Ed25519>, LoaderError> {
+		info!("loading an ed25519 signer {:?}", self);
 		match self {
 			SignerIdentifier::Local(_local) => Err(LoaderError::InvalidCurve),
 			SignerIdentifier::AwsKms(_aws_kms) => Err(LoaderError::InvalidCurve),
 			SignerIdentifier::HashiCorpVault(hashi_corp_vault) => {
-				let builder = movement_signer_hashicorp_vault::hsm::key::Builder::new();
+				let builder = movement_signer_hashicorp_vault::hsm::key::Builder::new()
+					.create_key(hashi_corp_vault.create);
 				let key = hashi_corp_vault.key.clone();
 				let signer = builder.build(key).await.map_err(|_e| LoaderError::InvalidSigner)?;
 				Ok(LoadedSigner::new(Arc::new(signer) as Arc<dyn Signing<Ed25519> + Send + Sync>))
