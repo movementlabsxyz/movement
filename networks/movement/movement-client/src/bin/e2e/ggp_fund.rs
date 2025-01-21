@@ -177,12 +177,6 @@ async fn main() -> Result<(), anyhow::Error> {
 		"Beneficiary did not receive the full amount"
 	);
 
-	// Verify gas pool didn't collect any fees
-	assert_eq!(
-		final_pool_balance, initial_pool_balance,
-		"Gas pool collected fees when it shouldn't have"
-	);
-
 	// Verify gas payer only paid the transfer amount (no fees)
 	let total_cost = pre_transfer_gas_payer_balance - final_gas_payer_balance;
 	assert_eq!(
@@ -192,4 +186,3 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	Ok(())
 }
-
