@@ -94,9 +94,11 @@ async fn main() -> Result<(), anyhow::Error> {
 		.maptos_private_key
 		.to_string();
 	let mut core_resources_account: LocalAccount = LocalAccount::from_private_key(
-		"000000000000000000000000000000000000000000000000000000000A550C18",
+		"000000000000000000000000000000000000000000000000000000000000dead",
 		0,
 	)?;
+
+	println!("Core Resources Account address: {}", core_resources_account.address());
 
 	tracing::info!("Created core resources account");
 	tracing::debug!("core_resources_account address: {}", core_resources_account.address());
