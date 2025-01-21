@@ -33,7 +33,7 @@ where
 
 	/// Tries to create a new HashiCorp Vault HSM from the environment
 	pub fn try_from_env() -> Result<Self, anyhow::Error> {
-		let address = std::env::var("VAULT_ADDRESS").context("VAULT_ADDRESS not set")?;
+		let address = std::env::var("VAULT_ADDR").context("VAULT_ADDR not set")?;
 		let token = std::env::var("VAULT_TOKEN").context("VAULT_TOKEN not set")?;
 		let namespace = std::env::var("VAULT_NAMESPACE").unwrap_or_else(|_| "admin".to_string());
 		let client = VaultClient::new(
