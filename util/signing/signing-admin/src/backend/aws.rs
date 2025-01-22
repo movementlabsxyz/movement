@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
+use async_trait::async_trait;
 use aws_config;
-use aws_sdk_kms::{Client as KmsClient};
-use aws_sdk_kms::types::Tag;
+use aws_sdk_kms::{Client as KmsClient, types::Tag};
 use super::SigningBackend;
 
 pub struct AwsBackend;
@@ -40,11 +40,32 @@ impl AwsBackend {
         }
 }
 
-#[async_trait::async_trait]
+#[async_trait]
 impl SigningBackend for AwsBackend {
+        async fn create_key(&self, _key_id: &str) -> Result<String> {
+                let client = Self::create_client().await?;
+
+                let response = client
+                        .create_key()
+                        .description("Key for signing and verification".to_string())
+                        .key_usage(aws_sdk_kms::types::KeyUsageType::SignVerify)
+                        .key_spec(aws_sdk_kms::types::KeySpec::EccSecgP256K1) // Replaced deprecated method
+                        .send()
+                        .await
+                        .context("Failed to create AWS KMS key")?;
+
+                let new_key_id = response
+                        .key_metadata()
+                        .and_then(|meta| Some(meta.key_id()))
+                        .map(String::from)
+                        .ok_or_else(|| anyhow::anyhow!("Failed to extract new key ID"))?;
+
+                Ok(new_key_id)
+        }
+
         async fn rotate_key(&self, key_id: &str) -> Result<()> {
                 let client = Self::create_client().await?;
-                
+
                 // Ensure the key_id starts with "alias/"
                 let full_alias = if key_id.starts_with("alias/") {
                         key_id.to_string()
@@ -52,7 +73,7 @@ impl SigningBackend for AwsBackend {
                         format!("alias/{}", key_id)
                 };
 
-                let new_key_id = Self::create_key(&client).await?;
+                let new_key_id = self.create_key(key_id).await?;
                 client
                         .update_alias()
                         .alias_name(&full_alias)
@@ -60,7 +81,8 @@ impl SigningBackend for AwsBackend {
                         .send()
                         .await
                         .context("Failed to update AWS KMS alias")?;
-                
+
                 Ok(())
         }
 }
+

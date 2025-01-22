@@ -9,8 +9,10 @@ use vault::VaultBackend;
 /// The trait that all signing backends must implement.
 #[async_trait]
 pub trait SigningBackend {
+        async fn create_key(&self, key_id: &str) -> Result<String>; // Now returns the new key ID
         async fn rotate_key(&self, key_id: &str) -> Result<()>;
 }
+
 
 /// Enum to represent the different backends.
 pub enum Backend {
@@ -21,6 +23,12 @@ pub enum Backend {
 /// Implement the SigningBackend trait for the Backend enum.
 #[async_trait]
 impl SigningBackend for Backend {
+        async fn create_key(&self, key_id: &str) -> Result<String> {
+                match self {
+                        Backend::Aws(aws) => aws.create_key(key_id).await,
+                        Backend::Vault(vault) => vault.create_key(key_id).await,
+                }
+        }
         async fn rotate_key(&self, key_id: &str) -> Result<()> {
                 match self {
                         Backend::Aws(aws) => aws.rotate_key(key_id).await,

@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand};
 
 pub mod rotate_key;
+pub mod wal;
 
 #[derive(Parser, Debug)]
 #[clap(name = "signing-admin", about = "CLI for managing signing keys")]
