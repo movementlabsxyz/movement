@@ -50,6 +50,7 @@ members = [
     "util/signing/util/loader",
     "demo/hsm",
     "util/signing/testing",
+    "util/signing/signing-admin"
 ]
 
 [workspace.package]

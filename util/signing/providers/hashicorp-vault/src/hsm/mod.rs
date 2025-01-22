@@ -33,7 +33,7 @@ where
 
 	/// Tries to create a new HashiCorp Vault HSM from the environment
 	pub fn try_from_env() -> Result<Self, anyhow::Error> {
-		let address = std::env::var("VAULT_ADDRESS").context("VAULT_ADDRESS not set")?;
+		let address = std::env::var("VAULT_ADDR").context("VAULT_ADDR not set")?;
 		let token = std::env::var("VAULT_TOKEN").context("VAULT_TOKEN not set")?;
 		let namespace = std::env::var("VAULT_NAMESPACE").unwrap_or_else(|_| "admin".to_string());
 		let client = VaultClient::new(
@@ -78,60 +78,108 @@ where
 {
 	async fn sign(&self, message: &[u8]) -> Result<C::Signature, SignerError> {
 		println!("Key name: {:?}", self.key_name.as_str());
+
 		let res = data::sign(
 			&self.client,
 			self.mount_name.as_str(),
-			self.key_name.as_str(),
-			// convert bytes vec<u8> to base64 string
+			self.key_name.replace("/", "_").as_str(),
 			base64::encode(message).as_str(),
 			None,
 		)
 		.await
-		.context("Failed to sign message")
-		.map_err(|e| SignerError::Internal(e.to_string()))?;
+		.map_err(|e| {
+			let error_msg = format!("Failed to sign message: {:?}", e);
+			println!("{}", error_msg);
+			SignerError::Internal(error_msg)
+		})?;
 
-		// the signature should be encoded vault:v1:<signature> check for match and split off the signature
-		// 1. check for match
-		if !res.signature.starts_with("vault:v1:") {
+		// Log the full response
+		println!("Signature response: {:?}", res);
+
+		if !res.signature.starts_with("vault") {
 			return Err(SignerError::Internal("Invalid signature format".to_string()));
 		}
-		// 2. split off the signature
-		let signature_str = res.signature.split_at(9).1;
 
-		// decode base64 string to vec<u8>
+		// Extract the key version from the signature
+		let version_end_index = res.signature[6..]
+			.find(':')
+			.ok_or_else(|| SignerError::Internal("Invalid signature format".to_string()))?
+			+ 6;
+
+		// Determine split index dynamically
+		let split_index = version_end_index + 1;
+
+		// Split and decode the signature
+		let signature_str = &res.signature[split_index..];
+
 		let signature = base64::decode(signature_str)
-			.context("Failed to decode signature")
+			.context("Failed to decode base64 signature from Vault")
 			.map_err(|e| SignerError::Internal(e.to_string()))?;
 
-		// Sign the message using HashiCorp Vault
-		Ok(C::Signature::try_from_bytes(signature.as_slice())
-			.map_err(|e| SignerError::Internal(e.to_string()))?)
+		if signature.len() != 64 {
+			return Err(SignerError::Internal(format!(
+				"Unexpected signature length: {} bytes",
+				signature.len()
+			)));
+		}
+
+		let parsed_signature = C::Signature::try_from_bytes(&signature).map_err(|e| {
+			SignerError::Internal(format!(
+				"Failed to parse signature into expected format: {:?}",
+				e
+			))
+		})?;
+
+		Ok(parsed_signature)
 	}
 
 	async fn public_key(&self) -> Result<C::PublicKey, SignerError> {
-		let res = transit_key::read(&self.client, self.mount_name.as_str(), self.key_name.as_str())
-			.await
-			.context("Failed to read key")
-			.map_err(|e| SignerError::Internal(e.to_string()))?;
+		println!("Attempting to read Vault key: {}", self.key_name);
 
+		// Read the key from Vault
+		let res = transit_key::read(
+			&self.client,
+			self.mount_name.as_str(),
+			self.key_name.replace("/", "_").as_str(),
+		)
+		.await
+		.map_err(|e| {
+			println!(
+				"Error reading key '{}' from mount '{}': {:?}",
+				self.key_name, self.mount_name, e
+			);
+			SignerError::Internal(format!("Failed to read key '{}': {:?}", self.key_name, e))
+		})?;
+
+		println!("Key read successfully: {:?}", res);
+
+		// Match the key type and determine the latest version
 		let public_key = match res.keys {
 			ReadKeyData::Symmetric(_) => {
+				println!("Key '{}' is symmetric and not supported", self.key_name);
 				return Err(SignerError::Internal("Symmetric keys are not supported".to_string()));
 			}
 			ReadKeyData::Asymmetric(keys) => {
-				let key = keys
-					.values()
-					.next()
-					.context("No key found")
-					.map_err(|_e| SignerError::KeyNotFound)?;
-				base64::decode(key.public_key.as_str())
-					.context("failed to decode public key")
-					.map_err(|e| SignerError::Decode(e.into()))?
+				// Use the number of items in the map as the version
+				let latest_version = keys.len().to_string();
+
+				let key =
+					keys.get(&latest_version).context("Key version not found").map_err(|e| {
+						println!("Key version '{}' not found: {:?}", latest_version, e);
+						SignerError::KeyNotFound
+					})?;
+
+				base64::decode(&key.public_key).map_err(|e| {
+					println!("Failed to decode public key: {:?}", e);
+					SignerError::Internal(e.to_string())
+				})?
 			}
 		};
 
-		Ok(C::PublicKey::try_from_bytes(public_key.as_slice())
-			.map_err(|e| SignerError::Internal(e.to_string()))?)
+		Ok(C::PublicKey::try_from_bytes(&public_key).map_err(|e| {
+			println!("Error converting public key to curve type: {:?}. Bytes: {:?}", e, public_key);
+			SignerError::Internal(e.to_string())
+		})?)
 	}
 }
 

@@ -5,7 +5,6 @@ use aws_sdk_kms::Client;
 use movement_signer::cryptography::TryFromBytes;
 use movement_signer::{cryptography::Curve, SignerError, Signing};
 use secp256k1::ecdsa::Signature as Secp256k1Signature;
-use secp256k1::Error as Secp256k1Error;
 pub mod key;
 use simple_asn1::{from_der, ASN1Block};
 
@@ -78,6 +77,24 @@ where
 
 		Ok(Self::new(self.client, key_id))
 	}
+
+	pub async fn resolve_key_id(&self) -> Result<String, SignerError> {
+		let alias_name = format!("alias/{}", self.key_id); // Ensure the alias format is correct
+
+		let key_metadata =
+			self.client.describe_key().key_id(&alias_name).send().await.map_err(|e| {
+				println!("Error resolving key ID from alias: {:?}", e);
+				SignerError::Internal(format!("Failed to resolve key ID: {:?}", e))
+			})?;
+
+		let key_id = key_metadata
+			.key_metadata()
+			.and_then(|metadata| Some(metadata.key_id()))
+			.map(|key_id| key_id.to_string())
+			.ok_or_else(|| SignerError::Internal("Failed to retrieve key ID".to_string()))?;
+
+		Ok(key_id)
+	}
 }
 
 #[async_trait::async_trait]
@@ -107,10 +124,8 @@ where
 			.context("No signature available")
 			.map_err(|e| SignerError::Internal(e.to_string()))?;
 
-		let secp_signature =
-			Secp256k1Signature::from_der(der_signature.as_ref()).map_err(|e: Secp256k1Error| {
-				SignerError::Internal(format!("Failed to parse DER signature: {}", e))
-			})?;
+		let secp_signature = Secp256k1Signature::from_der(der_signature.as_ref())
+			.map_err(|e| SignerError::Internal(format!("Failed to parse DER signature: {}", e)))?;
 
 		let raw_signature = secp_signature.serialize_compact();
 
@@ -123,9 +138,22 @@ where
 	}
 
 	async fn public_key(&self) -> Result<C::PublicKey, SignerError> {
-		let res = self.client.get_public_key().key_id(&self.key_id).send().await.map_err(|e| {
-			SignerError::Internal(format!("failed to get public key: {}", e.to_string()))
+		// Resolve the Key ID
+		let key_id = self.resolve_key_id().await.map_err(|e| {
+			println!("Error resolving key ID: {:?}", e);
+			SignerError::Internal(format!("Failed to resolve key ID: {:?}", e))
 		})?;
+
+		let res = self
+			.client
+			.get_public_key()
+			.key_id(&key_id) // Use the resolved Key ID
+			.send()
+			.await
+			.map_err(|e| {
+				println!("Error calling get_public_key: {:?}", e);
+				SignerError::Internal(format!("Failed to retrieve public key: {:?}", e))
+			})?;
 
 		let public_key_der = res.public_key().context("No public key available").map_err(|e| {
 			println!("Error extracting public key: {:?}", e);

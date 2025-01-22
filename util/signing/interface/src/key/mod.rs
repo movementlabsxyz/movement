@@ -46,7 +46,7 @@ impl ToCanonicalString for Environment {
 	fn to_canonical_string(&self) -> String {
 		match self {
 			Environment::Prod => "prod".to_string(),
-			Environment::Dev => "dev".to_string(),
+			Environment::Dev => "devNet".to_string(),
 			Environment::Staging => "staging".to_string(),
 		}
 	}
@@ -56,7 +56,7 @@ impl TryFromCanonicalString for Environment {
 	fn try_from_canonical_string(s: &str) -> Result<Self, String> {
 		match s {
 			"prod" => Ok(Environment::Prod),
-			"dev" => Ok(Environment::Dev),
+			"devNet" => Ok(Environment::Dev),
 			"staging" => Ok(Environment::Staging),
 			_ => Err(format!("invalid environment: {}", s)),
 		}
@@ -72,7 +72,7 @@ pub enum SoftwareUnit {
 impl ToCanonicalString for SoftwareUnit {
 	fn to_canonical_string(&self) -> String {
 		match self {
-			SoftwareUnit::FullNode => "full_node".to_string(),
+			SoftwareUnit::FullNode => "fullNode".to_string(),
 			SoftwareUnit::Other(s) => s.clone(),
 		}
 	}
@@ -81,7 +81,7 @@ impl ToCanonicalString for SoftwareUnit {
 impl TryFromCanonicalString for SoftwareUnit {
 	fn try_from_canonical_string(s: &str) -> Result<Self, String> {
 		match s {
-			"full_node" => Ok(SoftwareUnit::FullNode),
+			"fullNode" => Ok(SoftwareUnit::FullNode),
 			_ => Ok(SoftwareUnit::Other(s.to_string())),
 		}
 	}
@@ -213,6 +213,8 @@ impl Key {
 }
 
 impl TryFromCanonicalString for Key {
+	/// Gets a key from a canonical string.
+	/// Example canonical string: "movement/prod/full_node/mcr_settlement/signer/validator/0"
 	fn try_from_canonical_string(s: &str) -> Result<Self, String> {
 		let parts: Vec<&str> = s.split('/').collect();
 		if parts.len() != 7 {
