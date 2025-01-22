@@ -6,6 +6,7 @@ use clap::Subcommand;
 #[clap(rename_all = "kebab-case", about = "Commands for syncing")]
 pub enum Admin {
 	ForceCommitment(force_commitment::ForceCommitment),
+	#[clap(subcommand)]
 	RotateKey(rotate_key::RotateKey),
 }
 
