@@ -2,7 +2,7 @@
 use anyhow::{Chain, Context};
 use movement_client::crypto::ValidCryptoMaterialStringExt;
 
-use aptos_sdk::{move_types::{
+use aptos_sdk::{crypto::multi_ed25519::MultiEd25519PublicKey, crypto::ed25519::ed25519_keys::Ed25519PublicKey, move_types::{
 	identifier::Identifier, language_storage::{ModuleId, StructTag, TypeTag},
 }, rest_client::Account};
 use aptos_sdk::types::{
@@ -80,10 +80,9 @@ async fn main() -> Result<(), anyhow::Error> {
 	let coin_client = CoinClient::new(&rest_client);
 	let dead_address = AccountAddress::from_str(
 		"000000000000000000000000000000000000000000000000000000000000dead")?;
-	let relayer_address = AccountAddress::from_str(
+	let associate_address = AccountAddress::from_str(
 		"0x000000000000000000000000000000000000000000000000000000000a550c18")?;
-	let core_resources_signer_address = AccountAddress::from_str(
-		"f90391c81027f03cdea491ed8b36ffaced26b6df208a9b569e5baf2590eb9b16")?;
+	
 	let chain_id = rest_client
 		.get_index()
 		.await
@@ -91,32 +90,24 @@ async fn main() -> Result<(), anyhow::Error> {
 		.inner()
 		.chain_id;
 
-	// Create core resources account
-	faucet_client
-		.create_account(core_resources_signer_address)
-		.await
-		.context("Failed to fund core_resources_account account")?;
-	// let mut core_resources_account: LocalAccount = LocalAccount::new(
-    //     aptos_test_root_address(),
-    //     AccountKey::from_private_key(aptos_vm_genesis::GENESIS_KEYPAIR.0.clone()),
-    //     0,
-    // );
-	println!("genesis keypairs: {:?}, {:?}", aptos_vm_genesis::GENESIS_KEYPAIR.0.clone(), aptos_vm_genesis::GENESIS_KEYPAIR.1.clone());
-	let mut core_resources_account = LocalAccount::new(
-		relayer_address,
-		AccountKey::from_private_key(aptos_vm_genesis::GENESIS_KEYPAIR.0.clone()),
+	let mut core_resources_account = LocalAccount::from_private_key(
+		SUZUKA_CONFIG
+			.execution_config
+			.maptos_config
+			.chain
+			.maptos_private_key
+			.to_encoded_string()?
+			.as_str(),
 		0,
-	);
+	)?;
 	println!("resource account keypairs: {:?}, {:?}", core_resources_account.private_key(), core_resources_account.public_key());
 	println!("Core Resources Account address: {}", core_resources_account.address());
 
 	tracing::info!("Created core resources account");
-	tracing::debug!("core_resources_account address: {}", core_resources_account.address());
-
 	// core_resources_account is already funded with u64 max value
 	// Create dead account
 	let create_dead_transaction = transaction_test_helpers::get_test_signed_transaction_with_chain_id(
-        core_resources_account.address(),
+        associate_address,
         core_resources_account.sequence_number(),
         &core_resources_account.private_key(),
         core_resources_account.public_key().clone(),
@@ -149,7 +140,7 @@ async fn main() -> Result<(), anyhow::Error> {
 	// 		)),
 	// 		SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60,
 	// 		ChainId::new(chain_id),
-	// 	).sender(relayer_address).sequence_number(core_resources_account.sequence_number()));
+	// 	).sender(associate_address).sequence_number(core_resources_account.sequence_number()));
 
 	rest_client
 		.submit_and_wait(&create_dead_transaction)
@@ -208,7 +199,7 @@ async fn main() -> Result<(), anyhow::Error> {
 			script_payload,
 			SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60,
 			ChainId::new(chain_id),
-		).sender(relayer_address).sequence_number(core_resources_account.sequence_number())
+		).sender(associate_address).sequence_number(core_resources_account.sequence_number())
 	)).await.context("Failed to execute burn dead balance script transaction")?;
 
 	// transfer to relayer address the desired amount
