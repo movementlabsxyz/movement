@@ -27,7 +27,7 @@ impl TryFromCanonicalString for SignerIdentifier {
 		let parts: Vec<&str> = s.splitn(2, "::").collect();
 
 		if parts.len() < 2 {
-			return Err("Invalid signer identifier".to_string());
+			return Err("invalid signer identifier".to_string());
 		}
 
 		match parts[0] {
@@ -40,7 +40,7 @@ impl TryFromCanonicalString for SignerIdentifier {
 			"hashi_corp_vault" => Ok(SignerIdentifier::HashiCorpVault(
 				hashi_corp_vault::HashiCorpVault::try_from_canonical_string(parts[1])?,
 			)),
-			_ => Err("Invalid signer identifier".to_string()),
+			_ => Err("invalid signer identifier".to_string()),
 		}
 	}
 }

@@ -50,11 +50,11 @@ where
 /// Errors thrown by Signer
 #[derive(Debug, thiserror::Error)]
 pub enum LoaderError {
-	#[error("Invalid signer identifier")]
-	InvalidSignerIdentifier,
-	#[error("Invalid signer")]
-	InvalidSigner,
-	#[error("Invalid curve")]
+	#[error("invalid signer identifier: {0}")]
+	InvalidSignerIdentifier(#[source] Box<dyn std::error::Error + Send + Sync>),
+	#[error("invalid signer: {0}")]
+	InvalidSigner(#[source] Box<dyn std::error::Error + Send + Sync>),
+	#[error("invalid curve")]
 	InvalidCurve,
 }
 
@@ -79,14 +79,15 @@ impl Load<Secp256k1> for SignerIdentifier {
 				let signer = movement_signer_local::signer::LocalSigner::from_signing_key_hex(
 					&local.private_key_hex_bytes,
 				)
-				.map_err(|_e| LoaderError::InvalidSigner)?;
+				.map_err(|e| LoaderError::InvalidSigner(e.into()))?;
 				Ok(LoadedSigner::new(Arc::new(signer) as Arc<dyn Signing<Secp256k1> + Send + Sync>))
 			}
 			SignerIdentifier::AwsKms(aws_kms) => {
 				let builder =
 					movement_signer_aws_kms::hsm::key::Builder::new().create_key(aws_kms.create);
 				let key = aws_kms.key.clone();
-				let signer = builder.build(key).await.map_err(|_e| LoaderError::InvalidSigner)?;
+				let signer =
+					builder.build(key).await.map_err(|e| LoaderError::InvalidSigner(e.into()))?;
 				Ok(LoadedSigner::new(Arc::new(signer) as Arc<dyn Signing<Secp256k1> + Send + Sync>))
 			}
 			SignerIdentifier::HashiCorpVault(_hashi_corp_vault) => Err(LoaderError::InvalidCurve),
@@ -105,7 +106,8 @@ impl Load<Ed25519> for SignerIdentifier {
 				let builder = movement_signer_hashicorp_vault::hsm::key::Builder::new()
 					.create_key(hashi_corp_vault.create);
 				let key = hashi_corp_vault.key.clone();
-				let signer = builder.build(key).await.map_err(|_e| LoaderError::InvalidSigner)?;
+				let signer =
+					builder.build(key).await.map_err(|e| LoaderError::InvalidSigner(e.into()))?;
 				Ok(LoadedSigner::new(Arc::new(signer) as Arc<dyn Signing<Ed25519> + Send + Sync>))
 			}
 		}

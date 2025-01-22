@@ -67,7 +67,7 @@ pub fn default_da_signers_from_env() -> DaSigners {
 }
 
 pub fn default_da_signers() -> DaSigners {
-	match std::env::var("DA_SIGNERS") {
+	match std::env::var("MOVEMENT_CELESTIA_DA_KEY_IDENTIFIER") {
 		Ok(maybe_canonical_string) => {
 			let signer_identifier =
 				SignerIdentifier::try_from_canonical_string(&maybe_canonical_string)

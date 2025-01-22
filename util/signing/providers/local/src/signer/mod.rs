@@ -1,4 +1,5 @@
 use crate::cryptography::LocalCryptographySpec;
+use ecdsa::signature::Signer as _;
 use ecdsa::{
 	elliptic_curve::{
 		generic_array::ArrayLength,
@@ -67,7 +68,9 @@ impl LocalSigner<Secp256k1> {
 
 	/// Constructs a new [LocalSigner] from a hex string.
 	pub fn from_signing_key_hex(hex: &str) -> Result<Self, SignerError> {
-		let bytes = hex::decode(hex).map_err(|e| SignerError::Decode(e.into()))?;
+		let bytes = hex::decode(hex).map_err(|e| {
+			SignerError::Decode(format!("failed to decode hex string: {}", e).into())
+		})?;
 		Self::from_signing_key_bytes(&bytes)
 	}
 }
@@ -87,16 +90,14 @@ where
 	FieldBytesSize<<C as LocalCryptographySpec>::Curve>: ModulusSize,
 {
 	async fn sign(&self, message: &[u8]) -> Result<C::Signature, SignerError> {
-		let (signature, _recovery_id) = self
-			.signing_key
-			.sign_prehash_recoverable(message)
-			.map_err(|e| SignerError::Sign(e.into()))?;
+		let (signature, _recovery_id) =
+			self.signing_key.try_sign(message).map_err(|e| SignerError::Sign(e.into()))?;
 		Ok(C::Signature::try_from_bytes(signature.to_vec().as_slice())
 			.map_err(|e| SignerError::Sign(e.into()))?)
 	}
 
 	async fn public_key(&self) -> Result<C::PublicKey, SignerError> {
-		C::PublicKey::try_from_bytes(self.verifying_key.to_sec1_bytes().as_ref())
+		C::PublicKey::try_from_bytes(self.verifying_key.to_encoded_point(false).as_ref())
 			.map_err(|e| SignerError::PublicKey(e.into()))
 	}
 }

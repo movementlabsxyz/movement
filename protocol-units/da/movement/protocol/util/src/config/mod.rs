@@ -270,7 +270,7 @@ impl LoadSigner<Secp256k1> for Config {
 				let signer = identifier
 					.load()
 					.await
-					.map_err(|e| anyhow::anyhow!("Failed to load signer: {}", e))?;
+					.map_err(|e| anyhow::anyhow!("failed to load signer: {}", e))?;
 				Ok(signer)
 			}
 			Config::Arabica(local) => {
@@ -279,7 +279,7 @@ impl LoadSigner<Secp256k1> for Config {
 				let signer = identifier
 					.load()
 					.await
-					.map_err(|e| anyhow::anyhow!("Failed to load signer: {}", e))?;
+					.map_err(|e| anyhow::anyhow!("failed to load signer: {}", e))?;
 				Ok(signer)
 			}
 			Config::Mocha(local) => {
@@ -288,7 +288,7 @@ impl LoadSigner<Secp256k1> for Config {
 				let signer = identifier
 					.load()
 					.await
-					.map_err(|e| anyhow::anyhow!("Failed to load signer: {}", e))?;
+					.map_err(|e| anyhow::anyhow!("failed to load signer: {}", e))?;
 				Ok(signer)
 			}
 		}

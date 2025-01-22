@@ -19,5 +19,8 @@ rand = { version = "0.8.5" }
 async-trait = { workspace = true }
 hex = { workspace = true }
 
+[dev-dependencies]
+tokio = { workspace = true }
+
 [lints]
 workspace = true

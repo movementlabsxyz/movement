@@ -21,6 +21,10 @@ async-trait = { workspace = true }
 alloy-signer = { workspace = true }
 k256 = "0.13.4"
 spki = "0.7.3"
+simple_asn1 = { workspace = true}
+
+[dev-dependencies]
+tokio = { workspace = true }
 
 [lints]
 workspace = true
