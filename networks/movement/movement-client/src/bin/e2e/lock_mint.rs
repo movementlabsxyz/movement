@@ -125,27 +125,38 @@ async fn main() -> Result<(), anyhow::Error> {
 		None,
 		ChainId::new(chain_id),
     );
-    // let ret = vm_validator.validate_transaction(transaction).unwrap();
-
-	// let create_dead_transaction =
-	// 	core_resources_account.sign_with_transaction_builder(TransactionBuilder::new(
-	// 		TransactionPayload::EntryFunction(EntryFunction::new(
-	// 			ModuleId::new(
-	// 				AccountAddress::from_hex_literal("0x1")?,
-	// 				Identifier::new("aptos_account")?,
-	// 			),
-	// 			Identifier::new("create_account")?,
-	// 			vec![],
-	// 			vec![bcs::to_bytes(&dead_address)?],
-	// 		)),
-	// 		SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60,
-	// 		ChainId::new(chain_id),
-	// 	).sender(associate_address).sequence_number(core_resources_account.sequence_number()));
 
 	rest_client
 		.submit_and_wait(&create_dead_transaction)
 		.await
 		.context("Failed to create dead account")?;
+
+	core_resources_account.increment_sequence_number();
+
+		let create_signer_transaction = transaction_test_helpers::get_test_signed_transaction_with_chain_id(
+			associate_address,
+			core_resources_account.sequence_number(),
+			&core_resources_account.private_key(),
+			core_resources_account.public_key().clone(),
+			Some(TransactionPayload::EntryFunction(EntryFunction::new(
+				ModuleId::new(
+					AccountAddress::from_hex_literal("0x1")?,
+					Identifier::new("aptos_account")?,
+				),
+				Identifier::new("create_account")?,
+				vec![],
+				vec![bcs::to_bytes(&core_resources_account.address())?],
+			))),
+			SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60,
+			100,
+			None,
+			ChainId::new(chain_id),
+		);
+	
+		rest_client
+			.submit_and_wait(&create_signer_transaction)
+			.await
+			.context("Failed to create signer account")?;
 
 	coin_client
 		.transfer(
@@ -194,13 +205,22 @@ async fn main() -> Result<(), anyhow::Error> {
 	let args = vec![TransactionArgument::Address(dead_address), TransactionArgument::U64(1)];
 	let script_payload = TransactionPayload::Script(Script::new(code, vec![], args));
 
-	rest_client.submit_and_wait(&core_resources_account.sign_with_transaction_builder(
-		TransactionBuilder::new(
-			script_payload,
-			SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60,
-			ChainId::new(chain_id),
-		).sender(associate_address).sequence_number(core_resources_account.sequence_number())
-	)).await.context("Failed to execute burn dead balance script transaction")?;
+	let run_script_transaction = transaction_test_helpers::get_test_signed_transaction_with_chain_id(
+		associate_address,
+		core_resources_account.sequence_number(),
+		&core_resources_account.private_key(),
+		core_resources_account.public_key().clone(),
+		Some(script_payload),
+		SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60,
+		100,
+		None,
+		ChainId::new(chain_id),
+	);
+
+	rest_client
+		.submit_and_wait(&run_script_transaction)
+		.await
+		.context("Failed to execute burn dead balance script transaction")?;
 
 	// transfer to relayer address the desired amount
 	// let desired_amount = 1_000_000;
