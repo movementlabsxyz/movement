@@ -107,7 +107,6 @@ pub trait DaOperations: Send + Sync {
 		&self,
 		start_height: u64,
 	) -> Pin<Box<dyn Future<Output = Result<DaBlobStream, DaError>> + Send + '_>> {
-		tracing::info!("TEST Da lib DaOperations stream_da_blobs_from_height start");
 		let fut = async move {
 			let certificate_stream = self.stream_certificates().await?;
 			let stream = try_stream! {
