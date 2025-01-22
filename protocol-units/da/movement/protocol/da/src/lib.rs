@@ -4,7 +4,6 @@ use async_stream::try_stream;
 use movement_da_util::blob::ir::blob::DaBlob;
 use std::future::Future;
 use std::pin::Pin;
-use tokio::time::{self, Duration};
 use tokio_stream::{Stream, StreamExt};
 use tracing::{info, warn};
 
@@ -111,58 +110,41 @@ pub trait DaOperations: Send + Sync {
 		tracing::info!("TEST Da lib DaOperations stream_da_blobs_from_height start");
 		let fut = async move {
 			let certificate_stream = self.stream_certificates().await?;
-			// Tick interval for generating HeartBeat.
-			let mut tick_interval = time::interval(Duration::from_secs(10));
-
 			let stream = try_stream! {
 				let mut last_height = start_height;
 				let mut certificate_stream = certificate_stream;
 
+				while let Some(certificate) = certificate_stream.next().await {
 
-				loop {
-					tokio::select! {
-						// Yield from the data stream
-						Some(certificate) = certificate_stream.next() => {
-							info!("certificate: {:?}", certificate);
-							 match certificate {
-								Ok(Certificate::Height(height)) if height > last_height => {
-									tracing::info!("TEST Da lib DaOperations stream_da_blobs_from_height got new accepted blob at height:{height}");
-									let blob_stream = self
-										.stream_da_blobs_between_heights(last_height, height)
-										.await.unwrap(); // TODO remove the unwrap()
-									tokio::pin!(blob_stream);
+					info!("certificate: {:?}", certificate);
 
-									while let Some(blob) = blob_stream.next().await {
-										tracing::info!("TEST Da lib DaOperations stream_da_blobs_from_height send new accepted blob at height:{height}");
-										yield blob?;
-									}
+					match certificate {
+						Ok(Certificate::Height(height)) if height > last_height => {
+							let blob_stream = self
+								.stream_da_blobs_between_heights(last_height, height)
+								.await?;
+							tokio::pin!(blob_stream);
 
-									last_height = height;
-								}
-								Ok(Certificate::Nolo) => {
-									tracing::info!("TEST Da lib DaOperations stream_da_blobs_from_height got Certificate::Nolo");
-									// Ignore Nolo
-								}
-								// Warn log non-fatal certificate errors
-								Err(DaError::NonFatalCertificate(e)) => {
-									warn!("non-fatal certificate error: {}", e);
-								}
-								// Exit on all other errors
-								Err(e) => {
-									yield Err(e)?;
-								}
-								// If height is less than last height, ignore
-								_ => {
-									warn!("ignoring certificate");
-								}
+							while let Some(blob) = blob_stream.next().await {
+								yield blob?;
 							}
-						}
 
-						// Yield the periodic tick
-						_ = tick_interval.tick() => {
-							let heart_blob = (DaHeight(0u64), DaBlob::DigestV1(Vec::new()));
-							tracing::info!("TEST Da lib DaOperations stream_da_blobs_yield heartbeat.");
-							yield heart_blob;
+							last_height = height;
+						}
+						Ok(Certificate::Nolo) => {
+							// Ignore Nolo
+						}
+						// Warn log non-fatal certificate errors
+						Err(DaError::NonFatalCertificate(e)) => {
+							warn!("non-fatal certificate error: {}", e);
+						}
+						// Exit on all other errors
+						Err(e) => {
+							yield Err(e)?;
+						}
+						// If height is less than last height, ignore
+						_ => {
+							warn!("ignoring certificate");
 						}
 					}
 				}

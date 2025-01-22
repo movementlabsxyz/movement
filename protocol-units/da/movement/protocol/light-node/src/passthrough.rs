@@ -1,5 +1,6 @@
 use std::fmt::{self, Debug, Formatter};
 use std::sync::Arc;
+use tokio::time::{self, Duration};
 use tokio_stream::{Stream, StreamExt};
 use tracing::info;
 
@@ -127,27 +128,53 @@ where
 		let verifier = self.verifier.clone();
 		let height = request.into_inner().height;
 
+		// Tick interval for generating HeartBeat.
+		let mut tick_interval = time::interval(Duration::from_secs(10));
+
 		let output = async_stream::try_stream! {
 
 			let mut blob_stream = da.stream_da_blobs_from_height(height).await.map_err(|e| tonic::Status::internal(e.to_string()))?;
 
-			while let Some(blob) = blob_stream.next().await {
-				let (height, da_blob) = blob.map_err(|e| tonic::Status::internal(e.to_string()))?;
-				let response_content = if height.as_u64() == 0 {
-					//Heart beat. The value can be use to indicate some status.
-					BlobResponse { blob_type: Some(movement_da_light_node_proto::blob_response::BlobType::HeartbeatBlob(true)) }
-				} else {
-					let verifed_blob = verifier.verify(da_blob, height.as_u64()).await.map_err(|e| tonic::Status::internal(e.to_string()))?;
-					verifed_blob.into_inner().to_blob_passed_through_read_response(height.as_u64()).map_err(|e| tonic::Status::internal(e.to_string()))?
-				};
-				let response = StreamReadFromHeightResponse {
-					blob: Some(response_content)
-				};
-				tracing::info!("TEST passthrough LightNode stream_read_from_height send blob");
-				yield response;
-			}
+				loop {
+					let response_content = tokio::select! {
+						// Yield from the data stream
+						Some(blob) = blob_stream.next() => {
+							let (height, da_blob) = blob.map_err(|e| tonic::Status::internal(e.to_string())).unwrap(); //TODO remove unwrap
+							let verifed_blob = verifier.verify(da_blob, height.as_u64()).await.map_err(|e| tonic::Status::internal(e.to_string())).unwrap(); //TODO remove unwrap;
+							tracing::info!("TEST passthrough LightNode stream_read_from_height send blob");
+							verifed_blob.into_inner().to_blob_passed_through_read_response(height.as_u64()).map_err(|e| tonic::Status::internal(e.to_string())).unwrap() //TODO remove unwrap;
+						}
+						// Yield the periodic tick
+						_ = tick_interval.tick() => {
+							//Heart beat. The value can be use to indicate some status.
+							tracing::info!("TEST Da lib DaOperations stream_da_blobs_yield heartbeat.");
+							BlobResponse { blob_type: Some(movement_da_light_node_proto::blob_response::BlobType::HeartbeatBlob(true)) }
+						}
+					};
+					let response = StreamReadFromHeightResponse {
+						blob: Some(response_content)
+					};
+					yield response;
+				}
 
-			info!("Stream read from height closed for height: {}", height);
+
+			// while let Some(blob) = blob_stream.next().await {
+			// 	let (height, da_blob) = blob.map_err(|e| tonic::Status::internal(e.to_string()))?;
+			// 	let response_content = if height.as_u64() == 0 {
+			// 		//Heart beat. The value can be use to indicate some status.
+			// 		BlobResponse { blob_type: Some(movement_da_light_node_proto::blob_response::BlobType::HeartbeatBlob(true)) }
+			// 	} else {
+			// 		let verifed_blob = verifier.verify(da_blob, height.as_u64()).await.map_err(|e| tonic::Status::internal(e.to_string()))?;
+			// 		verifed_blob.into_inner().to_blob_passed_through_read_response(height.as_u64()).map_err(|e| tonic::Status::internal(e.to_string()))?
+			// 	};
+			// 	let response = StreamReadFromHeightResponse {
+			// 		blob: Some(response_content)
+			// 	};
+			// 	tracing::info!("TEST passthrough LightNode stream_read_from_height send blob");
+			// 	yield response;
+			// }
+
+			// info!("Stream read from height closed for height: {}", height);
 
 		};
 
