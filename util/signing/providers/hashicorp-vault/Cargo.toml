@@ -15,6 +15,11 @@ vaultrs = { workspace = true }
 base64 = { workspace = true }
 anyhow = { workspace = true }
 async-trait = { workspace = true }
+uuid = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }
+dotenv = { workspace = true }
 
 [lints]
 workspace = true

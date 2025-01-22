@@ -10688,7 +10688,10 @@ dependencies = [
  "anyhow",
  "async-trait",
  "base64 0.13.1",
+ "dotenv",
  "movement-signer",
+ "tokio",
+ "uuid",
  "vaultrs",
 ]
 

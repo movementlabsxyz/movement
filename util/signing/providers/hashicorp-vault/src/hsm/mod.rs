@@ -44,10 +44,17 @@ where
 				.build()?,
 		)?;
 
-		let key_name = std::env::var("VAULT_KEY_NAME").context("VAULT_KEY_NAME not set")?;
+		let key_name = std::env::var("VAULT_KEY_NAME").unwrap_or_else(|_| "signer".to_string());
 		let mount_name = std::env::var("VAULT_MOUNT_NAME").context("VAULT_MOUNT_NAME not set")?;
 
 		Ok(Self::new(client, key_name, mount_name))
+	}
+
+	/// Creates a random key using env configuration, but replacing the key name with a random one
+	pub async fn create_random_key() -> Result<Self, anyhow::Error> {
+		let mut hsm = Self::try_from_env()?;
+		hsm.key_name = format!("key-{}", uuid::Uuid::new_v4().to_string());
+		Ok(hsm.create_key().await?)
 	}
 
 	/// Creates a new key in the transit backend
@@ -125,5 +132,27 @@ where
 
 		Ok(C::PublicKey::try_from_bytes(public_key.as_slice())
 			.map_err(|e| SignerError::Internal(e.to_string()))?)
+	}
+}
+
+#[cfg(test)]
+pub mod test {
+
+	use super::*;
+	use movement_signer::{cryptography::ed25519::Ed25519, Signing, Verify};
+
+	#[tokio::test]
+	async fn test_signs_and_verifies_ed25519() -> Result<(), anyhow::Error> {
+		// load with dotenv
+		dotenv::dotenv().ok();
+
+		let hsm = HashiCorpVault::<Ed25519>::create_random_key().await?;
+		let message = b"hello world";
+		let signature = hsm.sign(message).await?;
+		let public_key = hsm.public_key().await?;
+
+		assert!(Ed25519::verify(message, &signature, &public_key)?);
+
+		Ok(())
 	}
 }
