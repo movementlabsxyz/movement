@@ -47,6 +47,7 @@ impl LocalSigner<Secp256k1> {
 	/// Constructs a new [LocalSigner] with a random key pair.
 	pub fn random() -> Self {
 		let signing_key = SigningKey::<k256::Secp256k1>::random(&mut rand::thread_rng());
+
 		let verifying_key = signing_key.verifying_key().clone();
 		Self::new(signing_key, verifying_key)
 	}

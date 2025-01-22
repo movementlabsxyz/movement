@@ -21,6 +21,7 @@ hex = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true }
+sha3 = "0.10.8"
 
 [lints]
 workspace = true

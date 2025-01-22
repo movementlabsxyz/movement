@@ -16,5 +16,7 @@ alloy = { workspace = true }
 godfig = { workspace = true }
 anyhow = { workspace = true }
 
+movement-signer-loader = { workspace = true }
+
 [lints]
 workspace = true

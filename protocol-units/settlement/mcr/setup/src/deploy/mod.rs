@@ -1,10 +1,21 @@
-use alloy::signers::local::PrivateKeySigner;
+use alloy::providers::Provider;
+use alloy::providers::ProviderBuilder;
+use alloy::signers::Signer;
+use alloy_network::EthereumWallet;
+use alloy_network::TransactionBuilder;
+use alloy_primitives::U256;
 use anyhow::anyhow;
 use anyhow::Context;
 use commander::run_command;
 use dot_movement::DotMovement;
+use mcr_settlement_client::eth_client::MCR;
 use mcr_settlement_config::{common, Config};
+use movement_signer::cryptography::secp256k1::Secp256k1;
+use movement_signer_aws_kms::hsm::AwsKms;
+use movement_signer_loader::identifiers::SignerIdentifier;
+use movement_signing_eth::HsmSigner;
 use serde_json::Value;
+use std::str::FromStr;
 use tracing::info;
 
 /// The local setup strategy for MCR settlement
@@ -34,8 +45,7 @@ impl Deploy {
 	) -> Result<Config, anyhow::Error> {
 		// enforce config.deploy = deploy
 		config.deploy = Some(deploy.clone());
-
-		let wallet: PrivateKeySigner = deploy.mcr_deployment_account_private_key.parse()?;
+		let wallet: PrivateKeySigner = deploy.mcr_local_anvil_account_private_key.parse()?;
 
 		// todo: make sure this shows up in the docker container as well
 		let mut solidity_path = std::env::current_dir()?;
@@ -73,7 +83,7 @@ impl Deploy {
 				"--rpc-url",
 				&config.eth_rpc_connection_url(),
 				"--private-key",
-				&deploy.mcr_deployment_account_private_key,
+				&deploy.mcr_local_anvil_account_private_key,
 				"--legacy",
 				"--use",
 				&solc_path,
@@ -138,19 +148,6 @@ impl Deploy {
 				s.to_owned()
 			})?;
 
-		// generate random well-known accounts and addresses
-		// let mut well_known_account_private_keys =
-		// 	if let Some(existing_testing_config) = config.testing.clone() {
-		// 		existing_testing_config.well_known_account_private_keys
-		// 	} else {
-		// 		let mut keys = Vec::new();
-		// 		for _ in 0..10 {
-		// 			let wallet = PrivateKeySigner::random();
-		// 			keys.push(wallet.to_bytes().to_string());
-		// 		}
-		// 		keys
-		// 	};
-
 		info!("setting up MCR Ethereum client move_token_address: {move_token_address}");
 		info!(
 			"setting up MCR Ethereum client movement_staking_address: {movement_staking_address}"
@@ -159,9 +156,52 @@ impl Deploy {
 
 		if let Some(testing) = &mut config.testing {
 			testing.mcr_testing_admin_account_private_key =
-				deploy.mcr_deployment_account_private_key.clone();
+				deploy.mcr_local_anvil_account_private_key.clone();
 			testing.move_token_contract_address = move_token_address;
 			testing.movement_staking_contract_address = movement_staking_address;
+		}
+
+		use alloy::rpc::types::TransactionRequest;
+		use alloy::signers::local::PrivateKeySigner;
+
+		// Manage signer contract role update
+		// For Local signer the deployment account is used so no need to update.
+		// For Was signer the AWS key account must be declared has a TrustedAttester.
+		match config.settle.signer_identifier {
+			SignerIdentifier::Local(_) => (),
+			SignerIdentifier::AwsKms(ref aws) => {
+				let key_id = aws.key.key_name();
+				let aws: AwsKms<Secp256k1> =
+					AwsKms::try_from_env_with_key(key_id.to_string()).await?;
+				let signer =
+					HsmSigner::try_new(aws, Some(config.eth_connection.eth_chain_id)).await?;
+				let address = signer.address();
+
+				let rpc_url = config.eth_rpc_connection_url();
+				let admin =
+					PrivateKeySigner::from_str(&deploy.mcr_local_anvil_account_private_key)?;
+				let admin_address = admin.address();
+				let admin_provider = ProviderBuilder::new()
+					.with_recommended_fillers()
+					.wallet(EthereumWallet::new(admin))
+					.on_builtin(&rpc_url.to_string())
+					.await?;
+				// Grant Attester role to AWS account.
+				let mcr_contract = MCR::new(mcr_address.parse()?, &admin_provider);
+				let grant_attester_call =
+					mcr_contract.grantTrustedAttester(address).from(admin_address);
+				grant_attester_call.send().await?.get_receipt().await?;
+
+				//transfer some fund to the AWS key account
+				let tx = TransactionRequest::default()
+					.with_to(address)
+					.with_value(U256::from(100_000_000_000_000_000u64));
+				admin_provider.send_transaction(tx).await?.get_receipt().await?;
+
+				let balance = admin_provider.get_balance(address).await?;
+				info!("setting up AWS Account:{address} granted Attester role of MCR contract with balance: {balance}");
+			}
+			SignerIdentifier::HashiCorpVault(_) => (),
 		}
 
 		config.settle.mcr_contract_address = mcr_address;

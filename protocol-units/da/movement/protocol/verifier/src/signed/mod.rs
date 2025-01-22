@@ -2,7 +2,6 @@ use crate::{Error, Verified, VerifierOperations};
 use movement_da_util::blob::ir::blob::DaBlob;
 use movement_signer::{cryptography::Curve, Digester, Verify};
 use std::collections::HashSet;
-use tracing::info;
 
 /// A verifier that checks the signature of the inner blob.
 #[derive(Clone)]
@@ -72,7 +71,6 @@ where
 {
 	async fn verify(&self, blob: DaBlob<C>, height: u64) -> Result<Verified<DaBlob<C>>, Error> {
 		let da_blob = self.inner_verifier.verify(blob, height).await?;
-		info!("Verified inner blob");
 		let signer = da_blob.inner().signer_hex();
 		if !self.known_signers_sec1_bytes_hex.contains(&signer) {
 			return Err(Error::Validation("signer not in known signers".to_string()));
