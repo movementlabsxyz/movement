@@ -4,7 +4,7 @@ use std::fs::{self, OpenOptions};
 use std::io::{BufReader, BufWriter};
 use std::path::Path;
 
-const WAL_FILE: &str = "wal.json";
+pub const WAL_FILE: &str = "wal.json";
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct WalEntry {

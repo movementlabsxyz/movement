@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use crate::cli::wal::{append_to_wal, update_wal_entry, update_wal_status, WalEntry, WAL_FILE};
 use hex;
 use movement_signer::{
                 cryptography::{secp256k1::Secp256k1, ed25519::Ed25519},
@@ -9,13 +10,16 @@ use signing_admin::{
                 backend::{aws::AwsBackend, vault::VaultBackend, Backend},
                 key_manager::KeyManager,
 };
-use crate::cli::wal::{append_to_wal, update_wal_entry, update_wal_status, WalEntry};
-
+use std::{fs, path::Path};
 pub async fn rotate_key(
                 canonical_string: String,
                 application_url: String,
                 backend_name: String,
 ) -> Result<()> {
+                // Clean up existing WAL file
+                if Path::new(WAL_FILE).exists() {
+                        fs::remove_file(WAL_FILE).context("Failed to clean WAL file")?;
+                }
                 // Initialize the application
                 let application = HttpApplication::new(application_url);
 
@@ -29,7 +33,7 @@ pub async fn rotate_key(
                 // Create the key manager
                 let key_manager = KeyManager::new(application, backend);
 
-                // Phase 1: Create New Key
+                // Phase 1: Create new key and prepare application 
                 let new_key_id = key_manager.create_key(&canonical_string).await?;
                 append_to_wal(WalEntry {
                                 operation: "rotate_key".to_string(),
@@ -40,7 +44,6 @@ pub async fn rotate_key(
                 })?;
                 update_wal_status(&canonical_string, "key_created")?;
 
-                // Fetch the public key from the new key
                 let public_key = new_key_id.as_bytes().to_vec();
                 key_manager
                                 .notify_application(public_key.clone())
@@ -49,6 +52,7 @@ pub async fn rotate_key(
                 update_wal_entry(&canonical_string, |entry| {
                                 entry.public_key = Some(hex::encode(&public_key));
                 })?;
+                update_wal_status(&canonical_string, "app_public_key_updated")?;
 
                 // Phase 2: Rotate Key
                 update_wal_status(&canonical_string, "commit")?;
@@ -59,5 +63,8 @@ pub async fn rotate_key(
                 update_wal_status(&canonical_string, "completed")?;
 
                 println!("Key rotation completed successfully.");
+
+                fs::remove_file(WAL_FILE).context("Failed to delete WAL file after successful operation")?;
+
                 Ok(())
 }
