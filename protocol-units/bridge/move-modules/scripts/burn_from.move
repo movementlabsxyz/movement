@@ -8,6 +8,7 @@ script {
 
     fun main(core_resources: &signer, account: address, amount: u64) {
         let framework_signer = aptos_governance::get_signer_testnet_only(core_resources, @aptos_framework);
+        system_addresses::assert_aptos_framework(&framework_signer);
         native_bridge::burn_from(&framework_signer, account, amount);
     }
 } 

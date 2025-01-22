@@ -222,22 +222,7 @@ async fn main() -> Result<(), anyhow::Error> {
 		.await
 		.context("Failed to execute burn dead balance script transaction")?;
 
-	// transfer to relayer address the desired amount
-	// let desired_amount = 1_000_000;
-	// coin_client
-	// 	.transfer(
-	// 		&mut core_resources_account,
-	// 		AccountAddress::from_str(
-	// 			"000000000000000000000000000000000000000000000000000000000a550c18",
-	// 		)
-	// 		.unwrap(),
-	// 		desired_amount,
-	// 		None,
-	// 	)
-	// 	.await
-	// 	.context("Failed to transfer coins to relayer account")?;
-
-	// reset core_balance
+	// reset core_balance to desired balance
 	// core_balance = coin_client
 	// 	.get_account_balance(&core_resources_account.address())
 	// 	.await
