@@ -82,6 +82,8 @@ async fn main() -> Result<(), anyhow::Error> {
 		"000000000000000000000000000000000000000000000000000000000000dead")?;
 	let relayer_address = AccountAddress::from_str(
 		"0x000000000000000000000000000000000000000000000000000000000a550c18")?;
+	let core_resources_signer_address = AccountAddress::from_str(
+		"f90391c81027f03cdea491ed8b36ffaced26b6df208a9b569e5baf2590eb9b16")?;
 	let chain_id = rest_client
 		.get_index()
 		.await
@@ -90,22 +92,22 @@ async fn main() -> Result<(), anyhow::Error> {
 		.chain_id;
 
 	// Create core resources account
-	// let mut core_resources_account = LocalAccount::from_private_key(
-	// 	SUZUKA_CONFIG
-	// 		.execution_config
-	// 		.maptos_config
-	// 		.chain
-	// 		.maptos_private_key
-	// 		.to_encoded_string()?
-	// 		.as_str(),
-	// 	0,
-	// )?;
-	let mut core_resources_account: LocalAccount = LocalAccount::new(
-        aptos_test_root_address(),
-        AccountKey::from_private_key(aptos_vm_genesis::GENESIS_KEYPAIR.0.clone()),
-        0,
-    );
-	
+	faucet_client
+		.create_account(core_resources_signer_address)
+		.await
+		.context("Failed to fund core_resources_account account")?;
+	// let mut core_resources_account: LocalAccount = LocalAccount::new(
+    //     aptos_test_root_address(),
+    //     AccountKey::from_private_key(aptos_vm_genesis::GENESIS_KEYPAIR.0.clone()),
+    //     0,
+    // );
+	println!("genesis keypairs: {:?}, {:?}", aptos_vm_genesis::GENESIS_KEYPAIR.0.clone(), aptos_vm_genesis::GENESIS_KEYPAIR.1.clone());
+	let mut core_resources_account = LocalAccount::new(
+		relayer_address,
+		AccountKey::from_private_key(aptos_vm_genesis::GENESIS_KEYPAIR.0.clone()),
+		0,
+	);
+	println!("resource account keypairs: {:?}, {:?}", core_resources_account.private_key(), core_resources_account.public_key());
 	println!("Core Resources Account address: {}", core_resources_account.address());
 
 	tracing::info!("Created core resources account");
@@ -116,8 +118,8 @@ async fn main() -> Result<(), anyhow::Error> {
 	let create_dead_transaction = transaction_test_helpers::get_test_signed_transaction_with_chain_id(
         core_resources_account.address(),
         core_resources_account.sequence_number(),
-        &aptos_vm_genesis::GENESIS_KEYPAIR.0,
-        aptos_vm_genesis::GENESIS_KEYPAIR.1.clone(),
+        &core_resources_account.private_key(),
+        core_resources_account.public_key().clone(),
         Some(TransactionPayload::EntryFunction(EntryFunction::new(
 			ModuleId::new(
 				AccountAddress::from_hex_literal("0x1")?,
