@@ -1,14 +1,14 @@
+#![allow(unused_imports)]
+#![allow(dead_code)]
 use anyhow::Context;
-use aptos_sdk::crypto::ValidCryptoMaterialStringExt;
 use aptos_sdk::move_types::identifier::Identifier;
 use aptos_sdk::move_types::language_storage::ModuleId;
 use aptos_sdk::rest_client::Transaction;
 use aptos_sdk::types::account_address::AccountAddress;
 use aptos_sdk::{move_types::language_storage::TypeTag, transaction_builder::TransactionFactory};
 use aptos_types::chain_id::ChainId;
-use aptos_types::transaction::{EntryFunction, Script, TransactionArgument, TransactionPayload};
+use aptos_types::transaction::{EntryFunction, TransactionPayload};
 
-use e2e_move_tests::MoveHarness;
 use movement_client::{
 	coin_client::CoinClient,
 	rest_client::{Client, FaucetClient},
@@ -16,7 +16,6 @@ use movement_client::{
 };
 use once_cell::sync::Lazy;
 use std::env;
-use std::fs;
 use std::path::PathBuf;
 use std::str::FromStr;
 use tokio::process::Command;
@@ -84,8 +83,8 @@ static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
 	let rest_client = Client::new(NODE_URL.clone());
-	let _faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
-	let _coin_client = CoinClient::new(&rest_client);
+	let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
+	let coin_client = CoinClient::new(&rest_client);
 
 	let crate_dir = env::var("CARGO_MANIFEST_DIR").expect(
 		"CARGO_MANIFEST_DIR is not set. Make sure to run this inside a Cargo build context.",
@@ -167,72 +166,91 @@ async fn main() -> Result<(), anyhow::Error> {
 		vec![],
 	);
 
-	//If you don't remove .movement/ between runs this seq number will be wrong
-	let mut sequence_number = 1;
-	let signer = &mut LocalAccount::from_private_key(PRIVATE_KEY, sequence_number)?;
-
-	println!("sending initialize_test_token tx with payload {:?}", init_payload);
-
-	let tx_response = send_aptos_transaction(&rest_client, signer, init_payload).await?;
-
-	println!("Transaction response: {:?}", tx_response);
-
-	let code = fs::read(
-		std::env::current_dir()?
-			.join("build")
-			.join("GGPTestToken")
-			.join("bytecode_scripts")
-			.join("main.mv"),
-	)?;
-	let args = vec![TransactionArgument::U64(42)];
-
-	let script_payload = TransactionPayload::Script(Script::new(code, vec![], args));
-
-	println!("script_payload: {:?}", script_payload);
-
-	// let core_resource_signer = &mut LocalAccount::new(
-	// 	aptos_test_root_address(),
-	// 	AccountKey::from_private_key(aptos_vm_genesis::GENESIS_KEYPAIR.0.clone()),
-	// 	sequence_number,
-	// );
-
-	let core_resources_signer = &mut LocalAccount::from_private_key(
-		SUZUKA_CONFIG
-			.execution_config
-			.maptos_config
-			.chain
-			.maptos_private_key
-			.to_encoded_string()?
-			.as_str(),
-		sequence_number,
-	)?;
-
-	println!("core_resource_signer: {:?}", core_resources_signer);
-
-	let mut harness = MoveHarness::new();
-
-	let core_resources =
-		harness.new_account_at(AccountAddress::from_hex_literal("0xA550C18").unwrap());
-
-	let state = rest_client
-		.get_ledger_information()
+	let deposit_status = Command::new("movement")
+		.args(&[
+			"move",
+			"run-script",
+			"--compiled-script-path",
+			"build/GGPTestToken/bytecode_scripts/main.mv",
+			"--args",
+			"u64: 42",
+			"--profile",
+			"default",
+			"--assume-yes",
+			"--sender-account",
+			"0xa550c18",
+		])
+		.status()
 		.await
-		.context("Failed in getting chain id")?
-		.into_inner();
+		.expect("Failed to execute `movement move run-script` command");
 
-	let tx_builder = core_resources.transaction();
+	println!("deposit_status: {:?}", deposit_status);
 
-	let signed_tx = tx_builder
-		.chain_id(ChainId::new(state.chain_id))
-		.sequence_number(sequence_number)
-		.gas_unit_price(GAS_UNIT_PRICE)
-		.payload(script_payload.clone())
-		.sign();
+	if !deposit_status.success() {
+		anyhow::bail!("Deposit failed. Please check the `movement move run-script` command.");
+	}
 
-	let response = rest_client.submit_and_wait(&signed_tx).await?;
+	//If you don't remove .movement/ between runs this seq number will be wrong
+	// let mut sequence_number = 1;
+	// let signer = &mut LocalAccount::from_private_key(PRIVATE_KEY, sequence_number)?;
+	//
+	// println!("sending initialize_test_token tx with payload {:?}", init_payload);
+	//
+	// let tx_response = send_aptos_transaction(&rest_client, signer, init_payload).await?;
+	//
+	// println!("Transaction response: {:?}", tx_response);
+	//
+	// let deposit_script = fs::read(
+	// 	std::env::current_dir()?
+	// 		.join("build")
+	// 		.join("GGPTestToken")
+	// 		.join("bytecode_scripts")
+	// 		.join("main.mv"),
+	// )?;
+	//
+	// // let args = vec![TransactionArgument::U64(42)];
+	// // let script_payload = TransactionPayload::Script(Script::new(code, vec![], args));
+	//
+	// let mut harness = MoveHarness::new_testnet();
+	//
+	// let core_resources =
+	// 	harness.new_account_at(AccountAddress::from_hex_literal("0xA550C18").unwrap());
+	//
+	// let tx = harness.create_script(
+	// 	&core_resources,
+	// 	deposit_script,
+	// 	vec![],
+	// 	vec![TransactionArgument::U64(42)],
+	// );
+	//
+	// println!("TX: {:?}", tx);
+	//
+	// let tx_status = harness.run(tx);
+	//
+	// println!("tx_status: {:?}", tx_status);
+	//
+	// let state = rest_client
+	// 	.get_ledger_information()
+	// 	.await
+	// 	.context("Failed in getting chain id")?
+	// 	.into_inner();
 
-	println!("tx_response: {:?}", response);
+	//let tx_builder = core_resources.transaction();
 
+	// let signed_tx = tx_builder
+	// 	.chain_id(ChainId::new(state.chain_id))
+	// 	.sequence_number(0)
+	// 	.ttl(SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60)
+	// 	.gas_unit_price(GAS_UNIT_PRICE)
+	// 	.payload(script_payload.clone())
+	// 	.sign();
+	//
+	// println!("signed_tx: {:?}", signed_tx);
+	//
+	// let response = rest_client.submit_and_wait(&signed_tx).await?;
+	//
+	// println!("tx_response: {:?}", response);
+	//
 	Ok(())
 }
 
