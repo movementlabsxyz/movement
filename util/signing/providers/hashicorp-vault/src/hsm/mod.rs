@@ -33,7 +33,7 @@ where
 
 	/// Tries to create a new HashiCorp Vault HSM from the environment
 	pub fn try_from_env() -> Result<Self, anyhow::Error> {
-		let address = std::env::var("VAULT_ADDR").context("VAULT_ADDR not set")?;
+		let address = std::env::var("VAULT_ADDRESS").context("VAULT_ADDRESS not set")?;
 		let token = std::env::var("VAULT_TOKEN").context("VAULT_TOKEN not set")?;
 		let namespace = std::env::var("VAULT_NAMESPACE").unwrap_or_else(|_| "admin".to_string());
 		let client = VaultClient::new(
@@ -77,8 +77,6 @@ where
 	C: Curve + HashiCorpVaultCryptographySpec + Sync,
 {
 	async fn sign(&self, message: &[u8]) -> Result<C::Signature, SignerError> {
-		println!("Key name: {:?}", self.key_name.as_str());
-
 		let res = data::sign(
 			&self.client,
 			self.mount_name.as_str(),
@@ -92,9 +90,6 @@ where
 			println!("{}", error_msg);
 			SignerError::Internal(error_msg)
 		})?;
-
-		// Log the full response
-		println!("Signature response: {:?}", res);
 
 		if !res.signature.starts_with("vault") {
 			return Err(SignerError::Internal("Invalid signature format".to_string()));
@@ -134,8 +129,6 @@ where
 	}
 
 	async fn public_key(&self) -> Result<C::PublicKey, SignerError> {
-		println!("Attempting to read Vault key: {}", self.key_name);
-
 		// Read the key from Vault
 		let res = transit_key::read(
 			&self.client,

@@ -55,9 +55,82 @@ where
 #[cfg(test)]
 pub mod test {
 
-	/*use super::*;
+	use super::*;
+	use aptos_crypto::HashValue;
+	use aptos_types::{
+		account_address::AccountAddress,
+		block_executor::partitioner::{ExecutableBlock, ExecutableTransactions},
+		block_metadata::BlockMetadata,
+		chain_id::ChainId,
+		transaction::signature_verified_transaction::SignatureVerifiedTransaction,
+		transaction::{RawTransaction, Script, Transaction, TransactionPayload},
+	};
 	use maptos_opt_executor::Executor;
+	use movement_signer_hashicorp_vault::hsm::HashiCorpVault;
+	use tokio::sync::mpsc;
 
 	#[tokio::test]
-	async fn test_sign_transaction*/
+	async fn test_sign_transaction_with_hashi_corp_vault_verifies() -> Result<(), anyhow::Error> {
+		dotenv::dotenv().ok();
+		let hsm = HashiCorpVault::<Ed25519>::create_random_key().await?;
+
+		let transaction_payload = TransactionPayload::Script(Script::new(vec![0], vec![], vec![]));
+		let raw_transaction = RawTransaction::new(
+			AccountAddress::random(),
+			0,
+			transaction_payload,
+			0,
+			0,
+			0,
+			ChainId::test(),
+		);
+		let signed_transaction = TransactionSigner::sign_transaction(&hsm, raw_transaction).await?;
+		signed_transaction.verify_signature().map_err(|e| anyhow::anyhow!(e))?;
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_sign_transaction_with_hashi_corp_vault_includes_in_block(
+	) -> Result<(), anyhow::Error> {
+		dotenv::dotenv().ok();
+		let hsm = HashiCorpVault::<Ed25519>::create_random_key().await?;
+		let public_key = TransactionSigner::public_key(&hsm).await?;
+
+		let transaction_payload = TransactionPayload::Script(Script::new(vec![0], vec![], vec![]));
+		let raw_transaction = RawTransaction::new(
+			AccountAddress::random(),
+			0,
+			transaction_payload,
+			0,
+			0,
+			0,
+			ChainId::test(),
+		);
+		let signed_transaction = TransactionSigner::sign_transaction(&hsm, raw_transaction).await?;
+
+		let (tx_sender, _tx_receiver) = mpsc::channel(1);
+		let (executor, _tempdir) = Executor::try_test_default_with_public_key(public_key)?;
+		let (context, _transaction_pipe) = executor.background(tx_sender)?;
+		let block_id = HashValue::random();
+		let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
+			block_id,
+			0,
+			0,
+			executor.signer.author(),
+			vec![],
+			vec![],
+			chrono::Utc::now().timestamp_micros() as u64,
+		));
+		let tx = SignatureVerifiedTransaction::Valid(Transaction::UserTransaction(
+			signed_transaction.clone(),
+		));
+		let txs = ExecutableTransactions::Unsharded(vec![
+			SignatureVerifiedTransaction::Valid(block_metadata),
+			tx,
+		]);
+		let block = ExecutableBlock::new(block_id.clone(), txs);
+		executor.execute_block(block).await?;
+
+		Ok(())
+	}
 }

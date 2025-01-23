@@ -18,6 +18,11 @@ thiserror = { workspace = true }
 [dev-dependencies]
 maptos-opt-executor = { workspace = true }
 tokio = { workspace = true }
+movement-signer-hashicorp-vault = { workspace = true }
+anyhow = { workspace = true }
+chrono = { workspace = true }
+dotenv = { workspace = true }  
+
 
 [lints]
 workspace = true

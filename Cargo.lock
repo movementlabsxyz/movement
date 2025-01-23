@@ -10744,10 +10744,14 @@ dependencies = [
 name = "movement-signing-aptos"
 version = "0.0.2"
 dependencies = [
+ "anyhow",
  "aptos-crypto",
  "aptos-types",
+ "chrono",
+ "dotenv",
  "maptos-opt-executor",
  "movement-signer",
+ "movement-signer-hashicorp-vault",
  "thiserror 1.0.69",
  "tokio",
 ]
