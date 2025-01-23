@@ -15,5 +15,9 @@ aptos-crypto = { workspace = true }
 aptos-types = { workspace = true }
 thiserror = { workspace = true }
 
+[dev-dependencies]
+maptos-opt-executor = { workspace = true }
+tokio = { workspace = true }
+
 [lints]
 workspace = true

@@ -18,6 +18,7 @@ ecdsa = { workspace = true }
 rand = { version = "0.8.5" }
 async-trait = { workspace = true }
 hex = { workspace = true }
+ed25519-dalek = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true }
