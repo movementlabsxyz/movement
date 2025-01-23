@@ -1,5 +1,5 @@
 [package]
-name = "maptos-opt-executor"
+name = "biarritz-aptos-framework-release"
 description = "Executor for the AptosVM"
 authors = { workspace = true }
 edition = { workspace = true }
@@ -71,7 +71,6 @@ movement-rest = { workspace = true }
 dot-movement = { workspace = true }
 movement-collections = { workspace = true }
 aptos-account-whitelist = { workspace = true }
-maptos-framework-release-util = { workspace = true }
 
 [dev-dependencies]
 dirs = { workspace = true }

@@ -14,6 +14,7 @@ use aptos_vm::AptosVM;
 use aptos_vm_genesis::{
 	default_gas_schedule, encode_genesis_change_set, GenesisConfiguration, TestValidator, Validator,
 };
+use maptos_framework_release_util::Release;
 use tracing::warn;
 
 use std::path::Path;
@@ -22,8 +23,9 @@ fn genesis_change_set_and_validators(
 	chain_id: ChainId,
 	count: Option<usize>,
 	public_key: &Ed25519PublicKey, //Core resource account.
-) -> (ChangeSet, Vec<TestValidator>) {
-	let framework = aptos_cached_packages::head_release_bundle();
+	release: impl Release,
+) -> Result<(ChangeSet, Vec<TestValidator>), anyhow::Error> {
+	let framework = release.release().map_err(|e| anyhow::anyhow!(e))?;
 	let test_validators = TestValidator::new_test_set(count, Some(100_000_000));
 	let validators_: Vec<Validator> = test_validators.iter().map(|t| t.data.clone()).collect();
 	let validators = &validators_;
@@ -64,7 +66,7 @@ fn genesis_change_set_and_validators(
 		&OnChainExecutionConfig::default_for_genesis(),
 		&default_gas_schedule(),
 	);
-	(genesis, test_validators)
+	Ok((genesis, test_validators))
 }
 
 /// Bootstrap a database with a genesis transaction if it is empty.
@@ -73,6 +75,7 @@ pub fn maybe_bootstrap_empty_db(
 	db_dir: impl AsRef<Path> + Clone,
 	chain_id: ChainId,
 	public_key: &Ed25519PublicKey,
+	release: impl Release,
 ) -> Result<(DbReaderWriter, ValidatorSigner), anyhow::Error> {
 	let aptos_db = AptosDB::open(
 		StorageDirPaths::from_path(db_dir.clone()),
@@ -85,7 +88,8 @@ pub fn maybe_bootstrap_empty_db(
 	)?;
 
 	let db_rw = DbReaderWriter::new(aptos_db);
-	let (genesis, validators) = genesis_change_set_and_validators(chain_id, Some(1), public_key);
+	let (genesis, validators) =
+		genesis_change_set_and_validators(chain_id, Some(1), public_key, release)?;
 	let genesis_txn = Transaction::GenesisTransaction(WriteSetPayload::Direct(genesis));
 	let validator_signer =
 		ValidatorSigner::new(validators[0].data.owner_address, validators[0].consensus_key.clone());

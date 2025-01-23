@@ -47,6 +47,7 @@ members = [
   "util/signing/providers/aws-kms",
   "util/signing/providers/hashicorp-vault",
   "demo/hsm",
+  "protocol-units/execution/maptos/framework/releases/*",
 ]
 
 [workspace.package]
@@ -86,6 +87,7 @@ maptos-dof-execution = { path = "protocol-units/execution/maptos/dof" }
 maptos-opt-executor = { path = "protocol-units/execution/maptos/opt-executor" }
 maptos-fin-view = { path = "protocol-units/execution/maptos/fin-view" }
 maptos-execution-util = { path = "protocol-units/execution/maptos/util" }
+maptos-framework-release-util = { path = "protocol-units/execution/maptos/framework/releases/util" }
 ## infra
 movement-rest = { path = "protocol-units/movement-rest" }
 ## mempool

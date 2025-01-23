@@ -1,0 +1,18 @@
+[package]
+name = "tip-aptos-framework-migration"
+description = "Executor for the AptosVM"
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+
+version = { workspace = true }
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+aptos-framework = { workspace = true }
+aptos-cached-packages = { workspace = true }
+maptos-framework-release-util = { workspace = true }
