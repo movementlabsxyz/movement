@@ -283,11 +283,15 @@ impl WalEntry {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Wal {
         pub entries: Vec<WalEntry>,
+	pub backend_name: String, 
 }
 
 impl Wal {
-        pub fn new() -> Self {
-                Self { entries: vec![] }
+        pub fn new(backend_name: String) -> Self {
+                Self { 
+			entries: vec![],
+			backend_name 
+		}
         }
 
         pub fn append(&mut self, entry: WalEntry) {

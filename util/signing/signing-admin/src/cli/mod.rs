@@ -22,4 +22,7 @@ pub enum Commands {
 		#[clap(long, help = "Backend to use (e.g., 'vault', 'aws')")]
 		backend: String,
 	},
+	RotateKeyRecover {
+		
+	}
 }

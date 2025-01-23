@@ -5,7 +5,7 @@ use crate::cli::wal_v2::{
 use anyhow::{Context, Result};
 use signing_admin::{
         application::{Application, HttpApplication},
-        backend::{aws::AwsBackend, vault::VaultBackend, Backend},
+        backend::{aws::AwsBackend, vault::VaultBackend, Backend, SigningBackend},
         key_manager::KeyManager,
 };
 use std::{fs, path::Path, io::Write};
@@ -13,7 +13,7 @@ use std::{fs, path::Path, io::Write};
 const WAL_FILE: &str = "rotate_key.wal";
 
 /// Writes the WAL to a file
-fn save_wal_to_file(wal: &Wal) -> Result<()> {
+pub fn save_wal_to_file(wal: &Wal) -> Result<()> {
         let serialized_wal = serde_json::to_string(wal).context("Failed to serialize WAL")?;
         let mut file = fs::File::create(WAL_FILE).context("Failed to create WAL file")?;
         file.write_all(serialized_wal.as_bytes()).context("Failed to write WAL to file")?;
@@ -21,7 +21,7 @@ fn save_wal_to_file(wal: &Wal) -> Result<()> {
 }
 
 /// Reads the WAL from a file
-fn load_wal_from_file() -> Result<Wal> {
+pub fn load_wal_from_file() -> Result<Wal> {
         let content = fs::read_to_string(WAL_FILE).context("Failed to read WAL file")?;
         let wal = serde_json::from_str(&content).context("Failed to deserialize WAL")?;
         Ok(wal)
@@ -54,7 +54,7 @@ pub async fn rotate_key(
         let executor = WalExecutor::new();
 
         // Initialize a new WAL
-        let mut wal = Wal::new();
+        let mut wal = Wal::new(backend_name.clone());
 
         // Create a new key
         let new_key_id = key_manager.create_key(&canonical_string).await
@@ -87,4 +87,47 @@ pub async fn rotate_key(
 
         Ok(())
 }
+
+/// Attempts to recover by executing the WAL
+pub async fn recover<A, B>() -> Result<()>
+where
+        A: Application,
+        B: SigningBackend,
+{
+        if !Path::new(WAL_FILE).exists() {
+                return Err(anyhow::anyhow!("No WAL file found to recover from."));
+        }
+
+        let wal = load_wal_from_file().context("Failed to load WAL file for recovery")?;
+        let application = HttpApplication::new("http://0.0.0.0:3000".to_string());
+
+        let backend = match wal.backend_name.as_str() {
+                "vault" => Backend::Vault(VaultBackend::new()),
+                "aws" => Backend::Aws(AwsBackend::new()),
+                _ => {
+                        return Err(anyhow::anyhow!(
+                                "Unsupported backend: {}",
+                                wal.backend_name
+                        ));
+                }
+        };
+
+        let key_manager = KeyManager::new(application, backend);
+        let executor = WalExecutor::new();
+
+        executor
+                .recover(&wal, &key_manager, &wal.backend_name)
+                .await?;
+
+        fs::remove_file(WAL_FILE).context("Failed to clean up WAL file after recovery")?;
+        println!("Recovery completed successfully.");
+
+        Ok(())
+}
+
+
+
+
+
+
 

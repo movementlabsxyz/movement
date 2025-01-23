@@ -1,3 +1,5 @@
+use crate::cli::rotate_key::save_wal_to_file;
+
 use super::log::{
         KeyRotationMessage, Operation, TransactionId, Wal, WalEntry, StartRotateKey,
         SendAppUpdateKey, RecvAppUpdateKey, SendHsmUpdateKey, RecvHsmUpdateKey,
@@ -96,17 +98,23 @@ impl WalExecutor {
                 self.execute_inner(wal, key_manager, backend_name).await
         }
 
-        /// Recovers by replaying and executing any uncommitted entries in the WAL.
+	/// Recovers by replaying and executing any uncommitted entries in the WAL.
         pub async fn recover<A, B>(
                 &self,
-                wal: Wal,
+                wal: &Wal,
                 key_manager: &KeyManager<A, B>,
-                backend_name: &str, // Added backend_name argument
-        ) -> Result<Wal, (Wal, anyhow::Error)>
+                backend_name: &str,
+        ) -> Result<()>
         where
                 A: Application,
                 B: SigningBackend,
         {
-                self.execute_inner(wal, key_manager, backend_name).await
+                if let Err((updated_wal, err)) = self.execute_inner(wal.clone(), key_manager, backend_name).await {
+                        save_wal_to_file(&updated_wal).expect("Failed to save WAL during recovery");
+                        return Err(err);
+                }
+                Ok(())
         }
+
+
 }
