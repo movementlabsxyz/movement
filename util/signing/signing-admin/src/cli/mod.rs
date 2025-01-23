@@ -1,7 +1,6 @@
 use clap::{Parser, Subcommand};
 
 pub mod rotate_key;
-pub mod wal;
 pub mod wal_v2;
 
 #[derive(Parser, Debug)]

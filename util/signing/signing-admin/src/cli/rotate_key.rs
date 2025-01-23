@@ -1,70 +1,90 @@
-use crate::cli::wal::{append_to_wal, update_wal_entry, update_wal_status, WalEntry, WAL_FILE};
+use crate::cli::wal_v2::{
+        execute::WalExecutor,
+        log::{Wal, WalEntry, Operation, TransactionId},
+};
 use anyhow::{Context, Result};
-use hex;
-use movement_signer::{
-	cryptography::{ed25519::Ed25519, secp256k1::Secp256k1},
-	Signing,
-};
 use signing_admin::{
-	application::{Application, HttpApplication},
-	backend::{aws::AwsBackend, vault::VaultBackend, Backend},
-	key_manager::KeyManager,
+        application::{Application, HttpApplication},
+        backend::{aws::AwsBackend, vault::VaultBackend, Backend},
+        key_manager::KeyManager,
 };
-use std::{fs, path::Path};
-pub async fn rotate_key(
-	canonical_string: String,
-	application_url: String,
-	backend_name: String,
-) -> Result<()> {
-	// Clean up existing WAL file
-	if Path::new(WAL_FILE).exists() {
-		fs::remove_file(WAL_FILE).context("Failed to clean WAL file")?;
-	}
-	// Initialize the application
-	let application = HttpApplication::new(application_url);
+use std::{fs, path::Path, io::Write};
 
-	// Initialize the backend
-	let backend = match backend_name.as_str() {
-		"vault" => Backend::Vault(VaultBackend::new()),
-		"aws" => Backend::Aws(AwsBackend::new()),
-		_ => return Err(anyhow::anyhow!("Unsupported backend: {}", backend_name)),
-	};
+const WAL_FILE: &str = "rotate_key.wal";
 
-	// Create the key manager
-	let key_manager = KeyManager::new(application, backend);
-
-	// Phase 1: Create new key and prepare application
-	let new_key_id = key_manager.create_key(&canonical_string).await?;
-	append_to_wal(WalEntry {
-		operation: "rotate_key".to_string(),
-		canonical_string: canonical_string.clone(),
-		status: "key_created".to_string(),
-		public_key: None,
-		key_id: Some(new_key_id.clone()),
-	})?;
-	update_wal_status(&canonical_string, "key_created")?;
-
-	let public_key = new_key_id.as_bytes().to_vec();
-	key_manager
-		.notify_application(public_key.clone())
-		.await
-		.context("Failed to notify application with the public key")?;
-	update_wal_entry(&canonical_string, |entry| {
-		entry.public_key = Some(hex::encode(&public_key));
-	})?;
-	update_wal_status(&canonical_string, "app_public_key_updated")?;
-
-	// Phase 2: Rotate Key
-	update_wal_status(&canonical_string, "commit")?;
-	key_manager
-		.rotate_key(&new_key_id)
-		.await
-		.context("Failed to rotate key to the new ID")?;
-	update_wal_status(&canonical_string, "completed")?;
-
-	println!("Key rotation completed successfully.");
-
-	fs::remove_file(WAL_FILE).context("Failed to delete WAL file after successful operation")?;
-
-	Ok(())
+/// Writes the WAL to a file
+fn save_wal_to_file(wal: &Wal) -> Result<()> {
+        let serialized_wal = serde_json::to_string(wal).context("Failed to serialize WAL")?;
+        let mut file = fs::File::create(WAL_FILE).context("Failed to create WAL file")?;
+        file.write_all(serialized_wal.as_bytes()).context("Failed to write WAL to file")?;
+        Ok(())
 }
+
+/// Reads the WAL from a file
+fn load_wal_from_file() -> Result<Wal> {
+        let content = fs::read_to_string(WAL_FILE).context("Failed to read WAL file")?;
+        let wal = serde_json::from_str(&content).context("Failed to deserialize WAL")?;
+        Ok(wal)
+}
+
+pub async fn rotate_key(
+        canonical_string: String,
+        application_url: String,
+        backend_name: String, // Already here
+) -> Result<()> {
+        // Check if the WAL file exists
+        if Path::new(WAL_FILE).exists() {
+                return Err(anyhow::anyhow!(
+                        "WAL file exists. Use the recover command to recover or clean up the WAL."
+                ));
+        }
+
+        // Initialize the application and backend
+        let application = HttpApplication::new(application_url.clone());
+        let backend = match backend_name.as_str() {
+                "vault" => Backend::Vault(VaultBackend::new()),
+                "aws" => Backend::Aws(AwsBackend::new()),
+                _ => return Err(anyhow::anyhow!("Unsupported backend: {}", backend_name)),
+        };
+
+        // Create the key manager
+        let key_manager = KeyManager::new(application, backend);
+
+        // Initialize the WAL executor
+        let executor = WalExecutor::new();
+
+        // Initialize a new WAL
+        let mut wal = Wal::new();
+
+        // Create a new key
+        let new_key_id = key_manager.create_key(&canonical_string).await
+                .context("Failed to create a new key")?;
+
+        // Append the WAL entry
+        wal = executor
+                .append(wal, canonical_string.clone(), new_key_id.clone(), &key_manager, &backend_name)
+                .await
+                .map_err(|(wal, err)| {
+                        anyhow::anyhow!("Failed to append to WAL: {:?}", err)
+                                .context(format!("Error occurred with WAL: {:?}", wal))
+                })?;
+
+        // Save the WAL to a file
+        save_wal_to_file(&wal).context("Failed to save WAL to file")?;
+
+        // Execute the WAL
+        wal = executor
+                .execute(wal, &key_manager, &backend_name) // Pass backend_name
+                .await
+                .map_err(|(wal, err)| {
+                        anyhow::anyhow!("Failed to execute WAL: {:?}", err)
+                                .context(format!("Error occurred with WAL: {:?}", wal))
+                })?;
+
+        // Clean up after successful execution
+        fs::remove_file(WAL_FILE).context("Failed to clean up WAL file after successful execution")?;
+        println!("Key rotation completed successfully for key: {}", canonical_string);
+
+        Ok(())
+}
+

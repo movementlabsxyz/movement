@@ -9,7 +9,7 @@ use vault::VaultBackend;
 /// The trait that all signing backends must implement.
 #[async_trait]
 pub trait SigningBackend {
-        async fn create_key(&self, key_id: &str) -> Result<String>; // Now returns the new key ID
+        async fn create_key(&self, key_id: &str) -> Result<String>;
         async fn rotate_key(&self, key_id: &str) -> Result<()>;
 }
 
