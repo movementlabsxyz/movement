@@ -10746,14 +10746,19 @@ version = "0.0.2"
 dependencies = [
  "anyhow",
  "aptos-crypto",
+ "aptos-sdk",
+ "aptos-storage-interface",
  "aptos-types",
  "chrono",
  "dotenv",
  "maptos-opt-executor",
  "movement-signer",
  "movement-signer-hashicorp-vault",
+ "rand 0.7.3",
  "thiserror 1.0.69",
  "tokio",
+ "tracing",
+ "tracing-test",
 ]
 
 [[package]]

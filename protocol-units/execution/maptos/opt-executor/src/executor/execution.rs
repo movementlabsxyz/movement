@@ -39,7 +39,7 @@ impl Executor {
 			};
 
 			for transaction in metadata_access_transactions.iter() {
-				warn!("Transaction sender: {:?}", transaction.sender());
+				debug!("Transaction sender: {:?}", transaction.sender());
 			}
 
 			// reconstruct the block
@@ -64,10 +64,10 @@ impl Executor {
 		})
 		.await??;
 
-		warn!("Block execution compute the following state: {:?}", state_compute);
+		info!("Block execution compute the following state: {:?}", state_compute);
 
 		let version = state_compute.version();
-		debug!("Block execution computed the following version: {:?}", version);
+		info!("Block execution computed the following version: {:?}", version);
 		let (epoch, round) = (block_metadata.epoch(), block_metadata.round());
 
 		let ledger_info_with_sigs = self.ledger_info_with_sigs(

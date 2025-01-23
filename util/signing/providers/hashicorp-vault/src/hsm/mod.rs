@@ -144,8 +144,6 @@ where
 			SignerError::Internal(format!("Failed to read key '{}': {:?}", self.key_name, e))
 		})?;
 
-		println!("Key read successfully: {:?}", res);
-
 		// Match the key type and determine the latest version
 		let public_key = match res.keys {
 			ReadKeyData::Symmetric(_) => {
