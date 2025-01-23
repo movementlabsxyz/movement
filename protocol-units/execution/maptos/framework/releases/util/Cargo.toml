@@ -14,4 +14,6 @@ path = "src/lib.rs"
 
 [dependencies]
 aptos-framework = { workspace = true }
+aptos-cached-packages = { workspace = true }
 thiserror = { workspace = true }
+aptos-release-builder = { workspace = true }
