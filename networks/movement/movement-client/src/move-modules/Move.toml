@@ -1,0 +1,16 @@
+[package]
+name = "Rotate"
+version = "1.0.0"
+authors = []
+
+[addresses]
+test_token = "_"
+
+[dev-addresses]
+
+[dependencies.AptosFramework]
+git = "https://github.com/movementlabsxyz/aptos-core.git"
+rev = "governed-gas-pool"
+subdir = "aptos-move/framework/aptos-framework"
+
+[dev-dependencies]

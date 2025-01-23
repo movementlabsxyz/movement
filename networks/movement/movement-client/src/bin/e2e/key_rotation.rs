@@ -1,7 +1,7 @@
 use anyhow::Context;
 use aptos_sdk::rest_client::{
 	aptos_api_types::{Address, EntryFunctionId, IdentifierWrapper, MoveModuleId, ViewRequest},
-	Response,
+	Account, Response,
 };
 use aptos_sdk::types::account_address::AccountAddress;
 use movement_client::{
@@ -64,6 +64,11 @@ async fn main() -> Result<(), anyhow::Error> {
 	// Create account for transactions and gas collection
 	let mut sender = LocalAccount::generate(&mut rand::rngs::OsRng);
 	let beneficiary = LocalAccount::generate(&mut rand::rngs::OsRng);
+
+	let acc = AccountAddress::from_str(
+		"0xb08e0478ac871400e082f34e003145570bf4a9e4d88f17964b21fb110e93d77a",
+	)
+	.unwrap();
 
 	tracing::info!("Created test accounts");
 	tracing::debug!(
