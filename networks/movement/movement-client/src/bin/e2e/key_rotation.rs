@@ -1,16 +1,19 @@
 use anyhow::Context;
-use aptos_sdk::rest_client::{
-	aptos_api_types::{Address, EntryFunctionId, IdentifierWrapper, MoveModuleId, ViewRequest},
-	Account, Response,
+use aptos_sdk::{
+	rest_client::{Client, FaucetClient, Response},
+	types::{
+		account_address::AccountAddress,
+		transaction::{Script, TransactionArgument, TransactionPayload},
+	},
 };
-use aptos_sdk::types::account_address::AccountAddress;
+use ed25519_dalek::{Keypair, PublicKey, SecretKey, Signer};
 use movement_client::{
 	coin_client::CoinClient,
-	rest_client::{Client, FaucetClient},
-	types::LocalAccount,
+	types::{LocalAccount, RotationProofChallenge},
 };
 use once_cell::sync::Lazy;
-use std::str::FromStr;
+use std::time::{SystemTime, UNIX_EPOCH};
+use std::{fs, str::FromStr};
 use tracing;
 use url::Url;
 
@@ -35,7 +38,7 @@ static NODE_URL: Lazy<Url> = Lazy::new(|| {
 		.clone();
 	let node_connection_url =
 		format!("http://{}:{}", node_connection_address, node_connection_port);
-	Url::from_str(node_connection_url.as_str()).unwrap()
+	Url::from_str(&node_connection_url).unwrap()
 });
 
 static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
@@ -52,30 +55,21 @@ static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
 		.maptos_faucet_rest_connection_port
 		.clone();
 	let faucet_listen_url = format!("http://{}:{}", faucet_listen_address, faucet_listen_port);
-	Url::from_str(faucet_listen_url.as_str()).unwrap()
+	Url::from_str(&faucet_listen_url).unwrap()
 });
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
+	// Initialize clients
 	let rest_client = Client::new(NODE_URL.clone());
 	let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
 	let coin_client = CoinClient::new(&rest_client);
 
-	// Create account for transactions and gas collection
+	// Generate accounts
 	let mut sender = LocalAccount::generate(&mut rand::rngs::OsRng);
-	let beneficiary = LocalAccount::generate(&mut rand::rngs::OsRng);
+	let delegate = LocalAccount::generate(&mut rand::rngs::OsRng);
 
-	let acc = AccountAddress::from_str(
-		"0xb08e0478ac871400e082f34e003145570bf4a9e4d88f17964b21fb110e93d77a",
-	)
-	.unwrap();
-
-	tracing::info!("Created test accounts");
-	tracing::debug!(
-		"Sender address: {}, Beneficiary address: {}",
-		sender.address(),
-		beneficiary.address()
-	);
+	tracing::info!("Generated sender and delegate accounts");
 
 	// Fund the sender account
 	faucet_client
@@ -83,92 +77,59 @@ async fn main() -> Result<(), anyhow::Error> {
 		.await
 		.context("Failed to fund sender account")?;
 
-	// Create the beneficiary account
-	faucet_client
-		.create_account(beneficiary.address())
-		.await
-		.context("Failed to create beneficiary account")?;
+	// Generate new key pair for rotation
+	let new_keypair = Keypair::generate(&mut rand::rngs::OsRng);
+	let new_public_key: PublicKey = new_keypair.public;
 
-	let view_req = ViewRequest {
-		function: EntryFunctionId {
-			module: MoveModuleId {
-				address: Address::from_str("0x1").unwrap(),
-				name: IdentifierWrapper::from_str("governed_gas_pool").unwrap(),
-			},
-			name: IdentifierWrapper::from_str("governed_gas_pool_address").unwrap(),
-		},
-		type_arguments: vec![],
-		arguments: vec![],
+	// Create the rotation proof challenge
+	let rotation_proof = RotationProofChallenge {
+		account_address: sender.address(),
+		sequence_number: sender.sequence_number(),
+		originator: sender.address(),
+		current_auth_key: sender.auth_key().to_vec(),
+		new_public_key: new_public_key.as_bytes().to_vec(),
 	};
 
-	let view_res: Response<Vec<serde_json::Value>> = rest_client
-		.view(&view_req, None)
-		.await
-		.context("Failed to get governed gas pool address")?;
+	let rotation_message = bcs::to_bytes(&rotation_proof).unwrap();
 
-	// Extract the inner field from the response
-	let inner_value = serde_json::to_value(view_res.inner())
-		.context("Failed to convert response inner to serde_json::Value")?;
+	// Sign the rotation proof challenge
+	let signature_by_new_key = new_keypair.sign(&rotation_message);
 
-	// Deserialize the inner value into your AddressResponse struct
-	let ggp_address: Vec<String> =
-		serde_json::from_value(inner_value).context("Failed to deserialize AddressResponse")?;
+	// Read compiled Move script
+	let script_code = fs::read("path/to/compiled/script.mv").context("Failed to read script")?;
+	let script_payload = TransactionPayload::Script(Script::new(
+		script_code,
+		vec![],
+		vec![
+			TransactionArgument::U8(0), // Scheme for the current key (Ed25519)
+			TransactionArgument::U8(0), // Scheme for the new key (Ed25519)
+			TransactionArgument::Bytes(new_public_key.as_bytes().to_vec()),
+			TransactionArgument::Bytes(signature_by_new_key.to_bytes().to_vec()),
+		],
+	));
 
-	assert_eq!(
-		ggp_address,
-		vec!["0xb08e0478ac871400e082f34e003145570bf4a9e4d88f17964b21fb110e93d77a"],
-		"Governed Gas Pool Resource account is not what is expected"
+	// Create and submit the transaction
+	let expiration_time = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60; // 60 seconds from now
+
+	let txn = transaction_test_helpers::get_test_signed_transaction_with_chain_id(
+		sender.address(),
+		sender.sequence_number(),
+		sender.private_key(),
+		sender.public_key(),
+		Some(script_payload),
+		expiration_time,
+		100, // Max gas
+		None,
+		ChainId::new(1), // Set chain ID
 	);
 
-	let ggp_account_address =
-		AccountAddress::from_str(&ggp_address[0]).expect("Failed to parse address");
-
-	// Get initial balances
-	let initial_ggp_balance = coin_client
-		.get_account_balance(&ggp_account_address)
-		.await
-		.context("Failed to get initial framework balance")?;
-
-	tracing::info!("Initial ggp Balance: {}", initial_ggp_balance);
-
-	// Simple transaction that will generate gas fees
-	tracing::info!("Executing test transaction...");
-	let txn_hash = coin_client
-		.transfer(&mut sender, beneficiary.address(), 1_000, None)
-		.await
-		.context("Failed to submit transfer transaction")?;
-
+	tracing::info!("Submitting transaction for key rotation");
 	rest_client
-		.wait_for_transaction(&txn_hash)
+		.submit_and_wait(&txn)
 		.await
-		.context("Failed when waiting for transfer transaction")?;
-	tracing::info!("Test transaction completed: {:?}", txn_hash);
+		.context("Failed to submit key rotation transaction")?;
 
-	// Get post-transaction balance
-	let post_ggp_balance = coin_client
-		.get_account_balance(&ggp_account_address)
-		.await
-		.context("Failed to get post-transaction framework balance")?;
-
-	tracing::info!("Initial ggp Balance: {}", initial_ggp_balance);
-
-	// Verify gas fees collection
-	assert!(post_ggp_balance > initial_ggp_balance, "Gas fees were not collected as expected");
-
-	// Wait to verify no additional deposits
-	tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
-
-	// Check final balance
-	let final_framework_balance = coin_client
-		.get_account_balance(&ggp_account_address)
-		.await
-		.context("Failed to get final framework balance")?;
-
-	// Verify no additional deposits occurred
-	assert_eq!(
-		post_ggp_balance, final_framework_balance,
-		"Additional unexpected deposits were detected"
-	);
+	tracing::info!("Key rotation transaction completed successfully");
 
 	Ok(())
 }

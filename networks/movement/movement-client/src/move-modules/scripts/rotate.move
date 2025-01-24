@@ -1,21 +1,31 @@
 script {
     use aptos_framework::account;
 
-    /// Rotate the authentication key of an account, ensuring secure verification of both current and new keys.
-    /// This prevents malicious attacks and ensures ownership of both current and new keys.
-
-    // For full description of how rotation works see :
-    // https://github.com/movementlabsxyz/aptos-core/blob/ac9de113a4afec6a26fe587bb92c982532f09d3a/aptos-move/framework/aptos-framework/sources/account.move#L298
+    /// Perform both offering the rotation capability and rotating the authentication key of an account.
+    /// This ensures that the recipient has the necessary capability before performing the key rotation.
     fun main(
         account: &signer,
+        rotation_capability_sig_bytes: vector<u8>,
         from_scheme: u8,
         from_public_key_bytes: vector<u8>,
         to_scheme: u8,
         to_public_key_bytes: vector<u8>,
         cap_rotate_key: vector<u8>,
         cap_update_table: vector<u8>,
+        account_scheme: u8,
+        account_public_key_bytes: vector<u8>,
+        recipient_address: address,
     ) {
-        // Call the `rotate_authentication_key` function from the `account` module
+        // Step 1: Offer rotation capability to the recipient
+        account::offer_rotation_capability(
+            account,
+            rotation_capability_sig_bytes,
+            account_scheme,
+            account_public_key_bytes,
+            recipient_address,
+        );
+
+        // Step 2: Rotate the authentication key
         account::rotate_authentication_key(
             account,
             from_scheme,
@@ -27,3 +37,4 @@ script {
         );
     }
 }
+
