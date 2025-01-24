@@ -1,20 +1,18 @@
 use anyhow::Context;
+use aptos_sdk::crypto::{SigningKey, Uniform, ValidCryptoMaterialStringExt};
 use aptos_sdk::{
-	rest_client::{Client, FaucetClient, Response},
+	crypto::test_utils::KeyPair,
+	rest_client::{Client, FaucetClient},
 	types::{
 		account_address::AccountAddress,
 		transaction::{Script, TransactionArgument, TransactionPayload},
 	},
 };
-use ed25519_dalek::{Keypair, PublicKey, SecretKey, Signer};
-use movement_client::{
-	coin_client::CoinClient,
-	types::{LocalAccount, RotationProofChallenge},
-};
+use aptos_types::account_config::RotationProofChallenge;
+use movement_client::{coin_client::CoinClient, crypto::ed25519::PublicKey, types::LocalAccount};
 use once_cell::sync::Lazy;
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::{fs, str::FromStr};
-use tracing;
 use url::Url;
 
 static SUZUKA_CONFIG: Lazy<movement_config::Config> = Lazy::new(|| {
@@ -65,10 +63,63 @@ async fn main() -> Result<(), anyhow::Error> {
 	let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
 	let coin_client = CoinClient::new(&rest_client);
 
-	// Generate accounts
+	let associate_address = AccountAddress::from_str(
+		"0x000000000000000000000000000000000000000000000000000000000a550c18",
+	)?;
+
+	let chain_id = rest_client
+		.get_index()
+		.await
+		.context("failed to get chain ID")?
+		.inner()
+		.chain_id;
+
+	let mut core_resources_account = LocalAccount::from_private_key(
+		SUZUKA_CONFIG
+			.execution_config
+			.maptos_config
+			.chain
+			.maptos_private_key
+			.to_encoded_string()?
+			.as_str(),
+		0,
+	)?;
+	println!(
+		"resource account keypairs: {:?}, {:?}",
+		core_resources_account.private_key(),
+		core_resources_account.public_key()
+	);
+	println!("Core Resources Account address: {}", core_resources_account.address());
+
+	tracing::info!("Created core resources account");
+	// core_resources_account is already funded with u64 max value
+	// Create dead account
+
+	// Get chain ID
+	let chain_id = rest_client
+		.get_index()
+		.await
+		.context("Failed to get chain ID")?
+		.inner()
+		.chain_id;
+
+	// Load core resource account
+	let mut core_resources_account = LocalAccount::from_private_key(
+		SUZUKA_CONFIG
+			.execution_config
+			.maptos_config
+			.chain
+			.maptos_private_key
+			.to_encoded_string()?
+			.as_str(),
+		0,
+	)?;
+	println!("Core Resources Account Address: {}", core_resources_account.address());
+	tracing::info!("Core resources account loaded");
+
+	// Generate sender and delegate accounts
 	let mut sender = LocalAccount::generate(&mut rand::rngs::OsRng);
 	let delegate = LocalAccount::generate(&mut rand::rngs::OsRng);
-
 	tracing::info!("Generated sender and delegate accounts");
 
 	// Fund the sender account
@@ -77,25 +128,29 @@ async fn main() -> Result<(), anyhow::Error> {
 		.await
 		.context("Failed to fund sender account")?;
 
-	// Generate new key pair for rotation
-	let new_keypair = Keypair::generate(&mut rand::rngs::OsRng);
-	let new_public_key: PublicKey = new_keypair.public;
+	// Generate new key pair for rotation using KeyPair
+	let new_keypair: KeyPair<_, PublicKey> = KeyPair::generate(&mut rand::rngs::OsRng);
+	let new_public_key: PublicKey = new_keypair.public_key.clone();
 
 	// Create the rotation proof challenge
 	let rotation_proof = RotationProofChallenge {
+		module_name: String::from("account"),
+		struct_name: String::from("RotationProofChallenge"),
 		account_address: sender.address(),
 		sequence_number: sender.sequence_number(),
 		originator: sender.address(),
-		current_auth_key: sender.auth_key().to_vec(),
-		new_public_key: new_public_key.as_bytes().to_vec(),
+		current_auth_key: AccountAddress::from_str(
+			core_resources_account.private_key().to_encoded_string().unwrap().as_str(),
+		)?,
+		new_public_key: Vec::from(new_public_key.to_bytes()),
 	};
 
 	let rotation_message = bcs::to_bytes(&rotation_proof).unwrap();
 
 	// Sign the rotation proof challenge
-	let signature_by_new_key = new_keypair.sign(&rotation_message);
+	let signature_by_new_key = new_keypair.private_key.sign(&rotation_message);
 
-	// Read compiled Move script
+	// Read the compiled Move script
 	let script_code = fs::read("path/to/compiled/script.mv").context("Failed to read script")?;
 	let script_payload = TransactionPayload::Script(Script::new(
 		script_code,
@@ -103,14 +158,13 @@ async fn main() -> Result<(), anyhow::Error> {
 		vec![
 			TransactionArgument::U8(0), // Scheme for the current key (Ed25519)
 			TransactionArgument::U8(0), // Scheme for the new key (Ed25519)
-			TransactionArgument::Bytes(new_public_key.as_bytes().to_vec()),
+			TransactionArgument::Bytes(new_public_key.to_bytes().to_vec()),
 			TransactionArgument::Bytes(signature_by_new_key.to_bytes().to_vec()),
 		],
 	));
 
 	// Create and submit the transaction
 	let expiration_time = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60; // 60 seconds from now
-
 	let txn = transaction_test_helpers::get_test_signed_transaction_with_chain_id(
 		sender.address(),
 		sender.sequence_number(),
@@ -120,7 +174,7 @@ async fn main() -> Result<(), anyhow::Error> {
 		expiration_time,
 		100, // Max gas
 		None,
-		ChainId::new(1), // Set chain ID
+		chain_id,
 	);
 
 	tracing::info!("Submitting transaction for key rotation");
