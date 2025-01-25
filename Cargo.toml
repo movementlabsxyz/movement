@@ -149,7 +149,7 @@ aptos-cached-packages = { git = "https://github.com/movementlabsxyz/aptos-core",
 aptos-config = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "mikhail/upstream-bcs" }
 aptos-consensus-types = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "mikhail/upstream-bcs" }
 aptos-crypto = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "mikhail/upstream-bcs", features = [
-    "cloneable-private-keys",
+  "cloneable-private-keys",
 ] }
 aptos-db = { git = "https://github.com/movementlabsxyz/aptos-core.git", branch = "mikhail/upstream-bcs" }
 aptos-executor = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "mikhail/upstream-bcs" }
