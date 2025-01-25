@@ -1,5 +1,5 @@
 [package]
-name = "aptos-framework-elsa-release"
+name = "aptos-framework-known-release"
 description = "Executor for the AptosVM"
 authors = { workspace = true }
 edition = { workspace = true }
@@ -10,7 +10,7 @@ repository = { workspace = true }
 version = { workspace = true }
 
 [[bin]]
-name = "aptos-framework-elsa-release-tool"
+name = "aptos-framework-known-release-tool"
 path = "src/bin/release.rs"
 
 [lib]
@@ -18,6 +18,9 @@ path = "src/lib.rs"
 
 [dependencies]
 maptos-framework-release-util = { workspace = true }
+aptos-framework-elsa-release = { workspace = true }
+aptos-framework-head-release = { workspace = true }
 aptos-framework = { workspace = true }
 tokio = { workspace = true }
 anyhow = { workspace = true}
+thiserror = { workspace = true}

@@ -1,7 +1,9 @@
-use aptos_framework::ReleaseBundle;
+use aptos_framework::{BuiltPackage, ReleaseBundle, ReleasePackage};
 use aptos_release_builder::components::framework::{
-	generate_upgrade_proposals_with_repo, FrameworkReleaseConfig,
+	generate_upgrade_proposals_release_packages_with_repo, FrameworkReleaseConfig,
 };
+use std::sync::Arc;
+
 use std::error;
 #[derive(Debug, thiserror::Error)]
 pub enum ReleaseBundleError {
@@ -10,9 +12,13 @@ pub enum ReleaseBundleError {
 }
 
 pub trait Release {
-	fn release(&self) -> Result<&'static ReleaseBundle, ReleaseBundleError>;
+	fn release(&self) -> Result<ReleaseBundle, ReleaseBundleError>;
 }
 
+/// To form a commit hash porposer, at the lowest level we use [generate_upgrade_proposals_with_repo] function to generate the scripts.
+/// We then write these scripts out to a proposal directory in line with the implementation here: https://github.com/movementlabsxyz/aptos-core/blob/ac9de113a4afec6a26fe587bb92c982532f09d3a/aptos-move/aptos-release-builder/src/components/mod.rs#L563
+/// We then need to compile the code to form [ReleasePackage]s which are then used to form [ReleaseBundle]s.
+/// To do this, we need to form a [BuiltPackage] from the scripts I BELIEVE.
 pub struct CommitHash {
 	pub repo: &'static str,
 	pub commit_hash: &'static str,
@@ -38,12 +44,34 @@ impl CommitHash {
 }
 
 impl Release for CommitHash {
-	fn release(&self) -> Result<&'static ReleaseBundle, ReleaseBundleError> {
+	fn release(&self) -> Result<ReleaseBundle, ReleaseBundleError> {
 		let (config, repo) = self.framework_release_config();
 
-		let upgrade_proposals = generate_upgrade_proposals_with_repo(&config, true, vec![], repo)
-			.map_err(|e| ReleaseBundleError::Build(e.into()))?;
+		let (_commit_info, releases) =
+			generate_upgrade_proposals_release_packages_with_repo(&config, true, vec![], repo)
+				.map_err(|e| ReleaseBundleError::Build(e.into()))?;
+		let release_packages = releases
+			.into_iter()
+			.map(|(_account, release_package, _move_script_path, _script_name)| release_package)
+			.collect();
 
-		Ok(aptos_cached_packages::commit_hash_release_bundle(self.0))
+		let release_bundle = ReleaseBundle::new(release_packages, vec![]);
+
+		Ok(release_bundle)
+	}
+}
+
+/// A dynamic wrapper around a [Release] implementation.
+pub struct CommonRelease(pub Arc<dyn Release>);
+
+impl CommonRelease {
+	pub fn new(release: Arc<dyn Release>) -> Self {
+		Self(release)
+	}
+}
+
+impl Release for CommonRelease {
+	fn release(&self) -> Result<ReleaseBundle, ReleaseBundleError> {
+		self.0.release()
 	}
 }

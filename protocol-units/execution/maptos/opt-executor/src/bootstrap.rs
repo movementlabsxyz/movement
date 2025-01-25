@@ -23,7 +23,7 @@ fn genesis_change_set_and_validators(
 	chain_id: ChainId,
 	count: Option<usize>,
 	public_key: &Ed25519PublicKey, //Core resource account.
-	release: impl Release,
+	release: &impl Release,
 ) -> Result<(ChangeSet, Vec<TestValidator>), anyhow::Error> {
 	let framework = release.release().map_err(|e| anyhow::anyhow!(e))?;
 	let test_validators = TestValidator::new_test_set(count, Some(100_000_000));
@@ -40,7 +40,7 @@ fn genesis_change_set_and_validators(
 	let genesis = encode_genesis_change_set(
 		&public_key,
 		validators,
-		framework,
+		&framework,
 		chain_id,
 		// todo: get this config from somewhere
 		&GenesisConfiguration {
@@ -75,7 +75,7 @@ pub fn maybe_bootstrap_empty_db(
 	db_dir: impl AsRef<Path> + Clone,
 	chain_id: ChainId,
 	public_key: &Ed25519PublicKey,
-	release: impl Release,
+	release: &impl Release,
 ) -> Result<(DbReaderWriter, ValidatorSigner), anyhow::Error> {
 	let aptos_db = AptosDB::open(
 		StorageDirPaths::from_path(db_dir.clone()),
