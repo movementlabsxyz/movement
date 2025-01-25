@@ -126,6 +126,7 @@ async fn main() -> Result<(), anyhow::Error> {
 	let rotation_message = bcs::to_bytes(&rotation_proof).unwrap();
 
 	// Sign the rotation message directly using the private key
+	let signature_by_curr_privkey = sender.private_key().sign_arbitrary_message(&rotation_message);
 	let signature_by_new_privkey =
 		new_keypair.private_key.sign_arbitrary_message(&rotation_message);
 
@@ -134,12 +135,21 @@ async fn main() -> Result<(), anyhow::Error> {
 		"networks/movement/movement-client/src/move-modules/build/Rotate/bytecode_scripts/main.mv",
 	)
 	.context("Failed to read script")?;
+
 	let script_payload = TransactionPayload::Script(Script::new(
 		script_code,
-		vec![],
+		vec![], // No type arguments
 		vec![
 			TransactionArgument::U8(0), // Scheme for the current key (Ed25519)
 			TransactionArgument::U8(0), // Scheme for the new key (Ed25519)
+			TransactionArgument::U8Vector(signature_by_curr_privkey.to_bytes().to_vec()), // Signature from current key
+			TransactionArgument::U8Vector(sender.public_key().to_bytes().to_vec()), // Current public key bytes
+			TransactionArgument::U8Vector(new_public_key.to_bytes().to_vec()),      // New public key bytes
+			TransactionArgument::U8Vector(signature_by_new_privkey.to_bytes().to_vec()), // Signature from new key
+			TransactionArgument::U8Vector(vec![]), // Placeholder for `cap_update_table` (fill if applicable)
+			TransactionArgument::U8(0),            // Account key scheme (Ed25519)
+			TransactionArgument::U8Vector(sender.public_key().to_bytes().to_vec()), // Account public key bytes
+			TransactionArgument::Address(delegate.address()), // Recipient's address for capability offer
 		],
 	));
 

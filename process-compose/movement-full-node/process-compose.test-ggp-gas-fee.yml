@@ -5,7 +5,7 @@ environment:
 processes:
   test-ggp-gas-fee:
     command: |
-      cargo run --bin movement-tests-key-rotation
+      cargo run --bin movement-tests-e2e-ggp-gas-fee
     depends_on:
       movement-full-node:
         condition: process_healthy

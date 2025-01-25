@@ -11,7 +11,7 @@ processes:
 
   test-key-rotation: 
     command : |
-      movement-faucet-service run-simple --do-not-delegate
+      cargo run --bin movement-tests-e2e-key-rotation 
     depends_on:
       movement-full-node:
         condition: process_healthy
