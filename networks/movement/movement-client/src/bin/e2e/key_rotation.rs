@@ -15,6 +15,7 @@ use aptos_sdk::{
 	types::transaction::TransactionPayload,
 };
 use aptos_types::account_config::RotationProofChallenge;
+use aptos_types::account_config::CORE_CODE_ADDRESS;
 use aptos_types::chain_id::ChainId;
 use aptos_types::transaction::EntryFunction;
 use movement_client::{crypto::ed25519::PublicKey, types::LocalAccount};
@@ -147,7 +148,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	// --- Offer Rotation Capability ---
 	let rotation_capability_proof = RotationCapabilityOfferProofChallengeV2 {
-		account_address: AccountAddress::from_str("0x1").unwrap(),
+		account_address: CORE_CODE_ADDRESS,
 		module_name: String::from("account"),
 		struct_name: String::from("RotationCapabilityOfferProofChallengeV2"),
 		chain_id: state.chain_id,
@@ -163,15 +164,15 @@ async fn main() -> Result<(), anyhow::Error> {
 		.sign_arbitrary_message(&rotation_capability_proof_msg);
 
 	let offer_payload = make_entry_function_payload(
-		AccountAddress::from_hex_literal("0x1").unwrap(), // Package address
-		"account",                                        // Module name
-		"offer_rotation_capability",                      // Function name
-		vec![],                                           // Type arguments
+		CORE_CODE_ADDRESS,           // Package address
+		"account",                   // Module name
+		"offer_rotation_capability", // Function name
+		vec![],                      // Type arguments
 		vec![
 			bcs::to_bytes(&rotation_proof_signed.to_bytes().to_vec()).unwrap(), // rotation_capability_sig_bytes
 			bcs::to_bytes(&0u8).unwrap(),                                       // account_scheme (Ed25519)
 			bcs::to_bytes(&core_resources_account.public_key().to_bytes()).unwrap(), // account_public_key_bytes
-			bcs::to_bytes(&new_public_key).unwrap(),                            // recipient_address
+			bcs::to_bytes(&recipient.address()).unwrap(),                       // recipient_address
 		],
 	);
 
