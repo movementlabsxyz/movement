@@ -10,7 +10,6 @@ use aptos_executor::block_executor::BlockExecutor;
 use aptos_mempool::MempoolClientRequest;
 use aptos_types::transaction::SignedTransaction;
 use dot_movement::DotMovement;
-use futures::FutureExt;
 use maptos_execution_util::config::Config;
 
 use anyhow::Context as _;
