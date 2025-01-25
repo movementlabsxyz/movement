@@ -34,4 +34,8 @@ impl KnownRelease {
 			.into()),
 		}
 	}
+
+	pub fn head() -> Self {
+		KnownRelease::Head(aptos_framework_head_release::Head::new())
+	}
 }

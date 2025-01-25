@@ -1,0 +1,13 @@
+version: "3"
+
+environment:
+
+processes:
+  test-upgrade-elsa:
+    command: |
+      cargo run --bin aptos-framework-elsa-release-tool
+    depends_on:
+      movement-full-node:
+        condition: process_healthy
+      movement-faucet:
+        condition: process_healthy

@@ -1883,8 +1883,14 @@ version = "0.0.2"
 dependencies = [
  "anyhow",
  "aptos-framework",
+ "dot-movement",
  "maptos-framework-release-util",
+ "movement-client",
+ "movement-config",
+ "once_cell",
+ "tempfile",
  "tokio",
+ "url",
 ]
 
 [[package]]
@@ -10476,8 +10482,7 @@ dependencies = [
  "aptos-executor-types",
  "aptos-faucet-core",
  "aptos-framework",
- "aptos-framework-elsa-release",
- "aptos-framework-head-release",
+ "aptos-framework-known-release",
  "aptos-indexer",
  "aptos-indexer-grpc-fullnode",
  "aptos-indexer-grpc-table-info",

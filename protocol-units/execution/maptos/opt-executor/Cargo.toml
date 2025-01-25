@@ -72,8 +72,7 @@ dot-movement = { workspace = true }
 movement-collections = { workspace = true }
 aptos-account-whitelist = { workspace = true }
 maptos-framework-release-util = { workspace = true }
-aptos-framework-head-release = { workspace = true }
-aptos-framework-elsa-release = { workspace = true }
+aptos-framework-known-release = { workspace = true }
 
 [dev-dependencies]
 dirs = { workspace = true }
