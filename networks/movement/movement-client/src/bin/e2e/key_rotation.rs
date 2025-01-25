@@ -1,4 +1,5 @@
 use anyhow::Context;
+use aptos_sdk::coin_client::CoinClient;
 //use aptos_sdk::coin_client::CoinClient;
 use aptos_sdk::crypto::ed25519::Ed25519PrivateKey;
 use aptos_sdk::crypto::SigningKey;
@@ -23,7 +24,7 @@ use std::str::FromStr;
 use url::Url;
 
 /// limit of gas unit
-const GAS_UNIT_LIMIT: u64 = 100000;
+//const GAS_UNIT_LIMIT: u64 = 100000;
 /// minimum price of gas unit of aptos chains
 pub const GAS_UNIT_PRICE: u64 = 100;
 
@@ -88,6 +89,7 @@ async fn main() -> Result<(), anyhow::Error> {
 	// Initialize clients
 	let rest_client = Client::new(NODE_URL.clone());
 	let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
+	let coin_client = CoinClient::new(&rest_client);
 
 	// Load core resource account
 	let core_resources_account = LocalAccount::from_private_key(
@@ -108,7 +110,7 @@ async fn main() -> Result<(), anyhow::Error> {
 	println!("Core Resources Account address: {}", core_resources_account.address());
 
 	// Fund the account
-	faucet_client.fund(core_resources_account.address(), 100_000_000).await?;
+	faucet_client.fund(core_resources_account.address(), 100_000_000_000).await?;
 
 	let state = rest_client
 		.get_ledger_information()
@@ -116,10 +118,32 @@ async fn main() -> Result<(), anyhow::Error> {
 		.context("Failed in getting chain id")?
 		.into_inner();
 
-	// Generate a new key pair for rotation
+	// Generate a new key pair for rotation and fund
 	let new_keypair: KeyPair<Ed25519PrivateKey, PublicKey> =
 		KeyPair::generate(&mut rand::rngs::OsRng);
 	let new_public_key: PublicKey = new_keypair.public_key.clone();
+
+	let recipient_seq_num = 0_u64;
+
+	let recipient = LocalAccount::from_private_key(
+		new_keypair.private_key.to_encoded_string()?.as_str(),
+		recipient_seq_num,
+	)?;
+
+	faucet_client.fund(recipient.address(), 100_000_000_000).await?;
+
+	let recipient_bal = coin_client
+		.get_account_balance(&recipient.address())
+		.await
+		.context("Failed to get recipient's account balance")?;
+
+	let core_resource_bal = coin_client
+		.get_account_balance(&core_resources_account.address())
+		.await
+		.context("Failed to get core resources account balance")?;
+
+	println!("Recipient's balance: {:?}", recipient_bal);
+	println!("Core Resources Account balance: {:?}", core_resource_bal);
 
 	// --- Offer Rotation Capability ---
 	let rotation_capability_proof = RotationCapabilityOfferProofChallengeV2 {
