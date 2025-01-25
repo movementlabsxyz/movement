@@ -1,5 +1,5 @@
 use anyhow::Context;
-use aptos_sdk::coin_client::CoinClient;
+//use aptos_sdk::coin_client::CoinClient;
 use aptos_sdk::crypto::ed25519::Ed25519PrivateKey;
 use aptos_sdk::crypto::SigningKey;
 use aptos_sdk::crypto::Uniform;
@@ -88,7 +88,6 @@ async fn main() -> Result<(), anyhow::Error> {
 	// Initialize clients
 	let rest_client = Client::new(NODE_URL.clone());
 	let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
-	let _coin_client = CoinClient::new(&rest_client);
 
 	// Load core resource account
 	let core_resources_account = LocalAccount::from_private_key(
@@ -102,83 +101,72 @@ async fn main() -> Result<(), anyhow::Error> {
 		0,
 	)?;
 	println!(
-		"resource account keypairs: {:?}, {:?}",
+		"Core Resources Account keypairs: {:?}, {:?}",
 		core_resources_account.private_key(),
 		core_resources_account.public_key()
 	);
 	println!("Core Resources Account address: {}", core_resources_account.address());
 
+	// Fund the account
 	faucet_client.fund(core_resources_account.address(), 100_000_000).await?;
 
-	// Generate sender and delegate accounts
-	let delegate = LocalAccount::generate(&mut rand::rngs::OsRng);
+	let state = rest_client
+		.get_ledger_information()
+		.await
+		.context("Failed in getting chain id")?
+		.into_inner();
 
-	tracing::info!("Generated sender and delegate accounts");
-
-	// Generate new key pair for rotation using KeyPair
+	// Generate a new key pair for rotation
 	let new_keypair: KeyPair<Ed25519PrivateKey, PublicKey> =
 		KeyPair::generate(&mut rand::rngs::OsRng);
 	let new_public_key: PublicKey = new_keypair.public_key.clone();
 
-	// Create the rotation capability offer proof challenge
+	// --- Offer Rotation Capability ---
 	let rotation_capability_proof = RotationCapabilityOfferProofChallengeV2 {
 		account_address: AccountAddress::from_str("0x1").unwrap(),
 		module_name: String::from("account"),
 		struct_name: String::from("RotationCapabilityOfferProofChallengeV2"),
-		chain_id: ChainId::test().id(),
-		sequence_number: core_resources_account.sequence_number(), // Update if a specific sequence number is required
+		chain_id: state.chain_id,
+		sequence_number: core_resources_account.sequence_number(),
 		source_address: core_resources_account.address(),
-		recipient_address: delegate.address(),
+		recipient_address: AccountAddress::from_bytes(new_public_key.to_bytes()).unwrap(),
 	};
 
 	// Serialize the rotation capability proof challenge
 	let rotation_capability_proof_msg = bcs::to_bytes(&rotation_capability_proof).unwrap();
+	let rotation_proof_signed = core_resources_account
+		.private_key()
+		.sign_arbitrary_message(&rotation_capability_proof_msg);
 
-	// Sign the proof message with the offerer's private key
-	let rotation_proof_signed =
-		delegate.private_key().sign_arbitrary_message(&rotation_capability_proof_msg);
-
-	// Construct the entry function payload
-	let payload = make_entry_function_payload(
+	let offer_payload = make_entry_function_payload(
 		AccountAddress::from_hex_literal("0x1").unwrap(), // Package address
 		"account",                                        // Module name
 		"offer_rotation_capability",                      // Function name
 		vec![],                                           // Type arguments
 		vec![
-			bcs::to_bytes(&rotation_proof_signed.to_bytes().to_vec()).unwrap(), // `rotation_capability_sig_bytes`
-			bcs::to_bytes(&0u8).unwrap(),                                       // `account_scheme` (Ed25519)
-			bcs::to_bytes(&core_resources_account.public_key().to_bytes()).unwrap(), // `account_public_key_bytes`
-			bcs::to_bytes(&delegate.address().to_vec()).unwrap(),                    // `recipient_address`
+			bcs::to_bytes(&rotation_proof_signed.to_bytes().to_vec()).unwrap(), // rotation_capability_sig_bytes
+			bcs::to_bytes(&0u8).unwrap(),                                       // account_scheme (Ed25519)
+			bcs::to_bytes(&core_resources_account.public_key().to_bytes()).unwrap(), // account_public_key_bytes
+			bcs::to_bytes(&new_public_key).unwrap(),                            // recipient_address
 		],
 	);
 
-	// Debugging: Print the payload
-	println!("Entry function payload: {:?}", payload);
+	println!("Offer Payload: {:?}", offer_payload);
 
-	// Submit the transaction
-	let state = rest_client
-		.get_ledger_information()
-		.await
-		.context("Failed to get chain ID")?
-		.into_inner();
+	// Submit the offer transaction
+	let offer_signed_tx = core_resources_account.sign_with_transaction_builder(
+		TransactionFactory::new(ChainId::new(state.chain_id)).payload(offer_payload),
+	);
 
-	let transaction_factory = TransactionFactory::new(ChainId::new(state.chain_id))
-		.with_gas_unit_price(100)
-		.with_max_gas_amount(GAS_UNIT_LIMIT);
-
-	let signed_tx =
-		core_resources_account.sign_with_transaction_builder(transaction_factory.payload(payload));
-
-	let response = rest_client
-		.submit_and_wait(&signed_tx)
+	let offer_response = rest_client
+		.submit_and_wait(&offer_signed_tx)
 		.await
 		.map_err(|e| anyhow::anyhow!(e.to_string()))?
 		.into_inner();
 
-	// Debugging: Print the transaction response
-	println!("Transaction response: {:?}", response);
+	println!("Offer transaction response: {:?}", offer_response);
 
-	// Create the rotation proof challenge
+	// --- Rotate Authentication Key ---
 	let rotation_proof = RotationProofChallenge {
 		module_name: String::from("account"),
 		struct_name: String::from("RotationProofChallenge"),
@@ -196,54 +184,40 @@ async fn main() -> Result<(), anyhow::Error> {
 	};
 
 	let rotation_message = bcs::to_bytes(&rotation_proof).unwrap();
-
-	// Sign the rotation message directly using the private key
 	let signature_by_curr_privkey =
 		core_resources_account.private_key().sign_arbitrary_message(&rotation_message);
 	let signature_by_new_privkey =
 		new_keypair.private_key.sign_arbitrary_message(&rotation_message);
 
-	// Construct the payload using the new signature for cap_update_table
-	let payload = make_entry_function_payload(
-		// Package address: Account address of the sender (or appropriate address)
-		AccountAddress::from_hex_literal("0x1").unwrap(), // Update if a different package address is needed
+	let rotate_payload = make_entry_function_payload(
+		AccountAddress::from_hex_literal("0x1").unwrap(), // Package address
 		"account",                                        // Module name
 		"rotate_authentication_key",                      // Function name
 		vec![],                                           // Type arguments
 		vec![
-			bcs::to_bytes(&0u8).unwrap(), // `from_scheme` (Ed25519)
-			bcs::to_bytes(&core_resources_account.public_key().to_bytes().to_vec()).unwrap(), // `from_public_key_bytes`
-			bcs::to_bytes(&0u8).unwrap(), // `to_scheme` (Ed25519)
-			bcs::to_bytes(&new_public_key.to_bytes().to_vec()).unwrap(), // `to_public_key_bytes`
-			bcs::to_bytes(&signature_by_curr_privkey.to_bytes().to_vec()).unwrap(), // `cap_rotate_key`
-			bcs::to_bytes(&signature_by_new_privkey.to_bytes().to_vec()).unwrap(), // `cap_update_table` (signature by new private key)
+			bcs::to_bytes(&0u8).unwrap(), // from_scheme (Ed25519)
+			bcs::to_bytes(&core_resources_account.public_key().to_bytes().to_vec()).unwrap(), // from_public_key_bytes
+			bcs::to_bytes(&0u8).unwrap(), // to_scheme (Ed25519)
+			bcs::to_bytes(&new_public_key.to_bytes().to_vec()).unwrap(), // to_public_key_bytes
+			bcs::to_bytes(&signature_by_curr_privkey.to_bytes().to_vec()).unwrap(), // cap_rotate_key
+			bcs::to_bytes(&signature_by_new_privkey.to_bytes().to_vec()).unwrap(), // cap_update_table (signature by new private key)
 		],
 	);
 
-	println!("entry fun Payload: {:?}", payload);
+	println!("Rotate Payload: {:?}", rotate_payload);
 
-	// Create and submit the transaction
+	// Submit the rotation transaction
+	let rotate_signed_tx = core_resources_account.sign_with_transaction_builder(
+		TransactionFactory::new(ChainId::new(state.chain_id)).payload(rotate_payload),
+	);
 
-	let state = rest_client
-		.get_ledger_information()
-		.await
-		.context("Failed in getting chain id")?
-		.into_inner();
-
-	let transaction_factory = TransactionFactory::new(ChainId::new(state.chain_id))
-		.with_gas_unit_price(100)
-		.with_max_gas_amount(GAS_UNIT_LIMIT);
-
-	let signed_tx =
-		core_resources_account.sign_with_transaction_builder(transaction_factory.payload(payload));
-
-	let response = rest_client
-		.submit_and_wait(&signed_tx)
+	let rotate_response = rest_client
+		.submit_and_wait(&rotate_signed_tx)
 		.await
 		.map_err(|e| anyhow::anyhow!(e.to_string()))?
 		.into_inner();
 
-	println!("Transaction submitted: {:?}", response);
+	println!("Rotation transaction response: {:?}", rotate_response);
 
 	Ok(())
 }
