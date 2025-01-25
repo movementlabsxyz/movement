@@ -121,7 +121,8 @@ async fn main() -> Result<(), anyhow::Error> {
 	);
 	println!("Core Resources Account address: {}", core_resources_account.address());
 
-	tracing::info!("Created core resources account");
+	println!("Created core resources account");
+
 	// core_resources_account is already funded with u64 max value
 	// Create dead account
 	let create_dead_transaction =
@@ -152,44 +153,10 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	core_resources_account.increment_sequence_number();
 
-	let create_signer_transaction =
-		transaction_test_helpers::get_test_signed_transaction_with_chain_id(
-			associate_address,
-			core_resources_account.sequence_number(),
-			&core_resources_account.private_key(),
-			core_resources_account.public_key().clone(),
-			Some(TransactionPayload::EntryFunction(EntryFunction::new(
-				ModuleId::new(
-					AccountAddress::from_hex_literal("0x1")?,
-					Identifier::new("aptos_account")?,
-				),
-				Identifier::new("create_account")?,
-				vec![],
-				vec![bcs::to_bytes(&core_resources_account.address())?],
-			))),
-			SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60,
-			100,
-			None,
-			ChainId::new(chain_id),
-		);
-
-	rest_client
-		.submit_and_wait(&create_signer_transaction)
-		.await
-		.context("Failed to create signer account")?;
-
-	coin_client
-		.transfer(
-			&mut core_resources_account,
-			AccountAddress::from_str(
-				"000000000000000000000000000000000000000000000000000000000000dead",
-			)
-			.unwrap(),
-			1,
-			None,
-		)
-		.await
-		.context("Failed to transfer coins to dead account")?;
+	faucet_client.fund(core_resources_account.address(), 1_000_000).await?;
+	core_resources_account.increment_sequence_number();
+	faucet_client.fund(dead_address, 1).await?;
+	core_resources_account.increment_sequence_number();
 
 	// Retrieve and log balances
 	let dead_balance = coin_client
@@ -201,95 +168,132 @@ async fn main() -> Result<(), anyhow::Error> {
 		.await
 		.context("Failed to retrieve core resources account balance")?;
 
-	// assert_eq!(core_resorces_balance, 999_999_999_999_999, "Core resources account balance is not what is expected");
-	// assert_eq!(dead_balance, 1, "Dead account balance is not what is expected");
+	println!("Core account balance: {}, Dead account balance: {}", core_balance, dead_balance);
 
-	tracing::info!(
-		"Core account balance: {}, Dead account balance: {}",
-		core_balance,
-		dead_balance
-	);
+	Command::new("movement")
+		.args(["move", "compile", "--package-dir", "protocol-units/bridge/move-modules"])
+		.status()
+		.expect("Failed to execute `movement compile` command");
 
-	// let compile_status = Command::new("movement")
-	// 	.args([
-	// 		"move",
-	// 		"compile",
-	// 		"--package-dir",
-	// 		"protocol-units/bridge/move-modules",
-	// 	])
-	// 	.status()
-	// 	.expect("Failed to execute `movement compile` command");
+	let enable_bridge_code = fs::read("protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/enable_bridge_feature.mv")?;
+	let enable_bridge_script_payload =
+		TransactionPayload::Script(Script::new(enable_bridge_code, vec![], vec![]));
 
-	// let code = fs::read("protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/burn_from.mv")?;
-	// let args = vec![TransactionArgument::Address(dead_address), TransactionArgument::U64(1)];
-	// let script_payload = TransactionPayload::Script(Script::new(code, vec![], args));
-
-	// let run_script_transaction = transaction_test_helpers::get_test_signed_transaction_with_chain_id(
-	// 	associate_address,
-	// 	core_resources_account.sequence_number(),
-	// 	&core_resources_account.private_key(),
-	// 	core_resources_account.public_key().clone(),
-	// 	Some(script_payload),
-	// 	SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60,
-	// 	100,
-	// 	None,
-	// 	ChainId::new(chain_id),
-	// );
-
-	// rest_client
-	// 	.submit_and_wait(&run_script_transaction)
-	// 	.await
-	// 	.context("Failed to execute burn dead balance script transaction")?;
-
-	let burn_dead_transaction = transaction_test_helpers::get_test_signed_transaction_with_chain_id(
-		associate_address,
-		core_resources_account.sequence_number(),
-		&core_resources_account.private_key(),
-		core_resources_account.public_key().clone(),
-		Some(TransactionPayload::EntryFunction(EntryFunction::new(
-			ModuleId::new(
-				AccountAddress::from_hex_literal("0x1")?,
-				Identifier::new("native_bridge")?,
-			),
-			Identifier::new("burn_from")?,
-			vec![],
-			vec![bcs::to_bytes(&dead_address)?, bcs::to_bytes(&(1 as u64))?],
-		))),
-		SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60,
-		100,
-		None,
-		ChainId::new(chain_id),
-	);
+	let enable_bridge_script_transaction =
+		transaction_test_helpers::get_test_signed_transaction_with_chain_id(
+			associate_address,
+			core_resources_account.sequence_number(),
+			&core_resources_account.private_key(),
+			core_resources_account.public_key().clone(),
+			Some(enable_bridge_script_payload),
+			SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60,
+			100,
+			None,
+			ChainId::new(chain_id),
+		);
 
 	rest_client
-		.submit_and_wait(&burn_dead_transaction)
+		.submit_and_wait(&enable_bridge_script_transaction)
+		.await
+		.context("Failed to enable bridge script transaction")?;
+
+	core_resources_account.increment_sequence_number();
+
+	let store_mint_burn_caps_code = fs::read("protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/store_mint_burn_caps.mv")?;
+	let store_mint_burn_caps_script_payload =
+		TransactionPayload::Script(Script::new(store_mint_burn_caps_code, vec![], vec![]));
+
+	let store_mint_burn_caps_script_transaction =
+		transaction_test_helpers::get_test_signed_transaction_with_chain_id(
+			associate_address,
+			core_resources_account.sequence_number(),
+			&core_resources_account.private_key(),
+			core_resources_account.public_key().clone(),
+			Some(store_mint_burn_caps_script_payload),
+			SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60,
+			100,
+			None,
+			ChainId::new(chain_id),
+		);
+
+	rest_client
+		.submit_and_wait(&store_mint_burn_caps_script_transaction)
+		.await
+		.context("Failed to store_mint_burn_caps script transaction")?;
+	core_resources_account.increment_sequence_number();
+
+	println!("Bridge feature enabled and mint burn caps stored");
+
+	let burn_dead_code = fs::read(
+		"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/burn_from.mv",
+	)?;
+	let burn_dead_args =
+		vec![TransactionArgument::Address(dead_address), TransactionArgument::U64(1)];
+	let burn_dead_script_payload =
+		TransactionPayload::Script(Script::new(burn_dead_code, vec![], burn_dead_args));
+	let burn_dead_script_transaction =
+		transaction_test_helpers::get_test_signed_transaction_with_chain_id(
+			associate_address,
+			core_resources_account.sequence_number(),
+			&core_resources_account.private_key(),
+			core_resources_account.public_key().clone(),
+			Some(burn_dead_script_payload),
+			SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60,
+			100,
+			None,
+			ChainId::new(chain_id),
+		);
+
+	rest_client
+		.submit_and_wait(&burn_dead_script_transaction)
 		.await
 		.context("Failed to execute burn dead balance script transaction")?;
 
-	// reset core_balance to desired balance
-	// core_balance = coin_client
-	// 	.get_account_balance(&core_resources_account.address())
-	// 	.await
-	// 	.context("Failed to retrieve core resources account balance")?;
+	core_resources_account.increment_sequence_number();
 
-	// // Burn coins from the core resource account
-	// let code = fs::read("protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/main.mv")?;
-	// let args = vec![TransactionArgument::Address(core_resources_account.address()), TransactionArgument::U64(core_balance)];
-	// let script_payload = TransactionPayload::Script(Script::new(code, vec![], args));
+	let desired_core_balance = 1;
 
-	// rest_client.submit_and_wait(&core_resources_account.sign_with_transaction_builder(
-	// 	TransactionBuilder::new(
-	// 		script_payload,
-	// 		SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60,
-	// 		ChainId::new(chain_id),
-	// 	).sequence_number(core_resources_account.sequence_number())
-	// )).await.context("Failed to execute burn dead balance script transaction")?;
+	let amount_to_burn = core_balance - desired_core_balance;
 
-	tracing::info!("Burn transactions successfully executed.");
+	let burn_core_code = fs::read(
+		"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/burn_from.mv",
+	)?;
+	let burn_core_args =
+		vec![TransactionArgument::Address(core_resources_account.address()), TransactionArgument::U64(amount_to_burn)];
+	let burn_core_script_payload =
+		TransactionPayload::Script(Script::new(burn_core_code, vec![], burn_core_args));
+	let burn_core_script_transaction =
+		transaction_test_helpers::get_test_signed_transaction_with_chain_id(
+			associate_address,
+			core_resources_account.sequence_number(),
+			&core_resources_account.private_key(),
+			core_resources_account.public_key().clone(),
+			Some(burn_core_script_payload),
+			SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60,
+			100,
+			None,
+			ChainId::new(chain_id),
+		);
 
+	rest_client
+		.submit_and_wait(&burn_core_script_transaction)
+		.await
+		.context("Failed to execute burn dead balance script transaction")?;
+
+	core_resources_account.increment_sequence_number();
+
+	println!("Script burn transactions successfully executed.");
+
+	assert!(
+		coin_client
+			.get_account_balance(&core_resources_account.address())
+			.await
+			.context("Failed to retrieve core resources account new balance")?
+			== desired_core_balance
+	);
 	// Transfer L1 move desired amount to L1 bridge address
-
-	// Check if Relayer address balance on L2 equals to L1 bridge address
+	// not needed to cover as its a simple bridge, what matters is transferring the correct amount without initiating a bridge attempt
+	// Manual check of if Relayer address balance on L2 equals to L1 bridge address
 
 	Ok(())
 }
