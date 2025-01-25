@@ -150,6 +150,7 @@ aptos-config = { git = "https://github.com/movementlabsxyz/aptos-core", branch =
 aptos-consensus-types = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "mikhail/upstream-bcs" }
 aptos-crypto = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "mikhail/upstream-bcs", features = [
   "cloneable-private-keys",
+  "fuzzing",
 ] }
 aptos-db = { git = "https://github.com/movementlabsxyz/aptos-core.git", branch = "mikhail/upstream-bcs" }
 aptos-executor = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "mikhail/upstream-bcs" }
