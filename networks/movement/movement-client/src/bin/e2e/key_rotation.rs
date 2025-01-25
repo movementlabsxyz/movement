@@ -1,8 +1,10 @@
 use anyhow::Context;
+use aptos_sdk::coin_client::CoinClient;
 use aptos_sdk::crypto::ed25519::Ed25519PrivateKey;
 use aptos_sdk::crypto::SigningKey;
 use aptos_sdk::crypto::Uniform;
 use aptos_sdk::crypto::ValidCryptoMaterialStringExt;
+use aptos_sdk::rest_client::FaucetClient;
 use aptos_sdk::transaction_builder::TransactionFactory;
 use aptos_sdk::{
 	crypto::test_utils::KeyPair,
@@ -46,10 +48,31 @@ static NODE_URL: Lazy<Url> = Lazy::new(|| {
 	Url::from_str(&node_connection_url).unwrap()
 });
 
+static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
+	let faucet_listen_address = SUZUKA_CONFIG
+		.execution_config
+		.maptos_config
+		.client
+		.maptos_faucet_rest_connection_hostname
+		.clone();
+	let faucet_listen_port = SUZUKA_CONFIG
+		.execution_config
+		.maptos_config
+		.client
+		.maptos_faucet_rest_connection_port
+		.clone();
+
+	let faucet_listen_url = format!("http://{}:{}", faucet_listen_address, faucet_listen_port);
+
+	Url::from_str(faucet_listen_url.as_str()).unwrap()
+});
+
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
 	// Initialize clients
 	let rest_client = Client::new(NODE_URL.clone());
+	let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
+	let _coin_client = CoinClient::new(&rest_client);
 
 	// Load core resource account
 	let core_resources_account = LocalAccount::from_private_key(
@@ -62,9 +85,14 @@ async fn main() -> Result<(), anyhow::Error> {
 			.as_str(),
 		0,
 	)?;
-	println!("Core Resources Account Address: {}", core_resources_account.address());
+	println!(
+		"resource account keypairs: {:?}, {:?}",
+		core_resources_account.private_key(),
+		core_resources_account.public_key()
+	);
+	println!("Core Resources Account address: {}", core_resources_account.address());
 
-	tracing::info!("Core resources account loaded");
+	faucet_client.fund(core_resources_account.address(), 100_000_000).await?;
 
 	// Generate sender and delegate accounts
 	let delegate = LocalAccount::generate(&mut rand::rngs::OsRng);
@@ -76,17 +104,21 @@ async fn main() -> Result<(), anyhow::Error> {
 		KeyPair::generate(&mut rand::rngs::OsRng);
 	let new_public_key: PublicKey = new_keypair.public_key.clone();
 
+	let mut sequence_number = core_resources_account.sequence_number();
+	sequence_number += 1;
+
 	// Create the rotation proof challenge
 	let rotation_proof = RotationProofChallenge {
 		module_name: String::from("account"),
 		struct_name: String::from("RotationProofChallenge"),
 		account_address: core_resources_account.address(),
-		sequence_number: core_resources_account.sequence_number(),
 		originator: core_resources_account.address(),
 		current_auth_key: AccountAddress::from_str(
 			core_resources_account.private_key().to_encoded_string().unwrap().as_str(),
 		)?,
 		new_public_key: Vec::from(new_public_key.to_bytes()),
+
+		sequence_number,
 	};
 
 	let rotation_message = bcs::to_bytes(&rotation_proof).unwrap();
@@ -119,6 +151,8 @@ async fn main() -> Result<(), anyhow::Error> {
 			TransactionArgument::Address(delegate.address()), // Recipient's address for capability offer
 		],
 	));
+
+	println!("Script Payload: {:?}", script_payload);
 
 	// Create and submit the transaction
 
