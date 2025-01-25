@@ -19,11 +19,16 @@ contract NativeBridgeDeployer is Script {
     // TODO: all params are hardcoded for testnet deployment for now
     // Parameters
     address public moveTokenAddress = 0xC36ba8B8fD9EcbF36288b9B9B0ae9FC3E0645227;
-    address public ownerAddress = 0x5b97cdf756f6363A88706c376464180E008Bd88b; // Replace with your .env PRIVATE_KEY address for testing
+    address public adminAddress = 0x5b97cdf756f6363A88706c376464180E008Bd88b; // Replace with your .env PRIVATE_KEY address for testing
+    address public relayerAddress = 0x5b97cdf756f6363A88706c376464180E008Bd88b;
+    address public maintainerAddress = 0x0;
 
     // Safe addresses (replace these with actual safe addresses)
     address public movementLabsSafe = 0x493516F6dB02c9b7f649E650c5de244646022Aa0;
     address public movementFoundationSafe = 0x00db70A9e12537495C359581b7b3Bc3a69379A00;
+
+    address public insuranceFund = movementLabsSafe;
+
 
     bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
     bytes32 public constant RELAYER_ROLE = keccak256("RELAYER_ROLE");
@@ -64,9 +69,9 @@ contract NativeBridgeDeployer is Script {
             abi.encodeWithSignature(
                 nativeBridgeSignature,
                 moveTokenAddress, // MOVE token address
-                ownerAddress, // Owner of the contract
-                ownerAddress, // Owner of the contract
-                ownerAddress  // Owner of the contract
+                adminAddress, // Owner of the contract
+                adminAddress, // Owner of the contract
+                adminAddress  // Owner of the contract
             )
         );
 
@@ -90,7 +95,7 @@ contract NativeBridgeDeployer is Script {
                 address(nativeBridgeProxy),
                 address(newBridgeImplementation),
                 abi.encodeWithSignature(
-                    nativeBridgeSignature, moveTokenAddress, ownerAddress, ownerAddress, ownerAddress
+                    nativeBridgeSignature, moveTokenAddress, adminAddress, adminAddress, adminAddress
                 )
             ),
             bytes32(0),
