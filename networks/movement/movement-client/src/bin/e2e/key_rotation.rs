@@ -11,6 +11,7 @@ use aptos_sdk::move_types::identifier::Identifier;
 use aptos_sdk::move_types::language_storage::ModuleId;
 use aptos_sdk::move_types::language_storage::TypeTag;
 use aptos_sdk::rest_client::FaucetClient;
+use aptos_sdk::rest_client::Transaction;
 use aptos_sdk::transaction_builder::TransactionFactory;
 use aptos_sdk::{
 	crypto::test_utils::KeyPair, move_types::transaction_argument::TransactionArgument,
@@ -20,7 +21,6 @@ use aptos_sdk::{
 use aptos_types::account_config::RotationProofChallenge;
 use aptos_types::account_config::CORE_CODE_ADDRESS;
 use aptos_types::chain_id::ChainId;
-use aptos_types::test_helpers::transaction_test_helpers;
 use aptos_types::transaction::EntryFunction;
 use movement_client::{crypto::ed25519::PublicKey, types::LocalAccount};
 use once_cell::sync::Lazy;
@@ -31,7 +31,7 @@ use std::time::UNIX_EPOCH;
 use url::Url;
 
 /// limit of gas unit
-//const GAS_UNIT_LIMIT: u64 = 100000;
+const GAS_UNIT_LIMIT: u64 = 100000;
 /// minimum price of gas unit of aptos chains
 pub const GAS_UNIT_PRICE: u64 = 100;
 
@@ -97,7 +97,7 @@ async fn main() -> Result<(), anyhow::Error> {
 	let coin_client = CoinClient::new(&rest_client);
 
 	// Load core resource account
-	let core_resources_account = LocalAccount::from_private_key(
+	let mut core_resources_account = LocalAccount::from_private_key(
 		SUZUKA_CONFIG
 			.execution_config
 			.maptos_config
@@ -141,12 +141,17 @@ async fn main() -> Result<(), anyhow::Error> {
 	println!("Recipient's balance: {:?}", recipient_bal);
 	println!("Core Resources Account balance: {:?}", core_resource_bal);
 
-	// --- Offer Rotation Capability ---
+	// Note that the offer_rotation_capability call requires the
+	// sequence number field to be 1+ the current state. For exeuction this will be too
+	// high, so we decrement the account state back before the offer_rotation_capability call
+
+	// --- Offer Rotation Capability -
 	let rotation_capability_proof = RotationCapabilityOfferProofChallengeV2 {
 		account_address: CORE_CODE_ADDRESS,
 		module_name: String::from("account"),
 		struct_name: String::from("RotationCapabilityOfferProofChallengeV2"),
 		chain_id: state.chain_id,
+
 		sequence_number: core_resources_account.increment_sequence_number(),
 		source_address: core_resources_account.address(),
 		recipient_address: recipient.address(),
@@ -183,25 +188,11 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	println!("Offer Payload: {:?}", offer_payload);
 
-	let offer_signed_tx = transaction_test_helpers::get_test_signed_transaction_with_chain_id(
-		core_resources_account.address(),
-		core_resources_account.increment_sequence_number(),
-		&core_resources_account.private_key(),
-		core_resources_account.public_key().clone(),
-		Some(offer_payload),
-		SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60,
-		100,
-		None,
-		ChainId::new(state.chain_id),
-	);
+	// As mentioned above, for actual execution we must decrement the sequence number
+	core_resources_account.decrement_sequence_number();
 
-	println!("Offer signed tx: {:?}", offer_signed_tx);
-
-	let offer_response = rest_client
-		.submit_and_wait(&offer_signed_tx)
-		.await
-		.map_err(|e| anyhow::anyhow!(e.to_string()))?
-		.into_inner();
+	let offer_response =
+		send_aptos_transaction(&rest_client, &mut core_resources_account, offer_payload).await?;
 
 	println!("Offer transaction response: {:?}", offer_response);
 
@@ -248,18 +239,10 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	println!("Rotate Payload: {:?}", rotate_payload);
 
-	// Submit the rotation transaction
-	let rotate_signed_tx = core_resources_account.sign_with_transaction_builder(
-		TransactionFactory::new(ChainId::new(state.chain_id)).payload(rotate_payload),
-	);
+	let rotate_response =
+		send_aptos_transaction(&rest_client, &mut core_resources_account, rotate_payload).await?;
 
-	let rotate_response = rest_client
-		.submit_and_wait(&rotate_signed_tx)
-		.await
-		.map_err(|e| anyhow::anyhow!(e.to_string()))?
-		.into_inner();
-
-	println!("Rotation transaction response: {:?}", rotate_response);
+	println!("Rotate transaction response: {:?}", rotate_response);
 
 	Ok(())
 }
@@ -290,4 +273,29 @@ fn verify_signature(
 	let verifying_key = VerifyingKey::from_bytes(public_key_bytes)?;
 	let signature = Signature::from_bytes(signature_bytes);
 	Ok(verifying_key.verify(message, &signature).is_ok())
+}
+
+async fn send_aptos_transaction(
+	client: &Client,
+	signer: &mut LocalAccount,
+	payload: TransactionPayload,
+) -> anyhow::Result<Transaction> {
+	let state = client
+		.get_ledger_information()
+		.await
+		.context("Failed in getting chain id")?
+		.into_inner();
+
+	let transaction_factory = TransactionFactory::new(ChainId::new(state.chain_id))
+		.with_gas_unit_price(100)
+		.with_max_gas_amount(GAS_UNIT_LIMIT);
+
+	let signed_tx = signer.sign_with_transaction_builder(transaction_factory.payload(payload));
+
+	let response = client
+		.submit_and_wait(&signed_tx)
+		.await
+		.map_err(|e| anyhow::anyhow!(e.to_string()))?
+		.into_inner();
+	Ok(response)
 }
