@@ -178,8 +178,8 @@ aptos-indexer-grpc-table-info = { git = "https://github.com/movementlabsxyz/apto
 aptos-protos = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "l-monninger/governed-gas-pool" }
 
 # Indexer
-processor = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors", branch = "l-monninger/governed-gas-pool" }
-server-framework = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors", branch = "l-monninger/governed-gas-pool" }
+processor = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors", branch = "main" }
+server-framework = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors", branch = "main" }
 
 bcs = { git = "https://github.com/movementlabsxyz/bcs.git", rev = "bc16d2d39cabafaabd76173dd1b04b2aa170cf0c" }
 
