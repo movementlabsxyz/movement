@@ -181,6 +181,8 @@ async fn main() -> Result<(), anyhow::Error> {
 		TransactionFactory::new(ChainId::new(state.chain_id)).payload(offer_payload),
 	);
 
+	println!("Offer signed tx: {:?}", offer_signed_tx);
+
 	let offer_response = rest_client
 		.submit_and_wait(&offer_signed_tx)
 		.await
