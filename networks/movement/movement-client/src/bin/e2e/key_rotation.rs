@@ -3,6 +3,7 @@ use anyhow::Context;
 use aptos_sdk::coin_client::CoinClient;
 //use aptos_sdk::coin_client::CoinClient;
 use aptos_sdk::crypto::ed25519::Ed25519PrivateKey;
+use aptos_sdk::crypto::HashValue;
 use aptos_sdk::crypto::SigningKey;
 use aptos_sdk::crypto::Uniform;
 use aptos_sdk::crypto::ValidCryptoMaterialStringExt;
@@ -122,8 +123,6 @@ async fn main() -> Result<(), anyhow::Error> {
 	//Generate recepient account
 	let recipient = LocalAccount::generate(&mut rand::rngs::OsRng);
 
-	let recipient_seq_num = 0_u64;
-
 	faucet_client.fund(recipient.address(), 100_000_000_000).await?;
 
 	let recipient_bal = coin_client
@@ -156,6 +155,17 @@ async fn main() -> Result<(), anyhow::Error> {
 		.private_key()
 		.sign_arbitrary_message(&rotation_capability_proof_msg);
 
+	// Do a test signing
+	let is_valid = verify_signature(
+		&core_resources_account.public_key().to_bytes(),
+		&rotation_capability_proof_msg,
+		&rotation_proof_signed.to_bytes(),
+	)?;
+
+	assert!(is_valid, "Signature verification failed!");
+
+	println!("Signature successfully verified!");
+
 	let offer_payload = make_entry_function_payload(
 		CORE_CODE_ADDRESS,           // Package address
 		"account",                   // Module name
@@ -163,7 +173,7 @@ async fn main() -> Result<(), anyhow::Error> {
 		vec![],                      // Type arguments
 		vec![
 			bcs::to_bytes(&rotation_proof_signed.to_bytes().to_vec()).unwrap(), // rotation_capability_sig_bytes
-			bcs::to_bytes(&0u8).unwrap(),                                       // account_scheme (Ed25519)
+			bcs::to_bytes(&0u8).unwrap(),                                       // account_scheme (Ed25519 is 0)
 			bcs::to_bytes(&core_resources_account.public_key().to_bytes().to_vec()).unwrap(), // account_public_key_bytes
 			bcs::to_bytes(&recipient.address()).unwrap(), // recipient_address
 		],
@@ -256,4 +266,16 @@ fn make_entry_function_payload(
 		ty_args,
 		args,
 	))
+}
+
+fn verify_signature(
+	public_key_bytes: &[u8; 32],
+	message: &[u8],
+	signature_bytes: &[u8; 64],
+) -> Result<bool, anyhow::Error> {
+	use ed25519_dalek::{Signature, Signer, Verifier, VerifyingKey};
+
+	let verifying_key = VerifyingKey::from_bytes(public_key_bytes)?;
+	let signature = Signature::from_bytes(signature_bytes);
+	Ok(verifying_key.verify(message, &signature).is_ok())
 }
