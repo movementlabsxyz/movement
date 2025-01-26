@@ -1,3 +1,5 @@
+pub mod cached;
+
 use aptos_framework::ReleaseBundle;
 use maptos_framework_release_util::{CommitHash, Release, ReleaseBundleError};
 
@@ -18,7 +20,7 @@ impl Elsa {
 }
 
 impl Release for Elsa {
-	fn release(&self) -> Result<ReleaseBundle, ReleaseBundleError> {
-		self.0.release()
+	fn release_bundle(&self) -> Result<ReleaseBundle, ReleaseBundleError> {
+		self.0.release_bundle()
 	}
 }

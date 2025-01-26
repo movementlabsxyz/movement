@@ -3,71 +3,330 @@ use aptos_release_builder::components::framework::{
 	generate_upgrade_proposals_release_packages_with_repo, FrameworkReleaseConfig,
 };
 use aptos_sdk::{
-	move_types::{
-		identifier::Identifier,
-		language_storage::TypeTag,
-		language_storage::{ModuleId, StructTag},
-	},
+	rest_client::Client,
 	types::{
 		account_address::AccountAddress,
 		chain_id::ChainId,
 		transaction::{
-			EntryFunction, RawTransaction, Script, TransactionArgument, TransactionPayload,
+			RawTransaction, Script, SignedTransaction, Transaction, TransactionArgument,
+			TransactionPayload,
 		},
 		LocalAccount,
 	},
 };
-use std::sync::Arc;
+use std::future::Future;
 
 use std::error;
+
+#[derive(Debug, thiserror::Error)]
+pub enum ReleaseSignerError {
+	#[error("signing release failed with: {0}")]
+	Signing(#[source] Box<dyn error::Error + Send + Sync>),
+	#[error("account address for release not found: {0}")]
+	AccountAddressNotFound(#[source] Box<dyn error::Error + Send + Sync>),
+}
+
+pub trait ReleaseSigner {
+	/// Signs the given raw transaction.
+	fn sign_release(
+		&self,
+		raw_transaction: RawTransaction,
+	) -> impl Future<Output = Result<SignedTransaction, ReleaseSignerError>>;
+
+	/// Gets the account address of the signer.
+	fn release_account_address(
+		&self,
+	) -> impl Future<Output = Result<AccountAddress, ReleaseSignerError>>;
+}
+
+/// A [ReleaseSigner] that signs the transactions with a local account.
+pub struct LocalAccountReleaseSigner {
+	/// The local account to sign the transactions with.
+	pub local_account: LocalAccount,
+	/// An override for the account address.
+	pub account_address: Option<AccountAddress>,
+}
+
+impl LocalAccountReleaseSigner {
+	pub fn new(local_account: LocalAccount, account_address: Option<AccountAddress>) -> Self {
+		Self { local_account, account_address }
+	}
+}
+
+impl ReleaseSigner for LocalAccountReleaseSigner {
+	fn sign_release(
+		&self,
+		raw_transaction: RawTransaction,
+	) -> impl Future<Output = Result<SignedTransaction, ReleaseSignerError>> {
+		let signed_transaction_res = self.local_account.sign_transaction(raw_transaction);
+		async move { Ok(signed_transaction_res) }
+	}
+
+	fn release_account_address(
+		&self,
+	) -> impl Future<Output = Result<AccountAddress, ReleaseSignerError>> {
+		let address = match self.account_address {
+			Some(address) => address,
+			None => self.local_account.address(),
+		};
+		async move { Ok(address) }
+	}
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum ReleaseBundleError {
 	#[error("building release failed with error: {0}")]
 	Build(#[source] Box<dyn error::Error + Send + Sync>),
+	#[error("signing release bundle failed with error: {0}")]
+	Signing(#[from] ReleaseSignerError),
+	#[error("proposing release failed with error: {0}")]
+	Proposing(#[source] Box<dyn error::Error + Send + Sync>),
 }
 
 pub trait Release {
-	fn release(&self) -> Result<ReleaseBundle, ReleaseBundleError>;
+	/// Returns a [ReleaseBundle] that contains the release packages.
+	fn release_bundle(&self) -> Result<ReleaseBundle, ReleaseBundleError>;
+
+	/// Returns the [RawTransaction]s for proposing the release.
+	fn proposal_raw_transactions(
+		&self,
+		account_address: AccountAddress,
+		start_sequence_number: u64,
+		max_gas_amount: u64,
+		gas_unit_price: u64,
+		expiration_timestamp_secs: u64,
+		chain_id: ChainId,
+	) -> Result<Vec<RawTransaction>, ReleaseBundleError> {
+		let release_bundle = self.release_bundle()?;
+		build_release_bundles_raw_transactions(
+			&release_bundle,
+			account_address,
+			start_sequence_number,
+			max_gas_amount,
+			gas_unit_price,
+			expiration_timestamp_secs,
+			chain_id,
+		)
+	}
+
+	/// Returns the [SignedTransaction]s for proposing the release.
+	async fn proposal_signed_transactions(
+		&self,
+		signer: &impl ReleaseSigner,
+		start_sequence_number: u64,
+		max_gas_amount: u64,
+		gas_unit_price: u64,
+		expiration_timestamp_secs: u64,
+		chain_id: ChainId,
+	) -> Result<Vec<SignedTransaction>, ReleaseBundleError> {
+		// get the account address
+		let account_address = signer.release_account_address().await?;
+
+		// form the raw transactions
+		let raw_transactions = self.proposal_raw_transactions(
+			account_address,
+			start_sequence_number,
+			max_gas_amount,
+			gas_unit_price,
+			expiration_timestamp_secs,
+			chain_id,
+		)?;
+
+		// sign the raw transactions
+		let mut signed_transactions = vec![];
+		for raw_transaction in raw_transactions {
+			let signed_transaction = signer.sign_release(raw_transaction).await?;
+			signed_transactions.push(signed_transaction);
+		}
+
+		Ok(signed_transactions)
+	}
+
+	/// Returns the [Transaction]s for proposing the release.
+	async fn proposal_transactions(
+		&self,
+		signer: &impl ReleaseSigner,
+		start_sequence_number: u64,
+		max_gas_amount: u64,
+		gas_unit_price: u64,
+		expiration_timestamp_secs: u64,
+		chain_id: ChainId,
+	) -> Result<Vec<Transaction>, ReleaseBundleError> {
+		let signed_transactions = self
+			.proposal_signed_transactions(
+				signer,
+				start_sequence_number,
+				max_gas_amount,
+				gas_unit_price,
+				expiration_timestamp_secs,
+				chain_id,
+			)
+			.await?;
+		Ok(signed_transactions
+			.into_iter()
+			.map(|signed_transaction| Transaction::UserTransaction(signed_transaction))
+			.collect())
+	}
+
+	/// Submits the release proposals to the network.
+	/// Returns the transaction hashes of the submitted proposals.
+	async fn submit_release_proposals(
+		&self,
+		signer: &impl ReleaseSigner,
+		start_sequence_number: u64,
+		max_gas_amount: u64,
+		gas_unit_price: u64,
+		expiration_timestamp_secs: u64,
+		chain_id: ChainId,
+		client: &Client,
+	) -> Result<Vec<SignedTransaction>, ReleaseBundleError> {
+		// form the signed transactions
+		let transactions = self
+			.proposal_signed_transactions(
+				signer,
+				start_sequence_number,
+				max_gas_amount,
+				gas_unit_price,
+				expiration_timestamp_secs,
+				chain_id,
+			)
+			.await?;
+
+		// submit the transactions
+		let transaction_batch_submission_res = client
+			.submit_batch_bcs(&transactions)
+			.await
+			.map_err(|e| ReleaseBundleError::Proposing(Box::new(e)))?;
+
+		let transaction_failures =
+			transaction_batch_submission_res.into_inner().transaction_failures;
+
+		if !transaction_failures.is_empty() {
+			return Err(ReleaseBundleError::Proposing(
+				format!("transaction failures: {:?}", transaction_failures).into(),
+			));
+		}
+
+		Ok(transactions)
+	}
+
+	/// Submits the release proposals to the network and waits for the transactions to be executed.
+	/// Returns the transaction hashes of the submitted proposals.
+	async fn propose_release(
+		&self,
+		signer: &impl ReleaseSigner,
+		start_sequence_number: u64,
+		max_gas_amount: u64,
+		gas_unit_price: u64,
+		expiration_timestamp_secs: u64,
+		chain_id: ChainId,
+		client: &Client,
+	) -> Result<Vec<SignedTransaction>, ReleaseBundleError> {
+		let submitted_transactions = self
+			.submit_release_proposals(
+				signer,
+				start_sequence_number,
+				max_gas_amount,
+				gas_unit_price,
+				expiration_timestamp_secs,
+				chain_id,
+				client,
+			)
+			.await?;
+
+		// wait for the transactions to be executed
+		for transaction in &submitted_transactions {
+			client
+				.wait_for_signed_transaction_bcs(transaction)
+				.await
+				.map_err(|e| ReleaseBundleError::Proposing(Box::new(e)))?;
+		}
+
+		Ok(submitted_transactions)
+	}
+
+	/// Proposes and votes through the release proposals.
+	/// This only works when the signer represents a controlling interest in the network.
+	async fn release(
+		&self,
+		signer: &impl ReleaseSigner,
+		start_sequence_number: u64,
+		max_gas_amount: u64,
+		gas_unit_price: u64,
+		expiration_timestamp_secs: u64,
+		chain_id: ChainId,
+		client: &Client,
+	) -> Result<Vec<SignedTransaction>, ReleaseBundleError> {
+		// propose the release
+		let completed_proposals = self
+			.propose_release(
+				signer,
+				start_sequence_number,
+				max_gas_amount,
+				gas_unit_price,
+				expiration_timestamp_secs,
+				chain_id,
+				client,
+			)
+			.await?;
+
+		// vote through the proposals
+		// todo: currently we are not voting through the proposals, the scripts will simply execute under the root signer
+
+		Ok(completed_proposals)
+	}
 }
 
-pub fn build_release_bundle_transactions(
+fn build_release_bundles_raw_transactions(
 	release_bundle: &ReleaseBundle,
+	account_address: AccountAddress,
+	start_sequence_number: u64,
+	max_gas_amount: u64,
+	gas_unit_price: u64,
+	expiration_timestamp_secs: u64,
+	chain_id: ChainId,
 ) -> Result<Vec<RawTransaction>, ReleaseBundleError> {
+	let payloads = build_release_bundle_transaction_payloads(release_bundle)?;
+	let mut transactions = vec![];
+	let mut sequence_number = start_sequence_number;
+	for payload in payloads {
+		let raw_transaction = RawTransaction::new(
+			account_address,
+			sequence_number,
+			payload,
+			max_gas_amount,
+			gas_unit_price,
+			expiration_timestamp_secs,
+			chain_id,
+		);
+		transactions.push(raw_transaction);
+		sequence_number += 1;
+	}
+	Ok(transactions)
+}
+
+fn build_release_bundle_transaction_payloads(
+	release_bundle: &ReleaseBundle,
+) -> Result<Vec<TransactionPayload>, ReleaseBundleError> {
 	let mut built_packages = vec![];
 	for release_package in &release_bundle.packages {
-		let built_package = release_package.build()?;
-		built_packages.push(built_package);
+		let args = vec![];
+		let payload = build_release_package_transaction_payload(args, release_package)?;
+		built_packages.push(payload);
 	}
 	Ok(built_packages)
 }
 
-pub fn build_release_package_transaction(
+fn build_release_package_transaction_payload(
+	args: Vec<TransactionArgument>,
 	release_package: &ReleasePackage,
-) -> Result<RawTransaction, ReleaseBundleError> {
-	let code = fs::read(
-		"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/burn_from.mv",
-	)?;
+) -> Result<TransactionPayload, ReleaseBundleError> {
+	let code: Vec<u8> =
+		release_package.code().iter().flat_map(|slice| slice.iter().cloned()).collect();
 
-	let args = vec![
-		TransactionArgument::Address(dead_address),
-		TransactionArgument::U64(1),
-		TransactionArgument::U8Vector(
-			StructTag {
-				address: AccountAddress::from_hex_literal("0x1")?,
-				module: Identifier::new("coin")?,
-				name: Identifier::new("BurnCapability")?,
-				type_args: vec![StructTag {
-					address: AccountAddress::from_hex_literal("0x1")?,
-					module: Identifier::new("aptos_coin")?,
-					name: Identifier::new("AptosCoin")?,
-					type_args: vec![],
-				}
-				.into()],
-			}
-			.access_vector(),
-		),
-	];
 	let script_payload = TransactionPayload::Script(Script::new(code, vec![], args));
+
+	Ok(script_payload)
 }
 
 /// To form a commit hash porposer, at the lowest level we use [generate_upgrade_proposals_with_repo] function to generate the scripts.
@@ -99,7 +358,7 @@ impl CommitHash {
 }
 
 impl Release for CommitHash {
-	fn release(&self) -> Result<ReleaseBundle, ReleaseBundleError> {
+	fn release_bundle(&self) -> Result<ReleaseBundle, ReleaseBundleError> {
 		let (config, repo) = self.framework_release_config();
 
 		let (_commit_info, releases) =
@@ -116,17 +375,35 @@ impl Release for CommitHash {
 	}
 }
 
-/// A dynamic wrapper around a [Release] implementation.
-pub struct CommonRelease(pub Arc<dyn Release>);
+#[macro_export]
+macro_rules! mrb_release {
+	($struct_name:ident, $bytes_name:ident, $path:expr) => {
+		use aptos_framework::ReleaseBundle;
+		use maptos_framework_release_util::{Release, ReleaseBundleError};
 
-impl CommonRelease {
-	pub fn new(release: Arc<dyn Release>) -> Self {
-		Self(release)
-	}
-}
+		// Define the constant with the byte data
+		#[cfg(unix)]
+		const $bytes_name: &[u8] = include_bytes!(concat!("target", "/", "mrb_cache", "/", $path));
 
-impl Release for CommonRelease {
-	fn release(&self) -> Result<ReleaseBundle, ReleaseBundleError> {
-		self.0.release()
-	}
+		#[cfg(windows)]
+		const $bytes_name: &[u8] =
+			include_bytes!(concat!("target", "\\", "mrb_cache", "\\", $path));
+
+		// Define the struct implementing Release
+		pub struct $struct_name;
+
+		impl $struct_name {
+			pub fn new() -> Self {
+				Self
+			}
+		}
+
+		impl Release for $struct_name {
+			fn release_bundle(&self) -> Result<ReleaseBundle, ReleaseBundleError> {
+				let release_bundle: ReleaseBundle = bcs::from_bytes($bytes_name)
+					.map_err(|e| ReleaseBundleError::Build(e.into()))?;
+				Ok(release_bundle)
+			}
+		}
+	};
 }

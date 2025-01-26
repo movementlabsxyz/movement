@@ -8,10 +8,10 @@ pub enum KnownRelease {
 }
 
 impl Release for KnownRelease {
-	fn release(&self) -> Result<ReleaseBundle, ReleaseBundleError> {
+	fn release_bundle(&self) -> Result<ReleaseBundle, ReleaseBundleError> {
 		match self {
-			KnownRelease::Elsa(elsa) => elsa.release(),
-			KnownRelease::Head(head) => head.release(),
+			KnownRelease::Elsa(elsa) => elsa.release_bundle(),
+			KnownRelease::Head(head) => head.release_bundle(),
 		}
 	}
 }

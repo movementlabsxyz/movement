@@ -18,3 +18,5 @@ aptos-framework = { workspace = true }
 aptos-cached-packages = { workspace = true }
 thiserror = { workspace = true }
 aptos-release-builder = { workspace = true }
+anyhow = { workspace = true }
+bcs = { workspace = true }

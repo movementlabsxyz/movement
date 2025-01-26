@@ -1883,6 +1883,7 @@ version = "0.0.2"
 dependencies = [
  "anyhow",
  "aptos-framework",
+ "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
  "dot-movement",
  "maptos-framework-release-util",
  "movement-client",
@@ -10456,10 +10457,12 @@ dependencies = [
 name = "maptos-framework-release-util"
 version = "0.0.2"
 dependencies = [
+ "anyhow",
  "aptos-cached-packages",
  "aptos-framework",
  "aptos-release-builder",
  "aptos-sdk",
+ "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
  "thiserror 1.0.69",
 ]
 

@@ -25,7 +25,7 @@ fn genesis_change_set_and_validators(
 	public_key: &Ed25519PublicKey, //Core resource account.
 	release: &impl Release,
 ) -> Result<(ChangeSet, Vec<TestValidator>), anyhow::Error> {
-	let framework = release.release().map_err(|e| anyhow::anyhow!(e))?;
+	let framework = release.release_bundle().map_err(|e| anyhow::anyhow!(e))?;
 	let test_validators = TestValidator::new_test_set(count, Some(100_000_000));
 	let validators_: Vec<Validator> = test_validators.iter().map(|t| t.data.clone()).collect();
 	let validators = &validators_;

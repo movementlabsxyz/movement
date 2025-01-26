@@ -10,7 +10,7 @@ impl Head {
 }
 
 impl Release for Head {
-	fn release(&self) -> Result<ReleaseBundle, ReleaseBundleError> {
+	fn release_bundle(&self) -> Result<ReleaseBundle, ReleaseBundleError> {
 		Ok(aptos_cached_packages::head_release_bundle().clone())
 	}
 }

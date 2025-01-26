@@ -1,9 +1,8 @@
-use anyhow::Context;
-use aptos_framework_elsa_release::Elsa;
-use maptos_framework_release_util::Release;
+use aptos_framework_elsa_release::cached::Elsa;
+use maptos_framework_release_util::{LocalAccountReleaseSigner, Release};
 use movement_client::{
-	crypto::ValidCryptoMaterialStringExt, types::account_address::AccountAddress,
-	types::account_config::aptos_test_root_address, types::LocalAccount,
+	crypto::ValidCryptoMaterialStringExt,
+	types::{account_config::aptos_test_root_address, LocalAccount},
 };
 use once_cell::sync::Lazy;
 use std::str::FromStr;
@@ -38,28 +37,11 @@ static NODE_URL: Lazy<Url> = Lazy::new(|| {
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
-	// form the elsa release bundle
+	// form the elsa release
 	let elsa = Elsa::new();
-	let release_bundle = elsa.release()?;
 
-	// write it out the script to a temp directory
-	let temp_dir = tempfile::tempdir().context("failed to create temp directory")?;
-	for release_package in release_bundle.packages {
-		// add a temp path in the temp directory with the .move extension
-		// let temp_path = temp_dir.path().join(format!("{}.move", release_package.name()));
-
-		// use the path working directory/proposals/script_name.move
-		// use the crate root as the working directory
-		let working_directory =
-			std::env::current_dir().context("failed to get current directory")?;
-		let temp_path = working_directory
-			.join("proposals")
-			.join(format!("{}.move", release_package.name()));
-
-		release_package.generate_script_proposal_testnet(aptos_test_root_address(), temp_path)?;
-	}
-
-	let mut genesis = LocalAccount::from_private_key(
+	// get the root account
+	let root_account = LocalAccount::from_private_key(
 		MOVEMENT_CONFIG
 			.execution_config
 			.maptos_config
@@ -69,6 +51,36 @@ async fn main() -> Result<(), anyhow::Error> {
 			.as_str(),
 		0,
 	)?;
+
+	// form the local account release signer
+	let local_account_release_signer =
+		LocalAccountReleaseSigner::new(root_account, Some(aptos_test_root_address()));
+
+	// form the rest client
+	let rest_client = movement_client::rest_client::Client::new(NODE_URL.clone());
+
+	// get the current sequence number
+	let account = rest_client.get_account(aptos_test_root_address()).await?;
+	let sequencer_number = account.into_inner().sequence_number;
+
+	// release the elsa release
+	elsa.release(
+		&local_account_release_signer,
+		sequencer_number,
+		10_000,
+		100,
+		// 60 seconds from now as u64
+		((std::time::SystemTime::now()
+			.checked_add(std::time::Duration::from_secs(60))
+			.unwrap()
+			.duration_since(std::time::UNIX_EPOCH)
+			.unwrap()
+			.as_secs()) as u64)
+			.into(),
+		MOVEMENT_CONFIG.execution_config.maptos_config.chain.maptos_chain_id,
+		&rest_client,
+	)
+	.await?;
 
 	Ok(())
 }

@@ -27,3 +27,18 @@ anyhow = { workspace = true}
 url = { workspace = true }
 dot-movement = { workspace = true }
 tempfile = { workspace = true }
+bcs = { workspace = true }
+
+[build-dependencies]
+maptos-framework-release-util = { workspace = true }
+movement-config = { workspace = true }
+movement-client = { workspace = true }
+once_cell = { workspace = true }
+aptos-framework = { workspace = true }
+tokio = { workspace = true }
+anyhow = { workspace = true}
+url = { workspace = true }
+dot-movement = { workspace = true }
+tempfile = { workspace = true }
+bcs = { workspace = true }
+
