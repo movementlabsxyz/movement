@@ -45,6 +45,7 @@ path = "src/bin/e2e/key_rotation.rs"
 
 
 [dependencies]
+aptos-language-e2e-tests = { workspace = true }
 aptos-sdk = { workspace = true }
 aptos-types = { workspace = true }
 anyhow = { workspace = true }

@@ -72,8 +72,6 @@ static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
 	Url::from_str(faucet_listen_url.as_str()).unwrap()
 });
 
-// This is defined in the e2e test crate of aptos-core and
-// intentionally not made `pub`. So redefine it here.
 #[derive(Serialize, Deserialize)]
 struct RotationCapabilityOfferProofChallengeV2 {
 	account_address: AccountAddress,
@@ -154,7 +152,7 @@ async fn main() -> Result<(), anyhow::Error> {
 		chain_id: state.chain_id,
 		sequence_number: core_resources_account.sequence_number(),
 		source_address: core_resources_account.address(),
-		recipient_address: AccountAddress::from_bytes(new_public_key.to_bytes()).unwrap(),
+		recipient_address: recipient.address(),
 	};
 
 	// Serialize the rotation capability proof challenge
