@@ -207,7 +207,7 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
      * @dev Rate limits the outboud transfers based on the insurance fund and insurance budget divider
      * @param amount The amount to rate limit
      */
-    function _rateLimitOutbound(uint256 amount) public {
+    function _rateLimitOutbound(uint256 amount) internal {
         uint256 day = block.timestamp / 1 days;
         outboundRateLimitBudget[day] += amount;
         require(
@@ -220,7 +220,7 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
      * @dev Rate limits the inbound transfers based on the insurance fund and insurance budget divider
      * @param amount The amount to rate limit
      */
-    function _rateLimitInbound(uint256 amount) public {
+    function _rateLimitInbound(uint256 amount) internal {
         uint256 day = block.timestamp / 1 days;
         inboundRateLimitBudget[day] += amount;
         require(
