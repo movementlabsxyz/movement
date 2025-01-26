@@ -183,22 +183,16 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	println!("Offer Payload: {:?}", offer_payload);
 
-	let enable_bridge_script_transaction =
-		transaction_test_helpers::get_test_signed_transaction_with_chain_id(
-			core_resources_account.address(),
-			core_resources_account.increment_sequence_number(),
-			&core_resources_account.private_key(),
-			core_resources_account.public_key().clone(),
-			Some(offer_payload),
-			SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60,
-			100,
-			None,
-			ChainId::new(state.chain_id),
-		);
-
-	// Submit the offer transaction
-	let offer_signed_tx = core_resources_account.sign_with_transaction_builder(
-		TransactionFactory::new(ChainId::new(state.chain_id)).payload(offer_payload),
+	let offer_signed_tx = transaction_test_helpers::get_test_signed_transaction_with_chain_id(
+		core_resources_account.address(),
+		core_resources_account.increment_sequence_number(),
+		&core_resources_account.private_key(),
+		core_resources_account.public_key().clone(),
+		Some(offer_payload),
+		SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60,
+		100,
+		None,
+		ChainId::new(state.chain_id),
 	);
 
 	println!("Offer signed tx: {:?}", offer_signed_tx);
