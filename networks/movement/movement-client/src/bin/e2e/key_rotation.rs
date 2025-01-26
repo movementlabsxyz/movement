@@ -20,11 +20,14 @@ use aptos_sdk::{
 use aptos_types::account_config::RotationProofChallenge;
 use aptos_types::account_config::CORE_CODE_ADDRESS;
 use aptos_types::chain_id::ChainId;
+use aptos_types::test_helpers::transaction_test_helpers;
 use aptos_types::transaction::EntryFunction;
 use movement_client::{crypto::ed25519::PublicKey, types::LocalAccount};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
+use std::time::SystemTime;
+use std::time::UNIX_EPOCH;
 use url::Url;
 
 /// limit of gas unit
@@ -179,6 +182,19 @@ async fn main() -> Result<(), anyhow::Error> {
 	);
 
 	println!("Offer Payload: {:?}", offer_payload);
+
+	let enable_bridge_script_transaction =
+		transaction_test_helpers::get_test_signed_transaction_with_chain_id(
+			core_resources_account.address(),
+			core_resources_account.increment_sequence_number(),
+			&core_resources_account.private_key(),
+			core_resources_account.public_key().clone(),
+			Some(offer_payload),
+			SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60,
+			100,
+			None,
+			ChainId::new(state.chain_id),
+		);
 
 	// Submit the offer transaction
 	let offer_signed_tx = core_resources_account.sign_with_transaction_builder(
