@@ -12,7 +12,8 @@ use aptos_sdk::move_types::language_storage::TypeTag;
 use aptos_sdk::rest_client::FaucetClient;
 use aptos_sdk::transaction_builder::TransactionFactory;
 use aptos_sdk::{
-	crypto::test_utils::KeyPair, rest_client::Client, types::account_address::AccountAddress,
+	crypto::test_utils::KeyPair, move_types::transaction_argument::TransactionArgument,
+	rest_client::Client, types::account_address::AccountAddress,
 	types::transaction::TransactionPayload,
 };
 use aptos_types::account_config::RotationProofChallenge;
@@ -163,8 +164,8 @@ async fn main() -> Result<(), anyhow::Error> {
 		vec![
 			bcs::to_bytes(&rotation_proof_signed.to_bytes().to_vec()).unwrap(), // rotation_capability_sig_bytes
 			bcs::to_bytes(&0u8).unwrap(),                                       // account_scheme (Ed25519)
-			bcs::to_bytes(&core_resources_account.public_key().to_bytes()).unwrap(), // account_public_key_bytes
-			bcs::to_bytes(&recipient.address()).unwrap(),                       // recipient_address
+			bcs::to_bytes(&core_resources_account.public_key().to_bytes().to_vec()).unwrap(), // account_public_key_bytes
+			bcs::to_bytes(&recipient.address()).unwrap(), // recipient_address
 		],
 	);
 
