@@ -43,6 +43,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use std::{env, fs};
 use tracing;
 use url::Url;
+use buildtime_helpers::cargo::cargo_workspace;
+use std::path::PathBuf;
 
 static SUZUKA_CONFIG: Lazy<movement_config::Config> = Lazy::new(|| {
 	let dot_movement = dot_movement::DotMovement::try_from_env().unwrap();
@@ -175,7 +177,12 @@ async fn main() -> Result<(), anyhow::Error> {
 		.status()
 		.expect("Failed to execute `movement compile` command");
 
-	let enable_bridge_code = fs::read("protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/enable_bridge_feature.mv")?;
+	let root: PathBuf = cargo_workspace()?;
+	let additional_path =
+		"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/";
+	let combined_path = root.join(additional_path);
+
+	let enable_bridge_code = fs::read(combined_path.join("enable_bridge_feature.mv"))?;
 	let enable_bridge_script_payload =
 		TransactionPayload::Script(Script::new(enable_bridge_code, vec![], vec![]));
 
@@ -199,7 +206,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	core_resources_account.increment_sequence_number();
 
-	let store_mint_burn_caps_code = fs::read("protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/store_mint_burn_caps.mv")?;
+	let store_mint_burn_caps_code = fs::read(combined_path.join("store_mint_burn_caps.mv"))?;
 	let store_mint_burn_caps_script_payload =
 		TransactionPayload::Script(Script::new(store_mint_burn_caps_code, vec![], vec![]));
 
@@ -224,9 +231,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	println!("Bridge feature enabled and mint burn caps stored");
 
-	let burn_dead_code = fs::read(
-		"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/burn_from.mv",
-	)?;
+	let burn_dead_code = fs::read(combined_path.join("burn_from.mv"))?;
 	let burn_dead_args =
 		vec![TransactionArgument::Address(dead_address), TransactionArgument::U64(1)];
 	let burn_dead_script_payload =
@@ -258,8 +263,10 @@ async fn main() -> Result<(), anyhow::Error> {
 	let burn_core_code = fs::read(
 		"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/burn_from.mv",
 	)?;
-	let burn_core_args =
-		vec![TransactionArgument::Address(core_resources_account.address()), TransactionArgument::U64(amount_to_burn)];
+	let burn_core_args = vec![
+		TransactionArgument::Address(core_resources_account.address()),
+		TransactionArgument::U64(amount_to_burn),
+	];
 	let burn_core_script_payload =
 		TransactionPayload::Script(Script::new(burn_core_code, vec![], burn_core_args));
 	let burn_core_script_transaction =
