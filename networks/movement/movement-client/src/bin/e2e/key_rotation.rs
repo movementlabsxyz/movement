@@ -155,7 +155,6 @@ async fn main() -> Result<(), anyhow::Error> {
 		.private_key()
 		.sign_arbitrary_message(&rotation_capability_proof_msg);
 
-	// Do a test signing
 	let is_valid = verify_signature(
 		&core_resources_account.public_key().to_bytes(),
 		&rotation_capability_proof_msg,
@@ -210,10 +209,13 @@ async fn main() -> Result<(), anyhow::Error> {
 				.as_str(),
 		)?,
 		new_public_key: Vec::from(recipient.public_key().to_bytes()),
-		sequence_number: core_resources_account.sequence_number(),
+		sequence_number: core_resources_account.increment_sequence_number(),
 	};
 
+	// Serialize the rotation proof challenge
 	let rotation_message = bcs::to_bytes(&rotation_proof).unwrap();
+
+	// Sign the rotation message from the sender and recipient private keys
 	let signature_by_curr_privkey =
 		core_resources_account.private_key().sign_arbitrary_message(&rotation_message);
 	let signature_by_new_privkey =
