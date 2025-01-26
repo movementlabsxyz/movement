@@ -1,3 +1,4 @@
+#![allow(unused_imports)]
 use anyhow::Context;
 use aptos_sdk::coin_client::CoinClient;
 //use aptos_sdk::coin_client::CoinClient;
@@ -117,17 +118,10 @@ async fn main() -> Result<(), anyhow::Error> {
 		.context("Failed in getting chain id")?
 		.into_inner();
 
-	// Generate a new key pair for rotation and fund
-	let new_keypair: KeyPair<Ed25519PrivateKey, PublicKey> =
-		KeyPair::generate(&mut rand::rngs::OsRng);
-	let new_public_key: PublicKey = new_keypair.public_key.clone();
+	//Generate recepient account
+	let recipient = LocalAccount::generate(&mut rand::rngs::OsRng);
 
 	let recipient_seq_num = 0_u64;
-
-	let recipient = LocalAccount::from_private_key(
-		new_keypair.private_key.to_encoded_string()?.as_str(),
-		recipient_seq_num,
-	)?;
 
 	faucet_client.fund(recipient.address(), 100_000_000_000).await?;
 
@@ -204,7 +198,7 @@ async fn main() -> Result<(), anyhow::Error> {
 				.unwrap()
 				.as_str(),
 		)?,
-		new_public_key: Vec::from(new_public_key.to_bytes()),
+		new_public_key: Vec::from(recipient.public_key().to_bytes()),
 		sequence_number: core_resources_account.sequence_number(),
 	};
 
@@ -212,7 +206,7 @@ async fn main() -> Result<(), anyhow::Error> {
 	let signature_by_curr_privkey =
 		core_resources_account.private_key().sign_arbitrary_message(&rotation_message);
 	let signature_by_new_privkey =
-		new_keypair.private_key.sign_arbitrary_message(&rotation_message);
+		recipient.private_key().sign_arbitrary_message(&rotation_message);
 
 	let rotate_payload = make_entry_function_payload(
 		AccountAddress::from_hex_literal("0x1").unwrap(), // Package address
@@ -223,7 +217,7 @@ async fn main() -> Result<(), anyhow::Error> {
 			bcs::to_bytes(&0u8).unwrap(), // from_scheme (Ed25519)
 			bcs::to_bytes(&core_resources_account.public_key().to_bytes().to_vec()).unwrap(), // from_public_key_bytes
 			bcs::to_bytes(&0u8).unwrap(), // to_scheme (Ed25519)
-			bcs::to_bytes(&new_public_key.to_bytes().to_vec()).unwrap(), // to_public_key_bytes
+			bcs::to_bytes(&recipient.public_key().to_bytes().to_vec()).unwrap(), // to_public_key_bytes
 			bcs::to_bytes(&signature_by_curr_privkey.to_bytes().to_vec()).unwrap(), // cap_rotate_key
 			bcs::to_bytes(&signature_by_new_privkey.to_bytes().to_vec()).unwrap(), // cap_update_table (signature by new private key)
 		],
