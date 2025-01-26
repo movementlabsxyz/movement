@@ -144,7 +144,7 @@ async fn main() -> Result<(), anyhow::Error> {
 		module_name: String::from("account"),
 		struct_name: String::from("RotationCapabilityOfferProofChallengeV2"),
 		chain_id: state.chain_id,
-		sequence_number: core_resources_account.sequence_number(),
+		sequence_number: core_resources_account.increment_sequence_number(),
 		source_address: core_resources_account.address(),
 		recipient_address: recipient.address(),
 	};
