@@ -1,6 +1,21 @@
-use aptos_framework::{BuiltPackage, ReleaseBundle, ReleasePackage};
+use aptos_framework::{ReleaseBundle, ReleasePackage};
 use aptos_release_builder::components::framework::{
 	generate_upgrade_proposals_release_packages_with_repo, FrameworkReleaseConfig,
+};
+use aptos_sdk::{
+	move_types::{
+		identifier::Identifier,
+		language_storage::TypeTag,
+		language_storage::{ModuleId, StructTag},
+	},
+	types::{
+		account_address::AccountAddress,
+		chain_id::ChainId,
+		transaction::{
+			EntryFunction, RawTransaction, Script, TransactionArgument, TransactionPayload,
+		},
+		LocalAccount,
+	},
 };
 use std::sync::Arc;
 
@@ -13,6 +28,46 @@ pub enum ReleaseBundleError {
 
 pub trait Release {
 	fn release(&self) -> Result<ReleaseBundle, ReleaseBundleError>;
+}
+
+pub fn build_release_bundle_transactions(
+	release_bundle: &ReleaseBundle,
+) -> Result<Vec<RawTransaction>, ReleaseBundleError> {
+	let mut built_packages = vec![];
+	for release_package in &release_bundle.packages {
+		let built_package = release_package.build()?;
+		built_packages.push(built_package);
+	}
+	Ok(built_packages)
+}
+
+pub fn build_release_package_transaction(
+	release_package: &ReleasePackage,
+) -> Result<RawTransaction, ReleaseBundleError> {
+	let code = fs::read(
+		"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/burn_from.mv",
+	)?;
+
+	let args = vec![
+		TransactionArgument::Address(dead_address),
+		TransactionArgument::U64(1),
+		TransactionArgument::U8Vector(
+			StructTag {
+				address: AccountAddress::from_hex_literal("0x1")?,
+				module: Identifier::new("coin")?,
+				name: Identifier::new("BurnCapability")?,
+				type_args: vec![StructTag {
+					address: AccountAddress::from_hex_literal("0x1")?,
+					module: Identifier::new("aptos_coin")?,
+					name: Identifier::new("AptosCoin")?,
+					type_args: vec![],
+				}
+				.into()],
+			}
+			.access_vector(),
+		),
+	];
+	let script_payload = TransactionPayload::Script(Script::new(code, vec![], args));
 }
 
 /// To form a commit hash porposer, at the lowest level we use [generate_upgrade_proposals_with_repo] function to generate the scripts.

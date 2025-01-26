@@ -10459,6 +10459,7 @@ dependencies = [
  "aptos-cached-packages",
  "aptos-framework",
  "aptos-release-builder",
+ "aptos-sdk",
  "thiserror 1.0.69",
 ]
 

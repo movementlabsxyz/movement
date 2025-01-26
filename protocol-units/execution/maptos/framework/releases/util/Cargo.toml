@@ -13,6 +13,7 @@ version = { workspace = true }
 path = "src/lib.rs"
 
 [dependencies]
+aptos-sdk = { workspace = true }
 aptos-framework = { workspace = true }
 aptos-cached-packages = { workspace = true }
 thiserror = { workspace = true }

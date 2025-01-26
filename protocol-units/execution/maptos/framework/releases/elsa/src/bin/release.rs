@@ -49,7 +49,12 @@ async fn main() -> Result<(), anyhow::Error> {
 		// let temp_path = temp_dir.path().join(format!("{}.move", release_package.name()));
 
 		// use the path working directory/proposals/script_name.move
-		let temp_path = temp_dir.path().join(format!("{}.proposal.move", release_package.name()));
+		// use the crate root as the working directory
+		let working_directory =
+			std::env::current_dir().context("failed to get current directory")?;
+		let temp_path = working_directory
+			.join("proposals")
+			.join(format!("{}.move", release_package.name()));
 
 		release_package.generate_script_proposal_testnet(aptos_test_root_address(), temp_path)?;
 	}
