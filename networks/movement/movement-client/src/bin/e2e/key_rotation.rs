@@ -19,8 +19,9 @@ use movement_client::types::LocalAccount;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
-use tokio::process::Command;
+//use tokio::process::Command;
 use tracing::info;
+use tracing_subscriber::EnvFilter;
 use url::Url;
 
 /// limit of gas unit
@@ -78,7 +79,11 @@ struct RotationCapabilityOfferProofChallengeV2 {
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
-	let _ = Command::new("rm").arg("-rf").arg("./movement").output().await?;
+	tracing_subscriber::fmt()
+		.with_env_filter(
+			EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
+		)
+		.init();
 
 	// Initialize clients
 	let rest_client = Client::new(NODE_URL.clone());
