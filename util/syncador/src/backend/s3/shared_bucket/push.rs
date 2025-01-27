@@ -25,8 +25,8 @@ impl Push {
 
 	pub(crate) async fn upload_path(
 		&self,
-		relative_path: &std::path::Path,
-		full_path: &std::path::Path,
+		relative_path: std::path::PathBuf,
+		full_path: std::path::PathBuf,
 	) -> Result<(PutObjectOutput, PathBuf), anyhow::Error> {
 		let bucket = self.bucket_connection.bucket.clone();
 		let key =
@@ -55,7 +55,7 @@ impl Push {
 		// upload each file
 		let mut manifest_futures = Vec::new();
 		for (relative_path, full_path) in path_tuples {
-			let future = self.upload_path(&relative_path, &full_path);
+			let future = self.upload_path(relative_path, full_path);
 			manifest_futures.push(future);
 		}
 
