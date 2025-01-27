@@ -91,11 +91,20 @@ fn split_archive<P: AsRef<Path>>(
 	let output_dir = root_dir.as_ref();
 
 	// Check the file size before proceeding with the split
+	let file_metadata = std::fs::metadata(&archive)?;
+	let file_size = file_metadata.len() as usize;
+	println!("Push split file size{file_size} chunksize:{chunk_size}",);
+
 	if file_size <= chunk_size {
 		return Ok(vec![archive]);
 	}
 
 	let archive_file = File::open(&archive)?;
+
+	let file_metadata = std::fs::metadata(&archive)?;
+	let file_size = file_metadata.len() as usize;
+	println!("PUSH {archive:?} archive_file size: {file_size}",);
+
 	std::fs::create_dir_all(output_dir)?;
 
 	let mut chunk_num = 0;
@@ -137,7 +146,7 @@ fn split_archive<P: AsRef<Path>>(
 
 		let file_metadata = std::fs::metadata(&chunk_path)?;
 		let file_size = file_metadata.len() as usize;
-		println!("PUSH {chunk_path:?} chunk_file size: {file_size}",);
+		println!("{chunk_path:?} chunk_file size: {file_size}",);
 
 		chunk_num += 1;
 		chunk_list.push(chunk_path);
@@ -146,5 +155,6 @@ fn split_archive<P: AsRef<Path>>(
 		}
 	}
 
+	println!("split_archive return {chunk_list:?}",);
 	Ok(chunk_list)
 }
