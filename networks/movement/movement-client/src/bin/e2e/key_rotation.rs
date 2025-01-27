@@ -28,6 +28,7 @@ use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
+use tokio::process::Command;
 use url::Url;
 
 /// limit of gas unit
@@ -91,6 +92,8 @@ struct RotationCapabilityOfferProofChallengeV2 {
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
+	let _remove_movement_dir = Command::new("rm").arg("-rf").arg("./movement").output();
+
 	// Initialize clients
 	let rest_client = Client::new(NODE_URL.clone());
 	let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
@@ -141,17 +144,12 @@ async fn main() -> Result<(), anyhow::Error> {
 	println!("Recipient's balance: {:?}", recipient_bal);
 	println!("Core Resources Account balance: {:?}", core_resource_bal);
 
-	// Note that the offer_rotation_capability call requires the
-	// sequence number field to be 1+ the current state. For exeuction this will be too
-	// high, so we decrement the account state back before the offer_rotation_capability call
-
 	// --- Offer Rotation Capability -
 	let rotation_capability_proof = RotationCapabilityOfferProofChallengeV2 {
 		account_address: CORE_CODE_ADDRESS,
 		module_name: String::from("account"),
 		struct_name: String::from("RotationCapabilityOfferProofChallengeV2"),
 		chain_id: state.chain_id,
-
 		sequence_number: core_resources_account.increment_sequence_number(),
 		source_address: core_resources_account.address(),
 		recipient_address: recipient.address(),
@@ -189,28 +187,30 @@ async fn main() -> Result<(), anyhow::Error> {
 	println!("Offer Payload: {:?}", offer_payload);
 
 	// As mentioned above, for actual execution we must decrement the sequence number
-	core_resources_account.decrement_sequence_number();
+	core_resources_account.decrement_sequence_number(); //
 
 	let offer_response =
 		send_aptos_transaction(&rest_client, &mut core_resources_account, offer_payload).await?;
 
 	println!("Offer transaction response: {:?}", offer_response);
 
+	//creaet a println that creates a few line breaks
+	println!("\n\n");
+	println!(
+		"core_resources_account curr seq number is: {:?}",
+		core_resources_account.sequence_number(),
+	);
+
 	// --- Rotate Authentication Key ---
+
 	let rotation_proof = RotationProofChallenge {
+		account_address: CORE_CODE_ADDRESS,
 		module_name: String::from("account"),
 		struct_name: String::from("RotationProofChallenge"),
-		account_address: core_resources_account.address(),
-		originator: core_resources_account.address(),
-		current_auth_key: AccountAddress::from_str(
-			core_resources_account
-				.authentication_key()
-				.to_encoded_string()
-				.unwrap()
-				.as_str(),
-		)?,
-		new_public_key: Vec::from(recipient.public_key().to_bytes()),
 		sequence_number: core_resources_account.increment_sequence_number(),
+		originator: core_resources_account.address(),
+		current_auth_key: AccountAddress::from_bytes(core_resources_account.authentication_key())?,
+		new_public_key: recipient.public_key().to_bytes().to_vec(),
 	};
 
 	// Serialize the rotation proof challenge
@@ -239,12 +239,23 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	println!("Rotate Payload: {:?}", rotate_payload);
 
+	println!("\n\n");
+
+	core_resources_account.decrement_sequence_number();
+
+	println!(
+		"core_resources_account curr seq number is: {:?}",
+		core_resources_account.sequence_number()
+	);
+
 	let rotate_response =
 		send_aptos_transaction(&rest_client, &mut core_resources_account, rotate_payload).await?;
 
 	println!("Rotate transaction response: {:?}", rotate_response);
 
 	Ok(())
+
+	//Sequence number correct for execution
 }
 
 fn make_entry_function_payload(
