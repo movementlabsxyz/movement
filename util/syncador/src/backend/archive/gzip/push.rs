@@ -25,8 +25,8 @@ impl Push {
 	/// Tar GZips a manifest.
 	fn tar_gzip_manifest(
 		manifest: PackageElement,
-		root_dir: PathBuf,
 		destination: PathBuf,
+		root_dir: PathBuf,
 		chunk_size: usize,
 		buffer_size: usize,
 	) -> Result<PackageElement, anyhow::Error> {
@@ -60,13 +60,22 @@ impl PushOperations for Push {
 	async fn push(&self, package: Package) -> Result<Package, anyhow::Error> {
 		let mut manifests = Vec::new();
 		for (i, manifest) in package.0.into_iter().enumerate() {
-			let new_manifest = Self::tar_gzip_manifest(
-				manifest,
-				self.archives_dir.clone(),
-				self.archives_dir.join(format!("{}.tar.gz", i)),
-				self.chunk_size,
-				self.buffer_size,
-			)?;
+			let new_manifest = tokio::task::spawn_blocking({
+				let archive_dir = self.archives_dir.clone();
+				let chunk_size = self.chunk_size;
+				let buffer_size = self.buffer_size;
+
+				move || {
+					Self::tar_gzip_manifest(
+						manifest,
+						archive_dir.join(format!("{}.tar.gz", i)),
+						archive_dir,
+						chunk_size,
+						buffer_size,
+					)
+				}
+			})
+			.await??;
 			manifests.push(new_manifest);
 		}
 		Ok(Package(manifests))

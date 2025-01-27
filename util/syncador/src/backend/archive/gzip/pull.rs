@@ -63,7 +63,8 @@ impl Pull {
 		// Unpack each archive in the manifest
 		for (_relative_path, absolute_path) in manifest.try_path_tuples()? {
 			// Recreate splited file if any
-			let absolute_path = recreate_archive(absolute_path.to_path_buf())?;
+			let path_buf = absolute_path.to_path_buf();
+			let absolute_path = task::spawn_blocking(move || recreate_archive(path_buf)).await??;
 
 			println!("PULL absolute_path {absolute_path:?}",);
 			println!("PULL destination {destination:?}",);
