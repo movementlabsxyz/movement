@@ -141,40 +141,40 @@ borsh = { version = "0.10" } # todo: internalize jmt and bump
 
 ### We use a forked version so that we can override dependency versions. This is required
 ### to be avoid dependency conflicts with other Sovereign Labs crates.
-aptos-api = { git = "https://github.com/movementlabsxyz/aptos-core", branc = "movement" }
-aptos-api-types = { git = "https://github.com/movementlabsxyz/aptos-core", branc = "movement" }
-aptos-bitvec = { git = "https://github.com/movementlabsxyz/aptos-core", branc = "movement" }
-aptos-block-executor = { git = "https://github.com/movementlabsxyz/aptos-core.git", branc = "movement" }
-aptos-cached-packages = { git = "https://github.com/movementlabsxyz/aptos-core", branc = "movement" }
-aptos-config = { git = "https://github.com/movementlabsxyz/aptos-core", branc = "movement" }
-aptos-consensus-types = { git = "https://github.com/movementlabsxyz/aptos-core", branc = "movement" }
-aptos-crypto = { git = "https://github.com/movementlabsxyz/aptos-core", branc = "movement", features = [
+aptos-api = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "movement" }
+aptos-api-types = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "movement" }
+aptos-bitvec = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "movement" }
+aptos-block-executor = { git = "https://github.com/movementlabsxyz/aptos-core.git", branch = "movement" }
+aptos-cached-packages = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "movement" }
+aptos-config = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "movement" }
+aptos-consensus-types = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "movement" }
+aptos-crypto = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "movement", features = [
   "cloneable-private-keys",
 ] }
-aptos-db = { git = "https://github.com/movementlabsxyz/aptos-core.git", branc = "movement" }
-aptos-executor = { git = "https://github.com/movementlabsxyz/aptos-core", branc = "movement" }
-aptos-executor-test-helpers = { git = "https://github.com/movementlabsxyz/aptos-core", branc = "movement" }
-aptos-executor-types = { git = "https://github.com/movementlabsxyz/aptos-core", branc = "movement" }
-aptos-faucet-core = { git = "https://github.com/movementlabsxyz/aptos-core", branc = "movement" }
-aptos-framework = { git = "https://github.com/movementlabsxyz/aptos-core", branc = "movement" }
-aptos-language-e2e-tests = { git = "https://github.com/movementlabsxyz/aptos-core", branc = "movement" }
-aptos-mempool = { git = "https://github.com/movementlabsxyz/aptos-core", branc = "movement" }
-aptos-proptest-helpers = { git = "https://github.com/movementlabsxyz/aptos-core", branc = "movement" }
-aptos-sdk = { git = "https://github.com/movementlabsxyz/aptos-core", branc = "movement" }
-aptos-state-view = { git = "https://github.com/movementlabsxyz/aptos-core", branc = "movement" }
-aptos-storage-interface = { git = "https://github.com/movementlabsxyz/aptos-core", branc = "movement" }
-aptos-temppath = { git = "https://github.com/movementlabsxyz/aptos-core", branc = "movement" }
-aptos-types = { git = "https://github.com/movementlabsxyz/aptos-core", branc = "movement" }
-aptos-vm = { git = "https://github.com/movementlabsxyz/aptos-core", branc = "movement" }
-aptos-vm-genesis = { git = "https://github.com/movementlabsxyz/aptos-core", branc = "movement" }
-aptos-vm-logging = { git = "https://github.com/movementlabsxyz/aptos-core", branc = "movement" }
-aptos-vm-validator = { git = "https://github.com/movementlabsxyz/aptos-core", branc = "movement" }
-aptos-logger = { git = "https://github.com/movementlabsxyz/aptos-core", branc = "movement" }
-aptos-vm-types = { git = "https://github.com/movementlabsxyz/aptos-core", branc = "movement" }
-aptos-indexer = { git = "https://github.com/movementlabsxyz/aptos-core", branc = "movement" }
-aptos-indexer-grpc-fullnode = { git = "https://github.com/movementlabsxyz/aptos-core", branc = "movement" }
-aptos-indexer-grpc-table-info = { git = "https://github.com/movementlabsxyz/aptos-core", branc = "movement" }
-aptos-protos = { git = "https://github.com/movementlabsxyz/aptos-core", branc = "movement" }
+aptos-db = { git = "https://github.com/movementlabsxyz/aptos-core.git", branch = "movement" }
+aptos-executor = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "movement" }
+aptos-executor-test-helpers = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "movement" }
+aptos-executor-types = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "movement" }
+aptos-faucet-core = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "movement" }
+aptos-framework = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "movement" }
+aptos-language-e2e-tests = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "movement" }
+aptos-mempool = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "movement" }
+aptos-proptest-helpers = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "movement" }
+aptos-sdk = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "movement" }
+aptos-state-view = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "movement" }
+aptos-storage-interface = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "movement" }
+aptos-temppath = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "movement" }
+aptos-types = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "movement" }
+aptos-vm = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "movement" }
+aptos-vm-genesis = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "movement" }
+aptos-vm-logging = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "movement" }
+aptos-vm-validator = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "movement" }
+aptos-logger = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "movement" }
+aptos-vm-types = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "movement" }
+aptos-indexer = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "movement" }
+aptos-indexer-grpc-fullnode = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "movement" }
+aptos-indexer-grpc-table-info = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "movement" }
+aptos-protos = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "movement" }
 
 # Indexer
 processor = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors", rev = "77a36245400250e7d8a854360194288d078681bc" }
