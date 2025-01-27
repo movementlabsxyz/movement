@@ -40,8 +40,8 @@ name = "movement-tests-e2e-ggp-gas-fee"
 path = "src/bin/e2e/ggp_gas_fee.rs"
 
 [[bin]]
-name = "movement-tests-e2e-lock-mint"
-path = "src/bin/e2e/lock_mint.rs"
+name = "movement-tests-e2e-mint-burn"
+path = "src/bin/e2e/mint_burn.rs"
 
 
 [dependencies]

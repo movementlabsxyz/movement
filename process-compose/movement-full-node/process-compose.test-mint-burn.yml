@@ -13,9 +13,9 @@ processes:
     command : |
       movement-faucet-service run-simple --do-not-delegate
 
-  test-lock-mint:
+  test-mint-burn:
     command: |
-      cargo run --bin movement-tests-e2e-lock-mint
+      cargo run --bin movement-tests-e2e-mint-burn
     depends_on:
       movement-full-node:
         condition: process_healthy

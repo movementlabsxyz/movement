@@ -116,14 +116,14 @@ async fn main() -> Result<(), anyhow::Error> {
 			.as_str(),
 		0,
 	)?;
-	println!(
+	tracing::info!(
 		"resource account keypairs: {:?}, {:?}",
 		core_resources_account.private_key(),
 		core_resources_account.public_key()
 	);
-	println!("Core Resources Account address: {}", core_resources_account.address());
+	tracing::info!("Core Resources Account address: {}", core_resources_account.address());
 
-	println!("Created core resources account");
+	tracing::info!("Created core resources account");
 
 	// core_resources_account is already funded with u64 max value
 	// Create dead account
@@ -170,7 +170,7 @@ async fn main() -> Result<(), anyhow::Error> {
 		.await
 		.context("Failed to retrieve core resources account balance")?;
 
-	println!("Core account balance: {}, Dead account balance: {}", core_balance, dead_balance);
+	tracing::info!("Core account balance: {}, Dead account balance: {}", core_balance, dead_balance);
 
 	Command::new("movement")
 		.args(["move", "compile", "--package-dir", "protocol-units/bridge/move-modules"])
@@ -229,7 +229,7 @@ async fn main() -> Result<(), anyhow::Error> {
 		.context("Failed to store_mint_burn_caps script transaction")?;
 	core_resources_account.increment_sequence_number();
 
-	println!("Bridge feature enabled and mint burn caps stored");
+	tracing::info!("Bridge feature enabled and mint burn caps stored");
 
 	let burn_dead_code = fs::read(combined_path.join("burn_from.mv"))?;
 	let burn_dead_args =
@@ -289,7 +289,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	core_resources_account.increment_sequence_number();
 
-	println!("Script burn transactions successfully executed.");
+	tracing::info!("Script burn transactions successfully executed.");
 
 	assert!(
 		coin_client
@@ -298,9 +298,6 @@ async fn main() -> Result<(), anyhow::Error> {
 			.context("Failed to retrieve core resources account new balance")?
 			== desired_core_balance
 	);
-	// Transfer L1 move desired amount to L1 bridge address
-	// not needed to cover as its a simple bridge, what matters is transferring the correct amount without initiating a bridge attempt
-	// Manual check of if Relayer address balance on L2 equals to L1 bridge address
 
 	Ok(())
 }
