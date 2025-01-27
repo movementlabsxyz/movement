@@ -1,50 +1,48 @@
 #![allow(unused_imports)]
-use anyhow::{Chain, Context};
-use movement_client::crypto::ValidCryptoMaterialStringExt;
 
-use aptos_sdk::types::{
-	account_address::AccountAddress,
-	chain_id::ChainId,
-	transaction::{EntryFunction, Script, TransactionArgument},
-	AccountKey, LocalAccount,
-};
+use anyhow::{Chain, Context};
 use aptos_sdk::{
-	crypto::ed25519::ed25519_keys::Ed25519PublicKey,
-	crypto::multi_ed25519::MultiEd25519PublicKey,
+	crypto::{ed25519::ed25519_keys::Ed25519PublicKey, multi_ed25519::MultiEd25519PublicKey},
 	move_types::{
 		identifier::Identifier,
 		language_storage::{ModuleId, StructTag, TypeTag},
 	},
-	rest_client::Account,
-};
-use aptos_sdk::{
 	rest_client::{
 		aptos_api_types::{
 			Address, EntryFunctionId, IdentifierWrapper, MoveModule, MoveModuleId, MoveStructTag,
 			MoveType, ViewRequest,
 		},
-		Response,
+		Account, Response,
 	},
 	transaction_builder::TransactionBuilder,
+	types::{
+		account_address::AccountAddress,
+		chain_id::ChainId,
+		transaction::{EntryFunction, Script, TransactionArgument},
+		AccountKey, LocalAccount,
+	},
 };
 use aptos_types::{
 	account_config::aptos_test_root_address, test_helpers::transaction_test_helpers,
 	transaction::TransactionPayload,
 };
+use buildtime_helpers::cargo::cargo_workspace;
 use movement_client::{
 	coin_client::CoinClient,
+	crypto::ValidCryptoMaterialStringExt,
 	rest_client::{Client, FaucetClient},
 };
 use once_cell::sync::Lazy;
 use rayon::vec;
-use std::process::Command;
-use std::str::FromStr;
-use std::time::{SystemTime, UNIX_EPOCH};
-use std::{env, fs};
+use std::{
+	env, fs,
+	path::PathBuf,
+	process::Command,
+	str::FromStr,
+	time::{SystemTime, UNIX_EPOCH},
+};
 use tracing;
 use url::Url;
-use buildtime_helpers::cargo::cargo_workspace;
-use std::path::PathBuf;
 
 static SUZUKA_CONFIG: Lazy<movement_config::Config> = Lazy::new(|| {
 	let dot_movement = dot_movement::DotMovement::try_from_env().unwrap();
@@ -170,7 +168,11 @@ async fn main() -> Result<(), anyhow::Error> {
 		.await
 		.context("Failed to retrieve core resources account balance")?;
 
-	tracing::info!("Core account balance: {}, Dead account balance: {}", core_balance, dead_balance);
+	tracing::info!(
+		"Core account balance: {}, Dead account balance: {}",
+		core_balance,
+		dead_balance
+	);
 
 	Command::new("movement")
 		.args(["move", "compile", "--package-dir", "protocol-units/bridge/move-modules"])
