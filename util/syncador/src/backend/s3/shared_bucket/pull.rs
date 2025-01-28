@@ -87,6 +87,26 @@ impl Pull {
 			candidates.entry(candidate).or_insert_with(HashSet::new).insert(file_path);
 		}
 
+		//filter all path with only the one that contains the complete upload marker file.
+		let to_remove: Vec<_> = candidates
+			.iter()
+			.filter_map(|(key, set)| {
+				if set
+					.iter()
+					.find(|path| path.ends_with(super::UPLOAD_COMPLETE_MARKER_FILE_NAME))
+					.is_none()
+				{
+					Some(key.clone())
+				} else {
+					None
+				}
+			})
+			.collect();
+		println!("S3 PUSH to_remove: {to_remove:?}",);
+		to_remove.iter().for_each(|key| {
+			candidates.remove(key);
+		});
+
 		Ok(candidates.keys().cloned().collect())
 	}
 
@@ -140,6 +160,10 @@ impl Pull {
 		// download each file
 		let mut manifest_futures = Vec::new();
 		for file_path in file_paths {
+			//remove complte marker file
+			if file_path.ends_with(super::UPLOAD_COMPLETE_MARKER_FILE_NAME) {
+				continue;
+			}
 			let relative_path = PathBuf::from(
 				file_path
 					.strip_prefix(format!("{}/", candidate.key).as_str())
