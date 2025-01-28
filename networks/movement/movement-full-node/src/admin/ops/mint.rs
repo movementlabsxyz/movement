@@ -1,11 +1,12 @@
 #[allow(unused_imports)]
 use anyhow::Context;
+use tokio::process::Command;
 use crate::common_args::MovementArgs;
-use aptos_sdk::{coin_client::CoinClient, rest_client::{Client, FaucetClient}, transaction_builder::TransactionBuilder, types::{chain_id::ChainId, transaction::EntryFunction, LocalAccount}};
-use clap::Parser;
+use aptos_sdk::{coin_client::CoinClient, move_types::language_storage::StructTag, rest_client::{Client, FaucetClient}, transaction_builder::TransactionBuilder, types::{chain_id::ChainId, transaction::{EntryFunction, Script, TransactionArgument}, LocalAccount}};
+use clap::{Parser};
 use once_cell::sync::Lazy;
 use url::Url;
-use std::{str::FromStr, time::{SystemTime, UNIX_EPOCH}};
+use std::{fs, str::FromStr, time::{SystemTime, UNIX_EPOCH}};
 use aptos_sdk::{
 	coin_client::CoinClient,
 	crypto::{SigningKey, ValidCryptoMaterialStringExt},
@@ -114,21 +115,41 @@ impl Mint {
 			.maptos_private_key
 			.to_string();
 
-		let create_dead_transaction =
-		core_resources_account.sign_with_transaction_builder(TransactionBuilder::new(
-			TransactionPayload::EntryFunction(EntryFunction::new(
-				ModuleId::new(
-					AccountAddress::from_hex_literal("0x1")?,
-					Identifier::new("aptos_account")?,
-				),
-				Identifier::new("create_account")?,
-				vec![],
-				vec![bcs::to_bytes(&dead_address)?],
-			)),
-			SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60,
-			ChainId::new(chain_id),
-		).sequence_number(core_resources_account.sequence_number()));
+			let compile_status = Command::new("movement")
+			.args([
+				"move",
+				"compile",
+				"--package-dir",
+				"networks/movement/movement-full-node/ops/move-modules",
+			])
+			.status()
+			.await
+			.expect("Failed to execute `movement compile` command");
 
+		let code = fs::read("networks/movement/movement-full-node/ops/move-modules/burn_from.move")?;
+
+		let args = vec![TransactionArgument::Address(dead_address), TransactionArgument::U64(1), TransactionArgument::U8Vector(StructTag {
+			address: AccountAddress::from_hex_literal("0x1")?,
+			module: Identifier::new("coin")?,
+			name: Identifier::new("BurnCapability")?,
+			type_args: vec![StructTag{
+				address: AccountAddress::from_hex_literal("0x1")?,
+				module: Identifier::new("aptos_coin")?,
+				name: Identifier::new("AptosCoin")?,
+				type_args: vec![],
+			}.into()],
+		}.access_vector())];
+
+		let script_payload = TransactionPayload::Script(Script::new(code, vec![], args));
+	
+		let tx_response = rest_client.submit_and_wait(&core_resources_account.sign_with_transaction_builder(
+			TransactionBuilder::new(
+				script_payload,
+				SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60,
+				ChainId::new(chain_id),
+			).sequence_number(core_resources_account.sequence_number())
+		)).await?;
+		
 		Ok(())
 	}
 }
