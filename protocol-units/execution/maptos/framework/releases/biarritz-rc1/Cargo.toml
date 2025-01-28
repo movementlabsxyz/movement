@@ -1,0 +1,45 @@
+[package]
+name = "aptos-framework-biarritz-rc1-release"
+description = "Executor for the AptosVM"
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+
+version = { workspace = true }
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "aptos-framework-biarritz-rc1-release-tool"
+path = "src/bin/release.rs"
+
+[dependencies]
+maptos-framework-release-util = { workspace = true }
+movement-config = { workspace = true }
+movement-client = { workspace = true }
+once_cell = { workspace = true }
+aptos-framework = { workspace = true }
+tokio = { workspace = true }
+anyhow = { workspace = true}
+url = { workspace = true }
+dot-movement = { workspace = true }
+tempfile = { workspace = true }
+bcs = { workspace = true }
+aptos-framework-bump-gas-release = { workspace = true }
+
+[build-dependencies]
+maptos-framework-release-util = { workspace = true }
+movement-config = { workspace = true }
+movement-client = { workspace = true }
+once_cell = { workspace = true }
+aptos-framework = { workspace = true }
+tokio = { workspace = true }
+anyhow = { workspace = true}
+url = { workspace = true }
+dot-movement = { workspace = true }
+tempfile = { workspace = true }
+bcs = { workspace = true }
+

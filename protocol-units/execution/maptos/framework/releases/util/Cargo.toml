@@ -20,3 +20,7 @@ thiserror = { workspace = true }
 aptos-release-builder = { workspace = true }
 anyhow = { workspace = true }
 bcs = { workspace = true }
+movement = { workspace = true }
+move-package = { workspace = true }
+tempfile = { workspace = true }
+toml = { workspace = true }

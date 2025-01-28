@@ -3,6 +3,8 @@ use aptos_config::config::StorageDirPaths;
 use aptos_crypto::ed25519::Ed25519PublicKey;
 use aptos_db::AptosDB;
 use aptos_executor::db_bootstrapper;
+use aptos_gas_schedule::{AptosGasParameters, InitialGasSchedule, ToOnChainGasSchedule};
+use aptos_sdk::move_types::gas_algebra::GasQuantity;
 use aptos_storage_interface::DbReaderWriter;
 use aptos_types::{
 	chain_id::ChainId,
@@ -11,9 +13,7 @@ use aptos_types::{
 	validator_signer::ValidatorSigner,
 };
 use aptos_vm::AptosVM;
-use aptos_vm_genesis::{
-	default_gas_schedule, encode_genesis_change_set, GenesisConfiguration, TestValidator, Validator,
-};
+use aptos_vm_genesis::{encode_genesis_change_set, GenesisConfiguration, TestValidator, Validator};
 use maptos_framework_release_util::Release;
 use tracing::warn;
 
@@ -36,6 +36,16 @@ fn genesis_change_set_and_validators(
 	// to avoid overflowing calculations in aptos-vm-genesis.
 	// This will last several centuries.
 	const EPOCH_DURATION_SECS: u64 = 60 * 60 * 24 * 1024 * 128;
+
+	let mut gas_parameters = AptosGasParameters::initial();
+	gas_parameters.vm.txn.max_transaction_size_in_bytes = GasQuantity::new(100_000_000);
+	gas_parameters.vm.txn.max_execution_gas = GasQuantity::new(10_000_000_000);
+
+	let gas_schedule = aptos_types::on_chain_config::GasScheduleV2 {
+		feature_version: aptos_gas_schedule::LATEST_GAS_FEATURE_VERSION,
+		entries: gas_parameters
+			.to_on_chain_gas_schedule(aptos_gas_schedule::LATEST_GAS_FEATURE_VERSION),
+	};
 
 	let genesis = encode_genesis_change_set(
 		&public_key,
@@ -64,7 +74,7 @@ fn genesis_change_set_and_validators(
 		},
 		&OnChainConsensusConfig::default_for_genesis(),
 		&OnChainExecutionConfig::default_for_genesis(),
-		&default_gas_schedule(),
+		&gas_schedule,
 	);
 	Ok((genesis, test_validators))
 }

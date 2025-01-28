@@ -1,4 +1,7 @@
+pub mod compiler;
+
 use aptos_framework::{ReleaseBundle, ReleasePackage};
+use aptos_release_builder::aptos_framework_path;
 use aptos_release_builder::components::framework::{
 	generate_upgrade_proposals_release_packages_with_repo, FrameworkReleaseConfig,
 };
@@ -15,6 +18,7 @@ use aptos_sdk::{
 	},
 };
 use std::future::Future;
+use std::path::PathBuf;
 
 use std::error;
 
@@ -236,10 +240,16 @@ pub trait Release {
 
 		// wait for the transactions to be executed
 		for transaction in &submitted_transactions {
-			client
-				.wait_for_signed_transaction_bcs(transaction)
-				.await
-				.map_err(|e| ReleaseBundleError::Proposing(Box::new(e)))?;
+			client.wait_for_signed_transaction_bcs(transaction).await.map_err(|e| {
+				ReleaseBundleError::Proposing(
+					format!(
+						"waiting for transaction {:?} failed with: {:?}",
+						transaction.committed_hash(),
+						e
+					)
+					.into(),
+				)
+			})?;
 		}
 
 		Ok(submitted_transactions)
@@ -272,6 +282,7 @@ pub trait Release {
 
 		// vote through the proposals
 		// todo: currently we are not voting through the proposals, the scripts will simply execute under the root signer
+		// write out the bytecode for t
 
 		Ok(completed_proposals)
 	}
@@ -321,15 +332,37 @@ fn build_release_package_transaction_payload(
 	args: Vec<TransactionArgument>,
 	release_package: &ReleasePackage,
 ) -> Result<TransactionPayload, ReleaseBundleError> {
-	let code: Vec<u8> =
-		release_package.code().iter().flat_map(|slice| slice.iter().cloned()).collect();
+	println!("release_package_code: {:?}", release_package.code().len());
+
+	let script_path = PathBuf::from("proposal.move");
+	release_package
+		.generate_script_proposal_testnet(AccountAddress::ONE, script_path.clone())
+		.map_err(|e| {
+			ReleaseBundleError::Build(
+				format!("failed to generate script proposal for release package: {:?}", e).into(),
+			)
+		})?;
+
+	let compiler = compiler::Compiler::new(
+		"doesn't matter",
+		"doesn't matter",
+		6,
+		Some(aptos_framework_path()),
+	);
+	let code = compiler
+		.compile_in_temp_dir_to_bytecode("proposal", script_path.as_path())
+		.map_err(|e| {
+			ReleaseBundleError::Build(
+				format!("failed to compile script in temp dir to bytecode: {:?}", e).into(),
+			)
+		})?;
 
 	let script_payload = TransactionPayload::Script(Script::new(code, vec![], args));
 
 	Ok(script_payload)
 }
 
-/// To form a commit hash porposer, at the lowest level we use [generate_upgrade_proposals_with_repo] function to generate the scripts.
+/// To form a commit hash proposer, at the lowest level we use [generate_upgrade_proposals_with_repo] function to generate the scripts.
 /// We then write these scripts out to a proposal directory in line with the implementation here: https://github.com/movementlabsxyz/aptos-core/blob/ac9de113a4afec6a26fe587bb92c982532f09d3a/aptos-move/aptos-release-builder/src/components/mod.rs#L563
 /// We then need to compile the code to form [ReleasePackage]s which are then used to form [ReleaseBundle]s.
 /// To do this, we need to form a [BuiltPackage] from the scripts I BELIEVE.
@@ -383,11 +416,12 @@ macro_rules! mrb_release {
 
 		// Define the constant with the byte data
 		#[cfg(unix)]
-		const $bytes_name: &[u8] = include_bytes!(concat!("target", "/", "mrb_cache", "/", $path));
+		const $bytes_name: &[u8] =
+			include_bytes!(concat!("..", "/", "target", "/", "mrb_cache", "/", $path));
 
 		#[cfg(windows)]
 		const $bytes_name: &[u8] =
-			include_bytes!(concat!("target", "\\", "mrb_cache", "\\", $path));
+			include_bytes!(concat!("..", "\\", "target", "\\", "mrb_cache", "\\", $path));
 
 		// Define the struct implementing Release
 		pub struct $struct_name;
@@ -404,6 +438,65 @@ macro_rules! mrb_release {
 					.map_err(|e| ReleaseBundleError::Build(e.into()))?;
 				Ok(release_bundle)
 			}
+		}
+	};
+}
+
+#[macro_export]
+macro_rules! commit_hash_with_script {
+	($name:ident, $repo:expr, $commit_hash:expr, $bytecode_version:expr, $mrb_file:expr, $cache_env_var:expr) => {
+		use anyhow::Context;
+		use std::path::PathBuf;
+
+		use aptos_framework::ReleaseBundle;
+		use maptos_framework_release_util::{CommitHash, Release, ReleaseBundleError};
+
+		pub static REPO: &str = $repo;
+		pub static COMMIT_HASH: &str = $commit_hash;
+		pub static BYTECODE_VERSION: u32 = $bytecode_version;
+		pub static CACHE_RELEASE: &str = $cache_env_var;
+		pub static CACHE_ALL_RELEASES: &str = "CACHE_ALL_FRAMEWORK_RELEASES";
+		pub static MRB_FILE: &str = $mrb_file;
+
+		/// Builds a release for the specified framework.
+		/// This is a wrapper around the [CommitHash] builder.
+		pub struct $name(CommitHash);
+
+		impl $name {
+			pub fn new() -> Self {
+				Self(CommitHash::new(REPO, COMMIT_HASH, &BYTECODE_VERSION))
+			}
+		}
+
+		impl Release for $name {
+			fn release_bundle(&self) -> Result<ReleaseBundle, ReleaseBundleError> {
+				self.0.release_bundle()
+			}
+		}
+
+		pub fn main() -> Result<(), anyhow::Error> {
+			// Write to target/cache/<mrb_file>
+			let target_cache_dir = PathBuf::from("target/mrb_cache");
+			std::fs::create_dir_all(&target_cache_dir)
+				.context("failed to create cache directory")?;
+			let path = target_cache_dir.join(MRB_FILE);
+
+			// if the release is already built and CACHE_RELEASE is set, skip building
+			if (std::env::var(CACHE_ALL_RELEASES).is_ok() || std::env::var(CACHE_RELEASE).is_ok())
+				&& std::fs::metadata(&path).is_ok()
+			{
+				return Ok(());
+			}
+
+			// serialize the release
+			let release = $name::new();
+			let release_bundle = release.release_bundle()?;
+			let serialized_release =
+				bcs::to_bytes(&release_bundle).context("failed to serialize release")?;
+
+			std::fs::write(&path, serialized_release).context("failed to write release")?;
+
+			Ok(())
 		}
 	};
 }

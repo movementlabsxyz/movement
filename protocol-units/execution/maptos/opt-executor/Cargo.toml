@@ -73,6 +73,8 @@ movement-collections = { workspace = true }
 aptos-account-whitelist = { workspace = true }
 maptos-framework-release-util = { workspace = true }
 aptos-framework-known-release = { workspace = true }
+aptos-gas-schedule = { workspace = true }
+aptos-sdk = { workspace = true }
 
 [dev-dependencies]
 dirs = { workspace = true }

@@ -1,0 +1,13 @@
+[package]
+name = "proposal"
+version = "1.0.0"
+authors = []
+
+[addresses]
+
+[dev-addresses]
+
+[dependencies.AptosFramework]
+local = "/Users/l-monninger/.cargo/git/checkouts/aptos-core-1668198cfadb05a3/51c291d/aptos-move/framework/aptos-framework"
+
+[dev-dependencies]

@@ -28,6 +28,7 @@ url = { workspace = true }
 dot-movement = { workspace = true }
 tempfile = { workspace = true }
 bcs = { workspace = true }
+aptos-framework-bump-gas-release = { workspace = true }
 
 [build-dependencies]
 maptos-framework-release-util = { workspace = true }

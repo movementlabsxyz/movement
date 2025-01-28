@@ -13,7 +13,8 @@ use std::path::PathBuf;
 pub fn default_known_framework_release_str() -> String {
 	match std::env::var("KNOWN_FRAMEWORK_RELEASE") {
 		Ok(val) => val,
-		Err(_) => "head".to_string(),
+		// todo: revert to head
+		Err(_) => "elsa".to_string(),
 	}
 }
 

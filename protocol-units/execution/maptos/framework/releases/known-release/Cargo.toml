@@ -19,6 +19,7 @@ path = "src/lib.rs"
 [dependencies]
 maptos-framework-release-util = { workspace = true }
 aptos-framework-elsa-release = { workspace = true }
+aptos-framework-biarritz-rc1-release = { workspace = true }
 aptos-framework-head-release = { workspace = true }
 aptos-framework = { workspace = true }
 tokio = { workspace = true }
