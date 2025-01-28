@@ -2,6 +2,7 @@ pub mod aws_kms;
 pub mod hashi_corp_vault;
 pub mod local;
 
+use anyhow::anyhow;
 use movement_signer::{cryptography::Curve, key::TryFromCanonicalString};
 use serde::{Deserialize, Serialize};
 
@@ -18,6 +19,18 @@ impl SignerIdentifier {
 		C: Curve,
 	{
 		TypedSignerIdentifier::new(self)
+	}
+
+	/// Returns the bytes of the private key if it can be extracted from
+	/// the identifier. This method is only used for testing.
+	pub fn try_raw_private_key(&self) -> Result<Vec<u8>, anyhow::Error> {
+		match self {
+			SignerIdentifier::Local(local::Local { private_key_hex_bytes }) => {
+				let key = hex::decode(private_key_hex_bytes)?;
+				Ok(key)
+			}
+			_ => Err(anyhow!("")),
+		}
 	}
 }
 

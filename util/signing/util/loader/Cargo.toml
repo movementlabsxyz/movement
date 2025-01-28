@@ -10,14 +10,16 @@ publish = { workspace = true }
 rust-version = { workspace = true }
 
 [dependencies]
-anyhow = { workspace = true }
 movement-signer = { workspace = true }
 movement-signer-aws-kms = { workspace = true }
 movement-signer-hashicorp-vault = { workspace = true }
 movement-signer-local = { workspace = true }
+
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+hex = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
-async-trait = { workspace = true }
 tracing = { workspace = true }
 
 [lints]
