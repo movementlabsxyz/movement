@@ -10536,6 +10536,7 @@ name = "movement-full-node"
 version = "0.0.2"
 dependencies = [
  "anyhow",
+ "aptos-sdk",
  "bcs 0.1.4",
  "clap 4.5.21",
  "console-subscriber",
@@ -10555,6 +10556,7 @@ dependencies = [
  "movement-rest",
  "movement-tracing",
  "movement-types",
+ "once_cell",
  "prost 0.13.3",
  "rocksdb",
  "serde_json",
@@ -10564,6 +10566,7 @@ dependencies = [
  "tonic 0.12.3",
  "tracing",
  "tracing-subscriber 0.3.18",
+ "url",
  "zstd 0.13.2",
 ]
 
