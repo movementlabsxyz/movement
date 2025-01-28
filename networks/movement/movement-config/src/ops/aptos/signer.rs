@@ -6,7 +6,7 @@ use std::future::Future;
 /// Errors thrown when attempting to use the config for an Aptos rest client.
 #[derive(Debug, thiserror::Error)]
 pub enum TransactionSignerOperationsError {
-	#[error("building client failed: {0}")]
+	#[error("building transaction signer failed: {0}")]
 	BuildingTransactionSignerOperations(#[source] Box<dyn std::error::Error + Send + Sync>),
 }
 

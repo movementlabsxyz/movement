@@ -1,9 +1,9 @@
 use crate::{ElsaToBiarritzRc1, ElsaToBiarritzRc1Error, MigrateElsaToBiarritzRc1};
 use dot_movement::DotMovement;
-use maptos_framework_release_util::ReleaseSigner;
 use movement_config::{
 	ops::aptos::{
-		framework::releases::release_signer::ReleaseSignerOperations, rest_client::RestClient,
+		framework::releases::release_signer::ReleaseSignerOperations,
+		rest_client::RestClientOperations,
 	},
 	Config,
 };

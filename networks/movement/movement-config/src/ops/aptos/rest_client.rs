@@ -4,20 +4,20 @@ use std::future::Future;
 
 /// Errors thrown when attempting to use the config for an Aptos rest client.
 #[derive(Debug, thiserror::Error)]
-pub enum RestClientError {
-	#[error("building client failed: {0}")]
+pub enum RestClientOperationsError {
+	#[error("building rest client failed: {0}")]
 	BuildingClient(#[source] Box<dyn std::error::Error + Send + Sync>),
 }
 
-/// A trait for [RestClient] operations.
+/// A trait for [RestClientOperations] operations.
 ///
 /// This is useful for managing imports and adding sub implementations.
-pub trait RestClient {
-	fn get_rest_client(&self) -> impl Future<Output = Result<Client, RestClientError>>;
+pub trait RestClientOperations {
+	fn get_rest_client(&self) -> impl Future<Output = Result<Client, RestClientOperationsError>>;
 }
 
-impl RestClient for Config {
-	async fn get_rest_client(&self) -> Result<Client, RestClientError> {
+impl RestClientOperations for Config {
+	async fn get_rest_client(&self) -> Result<Client, RestClientOperationsError> {
 		// get the relevant fields from the config
 		let protocol = "http";
 		let hostname = self
@@ -33,7 +33,7 @@ impl RestClient for Config {
 
 		// build the client
 		let client = Client::new(connection_string.parse().map_err(|e| {
-			RestClientError::BuildingClient(
+			RestClientOperationsError::BuildingClient(
 				format!("failed to parse connection string: {}", e).into(),
 			)
 		})?);
