@@ -45,6 +45,38 @@ impl Push {
 		Ok((output, s3_path.into()))
 	}
 
+	async fn add_marker_file(
+		&self,
+		marker_name: &str,
+	) -> Result<(PutObjectOutput, PathBuf), anyhow::Error> {
+		let bucket = self.bucket_connection.bucket.clone();
+		let marker_key = format!("{}/{}", self.metadata.syncer_epoch_prefix()?, marker_name);
+		let s3_path = format!("s3://{}/{}", bucket, marker_key);
+		let output = self
+			.bucket_connection
+			.client
+			.put_object()
+			.bucket(bucket)
+			.key(marker_key)
+			.body(ByteStream::from_static(b"Upload complete"))
+			.send()
+			.await?;
+		Ok((output, s3_path.into()))
+	}
+
+	// Adapter method for the upload_path and add_marker_file future.
+	async fn add_upload_entry(
+		&self,
+		relative_path: std::path::PathBuf,
+		full_path: std::path::PathBuf,
+		marker_file: Option<&str>,
+	) -> Result<(PutObjectOutput, PathBuf), anyhow::Error> {
+		match marker_file {
+			Some(file) => self.add_marker_file(file).await,
+			None => self.upload_path(relative_path, full_path).await,
+		}
+	}
+
 	pub(crate) async fn upload_based_on_manifest(
 		&self,
 		manifest: PackageElement,
@@ -55,9 +87,17 @@ impl Push {
 		// upload each file
 		let mut manifest_futures = Vec::new();
 		for (relative_path, full_path) in path_tuples {
-			let future = self.upload_path(relative_path, full_path);
+			let future = self.add_upload_entry(relative_path, full_path, None);
 			manifest_futures.push(future);
 		}
+
+		// Add upload completed marker file
+		let future = self.add_upload_entry(
+			Default::default(),
+			Default::default(),
+			Some(super::UPLOAD_COMPLETE_MARKER_FILE_NAME),
+		);
+		manifest_futures.push(future);
 
 		// try to join all the manifest_futures
 		let put_object_outputs = futures::future::try_join_all(manifest_futures).await?;
