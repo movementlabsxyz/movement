@@ -5,6 +5,7 @@ use crate::{bootstrap, Context};
 use aptos_config::config::NodeConfig;
 #[cfg(test)]
 use aptos_crypto::ed25519::Ed25519PrivateKey;
+use aptos_crypto::ed25519::Ed25519PublicKey;
 use aptos_crypto::PrivateKey;
 use aptos_executor::block_executor::BlockExecutor;
 use aptos_mempool::MempoolClientRequest;
@@ -17,7 +18,6 @@ use futures::channel::mpsc as futures_mpsc;
 use movement_collections::garbage::{counted::GcCounter, Duration};
 use tokio::sync::mpsc;
 
-#[cfg(test)]
 use tempfile::TempDir;
 
 use std::net::ToSocketAddrs;
@@ -28,7 +28,10 @@ use std::sync::{Arc, RwLock};
 const EXECUTOR_CHANNEL_SIZE: usize = 2_usize.pow(16);
 
 impl Executor {
-	pub fn bootstrap(maptos_config: &Config) -> Result<Self, anyhow::Error> {
+	pub fn bootstrap_with_public_key(
+		maptos_config: &Config,
+		public_key: Ed25519PublicKey,
+	) -> Result<Self, anyhow::Error> {
 		// get dot movement
 		// todo: this is a slight anti-pattern, but it's fine for now
 		let dot_movement = DotMovement::try_from_env()?;
@@ -122,8 +125,36 @@ impl Executor {
 		})
 	}
 
+	pub fn bootstrap(maptos_config: &Config) -> Result<Self, anyhow::Error> {
+		let private_key = maptos_config.chain.maptos_private_key.clone();
+		let public_key = private_key.public_key();
+		Self::bootstrap_with_public_key(maptos_config, public_key)
+	}
+
 	pub fn try_from_config(maptos_config: Config) -> Result<Self, anyhow::Error> {
 		Self::bootstrap(&maptos_config)
+	}
+
+	#[cfg(test)]
+	pub fn try_test_default_with_public_key_bytes(
+		public_key_bytes: &[u8],
+	) -> Result<(Self, TempDir), anyhow::Error> {
+		use aptos_crypto::ValidCryptoMaterialStringExt;
+
+		let public_key =
+			Ed25519PublicKey::from_encoded_string(hex::encode(public_key_bytes).as_str())?;
+		Self::try_test_default_with_public_key(public_key)
+	}
+
+	pub fn try_test_default_with_public_key(
+		public_key: Ed25519PublicKey,
+	) -> Result<(Self, TempDir), anyhow::Error> {
+		let tempdir = tempfile::tempdir()?;
+
+		let mut maptos_config = Config::default();
+		maptos_config.chain.maptos_db_path.replace(tempdir.path().to_path_buf());
+		let executor = Self::bootstrap_with_public_key(&maptos_config, public_key)?;
+		Ok((executor, tempdir))
 	}
 
 	#[cfg(test)]

@@ -1,0 +1,46 @@
+[package]
+name = "movement-signer-test"
+description = "Test support for Movement signing API"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+movement-signer = { workspace = true }
+ed25519-dalek = { workspace = true }
+async-trait = { workspace = true }
+
+[dev-dependencies]
+maptos-dof-execution = { workspace = true }
+maptos-execution-util = { workspace = true }
+movement-signing-aptos = { workspace = true }
+movement-signer-local = { workspace = true }
+movement-signer-aws-kms = { workspace = true }
+movement-signing-eth = { workspace = true }
+aptos-crypto = { workspace = true }
+aptos-types = { workspace = true }
+anyhow = { workspace = true }
+chrono = { workspace = true }
+ed25519-dalek = { workspace = true, features = ["rand_core"] }
+# Workspace is on rand 0.7 due largely to aptos-core
+rand = "0.8"
+sha3 = "0.10.8"
+tempfile = { workspace = true }
+tokio = { workspace = true, features = ["macros"] }
+
+alloy.workspace = true
+alloy-signer-aws = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
+alloy-primitives.workspace = true
+alloy-signer.workspace = true
+alloy-network.workspace = true
+alloy-consensus.workspace = true
+alloy-transport-http = { workspace = true, features = ["reqwest-rustls-tls"] }
+
+
+[lints]
+workspace = true

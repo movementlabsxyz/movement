@@ -102,7 +102,7 @@ dependencies = [
  "once_cell",
  "serde",
  "version_check",
- "zerocopy",
+ "zerocopy 0.7.35",
 ]
 
 [[package]]
@@ -6045,9 +6045,9 @@ dependencies = [
 
 [[package]]
 name = "clap_complete"
-version = "4.5.42"
+version = "4.5.43"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "33a7e468e750fa4b6be660e8b5651ad47372e8fb114030b594c2d75d48c5ffd0"
+checksum = "0952013545c9c6dca60f491602655b795c6c062ab180c9cb0bccb83135461861"
 dependencies = [
  "clap 4.5.21",
 ]
@@ -8840,8 +8840,12 @@ dependencies = [
  "clap 4.5.21",
  "dotenv",
  "ed25519 2.2.3",
+ "ed25519-dalek 2.1.1",
  "google-cloud-kms",
  "k256",
+ "movement-signer",
+ "movement-signer-aws-kms",
+ "movement-signer-hashicorp-vault",
  "rand 0.7.3",
  "reqwest 0.12.9",
  "ring-compat",
@@ -9839,7 +9843,7 @@ dependencies = [
  "ring 0.16.20",
  "serde",
  "serde_json",
- "simple_asn1 0.6.2",
+ "simple_asn1 0.6.3",
 ]
 
 [[package]]
@@ -9854,7 +9858,7 @@ dependencies = [
  "ring 0.17.8",
  "serde",
  "serde_json",
- "simple_asn1 0.6.2",
+ "simple_asn1 0.6.3",
 ]
 
 [[package]]
@@ -9966,7 +9970,7 @@ dependencies = [
  "poem",
  "poem-openapi",
  "rand 0.7.3",
- "rand_core 0.5.1",
+ "rand_core 0.9.0",
  "schemars",
  "serde",
  "serde_json",
@@ -10398,7 +10402,7 @@ dependencies = [
  "aptos-types",
  "godfig",
  "hex",
- "movement-celestia-da-util",
+ "movement-da-util",
  "rand 0.7.3",
  "serde",
  "serde_derive",
@@ -10505,7 +10509,6 @@ dependencies = [
  "poem",
  "poem-openapi",
  "rand 0.7.3",
- "rand_core 0.5.1",
  "schemars",
  "serde",
  "serde_json",
@@ -10559,6 +10562,9 @@ dependencies = [
  "futures",
  "godfig",
  "mcr-settlement-config",
+ "movement-signer",
+ "movement-signer-loader",
+ "movement-signing-eth",
  "movement-types",
  "serde",
  "serde_json",
@@ -10576,6 +10582,7 @@ dependencies = [
  "alloy",
  "anyhow",
  "godfig",
+ "movement-signer-loader",
  "serde",
 ]
 
@@ -10620,6 +10627,7 @@ name = "mcr-settlement-setup"
 version = "0.0.2"
 dependencies = [
  "alloy",
+ "alloy-network",
  "alloy-primitives 0.7.7",
  "anyhow",
  "commander",
@@ -10628,6 +10636,10 @@ dependencies = [
  "k256",
  "mcr-settlement-client",
  "mcr-settlement-config",
+ "movement-signer",
+ "movement-signer-aws-kms",
+ "movement-signer-loader",
+ "movement-signing-eth",
  "rand 0.7.3",
  "serde_json",
  "tokio",
@@ -11630,48 +11642,29 @@ dependencies = [
  "k256",
  "memseq",
  "movement-algs",
- "movement-celestia-da-light-node-prevalidator",
- "movement-celestia-da-light-node-verifier",
- "movement-celestia-da-util",
+ "movement-da-light-node-celestia",
+ "movement-da-light-node-da",
+ "movement-da-light-node-digest-store",
+ "movement-da-light-node-prevalidator",
  "movement-da-light-node-proto",
+ "movement-da-light-node-signer",
+ "movement-da-light-node-verifier",
+ "movement-da-util",
+ "movement-signer",
+ "movement-signer-loader",
  "movement-tracing",
  "movement-types",
  "prost 0.13.3",
  "serde",
  "serde_json",
  "tempfile",
+ "thiserror 1.0.69",
  "tokio",
  "tokio-stream",
  "tonic 0.12.3",
  "tonic-reflection 0.12.3",
  "tracing",
  "zstd 0.13.2",
-]
-
-[[package]]
-name = "movement-celestia-da-light-node-prevalidator"
-version = "0.0.2"
-dependencies = [
- "anyhow",
- "aptos-types",
- "async-stream",
- "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
- "dot-movement",
- "ecdsa 0.16.9",
- "hex",
- "k256",
- "movement-celestia-da-light-node-setup",
- "movement-celestia-da-util",
- "movement-da-light-node-proto",
- "movement-types",
- "prost 0.13.3",
- "rand 0.7.3",
- "serde_json",
- "thiserror 1.0.69",
- "tokio",
- "tokio-stream",
- "tonic 0.12.3",
- "tracing",
 ]
 
 [[package]]
@@ -11683,7 +11676,7 @@ dependencies = [
  "dot-movement",
  "godfig",
  "hex",
- "movement-celestia-da-util",
+ "movement-da-util",
  "rand 0.7.3",
  "reqwest 0.12.9",
  "serde",
@@ -11693,104 +11686,6 @@ dependencies = [
  "tokio-stream",
  "tracing",
  "tracing-subscriber 0.3.18",
-]
-
-[[package]]
-name = "movement-celestia-da-light-node-setup"
-version = "0.0.2"
-dependencies = [
- "anyhow",
- "async-recursion",
- "celestia-rpc",
- "celestia-types",
- "commander",
- "dot-movement",
- "godfig",
- "hex",
- "movement-celestia-da-util",
- "rand 0.7.3",
- "reqwest 0.12.9",
- "serde",
- "serde_json",
- "tempfile",
- "tokio",
- "tokio-stream",
- "tracing",
- "tracing-subscriber 0.3.18",
-]
-
-[[package]]
-name = "movement-celestia-da-light-node-tests"
-version = "0.0.2"
-dependencies = [
- "anyhow",
- "ecdsa 0.16.9",
- "movement-da-light-node-proto",
- "movement-types",
- "serde_json",
- "tokio",
- "tokio-stream",
- "tonic 0.12.3",
-]
-
-[[package]]
-name = "movement-celestia-da-light-node-verifier"
-version = "0.0.2"
-dependencies = [
- "anyhow",
- "async-stream",
- "celestia-rpc",
- "celestia-types",
- "dot-movement",
- "ecdsa 0.16.9",
- "hex",
- "k256",
- "movement-celestia-da-light-node-setup",
- "movement-celestia-da-util",
- "movement-da-light-node-proto",
- "prost 0.13.3",
- "rand 0.7.3",
- "serde_json",
- "thiserror 1.0.69",
- "tokio",
- "tokio-stream",
- "tonic 0.12.3",
- "tracing",
-]
-
-[[package]]
-name = "movement-celestia-da-util"
-version = "0.0.2"
-dependencies = [
- "alloy",
- "anyhow",
- "aptos-account-whitelist",
- "aptos-types",
- "async-stream",
- "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
- "celestia-rpc",
- "celestia-types",
- "dot-movement",
- "ecdsa 0.16.9",
- "godfig",
- "hex",
- "jsonrpsee 0.20.4",
- "k256",
- "memseq-util",
- "movement-da-light-node-proto",
- "prost 0.13.3",
- "rand 0.8.5",
- "serde",
- "serde_derive",
- "serde_json",
- "tempfile",
- "tokio",
- "tokio-stream",
- "toml 0.8.19",
- "tonic 0.12.3",
- "tracing",
- "tracing-subscriber 0.3.18",
- "zstd 0.13.2",
 ]
 
 [[package]]
@@ -11850,7 +11745,7 @@ dependencies = [
  "maptos-execution-util",
  "mcr-settlement-client",
  "mcr-settlement-config",
- "movement-celestia-da-util",
+ "movement-da-util",
  "movement-types",
  "serde",
  "serde_derive",
@@ -11858,6 +11753,24 @@ dependencies = [
  "tokio",
  "toml 0.8.19",
  "tracing",
+]
+
+[[package]]
+name = "movement-da-light-node-celestia"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "async-stream",
+ "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
+ "celestia-rpc",
+ "celestia-types",
+ "movement-da-light-node-da",
+ "movement-da-util",
+ "movement-signer",
+ "serde",
+ "tonic 0.12.3",
+ "tracing",
+ "zstd 0.13.2",
 ]
 
 [[package]]
@@ -11875,6 +11788,65 @@ dependencies = [
 ]
 
 [[package]]
+name = "movement-da-light-node-da"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "async-stream",
+ "futures",
+ "movement-da-light-node-proto",
+ "movement-da-util",
+ "movement-signer",
+ "thiserror 1.0.69",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+]
+
+[[package]]
+name = "movement-da-light-node-digest-store"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "async-stream",
+ "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
+ "movement-da-light-node-da",
+ "movement-da-util",
+ "movement-signer",
+ "rocksdb",
+ "serde",
+ "tokio",
+ "tonic 0.12.3",
+ "tracing",
+]
+
+[[package]]
+name = "movement-da-light-node-prevalidator"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "aptos-types",
+ "async-stream",
+ "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
+ "dot-movement",
+ "ecdsa 0.16.9",
+ "hex",
+ "k256",
+ "movement-da-light-node-proto",
+ "movement-da-light-node-setup",
+ "movement-da-util",
+ "movement-types",
+ "prost 0.13.3",
+ "rand 0.7.3",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tokio-stream",
+ "tonic 0.12.3",
+ "tracing",
+]
+
+[[package]]
 name = "movement-da-light-node-proto"
 version = "0.0.2"
 dependencies = [
@@ -11882,6 +11854,117 @@ dependencies = [
  "prost 0.13.3",
  "tonic 0.12.3",
  "tonic-build",
+]
+
+[[package]]
+name = "movement-da-light-node-setup"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "async-recursion",
+ "celestia-rpc",
+ "celestia-types",
+ "commander",
+ "dot-movement",
+ "godfig",
+ "hex",
+ "movement-da-util",
+ "rand 0.7.3",
+ "reqwest 0.12.9",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+]
+
+[[package]]
+name = "movement-da-light-node-signer"
+version = "0.0.2"
+dependencies = [
+ "movement-signer",
+]
+
+[[package]]
+name = "movement-da-light-node-tests"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "ecdsa 0.16.9",
+ "movement-da-light-node-proto",
+ "movement-types",
+ "serde_json",
+ "tokio",
+ "tokio-stream",
+ "tonic 0.12.3",
+]
+
+[[package]]
+name = "movement-da-light-node-verifier"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "async-stream",
+ "celestia-rpc",
+ "celestia-types",
+ "dot-movement",
+ "ecdsa 0.16.9",
+ "hex",
+ "k256",
+ "movement-da-light-node-proto",
+ "movement-da-light-node-setup",
+ "movement-da-util",
+ "movement-signer",
+ "prost 0.13.3",
+ "rand 0.7.3",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tokio-stream",
+ "tonic 0.12.3",
+ "tracing",
+]
+
+[[package]]
+name = "movement-da-util"
+version = "0.0.2"
+dependencies = [
+ "alloy",
+ "anyhow",
+ "aptos-account-whitelist",
+ "aptos-types",
+ "async-stream",
+ "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
+ "celestia-rpc",
+ "celestia-types",
+ "dot-movement",
+ "ecdsa 0.16.9",
+ "godfig",
+ "hex",
+ "jsonrpsee 0.20.4",
+ "k256",
+ "memseq-util",
+ "movement-da-light-node-proto",
+ "movement-da-light-node-signer",
+ "movement-signer",
+ "movement-signer-loader",
+ "movement-signer-local",
+ "movement-types",
+ "prost 0.13.3",
+ "rand 0.8.5",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "tokio-stream",
+ "toml 0.8.19",
+ "tonic 0.12.3",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "zstd 0.13.2",
 ]
 
 [[package]]
@@ -11917,10 +12000,10 @@ dependencies = [
  "mcr-settlement-client",
  "mcr-settlement-config",
  "mcr-settlement-manager",
- "movement-celestia-da-util",
  "movement-config",
  "movement-da-light-node-client",
  "movement-da-light-node-proto",
+ "movement-da-util",
  "movement-rest",
  "movement-tracing",
  "movement-types",
@@ -11952,9 +12035,9 @@ dependencies = [
  "hex",
  "mcr-settlement-config",
  "mcr-settlement-setup",
- "movement-celestia-da-light-node-setup",
- "movement-celestia-da-util",
  "movement-config",
+ "movement-da-light-node-setup",
+ "movement-da-util",
  "movement-types",
  "rand 0.7.3",
  "serde",
@@ -12006,17 +12089,31 @@ name = "movement-signer"
 version = "0.0.2"
 dependencies = [
  "anyhow",
+ "async-trait",
  "ed25519-dalek 2.1.1",
  "k256",
+ "serde",
+ "sha2 0.10.8",
  "thiserror 1.0.69",
+ "tracing",
 ]
 
 [[package]]
 name = "movement-signer-aws-kms"
 version = "0.0.2"
 dependencies = [
+ "alloy-signer",
+ "anyhow",
+ "async-trait",
+ "aws-config",
  "aws-sdk-kms",
+ "aws-types",
+ "k256",
  "movement-signer",
+ "secp256k1",
+ "simple_asn1 0.6.3",
+ "spki 0.7.3",
+ "tokio",
 ]
 
 [[package]]
@@ -12024,19 +12121,81 @@ name = "movement-signer-hashicorp-vault"
 version = "0.0.2"
 dependencies = [
  "anyhow",
+ "async-trait",
  "base64 0.13.1",
+ "dotenv",
  "movement-signer",
+ "tokio",
+ "uuid",
  "vaultrs",
+]
+
+[[package]]
+name = "movement-signer-loader"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "movement-signer",
+ "movement-signer-aws-kms",
+ "movement-signer-hashicorp-vault",
+ "movement-signer-local",
+ "serde",
+ "thiserror 1.0.69",
+ "tracing",
+]
+
+[[package]]
+name = "movement-signer-local"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "ecdsa 0.16.9",
+ "ed25519 2.2.3",
+ "ed25519-dalek 2.1.1",
+ "hex",
+ "k256",
+ "movement-signer",
+ "rand 0.8.5",
+ "sha3 0.10.8",
+ "tokio",
 ]
 
 [[package]]
 name = "movement-signing-aptos"
 version = "0.0.2"
 dependencies = [
+ "anyhow",
  "aptos-crypto",
+ "aptos-sdk",
+ "aptos-storage-interface",
  "aptos-types",
+ "chrono",
+ "dotenv",
+ "maptos-opt-executor",
  "movement-signer",
+ "movement-signer-hashicorp-vault",
+ "rand 0.7.3",
  "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "tracing-test",
+]
+
+[[package]]
+name = "movement-signing-eth"
+version = "0.0.2"
+dependencies = [
+ "alloy-consensus",
+ "alloy-network",
+ "alloy-primitives 0.7.7",
+ "alloy-signer",
+ "alloy-transport-http",
+ "async-trait",
+ "k256",
+ "movement-signer",
+ "movement-signer-aws-kms",
 ]
 
 [[package]]
@@ -12076,9 +12235,9 @@ dependencies = [
  "maptos-dof-execution",
  "mcr-settlement-client",
  "mcr-settlement-manager",
- "movement-celestia-da-util",
  "movement-config",
  "movement-da-light-node-proto",
+ "movement-da-util",
  "movement-rest",
  "movement-tracing",
  "movement-types",
@@ -12732,7 +12891,7 @@ dependencies = [
  "poem",
  "poem-openapi",
  "rand 0.7.3",
- "rand_core 0.5.1",
+ "rand_core 0.9.0",
  "schemars",
  "serde",
  "serde_json",
@@ -13512,7 +13671,7 @@ version = "0.2.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77957b295656769bb8ad2b6a6b09d897d94f05c41b069aede1fcdaa675eaea04"
 dependencies = [
- "zerocopy",
+ "zerocopy 0.7.35",
 ]
 
 [[package]]
@@ -14278,6 +14437,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
 dependencies = [
  "getrandom 0.2.15",
+]
+
+[[package]]
+name = "rand_core"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b08f3c9802962f7e1b25113931d94f43ed9725bebc59db9d0c3e9a23b67e15ff"
+dependencies = [
+ "zerocopy 0.8.14",
 ]
 
 [[package]]
@@ -15259,6 +15427,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "secp256k1"
+version = "0.24.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6b1629c9c557ef9b293568b338dddfc8208c98a18c59d722a9d53f859d9c9b62"
+dependencies = [
+ "secp256k1-sys",
+]
+
+[[package]]
+name = "secp256k1-sys"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "83080e2c2fc1006e625be82e5d1eb6a43b7fd9578b617fcc55814daf286bba4b"
+dependencies = [
+ "cc",
+]
+
+[[package]]
 name = "security-framework"
 version = "2.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -15836,13 +16022,13 @@ dependencies = [
 
 [[package]]
 name = "simple_asn1"
-version = "0.6.2"
+version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "adc4e5204eb1910f40f9cfa375f6f05b68c3abac4b6fd879c8ff5e7ae8a0a085"
+checksum = "297f631f50729c8c99b84667867963997ec0b50f32b2a7dbcab828ef0541e8bb"
 dependencies = [
  "num-bigint 0.4.6",
  "num-traits",
- "thiserror 1.0.69",
+ "thiserror 2.0.7",
  "time",
 ]
 
@@ -18498,7 +18684,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1b9b4fd18abc82b8136838da5d50bae7bdea537c574d8dc1a34ed098d6c166f0"
 dependencies = [
  "byteorder",
- "zerocopy-derive",
+ "zerocopy-derive 0.7.35",
+]
+
+[[package]]
+name = "zerocopy"
+version = "0.8.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a367f292d93d4eab890745e75a778da40909cab4d6ff8173693812f79c4a2468"
+dependencies = [
+ "zerocopy-derive 0.8.14",
 ]
 
 [[package]]
@@ -18506,6 +18701,17 @@ name = "zerocopy-derive"
 version = "0.7.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fa4f8080344d4671fb4e831a13ad1e68092748387dfc4f55e356242fae12ce3e"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.87",
+]
+
+[[package]]
+name = "zerocopy-derive"
+version = "0.8.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d3931cb58c62c13adec22e38686b559c86a30565e16ad6e8510a337cedc611e1"
 dependencies = [
  "proc-macro2",
  "quote",

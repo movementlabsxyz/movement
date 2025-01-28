@@ -16,6 +16,9 @@ rust-version = { workspace = true }
 
 [dependencies]
 mcr-settlement-config = { workspace = true }
+movement-signer-loader = { workspace = true }
+movement-signer = { workspace = true }
+movement-signing-eth = { workspace = true }
 
 alloy = { workspace = true, features = [
     "node-bindings",

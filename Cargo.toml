@@ -11,7 +11,6 @@ members = [
   "protocol-units/execution/maptos/fin-view",
   "protocol-units/execution/maptos/util",
   "protocol-units/da/movement/protocol/*",
-  "protocol-units/da/movement/celestia/*",
   "protocol-units/sequencing/memseq/*",
   "protocol-units/mempool/*",
   "protocol-units/syncing/*",
@@ -74,14 +73,18 @@ bridge-indexer-db = { path = "protocol-units/bridge/indexer-db" }
 buildtime = { path = "util/buildtime" }
 buildtime-helpers = { path = "util/buildtime/buildtime-helpers" }
 buildtime-macros = { path = "util/buildtime/buildtime-macros" }
-## da/proto
-movement-da-light-node-proto = { path = "protocol-units/da/movement/protocol/light-node" }
+## movement-da
+movement-da-light-node-proto = { path = "protocol-units/da/movement/protocol/proto" }
+movement-da-light-node = { path = "protocol-units/da/movement/protocol/light-node" }
 movement-da-light-node-client = { path = "protocol-units/da/movement/protocol/client" }
-## da/celestia
-movement-celestia-da-util = { path = "protocol-units/da/movement/celestia/util" }
-movement-celestia-da-light-node-setup = { path = "protocol-units/da/movement/celestia/setup" }
-movement-celestia-da-light-node-verifier = { path = "protocol-units/da/movement/celestia/light-node-verifier" }
-movement-celestia-da-light-node-prevalidator = { path = "protocol-units/da/movement/celestia/light-node-prevalidator" }
+movement-da-util = { path = "protocol-units/da/movement/protocol/util" }
+movement-da-light-node-setup = { path = "protocol-units/da/movement/protocol/setup" }
+movement-da-light-node-verifier = { path = "protocol-units/da/movement/protocol/verifier" }
+movement-da-light-node-prevalidator = { path = "protocol-units/da/movement/protocol/prevalidator" }
+movement-da-light-node-da = { path = "protocol-units/da/movement/protocol/da" }
+movement-da-light-node-celestia = { path = "protocol-units/da/movement/providers/celestia" }
+movement-da-light-node-digest-store = { path = "protocol-units/da/movement/providers/digest-store" }
+movement-da-light-node-signer = { path = "protocol-units/da/movement/protocol/light-node-signer" }
 ## execution
 maptos-dof-execution = { path = "protocol-units/execution/maptos/dof" }
 maptos-opt-executor = { path = "protocol-units/execution/maptos/opt-executor" }
@@ -133,6 +136,10 @@ aptos-account-whitelist = { path = "protocol-units/access-control/aptos/account-
 movement-signer = { path = "util/signing/interface" }
 movement-signer-aws-kms = { path = "util/signing/providers/aws-kms" }
 movement-signer-hashicorp-vault = { path = "util/signing/providers/hashicorp-vault" }
+movement-signer-local = { path = "util/signing/providers/local" }
+movement-signer-loader = { path = "util/signing/util/loader" }
+movement-signing-aptos = { path = "util/signing/integrations/aptos" }
+movement-signing-eth = { path = "util/signing/integrations/eth" }
 
 ## vault
 vaultrs = { version = "0.7.3" }
@@ -236,6 +243,7 @@ alloy-eips = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b17258
 alloy-contract = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
 alloy-network = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
 alloy-primitives = { version = "0.7.2", default-features = false }
+alloy-consensus = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
 alloy-provider = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2", features = [
   "ws",
 ] }
@@ -244,6 +252,7 @@ alloy-rpc-types = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b
 alloy-sol-types = { version = "0.7.2", features = ["json"] }
 alloy-signer = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
 alloy-transport = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
+alloy-transport-http = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2", features = ["reqwest-rustls-tls"] }
 alloy-transport-ws = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
 
 anyhow = "1.0"
@@ -290,7 +299,6 @@ proptest = { version = "1.3.1", default-features = false, features = ["alloc"] }
 proptest-derive = "0.4"
 quote = "1.0"
 rand = "0.7.3"
-rand_core = "0.5.1"
 rayon = "1.10.0"
 reqwest = "0.12.4"
 risc0-build = "0.20"
@@ -358,6 +366,9 @@ aws-sdk-s3 = "1.42.0"
 
 # movement
 movement-client = { path = "networks/movement/movement-client" }
+simple_asn1 =  "0.6.3" 
+dotenv = "0.15.0"
+rand_core = "0.9.0"
 
 [workspace.lints.rust]
 dead_code = "deny"        ## Alloy Dependencies

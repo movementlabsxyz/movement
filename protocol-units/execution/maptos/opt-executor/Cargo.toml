@@ -31,7 +31,6 @@ lazy_static = "1.4.0"
 tokio = { workspace = true }
 tracing = { workspace = true }
 rand = { workspace = true }
-rand_core = { workspace = true }
 bcs = { workspace = true }
 futures = { workspace = true }
 
@@ -75,10 +74,10 @@ maptos-framework-release-util = { workspace = true }
 aptos-framework-known-release = { workspace = true }
 aptos-gas-schedule = { workspace = true }
 aptos-sdk = { workspace = true }
+tempfile = { workspace = true }
 
 [dev-dependencies]
 dirs = { workspace = true }
-tempfile = { workspace = true }
 tracing-test = { workspace = true }
 async-trait = { workspace = true }
 aptos-sdk = { workspace = true }

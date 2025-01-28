@@ -15,5 +15,19 @@ aptos-crypto = { workspace = true }
 aptos-types = { workspace = true }
 thiserror = { workspace = true }
 
+[dev-dependencies]
+maptos-opt-executor = { workspace = true }
+tokio = { workspace = true }
+movement-signer-hashicorp-vault = { workspace = true }
+anyhow = { workspace = true }
+chrono = { workspace = true }
+dotenv = { workspace = true }  
+rand = { workspace = true }
+aptos-sdk = { workspace = true }
+aptos-storage-interface = { workspace = true }
+tracing = { workspace = true }
+tracing-test = { workspace = true, features = ["no-env-filter"] }
+
+
 [lints]
 workspace = true
