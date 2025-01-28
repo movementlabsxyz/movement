@@ -1665,7 +1665,7 @@ dependencies = [
  "aptos-logger",
  "aptos-mempool",
  "aptos-metrics-core",
- "aptos-moving-average 0.1.0 (git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=77a36245400250e7d8a854360194288d078681bc)",
+ "aptos-moving-average",
  "aptos-protos 1.3.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=198b0089e4f57bc1ec284aaee701a6b5a774f34f)",
  "aptos-runtimes",
  "aptos-storage-interface",
@@ -1990,7 +1990,7 @@ dependencies = [
 [[package]]
 name = "aptos-moving-average"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=7658338eb9224abd9698c1e02dbc6ca526c268ce#7658338eb9224abd9698c1e02dbc6ca526c268ce"
+source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=77a36245400250e7d8a854360194288d078681bc#77a36245400250e7d8a854360194288d078681bc"
 dependencies = [
  "chrono",
 ]
@@ -3782,15 +3782,6 @@ name = "bcs"
 version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "85b6598a2f5d564fb7855dc6b06fd1c38cff5a72bd8b863a4d021938497b440a"
-dependencies = [
- "serde",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "bcs"
-version = "0.1.6"
-source = "git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c#bc16d2d39cabafaabd76173dd1b04b2aa170cf0c"
 dependencies = [
  "serde",
  "thiserror 1.0.69",
