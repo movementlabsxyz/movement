@@ -46,7 +46,7 @@ path = "src/bin/e2e/ggp_fund.rs"
 
 [[bin]]
 name = "movement-tests-e2e-complex-ggp-gas"
-path = "src/bin/e2e/complex-ggp-e2e"
+path = "src/bin/e2e/complex_ggp_e2e.rs"
 
 [dependencies]
 aptos-sdk = { workspace = true }
