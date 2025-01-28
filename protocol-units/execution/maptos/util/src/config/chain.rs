@@ -1,12 +1,12 @@
 use super::common::{
 	default_enable_pruning, default_genesis_block_hash_hex, default_genesis_timestamp_microseconds,
 	default_maptos_chain_id, default_maptos_epoch_snapshot_prune_window,
-	default_maptos_ledger_prune_window, default_maptos_private_key, default_maptos_read_only,
-	default_maptos_rest_listen_hostname, default_maptos_rest_listen_port,
+	default_maptos_ledger_prune_window, default_maptos_private_key_signer_identifier,
+	default_maptos_read_only, default_maptos_rest_listen_hostname, default_maptos_rest_listen_port,
 	default_maptos_state_merkle_prune_window,
 };
-use aptos_crypto::ed25519::Ed25519PrivateKey;
 use aptos_types::chain_id::ChainId;
+use movement_signer_loader::identifiers::SignerIdentifier;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
@@ -25,8 +25,8 @@ pub struct Config {
 	pub maptos_rest_listen_port: u16,
 
 	/// The private key for the Aptos node
-	#[serde(default = "default_maptos_private_key")]
-	pub maptos_private_key: Ed25519PrivateKey,
+	#[serde(default = "default_maptos_private_key_signer_identifier")]
+	pub maptos_private_key_signer_identifier: SignerIdentifier,
 
 	#[serde(default = "default_maptos_read_only")]
 	pub maptos_read_only: bool,
@@ -65,7 +65,7 @@ impl Default for Config {
 			maptos_chain_id: default_maptos_chain_id(),
 			maptos_rest_listen_hostname: default_maptos_rest_listen_hostname(),
 			maptos_rest_listen_port: default_maptos_rest_listen_port(),
-			maptos_private_key: default_maptos_private_key(),
+			maptos_private_key_signer_identifier: default_maptos_private_key_signer_identifier(),
 			maptos_read_only: default_maptos_read_only(),
 			enabled_pruning: default_enable_pruning(),
 			maptos_ledger_prune_window: default_maptos_ledger_prune_window(),

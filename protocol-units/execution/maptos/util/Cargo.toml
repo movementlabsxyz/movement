@@ -29,3 +29,5 @@ hex = { workspace = true }
 tokio = { workspace =  true }
 
 aptos-sdk = { workspace = true }
+movement-signer-loader = { workspace = true }
+movement-signer = { workspace = true }

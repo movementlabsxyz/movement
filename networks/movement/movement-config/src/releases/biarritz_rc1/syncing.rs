@@ -1,7 +1,6 @@
 use crate::Config as MovementConfig;
 use anyhow::Context;
 use dot_movement::DotMovement;
-use godfig::env_or_none;
 use movement_types::{actor, application};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;

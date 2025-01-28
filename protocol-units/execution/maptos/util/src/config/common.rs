@@ -4,8 +4,9 @@ use aptos_crypto::{
 	ed25519::Ed25519PrivateKey, Genesis, HashValue, Uniform, ValidCryptoMaterialStringExt,
 };
 use aptos_types::chain_id::ChainId;
-use godfig::{env_default, env_or_none};
-use std::collections::HashSet;
+use godfig::env_default;
+use movement_signer::key::TryFromCanonicalString;
+use movement_signer_loader::identifiers::{local::Local, SignerIdentifier};
 
 // The default Maptos API listen hostname
 env_default!(
@@ -84,6 +85,16 @@ pub fn default_maptos_private_key() -> Ed25519PrivateKey {
 			_ => Ed25519PrivateKey::from_encoded_string(&val).unwrap(),
 		},
 		Err(_) => Ed25519PrivateKey::genesis(),
+	}
+}
+
+// The default MAPTOS_PRIVATE_KEY_SIGNER_IDENTIFIER
+pub fn default_maptos_private_key_signer_identifier() -> SignerIdentifier {
+	match std::env::var("MAPTOS_PRIVATE_KEY_SIGNER_IDENTIFIER") {
+		Ok(val) => SignerIdentifier::try_from_canonical_string(&val).unwrap(),
+		Err(_) => SignerIdentifier::Local(Local {
+			private_key_hex_bytes: default_maptos_private_key().to_encoded_string().unwrap(),
+		}),
 	}
 }
 

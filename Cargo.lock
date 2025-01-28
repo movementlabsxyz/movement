@@ -9046,6 +9046,8 @@ dependencies = [
  "godfig",
  "hex",
  "movement-da-util",
+ "movement-signer",
+ "movement-signer-loader",
  "rand 0.7.3",
  "serde",
  "serde_derive",
@@ -9205,6 +9207,7 @@ dependencies = [
  "alloy",
  "anyhow",
  "godfig",
+ "movement-signer",
  "movement-signer-loader",
  "serde",
 ]
@@ -10276,13 +10279,18 @@ dependencies = [
  "mcr-settlement-client",
  "mcr-settlement-config",
  "movement-da-util",
+ "movement-signer-loader",
  "movement-types",
  "serde",
  "serde_derive",
+ "serde_json",
  "syncup",
+ "tap",
+ "thiserror 1.0.69",
  "tokio",
  "toml 0.8.19",
  "tracing",
+ "tracing-test",
 ]
 
 [[package]]
