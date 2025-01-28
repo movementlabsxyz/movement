@@ -244,7 +244,7 @@ use tracing::info;
  */
 pub struct ElsaToBiarritzRc1;
 
-/// Errors thrown by Signer
+/// Errors thrown by ElsaToBiarritzRc1 migrations.
 #[derive(Debug, thiserror::Error)]
 pub enum ElsaToBiarritzRc1Error {
 	#[error("migration failed: {0}")]

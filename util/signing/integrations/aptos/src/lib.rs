@@ -1,6 +1,10 @@
+pub mod release_signer;
+
 use aptos_crypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
 use aptos_crypto::CryptoMaterialError;
-use aptos_types::transaction::{RawTransaction, SignedTransaction};
+use aptos_types::transaction::{
+	authenticator::AuthenticationKey, RawTransaction, SignedTransaction,
+};
 use movement_signer::{cryptography::ed25519::Ed25519, SignerError, Signing};
 
 use std::future::Future;
@@ -33,6 +37,13 @@ pub trait TransactionSigner: Sync {
 	) -> impl Future<Output = Result<Ed25519Signature, Error>> + Send;
 
 	fn public_key(&self) -> impl Future<Output = Result<Ed25519PublicKey, Error>> + Send;
+
+	fn authentication_key(&self) -> impl Future<Output = Result<AuthenticationKey, Error>> + Send {
+		async move {
+			let public_key = self.public_key().await?;
+			Ok(AuthenticationKey::ed25519(&public_key))
+		}
+	}
 }
 
 impl<T> TransactionSigner for T

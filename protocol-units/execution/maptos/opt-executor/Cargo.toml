@@ -70,6 +70,10 @@ movement-rest = { workspace = true }
 dot-movement = { workspace = true }
 movement-collections = { workspace = true }
 aptos-account-whitelist = { workspace = true }
+maptos-framework-release-util = { workspace = true }
+aptos-framework-known-release = { workspace = true }
+aptos-gas-schedule = { workspace = true }
+aptos-sdk = { workspace = true }
 tempfile = { workspace = true }
 movement-signer-loader = { workspace = true }
 
