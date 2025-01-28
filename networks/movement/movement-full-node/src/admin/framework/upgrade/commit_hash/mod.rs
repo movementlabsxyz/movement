@@ -10,6 +10,6 @@ pub struct CommitHash {
 
 impl CommitHash {
 	pub async fn execute(&self) -> Result<(), anyhow::Error> {
-		Ok(())
+		unimplemented!()
 	}
 }

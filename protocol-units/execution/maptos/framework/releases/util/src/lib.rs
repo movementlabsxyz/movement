@@ -334,7 +334,17 @@ fn build_release_package_transaction_payload(
 ) -> Result<TransactionPayload, ReleaseBundleError> {
 	println!("release_package_code: {:?}", release_package.code().len());
 
-	let script_path = PathBuf::from("proposal.move");
+	// use .debug/move-scripts/{package.package_metadata.name()} to write out the script
+	let script_path = PathBuf::from(".debug/move-scripts/")
+		.join(release_package.package_metadata().name.clone())
+		.with_extension("move");
+	// create all parent directories
+	std::fs::create_dir_all(script_path.parent().unwrap()).map_err(|e| {
+		ReleaseBundleError::Build(
+			format!("failed to create parent directories for script path: {:?}", e).into(),
+		)
+	})?;
+
 	release_package
 		.generate_script_proposal_testnet(AccountAddress::ONE, script_path.clone())
 		.map_err(|e| {
@@ -454,8 +464,8 @@ macro_rules! commit_hash_with_script {
 		pub static REPO: &str = $repo;
 		pub static COMMIT_HASH: &str = $commit_hash;
 		pub static BYTECODE_VERSION: u32 = $bytecode_version;
-		pub static CACHE_RELEASE: &str = $cache_env_var;
-		pub static CACHE_ALL_RELEASES: &str = "CACHE_ALL_FRAMEWORK_RELEASES";
+		pub static FORCE_BUILD_RELEASE: &str = $cache_env_var;
+		pub static FORCE_BUILD_ALL_RELEASES: &str = "FORCE_BUILD_ALL_FRAMEWORK_RELEASES";
 		pub static MRB_FILE: &str = $mrb_file;
 
 		/// Builds a release for the specified framework.
@@ -475,18 +485,18 @@ macro_rules! commit_hash_with_script {
 		}
 
 		pub fn main() -> Result<(), anyhow::Error> {
-			// Write to target/cache/<mrb_file>
-			let target_cache_dir = PathBuf::from("target/mrb_cache");
+			// Write to mrb_cache/<mrb_file>
+			let target_cache_dir = PathBuf::from("mrb_cache");
 			std::fs::create_dir_all(&target_cache_dir)
 				.context("failed to create cache directory")?;
 			let path = target_cache_dir.join(MRB_FILE);
 
 			// if the release is already built and CACHE_RELEASE is set, skip building
-			let cache_all_releases = std::env::var(CACHE_ALL_RELEASES).is_ok();
-			let cache_release = std::env::var(CACHE_RELEASE).is_ok();
+			let force_build_all_releases = std::env::var(FORCE_BUILD_ALL_RELEASES).is_ok();
+			let force_build_release = std::env::var(FORCE_BUILD_ALL_RELEASES).is_ok();
 			let path_exists = std::fs::metadata(&path).is_ok();
 
-			if (cache_all_releases || cache_release) && path_exists {
+			if (!force_build_release || !force_build_all_releases) && path_exists {
 				println!("Release already built, skipping build");
 				return Ok(());
 			}
