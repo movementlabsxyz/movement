@@ -58,9 +58,6 @@ async fn main() -> Result<(), anyhow::Error> {
 					maptos_config.client.maptos_faucet_rest_connection_hostname;
 				config.movement.mvt_faucet_connection_port =
 					maptos_config.client.maptos_faucet_rest_connection_port;
-
-				//update signer with maptos private key
-				config.movement.movement_signer_key = maptos_config.chain.maptos_private_key;
 			}
 			if let Ok(settlement_config) = settlement_config {
 				println!("Update bridge config with settlement config");

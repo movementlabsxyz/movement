@@ -27,3 +27,8 @@ godfig = { workspace = true }
 syncup = { workspace = true }
 movement-types = { workspace = true }
 dot-movement = { workspace = true }
+thiserror = { workspace = true }   
+serde_json = { workspace = true }
+movement-signer-loader = { workspace = true }
+tracing-test = { workspace = true }
+tap = { workspace = true }

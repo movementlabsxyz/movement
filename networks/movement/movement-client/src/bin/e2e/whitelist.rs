@@ -2,6 +2,7 @@ use anyhow::Context;
 use movement_client::crypto::ValidCryptoMaterialStringExt;
 use movement_client::{
 	coin_client::CoinClient,
+	crypto::ed25519::Ed25519PrivateKey,
 	move_types::identifier::Identifier,
 	move_types::language_storage::ModuleId,
 	rest_client::{Client, FaucetClient},
@@ -74,16 +75,14 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	// Create two accounts locally, Alice and Bob.
 	// :!:>section_2
-	let mut genesis = LocalAccount::from_private_key(
-		SUZUKA_CONFIG
-			.execution_config
-			.maptos_config
-			.chain
-			.maptos_private_key
-			.to_encoded_string()?
-			.as_str(),
-		0,
-	)?;
+	let raw_private_key = SUZUKA_CONFIG
+		.execution_config
+		.maptos_config
+		.chain
+		.maptos_private_key_signer_identifier
+		.try_raw_private_key()?;
+	let private_key = Ed25519PrivateKey::try_from(raw_private_key.as_slice())?;
+	let mut genesis = LocalAccount::from_private_key(private_key.to_encoded_string()?.as_str(), 0)?;
 	let mut alice = LocalAccount::generate(&mut rand::rngs::OsRng);
 	let bob = LocalAccount::generate(&mut rand::rngs::OsRng); // <:!:section_2
 

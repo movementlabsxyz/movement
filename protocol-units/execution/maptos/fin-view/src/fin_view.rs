@@ -61,7 +61,9 @@ impl FinalityView {
 mod tests {
 	use super::*;
 	use aptos_api::accept_type::AcceptType;
+	use aptos_sdk::crypto::ed25519::Ed25519PrivateKey;
 	use aptos_sdk::crypto::HashValue;
+	use aptos_sdk::crypto::ValidCryptoMaterialStringExt;
 	use aptos_sdk::transaction_builder::TransactionFactory;
 	use aptos_sdk::types::{account_config::aptos_test_root_address, AccountKey, LocalAccount};
 	use aptos_types::block_executor::partitioner::{ExecutableBlock, ExecutableTransactions};
@@ -87,11 +89,14 @@ mod tests {
 		);
 
 		// Initialize a root account using a predefined keypair and the test root address.
-		let root_account = LocalAccount::new(
-			aptos_test_root_address(),
-			AccountKey::from_private_key(context.config().chain.maptos_private_key.clone()),
-			0,
-		);
+		let raw_private_key = context
+			.config()
+			.chain
+			.maptos_private_key_signer_identifier
+			.try_raw_private_key()?;
+		let private_key = Ed25519PrivateKey::try_from(raw_private_key.as_slice())?;
+		let root_account =
+			LocalAccount::from_private_key(private_key.to_encoded_string()?.as_str(), 0)?;
 
 		// Seed for random number generator, used here to generate predictable results in a test environment.
 		let seed = [3u8; 32];

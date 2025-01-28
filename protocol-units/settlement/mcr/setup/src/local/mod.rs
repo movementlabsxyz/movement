@@ -100,11 +100,17 @@ impl Local {
 			mcr_settlement_client::eth_client::read_anvil_json_file_addresses(&*anvil_path)
 				.context("Failed to read Anvil addresses")?;
 		if let Some(deploy) = &mut config.deploy {
-			deploy.mcr_local_anvil_account_private_key = anvil_addresses
+			let private_key_hex = anvil_addresses
 				.get(0)
 				.ok_or(anyhow!("Failed to get Anvil address"))?
 				.private_key
 				.clone();
+			let private_key_hex_bytes = (&private_key_hex[2..]).to_string();
+
+			info!("Use Local Signer.");
+			deploy.signer_identifier =
+				SignerIdentifier::Local(SignerLocal { private_key_hex_bytes });
+
 			let deployer_address = anvil_addresses
 				.get(0)
 				.ok_or(anyhow!("Failed to get Anvil address"))?
@@ -127,15 +133,7 @@ impl Local {
 						create: true,
 					})
 				}
-				Err(_) => {
-					// Createa new random key to sign settlement.
-					let private_key_hex = deploy.mcr_local_anvil_account_private_key.to_string();
-					//remove the Ox at the beginning
-					let private_key_hex_bytes = (&private_key_hex[2..]).to_string();
-
-					info!("Use Local Signer.");
-					SignerIdentifier::Local(SignerLocal { private_key_hex_bytes })
-				}
+				Err(_) => deploy.signer_identifier.clone(),
 			};
 		}
 		if let Some(testing) = &mut config.testing {

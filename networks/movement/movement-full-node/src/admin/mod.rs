@@ -1,4 +1,5 @@
 pub mod bring_up;
+pub mod config;
 pub mod framework;
 pub mod governed_gas_pool;
 pub mod mcr;
@@ -21,6 +22,8 @@ pub enum Admin {
 	Ops(ops::Ops),
 	#[clap(subcommand)]
 	Framework(framework::Framework),
+	#[clap(subcommand)]
+	Config(config::Config),
 }
 
 impl Admin {
@@ -32,6 +35,7 @@ impl Admin {
 			Admin::GovernedGasPool(governed_gas_pool) => governed_gas_pool.execute().await,
 			Admin::Ops(ops) => ops.execute().await,
 			Admin::Framework(framework) => framework.execute().await,
+			Admin::Config(config) => config.execute().await,
 		}
 	}
 }

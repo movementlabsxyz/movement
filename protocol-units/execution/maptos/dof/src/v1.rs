@@ -2,6 +2,7 @@ use crate::{
 	BlockMetadata, DynOptFinExecutor, ExecutableBlock, HashValue, MakeOptFinServices, Services,
 	SignedTransaction,
 };
+use aptos_crypto::ValidCryptoMaterialStringExt;
 use maptos_execution_util::config::Config;
 use maptos_fin_view::FinalityView;
 use maptos_opt_executor::{Context as OptContext, Executor as OptExecutor};
@@ -170,6 +171,7 @@ mod tests {
 		},
 	};
 	use maptos_execution_util::config::Config;
+	use movement_signer_loader::identifiers::{local::Local, SignerIdentifier};
 
 	use rand::SeedableRng;
 	use tempfile::TempDir;
@@ -205,7 +207,9 @@ mod tests {
 	async fn test_execute_opt_block() -> Result<(), anyhow::Error> {
 		let private_key = Ed25519PrivateKey::generate_for_testing();
 		let mut config = Config::default();
-		config.chain.maptos_private_key = private_key.clone();
+		config.chain.maptos_private_key_signer_identifier = SignerIdentifier::Local(Local {
+			private_key_hex_bytes: private_key.to_encoded_string()?.to_string(),
+		});
 		let (executor, _tempdir) = setup(config)?;
 		let block_id = HashValue::random();
 		let block_metadata = executor
@@ -227,9 +231,11 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_pipe_transactions_from_api() -> Result<(), anyhow::Error> {
-		let private_key = Ed25519PrivateKey::generate_for_testing();
 		let mut config = Config::default();
-		config.chain.maptos_private_key = private_key.clone();
+		let private_key = Ed25519PrivateKey::generate_for_testing();
+		config.chain.maptos_private_key_signer_identifier = SignerIdentifier::Local(Local {
+			private_key_hex_bytes: private_key.to_encoded_string()?.to_string(),
+		});
 		let (executor, _tempdir) = setup(config.clone())?;
 		let (tx_sender, mut tx_receiver) = mpsc::channel(16);
 		let (context, background) = executor.background(tx_sender, &config)?;
@@ -259,7 +265,9 @@ mod tests {
 	async fn test_submit_transaction_api_disabled_in_read_only() -> Result<(), anyhow::Error> {
 		let private_key = Ed25519PrivateKey::generate_for_testing();
 		let mut config = Config::default();
-		config.chain.maptos_private_key = private_key.clone();
+		config.chain.maptos_private_key_signer_identifier = SignerIdentifier::Local(Local {
+			private_key_hex_bytes: private_key.to_encoded_string()?.to_string(),
+		});
 		config.chain.maptos_read_only = true;
 		let (tx_sender, _tx_receiver) = mpsc::channel(16);
 		let (executor, _tempdir) = setup(config.clone())?;
@@ -289,7 +297,9 @@ mod tests {
 	async fn test_pipe_transactions_from_api_and_execute() -> Result<(), anyhow::Error> {
 		let private_key = Ed25519PrivateKey::generate_for_testing();
 		let mut config = Config::default();
-		config.chain.maptos_private_key = private_key.clone();
+		config.chain.maptos_private_key_signer_identifier = SignerIdentifier::Local(Local {
+			private_key_hex_bytes: private_key.to_encoded_string()?.to_string(),
+		});
 		let (executor, _tempdir) = setup(config.clone())?;
 		let (tx_sender, mut tx_receiver) = mpsc::channel(16);
 		let (context, background) = executor.background(tx_sender, &config)?;
@@ -348,7 +358,9 @@ mod tests {
 
 		let private_key = Ed25519PrivateKey::generate_for_testing();
 		let mut config = Config::default();
-		config.chain.maptos_private_key = private_key.clone();
+		config.chain.maptos_private_key_signer_identifier = SignerIdentifier::Local(Local {
+			private_key_hex_bytes: private_key.to_encoded_string()?.to_string(),
+		});
 		let (executor, _tempdir) = setup(config.clone())?;
 		let (tx_sender, mut tx_receiver) = mpsc::channel(16);
 		let (context, background) = executor.background(tx_sender, &config)?;
@@ -440,11 +452,11 @@ mod tests {
 		let background_handle = tokio::spawn(background);
 
 		// Initialize a root account using a predefined keypair and the test root address.
-		let root_account = LocalAccount::new(
-			aptos_test_root_address(),
-			AccountKey::from_private_key(config.chain.maptos_private_key.clone()),
-			0,
-		);
+		let raw_private_key =
+			config.chain.maptos_private_key_signer_identifier.try_raw_private_key()?;
+		let private_key = Ed25519PrivateKey::try_from(raw_private_key.as_slice())?;
+		let root_account =
+			LocalAccount::from_private_key(private_key.to_encoded_string()?.as_str(), 0)?;
 
 		// Seed for random number generator, used here to generate predictable results in a test environment.
 		let seed = [3u8; 32];
@@ -515,11 +527,11 @@ mod tests {
 		let background_handle = tokio::spawn(background);
 
 		// Initialize a root account using a predefined keypair and the test root address.
-		let root_account = LocalAccount::new(
-			aptos_test_root_address(),
-			AccountKey::from_private_key(config.chain.maptos_private_key.clone()),
-			0,
-		);
+		let raw_private_key =
+			config.chain.maptos_private_key_signer_identifier.try_raw_private_key()?;
+		let private_key = Ed25519PrivateKey::try_from(raw_private_key.as_slice())?;
+		let root_account =
+			LocalAccount::from_private_key(private_key.to_encoded_string()?.as_str(), 0)?;
 
 		// Seed for random number generator, used here to generate predictable results in a test environment.
 		let seed = [4u8; 32];

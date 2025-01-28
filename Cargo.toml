@@ -353,6 +353,7 @@ hyper = "1.4"
 hyper-util = { version = "0.1.4" }
 tower = { version = "0.5" }
 http-body-util = "0.1"
+tap = "1.0.1"
 
 # trying to pin diesel
 diesel = { version = "2.2.4", features = ["postgres", "numeric", "r2d2"] }
