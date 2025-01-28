@@ -7,6 +7,12 @@ use clap::Parser;
 pub struct Upgrade {
 	#[clap(flatten)]
 	pub movement_args: MovementArgs,
+	/// The canonical string for the Maptos signer used in the upgrade.
+	pub maptos_signer: String,
+	/// The canonical string for the DA signer used in the upgrade
+	pub da_signer: String,
+	/// The canonical string for the DA signer used in the upgrade
+	pub mcr_signer: String,
 }
 
 impl Upgrade {
