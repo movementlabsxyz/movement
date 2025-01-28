@@ -24,6 +24,15 @@ impl DotMovement {
 		self.0.join("config.json")
 	}
 
+	pub async fn try_get_config_file_str(&self) -> Result<String, anyhow::Error> {
+		let config_path = self.get_config_json_path();
+		let res = tokio::fs::read_to_string(config_path).await;
+		match res {
+			Ok(contents) => Ok(contents),
+			Err(e) => Err(anyhow::anyhow!("failed to read file: {}", e)),
+		}
+	}
+
 	pub async fn try_get_or_create_config_file(&self) -> Result<tokio::fs::File, anyhow::Error> {
 		let config_path = self.get_config_json_path();
 
@@ -42,7 +51,7 @@ impl DotMovement {
 					.recursive(true)
 					.create(
 						config_path.parent().ok_or(anyhow::anyhow!(
-							"Failed to get parent directory of config path"
+							"failed to get parent directory of config path"
 						))?,
 					)
 					.await?;
@@ -121,6 +130,12 @@ impl DotMovement {
 		let path = std::env::var(Self::DEFAULT_DOT_MOVEMENT_PATH_VAR_NAME)
 			.map_err(|_| anyhow::anyhow!("Dot movement path not provided"))?;
 		Ok(Self::new(&path))
+	}
+
+	pub async fn try_load_value(&self) -> Result<serde_json::Value, anyhow::Error> {
+		let json_contents = self.try_get_config_file_str().await?;
+		let value = serde_json::from_str(&json_contents)?;
+		Ok(value)
 	}
 }
 
