@@ -6,40 +6,67 @@ import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/acce
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {INativeBridge} from "./INativeBridge.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
-// import {RateLimiter} from "./RateLimiter.sol";
+import "forge-std/console.sol";
 
 contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeBridge {
-    struct OutgoingBridgeTransfer {
+    struct OutboundTransfer {
+        bytes32 bridgeTransferId;
         address initiator;
         bytes32 recipient;
         uint256 amount;
-        uint256 nonce;
     }
-    mapping(bytes32 bridgeTransferId => OutgoingBridgeTransfer) public outgoingBridgeTransfers;
-    mapping(uint256 nonce => bytes32 incomingBridgeTransferId) public noncesToIncomingBridgeTransferIds;
 
-    IERC20 public moveToken;
+    mapping(uint256 nonce => OutboundTransfer) public noncesToOutboundTransfers;
+    mapping(bytes32 bridgeTransferId => uint256 nonce) public idsToInboundNonces;
+    mapping(uint256 day => uint256 amount) public inboundRateLimitBudget;
+
     bytes32 public constant RELAYER_ROLE = keccak256(abi.encodePacked("RELAYER_ROLE"));
+    uint256 public constant MINIMUM_RISK_DENOMINATOR = 3;
+    IERC20 public moveToken;
+    address public insuranceFund;
+    uint256 public riskDenominator;
     uint256 private _nonce;
 
     // Prevents initialization of implementation contract exploits
     constructor() {
         _disableInitializers();
     }
-    // TODO: include rate limit
 
-    function initialize(address _moveToken, address _admin, address _relayer, address _maintainer) public initializer {
+    /**
+     * @dev Initializes the NativeBridge contract
+     * @param _moveToken The address of the MOVE token contract
+     * @param _admin The address of the admin role
+     * @param _relayer The address of the relayer role
+     * @param _maintainer The address of the maintainer role
+     */
+    function initialize(
+        address _moveToken,
+        address _admin,
+        address _relayer,
+        address _maintainer,
+        address _insuranceFund
+    ) public initializer {
         require(_moveToken != address(0) && _admin != address(0) && _relayer != address(0), ZeroAddress());
         __Pausable_init();
         moveToken = IERC20(_moveToken);
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
         _grantRole(RELAYER_ROLE, _relayer);
 
+        // Set insurance fund
+        insuranceFund = _insuranceFund;
+        riskDenominator = MINIMUM_RISK_DENOMINATOR + 1;
+
         // Maintainer is optional
         _grantRole(RELAYER_ROLE, _maintainer);
     }
 
+    /**
+     * @dev Creates a new bridge
+     * @param recipient The address on the other chain to which to transfer funds
+     * @param amount The amount of MOVE to send
+     * @return bridgeTransferId A unique id representing this BridgeTransfer
+     *
+     */
     function initiateBridgeTransfer(bytes32 recipient, uint256 amount)
         external
         whenNotPaused
@@ -47,7 +74,6 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
     {
         // Ensure there is a valid amount
         require(amount > 0, ZeroAmount());
-        //   _l1l2RateLimit(amount);
         address initiator = msg.sender;
 
         // Transfer the MOVE tokens from the user to the contract
@@ -57,12 +83,20 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
         bridgeTransferId = keccak256(abi.encodePacked(initiator, recipient, amount, ++_nonce));
 
         // Store the bridge transfer details
-        outgoingBridgeTransfers[bridgeTransferId] = OutgoingBridgeTransfer(initiator, recipient, amount, _nonce);
+        noncesToOutboundTransfers[_nonce] = OutboundTransfer(bridgeTransferId, initiator, recipient, amount);
 
         emit BridgeTransferInitiated(bridgeTransferId, initiator, recipient, amount, _nonce);
         return bridgeTransferId;
     }
 
+    /**
+     * @dev Completes the bridging of funds. Only the relayer can call this function.
+     * @param bridgeTransferId Unique identifier for the BridgeTransfer
+     * @param initiator The address on the other chain that originated the transfer of funds
+     * @param recipient The address on this chain to which to transfer funds
+     * @param amount The amount to transfer
+     * @param nonce The seed nonce to generate the bridgeTransferId
+     */
     function completeBridgeTransfer(
         bytes32 bridgeTransferId,
         bytes32 initiator,
@@ -73,6 +107,14 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
         _completeBridgeTransfer(bridgeTransferId, initiator, recipient, amount, nonce);
     }
 
+    /**
+     * @dev Completes multiple bridge transfers
+     * @param bridgeTransferIds Unique identifiers for the BridgeTransfers
+     * @param initiators The addresses on the other chain that originated the transfer of funds
+     * @param recipients The addresses on this chain to which to transfer funds
+     * @param amounts The amounts to transfer
+     * @param nonces The seed nonces to generate the bridgeTransferIds
+     */
     function batchCompleteBridgeTransfer(
         bytes32[] memory bridgeTransferIds,
         bytes32[] memory initiators,
@@ -100,17 +142,18 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
         uint256 amount,
         uint256 nonce
     ) internal {
-        // _l2l1RateLimit(amount);
+        _rateLimitInbound(amount);
+        // Ensure the bridge transfer has not already been completed
+        require(nonce > 0, InvalidNonce());
+        require(idsToInboundNonces[bridgeTransferId] == 0, CompletedBridgeTransferId());
         // Ensure the bridge transfer ID is valid against the initiator, recipient, amount, and nonce
         require(
             bridgeTransferId == keccak256(abi.encodePacked(initiator, recipient, amount, nonce)),
             InvalidBridgeTransferId()
         );
-        // Ensure the bridge transfer has not already been completed
-        require(noncesToIncomingBridgeTransferIds[nonce] == bytes32(0x0), CompletedBridgeTransferId());
 
         // Store the nonce to bridge transfer ID
-        noncesToIncomingBridgeTransferIds[nonce] = bridgeTransferId;
+        idsToInboundNonces[bridgeTransferId] = nonce;
 
         // Transfer the MOVE tokens to the recipient
         if (!moveToken.transfer(recipient, amount)) revert MOVETransferFailed();
@@ -118,7 +161,46 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
         emit BridgeTransferCompleted(bridgeTransferId, initiator, recipient, amount, nonce);
     }
 
+    /**
+     * @dev Sets the insurance fund address for rate limiting purposes
+     * @param _insuranceFund The new insurance fund address
+     */
+    function setInsuranceFund(address _insuranceFund) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(_insuranceFund != address(0), ZeroAddress());
+        insuranceFund = _insuranceFund;
+        emit InsuranceFundUpdated(_insuranceFund);
+    }
+
+    /**
+     * @dev Sets the risk denominator for the bridge
+     * @param _riskDenominator The new risk denominator
+     */
+    function setRiskDenominator(uint256 _riskDenominator) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        // risk denominator must be at least 4
+        require(_riskDenominator > MINIMUM_RISK_DENOMINATOR, InvalidRiskDenominator());
+        riskDenominator = _riskDenominator;
+        emit RiskDenominatorUpdated(_riskDenominator);
+    }
+
+    /**
+     * @dev Toggles the paused state of the contract
+     */
     function togglePause() external onlyRole(DEFAULT_ADMIN_ROLE) {
         paused() ? _pause() : _unpause();
+        emit PauseToggled(paused());
+    }
+
+    /**
+     * @dev Rate limits the inbound transfers based on the insurance fund and risk denominator
+     * @param amount The amount to rate limit
+     */
+
+    function _rateLimitInbound(uint256 amount) public {
+        uint256 day = block.timestamp / 1 days;
+        inboundRateLimitBudget[day] += amount;
+        require(
+            inboundRateLimitBudget[day] < moveToken.balanceOf(insuranceFund) / riskDenominator,
+            InboundRateLimitExceeded()
+        );
     }
 }

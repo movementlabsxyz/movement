@@ -10,6 +10,14 @@ use aptos_types::chain_id::ChainId;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
+pub fn default_known_framework_release_str() -> String {
+	match std::env::var("KNOWN_FRAMEWORK_RELEASE") {
+		Ok(val) => val,
+		// todo: revert to head
+		Err(_) => "elsa".to_string(),
+	}
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Config {
 	/// The chain id for the Aptos node
@@ -57,6 +65,10 @@ pub struct Config {
 	/// The genesis block hash
 	#[serde(default = "default_genesis_block_hash_hex")]
 	pub genesis_block_hash_hex: String,
+
+	/// The known framework release
+	#[serde(default = "default_known_framework_release_str")]
+	pub known_framework_release_str: String,
 }
 
 impl Default for Config {
@@ -74,6 +86,7 @@ impl Default for Config {
 			genesis_timestamp_microseconds: default_genesis_timestamp_microseconds(),
 			genesis_block_hash_hex: default_genesis_block_hash_hex(),
 			maptos_db_path: None,
+			known_framework_release_str: default_known_framework_release_str(),
 		}
 	}
 }

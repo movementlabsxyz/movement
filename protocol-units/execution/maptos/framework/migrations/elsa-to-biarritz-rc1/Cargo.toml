@@ -1,0 +1,25 @@
+[package]
+name = "aptos-framework-elsa-to-biarritz-rc1-migration"
+description = "Executor for the AptosVM"
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+
+version = { workspace = true }
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "aptos-framework-biarritz-rc1-release-tool"
+path = "src/bin/release.rs"
+
+[dependencies]
+maptos-framework-release-util = { workspace = true }
+aptos-sdk = { workspace = true }
+aptos-framework-biarritz-rc1-release = { workspace = true }
+thiserror = { workspace = true }
+dot-movement = { workspace = true }
+movement-config = { workspace = true }

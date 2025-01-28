@@ -1,7 +1,6 @@
 use super::Executor;
 use aptos_crypto::HashValue;
 use aptos_executor_types::BlockExecutorTrait;
-use aptos_types::transaction::signature_verified_transaction::into_signature_verified_block;
 use aptos_types::{
 	aggregate_signature::AggregateSignature,
 	block_executor::{
@@ -9,14 +8,13 @@ use aptos_types::{
 		partitioner::{ExecutableBlock, ExecutableTransactions},
 	},
 	block_info::BlockInfo,
-	block_metadata::BlockMetadata,
 	epoch_state::EpochState,
 	ledger_info::{LedgerInfo, LedgerInfoWithSignatures},
 	transaction::{Transaction, Version},
 	validator_verifier::{ValidatorConsensusInfo, ValidatorVerifier},
 };
 use movement_types::block::{BlockCommitment, Commitment, Id};
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
 
 impl Executor {
 	pub async fn execute_block(

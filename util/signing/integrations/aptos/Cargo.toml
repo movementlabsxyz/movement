@@ -14,6 +14,8 @@ movement-signer = { workspace = true }
 aptos-crypto = { workspace = true }
 aptos-types = { workspace = true }
 thiserror = { workspace = true }
+maptos-framework-release-util = { workspace = true }
+aptos-sdk = { workspace = true }
 
 [dev-dependencies]
 maptos-opt-executor = { workspace = true }

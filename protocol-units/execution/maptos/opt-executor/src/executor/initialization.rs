@@ -11,7 +11,6 @@ use aptos_executor::block_executor::BlockExecutor;
 use aptos_mempool::MempoolClientRequest;
 use aptos_types::transaction::SignedTransaction;
 use dot_movement::DotMovement;
-use futures::FutureExt;
 use maptos_execution_util::config::Config;
 
 use anyhow::Context as _;
@@ -104,11 +103,15 @@ impl Executor {
 		node_config.storage.dir = dot_movement.get_path().join("maptos-storage");
 		node_config.storage.set_data_dir(node_config.storage.dir.clone());
 
+		let known_release = aptos_framework_known_release::KnownRelease::try_new(
+			maptos_config.chain.known_framework_release_str.as_str(),
+		)?;
 		let (db, signer) = bootstrap::maybe_bootstrap_empty_db(
 			&node_config,
 			maptos_config.chain.maptos_db_path.as_ref().context("No db path provided.")?,
 			maptos_config.chain.maptos_chain_id.clone(),
-			&public_key,
+			&maptos_config.chain.maptos_private_key.public_key(),
+			&known_release,
 		)?;
 		Ok(Self {
 			block_executor: Arc::new(BlockExecutor::new(db.clone())),

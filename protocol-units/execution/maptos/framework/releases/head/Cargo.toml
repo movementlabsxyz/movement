@@ -1,0 +1,24 @@
+[package]
+name = "aptos-framework-head-release"
+description = "Executor for the AptosVM"
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+
+version = { workspace = true }
+
+[[bin]]
+name = "aptos-framework-head-release-tool"
+path = "src/bin/release.rs"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+aptos-framework = { workspace = true }
+aptos-cached-packages = { workspace = true }
+maptos-framework-release-util = { workspace = true }
+tokio = { workspace = true }
+anyhow = { workspace = true }
