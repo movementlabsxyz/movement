@@ -1,9 +1,6 @@
 use aptos_framework_biarritz_rc1_release::cached::gas_upgrade::BiarritzRc1;
 use maptos_framework_release_util::{LocalAccountReleaseSigner, Release};
-use movement_client::{
-	crypto::ValidCryptoMaterialStringExt,
-	types::{account_config::aptos_test_root_address, LocalAccount},
-};
+use movement_client::types::{account_config::aptos_test_root_address, LocalAccount};
 use once_cell::sync::Lazy;
 use std::str::FromStr;
 use url::Url;
@@ -41,16 +38,14 @@ async fn main() -> Result<(), anyhow::Error> {
 	let biarritz_rc1 = BiarritzRc1::new();
 
 	// get the root account
-	let root_account = LocalAccount::from_private_key(
-		MOVEMENT_CONFIG
-			.execution_config
-			.maptos_config
-			.chain
-			.maptos_private_key
-			.to_encoded_string()?
-			.as_str(),
-		0,
-	)?;
+	let raw_private_key = MOVEMENT_CONFIG
+		.execution_config
+		.maptos_config
+		.chain
+		.maptos_private_key_signer_identifier
+		.try_raw_private_key()?;
+	let private_key_hex = hex::encode(raw_private_key);
+	let root_account = LocalAccount::from_private_key(private_key_hex.as_str(), 0)?;
 
 	// form the local account release signer
 	let local_account_release_signer =
@@ -67,7 +62,6 @@ async fn main() -> Result<(), anyhow::Error> {
 	biarritz_rc1
 		.release(
 			&local_account_release_signer,
-			sequencer_number,
 			2_000_000,
 			100,
 			// 60 seconds from now as u64
@@ -78,7 +72,6 @@ async fn main() -> Result<(), anyhow::Error> {
 				.unwrap()
 				.as_secs()) as u64)
 				.into(),
-			MOVEMENT_CONFIG.execution_config.maptos_config.chain.maptos_chain_id,
 			&rest_client,
 		)
 		.await?;

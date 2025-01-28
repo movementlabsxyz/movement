@@ -19,12 +19,7 @@ pub trait RestClient {
 impl Config {
 	pub fn rest_client(&self) -> impl Future<Output = Result<Client, RestClientError>> {
 		// get the relevant fields from the config
-		let protocol = self
-			.execution_config
-			.maptos_config
-			.client
-			.maptos_rest_connection_protocol
-			.clone();
+		let protocol = "http";
 		let hostname = self
 			.execution_config
 			.maptos_config
@@ -36,11 +31,14 @@ impl Config {
 		// build the connection string
 		let connection_string = format!("{}://{}:{}", protocol, hostname, port);
 
-		// build the client
 		async move {
-			let client = Client::new(&connection_string)
-				.await
-				.map_err(|e| RestClientError::BuildingClient(Box::new(e)))?;
+			// build the client
+			let client = Client::new(connection_string.parse().map_err(|e| {
+				RestClientError::BuildingClient(
+					format!("failed to parse connection string: {}", e).into(),
+				)
+			})?);
+
 			Ok(client)
 		}
 	}

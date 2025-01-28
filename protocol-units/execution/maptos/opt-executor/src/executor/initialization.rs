@@ -111,7 +111,7 @@ impl Executor {
 			&node_config,
 			maptos_config.chain.maptos_db_path.as_ref().context("No db path provided.")?,
 			maptos_config.chain.maptos_chain_id.clone(),
-			&maptos_config.chain.maptos_private_key.public_key(),
+			&public_key,
 			&known_release,
 		)?;
 		Ok(Self {

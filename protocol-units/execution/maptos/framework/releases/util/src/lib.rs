@@ -64,6 +64,21 @@ pub trait ReleaseSigner {
 			Ok(account_address)
 		}
 	}
+
+	/// Get the release account sequence number.
+	fn release_account_sequence_number(
+		&self,
+		client: &Client,
+	) -> impl Future<Output = Result<u64, ReleaseSignerError>> {
+		async move {
+			let account_address = self.release_account_address(client).await?;
+			let account = client
+				.get_account(account_address)
+				.await
+				.map_err(|e| ReleaseSignerError::AccountAddressNotFound(Box::new(e)))?;
+			Ok(account.into_inner().sequence_number)
+		}
+	}
 }
 
 /// A [ReleaseSigner] that signs the transactions with a local account.
@@ -136,15 +151,23 @@ pub trait Release {
 	async fn proposal_signed_transactions(
 		&self,
 		signer: &impl ReleaseSigner,
-		start_sequence_number: u64,
 		max_gas_amount: u64,
 		gas_unit_price: u64,
 		expiration_timestamp_secs: u64,
-		chain_id: ChainId,
 		client: &Client,
 	) -> Result<Vec<SignedTransaction>, ReleaseBundleError> {
 		// get the account address
 		let account_address = signer.release_account_address(client).await?;
+
+		// get the start sequence number
+		let start_sequence_number = signer.release_account_sequence_number(client).await?;
+
+		// get the chain id
+		let ledger_information = client
+			.get_ledger_information()
+			.await
+			.map_err(|e| ReleaseBundleError::Proposing(Box::new(e)))?;
+		let chain_id = ChainId::new(ledger_information.into_inner().chain_id);
 
 		// form the raw transactions
 		let raw_transactions = self.proposal_raw_transactions(
@@ -170,21 +193,17 @@ pub trait Release {
 	async fn proposal_transactions(
 		&self,
 		signer: &impl ReleaseSigner,
-		start_sequence_number: u64,
 		max_gas_amount: u64,
 		gas_unit_price: u64,
 		expiration_timestamp_secs: u64,
-		chain_id: ChainId,
 		client: &Client,
 	) -> Result<Vec<Transaction>, ReleaseBundleError> {
 		let signed_transactions = self
 			.proposal_signed_transactions(
 				signer,
-				start_sequence_number,
 				max_gas_amount,
 				gas_unit_price,
 				expiration_timestamp_secs,
-				chain_id,
 				client,
 			)
 			.await?;
@@ -199,22 +218,18 @@ pub trait Release {
 	async fn submit_release_proposals(
 		&self,
 		signer: &impl ReleaseSigner,
-		start_sequence_number: u64,
 		max_gas_amount: u64,
 		gas_unit_price: u64,
 		expiration_timestamp_secs: u64,
-		chain_id: ChainId,
 		client: &Client,
 	) -> Result<Vec<SignedTransaction>, ReleaseBundleError> {
 		// form the signed transactions
 		let transactions = self
 			.proposal_signed_transactions(
 				signer,
-				start_sequence_number,
 				max_gas_amount,
 				gas_unit_price,
 				expiration_timestamp_secs,
-				chain_id,
 				client,
 			)
 			.await?;
@@ -242,21 +257,17 @@ pub trait Release {
 	async fn propose_release(
 		&self,
 		signer: &impl ReleaseSigner,
-		start_sequence_number: u64,
 		max_gas_amount: u64,
 		gas_unit_price: u64,
 		expiration_timestamp_secs: u64,
-		chain_id: ChainId,
 		client: &Client,
 	) -> Result<Vec<SignedTransaction>, ReleaseBundleError> {
 		let submitted_transactions = self
 			.submit_release_proposals(
 				signer,
-				start_sequence_number,
 				max_gas_amount,
 				gas_unit_price,
 				expiration_timestamp_secs,
-				chain_id,
 				client,
 			)
 			.await?;
@@ -283,22 +294,18 @@ pub trait Release {
 	async fn release(
 		&self,
 		signer: &impl ReleaseSigner,
-		start_sequence_number: u64,
 		max_gas_amount: u64,
 		gas_unit_price: u64,
 		expiration_timestamp_secs: u64,
-		chain_id: ChainId,
 		client: &Client,
 	) -> Result<Vec<SignedTransaction>, ReleaseBundleError> {
 		// propose the release
 		let completed_proposals = self
 			.propose_release(
 				signer,
-				start_sequence_number,
 				max_gas_amount,
 				gas_unit_price,
 				expiration_timestamp_secs,
-				chain_id,
 				client,
 			)
 			.await?;

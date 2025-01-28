@@ -32,3 +32,4 @@ serde_json = { workspace = true }
 movement-signer-loader = { workspace = true }
 tracing-test = { workspace = true }
 tap = { workspace = true }
+aptos-sdk = { workspace = true }

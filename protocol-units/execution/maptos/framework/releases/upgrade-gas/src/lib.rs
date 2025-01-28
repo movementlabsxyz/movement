@@ -97,18 +97,25 @@ where
 	pub async fn upgrade_gas_proposal_transaction(
 		&self,
 		signer: &impl ReleaseSigner,
-		start_sequence_number: u64,
 		max_gas_amount: u64,
 		gas_unit_price: u64,
 		expiration_timestamp_secs: u64,
-		chain_id: aptos_types::chain_id::ChainId,
 		client: &aptos_sdk::rest_client::Client,
 	) -> Result<SignedTransaction, ReleaseBundleError> {
 		let bytecode = self.upgrade_gas_proposal_bytecode()?;
 		let script_payload = TransactionPayload::Script(Script::new(bytecode, vec![], vec![]));
+
+		// get the chain id
+		let ledger_information = client
+			.get_ledger_information()
+			.await
+			.map_err(|e| ReleaseBundleError::Proposing(Box::new(e)))?;
+		let chain_id =
+			aptos_types::chain_id::ChainId::new(ledger_information.into_inner().chain_id);
+
 		let raw_transaction = aptos_types::transaction::RawTransaction::new(
 			signer.release_account_address(client).await?,
-			start_sequence_number,
+			signer.release_account_sequence_number(client).await?,
 			script_payload,
 			max_gas_amount,
 			gas_unit_price,
@@ -123,21 +130,17 @@ where
 	pub async fn upgrade_gas(
 		&self,
 		signer: &impl ReleaseSigner,
-		start_sequence_number: u64,
 		max_gas_amount: u64,
 		gas_unit_price: u64,
 		expiration_timestamp_secs: u64,
-		chain_id: aptos_types::chain_id::ChainId,
 		client: &aptos_sdk::rest_client::Client,
 	) -> Result<Vec<aptos_types::transaction::SignedTransaction>, ReleaseBundleError> {
 		let signed_transaction = self
 			.upgrade_gas_proposal_transaction(
 				signer,
-				start_sequence_number,
 				max_gas_amount,
 				gas_unit_price,
 				expiration_timestamp_secs,
-				chain_id,
 				client,
 			)
 			.await?;
@@ -165,36 +168,18 @@ where
 	async fn release(
 		&self,
 		signer: &impl maptos_framework_release_util::ReleaseSigner,
-		start_sequence_number: u64,
 		max_gas_amount: u64,
 		gas_unit_price: u64,
 		expiration_timestamp_secs: u64,
-		chain_id: aptos_types::chain_id::ChainId,
 		client: &aptos_sdk::rest_client::Client,
 	) -> Result<Vec<aptos_types::transaction::SignedTransaction>, ReleaseBundleError> {
 		// generate and execute the gas upgrade proposal
-		self.upgrade_gas(
-			signer,
-			start_sequence_number,
-			max_gas_amount,
-			gas_unit_price,
-			expiration_timestamp_secs,
-			chain_id,
-			client,
-		)
-		.await?;
+		self.upgrade_gas(signer, max_gas_amount, gas_unit_price, expiration_timestamp_secs, client)
+			.await?;
 
 		// run the wrapped release
 		self.wrapped_release
-			.release(
-				signer,
-				start_sequence_number + 1, // this needs to be + 1 because the value is not mutated in the upgrade_gas function
-				max_gas_amount,
-				gas_unit_price,
-				expiration_timestamp_secs,
-				chain_id,
-				client,
-			)
+			.release(signer, max_gas_amount, gas_unit_price, expiration_timestamp_secs, client)
 			.await
 	}
 }
@@ -243,21 +228,17 @@ macro_rules! generate_gas_upgrade_module {
 				async fn release(
 					&self,
 					signer: &impl maptos_framework_release_util::ReleaseSigner,
-					start_sequence_number: u64,
 					max_gas_amount: u64,
 					gas_unit_price: u64,
 					expiration_timestamp_secs: u64,
-					chain_id: aptos_types::chain_id::ChainId,
 					client: &aptos_sdk::rest_client::Client,
 				) -> Result<Vec<aptos_types::transaction::SignedTransaction>, ReleaseBundleError> {
 					self.with_gas_upgrade
 						.release(
 							signer,
-							start_sequence_number,
 							max_gas_amount,
 							gas_unit_price,
 							expiration_timestamp_secs,
-							chain_id,
 							client,
 						)
 						.await
