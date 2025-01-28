@@ -1883,24 +1883,7 @@ version = "0.0.2"
 dependencies = [
  "anyhow",
  "aptos-framework",
- "aptos-framework-bump-gas-release",
- "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
- "dot-movement",
- "maptos-framework-release-util",
- "movement-client",
- "movement-config",
- "once_cell",
- "tempfile",
- "tokio",
- "url",
-]
-
-[[package]]
-name = "aptos-framework-bump-gas-release"
-version = "0.0.2"
-dependencies = [
- "anyhow",
- "aptos-framework",
+ "aptos-framework-upgrade-gas-release",
  "aptos-gas-schedule",
  "aptos-release-builder",
  "aptos-sdk",
@@ -1908,14 +1891,11 @@ dependencies = [
  "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
  "dot-movement",
  "maptos-framework-release-util",
- "move-package",
- "movement",
  "movement-client",
  "movement-config",
  "once_cell",
  "tempfile",
  "tokio",
- "toml 0.8.19",
  "url",
 ]
 
@@ -1925,7 +1905,11 @@ version = "0.0.2"
 dependencies = [
  "anyhow",
  "aptos-framework",
- "aptos-framework-bump-gas-release",
+ "aptos-framework-upgrade-gas-release",
+ "aptos-gas-schedule",
+ "aptos-release-builder",
+ "aptos-sdk",
+ "aptos-types",
  "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
  "dot-movement",
  "maptos-framework-release-util",
@@ -1960,6 +1944,30 @@ dependencies = [
  "maptos-framework-release-util",
  "thiserror 1.0.69",
  "tokio",
+]
+
+[[package]]
+name = "aptos-framework-upgrade-gas-release"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "aptos-framework",
+ "aptos-gas-schedule",
+ "aptos-release-builder",
+ "aptos-sdk",
+ "aptos-types",
+ "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
+ "dot-movement",
+ "maptos-framework-release-util",
+ "move-package",
+ "movement",
+ "movement-client",
+ "movement-config",
+ "once_cell",
+ "tempfile",
+ "tokio",
+ "toml 0.8.19",
+ "url",
 ]
 
 [[package]]

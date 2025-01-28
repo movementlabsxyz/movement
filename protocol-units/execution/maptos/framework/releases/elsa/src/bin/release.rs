@@ -1,5 +1,4 @@
-use aptos_framework_bump_gas_release::BumpGas;
-use aptos_framework_elsa_release::{cached::Elsa, BYTECODE_VERSION, COMMIT_HASH, REPO};
+use aptos_framework_elsa_release::cached::Elsa;
 use maptos_framework_release_util::{LocalAccountReleaseSigner, Release};
 use movement_client::{
 	crypto::ValidCryptoMaterialStringExt,
@@ -41,9 +40,6 @@ async fn main() -> Result<(), anyhow::Error> {
 	// form the elsa release
 	let elsa = Elsa::new();
 
-	// form the bump gas release
-	let _bump_gas = BumpGas::new(REPO, COMMIT_HASH, BYTECODE_VERSION, None);
-
 	// get the root account
 	let root_account = LocalAccount::from_private_key(
 		MOVEMENT_CONFIG
@@ -65,36 +61,12 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	// get the current sequence number
 	let account = rest_client.get_account(aptos_test_root_address()).await?;
-	let sequencer_number = account.into_inner().sequence_number;
-
-	// release the bump gas release
-	/*bump_gas
-	.release(
-		&local_account_release_signer,
-		sequencer_number,
-		1_000_000,
-		100,
-		// 60 seconds from now as u64
-		((std::time::SystemTime::now()
-			.checked_add(std::time::Duration::from_secs(60))
-			.unwrap()
-			.duration_since(std::time::UNIX_EPOCH)
-			.unwrap()
-			.as_secs()) as u64)
-			.into(),
-		MOVEMENT_CONFIG.execution_config.maptos_config.chain.maptos_chain_id,
-		&rest_client,
-	)
-	.await?;*/
-
-	// get the current sequence number
-	let account = rest_client.get_account(aptos_test_root_address()).await?;
-	let sequencer_number = account.into_inner().sequence_number;
+	let sequence_number = account.into_inner().sequence_number;
 
 	// release the elsa release
 	elsa.release(
 		&local_account_release_signer,
-		sequencer_number,
+		sequence_number,
 		2_000_000,
 		100,
 		// 60 seconds from now as u64

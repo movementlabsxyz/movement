@@ -96,7 +96,7 @@ maptos-framework-release-util = { path = "protocol-units/execution/maptos/framew
 aptos-framework-head-release = { path = "protocol-units/execution/maptos/framework/releases/head" }
 aptos-framework-elsa-release = { path = "protocol-units/execution/maptos/framework/releases/elsa" }
 aptos-framework-biarritz-rc1-release = { path = "protocol-units/execution/maptos/framework/releases/biarritz-rc1" }
-aptos-framework-bump-gas-release = { path = "protocol-units/execution/maptos/framework/releases/bump-gas" }
+aptos-framework-upgrade-gas-release = { path = "protocol-units/execution/maptos/framework/releases/upgrade-gas" }
 aptos-framework-known-release = { path = "protocol-units/execution/maptos/framework/releases/known-release" }
 
 ## infra

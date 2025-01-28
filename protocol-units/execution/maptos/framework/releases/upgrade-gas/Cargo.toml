@@ -1,5 +1,5 @@
 [package]
-name = "aptos-framework-bump-gas-release"
+name = "aptos-framework-upgrade-gas-release"
 description = "Executor for the AptosVM"
 authors = { workspace = true }
 edition = { workspace = true }
