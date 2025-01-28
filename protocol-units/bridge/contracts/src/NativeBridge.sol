@@ -27,8 +27,9 @@ contract NativeBridge is AccessControlUpgradeable, PausableUpgradeable, INativeB
     bytes32 public constant PAUSER_ROLE = keccak256(abi.encodePacked("PAUSER_ROLE"));
 
     // The insuranceBudgetDivider determines the fraction of the insurance fund that can be used for the per day budget for a given transfer direction.
-    // inusrance budget divider must be equal or above 4
-    uint256 public constant INSURANCE_BUDGET_DIVIDER_LOWER_BOUND = 3;
+    // inusrance budget divider must be equal or above 2
+    // Assumes symmetric Insurance Funds on both L1 and L2
+    uint256 public constant INSURANCE_BUDGET_DIVIDER_LOWER_BOUND = 1;
     IERC20 public moveToken;
     address public insuranceFund;
     uint256 public insuranceBudgetDivider;
