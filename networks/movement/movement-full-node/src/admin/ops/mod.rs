@@ -1,5 +1,5 @@
-pub mod burn_from;
 pub mod mint;
+pub mod burn;
 
 use clap::Subcommand;
 
@@ -7,14 +7,14 @@ use clap::Subcommand;
 #[clap(rename_all = "kebab-case", about = "Commands for bespoke network operations")]
 pub enum Ops {
 	Mint(mint::Mint),
-	BurnFrom(burn_from::BurnFrom),
+	Burn(burn::Burn),
 }
 
 impl Ops {
 	pub async fn execute(&self) -> Result<(), anyhow::Error> {
 		match self {
 			Ops::Mint(mint) => mint.execute().await,
-			Ops::BurnFrom(burn_from) => burn_from.execute().await,
+			Ops::Burn(burm) => burn.execute().await,
 		}
 	}
 }
