@@ -1,7 +1,12 @@
 use crate::{ElsaToBiarritzRc1, ElsaToBiarritzRc1Error, MigrateElsaToBiarritzRc1};
 use dot_movement::DotMovement;
 use maptos_framework_release_util::ReleaseSigner;
-use movement_config::{ops::aptos::rest_client::RestClient, Config};
+use movement_config::{
+	ops::aptos::{
+		framework::releases::release_signer::ReleaseSignerOperations, rest_client::RestClient,
+	},
+	Config,
+};
 
 impl MigrateElsaToBiarritzRc1 for DotMovement {
 	async fn migrate_framework_from_elsa_to_biarritz_rc1(
@@ -17,6 +22,18 @@ impl MigrateElsaToBiarritzRc1 for DotMovement {
 			.get_rest_client()
 			.await
 			.map_err(|e| ElsaToBiarritzRc1Error::MigrationFailed(e.into()))?;
+
+		// get the release signer from the movement config
+		let signer = config
+			.get_release_signer()
+			.await
+			.map_err(|e| ElsaToBiarritzRc1Error::MigrationFailed(e.into()))?;
+
+		// migrate the framework from Elsa to Biarritz RC1
+		let elsa_to_biarritz_rc1 = ElsaToBiarritzRc1::new();
+		elsa_to_biarritz_rc1
+			.migrate_framework_from_elsa_to_biarritz_rc1(&rest_client, &signer)
+			.await?;
 
 		Ok(())
 	}
