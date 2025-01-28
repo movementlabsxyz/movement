@@ -14,7 +14,7 @@ use aptos_types::{
 	validator_verifier::{ValidatorConsensusInfo, ValidatorVerifier},
 };
 use movement_types::block::{BlockCommitment, Commitment, Id};
-use tracing::{debug, warn};
+use tracing::{debug, info};
 
 impl Executor {
 	pub async fn execute_block(

@@ -6,8 +6,8 @@ use std::error;
 ///
 /// Before making a release, ensure that the release is cached. Lengthy build times can cause issues in e2e tests.
 pub enum KnownRelease {
-	Elsa(aptos_framework_elsa_release::cached::Elsa),
-	BiarritzRc1(aptos_framework_biarritz_rc1_release::cached::BiarritzRc1),
+	Elsa(aptos_framework_elsa_release::cached::gas_upgrade::Elsa),
+	BiarritzRc1(aptos_framework_biarritz_rc1_release::cached::gas_upgrade::BiarritzRc1),
 	Head(aptos_framework_head_release::Head),
 }
 
@@ -31,9 +31,11 @@ pub enum KnownReleaseError {
 impl KnownRelease {
 	pub fn try_new(release: &str) -> Result<Self, KnownReleaseError> {
 		match release {
-			"elsa" => Ok(KnownRelease::Elsa(aptos_framework_elsa_release::cached::Elsa::new())),
+			"elsa" => Ok(KnownRelease::Elsa(
+				aptos_framework_elsa_release::cached::gas_upgrade::Elsa::new(),
+			)),
 			"biarritz-rc1" => Ok(KnownRelease::BiarritzRc1(
-				aptos_framework_biarritz_rc1_release::cached::BiarritzRc1::new(),
+				aptos_framework_biarritz_rc1_release::cached::gas_upgrade::BiarritzRc1::new(),
 			)),
 			"head" => Ok(KnownRelease::Head(aptos_framework_head_release::Head::new())),
 			_ => Err(KnownReleaseError::InvalidIdentifier(

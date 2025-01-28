@@ -9,10 +9,6 @@ repository = { workspace = true }
 
 version = { workspace = true }
 
-[[bin]]
-name = "aptos-framework-known-release-tool"
-path = "src/bin/release.rs"
-
 [lib]
 path = "src/lib.rs"
 

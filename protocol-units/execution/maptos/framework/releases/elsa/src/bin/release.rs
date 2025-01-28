@@ -1,4 +1,4 @@
-use aptos_framework_elsa_release::cached::Elsa;
+use aptos_framework_elsa_release::cached::gas_upgrade::Elsa;
 use maptos_framework_release_util::{LocalAccountReleaseSigner, Release};
 use movement_client::{
 	crypto::ValidCryptoMaterialStringExt,
