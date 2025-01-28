@@ -1996,14 +1996,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "aptos-moving-average"
-version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=77a36245400250e7d8a854360194288d078681bc#77a36245400250e7d8a854360194288d078681bc"
-dependencies = [
- "chrono",
-]
-
-[[package]]
 name = "aptos-mvhashmap"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=198b0089e4f57bc1ec284aaee701a6b5a774f34f#198b0089e4f57bc1ec284aaee701a6b5a774f34f"
@@ -3787,8 +3779,9 @@ dependencies = [
 
 [[package]]
 name = "bcs"
-version = "0.1.4"
-source = "git+https://github.com/aptos-labs/bcs.git?rev=d31fab9d81748e2594be5cd5cdf845786a30562d#d31fab9d81748e2594be5cd5cdf845786a30562d"
+version = "0.1.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "85b6598a2f5d564fb7855dc6b06fd1c38cff5a72bd8b863a4d021938497b440a"
 dependencies = [
  "serde",
  "thiserror 1.0.69",
@@ -3797,8 +3790,7 @@ dependencies = [
 [[package]]
 name = "bcs"
 version = "0.1.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "85b6598a2f5d564fb7855dc6b06fd1c38cff5a72bd8b863a4d021938497b440a"
+source = "git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c#bc16d2d39cabafaabd76173dd1b04b2aa170cf0c"
 dependencies = [
  "serde",
  "thiserror 1.0.69",
@@ -4239,7 +4231,7 @@ dependencies = [
  "aptos-logger",
  "aptos-sdk",
  "aptos-types",
- "bcs 0.1.4",
+ "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
  "bridge-config",
  "bridge-grpc",
  "bridge-service",
@@ -4279,7 +4271,7 @@ dependencies = [
  "aptos-types",
  "async-stream",
  "async-trait",
- "bcs 0.1.4",
+ "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
  "bridge-config",
  "bridge-grpc",
  "bridge-indexer-db",
@@ -7574,7 +7566,7 @@ dependencies = [
  "aptos-framework",
  "aptos-sdk",
  "aptos-types",
- "bcs 0.1.4",
+ "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
  "chrono",
  "futures",
  "godfig",
@@ -9112,7 +9104,7 @@ dependencies = [
  "aptos-vm-types",
  "aptos-vm-validator",
  "async-trait",
- "bcs 0.1.4",
+ "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
  "borsh 0.10.4",
  "bytes 1.8.0",
  "chrono",
@@ -9977,7 +9969,7 @@ name = "move-rocks"
 version = "0.0.2"
 dependencies = [
  "anyhow",
- "bcs 0.1.4",
+ "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
  "mempool-util",
  "movement-types",
  "rand 0.7.3",
@@ -10151,7 +10143,7 @@ version = "0.0.2"
 dependencies = [
  "anyhow",
  "async-stream",
- "bcs 0.1.4",
+ "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
  "celestia-rpc",
  "celestia-types",
  "chrono",
@@ -10188,7 +10180,7 @@ dependencies = [
  "anyhow",
  "aptos-types",
  "async-stream",
- "bcs 0.1.4",
+ "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
  "dot-movement",
  "ecdsa 0.16.9",
  "hex",
@@ -10300,7 +10292,7 @@ dependencies = [
  "aptos-account-whitelist",
  "aptos-types",
  "async-stream",
- "bcs 0.1.4",
+ "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
  "celestia-rpc",
  "celestia-types",
  "dot-movement",
@@ -10336,7 +10328,7 @@ dependencies = [
  "aptos-types",
  "aptos-vm-genesis",
  "async-trait",
- "bcs 0.1.4",
+ "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
  "buildtime-helpers",
  "chrono",
  "commander",
@@ -10439,7 +10431,7 @@ name = "movement-full-node"
 version = "0.0.2"
 dependencies = [
  "anyhow",
- "bcs 0.1.4",
+ "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
  "clap 4.5.21",
  "console-subscriber",
  "dot-movement",
@@ -10587,7 +10579,7 @@ version = "0.0.2"
 dependencies = [
  "anyhow",
  "aptos-types",
- "bcs 0.1.4",
+ "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
  "blake3",
  "rand 0.7.3",
  "serde",
@@ -10601,7 +10593,7 @@ name = "movement-util"
 version = "0.0.2"
 dependencies = [
  "anyhow",
- "bcs 0.1.4",
+ "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
  "clap 4.5.21",
  "console-subscriber",
  "dot-movement",
@@ -12076,16 +12068,16 @@ dependencies = [
 [[package]]
 name = "processor"
 version = "1.0.0"
-source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=7658338eb9224abd9698c1e02dbc6ca526c268ce#7658338eb9224abd9698c1e02dbc6ca526c268ce"
+source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=77a36245400250e7d8a854360194288d078681bc#77a36245400250e7d8a854360194288d078681bc"
 dependencies = [
  "ahash 0.8.11",
  "allocative",
  "allocative_derive",
  "anyhow",
- "aptos-moving-average 0.1.0 (git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=7658338eb9224abd9698c1e02dbc6ca526c268ce)",
+ "aptos-moving-average",
  "aptos-protos 1.3.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=338f9a1bcc06f62ce4a4994f1642b9a61b631ee0)",
  "async-trait",
- "bcs 0.1.4",
+ "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
  "bigdecimal",
  "bitflags 2.6.0",
  "canonical_json",
@@ -13841,7 +13833,7 @@ dependencies = [
 [[package]]
 name = "server-framework"
 version = "1.0.0"
-source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=7658338eb9224abd9698c1e02dbc6ca526c268ce#7658338eb9224abd9698c1e02dbc6ca526c268ce"
+source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=77a36245400250e7d8a854360194288d078681bc#77a36245400250e7d8a854360194288d078681bc"
 dependencies = [
  "anyhow",
  "aptos-system-utils",

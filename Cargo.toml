@@ -140,7 +140,7 @@ borsh = { version = "0.10" } # todo: internalize jmt and bump
 ## Aptos dependencies
 
 ### We use a forked version so that we can override dependency versions. This is required
-### to be avoid dependency conflicts with other Sovereign Labs crates.
+### to avoid dependency conflicts with other Sovereign Labs crates.
 aptos-api = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "198b0089e4f57bc1ec284aaee701a6b5a774f34f" }
 aptos-api-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "198b0089e4f57bc1ec284aaee701a6b5a774f34f" }
 aptos-bitvec = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "198b0089e4f57bc1ec284aaee701a6b5a774f34f" }
@@ -177,10 +177,11 @@ aptos-indexer-grpc-table-info = { git = "https://github.com/movementlabsxyz/apto
 aptos-protos = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "198b0089e4f57bc1ec284aaee701a6b5a774f34f" }
 
 # Indexer
-processor = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors", rev = "7658338eb9224abd9698c1e02dbc6ca526c268ce" }
-server-framework = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors", rev = "7658338eb9224abd9698c1e02dbc6ca526c268ce" }
+processor = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors", rev = "77a36245400250e7d8a854360194288d078681bc" }
+server-framework = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors", rev = "77a36245400250e7d8a854360194288d078681bc" }
 
-bcs = { git = "https://github.com/aptos-labs/bcs.git", rev = "d31fab9d81748e2594be5cd5cdf845786a30562d" }
+bcs = { git = "https://github.com/movementlabsxyz/bcs.git", rev = "bc16d2d39cabafaabd76173dd1b04b2aa170cf0c" }
+
 ethereum-types = "0.14.1"
 ethers = "=2.0.10"
 ethers-core = { version = "=2.0.10", default-features = false }
