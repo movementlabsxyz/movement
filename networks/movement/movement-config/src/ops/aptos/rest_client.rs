@@ -13,11 +13,11 @@ pub enum RestClientError {
 ///
 /// This is useful for managing imports and adding sub implementations.
 pub trait RestClient {
-	fn get_client(&self) -> impl Future<Output = Result<Client, RestClientError>>;
+	fn get_rest_client(&self) -> impl Future<Output = Result<Client, RestClientError>>;
 }
 
-impl Config {
-	pub fn rest_client(&self) -> impl Future<Output = Result<Client, RestClientError>> {
+impl RestClient for Config {
+	async fn get_rest_client(&self) -> Result<Client, RestClientError> {
 		// get the relevant fields from the config
 		let protocol = "http";
 		let hostname = self
@@ -31,15 +31,13 @@ impl Config {
 		// build the connection string
 		let connection_string = format!("{}://{}:{}", protocol, hostname, port);
 
-		async move {
-			// build the client
-			let client = Client::new(connection_string.parse().map_err(|e| {
-				RestClientError::BuildingClient(
-					format!("failed to parse connection string: {}", e).into(),
-				)
-			})?);
+		// build the client
+		let client = Client::new(connection_string.parse().map_err(|e| {
+			RestClientError::BuildingClient(
+				format!("failed to parse connection string: {}", e).into(),
+			)
+		})?);
 
-			Ok(client)
-		}
+		Ok(client)
 	}
 }
