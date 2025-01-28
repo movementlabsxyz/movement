@@ -482,9 +482,12 @@ macro_rules! commit_hash_with_script {
 			let path = target_cache_dir.join(MRB_FILE);
 
 			// if the release is already built and CACHE_RELEASE is set, skip building
-			if (std::env::var(CACHE_ALL_RELEASES).is_ok() || std::env::var(CACHE_RELEASE).is_ok())
-				&& std::fs::metadata(&path).is_ok()
-			{
+			let cache_all_releases = std::env::var(CACHE_ALL_RELEASES).is_ok();
+			let cache_release = std::env::var(CACHE_RELEASE).is_ok();
+			let path_exists = std::fs::metadata(&path).is_ok();
+
+			if (cache_all_releases || cache_release) && path_exists {
+				println!("Release already built, skipping build");
 				return Ok(());
 			}
 

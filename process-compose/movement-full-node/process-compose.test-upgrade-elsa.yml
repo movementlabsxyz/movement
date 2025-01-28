@@ -5,6 +5,9 @@ environment:
 processes:
   test-upgrade-elsa:
     command: |
+      # elsa is the earliest known release we currently have, so this will always either fail with:
+      - backward compatibility error, if you are trying to upgrade from head
+      - constraint error, if you are redundantly upgrading over elsa itself
       cargo run --bin aptos-framework-elsa-release-tool
     depends_on:
       movement-full-node:

@@ -3,7 +3,7 @@ version: "3"
 environment:
 
 processes:
-  test-upgrade-elsa:
+  test-upgrade-biarritz-rc1:
     command: |
       cargo run --bin aptos-framework-biarritz-rc1-release-tool
     depends_on:

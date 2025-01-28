@@ -1,5 +1,5 @@
 use aptos_framework_biarritz_rc1_release::{
-	cached::BiarritzRc1, BiarritzRc1, BYTECODE_VERSION, COMMIT_HASH, REPO,
+	cached::BiarritzRc1, BYTECODE_VERSION, COMMIT_HASH, REPO,
 };
 use aptos_framework_bump_gas_release::BumpGas;
 use maptos_framework_release_util::{LocalAccountReleaseSigner, Release};
