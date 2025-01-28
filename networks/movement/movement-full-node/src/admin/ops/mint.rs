@@ -1,11 +1,11 @@
 #[allow(unused_imports)]
 use anyhow::Context;
 use crate::common_args::MovementArgs;
-use aptos_sdk::{coin_client::CoinClient, rest_client::{Client, FaucetClient}};
+use aptos_sdk::{coin_client::CoinClient, rest_client::{Client, FaucetClient}, transaction_builder::TransactionBuilder, types::{chain_id::ChainId, transaction::EntryFunction, LocalAccount}};
 use clap::Parser;
 use once_cell::sync::Lazy;
 use url::Url;
-use std::str::FromStr;
+use std::{str::FromStr, time::{SystemTime, UNIX_EPOCH}};
 use aptos_sdk::{
 	coin_client::CoinClient,
 	crypto::{SigningKey, ValidCryptoMaterialStringExt},
@@ -100,6 +100,14 @@ impl Mint {
 			.inner()
 			.chain_id;
 
+			let mut core_resources_account: LocalAccount = LocalAccount::from_private_key(
+				MAPTOS_PRIVATE_KEY.clone().as_str(),
+				0,
+			)?;
+
+		tracing::info!("Created core resources account");
+		tracing::debug!("core_resources_account address: {}", core_resources_account.address());
+
 		// Create account for transactions and gas collection
 		let private_key = SUZUKA_CONFIG
 			.execution_config
@@ -107,10 +115,21 @@ impl Mint {
 			.chain
 			.maptos_private_key
 			.to_string();
-		let mut core_resources_account: LocalAccount = LocalAccount::from_private_key(
-			MAPTOS_PRIVATE_KEY.clone(),
-			0,
-		)?;
+
+		let create_dead_transaction =
+		core_resources_account.sign_with_transaction_builder(TransactionBuilder::new(
+			TransactionPayload::EntryFunction(EntryFunction::new(
+				ModuleId::new(
+					AccountAddress::from_hex_literal("0x1")?,
+					Identifier::new("aptos_account")?,
+				),
+				Identifier::new("create_account")?,
+				vec![],
+				vec![bcs::to_bytes(&dead_address)?],
+			)),
+			SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60,
+			ChainId::new(chain_id),
+		).sequence_number(core_resources_account.sequence_number()));
 
 		Ok(())
 	}
