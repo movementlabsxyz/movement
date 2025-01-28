@@ -72,16 +72,14 @@ static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
 });
 
 static MAPTOS_PRIVATE_KEY: Lazy<Url> = Lazy::new(|| {
-	let faucet_listen_port = SUZUKA_CONFIG
+	let pk= SUZUKA_CONFIG
 		.execution_config
 		.maptos_config
 		.chain
 		.maptos_private_key
 		.clone();
 
-	let faucet_listen_url = format!("http://{}:{}", faucet_listen_address, faucet_listen_port);
-
-	Url::from_str(faucet_listen_url.as_str()).unwrap()
+	Url::from_str(pk).unwrap()
 });
 
 const DEAD_ADDRESS: &str = "000000000000000000000000000000000000000000000000000000000000dead";
