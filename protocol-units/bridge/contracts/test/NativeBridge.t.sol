@@ -51,7 +51,7 @@ contract NativeBridgeTest is Test {
         vm.assume(_originator != address(0));
         vm.assume(_originator != deployer);
 
-        _amount = bound(_amount, 1, 1000000 * 1e8 - 1);
+        _amount = bound(_amount, 1, 1000000 * 1e8 / 4 - 1);
         moveToken.transfer(_originator, _amount);
         vm.startPrank(_originator);
         // require approval

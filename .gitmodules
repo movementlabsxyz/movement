@@ -76,3 +76,7 @@
 [submodule "protocol-units/bridge/contracts/lib/BokkyPooBahsDateTimeLibrary"]
 	path = protocol-units/bridge/contracts/lib/BokkyPooBahsDateTimeLibrary
 	url = https://github.com/bokkypoobah/BokkyPooBahsDateTimeLibrary
+[submodule "protocol-units/settlement/mcr/contracts/lib/v2-periphery"]
+    path = protocol-units/settlement/mcr/contracts/lib/v2-periphery
+    url = https://github.com/Uniswap/v2-periphery
+	
