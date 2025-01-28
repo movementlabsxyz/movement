@@ -6,10 +6,19 @@ use dot_movement::DotMovement;
 
 impl MigrateElsaToBiarritzRc1 for DotMovement {
 	async fn migrate_elsa_to_biarritz_rc1(&self) -> Result<Config, ElsaToBiarritzRc1Error> {
+		// get the value
 		let value = self
 			.try_load_value()
 			.await
 			.map_err(|e| ElsaToBiarritzRc1Error::MigrationFailed(e.into()))?;
-		Ok(ElsaToBiarritzRc1::migrate(value)?)
+
+		// migrate the value
+		let migrated_config = ElsaToBiarritzRc1::migrate(value)?;
+
+		// write the migrated value
+		self.try_overwrite_config_to_json(&migrated_config)
+			.map_err(|e| ElsaToBiarritzRc1Error::MigrationFailed(e.into()))?;
+
+		Ok(migrated_config)
 	}
 }
