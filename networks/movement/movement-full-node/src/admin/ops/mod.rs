@@ -14,7 +14,7 @@ impl Ops {
 	pub async fn execute(&self) -> Result<(), anyhow::Error> {
 		match self {
 			Ops::Mint(mint) => mint.execute().await,
-			Ops::Burn(burm) => burn.execute().await,
+			Ops::Burn(burn) => burn.execute().await,
 		}
 	}
 }
