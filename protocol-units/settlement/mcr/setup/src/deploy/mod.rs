@@ -45,7 +45,9 @@ impl Deploy {
 	) -> Result<Config, anyhow::Error> {
 		// enforce config.deploy = deploy
 		config.deploy = Some(deploy.clone());
-		let wallet: PrivateKeySigner = deploy.mcr_local_anvil_account_private_key.parse()?;
+		let raw_private_key = deploy.signer_identifier.try_raw_private_key()?;
+		let hex_string = hex::encode(raw_private_key);
+		let wallet: PrivateKeySigner = hex_string.parse()?;
 
 		// todo: make sure this shows up in the docker container as well
 		let mut solidity_path = std::env::current_dir()?;
@@ -68,6 +70,10 @@ impl Deploy {
 			.await
 			.context("Failed to compile with MCR workspace")?;
 
+		// get the raw private key
+		let raw_private_key = deploy.signer_identifier.try_raw_private_key()?;
+		let hex_string = hex::encode(raw_private_key);
+
 		let output_exec = run_command(
 			"forge",
 			&[
@@ -83,7 +89,7 @@ impl Deploy {
 				"--rpc-url",
 				&config.eth_rpc_connection_url(),
 				"--private-key",
-				&deploy.mcr_local_anvil_account_private_key,
+				&hex_string,
 				"--legacy",
 				"--use",
 				&solc_path,
@@ -155,8 +161,11 @@ impl Deploy {
 		info!("setting up MCR Ethereum client mcr_address: {mcr_address}");
 
 		if let Some(testing) = &mut config.testing {
-			testing.mcr_testing_admin_account_private_key =
-				deploy.mcr_local_anvil_account_private_key.clone();
+			// get the raw private key
+			let raw_private_key = deploy.signer_identifier.try_raw_private_key()?;
+			let hex_string = hex::encode(raw_private_key);
+
+			testing.mcr_testing_admin_account_private_key = hex_string;
 			testing.move_token_contract_address = move_token_address;
 			testing.movement_staking_contract_address = movement_staking_address;
 		}
@@ -178,8 +187,12 @@ impl Deploy {
 				let address = signer.address();
 
 				let rpc_url = config.eth_rpc_connection_url();
-				let admin =
-					PrivateKeySigner::from_str(&deploy.mcr_local_anvil_account_private_key)?;
+
+				// get the raw private key
+				let raw_private_key = deploy.signer_identifier.try_raw_private_key()?;
+				let hex_string = hex::encode(raw_private_key);
+
+				let admin = PrivateKeySigner::from_str(&hex_string)?;
 				let admin_address = admin.address();
 				let admin_provider = ProviderBuilder::new()
 					.with_recommended_fillers()

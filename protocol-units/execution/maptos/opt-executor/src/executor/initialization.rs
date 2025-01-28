@@ -1,18 +1,19 @@
 use super::Executor;
 use crate::background::BackgroundTask;
 use crate::{bootstrap, Context};
+use aptos_crypto::ed25519::Ed25519PrivateKey;
 
 use aptos_config::config::NodeConfig;
-#[cfg(test)]
-use aptos_crypto::ed25519::Ed25519PrivateKey;
 use aptos_crypto::ed25519::Ed25519PublicKey;
 use aptos_crypto::PrivateKey;
+use aptos_crypto::ValidCryptoMaterialStringExt;
 use aptos_executor::block_executor::BlockExecutor;
 use aptos_mempool::MempoolClientRequest;
 use aptos_types::transaction::SignedTransaction;
 use dot_movement::DotMovement;
 use futures::FutureExt;
 use maptos_execution_util::config::Config;
+use movement_signer_loader::identifiers::{local::Local, SignerIdentifier};
 
 use anyhow::Context as _;
 use futures::channel::mpsc as futures_mpsc;
@@ -123,7 +124,9 @@ impl Executor {
 	}
 
 	pub fn bootstrap(maptos_config: &Config) -> Result<Self, anyhow::Error> {
-		let private_key = maptos_config.chain.maptos_private_key.clone();
+		let raw_private_key =
+			maptos_config.chain.maptos_private_key_signer_identifier.try_raw_private_key()?;
+		let private_key = Ed25519PrivateKey::try_from(raw_private_key.as_slice())?;
 		let public_key = private_key.public_key();
 		Self::bootstrap_with_public_key(maptos_config, public_key)
 	}
@@ -161,7 +164,9 @@ impl Executor {
 		let tempdir = tempfile::tempdir()?;
 
 		let mut maptos_config = Config::default();
-		maptos_config.chain.maptos_private_key = private_key;
+		maptos_config.chain.maptos_private_key_signer_identifier = SignerIdentifier::Local(Local {
+			private_key_hex_bytes: private_key.to_encoded_string()?.to_string(),
+		});
 
 		// replace the db path with the temporary directory
 		maptos_config.chain.maptos_db_path.replace(tempdir.path().to_path_buf());

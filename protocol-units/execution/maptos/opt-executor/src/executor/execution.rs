@@ -1,5 +1,6 @@
 use super::Executor;
 use aptos_crypto::HashValue;
+use aptos_crypto::ValidCryptoMaterialStringExt;
 use aptos_executor_types::BlockExecutorTrait;
 use aptos_types::transaction::signature_verified_transaction::into_signature_verified_block;
 use aptos_types::{
@@ -289,11 +290,15 @@ mod tests {
 		let (context, _transaction_pipe) = executor.background(tx_sender)?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
-		let root_account = LocalAccount::new(
-			aptos_test_root_address(),
-			AccountKey::from_private_key(context.config().chain.maptos_private_key.clone()),
-			0,
-		);
+		// get the raw private key
+		let raw_private_key = context
+			.config()
+			.chain
+			.maptos_private_key_signer_identifier
+			.try_raw_private_key()?;
+		let private_key = Ed25519PrivateKey::try_from(raw_private_key.as_slice())?;
+		let root_account =
+			LocalAccount::from_private_key(private_key.to_encoded_string()?.as_str(), 0)?;
 
 		// Seed for random number generator, used here to generate predictable results in a test environment.
 		let seed = [3u8; 32];
@@ -391,11 +396,14 @@ mod tests {
 		let service = Service::new(&context);
 
 		// Initialize a root account using a predefined keypair and the test root address.
-		let root_account = LocalAccount::new(
-			aptos_test_root_address(),
-			AccountKey::from_private_key(context.config().chain.maptos_private_key.clone()),
-			0,
-		);
+		let raw_private_key = context
+			.config()
+			.chain
+			.maptos_private_key_signer_identifier
+			.try_raw_private_key()?;
+		let private_key = Ed25519PrivateKey::try_from(raw_private_key.as_slice())?;
+		let root_account =
+			LocalAccount::from_private_key(private_key.to_encoded_string()?.as_str(), 0)?;
 
 		// Seed for random number generator, used here to generate predictable results in a test environment.
 		let seed = [3u8; 32];

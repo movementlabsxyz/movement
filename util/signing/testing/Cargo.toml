@@ -19,6 +19,7 @@ async-trait = { workspace = true }
 maptos-dof-execution = { workspace = true }
 maptos-execution-util = { workspace = true }
 movement-signing-aptos = { workspace = true }
+movement-signer-loader = { workspace = true }   
 movement-signer-local = { workspace = true }
 movement-signer-aws-kms = { workspace = true }
 movement-signing-eth = { workspace = true }

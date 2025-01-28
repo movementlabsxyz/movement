@@ -1,6 +1,5 @@
 pub mod bring_up;
 pub mod config;
-pub mod config;
 pub mod framework;
 pub mod governed_gas_pool;
 pub mod mcr;

@@ -35,7 +35,13 @@ async fn main() -> Result<()> {
 	let connection_url = format!("http://{}:{}", connection_host, connection_port);
 
 	// get the key
-	let private_key = config.execution_config.maptos_config.chain.maptos_private_key.clone();
+	let raw_private_key = config
+		.execution_config
+		.maptos_config
+		.chain
+		.maptos_private_key_signer_identifier
+		.try_raw_private_key()?;
+	let private_key = Ed25519PrivateKey::try_from(raw_private_key.as_slice())?;
 
 	// get the chain id
 	let chain_id = config.execution_config.maptos_config.chain.maptos_chain_id.clone();
