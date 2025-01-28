@@ -250,6 +250,7 @@ pub enum ElsaToBiarritzRc1Error {
 	#[error("migration failed: {0}")]
 	MigrationFailed(#[source] Box<dyn std::error::Error + Send + Sync>),
 }
+
 impl ElsaToBiarritzRc1 {
 	/// Migrates from the Elsa config to the Biarritz RC1 config.
 	pub fn migrate(json: serde_json::Value) -> Result<Config, ElsaToBiarritzRc1Error> {

@@ -38,6 +38,7 @@ bcs = { workspace = true }
 zstd = { workspace = true }
 clap = { workspace = true }
 syncup = { workspace = true }
+aptos-sdk = { workspace = true }
 
 [features]
 default = []
