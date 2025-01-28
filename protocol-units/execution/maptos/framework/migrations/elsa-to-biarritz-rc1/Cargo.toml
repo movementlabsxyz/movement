@@ -21,3 +21,5 @@ maptos-framework-release-util = { workspace = true }
 aptos-sdk = { workspace = true }
 aptos-framework-biarritz-rc1-release = { workspace = true }
 thiserror = { workspace = true }
+dot-movement = { workspace = true }
+movement-config = { workspace = true }

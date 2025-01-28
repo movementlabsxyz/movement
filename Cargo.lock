@@ -1922,6 +1922,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "aptos-framework-elsa-to-biarritz-rc1-migration"
+version = "0.0.2"
+dependencies = [
+ "aptos-framework-biarritz-rc1-release",
+ "aptos-sdk",
+ "dot-movement",
+ "maptos-framework-release-util",
+ "movement-config",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "aptos-framework-head-release"
 version = "0.0.2"
 dependencies = [

@@ -47,6 +47,7 @@ members = [
   "util/signing/providers/hashicorp-vault",
   "demo/hsm",
   "protocol-units/execution/maptos/framework/releases/*",
+  "protocol-units/execution/maptos/framework/migrations/*",
 ]
 
 [workspace.package]
