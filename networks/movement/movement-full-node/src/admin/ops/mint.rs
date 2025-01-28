@@ -1,5 +1,5 @@
 #[allow(unused_imports)]
-use anyhow::Context
+use anyhow::Context;
 use crate::common_args::MovementArgs;
 use aptos_sdk::{coin_client::CoinClient, rest_client::{Client, FaucetClient}};
 use clap::Parser;
@@ -71,6 +71,19 @@ static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
 	Url::from_str(faucet_listen_url.as_str()).unwrap()
 });
 
+static MAPTOS_PRIVATE_KEY: Lazy<Url> = Lazy::new(|| {
+	let faucet_listen_port = SUZUKA_CONFIG
+		.execution_config
+		.maptos_config
+		.chain
+		.maptos_private_key
+		.clone();
+
+	let faucet_listen_url = format!("http://{}:{}", faucet_listen_address, faucet_listen_port);
+
+	Url::from_str(faucet_listen_url.as_str()).unwrap()
+});
+
 const DEAD_ADDRESS: &str = "000000000000000000000000000000000000000000000000000000000000dead";
 
 impl Mint {
@@ -95,7 +108,7 @@ impl Mint {
 			.maptos_private_key
 			.to_string();
 		let mut core_resources_account: LocalAccount = LocalAccount::from_private_key(
-			"0x0000000000000000000000000000000000000000000000000000000000000001",
+			MAPTOS_PRIVATE_KEY.clone(),
 			0,
 		)?;
 
