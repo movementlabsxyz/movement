@@ -1,3 +1,5 @@
+pub mod dot_movement;
+
 use maptos_framework_release_util::ReleaseSigner;
 use std::future::Future;
 
@@ -13,6 +15,10 @@ impl ElsaToBiarritzRc1 {
 		client: &aptos_sdk::rest_client::Client,
 		signer: &impl ReleaseSigner,
 	) -> Result<(), ElsaToBiarritzRc1Error> {
+		// todo: validate that the current release is Elsa
+
+		// upgrade to Biarritz RC1 with the gas upgrade
+
 		Ok(())
 	}
 }

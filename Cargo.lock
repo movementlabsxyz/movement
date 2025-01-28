@@ -12181,6 +12181,7 @@ dependencies = [
  "aptos-types",
  "chrono",
  "dotenv",
+ "maptos-framework-release-util",
  "maptos-opt-executor",
  "movement-signer",
  "movement-signer-hashicorp-vault",

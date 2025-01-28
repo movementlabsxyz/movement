@@ -10,6 +10,7 @@ use aptos_sdk::{
 	types::{
 		account_address::AccountAddress,
 		chain_id::ChainId,
+		transaction::authenticator::AuthenticationKey,
 		transaction::{
 			RawTransaction, Script, SignedTransaction, Transaction, TransactionArgument,
 			TransactionPayload,
@@ -17,6 +18,7 @@ use aptos_sdk::{
 		LocalAccount,
 	},
 };
+use movement::account::key_rotation::lookup_address;
 use std::future::Future;
 use std::path::PathBuf;
 
@@ -37,10 +39,31 @@ pub trait ReleaseSigner {
 		raw_transaction: RawTransaction,
 	) -> impl Future<Output = Result<SignedTransaction, ReleaseSignerError>>;
 
+	/// Gets the authentication key of the signer.
+	fn release_account_authentication_key(
+		&self,
+	) -> impl Future<Output = Result<AuthenticationKey, ReleaseSignerError>>;
+
 	/// Gets the account address of the signer.
 	fn release_account_address(
 		&self,
-	) -> impl Future<Output = Result<AccountAddress, ReleaseSignerError>>;
+		client: &Client,
+	) -> impl Future<Output = Result<AccountAddress, ReleaseSignerError>> {
+		async move {
+			// get the authentication key
+			let authentication_key = self.release_account_authentication_key().await?;
+
+			// form the lookup address from the authentication key
+			let lookup = AccountAddress::new(*authentication_key.account_address());
+
+			// lookup the account address
+			let account_address = lookup_address(client, lookup, true)
+				.await
+				.map_err(|e| ReleaseSignerError::AccountAddressNotFound(Box::new(e)))?;
+
+			Ok(account_address)
+		}
+	}
 }
 
 /// A [ReleaseSigner] that signs the transactions with a local account.
@@ -66,14 +89,10 @@ impl ReleaseSigner for LocalAccountReleaseSigner {
 		async move { Ok(signed_transaction_res) }
 	}
 
-	fn release_account_address(
+	async fn release_account_authentication_key(
 		&self,
-	) -> impl Future<Output = Result<AccountAddress, ReleaseSignerError>> {
-		let address = match self.account_address {
-			Some(address) => address,
-			None => self.local_account.address(),
-		};
-		async move { Ok(address) }
+	) -> Result<AuthenticationKey, ReleaseSignerError> {
+		Ok(self.local_account.authentication_key())
 	}
 }
 
@@ -122,9 +141,10 @@ pub trait Release {
 		gas_unit_price: u64,
 		expiration_timestamp_secs: u64,
 		chain_id: ChainId,
+		client: &Client,
 	) -> Result<Vec<SignedTransaction>, ReleaseBundleError> {
 		// get the account address
-		let account_address = signer.release_account_address().await?;
+		let account_address = signer.release_account_address(client).await?;
 
 		// form the raw transactions
 		let raw_transactions = self.proposal_raw_transactions(
@@ -155,6 +175,7 @@ pub trait Release {
 		gas_unit_price: u64,
 		expiration_timestamp_secs: u64,
 		chain_id: ChainId,
+		client: &Client,
 	) -> Result<Vec<Transaction>, ReleaseBundleError> {
 		let signed_transactions = self
 			.proposal_signed_transactions(
@@ -164,6 +185,7 @@ pub trait Release {
 				gas_unit_price,
 				expiration_timestamp_secs,
 				chain_id,
+				client,
 			)
 			.await?;
 		Ok(signed_transactions
@@ -193,6 +215,7 @@ pub trait Release {
 				gas_unit_price,
 				expiration_timestamp_secs,
 				chain_id,
+				client,
 			)
 			.await?;
 

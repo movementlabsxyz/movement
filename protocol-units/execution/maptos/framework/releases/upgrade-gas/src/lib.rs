@@ -102,11 +102,12 @@ where
 		gas_unit_price: u64,
 		expiration_timestamp_secs: u64,
 		chain_id: aptos_types::chain_id::ChainId,
+		client: &aptos_sdk::rest_client::Client,
 	) -> Result<SignedTransaction, ReleaseBundleError> {
 		let bytecode = self.upgrade_gas_proposal_bytecode()?;
 		let script_payload = TransactionPayload::Script(Script::new(bytecode, vec![], vec![]));
 		let raw_transaction = aptos_types::transaction::RawTransaction::new(
-			signer.release_account_address().await?,
+			signer.release_account_address(client).await?,
 			start_sequence_number,
 			script_payload,
 			max_gas_amount,
@@ -137,6 +138,7 @@ where
 				gas_unit_price,
 				expiration_timestamp_secs,
 				chain_id,
+				client,
 			)
 			.await?;
 
