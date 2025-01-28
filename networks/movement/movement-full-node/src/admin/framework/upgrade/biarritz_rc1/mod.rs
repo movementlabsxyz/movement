@@ -11,6 +11,8 @@ pub struct BiarritzRc1 {
 
 impl BiarritzRc1 {
 	pub async fn execute(&self) -> Result<(), anyhow::Error> {
+		// todo: right now we are using the migration, but really this should be replaced with a pure upgrade
+
 		// get the movement config from dot movement
 		let dot_movement = self.movement_args.dot_movement()?;
 
