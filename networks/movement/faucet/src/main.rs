@@ -41,7 +41,8 @@ async fn main() -> Result<()> {
 		.chain
 		.maptos_private_key_signer_identifier
 		.try_raw_private_key()?;
-	let private_key = Ed25519PrivateKey::try_from(raw_private_key.as_slice())?;
+	let hex_string = hex::encode(raw_private_key.as_slice());
+	let private_key = Ed25519PrivateKey::from_encoded_string(&hex_string)?;
 
 	// get the chain id
 	let chain_id = config.execution_config.maptos_config.chain.maptos_chain_id.clone();

@@ -18,7 +18,7 @@ use tracing::info;
 	  "maptos_chain_id": 126,
 	  "maptos_rest_listen_hostname": "0.0.0.0",
 	  "maptos_rest_listen_port": 30731,
-	  "maptos_private_key": "<redacted-hex-string>",
+	  "maptos_private_key": "0x<redacted-hex-string>",
 	  "maptos_read_only": false,
 	  "enabled_pruning": false,
 	  "maptos_ledger_prune_window": 50000000,
@@ -261,7 +261,8 @@ impl ElsaToBiarritzRc1 {
 			json: &serde_json::Value,
 			path: &[&str],
 		) -> Result<String, ElsaToBiarritzRc1Error> {
-			path.iter()
+			let full_string = path
+				.iter()
 				.fold(Some(json), |acc, key| acc.and_then(|j| j.get(key)))
 				.and_then(|key| key.as_str())
 				.map(|s| s.to_string())
@@ -269,7 +270,10 @@ impl ElsaToBiarritzRc1 {
 					ElsaToBiarritzRc1Error::MigrationFailed(
 						format!("Path {:?} not found or invalid", path).into(),
 					)
-				})
+				});
+
+			// remove the 0x prefix if it exists
+			full_string.map(|s| s.strip_prefix("0x").unwrap_or(&s).to_string())
 		}
 
 		// Helper function to replace a private key with a signer identifier in the JSON
@@ -371,7 +375,7 @@ mod tests {
 					"maptos_chain_id": 126,
 					"maptos_rest_listen_hostname": "0.0.0.0",
 					"maptos_rest_listen_port": 30731,
-					"maptos_private_key": "<redacted-hex-string>",
+					"maptos_private_key": "0x<redacted-hex-string>",
 					"maptos_read_only": false,
 					"enabled_pruning": false,
 					"maptos_ledger_prune_window": 50000000,
