@@ -2,7 +2,7 @@
 use anyhow::Context;
 use tokio::process::Command;
 use crate::common_args::MovementArgs;
-use aptos_sdk::{coin_client::CoinClient, move_types::language_storage::StructTag, rest_client::{Client, FaucetClient}, transaction_builder::TransactionBuilder, types::{chain_id::ChainId, transaction::{EntryFunction, Script, TransactionArgument}, LocalAccount}};
+use aptos_sdk::{coin_client::CoinClient, crypto::ed25519::{PrivateKey, Ed25519PrivateKey}, move_types::language_storage::StructTag, rest_client::{Client, FaucetClient}, transaction_builder::TransactionBuilder, types::{chain_id::ChainId, transaction::{EntryFunction, Script, TransactionArgument}, LocalAccount}};
 use clap::Parser;
 use once_cell::sync::Lazy;
 use url::Url;
@@ -16,12 +16,7 @@ use aptos_sdk::{
 	types::{account_address::AccountAddress, transaction::TransactionPayload},
 };
 
-#[derive(Debug, Parser, Clone)]
-#[clap(rename_all = "kebab-case", about = "Burns tokens 🔥.")]
-pub struct Burn {
-	#[clap(flatten)]
-	pub movement_args: MovementArgs,
-}
+
 
 static SUZUKA_CONFIG: Lazy<movement_config::Config> = Lazy::new(|| {
 	let dot_movement = dot_movement::DotMovement::try_from_env().unwrap();
@@ -69,7 +64,7 @@ static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
 	Url::from_str(faucet_listen_url.as_str()).unwrap()
 });
 
-static MAPTOS_PRIVATE_KEY: Lazy<Url> = Lazy::new(|| {
+static MAPTOS_PRIVATE_KEY: Lazy<Ed25519PrivateKey> = Lazy::new(|| {
 	let pk= SUZUKA_CONFIG
 		.execution_config
 		.maptos_config
@@ -77,17 +72,22 @@ static MAPTOS_PRIVATE_KEY: Lazy<Url> = Lazy::new(|| {
 		.maptos_private_key
 		.clone();
 
-	Url::from_str(pk).unwrap()
+		pk
 });
 
 const DEAD_ADDRESS: &str = "000000000000000000000000000000000000000000000000000000000000dead";
+
+#[derive(Debug, Parser, Clone)]
+#[clap(rename_all = "kebab-case", about = "Burns tokens 🔥.")]
+pub struct Burn {
+	#[clap(flatten)]
+	pub movement_args: MovementArgs,
+}
 
 impl Burn {
 	
 	pub async fn execute(&self) -> Result<(), anyhow::Error> {
 		let rest_client = Client::new(NODE_URL.clone());
-		let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
-		let coin_client = CoinClient::new(&rest_client);
 		let dead_address = AccountAddress::from_str(DEAD_ADDRESS)?;
 		let chain_id = rest_client
 			.get_index()
@@ -96,15 +96,7 @@ impl Burn {
 			.inner()
 			.chain_id;
 
-		let mut core_resources_account: LocalAccount = LocalAccount::from_private_key(
-			MAPTOS_PRIVATE_KEY.clone().as_str(),
-			0,
-		)?;
 
-		tracing::info!("Created core resources account");
-		tracing::debug!("core_resources_account address: {}", core_resources_account.address());
-
-		// Create account for transactions and gas collection
 		let private_key = SUZUKA_CONFIG
 			.execution_config
 			.maptos_config
@@ -112,8 +104,18 @@ impl Burn {
 			.maptos_private_key
 			.to_string();
 
+		let core_resources_account: LocalAccount = LocalAccount::from_private_key(
+			&private_key.clone(),
+			0,
+		)?;
+
+		tracing::info!("Created core resources account");
+		tracing::debug!("core_resources_account address: {}", core_resources_account.address());
+
+		// Create account for transactions and gas collection
+		
 			// I know that we shouldn't compile on cmd execution, but we can optimise this later.
-			let compile_status = Command::new("movement")
+		let _compile_status = Command::new("movement")
 			.args([
 				"move",
 				"compile",

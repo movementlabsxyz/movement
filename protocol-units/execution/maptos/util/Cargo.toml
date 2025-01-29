@@ -18,6 +18,7 @@ aptos-account-whitelist = { workspace = true }
 movement-da-util = { workspace = true }
 anyhow = { workspace = true }
 aptos-crypto = { workspace = true, features = ["cloneable-private-keys"] }
+buildtime-helpers = { workspace = true }
 rand = { workspace = true }
 tempfile = { workspace = true }
 serde_json = { workspace = true }

@@ -9043,6 +9043,7 @@ dependencies = [
  "aptos-crypto",
  "aptos-sdk",
  "aptos-types",
+ "buildtime-helpers",
  "godfig",
  "hex",
  "movement-da-util",
