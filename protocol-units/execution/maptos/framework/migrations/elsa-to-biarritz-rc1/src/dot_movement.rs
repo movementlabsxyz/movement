@@ -1,5 +1,6 @@
 use crate::{ElsaToBiarritzRc1, ElsaToBiarritzRc1Error, MigrateElsaToBiarritzRc1};
 use dot_movement::DotMovement;
+use maptos_framework_release_util::OverrideAccountAddressReleaseSigner;
 use movement_config::{
 	ops::aptos::{
 		framework::releases::release_signer::ReleaseSignerOperations,
@@ -28,6 +29,9 @@ impl MigrateElsaToBiarritzRc1 for DotMovement {
 			.get_release_signer()
 			.await
 			.map_err(|e| ElsaToBiarritzRc1Error::MigrationFailed(e.into()))?;
+
+		// write the signer with a core resource account override
+		let signer = OverrideAccountAddressReleaseSigner::core_resource_account(signer);
 
 		// migrate the framework from Elsa to Biarritz RC1
 		let elsa_to_biarritz_rc1 = ElsaToBiarritzRc1::new();

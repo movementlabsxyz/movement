@@ -127,10 +127,15 @@ impl Compiler {
 		script_path: &Path,
 	) -> Result<BuiltPackage, anyhow::Error> {
 		// Make a temporary directory for compilation
-		let temp_dir = "debug-temp-dir";
+		let package_dir = PathBuf::from(".debug/move-scripts/").join(script_name);
 
-		// Initialize a move directory
-		let package_dir = PathBuf::from(temp_dir);
+		// Make the temporary directory
+		fs::create_dir_all(&package_dir).context(format!(
+			"Failed to create the temporary directory {}",
+			package_dir.display()
+		))?;
+
+		// Initialize the Move package directory
 		self.init_move_dir(package_dir.as_path(), script_name, BTreeMap::new())?;
 
 		// Insert the new script

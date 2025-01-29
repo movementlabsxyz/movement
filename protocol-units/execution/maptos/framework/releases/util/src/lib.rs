@@ -5,6 +5,7 @@ use aptos_release_builder::aptos_framework_path;
 use aptos_release_builder::components::framework::{
 	generate_upgrade_proposals_release_packages_with_repo, FrameworkReleaseConfig,
 };
+use aptos_sdk::types::account_config::aptos_test_root_address;
 use aptos_sdk::{
 	rest_client::Client,
 	types::{
@@ -44,8 +45,8 @@ pub trait ReleaseSigner {
 		&self,
 	) -> impl Future<Output = Result<AuthenticationKey, ReleaseSignerError>>;
 
-	/// Gets the account address of the signer.
-	fn release_account_address(
+	/// Associated method for getting the account address of the signer.
+	fn default_release_account_address(
 		&self,
 		client: &Client,
 	) -> impl Future<Output = Result<AccountAddress, ReleaseSignerError>> {
@@ -63,6 +64,14 @@ pub trait ReleaseSigner {
 
 			Ok(account_address)
 		}
+	}
+
+	/// Gets the account address of the signer.
+	fn release_account_address(
+		&self,
+		client: &Client,
+	) -> impl Future<Output = Result<AccountAddress, ReleaseSignerError>> {
+		async move { self.default_release_account_address(client).await }
 	}
 
 	/// Get the release account sequence number.
@@ -108,6 +117,70 @@ impl ReleaseSigner for LocalAccountReleaseSigner {
 		&self,
 	) -> Result<AuthenticationKey, ReleaseSignerError> {
 		Ok(self.local_account.authentication_key())
+	}
+
+	fn release_account_address(
+		&self,
+		client: &Client,
+	) -> impl Future<Output = Result<AccountAddress, ReleaseSignerError>> {
+		async move {
+			// if the override is set, return the override
+			if let Some(account_address) = self.account_address {
+				return Ok(account_address);
+			}
+
+			// otherwise use the default implementation
+			self.default_release_account_address(client).await
+		}
+	}
+}
+
+/// A [ReleaseSigner] that signs the transactions with an account address override.
+pub struct OverrideAccountAddressReleaseSigner<R>
+where
+	R: ReleaseSigner,
+{
+	/// The account address to use for signing.
+	pub account_address: AccountAddress,
+	/// The underlying release signer.
+	pub release_signer: R,
+}
+
+impl<R> OverrideAccountAddressReleaseSigner<R>
+where
+	R: ReleaseSigner,
+{
+	pub fn new(account_address: AccountAddress, release_signer: R) -> Self {
+		Self { account_address, release_signer }
+	}
+
+	pub fn core_resource_account(release_signer: R) -> Self {
+		Self::new(aptos_test_root_address(), release_signer)
+	}
+}
+
+impl<R> ReleaseSigner for OverrideAccountAddressReleaseSigner<R>
+where
+	R: ReleaseSigner,
+{
+	fn sign_release(
+		&self,
+		raw_transaction: RawTransaction,
+	) -> impl Future<Output = Result<SignedTransaction, ReleaseSignerError>> {
+		self.release_signer.sign_release(raw_transaction)
+	}
+
+	fn release_account_authentication_key(
+		&self,
+	) -> impl Future<Output = Result<AuthenticationKey, ReleaseSignerError>> {
+		self.release_signer.release_account_authentication_key()
+	}
+
+	fn release_account_address(
+		&self,
+		_client: &Client,
+	) -> impl Future<Output = Result<AccountAddress, ReleaseSignerError>> {
+		async move { Ok(self.account_address) }
 	}
 }
 

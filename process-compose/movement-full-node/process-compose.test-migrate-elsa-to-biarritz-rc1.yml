@@ -1,0 +1,14 @@
+version: "3"
+
+environment:
+  - "KNOWN_FRAMEWORK_RELEASE=elsa"
+
+processes:
+  test-upgrade-biarritz-rc1:
+    command: |
+      cargo run --bin aptos-framework-biarritz-rc1-release-tool
+    depends_on:
+      movement-full-node:
+        condition: process_healthy
+      movement-faucet:
+        condition: process_healthy

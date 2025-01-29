@@ -74,7 +74,11 @@ where
 		let signer = da_blob.inner().signer_hex();
 		if !self.known_signers_sec1_bytes_hex.contains(&signer) {
 			return Err(Error::Validation(
-				format!("signer {} is not in the known signers set", signer).to_string(),
+				format!(
+					"signer {} is not in the known signers set {:#?}",
+					signer, self.known_signers_sec1_bytes_hex
+				)
+				.to_string(),
 			));
 		}
 
