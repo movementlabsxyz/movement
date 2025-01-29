@@ -50,7 +50,7 @@ pub async fn rotate_key(
 	let signer = match backend_name.as_str() {
 		"vault" => {
 			let vault_url =
-				std::env::var("VAULT_URL").context("Missing VAULT_URL environment variable")?;
+				std::env::var("VAULT_ADDR").context("Missing VAULT_ADDR environment variable")?;
 			let vault_token =
 				std::env::var("VAULT_TOKEN").context("Missing VAULT_TOKEN environment variable")?;
 
