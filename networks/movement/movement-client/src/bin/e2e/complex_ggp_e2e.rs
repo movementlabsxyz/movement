@@ -70,20 +70,24 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	let mut accounts = create_and_fund_accounts(&faucet_client, NUM_ACCOUNTS).await?;
 
+	// Get initial gas pool balance
 	let initial_pool_balance = coin_client
 		.get_account_balance(&ggp_address)
 		.await
 		.context("Failed to get initial gas pool balance")?;
 	tracing::info!("Initial gas pool balance: {}", initial_pool_balance);
 
+	// Execute multiple rounds of transactions between accounts
 	execute_transaction_rounds(&mut accounts, &coin_client, &rest_client).await?;
 
+	// Get final gas pool balance
 	let final_pool_balance = coin_client
 		.get_account_balance(&ggp_address)
 		.await
 		.context("Failed to get final gas pool balance")?;
 	tracing::info!("Final gas pool balance: {}", final_pool_balance);
 
+	// Verify gas fees were collected
 	assert!(
 		final_pool_balance > initial_pool_balance,
 		"Gas pool balance did not increase after {} transactions",
@@ -145,31 +149,41 @@ async fn create_and_fund_accounts(
 	Ok(accounts)
 }
 
-async fn execute_transaction_rounds(
+async fn execute_transaction_rounds<'a>(
 	accounts: &mut [LocalAccount],
-	coin_client: &CoinClient,
-	rest_client: &Client,
+	coin_client: &'a CoinClient<'a>,
+	rest_client: &'a Client,
 ) -> Result<(), anyhow::Error> {
 	for round in 0..TRANSACTIONS_PER_ACCOUNT {
 		tracing::info!("Starting transaction round {}", round);
-
-		// Each account sends a transaction to the next account in the list
 		for i in 0..accounts.len() {
-			let sender_idx = i;
 			let receiver_idx = (i + 1) % accounts.len();
 
-			let txn_hash = coin_client
-				.transfer(
-					&mut accounts[sender_idx],
-					accounts[receiver_idx].address(),
-					TRANSFER_AMOUNT,
-					None,
-				)
-				.await
-				.context(format!(
-					"Failed to submit transfer from account {} to {}",
-					sender_idx, receiver_idx
-				))?;
+			let receiver_address = accounts[receiver_idx].address();
+
+			let txn_hash = if receiver_idx <= i {
+				let (left, right) = accounts.split_at_mut(i + 1);
+				let sender = &mut left[i];
+
+				coin_client
+					.transfer(sender, receiver_address, TRANSFER_AMOUNT, None)
+					.await
+					.context(format!(
+						"Failed to submit transfer from account {} to {}",
+						i, receiver_idx
+					))?
+			} else {
+				let (left, right) = accounts.split_at_mut(i + 1);
+				let sender = &mut left[i];
+
+				coin_client
+					.transfer(sender, receiver_address, TRANSFER_AMOUNT, None)
+					.await
+					.context(format!(
+						"Failed to submit transfer from account {} to {}",
+						i, receiver_idx
+					))?
+			};
 
 			rest_client
 				.wait_for_transaction(&txn_hash)
