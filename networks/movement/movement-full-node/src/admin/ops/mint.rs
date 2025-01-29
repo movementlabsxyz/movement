@@ -1,23 +1,16 @@
-#[allow(unused_imports)]
 use buildtime_helpers::cargo::cargo_workspace;
 use anyhow::Context;
 use tokio::process::Command;
 use crate::common_args::MovementArgs;
-use aptos_sdk::{coin_client::CoinClient, move_types::language_storage::StructTag, rest_client::{Client, FaucetClient}, transaction_builder::TransactionBuilder, types::{chain_id::ChainId, transaction::{EntryFunction, Script, TransactionArgument}, LocalAccount}};
+use aptos_sdk::{
+	coin_client::CoinClient,	
+	rest_client::{Client, FaucetClient}, types::{chain_id::ChainId, test_helpers::transaction_test_helpers, transaction::Script, LocalAccount}
+};
 use clap::Parser;
 use once_cell::sync::Lazy;
 use url::Url;
 use std::{fs, path::PathBuf, str::FromStr, time::{SystemTime, UNIX_EPOCH}};
-use aptos_sdk::{
-	move_types::{
-		identifier::Identifier,
-		language_storage::{ModuleId, TypeTag},
-	},
-	
-	types::{account_address::AccountAddress, transaction::TransactionPayload},
-};
-use crate::common_args::MovementArgs;
-use clap::Parser;
+use aptos_sdk::types::transaction::TransactionPayload;
 
 static SUZUKA_CONFIG: Lazy<movement_config::Config> = Lazy::new(|| {
 	let dot_movement = dot_movement::DotMovement::try_from_env().unwrap();
@@ -65,17 +58,6 @@ static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
 	Url::from_str(faucet_listen_url.as_str()).unwrap()
 });
 
-static MAPTOS_PRIVATE_KEY: Lazy<Url> = Lazy::new(|| {
-	let pk= SUZUKA_CONFIG
-		.execution_config
-		.maptos_config
-		.chain
-		.maptos_private_key
-		.clone();
-
-	Url::from_str(pk).unwrap()
-});
-
 #[derive(Debug, Parser, Clone)]
 #[clap(rename_all = "kebab-case", about = "Mints and locks tokens.")]
 pub struct Mint {
@@ -95,22 +77,22 @@ impl Mint {
 			.inner()
 			.chain_id;
 
-		let mut core_resources_account: LocalAccount = LocalAccount::from_private_key(
-			MAPTOS_PRIVATE_KEY.clone().as_str(),
-			0,
-		)?;
+		let private_key = SUZUKA_CONFIG
+			.execution_config
+			.maptos_config
+			.chain
+			.maptos_private_key
+			.to_string();
+
+		let core_resources_account: LocalAccount =
+			LocalAccount::from_private_key(&private_key.clone(), 0)?;
 
 		tracing::debug!("coreresources_account address: {}", core_resources_account.address());
 
-		tracing::info!(
-			"Core account balance: {}, Dead account balance: {}",
-			core_balance,
-		);
-	
 		let _ = Command::new("movement")
 			.args(["move", "compile", "--package-dir", "protocol-units/bridge/move-modules"])
 			.status()
-			.await
+			.await?;
 	
 		let root: PathBuf= cargo_workspace()?;
 		let additional_path =
@@ -123,7 +105,7 @@ impl Mint {
 	
 		let enable_bridge_script_transaction =
 			transaction_test_helpers::get_test_signed_transaction_with_chain_id(
-				associate_address,
+				core_resources_account.address(),
 				core_resources_account.sequence_number(),
 				&core_resources_account.private_key(),
 				core_resources_account.public_key().clone(),
@@ -147,7 +129,7 @@ impl Mint {
 	
 		let store_mint_burn_caps_script_transaction =
 			transaction_test_helpers::get_test_signed_transaction_with_chain_id(
-				associate_address,
+				core_resources_account.address(),
 				core_resources_account.sequence_number(),
 				&core_resources_account.private_key(),
 				core_resources_account.public_key().clone(),

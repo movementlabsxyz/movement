@@ -12,6 +12,7 @@ rust-version = { workspace = true }
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+buildtime-helpers = { workspace = true }
 anyhow = { workspace = true }
 aptos-sdk = { workspace = true }
 maptos-dof-execution = { workspace = true }
@@ -21,6 +22,7 @@ movement-da-util = { workspace = true }
 mcr-settlement-client = { workspace = true, features = ["eth"] }
 mcr-settlement-manager = { workspace = true }
 serde_json = { workspace = true }
+aptos-language-e2e-tests = { workspace = true }
 futures = { workspace = true }
 tokio = { workspace = true }
 once_cell = { workspace = true }
