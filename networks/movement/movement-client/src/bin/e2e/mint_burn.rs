@@ -295,10 +295,20 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	assert!(
 		coin_client
+			.get_account_balance(&dead_address)
+			.await
+			.context("Failed to retrieve dead address new balance")?
+			== 0,
+		"Dead address balance was not burned"
+	);
+
+	assert!(
+		coin_client
 			.get_account_balance(&core_resources_account.address())
 			.await
 			.context("Failed to retrieve core resources account new balance")?
-			== desired_core_balance
+			== desired_core_balance,
+		"Core resources account balance was not burned"
 	);
 
 	Ok(())
