@@ -75,7 +75,7 @@ async fn main() -> Result<(), anyhow::Error> {
 		.get_account_balance(&ggp_address)
 		.await
 		.context("Failed to get initial gas pool balance")?;
-	println!("Initial gas pool balance: {}", initial_pool_balance);
+	tracing::info!("Initial gas pool balance: {}", initial_pool_balance);
 
 	// Execute multiple rounds of transactions between accounts
 	execute_transaction_rounds(&mut accounts, &coin_client, &rest_client).await?;
@@ -85,7 +85,7 @@ async fn main() -> Result<(), anyhow::Error> {
 		.get_account_balance(&ggp_address)
 		.await
 		.context("Failed to get final gas pool balance")?;
-	println!("Final gas pool balance: {}", final_pool_balance);
+	tracing::info!("Final gas pool balance: {}", final_pool_balance);
 
 	// Verify gas fees were collected
 	assert!(
@@ -94,7 +94,7 @@ async fn main() -> Result<(), anyhow::Error> {
 		NUM_ACCOUNTS * TRANSACTIONS_PER_ACCOUNT
 	);
 
-	println!("Total gas fees collected: {}", final_pool_balance - initial_pool_balance);
+	tracing::info!("Total gas fees collected: {}", final_pool_balance - initial_pool_balance);
 
 	Ok(())
 }
@@ -136,7 +136,7 @@ async fn create_and_fund_accounts(
 
 	for i in 0..num_accounts {
 		let account = LocalAccount::generate(&mut rand::rngs::OsRng);
-		println!("Creating account {}: {}", i, account.address());
+		tracing::info!("Creating account {}: {}", i, account.address());
 
 		faucet_client
 			.fund(account.address(), INITIAL_FUNDING)
@@ -155,25 +155,27 @@ async fn execute_transaction_rounds<'a>(
 	rest_client: &'a Client,
 ) -> Result<(), anyhow::Error> {
 	for round in 0..TRANSACTIONS_PER_ACCOUNT {
-		println!("Starting transaction round {}", round);
+		tracing::info!("Starting transaction round {}", round);
 
 		for i in 0..accounts.len() {
 			let receiver_idx = (i + 1) % accounts.len();
 
-			println!(
+			tracing::info!(
 				"Attempting transfer: Account {} -> Account {}, Round {}",
-				i, receiver_idx, round
+				i,
+				receiver_idx,
+				round
 			);
 
 			let receiver_address = accounts[receiver_idx].address();
-			println!("Receiver address retrieved: {}", receiver_address);
+			tracing::info!("Receiver address retrieved: {}", receiver_address);
 
 			let txn_hash = if receiver_idx <= i {
-				println!("Using first branch of split_at_mut");
+				tracing::info!("Using first branch of split_at_mut");
 				let (left, right) = accounts.split_at_mut(i + 1);
 				let sender = &mut left[i];
 
-				println!("Initiating transfer...");
+				tracing::info!("Initiating transfer...");
 				coin_client
 					.transfer(sender, receiver_address, TRANSFER_AMOUNT, None)
 					.await
@@ -182,11 +184,11 @@ async fn execute_transaction_rounds<'a>(
 						i, receiver_idx
 					))?
 			} else {
-				println!("Using second branch of split_at_mut");
+				tracing::info!("Using second branch of split_at_mut");
 				let (left, right) = accounts.split_at_mut(i + 1);
 				let sender = &mut left[i];
 
-				println!("Initiating transfer...");
+				tracing::info!("Initiating transfer...");
 				coin_client
 					.transfer(sender, receiver_address, TRANSFER_AMOUNT, None)
 					.await
@@ -196,21 +198,23 @@ async fn execute_transaction_rounds<'a>(
 					))?
 			};
 
-			println!("Transfer submitted. Transaction hash: {:?}", txn_hash);
+			tracing::info!("Transfer submitted. Transaction hash: {:?}", txn_hash);
 
-			println!("Waiting for transaction confirmation...");
+			tracing::info!("Waiting for transaction confirmation...");
 			rest_client
 				.wait_for_transaction(&txn_hash)
 				.await
 				.context("Failed when waiting for transfer transaction")?;
 
-			println!(
+			tracing::info!(
 				"Transaction confirmed: Account {} -> Account {}, Round {}",
-				i, receiver_idx, round
+				i,
+				receiver_idx,
+				round
 			);
 
 			if round % 10 == 0 && i == 0 {
-				println!("Completed {} transactions per account", round + 1);
+				tracing::info!("Completed {} transactions per account", round + 1);
 			}
 		}
 	}
