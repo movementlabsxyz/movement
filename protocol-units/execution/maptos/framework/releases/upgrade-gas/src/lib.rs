@@ -65,7 +65,7 @@ where
 				.unwrap();
 
 		let temp_dir = tempdir().map_err(|e| ReleaseBundleError::Build(e.into()))?;
-		let gas_script_path = temp_dir.path().join("gas_upgrade");
+		let gas_script_path = temp_dir.path().join("proposal");
 		let mut gas_script_path = gas_script_path.as_path().to_path_buf();
 		gas_script_path.set_extension("move");
 		fs::write(gas_script_path.as_path(), update_gas_script)
@@ -87,7 +87,7 @@ where
 		);
 
 		let bytecode = compiler
-			.compile_in_temp_dir_to_bytecode("gas_upgrade", &gas_script_path)
+			.compile_in_temp_dir_to_bytecode("proposal", &gas_script_path)
 			.map_err(|e| ReleaseBundleError::Build(e.into()))?;
 
 		Ok(bytecode)

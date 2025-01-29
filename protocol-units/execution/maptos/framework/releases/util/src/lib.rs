@@ -346,17 +346,32 @@ pub trait Release {
 			.await?;
 
 		// wait for the transactions to be executed
+		let mut i = 0;
+		let mut errors = vec![];
 		for transaction in &submitted_transactions {
-			client.wait_for_signed_transaction_bcs(transaction).await.map_err(|e| {
+			match client.wait_for_signed_transaction_bcs(transaction).await.map_err(|e| {
 				ReleaseBundleError::Proposing(
 					format!(
-						"waiting for transaction {:?} failed with: {:?}",
+						"waiting for transaction {:?} {:?} failed with: {:?}",
+						i,
 						transaction.committed_hash(),
 						e
 					)
 					.into(),
 				)
-			})?;
+			}) {
+				Ok(_) => {}
+				Err(e) => {
+					errors.push(e);
+				}
+			}
+			i += 1;
+		}
+
+		if !errors.is_empty() {
+			return Err(ReleaseBundleError::Proposing(
+				format!("transaction errors: {:?}", errors).into(),
+			));
 		}
 
 		Ok(submitted_transactions)
@@ -437,10 +452,7 @@ fn build_release_package_transaction_payload(
 ) -> Result<TransactionPayload, ReleaseBundleError> {
 	println!("release_package_code: {:?}", release_package.code().len());
 
-	// use .debug/move-scripts/{package.package_metadata.name()} to write out the script
-	let script_path = PathBuf::from(".debug/move-scripts/")
-		.join(release_package.package_metadata().name.clone())
-		.with_extension("move");
+	let script_path = PathBuf::from(".debug/move-scripts").join("proposal").with_extension("move");
 	// create all parent directories
 	std::fs::create_dir_all(script_path.parent().unwrap()).map_err(|e| {
 		ReleaseBundleError::Build(

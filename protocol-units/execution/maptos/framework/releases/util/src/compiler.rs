@@ -127,7 +127,7 @@ impl Compiler {
 		script_path: &Path,
 	) -> Result<BuiltPackage, anyhow::Error> {
 		// Make a temporary directory for compilation
-		let package_dir = PathBuf::from(".debug/move-scripts/").join(script_name);
+		let package_dir = PathBuf::from(".debug/move-scripts").join(script_name);
 
 		// Make the temporary directory
 		fs::create_dir_all(&package_dir).context(format!(
