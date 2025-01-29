@@ -8,19 +8,16 @@ use once_cell::sync::Lazy;
 use url::Url;
 use std::{fs, str::FromStr, time::{SystemTime, UNIX_EPOCH}};
 use aptos_sdk::{
-	coin_client::CoinClient,
-	crypto::{SigningKey, ValidCryptoMaterialStringExt},
 	move_types::{
 		identifier::Identifier,
 		language_storage::{ModuleId, TypeTag},
 	},
-	rest_client::{Client, FaucetClient, Transaction},
-	transaction_builder::TransactionFactory,
+	
 	types::{account_address::AccountAddress, transaction::TransactionPayload},
 };
 
 #[derive(Debug, Parser, Clone)]
-#[clap(rename_all = "kebab-case", about = "Mints and locks tokens.")]
+#[clap(rename_all = "kebab-case", about = "Burns tokens 🔥.")]
 pub struct Burn {
 	#[clap(flatten)]
 	pub movement_args: MovementArgs,
@@ -99,10 +96,10 @@ impl Burn {
 			.inner()
 			.chain_id;
 
-			let mut core_resources_account: LocalAccount = LocalAccount::from_private_key(
-				MAPTOS_PRIVATE_KEY.clone().as_str(),
-				0,
-			)?;
+		let mut core_resources_account: LocalAccount = LocalAccount::from_private_key(
+			MAPTOS_PRIVATE_KEY.clone().as_str(),
+			0,
+		)?;
 
 		tracing::info!("Created core resources account");
 		tracing::debug!("core_resources_account address: {}", core_resources_account.address());
