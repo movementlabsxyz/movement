@@ -66,3 +66,41 @@ If you encounter an error reported by the `setup` service for an invalid Aptos s
 
 ### Forceful Writes
 Most other bugs that emerged in early development should be handled by the forceful writes made by `syncador-v2`. However, this also means that if your application is not configured to allow for writes from the user running the Movement Full Follower servicer, then you will likely encounter errors. 
+
+### Sync issues:
+
+If you see the following in the `movement-full-node` container logs:
+
+```
+2025-01-30T12:57:49.843465Z  INFO movement_full_node::node::partial: Creating the http2 client https://movement-celestia-da-light-node.testnet.bardock.movementlabs.xyz:443
+Error: Failed to create the executor
+
+Caused by:
+    0: Failed to connect to light node
+    1: transport error
+    2: dns error: failed to lookup address information: Name or service not known
+    3: dns error: failed to lookup address information: Name or service not known
+    4: failed to lookup address information: Name or service not known
+```
+
+It's because the wrong value for `MOVEMENT_DA_LIGHT_NODE_CONNECTION_HOSTNAME` is in `/etc/systemd/system/movement-full-follower.service`. It should be updated to `m1-da-light-node.testnet.bardock.movementnetwork.xyz`:
+```
+Environment="MOVEMENT_DA_LIGHT_NODE_CONNECTION_HOSTNAME=m1-da-light-node.testnet.bardock.movementnetwork.xyz"
+```
+
+Then, the DB sync should be removed from the setup so that it doesn't start when the docker services are started
+
+1. Stop the `movement-full-node` container:
+```
+docker stop <container-id>
+```
+
+2. Delete `maptos`, `maptos-storage`, and `suszuka-da-db` in `~/.movement`:
+```
+rm -rf ~/.movement/{maptos,maptos-storage,suszuka-da-db}
+```
+
+3. Start the `movement-full-node` container:
+```
+docker start <container-id>
+```

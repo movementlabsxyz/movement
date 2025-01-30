@@ -28,7 +28,6 @@
           - xz-utils
           - git
           - nginx
-          - python3-pip
         state: present
         update_cache: yes
 
