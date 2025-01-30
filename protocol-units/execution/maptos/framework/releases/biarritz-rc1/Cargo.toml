@@ -29,6 +29,7 @@ dot-movement = { workspace = true }
 tempfile = { workspace = true }
 bcs = { workspace = true }
 aptos-framework-upgrade-gas-release = { workspace = true }
+aptos-framework-set-feature-flags-release = { workspace = true }
 aptos-types = { workspace = true }
 aptos-gas-schedule = { workspace = true }
 aptos-sdk = { workspace = true }

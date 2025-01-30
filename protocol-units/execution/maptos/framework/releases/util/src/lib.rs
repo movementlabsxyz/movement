@@ -286,45 +286,6 @@ pub trait Release {
 			.collect())
 	}
 
-	/// Submits the release proposals to the network.
-	/// Returns the transaction hashes of the submitted proposals.
-	async fn submit_release_proposals(
-		&self,
-		signer: &impl ReleaseSigner,
-		max_gas_amount: u64,
-		gas_unit_price: u64,
-		expiration_timestamp_secs: u64,
-		client: &Client,
-	) -> Result<Vec<SignedTransaction>, ReleaseBundleError> {
-		// form the signed transactions
-		let transactions = self
-			.proposal_signed_transactions(
-				signer,
-				max_gas_amount,
-				gas_unit_price,
-				expiration_timestamp_secs,
-				client,
-			)
-			.await?;
-
-		// submit the transactions
-		let transaction_batch_submission_res = client
-			.submit_batch_bcs(&transactions)
-			.await
-			.map_err(|e| ReleaseBundleError::Proposing(Box::new(e)))?;
-
-		let transaction_failures =
-			transaction_batch_submission_res.into_inner().transaction_failures;
-
-		if !transaction_failures.is_empty() {
-			return Err(ReleaseBundleError::Proposing(
-				format!("transaction failures: {:?}", transaction_failures).into(),
-			));
-		}
-
-		Ok(transactions)
-	}
-
 	/// Submits the release proposals to the network and waits for the transactions to be executed.
 	/// Returns the transaction hashes of the submitted proposals.
 	async fn propose_release(
@@ -335,8 +296,9 @@ pub trait Release {
 		expiration_timestamp_secs: u64,
 		client: &Client,
 	) -> Result<Vec<SignedTransaction>, ReleaseBundleError> {
-		let submitted_transactions = self
-			.submit_release_proposals(
+		// get the signed transactions
+		let signed_transactions = self
+			.proposal_signed_transactions(
 				signer,
 				max_gas_amount,
 				gas_unit_price,
@@ -345,36 +307,16 @@ pub trait Release {
 			)
 			.await?;
 
-		// wait for the transactions to be executed
-		let mut i = 0;
-		let mut errors = vec![];
-		for transaction in &submitted_transactions {
-			match client.wait_for_signed_transaction_bcs(transaction).await.map_err(|e| {
+		// submit and wait for transactions to be executed
+		for signed_transaction in &signed_transactions {
+			client.submit_and_wait_bcs(signed_transaction).await.map_err(|e| {
 				ReleaseBundleError::Proposing(
-					format!(
-						"waiting for transaction {:?} {:?} failed with: {:?}",
-						i,
-						transaction.committed_hash(),
-						e
-					)
-					.into(),
+					format!("submitting transaction failed with: {:?}", e).into(),
 				)
-			}) {
-				Ok(_) => {}
-				Err(e) => {
-					errors.push(e);
-				}
-			}
-			i += 1;
+			})?;
 		}
 
-		if !errors.is_empty() {
-			return Err(ReleaseBundleError::Proposing(
-				format!("transaction errors: {:?}", errors).into(),
-			));
-		}
-
-		Ok(submitted_transactions)
+		Ok(signed_transactions)
 	}
 
 	/// Proposes and votes through the release proposals.
