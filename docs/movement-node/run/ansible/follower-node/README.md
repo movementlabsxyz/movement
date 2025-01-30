@@ -88,7 +88,7 @@ It's because the wrong value for `MOVEMENT_DA_LIGHT_NODE_CONNECTION_HOSTNAME` is
 Environment="MOVEMENT_DA_LIGHT_NODE_CONNECTION_HOSTNAME=m1-da-light-node.testnet.bardock.movementnetwork.xyz"
 ```
 
-Then, the DB sync should be removed from the setup so that it doesn't start when the docker services are started
+Also, the DB sync must be removed from the setup so that it doesn't start when the docker services are started:
 
 1. Stop the `movement-full-node` container:
 ```
