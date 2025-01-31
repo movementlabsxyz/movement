@@ -11,6 +11,7 @@ use bridge_service::chains::ethereum::{
 use hex::ToHex;
 use std::io::BufRead;
 use std::{
+	env,
 	io::Write,
 	process::{Command, Stdio},
 };
@@ -257,7 +258,13 @@ pub fn init_movement_node(config: &mut MovementConfig) -> Result<(), anyhow::Err
 pub fn deploy_on_movement_framework(_config: &mut MovementConfig) -> Result<(), anyhow::Error> {
 	tracing::info!("Before compile move modules");
 	let compile_output = Command::new("movement")
-		.args(&["move", "compile", "--package-dir", "protocol-units/bridge/move-modules/"])
+		.args(&[
+			"move",
+			"compile",
+			"--package-dir",
+			"protocol-units/bridge/move-modules/",
+			"--skip-fetch-latest-git-deps",
+		])
 		.stdout(Stdio::piped())
 		.stderr(Stdio::piped())
 		.output()?;
