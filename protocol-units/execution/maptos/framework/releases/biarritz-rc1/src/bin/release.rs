@@ -34,8 +34,14 @@ static NODE_URL: Lazy<Url> = Lazy::new(|| {
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
-	// configure tracing
-	tracing_subscriber::fmt::init();
+	// setup the logger
+	use tracing_subscriber::EnvFilter;
+
+	tracing_subscriber::fmt()
+		.with_env_filter(
+			EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
+		)
+		.init();
 
 	// form the elsa release
 	let biarritz_rc1 = BiarritzRc1::new();

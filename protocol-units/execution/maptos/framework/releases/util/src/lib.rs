@@ -541,12 +541,10 @@ macro_rules! mrb_release {
 
 		// Define the constant with the byte data
 		#[cfg(unix)]
-		const $bytes_name: &[u8] =
-			include_bytes!(concat!("..", "/", "target", "/", "mrb_cache", "/", $path));
+		const $bytes_name: &[u8] = include_bytes!(concat!("..", "/", "mrb_cache", "/", $path));
 
 		#[cfg(windows)]
-		const $bytes_name: &[u8] =
-			include_bytes!(concat!("..", "\\", "target", "\\", "mrb_cache", "\\", $path));
+		const $bytes_name: &[u8] = include_bytes!(concat!("..", "\\", "mrb_cache", "\\", $path));
 
 		// Define the struct implementing Release
 		pub struct $struct_name;

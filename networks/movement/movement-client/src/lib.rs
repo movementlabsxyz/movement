@@ -26,7 +26,7 @@ pub mod test {
 	#[tokio::test]
 	#[tracing_test::traced_test]
 	pub async fn test_transaction_size() -> Result<(), anyhow::Error> {
-		let mut alice = LocalAccount::generate(&mut rand::rngs::OsRng);
+		let alice = LocalAccount::generate(&mut rand::rngs::OsRng);
 		let transaction_builder = TransactionBuilder::new(
 			TransactionPayload::EntryFunction(EntryFunction::new(
 				ModuleId::new(AccountAddress::from_str_strict("0x1")?, Identifier::new("coin")?),
@@ -44,7 +44,7 @@ pub mod test {
 
 		// create the blob write
 		let signed_transaction = alice.sign_with_transaction_builder(transaction_builder);
-		let txn_hash = signed_transaction.committed_hash();
+		let _txn_hash = signed_transaction.committed_hash();
 		let serialized_aptos_transaction = bcs::to_bytes(&signed_transaction)?;
 		info!("transaction size {}", serialized_aptos_transaction.len());
 

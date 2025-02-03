@@ -1,9 +1,6 @@
 use aptos_framework_elsa_release::cached::gas_upgrade::Elsa;
 use maptos_framework_release_util::{LocalAccountReleaseSigner, Release};
-use movement_client::{
-	crypto::ValidCryptoMaterialStringExt,
-	types::{account_config::aptos_test_root_address, LocalAccount},
-};
+use movement_client::types::{account_config::aptos_test_root_address, LocalAccount};
 use once_cell::sync::Lazy;
 use std::str::FromStr;
 use url::Url;

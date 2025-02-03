@@ -3,10 +3,7 @@
 
 use anyhow::Result;
 use aptos_config::keys::ConfigKey;
-use aptos_faucet_core::{
-	funder::ApiConnectionConfig,
-	server::{self, Server},
-};
+use aptos_faucet_core::{funder::ApiConnectionConfig, server::Server};
 use aptos_logger::info;
 use aptos_sdk::crypto::{ed25519::Ed25519PrivateKey, ValidCryptoMaterialStringExt};
 use clap::Parser;
@@ -57,7 +54,7 @@ async fn main() -> Result<()> {
 		Server::RunSimple(mut server) => {
 			server.api_connection_config = ApiConnectionConfig::new(
 				connection_url.parse()?,
-				/// The config will use an encoded key if one is provided
+				// The config will use an encoded key if one is provided
 				"/not/a/real/path".to_string().into(),
 				Some(ConfigKey::new(private_key)),
 				chain_id,

@@ -1,7 +1,5 @@
 use aptos_framework::ReleaseBundle;
-use aptos_gas_schedule::{AptosGasParameters, InitialGasSchedule, ToOnChainGasSchedule};
 use aptos_release_builder::components::gas::generate_gas_upgrade_proposal;
-use aptos_sdk::move_types::gas_algebra::GasQuantity;
 use aptos_sdk::types::transaction::{Script, SignedTransaction, TransactionPayload};
 use aptos_types::on_chain_config::GasScheduleV2;
 use maptos_framework_release_util::{

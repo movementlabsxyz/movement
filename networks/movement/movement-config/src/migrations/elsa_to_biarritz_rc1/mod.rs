@@ -3,7 +3,6 @@ pub mod dot_movement;
 use crate::releases::biarritz_rc1::Config;
 use movement_signer_loader::identifiers::{local::Local, SignerIdentifier};
 use std::future::Future;
-use tap::tap::Tap;
 use tracing::info;
 
 /// A struct for managing the Elsa to biarritz rc1 migration.

@@ -210,8 +210,8 @@ impl Howzit {
 	}
 
 	pub async fn call_transfers(&self, count: u64) -> Result<Vec<(bool, u64, u64)>, anyhow::Error> {
-		let mut results = Arc::new(RwLock::new(Vec::new()));
-		let mut latencies = Arc::new(RwLock::new(HashMap::new()));
+		let results = Arc::new(RwLock::new(Vec::new()));
+		let latencies = Arc::new(RwLock::new(HashMap::new()));
 
 		// local accounts
 		let mut alice = LocalAccount::generate(&mut rand::rngs::OsRng);
@@ -352,7 +352,7 @@ impl Howzit {
 		let mut successes = 0;
 		let mut failures = 0;
 
-		let mut alice = LocalAccount::generate(&mut rand::rngs::OsRng);
+		let alice = LocalAccount::generate(&mut rand::rngs::OsRng);
 		let bob = LocalAccount::generate(&mut rand::rngs::OsRng);
 
 		tracing::info!("Funding Alice");
@@ -378,7 +378,7 @@ impl Howzit {
 			}
 		}
 
-		let coin_client = CoinClient::new(&self.rest_client);
+		let _coin_client = CoinClient::new(&self.rest_client);
 		let mut transactions = Vec::new();
 		for _ in 0..count {
 			let options = TransferOptions::default();
