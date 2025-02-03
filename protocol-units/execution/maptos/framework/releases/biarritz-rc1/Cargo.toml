@@ -35,6 +35,8 @@ aptos-gas-schedule = { workspace = true }
 aptos-sdk = { workspace = true }
 aptos-release-builder = { workspace = true }
 hex = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
 
 [build-dependencies]
 maptos-framework-release-util = { workspace = true }

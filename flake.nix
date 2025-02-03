@@ -102,11 +102,11 @@
 
         celestia-node = pkgs.buildGoModule {
           pname = "celestia-node";
-          version = "0.17.2";
+          version = "0.20.4";
 
           src = pkgs.fetchgit {
             url = "https://github.com/celestiaorg/celestia-node";
-            rev = "v0.17.2";
+            rev = "v0.20.4";
             hash = "sha256-7Ame5xxLbLgD8LGNNWWqI0uUFO5K6MXvCo9TK9V5Sls=";
           };
 

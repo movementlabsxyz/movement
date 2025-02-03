@@ -147,21 +147,32 @@ where
 		self.wrapped_release.release_bundle()
 	}
 
-	async fn release(
+	async fn propose_release(
 		&self,
 		signer: &impl maptos_framework_release_util::ReleaseSigner,
 		max_gas_amount: u64,
 		gas_unit_price: u64,
-		expiration_timestamp_secs: u64,
+		expiration_timestamp_sec_offset: u64,
 		client: &aptos_sdk::rest_client::Client,
 	) -> Result<Vec<aptos_types::transaction::SignedTransaction>, ReleaseBundleError> {
 		// run the wrapped release
 		let transactions = self
 			.wrapped_release
-			.release(signer, max_gas_amount, gas_unit_price, expiration_timestamp_secs, client)
+			.propose_release(
+				signer,
+				max_gas_amount,
+				gas_unit_price,
+				expiration_timestamp_sec_offset,
+				client,
+			)
 			.await?;
 
 		// generate and execute the gas upgrade proposal
+		let now_u64 = std::time::SystemTime::now()
+			.duration_since(std::time::UNIX_EPOCH)
+			.map_err(|e| ReleaseBundleError::Build(e.into()))?
+			.as_secs();
+		let expiration_timestamp_secs = now_u64 + expiration_timestamp_sec_offset;
 		self.set_feature_flags(
 			signer,
 			max_gas_amount,
