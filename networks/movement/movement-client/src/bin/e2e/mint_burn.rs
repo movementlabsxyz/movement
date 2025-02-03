@@ -311,5 +311,44 @@ async fn main() -> Result<(), anyhow::Error> {
 		"Core resources account balance was not burned"
 	);
 
+	let amount_to_mint = 1;
+
+	let mint_core_code = fs::read(
+		"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/mint_to.mv",
+	)?;
+	let mint_core_args = vec![
+		TransactionArgument::Address(core_resources_account.address()),
+		TransactionArgument::U64(amount_to_mint),
+	];
+	let mint_core_script_payload =
+		TransactionPayload::Script(Script::new(mint_core_code, vec![], mint_core_args));
+
+	let mint_core_script_transaction = transaction_test_helpers::get_test_signed_transaction_with_chain_id(
+		associate_address,
+		core_resources_account.sequence_number(),
+		&core_resources_account.private_key(),
+		core_resources_account.public_key().clone(),
+		Some(mint_core_script_payload),
+		SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60,
+		100,
+		None,
+		ChainId::new(chain_id),
+	);
+
+	rest_client
+		.submit_and_wait(&mint_core_script_transaction)
+		.await
+		.context("Failed to execute mint core balance script transaction")?;
+
+	assert!(
+		coin_client
+			.get_account_balance(&core_resources_account.address())
+			.await
+			.context("Failed to retrieve core resources account new balance")?
+			== desired_core_balance + amount_to_mint,
+		"Core resources account balance was not minted"
+	);
+
+
 	Ok(())
 }
