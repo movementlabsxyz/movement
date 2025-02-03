@@ -43,6 +43,8 @@ mcr-settlement-config = { workspace = true }
 clap = { workspace =  true }
 movement-da-light-node-client = { workspace = true}
 chrono = { workspace = true }
+syncador = { workspace = true }
+syncup = { workspace = true }
 
 [features]
 default = []
