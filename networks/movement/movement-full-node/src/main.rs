@@ -12,7 +12,6 @@ async fn main() -> Result<(), anyhow::Error> {
 	let _guard = movement_tracing::init_tracing_subscriber(tracing_config);
 
 	let suzuka_util = MovementFullNode::parse();
-
 	suzuka_util.execute().await?;
 
 	Ok(())
