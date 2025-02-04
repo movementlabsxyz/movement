@@ -73,7 +73,7 @@ impl MintTo {
 			.inner()
 			.chain_id;
 
-		let dot_movement = dot_movement::DotMovement::try_from_env()?;
+		let dot_movement = self.movement_args.dot_movement()?;
 		let config = dot_movement.try_get_config_from_json::<movement_config::Config>()?;
 
 		let raw_private_key = config
