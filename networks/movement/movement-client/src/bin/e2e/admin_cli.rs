@@ -1,15 +1,16 @@
 use anyhow::Context;
 use aptos_sdk::{
 	coin_client::CoinClient,
-	crypto::ValidCryptoMaterialStringExt,
 	rest_client::{Client, FaucetClient},
 };
+use movement_client::crypto::ed25519::Ed25519PrivateKey;
+use movement_client::crypto::ValidCryptoMaterialStringExt;
 use movement_client::types::LocalAccount;
 use once_cell::sync::Lazy;
 use std::str::FromStr;
 use tokio::process::Command;
 //use tokio::process::Command;
-use tracing::info;
+//use tracing::info;
 use tracing_subscriber::EnvFilter;
 use url::Url;
 
@@ -65,14 +66,21 @@ async fn main() -> Result<(), anyhow::Error> {
 	let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
 	let coin_client = CoinClient::new(&rest_client);
 
-	let core_resource_pk = SUZUKA_CONFIG
+	let raw_pk = SUZUKA_CONFIG
 		.execution_config
 		.maptos_config
 		.chain
 		.maptos_private_key_signer_identifier
 		.try_raw_private_key()?;
 
-	let mut core_resources_account = LocalAccount::from_private_key(core_resource_pk, 0)?;
+	let private_key = Ed25519PrivateKey::try_from(raw_pk.as_slice())?;
+	let core_resources_account =
+		LocalAccount::from_private_key(private_key.to_encoded_string()?.as_str(), 0)?;
+
+	faucet_client
+		.fund(core_resources_account.address(), 100_000_000_000)
+		.await
+		.context("Failed to fund core resourece account")?;
 
 	let output = Command::new("cargo")
 		.args(&[
