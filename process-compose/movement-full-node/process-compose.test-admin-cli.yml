@@ -9,11 +9,15 @@ processes:
       - APTOS_ACCOUNT_WHITELIST=$DOT_MOVEMENT_PATH/default_signer_address_whitelist
       - MAPTOS_PRIVATE_KEY=random
 
-    test-admin-cli:
+  movement-faucet: 
+    command : |
+      movement-faucet-service run-simple --do-not-delegate
+  test-admin-cli:
     command: |
-      ## The Cli command that an admin would run
-      cargo run -p movement-full-node admin ops mint-to --movement-path ".movement/" -a 42 -r "yo"
+      ## The Cli command that an admin would run recipient is 0xdead address
+      cargo run -p movement-full-node admin ops mint-to --movement-path ".movement/" -a 42 -r "000000000000000000000000000000000000000000000000000000000000dead"
     depends_on:
       movement-full-node:
         condition: process_healthy
-  
+      movement-faucet:
+        condition: process_healthy

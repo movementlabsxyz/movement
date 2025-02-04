@@ -1,12 +1,14 @@
 #[allow(unused_imports)]
 use anyhow::Context;
 use aptos_sdk::types::{
+	account_address::AccountAddress,
 	transaction::{Script, TransactionArgument, TransactionPayload},
 	LocalAccount,
 };
 use aptos_types::{chain_id::ChainId, test_helpers::transaction_test_helpers};
 use clap::Parser;
 use movement_config::ops::aptos::rest_client::RestClientOperations;
+use std::str::FromStr;
 use std::time::UNIX_EPOCH;
 use std::{fs, time::SystemTime};
 use tokio::process::Command;
@@ -60,7 +62,6 @@ impl MintTo {
 
 		let core_resources_account: LocalAccount = LocalAccount::from_private_key(&hex_string, 0)?;
 
-		tracing::info!("Created core resources account");
 		tracing::debug!("core_resources_account address: {}", core_resources_account.address());
 
 		// I know that we shouldn't compile on cmd execution, but we can optimise this later.
@@ -69,7 +70,8 @@ impl MintTo {
 				"move",
 				"compile",
 				"--package-dir",
-				"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/mint_to.mv"
+				"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/mint_to.mv",
+        "--skip-fetch-latest-git-deps",
 			])
 			.status()
 			.await
@@ -79,9 +81,11 @@ impl MintTo {
 			"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/mint_to.mv",
 		)?;
 
+		let recipient = AccountAddress::from_str(&self.recipient)?;
+
 		let mint_core_args = vec![
-			TransactionArgument::Address(core_resources_account.address()),
-			TransactionArgument::U64(self.amount),
+			TransactionArgument::Address(recipient), //recipient
+			TransactionArgument::U64(self.amount),   // amount
 		];
 		let mint_core_script_payload =
 			TransactionPayload::Script(Script::new(mint_core_code, vec![], mint_core_args));
