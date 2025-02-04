@@ -1,9 +1,6 @@
 use aptos_framework_elsa_release::cached::gas_upgrade::Elsa;
 use maptos_framework_release_util::{LocalAccountReleaseSigner, Release};
-use movement_client::{
-	crypto::ValidCryptoMaterialStringExt,
-	types::{account_config::aptos_test_root_address, LocalAccount},
-};
+use movement_client::types::{account_config::aptos_test_root_address, LocalAccount};
 use once_cell::sync::Lazy;
 use std::str::FromStr;
 use url::Url;
@@ -63,13 +60,7 @@ async fn main() -> Result<(), anyhow::Error> {
 		2_000_000,
 		100,
 		// 60 seconds from now as u64
-		((std::time::SystemTime::now()
-			.checked_add(std::time::Duration::from_secs(60))
-			.unwrap()
-			.duration_since(std::time::UNIX_EPOCH)
-			.unwrap()
-			.as_secs()) as u64)
-			.into(),
+		60,
 		&rest_client,
 	)
 	.await?;

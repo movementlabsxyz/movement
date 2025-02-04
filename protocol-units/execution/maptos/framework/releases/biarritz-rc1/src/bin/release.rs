@@ -1,4 +1,4 @@
-use aptos_framework_biarritz_rc1_release::cached::gas_upgrade::BiarritzRc1;
+use aptos_framework_biarritz_rc1_release::cached::full::feature_upgrade::BiarritzRc1;
 use maptos_framework_release_util::{LocalAccountReleaseSigner, Release};
 use movement_client::types::{account_config::aptos_test_root_address, LocalAccount};
 use once_cell::sync::Lazy;
@@ -34,6 +34,15 @@ static NODE_URL: Lazy<Url> = Lazy::new(|| {
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
+	// setup the logger
+	use tracing_subscriber::EnvFilter;
+
+	tracing_subscriber::fmt()
+		.with_env_filter(
+			EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
+		)
+		.init();
+
 	// form the elsa release
 	let biarritz_rc1 = BiarritzRc1::new();
 
@@ -54,26 +63,9 @@ async fn main() -> Result<(), anyhow::Error> {
 	// form the rest client
 	let rest_client = movement_client::rest_client::Client::new(NODE_URL.clone());
 
-	// get the current sequence number
-	let account = rest_client.get_account(aptos_test_root_address()).await?;
-	let sequencer_number = account.into_inner().sequence_number;
-
 	// release the elsa release
 	biarritz_rc1
-		.release(
-			&local_account_release_signer,
-			2_000_000,
-			100,
-			// 60 seconds from now as u64
-			((std::time::SystemTime::now()
-				.checked_add(std::time::Duration::from_secs(60))
-				.unwrap()
-				.duration_since(std::time::UNIX_EPOCH)
-				.unwrap()
-				.as_secs()) as u64)
-				.into(),
-			&rest_client,
-		)
+		.release(&local_account_release_signer, 2_000_000, 100, 60, &rest_client)
 		.await?;
 
 	Ok(())

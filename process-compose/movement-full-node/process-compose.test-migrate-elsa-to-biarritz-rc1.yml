@@ -1,10 +1,12 @@
 version: "3"
 
-environment:
-  - "KNOWN_FRAMEWORK_RELEASE=elsa"
-
 processes:
-  test-upgrade-biarritz-rc1:
+
+  setup:
+    environment:
+      - "KNOWN_FRAMEWORK_RELEASE=biarritz-rc1"
+
+  test-migrate-elsa-to-biarritz-rc1:
     command: |
       cargo run --bin aptos-framework-biarritz-rc1-release-tool
     depends_on:

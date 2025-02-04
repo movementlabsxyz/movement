@@ -21,19 +21,7 @@ impl ElsaToBiarritzRc1 {
 		// upgrade to Biarritz RC1 with the gas upgrade
 		let biarritz_rc1 = BiarritzRc1::new();
 		biarritz_rc1
-			.release(
-				signer,
-				2_000_000,
-				100,
-				((std::time::SystemTime::now()
-					.checked_add(std::time::Duration::from_secs(60))
-					.unwrap()
-					.duration_since(std::time::UNIX_EPOCH)
-					.unwrap()
-					.as_secs()) as u64)
-					.into(),
-				client,
-			)
+			.release(signer, 2_000_000, 100, 60, client)
 			.await
 			.map_err(|e| ElsaToBiarritzRc1Error::MigrationFailed(e.into()))?;
 

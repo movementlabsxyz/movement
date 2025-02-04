@@ -43,7 +43,7 @@ async fn health_handler() -> &'static str {
 // /sign endpoint for signing a message
 async fn sign_handler<O, C>(
 	Extension(hsm): Extension<Arc<Mutex<Signer<O, C>>>>,
-	Extension(app_state): Extension<Arc<AppState>>,
+	Extension(_app_state): Extension<Arc<AppState>>,
 	Json(payload): Json<SignRequest>,
 ) -> Result<Json<SignedResponse>, StatusCode>
 where
