@@ -1,0 +1,54 @@
+version: "3"
+
+processes:
+ 
+  movement-snapshot-node:
+    command: |
+      #!/bin/bash -e
+      # Copy the snapshot
+      cp -r "$DOT_MOVEMENT" "$DOT_MOVEMENT-snapshot"
+
+      # Replace the port in the snapshot node's config file
+      # Field is maptos_config.chain.maptos_rest_listen_port
+      sed -i 's/"maptos_rest_listen_port": 39731/"maptos_rest_listen_port": 39731/' "$DOT_MOVEMENT-snapshot/config.json"
+
+      export DOT_MOVEMENT="$DOT_MOVEMENT-snapshot"
+
+      # Loop forever: run the node for 60 seconds, then take a snapshot
+      while true; do
+          echo "Starting node for 60 seconds..."
+
+          # Run the node for 60 seconds, terminating if it exceeds the time limit
+          if timeout 60s movement-full-node run; then
+              echo "Node run completed within the time limit."
+          else
+              echo "Node run did not complete within the time limit. Forcefully terminated."
+          fi
+
+          # Take a snapshot after the node run
+          echo "Taking snapshot..."
+          if movement-full-node backup push; then
+              echo "Snapshot taken successfully."
+          else
+              echo "Snapshot process failed. Exiting loop."
+              break
+          fi
+
+          # Optional: Add a sleep period if needed between iterations
+          # sleep 5
+      done
+
+
+    depends_on:
+      movement-celestia-da-light-node:
+        condition: process_healthy
+    readiness_probe:
+      initial_delay_seconds: 10
+      exec:
+        command: curl http://0.0.0.0:39731
+
+  # movement-full-node now depends on movement-snapshot-node having started
+  movement-full-node:
+    depends_on:
+      movement-snapshot-node:
+        condition: process_healthy
