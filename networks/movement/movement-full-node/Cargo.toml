@@ -12,6 +12,8 @@ rust-version = { workspace = true }
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+aptos-types = { workspace = true }
+aptos-sdk = { workspace = true }
 maptos-dof-execution = { workspace = true }
 prost = { workspace = true }
 movement-da-light-node-proto = { workspace = true, features = ["client"] }
@@ -40,9 +42,11 @@ zstd = { workspace = true }
 hyper = { workspace = true }
 hex = { workspace = true }
 mcr-settlement-config = { workspace = true }
-clap = { workspace =  true }
-movement-da-light-node-client = { workspace = true}
+clap = { workspace = true }
+movement-da-light-node-client = { workspace = true }
 aptos-framework-elsa-to-biarritz-rc1-migration = { workspace = true }
+once_cell = { workspace = true }
+url = { workspace = true }
 
 [features]
 default = []
