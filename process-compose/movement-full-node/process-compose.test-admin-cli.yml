@@ -9,15 +9,11 @@ processes:
       - APTOS_ACCOUNT_WHITELIST=$DOT_MOVEMENT_PATH/default_signer_address_whitelist
       - MAPTOS_PRIVATE_KEY=random
 
-  movement-faucet: 
-    command : |
-      movement-faucet-service run-simple --do-not-delegate
-  test-admin-cli:
+    test-admin-cli:
     command: |
       ## The Cli command that an admin would run
       cargo run -p movement-full-node admin ops mint-to --movement-path ".movement/" -a 42 -r "yo"
     depends_on:
       movement-full-node:
         condition: process_healthy
-      movement-faucet:
-        condition: process_healthy
+  
