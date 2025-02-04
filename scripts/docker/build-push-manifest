@@ -49,37 +49,15 @@ branch_name=$(git rev-parse --abbrev-ref HEAD)
 sanitized_branch_name=${branch_name//\//.}
 is_tag=false
 
-# if git describe --exact-match --tags HEAD >/dev/null 2>&1; then
-#     is_tag="true"
-# fi
+if git describe --exact-match --tags HEAD >/dev/null 2>&1; then
+    is_tag="true"
+fi
 
 if [ "$debug" = true ]; then
     echo "COMMIT_HASH: $commit_hash"
     echo "BRANCH_NAME: $branch_name"
     echo "SANITIZED_BRANCH_NAME: $sanitized_branch_name"
     echo "IS_TAG: $is_tag"
-fi
-
-# Get the machine hardware name
-arch=$(uname -m)
-
-# Determine the platform name suffix based on the architecture
-case "$arch" in
-    x86_64)
-        platform_suffix="-amd64"
-        ;;
-    aarch64)
-        platform_suffix="-arm64"
-        ;;
-    *)
-        echo "Unsupported architecture: $arch"
-        exit 1
-        ;;
-esac
-
-if [ "$debug" = true ]; then
-    echo "ARCH: $arch"
-    echo "PLATFORM_SUFFIX: $platform_suffix"
 fi
 
 # Get application version
@@ -95,15 +73,14 @@ container_tag_commit="${repository}/${container_name}:${commit_hash}"
 container_tag_version="${repository}/${container_name}:${application_version}"
 container_tag_branch="${repository}/${container_name}:${application_version}-${sanitized_branch_name}"
 
+
+
+container_tags+=("$container_tag_commit")
+container_tags+=("$container_tag_branch")
 if [ "$is_tag" = true ]; then
     # If it's a tag, use the application version
     container_tags+=("$container_tag_version")
-else
-    # If it's not a tag, use the sanitized branch name
-    container_tags+=("$container_tag_branch")
 fi
-
-container_tags+=("$container_tag_commit")
 
 if [ "$debug" = true ]; then
     for tag in "${container_tags[@]}"; do
@@ -111,14 +88,13 @@ if [ "$debug" = true ]; then
     done
 fi
 
-# # build and tag the docker image
-docker buildx imagetools create \
-    $container_tag_commit-amd64 \
-    $container_tag_commit-arm64 \
-    $(for tag in "${container_tags[@]}"; do echo -n " --tag $tag"; done)
-
-# Push the Docker images
 for tag in "${container_tags[@]}"; do
-    docker push $tag
+    docker pull $tag-amd64
+    docker pull $tag-arm64
 done
-    
+
+docker buildx imagetools create \
+    $(for tag in "${container_tags[@]}"; do echo -n " --tag $tag"; done) \
+    $container_tag_commit-amd64 \
+    $container_tag_commit-arm64
+
