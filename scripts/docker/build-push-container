@@ -119,14 +119,3 @@ docker buildx build \
   $(for tag in "${container_tags[@]}"; do echo -n " -t $tag "; done) \
   --push \
   "$git_root"
-
-# # build and tag the docker image
-# docker build $git_root \
-#     -f $dockerfile_path \
-#     $(for tag in "${container_tags[@]}"; do echo -n " -t $tag"; done)
-
-# # Push the Docker images
-# for tag in "${container_tags[@]}"; do
-#     docker push $tag
-# done
-    

@@ -12,7 +12,6 @@ on:
       - '**' 
 
 jobs:
-
   build-push-checked-containers:
     uses: ./.github/workflows/build-push-container.yml
     name: Build Push Checked Containers
