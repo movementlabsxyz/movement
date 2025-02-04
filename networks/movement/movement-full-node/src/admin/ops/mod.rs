@@ -1,19 +1,19 @@
 pub mod burn;
-pub mod mint;
+pub mod mint_to;
 
 use clap::Subcommand;
 
 #[derive(Subcommand, Debug)]
 #[clap(rename_all = "kebab-case", about = "Commands for bespoke network operations")]
 pub enum Ops {
-	Mint(mint::Mint),
+	MintTo(mint_to::MintTo),
 	//Burn(burn::Burn),
 }
 
 impl Ops {
 	pub async fn execute(&self) -> Result<(), anyhow::Error> {
 		match self {
-			Ops::Mint(mint) => mint.execute().await,
+			Ops::MintTo(mint_to) => mint_to.execute().await,
 			//Ops::Burn(burn) => burn.execute().await,
 		}
 	}

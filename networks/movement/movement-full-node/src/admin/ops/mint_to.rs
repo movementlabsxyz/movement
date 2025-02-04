@@ -15,6 +15,8 @@ use std::{str::FromStr, time::UNIX_EPOCH};
 use tokio::process::Command;
 use url::Url;
 
+use crate::common_args::MovementArgs;
+
 static SUZUKA_CONFIG: Lazy<movement_config::Config> = Lazy::new(|| {
 	let dot_movement = dot_movement::DotMovement::try_from_env().unwrap();
 	let config = dot_movement.try_get_config_from_json::<movement_config::Config>().unwrap();
@@ -41,20 +43,25 @@ static NODE_URL: Lazy<Url> = Lazy::new(|| {
 	Url::from_str(node_connection_url.as_str()).unwrap()
 });
 
-#[derive(Debug, clap::Args, Clone)]
-pub struct MintArgs {
+#[derive(Debug, Parser, Clone)]
+#[clap(
+	rename_all = "kebab-case",
+	about = "Mint token to a recipient with the core_resource account."
+)]
+pub struct MintTo {
+	#[clap(flatten)]
+	pub movement_args: MovementArgs,
+
+	/// The amount to send
+	#[clap(long, short)]
 	amount: u64,
+
+	/// The address of the recipient
+	#[clap(long, short)]
 	recipient: String,
 }
 
-#[derive(Debug, Parser, Clone)]
-#[clap(rename_all = "kebab-case", about = "Mints tokens with the core_resource account.")]
-pub struct Mint {
-	#[clap(flatten)]
-	pub args: MintArgs,
-}
-
-impl Mint {
+impl MintTo {
 	pub async fn execute(&self) -> Result<(), anyhow::Error> {
 		let rest_client = Client::new(NODE_URL.clone());
 		//let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
@@ -102,7 +109,7 @@ impl Mint {
 
 		let mint_core_args = vec![
 			TransactionArgument::Address(core_resources_account.address()),
-			TransactionArgument::U64(self.args.amount),
+			TransactionArgument::U64(self.amount),
 		];
 		let mint_core_script_payload =
 			TransactionPayload::Script(Script::new(mint_core_code, vec![], mint_core_args));
