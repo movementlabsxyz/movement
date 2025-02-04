@@ -6,17 +6,15 @@ processes:
 
   setup:
     environment:
+      - APTOS_ACCOUNT_WHITELIST=$DOT_MOVEMENT_PATH/default_signer_address_whitelist
       - MAPTOS_PRIVATE_KEY=random
 
   movement-faucet: 
     command : |
       movement-faucet-service run-simple --do-not-delegate
-  test-admin-cli:
-    command: |
-      ## The Cli command that an admin would run recipient is 0xdead address
-      movement init 
-      movement account fund-with-faucet && \
-      cargo run -p movement-full-node admin ops mint-to --movement-path ".movement/" -a 42 -r "000000000000000000000000000000000000000000000000000000000000dead"
+  test-admin-cli: 
+    command : |
+      cargo run --bin movement-tests-admin-cli
     depends_on:
       movement-full-node:
         condition: process_healthy
