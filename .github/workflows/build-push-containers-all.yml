@@ -1,5 +1,5 @@
 name: 📦 Build Push Containers
-run-name: Building containers for ${{ github.event.pull_request.head.ref || github.ref }}
+run-name: Building containers for ${{ github.event.pull_request.head || github.ref_name }}
 
 on:
   pull_request:
