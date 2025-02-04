@@ -88,13 +88,13 @@ if [ "$debug" = true ]; then
     done
 fi
 
-for tag in "${container_tags[@]}"; do
-    docker pull $tag-amd64
-    docker pull $tag-arm64
-done
+# for tag in "${container_tags[@]}"; do
+#     docker pull $tag-amd64
+#     docker pull $tag-arm64
+# done
 
 docker buildx imagetools create \
     $(for tag in "${container_tags[@]}"; do echo -n " --tag $tag"; done) \
     $container_tag_commit-amd64 \
-    $container_tag_commit-arm64
+    $container_tag_commit-arm64 \
 

@@ -34,14 +34,24 @@ jobs:
     with:
       container_name: ${{ matrix.container_name }}
 
-  
+  build-push-checked-manifest:
+    uses: ./.github/workflows/build-push-manifest.yml
+    name: Build Push Checked Manifest
+    needs: 
+      - build-push-checked-containers
+    secrets: inherit
+    strategy:
+      matrix:
+        container_name:
+          - movement-full-node
+    with:
+      container_name: ${{ matrix.container_name }}
 
-  
   container-checks:
     if: github.event.label.name == 'cicd:movement-containers' ||  github.ref == 'refs/heads/main'
     runs-on: buildjet-8vcpu-ubuntu-2204
     needs: 
-      - build-push-checked-containers
+      - build-push-checked-manifest
     steps:
 
       - name: Checkout repository
