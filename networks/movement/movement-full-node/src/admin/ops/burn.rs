@@ -1,19 +1,17 @@
 #[allow(unused_imports)]
 use crate::common_args::MovementArgs;
 use anyhow::Context;
+use aptos_sdk::types::{account_address::AccountAddress, transaction::TransactionPayload};
 use aptos_sdk::{
-	move_types::language_storage::StructTag,
 	move_types::identifier::Identifier,
-	rest_client::{Client},
+	move_types::language_storage::StructTag,
+	rest_client::Client,
 	transaction_builder::TransactionBuilder,
 	types::{
 		chain_id::ChainId,
-		transaction::{ Script, TransactionArgument},
+		transaction::{Script, TransactionArgument},
 		LocalAccount,
 	},
-};
-use aptos_sdk::{
-	types::{account_address::AccountAddress, transaction::TransactionPayload},
 };
 use clap::Parser;
 use once_cell::sync::Lazy;
@@ -140,3 +138,4 @@ impl Burn {
 		Ok(())
 	}
 }
+
