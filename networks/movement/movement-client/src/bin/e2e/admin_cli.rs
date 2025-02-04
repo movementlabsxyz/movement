@@ -1,23 +1,10 @@
 use anyhow::Context;
 use aptos_sdk::{
 	coin_client::CoinClient,
-	crypto::{SigningKey, ValidCryptoMaterialStringExt},
-	move_types::{
-		identifier::Identifier,
-		language_storage::{ModuleId, TypeTag},
-	},
-	rest_client::{Client, FaucetClient, Transaction},
-	transaction_builder::TransactionFactory,
-	types::{account_address::AccountAddress, transaction::TransactionPayload},
-};
-use aptos_types::{
-	account_config::{RotationProofChallenge, CORE_CODE_ADDRESS},
-	chain_id::ChainId,
-	transaction::EntryFunction,
+	rest_client::{Client, FaucetClient},
 };
 use movement_client::types::LocalAccount;
 use once_cell::sync::Lazy;
-use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 //use tokio::process::Command;
 use tracing::info;
@@ -60,6 +47,8 @@ static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
 
 	Url::from_str(faucet_listen_url.as_str()).unwrap()
 });
+
+const DEAD_ADDRESS: &str = "000000000000000000000000000000000000000000000000000000000000dead";
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
