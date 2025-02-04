@@ -17,12 +17,6 @@ use url::Url;
 
 use crate::common_args::MovementArgs;
 
-static SUZUKA_CONFIG: Lazy<movement_config::Config> = Lazy::new(|| {
-	let dot_movement = dot_movement::DotMovement::try_from_env().unwrap();
-	let config = dot_movement.try_get_config_from_json::<movement_config::Config>().unwrap();
-	config
-});
-
 static NODE_URL: Lazy<Url> = Lazy::new(|| {
 	let node_connection_address = SUZUKA_CONFIG
 		.execution_config
