@@ -1,41 +1,17 @@
 #[allow(unused_imports)]
 use anyhow::Context;
-use aptos_sdk::{
-	rest_client::Client,
-	types::{
-		transaction::{Script, TransactionArgument, TransactionPayload},
-		LocalAccount,
-	},
+use aptos_sdk::types::{
+	transaction::{Script, TransactionArgument, TransactionPayload},
+	LocalAccount,
 };
 use aptos_types::{chain_id::ChainId, test_helpers::transaction_test_helpers};
 use clap::Parser;
-use once_cell::sync::Lazy;
+use movement_config::ops::aptos::rest_client::RestClientOperations;
+use std::time::UNIX_EPOCH;
 use std::{fs, time::SystemTime};
-use std::{str::FromStr, time::UNIX_EPOCH};
 use tokio::process::Command;
-use url::Url;
 
 use crate::common_args::MovementArgs;
-
-static NODE_URL: Lazy<Url> = Lazy::new(|| {
-	let node_connection_address = SUZUKA_CONFIG
-		.execution_config
-		.maptos_config
-		.client
-		.maptos_rest_connection_hostname
-		.clone();
-	let node_connection_port = SUZUKA_CONFIG
-		.execution_config
-		.maptos_config
-		.client
-		.maptos_rest_connection_port
-		.clone();
-
-	let node_connection_url =
-		format!("http://{}:{}", node_connection_address, node_connection_port);
-
-	Url::from_str(node_connection_url.as_str()).unwrap()
-});
 
 #[derive(Debug, Parser, Clone)]
 #[clap(
@@ -57,18 +33,20 @@ pub struct MintTo {
 
 impl MintTo {
 	pub async fn execute(&self) -> Result<(), anyhow::Error> {
-		let rest_client = Client::new(NODE_URL.clone());
+		let dot_movement = self.movement_args.dot_movement()?;
+		let config = dot_movement.try_get_config_from_json::<movement_config::Config>()?;
+
+		let rest_client = config.get_rest_client().await?;
+
 		//let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
 		//let coin_client = CoinClient::new(&rest_client);
+
 		let chain_id = rest_client
 			.get_index()
 			.await
 			.context("failed to get chain ID")?
 			.inner()
 			.chain_id;
-
-		let dot_movement = self.movement_args.dot_movement()?;
-		let config = dot_movement.try_get_config_from_json::<movement_config::Config>()?;
 
 		let raw_private_key = config
 			.execution_config
