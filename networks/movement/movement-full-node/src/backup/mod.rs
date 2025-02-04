@@ -4,7 +4,6 @@ use movement_config::Config;
 use syncador::PushOperations;
 use syncup::Syncupable;
 
-// Default command: target/debug/movement-full-node backup db
 #[derive(Subcommand, Debug)]
 #[clap(rename_all = "kebab-case", about = "Commands for syncing")]
 pub enum Backup {
@@ -24,16 +23,33 @@ impl Backup {
 #[derive(Debug, Parser, Clone)]
 #[clap(rename_all = "kebab-case", about = "Backup the specified Node db at root_dir.")]
 pub struct BackupParam {
-	#[clap(default_value = ".movement", value_name = "DIRECTORY")]
-	pub root_dir: String,
 	#[clap(default_value = "{maptos,maptos-storage,movement-da-db}/**", value_name = "DB PATTERN")]
 	pub db_sync: String,
+	#[clap(value_name = "DIRECTORY")]
+	pub root_dir: Option<String>,
 }
 
 impl BackupParam {
 	pub async fn execute(&self) -> Result<(), anyhow::Error> {
-		let mut root_path = std::env::current_dir().expect("Current working dir not defined.");
-		root_path.push(&self.root_dir);
+		let root_path = match &self.root_dir {
+			Some(path) => {
+				let path = std::path::Path::new(&path);
+				if path.exists() {
+					path.to_path_buf()
+				} else {
+					let mut root_path =
+						std::env::current_dir().expect("Current working dir not defined.");
+					root_path.push(&path);
+					root_path
+				}
+			}
+			None => {
+				let dot_movement = dot_movement::DotMovement::try_from_env()?;
+				dot_movement.get_path().to_path_buf()
+			}
+		};
+
+		println!("root_path: {:?}", root_path);
 
 		let archive_pipe = syncador::backend::pipeline::push::Pipeline::new(vec![
 			Box::new(syncador::backend::glob::file::FileGlob::try_new(

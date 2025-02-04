@@ -18,11 +18,13 @@ services:
         export DOT_MOVEMENT_PATH=/.movement-snapshot
 
         while true; do
-          echo "Running movement-full-node for 60 seconds..."
-          timeout 60s movement-full-node run || echo "Node run timed out"
+          echo "Running movement-full-node for 120 seconds to wait until it sync..."
+          timeout 120s movement-full-node run || echo "Node run timed out"
 
           echo "Taking snapshot..."
-          movement-full-node backup push || echo "Snapshot failed"
+          movement-full-node backup db || echo "Snapshot failed"
+          echo "Pushing snapshot..."
+          movement-full-node backup push || echo "Push failed"
         done
       '
     volumes:
