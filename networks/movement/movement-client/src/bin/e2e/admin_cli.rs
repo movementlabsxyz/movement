@@ -1,11 +1,13 @@
 use anyhow::Context;
 use aptos_sdk::{
 	coin_client::CoinClient,
+	crypto::ValidCryptoMaterialStringExt,
 	rest_client::{Client, FaucetClient},
 };
 use movement_client::types::LocalAccount;
 use once_cell::sync::Lazy;
 use std::str::FromStr;
+use tokio::process::Command;
 //use tokio::process::Command;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
@@ -63,51 +65,39 @@ async fn main() -> Result<(), anyhow::Error> {
 	let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
 	let coin_client = CoinClient::new(&rest_client);
 
-	// Load core resource account
-	let mut core_resources_account = LocalAccount::from_private_key(
-		SUZUKA_CONFIG
-			.execution_config
-			.maptos_config
-			.chain
-			.maptos_private_key
-			.to_encoded_string()?
-			.as_str(),
-		0,
-	)?;
-	info!(
-		"Core Resources Account keypairs: {:?}, {:?}",
-		core_resources_account.private_key(),
-		core_resources_account.public_key()
-	);
-	info!("Core Resources Account address: {}", core_resources_account.address());
+	let core_resource_pk = SUZUKA_CONFIG
+		.execution_config
+		.maptos_config
+		.chain
+		.maptos_private_key_signer_identifier
+		.try_raw_private_key()?;
 
-	// Fund the account
-	faucet_client.fund(core_resources_account.address(), 100_000_000_000).await?;
+	let mut core_resources_account = LocalAccount::from_private_key(core_resource_pk, 0)?;
 
-	let state = rest_client
-		.get_ledger_information()
+	let output = Command::new("cargo")
+		.args(&[
+			"run",
+			"-p",
+			"movement-full-node",
+			"admin",
+			"ops",
+			"mint-to",
+			"--movement-path",
+			".movement/",
+			"--account",
+			"42",
+			"--recipient",
+			DEAD_ADDRESS,
+		])
+		.output()
 		.await
-		.context("Failed in getting chain id")?
-		.into_inner();
+		.expect("Failed to execute command");
 
-	// Generate recipient account
-	let recipient = LocalAccount::generate(&mut rand::rngs::OsRng);
-
-	faucet_client.fund(recipient.address(), 100_000_000_000).await?;
-
-	let recipient_bal = coin_client
-		.get_account_balance(&recipient.address())
-		.await
-		.context("Failed to get recipient's account balance")?;
-
-	let core_resource_bal = coin_client
-		.get_account_balance(&core_resources_account.address())
-		.await
-		.context("Failed to get core resources account balance")?;
-
-	info!("Recipient's balance: {:?}", recipient_bal);
-	info!("Core Resources Account balance: {:?}", core_resource_bal);
+	if output.status.success() {
+		println!("Command executed successfully:\n{}", String::from_utf8_lossy(&output.stdout));
+	} else {
+		eprintln!("Command failed:\n{}", String::from_utf8_lossy(&output.stderr));
+	}
 
 	Ok(())
 }
-

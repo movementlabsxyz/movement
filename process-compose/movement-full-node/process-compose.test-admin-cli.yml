@@ -14,6 +14,7 @@ processes:
   test-admin-cli:
     command: |
       ## The Cli command that an admin would run recipient is 0xdead address
+      movement init 
       movement account fund-with-faucet && \
       cargo run -p movement-full-node admin ops mint-to --movement-path ".movement/" -a 42 -r "000000000000000000000000000000000000000000000000000000000000dead"
     depends_on:
