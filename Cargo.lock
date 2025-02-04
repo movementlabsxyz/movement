@@ -12054,6 +12054,7 @@ name = "movement-full-node"
 version = "0.0.2"
 dependencies = [
  "anyhow",
+ "aptos-crypto",
  "aptos-framework-elsa-to-biarritz-rc1-migration",
  "aptos-sdk",
  "aptos-types",

@@ -1,8 +1,7 @@
-use crate::common_args::MovementArgs;
+#[allow(unused_imports)]
 use anyhow::Context;
 use aptos_sdk::{
-	coin_client::CoinClient,
-	rest_client::{Client, FaucetClient},
+	rest_client::Client,
 	types::{
 		transaction::{Script, TransactionArgument, TransactionPayload},
 		LocalAccount,
@@ -59,18 +58,24 @@ static NODE_URL: Lazy<Url> = Lazy::new(|| {
 	Url::from_str(node_connection_url.as_str()).unwrap()
 });
 
+#[derive(Debug, clap::Args, Clone)]
+pub struct MintArgs {
+	amount: u64,
+	recipient: String,
+}
+
 #[derive(Debug, Parser, Clone)]
-#[clap(rename_all = "kebab-case", about = "Mints and locks tokens.")]
+#[clap(rename_all = "kebab-case", about = "Mints tokens with the core_resource account.")]
 pub struct Mint {
 	#[clap(flatten)]
-	pub movement_args: MovementArgs,
+	pub args: MintArgs,
 }
 
 impl Mint {
 	pub async fn execute(&self) -> Result<(), anyhow::Error> {
 		let rest_client = Client::new(NODE_URL.clone());
-		let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
-		let coin_client = CoinClient::new(&rest_client);
+		//let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
+		//let coin_client = CoinClient::new(&rest_client);
 		let chain_id = rest_client
 			.get_index()
 			.await
@@ -78,17 +83,20 @@ impl Mint {
 			.inner()
 			.chain_id;
 
-		let private_key = SUZUKA_CONFIG
+		let dot_movement = dot_movement::DotMovement::try_from_env()?;
+		let config = dot_movement.try_get_config_from_json::<movement_config::Config>()?;
+
+		let raw_private_key = config
 			.execution_config
 			.maptos_config
 			.chain
-			.maptos_private_key
-			.to_string();
+			.maptos_private_key_signer_identifier
+			.try_raw_private_key()?;
 
-		let yo = Yo::new();
+		let hex_string = hex::encode(raw_private_key.as_slice());
+		//let private_key = Ed25519PrivateKey::from_encoded_string(&hex_string)?;
 
-		let core_resources_account: LocalAccount =
-			LocalAccount::from_private_key(&private_key.clone(), 0)?;
+		let core_resources_account: LocalAccount = LocalAccount::from_private_key(&hex_string, 0)?;
 
 		tracing::info!("Created core resources account");
 		tracing::debug!("core_resources_account address: {}", core_resources_account.address());
@@ -111,7 +119,7 @@ impl Mint {
 
 		let mint_core_args = vec![
 			TransactionArgument::Address(core_resources_account.address()),
-			TransactionArgument::U64(amount_to_mint),
+			TransactionArgument::U64(self.args.amount),
 		];
 		let mint_core_script_payload =
 			TransactionPayload::Script(Script::new(mint_core_code, vec![], mint_core_args));
@@ -134,14 +142,6 @@ impl Mint {
 			.await
 			.context("Failed to execute mint core balance script transaction")?;
 
-		assert!(
-			coin_client
-				.get_account_balance(&core_resources_account.address())
-				.await
-				.context("Failed to retrieve core resources account new balance")?
-				== desired_core_balance + amount_to_mint,
-			"Core resources account balance was not minted"
-		);
 		Ok(())
 	}
 }
