@@ -17,9 +17,11 @@ on:
 
 jobs:
   container-build:
-    name: Build ${{ inputs.container_name }}
-    runs-on: 'buildjet-8vcpu-ubuntu-2204'  
-    # runs-on: ${{ matrix.architecture == 'x86_64' && 'buildjet-8vcpu-ubuntu-2204' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
+    name: Build ${{ inputs.container_name }} ${{ matrix.architecture }}
+    strategy:
+      matrix:
+        architecture: [x86_64, arm64]        
+    runs-on: ${{ matrix.architecture == 'x86_64' && 'buildjet-8vcpu-ubuntu-2204' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

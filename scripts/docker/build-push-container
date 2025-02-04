@@ -94,9 +94,9 @@ fi
 
 # Generate image tags
 container_tags=()
-container_tag_commit="${repository}/${container_name}:${commit_hash}"
-container_tag_version="${repository}/${container_name}:${application_version}"
-container_tag_branch="${repository}/${container_name}:${application_version}-${sanitized_branch_name}"
+container_tag_commit="${repository}/${container_name}:${commit_hash}-${platform_shorthand}"
+container_tag_version="${repository}/${container_name}:${application_version}-${platform_shorthand}"
+container_tag_branch="${repository}/${container_name}:${application_version}-${sanitized_branch_name}-${platform_shorthand}"
 
 
 
@@ -114,7 +114,7 @@ if [ "$debug" = true ]; then
 fi
 
 docker buildx build \
-  --platform "linux/amd64,linux/arm64" \
+  --platform "linux/$platform_shorthand" \
   --file "$dockerfile_path" \
   $(for tag in "${container_tags[@]}"; do echo -n " -t $tag "; done) \
   --push \
