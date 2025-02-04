@@ -15,7 +15,7 @@ processes:
   test-admin-cli:
     command: |
       ## The Cli command that an admin would run
-      cargo run cargo run -p movement-full-node admin ops mint-to --movement-path ".movement/" -a 42 -r "yo"
+      cargo run -p movement-full-node admin ops mint-to --movement-path ".movement/" -a 42 -r "yo"
     depends_on:
       movement-full-node:
         condition: process_healthy
