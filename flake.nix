@@ -110,7 +110,7 @@
             hash = "sha256-DWOKdbeRIlQycV0yvkfN/9eTlYt+qhwb9Ur7Y2SixFU=";
           };
 
-          vendorHash = "sha256-RoydbcJ4A2KTW20ihybnUkROwKlrT69qhl8E+NRgOpk=";
+          vendorHash = "sha256-yTN36N02fl9zf+YvliTREfEW1fnUnoRFdsLssx0xikk=";
           subPackages = [ "cmd/celestia" "cmd/cel-key" ];
         };
     
