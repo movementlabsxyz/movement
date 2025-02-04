@@ -21,23 +21,6 @@ static SUZUKA_CONFIG: Lazy<movement_config::Config> = Lazy::new(|| {
 	config
 });
 
-static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
-	let faucet_listen_address = SUZUKA_CONFIG
-		.execution_config
-		.maptos_config
-		.client
-		.maptos_faucet_rest_connection_hostname
-		.clone();
-	let faucet_listen_port = SUZUKA_CONFIG
-		.execution_config
-		.maptos_config
-		.client
-		.maptos_faucet_rest_connection_port
-		.clone();
-	let faucet_listen_url = format!("http://{}:{}", faucet_listen_address, faucet_listen_port);
-	Url::from_str(faucet_listen_url.as_str()).unwrap()
-});
-
 static NODE_URL: Lazy<Url> = Lazy::new(|| {
 	let node_connection_address = SUZUKA_CONFIG
 		.execution_config

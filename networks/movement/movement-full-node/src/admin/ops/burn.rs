@@ -70,15 +70,20 @@ impl Burn {
 			.inner()
 			.chain_id;
 
-		let private_key = SUZUKA_CONFIG
+		let dot_movement = dot_movement::DotMovement::try_from_env()?;
+		let config = dot_movement.try_get_config_from_json::<movement_config::Config>()?;
+
+		let raw_private_key = config
 			.execution_config
 			.maptos_config
 			.chain
-			.maptos_private_key
-			.to_string();
+			.maptos_private_key_signer_identifier
+			.try_raw_private_key()?;
+
+		let hex_string = hex::encode(raw_private_key.as_slice());
 
 		let core_resources_account: LocalAccount =
-			LocalAccount::from_private_key(&private_key.clone(), 0)?;
+			LocalAccount::from_private_key(&hex_string.clone(), 0)?;
 
 		tracing::info!("Created core resources account");
 		tracing::debug!("core_resources_account address: {}", core_resources_account.address());
@@ -138,4 +143,3 @@ impl Burn {
 		Ok(())
 	}
 }
-
