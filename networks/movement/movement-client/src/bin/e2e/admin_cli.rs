@@ -92,7 +92,7 @@ async fn main() -> Result<(), anyhow::Error> {
 			"mint-to",
 			"--movement-path",
 			".movement/",
-			"--account",
+			"--amount",
 			"42",
 			"--recipient",
 			DEAD_ADDRESS,
