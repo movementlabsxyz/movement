@@ -2,7 +2,6 @@ use crate::{
 	BlockMetadata, DynOptFinExecutor, ExecutableBlock, HashValue, MakeOptFinServices, Services,
 	SignedTransaction,
 };
-use aptos_crypto::ValidCryptoMaterialStringExt;
 use maptos_execution_util::config::Config;
 use maptos_fin_view::FinalityView;
 use maptos_opt_executor::{Context as OptContext, Executor as OptExecutor};
@@ -54,7 +53,7 @@ impl DynOptFinExecutor for Executor {
 	fn background(
 		&self,
 		transaction_sender: Sender<(u64, SignedTransaction)>,
-		config: &Config,
+		_config: &Config,
 	) -> Result<
 		(Context, impl Future<Output = Result<(), anyhow::Error>> + Send + 'static),
 		anyhow::Error,
@@ -151,18 +150,14 @@ mod tests {
 	use super::*;
 	use aptos_api::accept_type::AcceptType;
 	use aptos_api::transactions::{SubmitTransactionError, SubmitTransactionPost};
+	use aptos_crypto::ValidCryptoMaterialStringExt;
 	use aptos_crypto::{
 		ed25519::{Ed25519PrivateKey, Ed25519Signature},
 		HashValue, PrivateKey, Uniform,
 	};
-	use aptos_sdk::{
-		bcs,
-		transaction_builder::TransactionFactory,
-		types::{AccountKey, LocalAccount},
-	};
+	use aptos_sdk::{bcs, transaction_builder::TransactionFactory, types::LocalAccount};
 	use aptos_types::{
 		account_address::AccountAddress,
-		account_config::aptos_test_root_address,
 		block_executor::partitioner::ExecutableTransactions,
 		chain_id::ChainId,
 		transaction::{

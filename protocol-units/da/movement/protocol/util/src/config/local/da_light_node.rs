@@ -51,17 +51,18 @@ pub fn default_da_signers_from_env() -> DaSigners {
 
 	// always trust yourself
 	let mut trusted_signers = HashSet::new();
-	let sec1_hex = hex::encode(da_signer.verifying_key().to_sec1_bytes().to_vec());
+	let sec1_hex = hex::encode(da_signer.verifying_key().to_encoded_point(false).as_ref().to_vec());
 	trusted_signers.insert(sec1_hex);
 
 	// add the other specified signers
 	let additional_signers = default_da_signers_sec1_keys();
 	trusted_signers.extend(additional_signers);
 
+	// hex encode the private key
+	let private_key_hex_bytes = hex::encode(da_signer.to_bytes());
+
 	DaSigners {
-		signer_identifier: SignerIdentifier::Local(Local {
-			private_key_hex_bytes: hex::encode(da_signer.to_bytes()),
-		}),
+		signer_identifier: SignerIdentifier::Local(Local { private_key_hex_bytes }),
 		public_keys_hex: trusted_signers,
 	}
 }

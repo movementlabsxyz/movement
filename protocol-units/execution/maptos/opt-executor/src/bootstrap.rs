@@ -39,6 +39,9 @@ fn genesis_change_set_and_validators(
 
 	// by default leave the initial gas parameters, this better suited to the kind of upgrades we routinely want to test
 	let gas_parameters = AptosGasParameters::initial();
+	// gas_parameters.vm.txn.max_transaction_size_in_bytes = GasQuantity::new(100_000_000);
+	// gas_parameters.vm.txn.max_execution_gas = GasQuantity::new(10_000_000_000);
+
 	let gas_schedule = aptos_types::on_chain_config::GasScheduleV2 {
 		feature_version: aptos_gas_schedule::LATEST_GAS_FEATURE_VERSION,
 		entries: gas_parameters

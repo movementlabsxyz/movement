@@ -174,7 +174,7 @@ pub async fn test_sending_failed_transaction() -> Result<(), anyhow::Error> {
 	let too_high_sequence_number = alice.sequence_number() + 32 + 2;
 	println!("Alice's sequence number: {}", alice.sequence_number());
 	println!("Too high sequence number: {}", too_high_sequence_number);
-	let mut last_balance = failed_balance;
+	let last_balance = failed_balance;
 	let transaction = create_fake_signed_transaction(
 		chain_id,
 		&alice,

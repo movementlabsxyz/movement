@@ -1,8 +1,8 @@
-use bridge_config::Config;
+/*use bridge_config::Config;
 use bridge_service::rest::BridgeRest;
 use poem::test::TestClient;
 use std::sync::Arc;
-use tracing_subscriber::EnvFilter;
+use tracing_subscriber::EnvFilter;*/
 
 #[tokio::test]
 async fn test_rest_service_health_endpoint() -> Result<(), anyhow::Error> {
