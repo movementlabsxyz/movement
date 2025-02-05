@@ -8,6 +8,7 @@ use maptos_framework_release_util::{
 use std::fs;
 use std::path::PathBuf;
 use tempfile::tempdir;
+use tracing::info;
 
 /// [GasUpgrade] can be used to wrap a proposal to prefix it with a gas upgrade.
 pub struct GasUpgrade<R>
@@ -57,16 +58,21 @@ where
 		.pop()
 		.map_or(Err(ReleaseBundleError::Build("no gas upgrade proposal".into())), Ok)?;
 
-		let temp_dir = tempdir().map_err(|e| ReleaseBundleError::Build(e.into()))?;
-		let gas_script_path = temp_dir.path().join("proposal");
+		let temp_dir = PathBuf::from("./.debug");
+		let gas_script_path = temp_dir.as_path().join("gas_upgrade");
 		let mut gas_script_path = gas_script_path.as_path().to_path_buf();
 		gas_script_path.set_extension("move");
-		fs::write(gas_script_path.as_path(), update_gas_script)
-			.map_err(|e| ReleaseBundleError::Build(e.into()))?;
+
+		if !gas_script_path.exists() {
+			fs::create_dir_all(temp_dir.as_path())
+				.map_err(|e| ReleaseBundleError::Build(e.into()))?;
+			fs::write(gas_script_path.as_path(), update_gas_script)
+				.map_err(|e| ReleaseBundleError::Build(e.into()))?;
+		}
 
 		// list all files in the temp dir
 		let files =
-			fs::read_dir(temp_dir.path()).map_err(|e| ReleaseBundleError::Build(e.into()))?;
+			fs::read_dir(temp_dir.as_path()).map_err(|e| ReleaseBundleError::Build(e.into()))?;
 		for file in files {
 			let file = file.map_err(|e| ReleaseBundleError::Build(e.into()))?;
 			println!("file: {:?}", file.path());
@@ -80,7 +86,7 @@ where
 		);
 
 		let bytecode = compiler
-			.compile_in_temp_dir_to_bytecode("proposal", &gas_script_path)
+			.compile_in_temp_dir_to_bytecode("gas_upgrade", &gas_script_path)
 			.map_err(|e| ReleaseBundleError::Build(e.into()))?;
 
 		Ok(bytecode)
@@ -139,10 +145,13 @@ where
 			.await?;
 
 		let _response = client.submit_and_wait_bcs(&signed_transaction).await.map_err(|e| {
+			info!("failed to submit gas upgrade proposal: {:?}", e);
 			ReleaseBundleError::Proposing(
 				format!("failed to submit gas upgrade proposal: {:?}", e).into(),
 			)
 		})?;
+
+		info!("gas upgrade proposal submitted");
 
 		Ok(vec![signed_transaction])
 	}
@@ -158,7 +167,7 @@ where
 		self.wrapped_release.release_bundle()
 	}
 
-	async fn propose_release(
+	async fn release(
 		&self,
 		signer: &impl maptos_framework_release_util::ReleaseSigner,
 		max_gas_amount: u64,
@@ -172,12 +181,14 @@ where
 			.map_err(|e| ReleaseBundleError::Build(e.into()))?
 			.as_secs();
 		let expiration_timestamp_secs = now_u64 + expiration_timestamp_sec_offset;
+
+		info!("Upgrading gas parameters");
 		self.upgrade_gas(signer, max_gas_amount, gas_unit_price, expiration_timestamp_secs, client)
 			.await?;
 
 		// run the wrapped release
 		self.wrapped_release
-			.propose_release(
+			.release(
 				signer,
 				max_gas_amount,
 				gas_unit_price,
@@ -201,9 +212,10 @@ macro_rules! generate_gas_upgrade_module {
 			use aptos_release_builder::aptos_framework_path;
 			use aptos_sdk::move_types::gas_algebra::GasQuantity;
 			use maptos_framework_release_util::{Release, ReleaseBundleError};
+			use tracing::info;
 
 			pub struct $struct_name {
-				with_gas_upgrade: GasUpgrade<super::$struct_name>,
+				pub with_gas_upgrade: GasUpgrade<super::$struct_name>,
 			}
 
 			impl $struct_name {
@@ -237,6 +249,7 @@ macro_rules! generate_gas_upgrade_module {
 					expiration_timestamp_secs: u64,
 					client: &aptos_sdk::rest_client::Client,
 				) -> Result<Vec<aptos_types::transaction::SignedTransaction>, ReleaseBundleError> {
+					info!("Releasing {} with gas upgrade", stringify!($struct_name));
 					self.with_gas_upgrade
 						.release(
 							signer,

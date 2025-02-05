@@ -367,6 +367,7 @@ pub trait Release {
 		client: &Client,
 	) -> impl Future<Output = Result<Vec<SignedTransaction>, ReleaseBundleError>> {
 		async move {
+			info!("Proposing release");
 			// propose the release
 			let completed_proposals = self
 				.propose_release(
@@ -387,6 +388,7 @@ pub trait Release {
 			let _completed_votes = self
 				.vote(signer, max_gas_amount, gas_unit_price, expiration_timestamp, client)
 				.await?;
+			info!("Voted through release");
 
 			Ok(completed_proposals)
 		}

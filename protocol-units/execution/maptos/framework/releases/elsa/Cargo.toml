@@ -34,6 +34,7 @@ aptos-types = { workspace = true }
 aptos-gas-schedule = { workspace = true }
 aptos-sdk = { workspace = true }
 hex = { workspace = true }
+tracing = { workspace = true }
 
 [build-dependencies]
 maptos-framework-release-util = { workspace = true }

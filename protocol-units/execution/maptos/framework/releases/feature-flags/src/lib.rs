@@ -9,6 +9,7 @@ use maptos_framework_release_util::{
 use std::fs;
 use std::path::PathBuf;
 use tempfile::tempdir;
+use tracing::info;
 
 /// [SetFeatureFlags] can be used to wrap a proposal to prefix it with a gas upgrade.
 pub struct SetFeatureFlags<R>
@@ -40,17 +41,17 @@ where
 
 	/// Generates the bytecode for the gas upgrade proposal.
 	pub fn set_feature_flags_proposal_bytecode(&self) -> Result<Vec<u8>, ReleaseBundleError> {
-		let (_, update_gas_script) =
+		let (_, update_feature_flags_script) =
 			generate_feature_upgrade_proposal(&self.features, true, vec![])
 				.map_err(|e| ReleaseBundleError::Build(e.into()))?
 				.pop()
 				.map_or(Err(ReleaseBundleError::Build("no gas upgrade proposal".into())), Ok)?;
 
 		let temp_dir = tempdir().map_err(|e| ReleaseBundleError::Build(e.into()))?;
-		let gas_script_path = temp_dir.path().join("proposal");
-		let mut gas_script_path = gas_script_path.as_path().to_path_buf();
-		gas_script_path.set_extension("move");
-		fs::write(gas_script_path.as_path(), update_gas_script)
+		let feature_flags_script_path = temp_dir.path().join("feature_flags");
+		let mut feature_flags_script_path = feature_flags_script_path.as_path().to_path_buf();
+		feature_flags_script_path.set_extension("move");
+		fs::write(feature_flags_script_path.as_path(), update_feature_flags_script)
 			.map_err(|e| ReleaseBundleError::Build(e.into()))?;
 
 		// list all files in the temp dir
@@ -69,7 +70,7 @@ where
 		);
 
 		let bytecode = compiler
-			.compile_in_temp_dir_to_bytecode("proposal", &gas_script_path)
+			.compile_in_temp_dir_to_bytecode("feature_flags", &feature_flags_script_path)
 			.map_err(|e| ReleaseBundleError::Build(e.into()))?;
 
 		Ok(bytecode)
@@ -117,6 +118,7 @@ where
 		expiration_timestamp_secs: u64,
 		client: &aptos_sdk::rest_client::Client,
 	) -> Result<Vec<aptos_types::transaction::SignedTransaction>, ReleaseBundleError> {
+		info!("Setting feature flags");
 		let signed_transaction = self
 			.set_feature_flags_proposal_transaction(
 				signer,
@@ -128,10 +130,13 @@ where
 			.await?;
 
 		let _response = client.submit_and_wait_bcs(&signed_transaction).await.map_err(|e| {
+			info!("failed to submit feature flag proposal: {:?}", e);
 			ReleaseBundleError::Proposing(
 				format!("failed to submit gas upgrade proposal: {:?}", e).into(),
 			)
 		})?;
+
+		info!("Feature flags set");
 
 		Ok(vec![signed_transaction])
 	}
@@ -199,7 +204,7 @@ macro_rules! generate_feature_upgrade_module {
 			use maptos_framework_release_util::{Release, ReleaseBundleError};
 
 			pub struct $struct_name {
-				with_features: SetFeatureFlags<super::$struct_name>,
+				pub with_features: SetFeatureFlags<super::$struct_name>,
 			}
 
 			impl $struct_name {
