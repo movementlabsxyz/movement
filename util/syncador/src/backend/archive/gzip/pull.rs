@@ -1,8 +1,12 @@
+use crate::backend::archive::gzip::BUFFER_SIZE;
 use crate::backend::PullOperations;
 use crate::files::package::{Package, PackageElement};
 use flate2::read::GzDecoder;
 use std::collections::VecDeque;
 use std::fs::File;
+use std::fs::OpenOptions;
+use std::io::BufReader;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use tar::Archive;
 use tokio::{fs, task};
@@ -51,8 +55,29 @@ impl Pull {
 		// Create the destination directory if it doesn't exist
 		fs::create_dir_all(&destination).await?;
 
+		println!("PULL manifest:{:?}", manifest);
+
+		let mut unsplit_manifest =
+			PackageElement { sync_files: vec![], root_dir: manifest.root_dir.clone() };
+
 		// Unpack each archive in the manifest
 		for (_relative_path, absolute_path) in manifest.try_path_tuples()? {
+			// Recreate splited file if any
+			let path_buf = absolute_path.to_path_buf();
+			let absolute_path = task::spawn_blocking(move || recreate_archive(path_buf)).await??;
+
+			println!("PULL absolute_path {absolute_path:?}",);
+			println!("PULL destination {destination:?}",);
+
+			if !unsplit_manifest.sync_files.contains(&absolute_path) {
+				unsplit_manifest.sync_files.push(absolute_path)
+			}
+		}
+
+		println!("PULL unsplit_manifest:{:?}", unsplit_manifest);
+
+		// Unpack each archive in the manifest
+		for (_relative_path, absolute_path) in unsplit_manifest.try_path_tuples()? {
 			let tar_gz = File::open(&absolute_path)?;
 			let decoder = GzDecoder::new(tar_gz);
 			let mut archive = Archive::new(decoder);
@@ -96,4 +121,70 @@ impl PullOperations for Pull {
 		}
 		Ok(Some(Package(manifests)))
 	}
+}
+
+fn recreate_archive(archive_chunk: PathBuf) -> Result<PathBuf, anyhow::Error> {
+	if archive_chunk
+		.extension()
+		.map(|ext| {
+			println!("ext:{ext:?}",);
+			ext != "chunk"
+		})
+		.unwrap_or(true)
+	{
+		//not a chunk file return.
+		return Ok(archive_chunk);
+	}
+
+	let arhive_file_name = archive_chunk
+		.file_name()
+		.and_then(|file_name| file_name.to_str())
+		.and_then(|file_name_str| file_name_str.strip_suffix(".chunk"))
+		.and_then(|base_filename| {
+			let base_filename_parts: Vec<&str> = base_filename.rsplitn(2, '_').collect();
+			(base_filename_parts.len() > 1).then(|| base_filename_parts[1].to_string())
+		})
+		.ok_or(anyhow::anyhow!(format!(
+			"Archive filename not found for chunk path:{:?}",
+			archive_chunk.to_str()
+		)))?;
+
+	println!("PULL arhive_file_name:{:?}", arhive_file_name);
+
+	let archive_path = archive_chunk.parent().map(|parent| parent.join(arhive_file_name)).ok_or(
+		anyhow::anyhow!(format!(
+			"Archive filename no root dir in path:{:?}",
+			archive_chunk.to_str()
+		)),
+	)?;
+
+	println!("PULL archive_path:{:?}", archive_path);
+	let mut archive_file = OpenOptions::new()
+		.create(true) // Create the file if it doesn't exist
+		.append(true) // Open in append mode (do not overwrite)
+		.open(&archive_path)?;
+
+	let mut buffer = vec![0; BUFFER_SIZE];
+
+	println!("PULL archive_chunk:{:?}", archive_chunk);
+	let chunk_file = File::open(&archive_chunk)?;
+	let mut chunk_reader = BufReader::new(chunk_file);
+
+	loop {
+		// Read a part of the chunk into the buffer
+		let bytes_read = chunk_reader.read(&mut buffer)?;
+
+		if bytes_read == 0 {
+			break; // End of chunk file
+		}
+
+		// Write the buffer data to the output file
+		archive_file.write_all(&buffer[..bytes_read])?;
+	}
+
+	let file_metadata = std::fs::metadata(&archive_path)?;
+	let file_size = file_metadata.len() as usize;
+	println!("PULL {archive_path:?} archive_chunk size: {file_size}",);
+
+	Ok(archive_path)
 }

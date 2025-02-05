@@ -147,13 +147,21 @@ impl BridgeRelayerContract<MockAddress> for RelayerMockClient {
 	}
 	async fn get_bridge_transfer_details_with_nonce(
 		&mut self,
+<<<<<<< HEAD
 		_nonce: Nonce,
+=======
+		nonce: Nonce,
+>>>>>>> 73adb88e1e50a283b08d175e189dfd51e9678dbe
 	) -> BridgeContractResult<Option<BridgeTransferInitiatedDetails<MockAddress>>> {
 		todo!()
 	}
 	async fn is_bridge_transfer_completed(
 		&mut self,
+<<<<<<< HEAD
 		_bridge_transfer_id: BridgeTransferId,
+=======
+		bridge_transfer_id: BridgeTransferId,
+>>>>>>> 73adb88e1e50a283b08d175e189dfd51e9678dbe
 	) -> BridgeContractResult<bool> {
 		todo!()
 	}
