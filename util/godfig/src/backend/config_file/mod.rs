@@ -126,7 +126,7 @@ impl BackendOperations for ConfigFile {
 		T: serde::de::DeserializeOwned,
 	{
 		let write_guard = self.lock.write().await?;
-		let (value, guard) = Self::try_get_with_guard(write_guard, key).await?;
+		let (value, _guard) = Self::try_get_with_guard(write_guard, key).await?;
 		Ok(value)
 	}
 
@@ -194,16 +194,16 @@ impl BackendOperations for ConfigFile {
 		let key = key.into();
 
 		// obtain the write_guard which will be held for the duration of the function
-		let mut write_guard = self.lock.write().await?;
+		let write_guard = self.lock.write().await?;
 
 		// get the current value
-		let (current_value, mut write_guard) =
+		let (current_value, write_guard) =
 			Self::try_get_with_guard(write_guard, key.clone()).await?;
 
 		let new_value = callback(current_value).await?;
 
 		// set the new value
-		write_guard = Self::try_set_with_guard(write_guard, key, new_value).await?;
+		Self::try_set_with_guard(write_guard, key, new_value).await?;
 
 		Ok(())
 	}
@@ -222,16 +222,16 @@ impl BackendOperations for ConfigFile {
 		let key = key.into();
 
 		// obtain the write_guard which will be held for the duration of the function
-		let mut write_guard = self.lock.write().await?;
+		let write_guard = self.lock.write().await?;
 
 		// get the current value
-		let (current_value, mut write_guard) =
+		let (current_value, write_guard) =
 			Self::try_get_with_guard(write_guard, key.clone()).await?;
 
 		let (new_value, result) = callback(current_value).await?;
 
 		// set the new value
-		write_guard = Self::try_set_with_guard(write_guard, key, new_value).await?;
+		Self::try_set_with_guard(write_guard, key, new_value).await?;
 
 		Ok(result)
 	}
@@ -301,7 +301,10 @@ pub mod test {
 		});
 
 		// wait for both tasks to finish
-		tokio::try_join!(wait_task, set_task)?;
+		let (wait_res, set_task_res) = tokio::try_join!(wait_task, set_task)?;
+
+		wait_res?;
+		set_task_res?;
 
 		Ok(())
 	}

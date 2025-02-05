@@ -255,14 +255,14 @@ impl BridgeRelayerContract<EthAddress> for EthClient {
 
 	async fn get_bridge_transfer_details_with_nonce(
 		&mut self,
-		nonce: Nonce,
+		_nonce: Nonce,
 	) -> BridgeContractResult<Option<BridgeTransferInitiatedDetails<EthAddress>>> {
 		todo!()
 	}
 
 	async fn is_bridge_transfer_completed(
 		&mut self,
-		bridge_transfer_id: BridgeTransferId,
+		_bridge_transfer_id: BridgeTransferId,
 	) -> BridgeContractResult<bool> {
 		todo!()
 	}

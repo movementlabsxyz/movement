@@ -37,10 +37,6 @@ impl Executor {
 				}
 			};
 
-			for transaction in metadata_access_transactions.iter() {
-				debug!("Transaction sender: {:?}", transaction.sender());
-			}
-
 			// reconstruct the block
 			let block = ExecutableBlock::new(
 				block.block_id.clone(),
@@ -174,6 +170,12 @@ impl Executor {
 		root_hash: HashValue,
 		version: Version,
 	) -> LedgerInfoWithSignatures {
+		let next_epoch = if version >= self.config().chain.dont_increase_epoch_until_version {
+			epoch + 1
+		} else {
+			epoch
+		};
+
 		let block_info = BlockInfo::new(
 			epoch,
 			round,
@@ -182,7 +184,7 @@ impl Executor {
 			version,
 			timestamp_microseconds,
 			Some(EpochState {
-				epoch,
+				epoch: next_epoch, // we now increase the epoch
 				verifier: ValidatorVerifier::new(vec![ValidatorConsensusInfo::new(
 					self.signer.author(),
 					self.signer.public_key(),
@@ -305,6 +307,7 @@ mod tests {
 		// Loop to simulate the execution of multiple blocks.
 		for i in 0..10 {
 			let (epoch, round) = executor.get_next_epoch_and_round()?;
+			info!("Epoch: {}, Round: {}", epoch, round);
 
 			// Generate a random block ID.
 			let block_id = HashValue::random();
@@ -362,7 +365,9 @@ mod tests {
 			// Access the database reader to verify state after execution.
 			let db_reader = executor.db_reader();
 			// Get the latest version of the blockchain state from the database.
-			let latest_version = db_reader.get_synced_version()?;
+			let latest_version = db_reader.get_latest_ledger_info_version()?;
+
+			info!("Latest version: {}", latest_version);
 			// Verify the transaction by its hash to ensure it was committed.
 			let transaction_result =
 				db_reader.get_transaction_by_hash(mint_tx_hash, latest_version, false)?;

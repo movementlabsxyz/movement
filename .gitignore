@@ -27,3 +27,5 @@ venv
 *.jot.*
 *.jot
 *.env
+.debug
+.out

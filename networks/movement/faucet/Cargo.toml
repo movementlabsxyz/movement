@@ -23,3 +23,4 @@ movement-config = { workspace = true }
 aptos-config = { workspace = true }
 aptos-sdk = { workspace = true }
 tracing = { workspace = true }
+hex = { workspace = true }

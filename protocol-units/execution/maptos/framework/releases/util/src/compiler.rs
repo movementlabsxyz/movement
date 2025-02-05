@@ -1,5 +1,6 @@
+use crate::aptos_framework_path;
 use anyhow::Context;
-use aptos_framework::{BuildOptions, BuiltPackage, ReleaseBundle};
+use aptos_framework::{BuildOptions, BuiltPackage};
 use move_package::source_package::layout::SourcePackageLayout;
 use movement::common::utils::write_to_file;
 use movement::move_tool::manifest::{
@@ -8,7 +9,6 @@ use movement::move_tool::manifest::{
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use tempfile::tempdir;
 
 pub struct Compiler {
 	pub repo: &'static str,
@@ -25,6 +25,15 @@ impl Compiler {
 		framework_local_dir: Option<PathBuf>,
 	) -> Self {
 		Self { repo, commit_hash, bytecode_version, framework_local_dir }
+	}
+
+	pub fn head() -> Self {
+		Self {
+			repo: "doesn't matter",
+			commit_hash: "doesn't matter",
+			bytecode_version: 6,
+			framework_local_dir: Some(aptos_framework_path()),
+		}
 	}
 
 	/// Initializes a Move package directory with a Move.toml file for the temporary compilation.
@@ -127,10 +136,15 @@ impl Compiler {
 		script_path: &Path,
 	) -> Result<BuiltPackage, anyhow::Error> {
 		// Make a temporary directory for compilation
-		let temp_dir = "debug-temp-dir";
+		let package_dir = PathBuf::from(".debug/move-scripts").join(script_name);
 
-		// Initialize a move directory
-		let package_dir = PathBuf::from(temp_dir);
+		// Make the temporary directory
+		fs::create_dir_all(&package_dir).context(format!(
+			"Failed to create the temporary directory {}",
+			package_dir.display()
+		))?;
+
+		// Initialize the Move package directory
 		self.init_move_dir(package_dir.as_path(), script_name, BTreeMap::new())?;
 
 		// Insert the new script

@@ -28,6 +28,7 @@ impl Verify<Secp256k1> for Secp256k1 {
 		signature: &Signature,
 		public_key: &PublicKey,
 	) -> Result<bool, VerifyError> {
+		// sec1 encoding is the same as uncompressed public key
 		let verifying_key = ecdsa::VerifyingKey::from_sec1_bytes(&public_key.0)
 			.context("Failed to create verifying key")
 			.map_err(|e| VerifyError(e.into()))?;

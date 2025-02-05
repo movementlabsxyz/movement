@@ -73,7 +73,13 @@ where
 		let da_blob = self.inner_verifier.verify(blob, height).await?;
 		let signer = da_blob.inner().signer_hex();
 		if !self.known_signers_sec1_bytes_hex.contains(&signer) {
-			return Err(Error::Validation("signer not in known signers".to_string()));
+			return Err(Error::Validation(
+				format!(
+					"signer {} is not in the known signers set {:#?}",
+					signer, self.known_signers_sec1_bytes_hex
+				)
+				.to_string(),
+			));
 		}
 
 		Ok(da_blob)

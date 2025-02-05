@@ -111,7 +111,7 @@ impl Executor {
 			&node_config,
 			maptos_config.chain.maptos_db_path.as_ref().context("No db path provided.")?,
 			maptos_config.chain.maptos_chain_id.clone(),
-			&maptos_config.chain.maptos_private_key.public_key(),
+			&public_key,
 			&known_release,
 		)?;
 		Ok(Self {
@@ -167,9 +167,11 @@ impl Executor {
 		let tempdir = tempfile::tempdir()?;
 
 		let mut maptos_config = Config::default();
-		maptos_config.chain.maptos_private_key_signer_identifier = SignerIdentifier::Local(Local {
-			private_key_hex_bytes: private_key.to_encoded_string()?.to_string(),
-		});
+		let raw_private_key_hex = private_key.to_encoded_string()?.to_string();
+		let prefix_stripped =
+			raw_private_key_hex.strip_prefix("0x").unwrap_or(&raw_private_key_hex);
+		maptos_config.chain.maptos_private_key_signer_identifier =
+			SignerIdentifier::Local(Local { private_key_hex_bytes: prefix_stripped.to_string() });
 
 		// replace the db path with the temporary directory
 		maptos_config.chain.maptos_db_path.replace(tempdir.path().to_path_buf());

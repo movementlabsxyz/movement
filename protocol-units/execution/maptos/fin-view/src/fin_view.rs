@@ -65,7 +65,7 @@ mod tests {
 	use aptos_sdk::crypto::HashValue;
 	use aptos_sdk::crypto::ValidCryptoMaterialStringExt;
 	use aptos_sdk::transaction_builder::TransactionFactory;
-	use aptos_sdk::types::{account_config::aptos_test_root_address, AccountKey, LocalAccount};
+	use aptos_sdk::types::LocalAccount;
 	use aptos_types::block_executor::partitioner::{ExecutableBlock, ExecutableTransactions};
 	use aptos_types::block_metadata::BlockMetadata;
 	use aptos_types::transaction::signature_verified_transaction::SignatureVerifiedTransaction;

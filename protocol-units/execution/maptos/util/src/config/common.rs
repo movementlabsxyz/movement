@@ -92,9 +92,15 @@ pub fn default_maptos_private_key() -> Ed25519PrivateKey {
 pub fn default_maptos_private_key_signer_identifier() -> SignerIdentifier {
 	match std::env::var("MAPTOS_PRIVATE_KEY_SIGNER_IDENTIFIER") {
 		Ok(val) => SignerIdentifier::try_from_canonical_string(&val).unwrap(),
-		Err(_) => SignerIdentifier::Local(Local {
-			private_key_hex_bytes: default_maptos_private_key().to_encoded_string().unwrap(),
-		}),
+		Err(_) => {
+			// encoded key string
+			let key = default_maptos_private_key().to_encoded_string().unwrap();
+
+			// remove the 0x prefix
+			let key = key.trim_start_matches("0x");
+
+			SignerIdentifier::Local(Local { private_key_hex_bytes: key.to_string() })
+		}
 	}
 }
 
