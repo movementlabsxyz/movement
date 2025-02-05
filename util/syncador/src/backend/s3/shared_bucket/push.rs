@@ -87,6 +87,7 @@ impl Push {
 		// upload each file
 		let mut manifest_futures = Vec::new();
 		for (relative_path, full_path) in path_tuples {
+			tracing::info!("Pushing file:{:?}", relative_path);
 			let future = self.add_upload_entry(relative_path, full_path, None);
 			manifest_futures.push(future);
 		}
@@ -169,6 +170,7 @@ impl Push {
 #[async_trait::async_trait]
 impl PushOperations for Push {
 	async fn push(&self, package: Package) -> Result<Package, anyhow::Error> {
+		tracing::info!("Pushing package:{package:?}");
 		// prune the old epochs
 		self.prune().await?;
 

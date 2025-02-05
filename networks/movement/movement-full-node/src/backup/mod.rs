@@ -1,55 +1,43 @@
 use clap::Parser;
 use clap::Subcommand;
 use movement_config::Config;
+use std::path::PathBuf;
+use syncador::PullOperations;
 use syncador::PushOperations;
 use syncup::Syncupable;
 
 #[derive(Subcommand, Debug)]
 #[clap(rename_all = "kebab-case", about = "Commands for syncing")]
 pub enum Backup {
-	Db(BackupParam),
+	Save(SaveDbParam),
 	Push(PushParam),
+	SaveAndPush(SaveAndPush),
+	Restore(RestoreParam),
 }
 
 impl Backup {
 	pub async fn execute(&self) -> Result<(), anyhow::Error> {
 		match self {
-			Backup::Db(param) => param.execute().await,
+			Backup::Save(param) => param.execute().await,
 			Backup::Push(param) => param.execute().await,
+			Backup::Restore(param) => param.execute().await,
+			Backup::SaveAndPush(param) => param.execute().await,
 		}
 	}
 }
 
 #[derive(Debug, Parser, Clone)]
-#[clap(rename_all = "kebab-case", about = "Backup the specified Node db at root_dir.")]
-pub struct BackupParam {
+#[clap(rename_all = "kebab-case", about = "Save the db using db_sync pattern in root_dir.")]
+pub struct SaveDbParam {
 	#[clap(default_value = "{maptos,maptos-storage,movement-da-db}/**", value_name = "DB PATTERN")]
 	pub db_sync: String,
-	#[clap(value_name = "DIRECTORY")]
+	#[clap(value_name = "ROOT DIRECTORY")]
 	pub root_dir: Option<String>,
 }
 
-impl BackupParam {
+impl SaveDbParam {
 	pub async fn execute(&self) -> Result<(), anyhow::Error> {
-		let root_path = match &self.root_dir {
-			Some(path) => {
-				let path = std::path::Path::new(&path);
-				if path.exists() {
-					path.to_path_buf()
-				} else {
-					let mut root_path =
-						std::env::current_dir().expect("Current working dir not defined.");
-					root_path.push(&path);
-					root_path
-				}
-			}
-			None => {
-				let dot_movement = dot_movement::DotMovement::try_from_env()?;
-				dot_movement.get_path().to_path_buf()
-			}
-		};
-
-		println!("root_path: {:?}", root_path);
+		let root_path = get_root_path(self.root_dir.as_ref())?;
 
 		let archive_pipe = syncador::backend::pipeline::push::Pipeline::new(vec![
 			Box::new(syncador::backend::glob::file::FileGlob::try_new(
@@ -73,10 +61,14 @@ impl BackupParam {
 }
 
 #[derive(Debug, Parser, Clone)]
-#[clap(rename_all = "kebab-case", about = "Backup the specified Node db at root_dir.")]
+#[clap(rename_all = "kebab-case", about = "Push the archived db to the bucket")]
 pub struct PushParam {
 	#[clap(default_value = "mtnet-l-sync-bucket-sync", value_name = "BUCKET NAME")]
 	pub bucket: String,
+	#[clap(default_value = "0.tar.gz", value_name = "ARCHIVE FILENAME")]
+	pub archive_file: String,
+	#[clap(value_name = "ROOT DIRECTORY")]
+	pub root_dir: Option<String>,
 }
 
 impl PushParam {
@@ -96,7 +88,15 @@ impl PushParam {
 
 		let push_pipe = syncador::backend::pipeline::push::Pipeline::new(vec![Box::new(s3_push)]);
 
-		match push_pipe.push(syncador::Package::null()).await {
+		let root_path = get_root_path(self.root_dir.as_ref())?;
+		let archive_file = root_path.join(&self.archive_file);
+
+		let package = syncador::Package(vec![syncador::PackageElement {
+			sync_files: vec![archive_file],
+			root_dir: root_path,
+		}]);
+
+		match push_pipe.push(package).await {
 			Ok(package) => {
 				tracing::info!("Archive file pushed {:?}", package);
 			}
@@ -106,5 +106,100 @@ impl PushParam {
 		}
 
 		Ok(())
+	}
+}
+
+#[derive(Debug, Parser, Clone)]
+#[clap(
+	rename_all = "kebab-case",
+	about = "Save the db using db_sync pattern in root_dir then push it to the bucket."
+)]
+pub struct SaveAndPush {
+	#[clap(default_value = "{maptos,maptos-storage,movement-da-db}/**", value_name = "DB PATTERN")]
+	pub db_sync: String,
+	#[clap(default_value = "mtnet-l-sync-bucket-sync", value_name = "BUCKET NAME")]
+	pub bucket: String,
+	#[clap(default_value = "0.tar.gz", value_name = "ARCHIVE FILENAME")]
+	pub archive_file: String,
+	#[clap(value_name = "ROOT DIRECTORY")]
+	pub root_dir: Option<String>,
+}
+
+impl SaveAndPush {
+	pub async fn execute(&self) -> Result<(), anyhow::Error> {
+		let save_param =
+			SaveDbParam { db_sync: self.db_sync.clone(), root_dir: self.root_dir.clone() };
+		save_param.execute().await?;
+
+		let push_param = PushParam {
+			bucket: self.bucket.clone(),
+			archive_file: self.archive_file.clone(),
+			root_dir: self.root_dir.clone(),
+		};
+		push_param.execute().await?;
+
+		Ok(())
+	}
+}
+
+#[derive(Debug, Parser, Clone)]
+#[clap(rename_all = "kebab-case", about = "Restore from the specified bucket in the root_dir.")]
+pub struct RestoreParam {
+	#[clap(default_value = "mtnet-l-sync-bucket-sync", value_name = "BUCKET NAME")]
+	pub bucket: String,
+	#[clap(value_name = "ROOT DIRECTORY")]
+	pub root_dir: Option<String>,
+}
+
+impl RestoreParam {
+	pub async fn execute(&self) -> Result<(), anyhow::Error> {
+		let root_path = get_root_path(self.root_dir.as_ref())?;
+
+		//Load node config.
+		let dot_movement = dot_movement::DotMovement::try_from_env()?;
+		let config = dot_movement.try_get_config_from_json::<Config>()?;
+		let application_id = config.syncing.try_application_id()?;
+		let syncer_id = config.syncing.try_syncer_id()?;
+		let s3_pull = syncador::backend::s3::shared_bucket::create_pull_with_load_from_env(
+			self.bucket.clone(),
+			syncador::backend::s3::shared_bucket::metadata::Metadata::default()
+				.with_application_id(application_id)
+				.with_syncer_id(syncer_id),
+			root_path,
+		)
+		.await?;
+
+		let push_pipe = syncador::backend::pipeline::pull::Pipeline::new(vec![Box::new(s3_pull)]);
+
+		match push_pipe.pull(Some(syncador::Package::null())).await {
+			Ok(package) => {
+				tracing::info!("Archive file pushed {:?}", package);
+			}
+			Err(err) => {
+				tracing::warn!("Error during archive push: {:?}", err);
+			}
+		}
+
+		Ok(())
+	}
+}
+
+fn get_root_path(initial_dir: Option<&String>) -> Result<PathBuf, anyhow::Error> {
+	match initial_dir {
+		Some(path) => {
+			let path = std::path::Path::new(&path);
+			if path.exists() {
+				Ok(path.to_path_buf())
+			} else {
+				let mut root_path =
+					std::env::current_dir().expect("Current working dir not defined.");
+				root_path.push(&path);
+				Ok(root_path)
+			}
+		}
+		None => {
+			let dot_movement = dot_movement::DotMovement::try_from_env()?;
+			Ok(dot_movement.get_path().to_path_buf())
+		}
 	}
 }

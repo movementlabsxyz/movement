@@ -14,21 +14,6 @@ services:
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - MOVEMENT_SYNC=${MOVEMENT_SYNC}
-    command: |
-      sh -c '
-        echo "Taking snapshot..."
-        movement-full-node backup db || echo "Snapshot failed"
-        echo "Pushing snapshot..."
-        movement-full-node backup push || echo "Push failed"
-      '
+    command: backup db
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement
-    ports:
-      - "30731:30731"
-      - "30734:30734"
-    healthcheck:
-      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 39731" ]
-      retries: 10
-      interval: 10s
-      timeout: 5s
-    restart: on-failure:5

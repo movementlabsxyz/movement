@@ -41,6 +41,23 @@ pub async fn create_push_with_load_from_env(
 	Ok(push)
 }
 
+pub async fn create_pull_with_load_from_env(
+	bucket: String,
+	metadata: metadata::Metadata,
+	pull_destination: PathBuf,
+) -> Result<pull::Pull, anyhow::Error> {
+	let region = match std::env::var("AWS_REGION") {
+		Ok(region) => Some(Region::new(region)),
+		Err(_) => None,
+	};
+	let config = aws_config::load_from_env().await.into_builder().region(region).build();
+	info!("Create client used region {:?}", config.region());
+	let client = aws_sdk_s3::Client::new(&config);
+	let bucket_connection = bucket_connection::BucketConnection::create(client, bucket).await?;
+	let pull = pull::Pull::new(bucket_connection, metadata, pull_destination);
+	Ok(pull)
+}
+
 pub async fn destroy_with_load_from_env(bucket: String) -> Result<(), anyhow::Error> {
 	let region = match std::env::var("AWS_REGION") {
 		Ok(region) => Some(Region::new(region)),
