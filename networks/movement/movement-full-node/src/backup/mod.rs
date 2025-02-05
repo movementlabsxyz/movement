@@ -127,16 +127,34 @@ pub struct SaveAndPush {
 
 impl SaveAndPush {
 	pub async fn execute(&self) -> Result<(), anyhow::Error> {
-		let save_param =
-			SaveDbParam { db_sync: self.db_sync.clone(), root_dir: self.root_dir.clone() };
-		save_param.execute().await?;
+		let root_path = get_root_path(self.root_dir.as_ref())?;
 
-		let push_param = PushParam {
-			bucket: self.bucket.clone(),
-			archive_file: self.archive_file.clone(),
-			root_dir: self.root_dir.clone(),
-		};
-		push_param.execute().await?;
+		let dot_movement = dot_movement::DotMovement::try_from_env()?;
+		let config = dot_movement.try_get_config_from_json::<Config>()?;
+		let application_id = config.syncing.try_application_id()?;
+		let syncer_id = config.syncing.try_syncer_id()?;
+		let sync_task = syncup::syncup(
+			true,
+			root_path,
+			&self.db_sync,
+			syncup::Target::S3(self.bucket.clone()),
+			application_id,
+			syncer_id,
+		)
+		.await?;
+
+		sync_task.await?;
+
+		// let save_param =
+		// 	SaveDbParam { db_sync: self.db_sync.clone(), root_dir: self.root_dir.clone() };
+		// save_param.execute().await?;
+
+		// let push_param = PushParam {
+		// 	bucket: self.bucket.clone(),
+		// 	archive_file: self.archive_file.clone(),
+		// 	root_dir: self.root_dir.clone(),
+		// };
+		// push_param.execute().await?;
 
 		Ok(())
 	}

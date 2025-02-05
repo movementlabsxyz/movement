@@ -1,51 +1,40 @@
 #!/bin/bash -e
 # Copy the snapshot
 
-export AWS_REGION="us-west-2";
+export AWS_REGION="us-west-1";
 
-echo "ICI"
-export INITIAL_DOT_MOVEMENT_PATH="${DOT_MOVEMENT_PATH}";
-echo "Starting loop..."
-while true; do
-    export DOT_MOVEMENT_PATH="${INITIAL_DOT_MOVEMENT_PATH}";
-    echo "Copying snapshot to ${DOT_MOVEMENT_PATH}-snapshot..."
-    rm -rf "${DOT_MOVEMENT_PATH}-snapshot"
-    cp -r "${DOT_MOVEMENT_PATH}" "${DOT_MOVEMENT_PATH}-snapshot"
+rm -rf "${DOT_MOVEMENT_PATH}-snapshot"
+
+echo "Starting node for 60 seconds..."
+# Run the node for 60 seconds, terminating if it exceeds the time limit
+if timeout 60s movement-full-node run; then
+    echo "Node run completed within the time limit."
+else
+    echo "Node run did not complete within the time limit. Forcefully terminated."
+fi
+echo "Taking snapshot..."
+if movement-full-node backup save-and-push; then
+    echo "Snapshot taken successfully."
+else
+    echo "Snapshot process failed. Exiting loop."
+    break
+fi
+
+echo "Restore snapshot..."
+export DOT_MOVEMENT_PATH="${DOT_MOVEMENT_PATH}-snapshot"
+if movement-full-node backup restore; then
+    echo "Snapshot restored successfully."
+else
+    echo "Snapshot restoration failed. Exiting loop."
+    break
+fi
+echo "Starting new node for 60 seconds..."
+if timeout 60s movement-full-node run; then
+    echo "Node run completed within the time limit."
+else
+    echo "Node run did not complete within the time limit. Forcefully terminated."
+fi
 
 
-    export DOT_MOVEMENT_PATH="${DOT_MOVEMENT_PATH}-snapshot"
-    #export DOT_MOVEMENT_CONFIG="${DOT_MOVEMENT_PATH}/config.json"
-
-    # Replace the port in the snapshot node's config file
-    # Field is maptos_config.chain.maptos_rest_listen_port
-    echo "Replacing port in snapshot node's config file..."
-    jq '.maptos_config.chain.maptos_rest_listen_port = 39731' "${DOT_MOVEMENT_PATH}/config.json" > temp.json && mv temp.json "${DOT_MOVEMENT_PATH}/config.json"
-
-
-# Loop forever: run the node for 60 seconds, then take a snapshot
-    echo "Starting node for 60 seconds..."
-
-    # Run the node for 60 seconds, terminating if it exceeds the time limit
-    if timeout 60s movement-full-node run; then
-        echo "Node run completed within the time limit."
-    else
-        echo "Node run did not complete within the time limit. Forcefully terminated."
-    fi
-
-    # Take a snapshot after the node run
-    echo "Taking snapshot..."
-    if movement-full-node backup db; then
-        echo "Snapshot taken successfully."
-    else
-        echo "Snapshot process failed. Exiting loop."
-        break
-    fi
-    echo "Pushing snapshot..."
-    if movement-full-node backup push; then
-        echo "Snapshot pushed successfully."
-    else
-        echo "Snapshot push process failed. Exiting loop."
-        break
-    fi
 
 done
