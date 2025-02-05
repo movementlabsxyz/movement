@@ -24,6 +24,15 @@ impl DotMovement {
 		self.0.join("config.json")
 	}
 
+	pub async fn try_get_config_file_str(&self) -> Result<String, anyhow::Error> {
+		let config_path = self.get_config_json_path();
+		let res = tokio::fs::read_to_string(config_path).await;
+		match res {
+			Ok(contents) => Ok(contents),
+			Err(e) => Err(anyhow::anyhow!("failed to read file: {}", e)),
+		}
+	}
+
 	pub async fn try_get_or_create_config_file(&self) -> Result<tokio::fs::File, anyhow::Error> {
 		let config_path = self.get_config_json_path();
 
@@ -42,7 +51,7 @@ impl DotMovement {
 					.recursive(true)
 					.create(
 						config_path.parent().ok_or(anyhow::anyhow!(
-							"Failed to get parent directory of config path"
+							"failed to get parent directory of config path"
 						))?,
 					)
 					.await?;
@@ -117,10 +126,29 @@ impl DotMovement {
 		Ok(())
 	}
 
+	/// Tries overwrite a configuration to a JSON file. Replacing any existing file.
+	pub fn try_overwrite_config_to_json<T: serde::Serialize>(
+		&self,
+		config: &T,
+	) -> Result<(), anyhow::Error> {
+		let file = std::fs::File::create(self.get_config_json_path())
+			.map_err(|e| anyhow::anyhow!("Failed to create file: {}", e))?;
+		let writer = std::io::BufWriter::new(file);
+		serde_json::to_writer_pretty(writer, config)
+			.map_err(|e| anyhow::anyhow!("Failed to write config: {}", e))?;
+		Ok(())
+	}
+
 	pub fn try_from_env() -> Result<Self, anyhow::Error> {
 		let path = std::env::var(Self::DEFAULT_DOT_MOVEMENT_PATH_VAR_NAME)
 			.map_err(|_| anyhow::anyhow!("Dot movement path not provided"))?;
 		Ok(Self::new(&path))
+	}
+
+	pub async fn try_load_value(&self) -> Result<serde_json::Value, anyhow::Error> {
+		let json_contents = self.try_get_config_file_str().await?;
+		let value = serde_json::from_str(&json_contents)?;
+		Ok(value)
 	}
 }
 
