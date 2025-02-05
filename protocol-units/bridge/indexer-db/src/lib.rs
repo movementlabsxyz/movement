@@ -19,7 +19,7 @@ pub async fn run_indexer_client<
 	config: Config,
 	mut stream_source: impl BridgeContractMonitoring<Address = SOURCE>,
 	mut stream_target: impl BridgeContractMonitoring<Address = TARGET>,
-	relayer_actions: Option<mpsc::Sender<(BridgeTransferId, TransferActionType)>>,
+	_relayer_actions: Option<mpsc::Sender<(BridgeTransferId, TransferActionType)>>,
 ) -> Result<(), anyhow::Error>
 where
 	Vec<u8>: From<SOURCE>,

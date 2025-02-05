@@ -1,10 +1,5 @@
-use super::common::{
-	default_gc_slot_duration_ms, default_ingress_account_whitelist, default_sequence_number_ttl_ms,
-};
-use aptos_account_whitelist::file::{Whitelist, WhitelistOperations};
-use aptos_types::account_address::AccountAddress;
+use super::common::{default_gc_slot_duration_ms, default_sequence_number_ttl_ms};
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Config {

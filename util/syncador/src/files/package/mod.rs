@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 /// A package is a collection of file system locations that are synced together.
 #[derive(Debug, Clone)]
@@ -34,10 +34,13 @@ impl PackageElement {
 		Self { sync_files: Vec::new(), root_dir }
 	}
 
-	pub fn try_path_tuples(&self) -> Result<Vec<(&Path, &PathBuf)>, anyhow::Error> {
+	pub fn try_path_tuples(&self) -> Result<Vec<(PathBuf, PathBuf)>, anyhow::Error> {
 		let mut tuples = Vec::new();
-		for file in &self.sync_files {
-			let relative_path = file.strip_prefix(&self.root_dir)?;
+		// Order file in case of chunk files that must be processed in order.
+		let mut ordered_files = self.sync_files.clone();
+		ordered_files.sort();
+		for file in ordered_files {
+			let relative_path = file.strip_prefix(&self.root_dir)?.to_path_buf();
 			tuples.push((relative_path, file));
 		}
 		Ok(tuples)

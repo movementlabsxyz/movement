@@ -59,7 +59,7 @@ jobs:
       container_name: ${{ matrix.container_name }}
 
   container-checks:
-    if: github.event.label.name == 'cicd:movement-containers' ||  github.ref == 'refs/heads/main'
+    if: contains(github.event.pull_request.labels.*.name, 'cicd:movement-containers') ||  github.ref == 'refs/heads/main' || github.event.label.name == 'cicd:movement-containers'
     runs-on: buildjet-8vcpu-ubuntu-2204
     needs: 
       - build-push-checked-manifest
@@ -117,7 +117,7 @@ jobs:
           - helios
     with:
       container_name: ${{ matrix.container_name }}
-  
+
   build-push-unchecked-manifest:
     uses: ./.github/workflows/build-push-manifest.yml
     name: Build Push Unchecked Manifest
