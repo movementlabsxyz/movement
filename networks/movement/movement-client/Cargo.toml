@@ -39,6 +39,10 @@ path = "src/bin/e2e/whitelist.rs"
 name = "movement-tests-e2e-ggp-gas-fee"
 path = "src/bin/e2e/ggp_gas_fee.rs"
 
+[[bin]]
+name = "movement-tests-e2e-admin-cli"
+path = "src/bin/e2e/admin_cli.rs"
+
 
 [dependencies]
 aptos-sdk = { workspace = true }

@@ -1,0 +1,21 @@
+version: "3"
+
+environment:
+
+processes:
+
+  setup:
+    environment:
+      - MAPTOS_PRIVATE_KEY=random
+
+  movement-faucet: 
+    command : |
+      movement-faucet-service run-simple --do-not-delegate
+  test-admin-cli: 
+    command : |
+      cargo run --bin movement-tests-e2e-admin-cli
+    depends_on:
+      movement-full-node:
+        condition: process_healthy
+      movement-faucet:
+        condition: process_healthy

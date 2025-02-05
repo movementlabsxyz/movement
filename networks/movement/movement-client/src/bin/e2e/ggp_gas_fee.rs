@@ -152,7 +152,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	// Wait to verify no additional deposits
 	tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
-
+	//
 	// Check final balance
 	let final_framework_balance = coin_client
 		.get_account_balance(&ggp_account_address)
