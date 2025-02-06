@@ -8,7 +8,7 @@ use aptos_sdk::types::account_address::AccountAddress;
 use aptos_sdk::{move_types::language_storage::TypeTag, transaction_builder::TransactionFactory};
 use aptos_types::chain_id::ChainId;
 use aptos_types::transaction::{EntryFunction, TransactionPayload};
-
+use movement_client::crypto::ValidCryptoMaterialStringExt;
 use movement_client::{
 	coin_client::CoinClient,
 	rest_client::{Client, FaucetClient},
@@ -26,13 +26,6 @@ const GAS_UNIT_LIMIT: u64 = 100000;
 /// minimum price of gas unit of aptos chains
 pub const GAS_UNIT_PRICE: u64 = 100;
 const ACCOUNT_ADDRESS: &str = "30005dbbb9b324b18bed15aca87770512ec7807410fabb0420494d9865e56fa4";
-// NB: This is a determinisitic privake key generated from the init command
-// used for testing purposes only
-const PRIVATE_KEY: &str = "0x97121e4f94695b6fb65a24899c5cce23cc0dad5a1c07caaeb6dd555078d14ba7";
-// This is a well known private key used for testing purposes only. It is safe to expose
-// and never used on a real network
-//const ASSOCIATE_PRIVATE_KEY: &str =
-//	"0x0000000000000000000000000000000000000000000000000000000000000001";
 
 static SUZUKA_CONFIG: Lazy<movement_config::Config> = Lazy::new(|| {
 	let dot_movement = dot_movement::DotMovement::try_from_env().unwrap();
@@ -86,52 +79,36 @@ async fn main() -> Result<(), anyhow::Error> {
 	let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
 	let coin_client = CoinClient::new(&rest_client);
 
+	let mut core_resources_account = LocalAccount::from_private_key(
+		SUZUKA_CONFIG
+			.execution_config
+			.maptos_config
+			.chain
+			.maptos_private_key
+			.to_encoded_string()?
+			.as_str(),
+		0,
+	)?;
+
 	let crate_dir = env::var("CARGO_MANIFEST_DIR").expect(
 		"CARGO_MANIFEST_DIR is not set. Make sure to run this inside a Cargo build context.",
 	);
-	let crate_dir_clone = crate_dir.clone();
 
 	let target_dir = PathBuf::from(crate_dir).join("src").join("move-modules");
-	let target_dir_clone = target_dir.clone();
 
 	println!("target_dir: {:?}", target_dir);
 	println!("Node URL: {:?}", NODE_URL.as_str());
 	println!("Faucet URL: {:?}", FAUCET_URL.as_str());
 
-	// Use the account value generated from the init command
-	// found in ./movement/config.yaml
-	let init_status = Command::new("movement")
-		.args([
-			"init",
-			"--network",
-			"custom",
-			"--rest-url",
-			NODE_URL.as_str(),
-			"--faucet-url",
-			FAUCET_URL.as_str(),
-			"--assume-yes",
-			"--private-key",
-			PRIVATE_KEY,
-		])
-		.current_dir(target_dir) // think this is wrong .. check
-		.status()
-		.await
-		.expect("Failed to execute `movement init` command");
-
-	if !init_status.success() {
-		anyhow::bail!("Initializing Move module failed. Please check the `movement init` command.");
-	}
-
-	env::set_current_dir(&target_dir_clone).expect("Failed to set current directory");
-
 	//check current_dir println
 	println!("current_dir: {:?}", env::current_dir().unwrap());
 
-	// account associated with private key used for init
 	let publish_status = Command::new("movement")
 		.args([
 			"move",
 			"publish",
+			"--package-dir",
+			"networks/movement/movement-client/src/move-modules",
 			"--skip-fetch-latest-git-deps",
 			"--sender-account",
 			ACCOUNT_ADDRESS,
@@ -140,8 +117,6 @@ async fn main() -> Result<(), anyhow::Error> {
 		.status()
 		.await
 		.expect("Failed to execute `movement move publish` command");
-
-	println!("publish_status: {:?}", publish_status);
 
 	// Check if the publish succeeded
 	if !publish_status.success() {
