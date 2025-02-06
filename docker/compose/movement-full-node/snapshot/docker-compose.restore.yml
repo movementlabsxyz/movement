@@ -14,7 +14,6 @@ services:
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - MOVEMENT_SYNC=${MOVEMENT_SYNC}
-    entrypoint: /bin/sh
-    command: command: backup restore
+    command: backup restore
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement

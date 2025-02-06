@@ -133,28 +133,31 @@ impl SaveAndPush {
 		let config = dot_movement.try_get_config_from_json::<Config>()?;
 		let application_id = config.syncing.try_application_id()?;
 		let syncer_id = config.syncing.try_syncer_id()?;
-		let sync_task = syncup::syncup(
-			true,
-			root_path,
-			&self.db_sync,
-			syncup::Target::S3(self.bucket.clone()),
-			application_id,
-			syncer_id,
+		let s3_push = syncador::backend::s3::shared_bucket::create_push_with_load_from_env(
+			self.bucket.clone(),
+			syncador::backend::s3::shared_bucket::metadata::Metadata::default()
+				.with_application_id(application_id)
+				.with_syncer_id(syncer_id),
 		)
 		.await?;
 
-		sync_task.await?;
+		let push_pipe = syncador::backend::pipeline::push::Pipeline::new(vec![
+			Box::new(syncador::backend::glob::file::FileGlob::try_new(
+				&self.db_sync.clone(),
+				root_path.clone(),
+			)?),
+			Box::new(syncador::backend::archive::gzip::push::Push::new(root_path)),
+			Box::new(s3_push),
+		]);
 
-		// let save_param =
-		// 	SaveDbParam { db_sync: self.db_sync.clone(), root_dir: self.root_dir.clone() };
-		// save_param.execute().await?;
-
-		// let push_param = PushParam {
-		// 	bucket: self.bucket.clone(),
-		// 	archive_file: self.archive_file.clone(),
-		// 	root_dir: self.root_dir.clone(),
-		// };
-		// push_param.execute().await?;
+		match push_pipe.push(syncador::Package::null()).await {
+			Ok(package) => {
+				tracing::info!("Backup done in file: {:?}", package);
+			}
+			Err(err) => {
+				tracing::warn!("Error during backup: {:?}", err);
+			}
+		}
 
 		Ok(())
 	}
@@ -183,11 +186,18 @@ impl RestoreParam {
 			syncador::backend::s3::shared_bucket::metadata::Metadata::default()
 				.with_application_id(application_id)
 				.with_syncer_id(syncer_id),
-			root_path,
+			root_path.clone(),
 		)
 		.await?;
 
-		let push_pipe = syncador::backend::pipeline::pull::Pipeline::new(vec![Box::new(s3_pull)]);
+		let push_pipe = syncador::backend::pipeline::pull::Pipeline::new(vec![
+			Box::new(s3_pull),
+			Box::new(syncador::backend::clear::glob::pull::ClearGlob::try_new(
+				&config.syncing.try_glob()?,
+				root_path.clone(),
+			)?),
+			Box::new(syncador::backend::archive::gzip::pull::Pull::new(root_path.clone())),
+		]);
 
 		match push_pipe.pull(Some(syncador::Package::null())).await {
 			Ok(package) => {
