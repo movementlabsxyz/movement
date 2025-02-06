@@ -1,24 +1,24 @@
 use super::Executor;
 use crate::background::BackgroundTask;
 use crate::{bootstrap, Context};
+use aptos_crypto::ed25519::Ed25519PrivateKey;
 
 use aptos_config::config::NodeConfig;
-#[cfg(test)]
-use aptos_crypto::ed25519::Ed25519PrivateKey;
+use aptos_crypto::ed25519::Ed25519PublicKey;
 use aptos_crypto::PrivateKey;
+use aptos_crypto::ValidCryptoMaterialStringExt;
 use aptos_executor::block_executor::BlockExecutor;
 use aptos_mempool::MempoolClientRequest;
 use aptos_types::transaction::SignedTransaction;
 use dot_movement::DotMovement;
-use futures::FutureExt;
 use maptos_execution_util::config::Config;
+use movement_signer_loader::identifiers::{local::Local, SignerIdentifier};
 
 use anyhow::Context as _;
 use futures::channel::mpsc as futures_mpsc;
 use movement_collections::garbage::{counted::GcCounter, Duration};
 use tokio::sync::mpsc;
 
-#[cfg(test)]
 use tempfile::TempDir;
 
 use std::net::ToSocketAddrs;
@@ -29,7 +29,10 @@ use std::sync::{Arc, RwLock};
 const EXECUTOR_CHANNEL_SIZE: usize = 2_usize.pow(16);
 
 impl Executor {
-	pub fn bootstrap(maptos_config: &Config) -> Result<Self, anyhow::Error> {
+	pub fn bootstrap_with_public_key(
+		maptos_config: &Config,
+		public_key: Ed25519PublicKey,
+	) -> Result<Self, anyhow::Error> {
 		// get dot movement
 		// todo: this is a slight anti-pattern, but it's fine for now
 		let dot_movement = DotMovement::try_from_env()?;
@@ -101,11 +104,15 @@ impl Executor {
 		node_config.storage.dir = dot_movement.get_path().join("maptos-storage");
 		node_config.storage.set_data_dir(node_config.storage.dir.clone());
 
+		let known_release = aptos_framework_known_release::KnownRelease::try_new(
+			maptos_config.chain.known_framework_release_str.as_str(),
+		)?;
 		let (db, signer) = bootstrap::maybe_bootstrap_empty_db(
 			&node_config,
 			maptos_config.chain.maptos_db_path.as_ref().context("No db path provided.")?,
 			maptos_config.chain.maptos_chain_id.clone(),
-			&maptos_config.chain.maptos_private_key.public_key(),
+			&public_key,
+			&known_release,
 		)?;
 		Ok(Self {
 			block_executor: Arc::new(BlockExecutor::new(db.clone())),
@@ -119,8 +126,38 @@ impl Executor {
 		})
 	}
 
+	pub fn bootstrap(maptos_config: &Config) -> Result<Self, anyhow::Error> {
+		let raw_private_key =
+			maptos_config.chain.maptos_private_key_signer_identifier.try_raw_private_key()?;
+		let private_key = Ed25519PrivateKey::try_from(raw_private_key.as_slice())?;
+		let public_key = private_key.public_key();
+		Self::bootstrap_with_public_key(maptos_config, public_key)
+	}
+
 	pub fn try_from_config(maptos_config: Config) -> Result<Self, anyhow::Error> {
 		Self::bootstrap(&maptos_config)
+	}
+
+	#[cfg(test)]
+	pub fn try_test_default_with_public_key_bytes(
+		public_key_bytes: &[u8],
+	) -> Result<(Self, TempDir), anyhow::Error> {
+		use aptos_crypto::ValidCryptoMaterialStringExt;
+
+		let public_key =
+			Ed25519PublicKey::from_encoded_string(hex::encode(public_key_bytes).as_str())?;
+		Self::try_test_default_with_public_key(public_key)
+	}
+
+	pub fn try_test_default_with_public_key(
+		public_key: Ed25519PublicKey,
+	) -> Result<(Self, TempDir), anyhow::Error> {
+		let tempdir = tempfile::tempdir()?;
+
+		let mut maptos_config = Config::default();
+		maptos_config.chain.maptos_db_path.replace(tempdir.path().to_path_buf());
+		let executor = Self::bootstrap_with_public_key(&maptos_config, public_key)?;
+		Ok((executor, tempdir))
 	}
 
 	#[cfg(test)]
@@ -130,7 +167,11 @@ impl Executor {
 		let tempdir = tempfile::tempdir()?;
 
 		let mut maptos_config = Config::default();
-		maptos_config.chain.maptos_private_key = private_key;
+		let raw_private_key_hex = private_key.to_encoded_string()?.to_string();
+		let prefix_stripped =
+			raw_private_key_hex.strip_prefix("0x").unwrap_or(&raw_private_key_hex);
+		maptos_config.chain.maptos_private_key_signer_identifier =
+			SignerIdentifier::Local(Local { private_key_hex_bytes: prefix_stripped.to_string() });
 
 		// replace the db path with the temporary directory
 		maptos_config.chain.maptos_db_path.replace(tempdir.path().to_path_buf());

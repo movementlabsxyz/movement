@@ -14,7 +14,7 @@ rust-version = { workspace = true }
 [dependencies]
 maptos-dof-execution = { workspace = true }
 movement-da-light-node-proto = { workspace = true }
-movement-celestia-da-util = { workspace = true }
+movement-da-util = { workspace = true }
 mcr-settlement-client = { workspace = true, features = ["mock"] }
 mcr-settlement-manager = { workspace = true }
 serde_json = { workspace = true }
@@ -38,6 +38,7 @@ bcs = { workspace = true }
 zstd = { workspace = true }
 clap = { workspace = true }
 syncup = { workspace = true }
+aptos-sdk = { workspace = true }
 
 [features]
 default = []

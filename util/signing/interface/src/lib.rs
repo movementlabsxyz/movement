@@ -1,9 +1,8 @@
 use std::error;
-use std::future::Future;
 use std::marker::PhantomData;
 
 pub mod cryptography;
-pub mod manager;
+pub mod key;
 
 /// Errors thrown by Signer
 #[derive(Debug, thiserror::Error)]
@@ -16,22 +15,20 @@ pub enum SignerError {
 	Decode(#[source] Box<dyn error::Error + Send + Sync>),
 	#[error("signing key not found")]
 	KeyNotFound,
-	#[error("failed to sign")]
+	#[error("failed to sign {0}")]
 	Internal(String),
 }
 
 /// Asynchronous operations of a possibly remote signing service.
 ///
 /// The type parameter defines the elliptic curve used in the ECDSA signature algorithm.
+#[async_trait::async_trait]
 pub trait Signing<C: cryptography::Curve> {
 	/// Signs some bytes.
-	fn sign(
-		&self,
-		message: &[u8],
-	) -> impl Future<Output = Result<C::Signature, SignerError>> + Send;
+	async fn sign(&self, message: &[u8]) -> Result<C::Signature, SignerError>;
 
 	/// Fetches the public key that can be used for to verify signatures made by this signer.
-	fn public_key(&self) -> impl Future<Output = Result<C::PublicKey, SignerError>> + Send;
+	async fn public_key(&self) -> Result<C::PublicKey, SignerError>;
 }
 
 /// A convenience struct to bind a signing service with the specific elliptic curve type,
@@ -43,10 +40,13 @@ pub struct Signer<O, C> {
 	_phantom_curve: PhantomData<C>,
 }
 
-impl<O, C> Signer<O, C> {
+impl<O, C> Signer<O, C>
+where
+	O: Signing<C>,
+	C: cryptography::Curve,
+{
 	/// Binds the signing provider with the specific curve selection.
-	pub fn new(provider: O, curve: C) -> Self {
-		let _ = curve;
+	pub fn new(provider: O) -> Self {
 		Self { provider, _phantom_curve: PhantomData }
 	}
 
@@ -86,9 +86,19 @@ pub struct VerifyError(#[source] Box<dyn error::Error + Send + Sync>);
 pub trait Verify<C: cryptography::Curve> {
 	/// Verifies a signature.
 	fn verify(
-		&self,
 		message: &[u8],
 		signature: &C::Signature,
 		public_key: &C::PublicKey,
 	) -> Result<bool, VerifyError>;
+}
+
+/// Errors thrown by the digest.
+#[derive(Debug, thiserror::Error)]
+#[error("failed to compute digest")]
+pub struct DigestError(#[source] Box<dyn error::Error + Send + Sync>);
+
+/// A digest constructor trait.
+pub trait Digester<C: cryptography::Curve> {
+	/// Constructs a new digest.
+	fn digest(message: &[u8]) -> Result<C::Digest, DigestError>;
 }

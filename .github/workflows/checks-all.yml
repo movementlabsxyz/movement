@@ -32,11 +32,6 @@ jobs:
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
 
-    - uses: cachix/cachix-action@v15
-      with:
-        name: movementlabs
-        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-
     - name: Run Cargo Check in nix environment
       run: |
         nix develop --command bash  -c "cargo check --all-targets"  
@@ -71,7 +66,7 @@ jobs:
             -p movement-types \
             -p movement-config \
             -p movement-celestia-da-util \
-        EOF
+            -p movement-signer-test
 
   movement-full-node-local:
     if: github.event.label.name == 'cicd:movement-full-node' ||  github.ref == 'refs/heads/main'
@@ -92,11 +87,6 @@ jobs:
 
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
-
-    - uses: cachix/cachix-action@v15
-      with:
-        name: movementlabs
-        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
     - name: Run Movement Full Node Tests Against Local ETH and Local Celestia
       env:
@@ -206,11 +196,6 @@ jobs:
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
 
-    - uses: cachix/cachix-action@v15
-      with:
-        name: movementlabs
-        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-
     - name: Run Movement Full Node Tests Against Holesky and Local Celestia
       env: 
         CELESTIA_LOG_LEVEL: FATAL # adjust the log level while debugging
@@ -236,11 +221,6 @@ jobs:
 
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
-
-    - uses: cachix/cachix-action@v15
-      with:
-        name: movementlabs
-        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
     - name: Run Movement DA Light Node tests in nix environment
       # adjust the log level while debugging
@@ -294,12 +274,6 @@ jobs:
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
 
-
-    - uses: cachix/cachix-action@v15
-      with:
-        name: movementlabs
-        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-
     - name: Run MCR Client Tests
       run: nix develop --command bash  -c "just mcr-client native build.local.test -t=false"
 
@@ -325,11 +299,6 @@ jobs:
 
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
-
-    - uses: cachix/cachix-action@v15
-      with:
-        name: movementlabs
-        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
     - name: Run Aptos Tests
       run: |
@@ -360,11 +329,6 @@ jobs:
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
 
-    - uses: cachix/cachix-action@v15
-      with:
-        name: movementlabs
-        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-
     - name: Run foundry tests
       run: |
         nix develop --command bash -c "
@@ -373,52 +337,52 @@ jobs:
         "
 
 # any use of Move CLI requires ubuntu-24.04 and to not run on buildjet
-bridge-client-integration:
-  if: github.event.label.name == 'cicd:bridge' ||  github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/trusted-relayer'
-  strategy:
-    matrix:
-      include:
-        - os: ubuntu-24.04
-          arch: x86_64
-          runs-on: ubuntu-24.04 
-  runs-on: ${{ matrix.runs-on }}
-  steps:
-  - name: Checkout repository
-    uses: actions/checkout@v4
-  - name: Install Movement CLI
-    run: |
-      sudo apt-get update 
-      sudo apt-get install -y build-essential
-      sudo apt-get install -y binutils
-      sudo apt-get install -y lld
-      sudo apt-get install -y libudev-dev
-      sudo apt-get install -y libdw-dev
-      which ld
-      which lld
-      which gcc
-      which cc
-      echo $PATH
-      export GIT_CLONE_PROTECTION_ACTIVE=false
-      git clone https://github.com/movementlabsxyz/aptos-core/ 
-      cd aptos-core
-      cargo build -p movement
-      sudo cp target/debug/movement /usr/local/bin/
-      cd -
-  - name: Install Nix
-    uses: DeterminateSystems/nix-installer-action@main
-  - uses: cachix/cachix-action@v15
-    with:
-      name: movementlabs
-      authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-  - name: Run eth_movement tests
-    run: |
-      nix develop --command bash -c "rust_backtrace=1 cargo test --test client_eth_tests -- --nocapture --test-threads=1"
-  - name: Run movement_eth tests
-    run: |
-      nix develop --command bash -c "rust_backtrace=1 cargo test --test client_mvt_tests -- --nocapture --test-threads=1"
-  - name: Run Relayer tests
-    run: |
-      nix develop --command bash -c "rust_backtrace=1 cargo test --test relayer -- --nocapture --test-threads=1"
+  bridge-client-integration:
+    if: github.event.label.name == 'cicd:bridge' ||  github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/trusted-relayer'
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            arch: x86_64
+            runs-on: ubuntu-24.04 
+    runs-on: ${{ matrix.runs-on }}
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Install Movement CLI
+      run: |
+        sudo apt-get update 
+        sudo apt-get install -y build-essential
+        sudo apt-get install -y binutils
+        sudo apt-get install -y lld
+        sudo apt-get install -y libudev-dev
+        sudo apt-get install -y libdw-dev
+        which ld
+        which lld
+        which gcc
+        which cc
+        echo $PATH
+        export GIT_CLONE_PROTECTION_ACTIVE=false
+        git clone https://github.com/movementlabsxyz/aptos-core/ 
+        cd aptos-core
+        cargo build -p movement
+        sudo cp target/debug/movement /usr/local/bin/
+        cd -
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@main
+    - uses: cachix/cachix-action@v15
+      with:
+        name: movementlabs
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+    - name: Run eth_movement tests
+      run: |
+        nix develop --command bash -c "rust_backtrace=1 cargo test --test client_eth_tests -- --nocapture --test-threads=1"
+    - name: Run movement_eth tests
+      run: |
+        nix develop --command bash -c "rust_backtrace=1 cargo test --test client_mvt_tests -- --nocapture --test-threads=1"
+    - name: Run Relayer tests
+      run: |
+        nix develop --command bash -c "rust_backtrace=1 cargo test --test relayer -- --nocapture --test-threads=1"
 
 #  Indexer:
 #    strategy:

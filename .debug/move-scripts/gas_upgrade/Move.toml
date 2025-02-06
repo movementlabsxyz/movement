@@ -1,0 +1,13 @@
+[package]
+name = "gas_upgrade"
+version = "1.0.0"
+authors = []
+
+[addresses]
+
+[dev-addresses]
+
+[dependencies.AptosFramework]
+local = "/Users/l-monninger/.cargo/git/checkouts/aptos-core-1668198cfadb05a3/b3617c1/aptos-move/framework/aptos-framework"
+
+[dev-dependencies]

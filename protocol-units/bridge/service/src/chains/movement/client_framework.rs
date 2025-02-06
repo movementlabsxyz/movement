@@ -1,5 +1,5 @@
 use super::utils::{self, MovementAddress};
-use anyhow::{Context, Result};
+use anyhow::Result;
 use aptos_api_types::{EntryFunctionId, MoveModuleId, ViewRequest};
 use aptos_sdk::{
 	move_types::identifier::Identifier,
@@ -112,7 +112,7 @@ impl BridgeClientContract<MovementAddress> for MovementClientFramework {
 
 		Ok(())
 	}
-	
+
 	async fn get_bridge_transfer_details(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
@@ -177,7 +177,7 @@ impl BridgeClientContract<MovementAddress> for MovementClientFramework {
 			.parse::<u128>()
 			.map_err(|_| BridgeContractError::SerializationError)?;
 
-		let state = value["state"].as_u64().ok_or(BridgeContractError::SerializationError)? as u8;
+		let _state = value["state"].as_u64().ok_or(BridgeContractError::SerializationError)? as u8;
 
 		let details = BridgeTransferInitiatedDetails {
 			bridge_transfer_id,
@@ -327,14 +327,14 @@ impl BridgeRelayerContract<MovementAddress> for MovementClientFramework {
 
 	async fn get_bridge_transfer_details_with_nonce(
 		&mut self,
-		nonce: Nonce,
+		_nonce: Nonce,
 	) -> BridgeContractResult<Option<BridgeTransferInitiatedDetails<MovementAddress>>> {
 		todo!()
 	}
 
 	async fn is_bridge_transfer_completed(
 		&mut self,
-		bridge_transfer_id: BridgeTransferId,
+		_bridge_transfer_id: BridgeTransferId,
 	) -> BridgeContractResult<bool> {
 		todo!()
 	}
