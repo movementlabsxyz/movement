@@ -43,6 +43,10 @@ path = "src/bin/e2e/ggp_gas_fee.rs"
 name = "movement-tests-e2e-transfer"
 path = "src/bin/e2e/transfer.rs"
 
+[[bin]]
+name = "movement-tests-e2e-ggp-fund-fee"
+path = "src/bin/e2e/ggp_fund.rs"
+
 [dependencies]
 aptos-sdk = { workspace = true }
 aptos-types = { workspace = true }

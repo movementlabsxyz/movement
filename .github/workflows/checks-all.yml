@@ -256,6 +256,12 @@ jobs:
       run: |
         nix develop --command bash  -c "just movement-full-node native build.setup.eth-local.celestia-local.test-ggp-gas-fee -t=false"
 
+    - name: Run Movement Full Node + indexer Tests Against Local ETH and Local Celestia
+      env:
+        CELESTIA_LOG_LEVEL: FATAL # adjust the log level while debugging
+      run: |
+        nix develop --command bash  -c "just movement-full-node native build.setup.eth-local.celestia-local.test-ggp-gas-fund-fee -t=false"
+
   mcr:
     if: github.event.label.name == 'cicd:mcr' ||  github.ref == 'refs/heads/main'
     strategy:
@@ -404,3 +410,4 @@ jobs:
 #    - name: Run Indexer tests in nix environment
 #      # adjust the log level while debugging
 #      run: CELESTIA_LOG_LEVEL=FATAL nix develop --command bash  -c "just movement-full-node native build.celestia-local.indexer.hasura.indexer-test -t=false"
+
