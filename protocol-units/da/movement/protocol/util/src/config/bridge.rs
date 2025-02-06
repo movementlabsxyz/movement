@@ -1,4 +1,4 @@
-use crate::config::common::{
+use crate::config::default::{
 	default_celestia_bridge_replace_args, default_celestia_bridge_use_replace_args,
 	default_celestia_rpc_connection_hostname, default_celestia_rpc_connection_port,
 	default_celestia_rpc_connection_protocol, default_celestia_websocket_listen_hostname,

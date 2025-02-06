@@ -91,7 +91,7 @@ impl LightNodeRuntime
 
 		let memseq_path = pass_through.config.try_memseq_path()?;
 		info!("Memseq path: {:?}", memseq_path);
-		let (max_block_size, build_time) = pass_through.config.try_block_building_parameters()?;
+		let (max_block_size, build_time) = pass_through.config.block_building_parameters();
 
 		let memseq = Arc::new(memseq::Memseq::try_move_rocks(
 			PathBuf::from(memseq_path),

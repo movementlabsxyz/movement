@@ -1,9 +1,9 @@
 #[derive(Debug, Clone)]
-pub struct Mocha;
+pub struct Mainnet;
 
-impl Mocha {
+impl Mainnet {
 	pub fn new() -> Self {
-		Mocha
+		Mainnet
 	}
 
 	pub async fn run(
@@ -11,16 +11,16 @@ impl Mocha {
 		_dot_movement: dot_movement::DotMovement,
 		_config: movement_da_util::config::Config,
 	) -> Result<(), anyhow::Error> {
-		// celestia light start --core.ip validator-1.celestia-mocha-11.com --p2p.network mocha
+		// celestia light start --core.ip ??? --p2p.network celestia
 		commander::run_command(
 			"celestia",
 			&[
 				"light",
 				"start",
 				"--core.ip",
-				"rpc-mocha.pops.one",
+				"rpc.celestia.pops.one", // FIXME: is this correct?
 				"--p2p.network",
-				"mocha",
+				"celestia",
 				"--log.level",
 				"FATAL",
 			],

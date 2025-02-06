@@ -1,4 +1,4 @@
-use crate::config::common::{
+use crate::config::default::{
 	default_celestia_rpc_connection_hostname, default_celestia_rpc_connection_port,
 	default_celestia_rpc_connection_protocol, default_celestia_websocket_connection_hostname,
 	default_celestia_websocket_connection_port, default_movement_da_light_node_connection_hostname,

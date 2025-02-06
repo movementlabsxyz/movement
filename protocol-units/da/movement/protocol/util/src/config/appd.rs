@@ -1,4 +1,4 @@
-use crate::config::common::{
+use crate::config::default::{
 	default_celestia_appd_replace_args, default_celestia_appd_use_replace_args,
 	default_celestia_chain_id, default_celestia_namespace, default_celestia_rpc_listen_hostname,
 	default_celestia_rpc_listen_port, default_celestia_websocket_connection_hostname,
@@ -77,5 +77,19 @@ impl Default for Config {
 			celestia_appd_use_replace_args: default_celestia_appd_use_replace_args(),
 			celestia_appd_replace_args: default_celestia_appd_replace_args(),
 		}
+	}
+}
+
+impl Config {
+	// FIXME: use a single URL field as the source. The format was introduced by
+	// Sir Tim Berners-Lee in 1994 so you don't have to compose this from
+	// values that need to be set in three different environment variables.
+	pub fn celestia_websocket_url(&self) -> String {
+		format!(
+			"{}://{}:{}",
+			self.celestia_websocket_connection_protocol,
+			self.celestia_websocket_connection_hostname,
+			self.celestia_websocket_connection_port
+		)
 	}
 }
