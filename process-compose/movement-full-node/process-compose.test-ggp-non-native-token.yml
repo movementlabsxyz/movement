@@ -4,6 +4,11 @@ environment:
 
 processes:
 
+  setup:
+    environment:
+      - APTOS_ACCOUNT_WHITELIST=$DOT_MOVEMENT_PATH/default_signer_address_whitelist
+      - MAPTOS_PRIVATE_KEY=random
+
   test-ggp-non-native-token:
     command: |
       cargo run --bin movement-tests-e2e-ggp-non-native-token

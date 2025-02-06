@@ -2634,7 +2634,6 @@ dependencies = [
  "hex",
  "move-binary-format",
  "move-core-types",
- "move-unit-test",
  "move-vm-runtime",
  "move-vm-types",
  "num_cpus",
@@ -6126,41 +6125,6 @@ name = "dyn-clone"
 version = "1.0.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0d6ef0072f8a535281e4876be788938b528e9a1d43900b82c2569af7da799125"
-
-[[package]]
-name = "e2e-move-tests"
-version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=bee8894b34405b9ced8e596d0f70dc89cd4fbddf#bee8894b34405b9ced8e596d0f70dc89cd4fbddf"
-dependencies = [
- "anyhow",
- "aptos-cached-packages",
- "aptos-crypto",
- "aptos-framework",
- "aptos-gas-algebra",
- "aptos-gas-profiling",
- "aptos-gas-schedule",
- "aptos-language-e2e-tests",
- "aptos-package-builder",
- "aptos-types",
- "aptos-vm",
- "bcs 0.1.4",
- "claims",
- "hex",
- "move-binary-format",
- "move-command-line-common",
- "move-core-types",
- "move-model",
- "move-package",
- "move-symbol-pool",
- "once_cell",
- "project-root",
- "proptest",
- "rand 0.7.3",
- "rstest",
- "serde",
- "sha3 0.9.1",
- "test-case",
-]
 
 [[package]]
 name = "ecdsa"
@@ -10133,7 +10097,6 @@ dependencies = [
  "move-binary-format",
  "move-bytecode-utils",
  "move-core-types",
- "move-table-extension",
  "move-vm-types",
  "once_cell",
  "serde",
@@ -10361,7 +10324,6 @@ dependencies = [
  "chrono",
  "commander",
  "dot-movement",
- "e2e-move-tests",
  "futures",
  "hex",
  "itertools 0.12.1",
@@ -12170,12 +12132,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "project-root"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8bccbff07d5ed689c4087d20d7307a52ab6141edeedf487c3876a55b86cf63df"
-
-[[package]]
 name = "prometheus"
 version = "0.13.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -13132,31 +13088,6 @@ dependencies = [
  "libc",
  "rstack",
  "serde",
-]
-
-[[package]]
-name = "rstest"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e9c9dc66cc29792b663ffb5269be669f1613664e69ad56441fdb895c2347b930"
-dependencies = [
- "futures",
- "futures-timer",
- "rstest_macros",
- "rustc_version 0.4.1",
-]
-
-[[package]]
-name = "rstest_macros"
-version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5015e68a0685a95ade3eee617ff7101ab6a3fc689203101ca16ebc16f2b89c66"
-dependencies = [
- "cfg-if",
- "proc-macro2",
- "quote",
- "rustc_version 0.4.1",
- "syn 1.0.109",
 ]
 
 [[package]]
@@ -14737,39 +14668,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bab24d30b911b2376f3a13cc2cd443142f0c81dda04c118693e35b3835757755"
 dependencies = [
  "winapi-util",
-]
-
-[[package]]
-name = "test-case"
-version = "3.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb2550dd13afcd286853192af8601920d959b14c401fcece38071d53bf0768a8"
-dependencies = [
- "test-case-macros",
-]
-
-[[package]]
-name = "test-case-core"
-version = "3.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "adcb7fd841cd518e279be3d5a3eb0636409487998a4aff22f3de87b81e88384f"
-dependencies = [
- "cfg-if",
- "proc-macro2",
- "quote",
- "syn 2.0.87",
-]
-
-[[package]]
-name = "test-case-macros"
-version = "3.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c89e72a01ed4c579669add59014b9a524d609c0c88c6a585ce37485879f6ffb"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.87",
- "test-case-core",
 ]
 
 [[package]]
