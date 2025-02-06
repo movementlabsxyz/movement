@@ -492,6 +492,7 @@ fn build_release_package_transaction_payload(
 /// We then write these scripts out to a proposal directory in line with the implementation here: https://github.com/movementlabsxyz/aptos-core/blob/ac9de113a4afec6a26fe587bb92c982532f09d3a/aptos-move/aptos-release-builder/src/components/mod.rs#L563
 /// We then need to compile the code to form [ReleasePackage]s which are then used to form [ReleaseBundle]s.
 /// To do this, we need to form a [BuiltPackage] from the scripts I BELIEVE.
+#[derive(Debug)]
 pub struct CommitHash {
 	pub repo: &'static str,
 	pub commit_hash: &'static str,
@@ -549,6 +550,7 @@ macro_rules! mrb_release {
 		const $bytes_name: &[u8] = include_bytes!(concat!("..", "\\", "mrb_cache", "\\", $path));
 
 		// Define the struct implementing Release
+		#[derive(Debug)]
 		pub struct $struct_name;
 
 		impl $struct_name {
@@ -585,6 +587,7 @@ macro_rules! commit_hash_with_script {
 
 		/// Builds a release for the specified framework.
 		/// This is a wrapper around the [CommitHash] builder.
+		#[derive(Debug)]
 		pub struct $name(CommitHash);
 
 		impl $name {
