@@ -13,7 +13,8 @@ services:
       - AWS_REGION=us-west-1
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - MOVEMENT_SYNC=${MOVEMENT_SYNC}
-    command: backup restore
+      - SYNC_BUCKET=${SYNC_BUCKET}
+      - SYNC_PATTERN=${SYNC_PATTERN}
+    command: backup restore $SYNC_BUCKET $SYNC_PATTERN
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement

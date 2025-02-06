@@ -164,10 +164,15 @@ impl SaveAndPush {
 }
 
 #[derive(Debug, Parser, Clone)]
-#[clap(rename_all = "kebab-case", about = "Restore from the specified bucket in the root_dir.")]
+#[clap(
+	rename_all = "kebab-case",
+	about = "Restore from the specified bucket in the root_dir. Db pattern is used to clean before the update."
+)]
 pub struct RestoreParam {
 	#[clap(default_value = "mtnet-l-sync-bucket-sync", value_name = "BUCKET NAME")]
 	pub bucket: String,
+	#[clap(default_value = "{maptos,maptos-storage,movement-da-db}/**", value_name = "DB PATTERN")]
+	pub db_sync: String,
 	#[clap(value_name = "ROOT DIRECTORY")]
 	pub root_dir: Option<String>,
 }
@@ -193,7 +198,7 @@ impl RestoreParam {
 		let push_pipe = syncador::backend::pipeline::pull::Pipeline::new(vec![
 			Box::new(s3_pull),
 			Box::new(syncador::backend::clear::glob::pull::ClearGlob::try_new(
-				&config.syncing.try_glob()?,
+				&self.db_sync,
 				root_path.clone(),
 			)?),
 			Box::new(syncador::backend::archive::gzip::pull::Pull::new(root_path.clone())),
