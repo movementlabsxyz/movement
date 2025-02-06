@@ -1,0 +1,33 @@
+from_latest_tag = true
+ignore_merge_commits = true
+disable_changelog = false
+disable_bump_commit = false
+generate_mono_repository_global_tag = false
+generate_mono_repository_package_tags = false
+branch_whitelist = [
+    "main",
+]
+skip_ci = "[skip ci]"
+skip_untracked = true
+pre_bump_hooks = [
+    "echo {{version}}",
+    "cargo set-version {{version}} --exclude movement-faucet-service"
+]
+post_bump_hooks = []
+pre_package_bump_hooks = []
+post_package_bump_hooks = []
+
+[git_hooks]
+
+[commit_types]
+
+[changelog]
+path = "CHANGELOG.md"
+template = "remote"
+remote = "github.com"
+repository = "movement"
+owner = "movementlabsxyz"
+
+[bump_profiles]
+
+[packages]
