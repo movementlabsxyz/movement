@@ -1,6 +1,8 @@
 pub mod arabica;
+pub mod mainnet;
 pub mod mocha;
-use movement_da_util::config::CelestiaDaLightNodeConfig;
+
+use movement_da_util::config::{CelestiaDaLightNodeConfig, Network};
 
 use crate::Runner;
 
@@ -13,17 +15,22 @@ impl Runner for CelestiaLight {
 		dot_movement: dot_movement::DotMovement,
 		config: CelestiaDaLightNodeConfig,
 	) -> Result<(), anyhow::Error> {
-		match config.celestia_da_light_node_config {
-			movement_da_util::config::Config::Local(_config) => {
+		let config = config.celestia_da_light_node_config;
+		match config.network {
+			Network::Local => {
 				Err(anyhow::anyhow!("Local not implemented"))?;
 			}
-			movement_da_util::config::Config::Arabica(config) => {
+			Network::Arabica => {
 				let arabica = arabica::Arabica::new();
 				arabica.run(dot_movement, config).await?;
 			}
-			movement_da_util::config::Config::Mocha(config) => {
+			Network::Mocha => {
 				let mocha = mocha::Mocha::new();
 				mocha.run(dot_movement, config).await?;
+			}
+			Network::Mainnet => {
+				let mainnet = mainnet::Mainnet::new();
+				mainnet.run(dot_movement, config).await?;
 			}
 		}
 		Ok(())

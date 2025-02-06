@@ -9,7 +9,7 @@ impl Arabica {
 	pub async fn run(
 		&self,
 		_dot_movement: dot_movement::DotMovement,
-		_config: movement_da_util::config::local::Config,
+		_config: movement_da_util::config::Config,
 	) -> Result<(), anyhow::Error> {
 		// celestia light start --core.ip validator-1.celestia-arabica-11.com --p2p.network arabica
 		commander::run_command(

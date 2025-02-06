@@ -1,7 +1,17 @@
+pub mod appd;
+pub mod bridge;
+pub mod da_light_node;
+pub mod default;
+pub mod digest_store;
+
+use self::default::{default_celestia_force_new_chain, default_da_light_node_is_initial};
+
 use anyhow::Context;
+use aptos_account_whitelist::config::Config as WhitelistConfig;
 use aptos_types::account_address::AccountAddress;
 use celestia_rpc::Client;
 use celestia_types::nmt::Namespace;
+use memseq_util::Config as MemseqConfig;
 use movement_signer::cryptography::{secp256k1::Secp256k1, Curve};
 use movement_signer_loader::{Load, LoadedSigner};
 use serde::{Deserialize, Serialize};
@@ -9,153 +19,113 @@ use std::collections::HashSet;
 use std::future::Future;
 use std::path::PathBuf;
 
-pub mod common;
-pub mod local;
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum Network {
+	Local,
+	Arabica,
+	Mocha,
+	Mainnet,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub enum Config {
-	Local(local::Config),
-	Arabica(local::Config),
-	Mocha(local::Config),
+pub struct Config {
+	pub network: Network,
+
+	/// The appd configuration
+	#[serde(default)]
+	pub appd: appd::Config,
+
+	/// The bridge configuration
+	#[serde(default)]
+	pub bridge: bridge::Config,
+
+	/// The movement-celestia-da-light-node configuration
+	#[serde(default)]
+	pub da_light_node: da_light_node::Config,
+
+	/// Whether to force a new chain
+	#[serde(default = "default_celestia_force_new_chain")]
+	pub celestia_force_new_chain: bool,
+
+	/// The memseq configuration
+	#[serde(default)]
+	pub memseq: MemseqConfig,
+
+	#[serde(default = "default_da_light_node_is_initial")]
+	pub da_light_node_is_initial: bool,
+
+	/// The access control config
+	#[serde(default)]
+	pub access_control: WhitelistConfig,
+
+	/// The digest store configuration
+	#[serde(default)]
+	pub digest_store: digest_store::Config,
 }
 
 impl Default for Config {
 	fn default() -> Self {
-		std::env::var("CELESTIA_NETWORK").map_or_else(
-			|_| Config::Local(local::Config::default()),
+		let network = std::env::var("CELESTIA_NETWORK").map_or_else(
+			|_| Network::Local,
 			|network| match network.as_str() {
-				"arabica" => Config::Arabica(local::Config::default()),
-				"mocha" => Config::Mocha(local::Config::default()),
-				_ => Config::Local(local::Config::default()),
+				"mainnet" => Network::Mainnet,
+				"arabica" => Network::Arabica,
+				"mocha" => Network::Mocha,
+				_ => Network::Local,
 			},
-		)
+		);
+		Self {
+			network,
+			appd: appd::Config::default(),
+			bridge: bridge::Config::default(),
+			da_light_node: da_light_node::Config::default(),
+			celestia_force_new_chain: default_celestia_force_new_chain(),
+			memseq: MemseqConfig::default(),
+			da_light_node_is_initial: default_da_light_node_is_initial(),
+			access_control: WhitelistConfig::default(),
+			digest_store: digest_store::Config::default(),
+		}
 	}
 }
 
 impl Config {
 	/// Connects to a Celestia node using the config
 	pub async fn connect_celestia(&self) -> Result<Client, anyhow::Error> {
-		match self {
-			Config::Local(local) => {
-				let celestia_node_url = format!(
-					"{}://{}:{}",
-					local.appd.celestia_websocket_connection_protocol,
-					local.appd.celestia_websocket_connection_hostname,
-					local.appd.celestia_websocket_connection_port
-				);
-				let celestia_auth_token = local.appd.celestia_auth_token.clone().context(
-                    "Failed to get Celestia auth token from config. This is required for connecting to Celestia.",
-                )?;
+		let celestia_node_url = self.appd.celestia_websocket_url();
+		let celestia_auth_token = self.appd.celestia_auth_token.clone().context(
+			"Failed to get Celestia auth token from config. This is required for connecting to Celestia.",
+		)?;
 
-				let client = Client::new(&celestia_node_url, Some(&celestia_auth_token))
-					.await
-					.map_err(|e| {
-						anyhow::anyhow!(
-							"Failed to connect to Celestia client at {:?}: {}",
-							celestia_node_url,
-							e
-						)
-					})?;
+		let client =
+			Client::new(&celestia_node_url, Some(&celestia_auth_token)).await.map_err(|e| {
+				anyhow::anyhow!(
+					"Failed to connect to Celestia client at {:?}: {}",
+					celestia_node_url,
+					e
+				)
+			})?;
 
-				Ok(client)
-			}
-			Config::Arabica(local) => {
-				// arabica is also local for now
-				let celestia_node_url = format!(
-					"{}://{}:{}",
-					local.appd.celestia_websocket_connection_protocol,
-					local.appd.celestia_websocket_connection_hostname,
-					local.appd.celestia_websocket_connection_port
-				);
-				let celestia_auth_token = local.appd.celestia_auth_token.clone().context(
-					"Failed to get Celestia auth token from config. This is required for connecting to Celestia.",
-				)?;
-
-				let client = Client::new(&celestia_node_url, Some(&celestia_auth_token))
-					.await
-					.map_err(|e| {
-						anyhow::anyhow!(
-							"Failed to connect to Celestia client at {:?}: {}",
-							celestia_node_url,
-							e
-						)
-					})?;
-
-				Ok(client)
-			}
-			Config::Mocha(local) => {
-				// mocha is also local for now
-				let celestia_node_url = format!(
-					"{}://{}:{}",
-					local.appd.celestia_websocket_connection_protocol,
-					local.appd.celestia_websocket_connection_hostname,
-					local.appd.celestia_websocket_connection_port
-				);
-				let celestia_auth_token = local.appd.celestia_auth_token.clone().context(
-					"Failed to get Celestia auth token from config. This is required for connecting to Celestia.",
-				)?;
-
-				let client = Client::new(&celestia_node_url, Some(&celestia_auth_token))
-					.await
-					.map_err(|e| {
-						anyhow::anyhow!(
-							"Failed to connect to Celestia client at {:?}: {}",
-							celestia_node_url,
-							e
-						)
-					})?;
-
-				Ok(client)
-			}
-		}
+		Ok(client)
 	}
 
 	/// Gets the Celestia namespace
 	pub fn celestia_namespace(&self) -> Namespace {
-		match self {
-			Config::Local(local) => local.appd.celestia_namespace.clone(),
-			Config::Arabica(local) => local.appd.celestia_namespace.clone(),
-			Config::Mocha(local) => local.appd.celestia_namespace.clone(),
-		}
+		self.appd.celestia_namespace.clone()
 	}
 
 	/// Gets M1 DA Light Node connection protocol
 	pub fn movement_da_light_node_connection_protocol(&self) -> String {
-		match self {
-			Config::Local(local) => {
-				local.da_light_node.movement_da_light_node_connection_protocol.clone()
-			}
-			Config::Arabica(local) => {
-				local.da_light_node.movement_da_light_node_connection_protocol.clone()
-			}
-			Config::Mocha(local) => {
-				local.da_light_node.movement_da_light_node_connection_protocol.clone()
-			}
-		}
+		self.da_light_node.movement_da_light_node_connection_protocol.clone()
 	}
 
 	/// Gets M1 DA Light Node listen hostname
 	pub fn movement_da_light_node_listen_hostname(&self) -> String {
-		match self {
-			Config::Local(local) => {
-				local.da_light_node.movement_da_light_node_listen_hostname.clone()
-			}
-			Config::Arabica(local) => {
-				local.da_light_node.movement_da_light_node_listen_hostname.clone()
-			}
-			Config::Mocha(local) => {
-				local.da_light_node.movement_da_light_node_listen_hostname.clone()
-			}
-		}
+		self.da_light_node.movement_da_light_node_listen_hostname.clone()
 	}
 
 	/// Gets M1 DA Light Node listen port
 	pub fn movement_da_light_node_listen_port(&self) -> u16 {
-		match self {
-			Config::Local(local) => local.da_light_node.movement_da_light_node_listen_port,
-			Config::Arabica(local) => local.da_light_node.movement_da_light_node_listen_port,
-			Config::Mocha(local) => local.da_light_node.movement_da_light_node_listen_port,
-		}
+		self.da_light_node.movement_da_light_node_listen_port
 	}
 
 	/// Gets M1 DA Light Node service
@@ -167,89 +137,41 @@ impl Config {
 
 	/// Gets M1 DA Light Node connection hostname
 	pub fn movement_da_light_node_connection_hostname(&self) -> String {
-		match self {
-			Config::Local(local) => {
-				local.da_light_node.movement_da_light_node_connection_hostname.clone()
-			}
-			Config::Arabica(local) => {
-				local.da_light_node.movement_da_light_node_connection_hostname.clone()
-			}
-			Config::Mocha(local) => {
-				local.da_light_node.movement_da_light_node_connection_hostname.clone()
-			}
-		}
+		self.da_light_node.movement_da_light_node_connection_hostname.clone()
 	}
 
 	/// Gets M1 DA Light Node connection port
 	pub fn movement_da_light_node_connection_port(&self) -> u16 {
-		match self {
-			Config::Local(local) => local.da_light_node.movement_da_light_node_connection_port,
-			Config::Arabica(local) => local.da_light_node.movement_da_light_node_connection_port,
-			Config::Mocha(local) => local.da_light_node.movement_da_light_node_connection_port,
-		}
+		self.da_light_node.movement_da_light_node_connection_port
 	}
 
 	/// Whether to use HTTP/1.1 for the movement-da-light-node service
 	pub fn movement_da_light_node_http1(&self) -> bool {
-		match self {
-			Config::Local(local) => local.da_light_node.movement_da_light_node_http1,
-			Config::Arabica(local) => local.da_light_node.movement_da_light_node_http1,
-			Config::Mocha(local) => local.da_light_node.movement_da_light_node_http1,
-		}
+		self.da_light_node.movement_da_light_node_http1
 	}
 
 	/// Gets the memseq path
 	pub fn try_memseq_path(&self) -> Result<String, anyhow::Error> {
-		match self {
-			Config::Local(local) => local.memseq.sequencer_database_path.clone().context(
+		self.memseq.sequencer_database_path.clone().context(
                 "Failed to get memseq path from config. This is required for initializing the memseq database.",
-            ),
-			Config::Arabica(local) => local.memseq.sequencer_database_path.clone().context(
-				"Failed to get memseq path from config. This is required for initializing the memseq database.",
-			),
-			Config::Mocha(local) => local.memseq.sequencer_database_path.clone().context(
-				"Failed to get memseq path from config. This is required for initializing the memseq database.",
-			),
-		}
+            )
 	}
 
 	/// Gets the da signers sec1 keys
 	pub fn da_signers_sec1_keys(&self) -> HashSet<String> {
-		match self {
-			Config::Local(local) => local.da_light_node.da_signers.public_keys_hex.clone(),
-			Config::Arabica(local) => local.da_light_node.da_signers.public_keys_hex.clone(),
-			Config::Mocha(local) => local.da_light_node.da_signers.public_keys_hex.clone(),
-		}
+		self.da_light_node.da_signers.public_keys_hex.clone()
 	}
 
-	pub fn try_block_building_parameters(&self) -> Result<(u32, u64), anyhow::Error> {
-		match self {
-			Config::Local(local) => {
-				Ok((local.memseq.memseq_max_block_size, local.memseq.memseq_build_time))
-			}
-			Config::Arabica(local) => {
-				Ok((local.memseq.memseq_max_block_size, local.memseq.memseq_build_time))
-			}
-			Config::Mocha(local) => {
-				Ok((local.memseq.memseq_max_block_size, local.memseq.memseq_build_time))
-			}
-		}
+	pub fn block_building_parameters(&self) -> (u32, u64) {
+		(self.memseq.memseq_max_block_size, self.memseq.memseq_build_time)
 	}
 
 	pub fn whitelisted_accounts(&self) -> Result<Option<HashSet<AccountAddress>>, anyhow::Error> {
-		match self {
-			Config::Local(local) => local.access_control.whitelisted_accounts(),
-			Config::Arabica(local) => local.access_control.whitelisted_accounts(),
-			Config::Mocha(local) => local.access_control.whitelisted_accounts(),
-		}
+		self.access_control.whitelisted_accounts()
 	}
 
 	pub fn digest_store_db_path(&self) -> PathBuf {
-		match self {
-			Config::Local(local) => local.digest_store.digest_store_db_path.clone(),
-			Config::Arabica(local) => local.digest_store.digest_store_db_path.clone(),
-			Config::Mocha(local) => local.digest_store.digest_store_db_path.clone(),
-		}
+		self.digest_store.digest_store_db_path.clone()
 	}
 }
 
@@ -263,35 +185,13 @@ where
 
 impl LoadSigner<Secp256k1> for Config {
 	async fn da_signer(&self) -> Result<LoadedSigner<Secp256k1>, anyhow::Error> {
-		match self {
-			Config::Local(local) => {
-				let identifier: Box<dyn Load<Secp256k1> + Send> =
-					Box::new(local.da_light_node.da_signers.signer_identifier.clone());
-				let signer = identifier
-					.load()
-					.await
-					.map_err(|e| anyhow::anyhow!("failed to load signer: {}", e))?;
-				Ok(signer)
-			}
-			Config::Arabica(local) => {
-				let identifier: Box<dyn Load<Secp256k1> + Send> =
-					Box::new(local.da_light_node.da_signers.signer_identifier.clone());
-				let signer = identifier
-					.load()
-					.await
-					.map_err(|e| anyhow::anyhow!("failed to load signer: {}", e))?;
-				Ok(signer)
-			}
-			Config::Mocha(local) => {
-				let identifier: Box<dyn Load<Secp256k1> + Send> =
-					Box::new(local.da_light_node.da_signers.signer_identifier.clone());
-				let signer = identifier
-					.load()
-					.await
-					.map_err(|e| anyhow::anyhow!("failed to load signer: {}", e))?;
-				Ok(signer)
-			}
-		}
+		let identifier: Box<dyn Load<Secp256k1> + Send> =
+			Box::new(self.da_light_node.da_signers.signer_identifier.clone());
+		let signer = identifier
+			.load()
+			.await
+			.map_err(|e| anyhow::anyhow!("failed to load signer: {}", e))?;
+		Ok(signer)
 	}
 }
 

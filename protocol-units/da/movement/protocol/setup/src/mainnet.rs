@@ -6,16 +6,16 @@ use movement_da_util::config::Config;
 use tracing::info;
 
 #[derive(Debug, Clone)]
-pub struct Mocha;
+pub struct Mainnet;
 
-impl Mocha {
+impl Mainnet {
 	pub fn new() -> Self {
 		Self
 	}
 
-	pub async fn get_mocha_11_address(&self) -> Result<String, anyhow::Error> {
+	pub async fn get_mainnet_11_address(&self) -> Result<String, anyhow::Error> {
 		// get the json from celkey
-		// cel-key list --node.type light --keyring-backend test --p2p.network mocha --output json
+		// cel-key list --node.type light --keyring-backend test --p2p.network celestia --output json
 		let json_string = run_command(
 			"cel-key",
 			&[
@@ -25,7 +25,7 @@ impl Mocha {
 				"--keyring-backend",
 				"test",
 				"--p2p.network",
-				"mocha",
+				"celestia",
 				"--output",
 				"json",
 			],
@@ -37,7 +37,7 @@ impl Mocha {
 			.last()
 			.context("Failed to get the last line of the json string.")?;
 
-		info!("Mocha 11 address json: {}", json_string);
+		info!("Mainnet 11 address json: {}", json_string);
 
 		// use serde to convert to json
 		let json: serde_json::Value = serde_json::from_str(&json_string)
@@ -56,22 +56,23 @@ impl Mocha {
 	}
 
 	pub async fn celestia_light_init(&self) -> Result<(), anyhow::Error> {
-		// celestia light init --p2p.network mocha
-		run_command("celestia", &["light", "init", "--p2p.network", "mocha"]).await?;
+		// celestia light init --p2p.network celestia
+		run_command("celestia", &["light", "init", "--p2p.network", "celestia"]).await?;
 
 		Ok(())
 	}
 
 	pub async fn get_da_block_height(&self) -> Result<u64, anyhow::Error> {
-		let response = reqwest::get("https://rpc-mocha.pops.one/block").await?.text().await?;
+		todo!("what's this for mainnet?");
+		let response = reqwest::get("https://rpc-???.pops.one/block").await?.text().await?;
 
 		Ok(response.parse().context("Failed to parse the response to a u64.")?)
 	}
 
 	pub async fn get_auth_token(&self) -> Result<String, anyhow::Error> {
-		// celestia light auth admin --p2p.network mocha
+		// celestia light auth admin --p2p.network celestia
 		let auth_token =
-			run_command("celestia", &["light", "auth", "admin", "--p2p.network", "mocha"])
+			run_command("celestia", &["light", "auth", "admin", "--p2p.network", "celestia"])
 				.await?
 				.trim()
 				.to_string();
@@ -88,11 +89,11 @@ impl Mocha {
 		let config = common::memseq::initialize_memseq_config(dot_movement.clone(), config)?;
 		let mut config = common::celestia::make_dirs(dot_movement.clone(), config).await?;
 
-		// celestia light init --p2p.network mocha
+		// celestia light init --p2p.network celestia
 		self.celestia_light_init().await?;
 
-		// get the mocha 11 address
-		let address = self.get_mocha_11_address().await?;
+		// get the mainnet 11 address
+		let address = self.get_mainnet_11_address().await?;
 		config.appd.celestia_validator_address.replace(address.clone());
 
 		// get the auth token
