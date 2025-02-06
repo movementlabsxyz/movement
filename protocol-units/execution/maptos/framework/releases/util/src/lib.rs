@@ -603,15 +603,18 @@ macro_rules! commit_hash_with_script {
 		}
 
 		pub fn main() -> Result<(), anyhow::Error> {
-			// Write to mrb_cache/<mrb_file>
+			// Write to mrb_cache/<mrb_file>-<commit_hash>
 			let target_cache_dir = PathBuf::from("mrb_cache");
 			std::fs::create_dir_all(&target_cache_dir)
 				.context("failed to create cache directory")?;
-			let path = target_cache_dir.join(MRB_FILE);
+			let path = target_cache_dir.join(format!("{}-{}", MRB_FILE, COMMIT_HASH));
+
+			// rerun if the file on the path has for some reason changed
+			println!("cargo:rerun-if-changed={}", path.to_str().unwrap());
 
 			// if the release is already built and CACHE_RELEASE is set, skip building
 			let force_build_all_releases = std::env::var(FORCE_BUILD_ALL_RELEASES).is_ok();
-			let force_build_release = std::env::var(FORCE_BUILD_ALL_RELEASES).is_ok();
+			let force_build_release = std::env::var(FORCE_BUILD_RELEASE).is_ok();
 			let path_exists = std::fs::metadata(&path).is_ok();
 
 			if (!force_build_release || !force_build_all_releases) && path_exists {

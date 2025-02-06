@@ -1,7 +1,7 @@
 use aptos_framework_upgrade_gas_release::generate_gas_upgrade_module;
 use maptos_framework_release_util::mrb_release;
 
-mrb_release!(Elsa, ELSA, "elsa.mrb");
+mrb_release!(Elsa, ELSA, "elsa-dfc8e7a3d622597dfd81cc4ba480a5377f87a41.mrb");
 
 generate_gas_upgrade_module!(gas_upgrade, Elsa, {
 	let mut gas_parameters = AptosGasParameters::initial();
