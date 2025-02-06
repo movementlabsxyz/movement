@@ -1,5 +1,7 @@
 ###  Run docker compose setup locally version `89586b190bfe88a3e9cd9d9d0e1025caa0185d94`
+
 1.  Run the `movement-full-node` and `movement-indexer` locally
+
 ```bash
 rm -rf  ~/.movement/*  \
       && docker compose    \
@@ -11,7 +13,8 @@ rm -rf  ~/.movement/*  \
            up
 ```
 
-2.  in second terminal star the indexer
+1.  in second terminal star the indexer
+
 ```bash
 docker compose    \
             --env-file docker/compose/movement-indexer/.env  \
@@ -22,9 +25,10 @@ docker compose    \
            logs movement-indexer
 ```
 
-###  Run docker compose setup locally version `247a02657800d56b36f3c49f8ab01b125e54163a`
+### Run docker compose setup locally version `247a02657800d56b36f3c49f8ab01b125e54163a`
 
 Run the `movement-full-node`, `movement-indexer` and `movement-hasura` locally
+
 ```bash
 rm -rf  ~/.movement/*  \
       ; docker volume rm $(docker volume ls -q) \
@@ -39,7 +43,8 @@ rm -rf  ~/.movement/*  \
 
 ### Connect an indexer running locally to a movement-node running in AWS
 
-1. In one terminal start port forwarding from localhost to suzka-node running in aws
+1. In one terminal start port forwarding from localhost to movement-node running in aws
+
 ```bash
 INSTANCE_ID=i-0a617bd<snip>
 aws ssm start-session \
@@ -50,20 +55,23 @@ aws ssm start-session \
 ```
 
 test
+
 ```bash
 # brew install grpcurl
 grpcurl -plaintext localhost:30734 list aptos.indexer.v1.RawData
 ```
 
-2. Make sure that all other containers are stop
+2. Make sure that all other containers are stoped
+
 ```bash
 docker ps
 ```
 
-3. Clean previous runs and create required `config.json` by the indexer in the 
+3. Clean previous runs and create required `config.json` by the indexer in the
 proper location.
 
 In another terminal
+
 ```bash
 
 GIT_ROOT=$(git rev-parse --show-toplevel)
@@ -81,6 +89,7 @@ docker rm -f $(docker ps -aq) \
 ```
 
 logs
+
 ```bash
 docker compose    \
       --env-file docker/compose/movement-indexer/.remote-movement-node.env  \
@@ -89,6 +98,7 @@ docker compose    \
 ```
 
 attach to movement-indexer container
+
 ```bash
 docker compose  \
    --env-file docker/compose/movement-indexer/.remote-movement-node.env \
@@ -97,6 +107,7 @@ docker compose  \
 ```
 
 check if indexer can reach remote rpc
+
 ```bash
 docker compose  \
    --env-file docker/compose/movement-indexer/.remote-movement-node.env \
@@ -105,6 +116,7 @@ docker compose  \
 ```
 
 check size of local DB on disk
+
 ```bash
 docker run --rm -v movement-indexer_postgres_data:/volume alpine sh -c "du -sh /volume"
 ```
@@ -112,17 +124,21 @@ docker run --rm -v movement-indexer_postgres_data:/volume alpine sh -c "du -sh /
 ### Connect to postgres db
 
 Attach to the postgres container
+
 ```bash
 docker exec -it postgres bash
 ```
 
 Use `psql` to connect to the database. Password is `postgres`
+
 ```bash
 psql --username=postgres  --dbname=postgres --host=127.0.0.1 --password
 ```
 
 ### Hasura
+
 Docs:
+
 - https://hasura.io/docs/2.0/auth/quickstart/
 - https://hasura.io/docs/2.0/auth/quickstart/#step-2-create-a-user-role
 - https://hasura.io/docs/2.0/auth/authentication/unauthenticated-access/
@@ -144,8 +160,8 @@ A manual second step is needed to add a header `Authorization Bearer tokenValue`
 (stored in 1password)
 
 #### Update hasura metadata
-To update the Hasura metadata use this command in the movement root folder:
 
+To update the Hasura metadata use this command in the movement root folder:
 
 ```bash
 INDEXER_API_URL=https://indexer.testnet.porto.movementnetwork.xyz HASURA_ADMIN_AUTH_KEY=<auth key> POSTGRES_DB_URL=postgres://<login>:<password>@<host>:5432/postgres cargo run -p movement-indexer-service --bin load_metadata

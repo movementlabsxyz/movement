@@ -1,4 +1,4 @@
-## Explorer Reference Implementation
+# Explorer Reference Implementation
 
 Repository: https://github.com/movementlabsxyz/explorer/tree/suzuka
 
