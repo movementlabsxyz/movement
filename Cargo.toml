@@ -100,6 +100,7 @@ aptos-framework-biarritz-rc1-release = { path = "protocol-units/execution/maptos
 aptos-framework-upgrade-gas-release = { path = "protocol-units/execution/maptos/framework/releases/upgrade-gas" }
 aptos-framework-known-release = { path = "protocol-units/execution/maptos/framework/releases/known-release" }
 aptos-framework-set-feature-flags-release = { path = "protocol-units/execution/maptos/framework/releases/feature-flags" }
+aptos-framework-release-script-release = { path = "protocol-units/execution/maptos/framework/releases/release-script" }
 
 # framework migrations
 aptos-framework-elsa-to-biarritz-rc1-migration = { path = "protocol-units/execution/maptos/framework/migrations/elsa-to-biarritz-rc1" }
