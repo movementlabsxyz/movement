@@ -153,7 +153,7 @@ default_sleep_time_between_request: {}
 	let mut output_file = tempfile::NamedTempFile::new()?;
 	write!(output_file, "{}", indexer_config_content)?;
 
-	let mut indexer_config =
+	let indexer_config =
 		server_framework::load::<IndexerGrpcProcessorConfig>(&output_file.path().to_path_buf())?;
 
 	// Leave here for debug purpose. Will be removed later.

@@ -2,6 +2,8 @@ use super::bucket_connection;
 use aws_types::region::Region;
 use tracing::info;
 
+const UPLOAD_COMPLETE_MARKER_FILE_NAME: &str = "upload_complete.txt";
+
 pub mod metadata;
 pub mod pull;
 pub mod push;

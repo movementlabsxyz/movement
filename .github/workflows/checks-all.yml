@@ -8,9 +8,10 @@ on:
       - synchronize
   push:
     branches:
-      - "**"
+      - '**' 
 
 jobs:
+ 
   build:
     strategy:
       matrix:
@@ -25,20 +26,15 @@ jobs:
     runs-on: ${{ matrix.runs-on }}
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@main
 
-      - uses: cachix/cachix-action@v15
-        with:
-          name: movementlabs
-          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
-
-      - name: Run Cargo Check in nix environment
-        run: |
-          nix develop --command bash  -c "cargo check --all-targets"
+    - name: Run Cargo Check in nix environment
+      run: |
+        nix develop --command bash  -c "cargo check --all-targets"  
 
   unit-tests:
     strategy:
@@ -54,22 +50,23 @@ jobs:
     runs-on: ${{ matrix.runs-on }}
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@main
 
-      - name: Run unit tests in nix environment
-        run: |
-          nix develop --command bash <<EOF
-            cargo test \
-              -p maptos-opt-executor \
-              -p memseq \
-              -p move-rocks \
-              -p movement-types \
-              -p movement-config
-          EOF
+    - name: Run unit tests in nix environment
+      run: |
+        nix develop --command bash <<EOF
+          cargo test \
+            -p maptos-opt-executor \
+            -p memseq \
+            -p move-rocks \
+            -p movement-types \
+            -p movement-config \
+            -p movement-celestia-da-util \
+            -p movement-signer-test
 
   movement-full-node-local:
     if: github.event.label.name == 'cicd:movement-full-node' ||  github.ref == 'refs/heads/main'
@@ -83,25 +80,20 @@ jobs:
     runs-on: ${{ matrix.runs-on }}
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          submodules: true
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: true
 
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@main
 
-      - uses: cachix/cachix-action@v15
-        with:
-          name: movementlabs
-          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
-
-      - name: Run Movement Full Node Tests Against Local ETH and Local Celestia
-        env:
-          CELESTIA_LOG_LEVEL: FATAL # adjust the log level while debugging
-        run: |
-          nix develop --command bash  -c "just movement-full-node native build.setup.eth-local.celestia-local.test -t=false"
-          nix develop --command bash  -c "just movement-full-node native build.setup.eth-local.celestia-local.test -t=false"
+    - name: Run Movement Full Node Tests Against Local ETH and Local Celestia
+      env:
+        CELESTIA_LOG_LEVEL: FATAL # adjust the log level while debugging
+      run: |
+        nix develop --command bash  -c "just movement-full-node native build.setup.eth-local.celestia-local.test -t=false"
+        nix develop --command bash  -c "just movement-full-node native build.setup.eth-local.celestia-local.test -t=false"  
 
   movement-full-node-malicious:
     if: github.event.label.name == 'cicd:movement-full-node-malicious' ||  github.ref == 'refs/heads/main'
@@ -116,19 +108,19 @@ jobs:
     runs-on: ${{ matrix.runs-on }}
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          submodules: true
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: true
 
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@main
 
-      - name: Run Movement Full Node Gas DoS Test
-        env:
-          CELESTIA_LOG_LEVEL: FATAL # adjust the log level while debugging
-        run: |
-          nix develop --command bash  -c "just movement-full-node native build.setup.eth-local.celestia-local.gas-dos -t=false"
+    - name: Run Movement Full Node Gas DoS Test
+      env:
+        CELESTIA_LOG_LEVEL: FATAL # adjust the log level while debugging
+      run: |
+        nix develop --command bash  -c "just movement-full-node native build.setup.eth-local.celestia-local.gas-dos -t=false"
 
   movement-multi-node-local:
     if: github.event.label.name == 'cicd:movement-multi-node-local' ||  github.ref == 'refs/heads/main'
@@ -142,21 +134,21 @@ jobs:
     runs-on: ${{ matrix.runs-on }}
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          submodules: true
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: true
 
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@main
 
-      - name: Run Movement Full Node Tests Against Local ETH and Local Celestia
-        env:
-          CELESTIA_LOG_LEVEL: FATAL # adjust the log level while debugging
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        run: |
-          nix develop --command bash  -c "just movement-full-node native build.setup.eth-local.celestia-local.test-followers -t=false"
+    - name: Run Movement Full Node Tests Against Local ETH and Local Celestia
+      env:
+        CELESTIA_LOG_LEVEL: FATAL # adjust the log level while debugging
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      run: |
+        nix develop --command bash  -c "just movement-full-node native build.setup.eth-local.celestia-local.test-followers -t=false"
 
   movement-indexer-local:
     if: github.event.label.name == 'cicd:movement-full-node' ||  github.ref == 'refs/heads/main'
@@ -170,22 +162,22 @@ jobs:
     runs-on: ${{ matrix.runs-on }}
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          submodules: true
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: true
 
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@main
 
-      - name: Run Movement Full Node + indexer Tests Against Local ETH and Local Celestia
-        env:
-          CELESTIA_LOG_LEVEL: FATAL # adjust the log level while debugging
-        run: |
-          nix develop --command bash  -c "just movement-full-node native build.celestia-local.indexer.hasura.indexer-test -t=false"
-
+    - name: Run Movement Full Node + indexer Tests Against Local ETH and Local Celestia
+      env:
+        CELESTIA_LOG_LEVEL: FATAL # adjust the log level while debugging
+      run: |
+        nix develop --command bash  -c "just movement-full-node native build.celestia-local.indexer.hasura.indexer-test -t=false"
+  
   movement-full-node-remote:
-    if: false
+    if: false 
     strategy:
       matrix:
         include:
@@ -196,26 +188,21 @@ jobs:
     runs-on: ${{ matrix.runs-on }}
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          submodules: true
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: true
 
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@main
 
-      - uses: cachix/cachix-action@v15
-        with:
-          name: movementlabs
-          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
-
-      - name: Run Movement Full Node Tests Against Holesky and Local Celestia
-        env:
-          CELESTIA_LOG_LEVEL: FATAL # adjust the log level while debugging
-          MCR_DEPLOYMENT_ACCOUNT_PRIVATE_KEY: ${{ secrets.MCR_DEPLOYMENT_ACCOUNT_PRIVATE_KEY }}
-        run: |
-          nix develop --command bash  -c "just movement-full-node native build.setup.eth-holesky.celestia-local.test -t=false"
-          nix develop --command bash  -c "just movement-full-node native build.setup.eth-holesky.celestia-local.test -t=false"
+    - name: Run Movement Full Node Tests Against Holesky and Local Celestia
+      env: 
+        CELESTIA_LOG_LEVEL: FATAL # adjust the log level while debugging
+        MCR_DEPLOYMENT_ACCOUNT_PRIVATE_KEY: ${{ secrets.MCR_DEPLOYMENT_ACCOUNT_PRIVATE_KEY }}
+      run: |
+        nix develop --command bash  -c "just movement-full-node native build.setup.eth-holesky.celestia-local.test -t=false"
+        nix develop --command bash  -c "just movement-full-node native build.setup.eth-holesky.celestia-local.test -t=false"
 
   movement-celestia-da-light-node:
     if: false # this is effectively tested by the above
@@ -229,24 +216,19 @@ jobs:
     runs-on: ${{ matrix.runs-on }}
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@main
 
-      - uses: cachix/cachix-action@v15
-        with:
-          name: movementlabs
-          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
+    - name: Run Movement DA Light Node tests in nix environment
+      # adjust the log level while debugging
+      run: CELESTIA_LOG_LEVEL=FATAL nix develop --command bash  -c "just movement-celestia-da-light-node native build.setup.test.local -t=false"  
 
-      - name: Run Movement DA Light Node tests in nix environment
-        # adjust the log level while debugging
-        run: CELESTIA_LOG_LEVEL=FATAL nix develop --command bash  -c "just movement-celestia-da-light-node native build.setup.test.local -t=false"
-
-      - name: Run foundry tests
-        # Run the foundry solidity contracts using the WETH9 contract on sepolia
-        run: cd protocol-units/bridge/contracts && forge test --fork-url https://ethereum-sepolia-rpc.publicnode.com -vv
+    - name: Run foundry tests
+      # Run the foundry solidity contracts using the WETH9 contract on sepolia
+      run: cd protocol-units/bridge/contracts && forge test --fork-url https://ethereum-sepolia-rpc.publicnode.com -vv  
 
   governed-gas-pool:
     if: github.event.label.name == 'cicd:governed-gas-pool' ||  github.ref == 'refs/heads/main'
@@ -260,25 +242,19 @@ jobs:
     runs-on: ${{ matrix.runs-on }}
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          submodules: true
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: true
 
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@main
 
-      - name: Run Movement Full Node + indexer Tests Against Local ETH and Local Celestia
-        env:
-          CELESTIA_LOG_LEVEL: FATAL # adjust the log level while debugging
-        run: |
-          nix develop --command bash  -c "just movement-full-node native build.setup.eth-local.celestia-local.test-ggp-gas-fee -t=false"
-
-      - name: Run ggp fund test
-        env:
-          CELESTIA_LOG_LEVEL: FATAL
-        run: |
-          nix develop --command bash -c "just movement-full-node native build.setup.eth-local.celestia-local.test-ggp-gas-fund-fee -t=false"
+    - name: Run Movement Full Node + indexer Tests Against Local ETH and Local Celestia
+      env:
+        CELESTIA_LOG_LEVEL: FATAL # adjust the log level while debugging
+      run: |
+        nix develop --command bash  -c "just movement-full-node native build.setup.eth-local.celestia-local.test-ggp-gas-fee -t=false"
 
   mcr:
     if: github.event.label.name == 'cicd:mcr' ||  github.ref == 'refs/heads/main'
@@ -292,19 +268,14 @@ jobs:
     runs-on: ${{ matrix.runs-on }}
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@main
 
-      - uses: cachix/cachix-action@v15
-        with:
-          name: movementlabs
-          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
-
-      - name: Run MCR Client Tests
-        run: nix develop --command bash  -c "just mcr-client native build.local.test -t=false"
+    - name: Run MCR Client Tests
+      run: nix develop --command bash  -c "just mcr-client native build.local.test -t=false"
 
   ## any use of Move CLI requires ubuntu-24.04 and to not run on buildjet
   move-modules-test:
@@ -314,37 +285,32 @@ jobs:
         include:
           - os: ubuntu-24.04
             arch: x86_64
-            runs-on: ubuntu-24.04
+            runs-on: ubuntu-24.04 
 
     runs-on: ${{ matrix.runs-on }}
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-      - name: Install Aptos CLI
-        run: |
-          curl -fsSL "https://aptos.dev/scripts/install_cli.py" | python3
+    - name: Install Aptos CLI
+      run: |
+        curl -fsSL "https://aptos.dev/scripts/install_cli.py" | python3
 
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@main
 
-      - uses: cachix/cachix-action@v15
-        with:
-          name: movementlabs
-          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
-
-      - name: Run Aptos Tests
-        run: |
-          nix develop --command bash -c "
-            set -e
-            set -x
-            chmod +x .github/scripts/update_move_toml.sh && \
-            ./.github/scripts/update_move_toml.sh && \
-            cd protocol-units/bridge/move-modules && \
-            aptos move test
-          "
-
+    - name: Run Aptos Tests
+      run: |
+        nix develop --command bash -c "
+          set -e
+          set -x
+          chmod +x .github/scripts/update_move_toml.sh && \
+          ./.github/scripts/update_move_toml.sh && \
+          cd protocol-units/bridge/move-modules && \
+          aptos move test
+        "
+  
   solidity-bridge-tests:
     if: github.event.label.name == 'cicd:bridge' ||  github.ref == 'refs/heads/main'
     strategy:
@@ -357,35 +323,30 @@ jobs:
     runs-on: ${{ matrix.runs-on }}
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@main
 
-      - uses: cachix/cachix-action@v15
-        with:
-          name: movementlabs
-          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
-
-      - name: Run foundry tests
-        run: |
-          nix develop --command bash -c "
-              cd protocol-units/bridge/contracts && \
-              forge test --fork-url https://ethereum-sepolia-rpc.publicnode.com -vv
-          "
+    - name: Run foundry tests
+      run: |
+        nix develop --command bash -c "
+            cd protocol-units/bridge/contracts && \
+            forge test --fork-url https://ethereum-sepolia-rpc.publicnode.com -vv
+        "
 
 # any use of Move CLI requires ubuntu-24.04 and to not run on buildjet
-bridge-client-integration:
-  if: github.event.label.name == 'cicd:bridge' ||  github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/trusted-relayer'
-  strategy:
-    matrix:
-      include:
-        - os: ubuntu-24.04
-          arch: x86_64
-          runs-on: ubuntu-24.04
-  runs-on: ${{ matrix.runs-on }}
-  steps:
+  bridge-client-integration:
+    if: github.event.label.name == 'cicd:bridge' ||  github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/trusted-relayer'
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            arch: x86_64
+            runs-on: ubuntu-24.04 
+    runs-on: ${{ matrix.runs-on }}
+    steps:
     - name: Checkout repository
       uses: actions/checkout@v4
     - name: Install Movement CLI
@@ -412,7 +373,7 @@ bridge-client-integration:
     - uses: cachix/cachix-action@v15
       with:
         name: movementlabs
-        authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
     - name: Run eth_movement tests
       run: |
         nix develop --command bash -c "rust_backtrace=1 cargo test --test client_eth_tests -- --nocapture --test-threads=1"
@@ -443,3 +404,4 @@ bridge-client-integration:
 #    - name: Run Indexer tests in nix environment
 #      # adjust the log level while debugging
 #      run: CELESTIA_LOG_LEVEL=FATAL nix develop --command bash  -c "just movement-full-node native build.celestia-local.indexer.hasura.indexer-test -t=false"
+
