@@ -1,3 +1,4 @@
+use crate::TransactionSigner;
 use aptos_crypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
 use aptos_sdk::{
 	rest_client::Client,
@@ -83,4 +84,61 @@ pub trait KeyRotationSigner {
 		&self,
 		message: &[u8],
 	) -> impl Future<Output = Result<Ed25519Signature, KeyRotationSignerError>>;
+}
+
+/// Wrapper around a [TransactionSigner] used to implement the [KeyRotationSigner] trait.
+pub struct TransactionKeyRotationSigner<T>(T)
+where
+	T: TransactionSigner + Sync;
+
+impl<T> TransactionKeyRotationSigner<T>
+where
+	T: TransactionSigner + Sync,
+{
+	pub fn new(signer: T) -> Self {
+		Self(signer)
+	}
+}
+
+impl<T> KeyRotationSigner for TransactionKeyRotationSigner<T>
+where
+	T: TransactionSigner + Sync,
+{
+	async fn sign_key_rotation(
+		&self,
+		raw_transaction: aptos_types::transaction::RawTransaction,
+	) -> Result<aptos_types::transaction::SignedTransaction, KeyRotationSignerError> {
+		self.0
+			.sign_transaction(raw_transaction)
+			.await
+			.map_err(|e| KeyRotationSignerError::Signing(format!("{:?}", e).into()))
+	}
+
+	async fn sign_message(
+		&self,
+		message: &[u8],
+	) -> Result<Ed25519Signature, KeyRotationSignerError> {
+		// we'll simply use [TransactionSigner::sign_transaction_bytes] to sign the message
+		self.0
+			.sign_transaction_bytes(message)
+			.await
+			.map_err(|e| KeyRotationSignerError::Signing(format!("{:?}", e).into()))
+	}
+
+	async fn key_rotation_account_authentication_key(
+		&self,
+	) -> Result<aptos_types::transaction::authenticator::AuthenticationKey, KeyRotationSignerError>
+	{
+		self.0
+			.authentication_key()
+			.await
+			.map_err(|e| KeyRotationSignerError::Signing(format!("{:?}", e).into()))
+	}
+
+	async fn public_key(&self) -> Result<Ed25519PublicKey, KeyRotationSignerError> {
+		self.0
+			.public_key()
+			.await
+			.map_err(|e| KeyRotationSignerError::Signing(format!("{:?}", e).into()))
+	}
 }

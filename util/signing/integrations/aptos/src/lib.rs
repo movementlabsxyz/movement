@@ -129,7 +129,7 @@ pub mod test {
 
 		let (tx_sender, _tx_receiver) = mpsc::channel(1);
 		let (executor, _tempdir) = Executor::try_test_default_with_public_key(public_key)?;
-		let (context, _transaction_pipe) = executor.background(tx_sender)?;
+		let (_context, _transaction_pipe) = executor.background(tx_sender)?;
 		let block_id = HashValue::random();
 		let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
 			block_id,
