@@ -12104,6 +12104,8 @@ dependencies = [
  "movement-da-light-node-proto",
  "movement-da-util",
  "movement-rest",
+ "movement-signer",
+ "movement-signer-loader",
  "movement-tracing",
  "movement-types",
  "prost 0.13.3",

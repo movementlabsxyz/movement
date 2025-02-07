@@ -6,8 +6,8 @@ use crate::{
 	Config,
 };
 use movement_signer::cryptography::ed25519::Ed25519;
-use movement_signer_loader::identifiers::SignerIdentifier;
 use movement_signer_loader::LoadedSigner;
+use movement_signer_loader::{identifiers::SignerIdentifier, Load};
 use movement_signing_aptos::key_rotation::signer::{
 	KeyRotationSigner, TransactionKeyRotationSigner,
 };
@@ -25,6 +25,25 @@ pub struct Signer(TransactionKeyRotationSigner<LoadedSigner<Ed25519>>);
 impl Signer {
 	pub fn new(signer: TransactionKeyRotationSigner<LoadedSigner<Ed25519>>) -> Self {
 		Self(signer)
+	}
+
+	pub async fn load_from_identifier(
+		identifier: SignerIdentifier,
+	) -> Result<Self, LoadKeyRotationSignerError> {
+		// load the signer
+		let signer = identifier.load().await.map_err(|e| {
+			LoadKeyRotationSignerError::BuildingKeyRotationSigner(
+				format!("failed to load signer: {}", e).into(),
+			)
+		})?;
+
+		// build the release signer
+		let key_rotation_signer = TransactionKeyRotationSigner::new(signer);
+
+		// wrap the signer
+		let key_rotation_signer = Signer::new(key_rotation_signer);
+
+		Ok(key_rotation_signer)
 	}
 }
 
