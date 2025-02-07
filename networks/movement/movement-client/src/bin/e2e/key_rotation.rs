@@ -91,16 +91,15 @@ async fn main() -> Result<(), anyhow::Error> {
 	let coin_client = CoinClient::new(&rest_client);
 
 	// Load core resource account
-	let mut core_resources_account = LocalAccount::from_private_key(
-		SUZUKA_CONFIG
-			.execution_config
-			.maptos_config
-			.chain
-			.maptos_private_key
-			.to_encoded_string()?
-			.as_str(),
-		0,
-	)?;
+	let raw_private_key = SUZUKA_CONFIG
+		.execution_config
+		.maptos_config
+		.chain
+		.maptos_private_key_signer_identifier
+		.try_raw_private_key()?;
+	let private_key = Ed25519PrivateKey::try_from(raw_private_key.as_slice())?;
+	let mut core_resource_account =
+		LocalAccount::from_private_key(private_key.to_encoded_string()?.as_str(), 0)?;
 	info!(
 		"Core Resources Account keypairs: {:?}, {:?}",
 		core_resources_account.private_key(),
