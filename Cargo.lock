@@ -11756,6 +11756,7 @@ dependencies = [
  "aptos-protos 1.3.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=b3617c1f7f272832369cf235e5826858c3f7a512)",
  "aptos-sdk",
  "aptos-types",
+ "aptos-vm-genesis",
  "async-trait",
  "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
  "buildtime-helpers",
