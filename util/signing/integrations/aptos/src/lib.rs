@@ -1,3 +1,4 @@
+pub mod key_rotation;
 pub mod release_signer;
 
 use aptos_crypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
@@ -6,7 +7,6 @@ use aptos_types::transaction::{
 	authenticator::AuthenticationKey, RawTransaction, SignedTransaction,
 };
 use movement_signer::{cryptography::ed25519::Ed25519, SignerError, Signing};
-
 use std::future::Future;
 
 #[derive(Debug, thiserror::Error)]

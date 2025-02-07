@@ -607,7 +607,7 @@ macro_rules! commit_hash_with_script {
 			let target_cache_dir = PathBuf::from("mrb_cache");
 			std::fs::create_dir_all(&target_cache_dir)
 				.context("failed to create cache directory")?;
-			let path = target_cache_dir.join(format!("{}-{}", MRB_FILE, COMMIT_HASH));
+			let path = target_cache_dir.join(format!("{}-{}", COMMIT_HASH, MRB_FILE));
 
 			// rerun if the file on the path has for some reason changed
 			println!("cargo:rerun-if-changed={}", path.to_str().unwrap());
