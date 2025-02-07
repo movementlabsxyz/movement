@@ -20,6 +20,7 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 //use tokio::process::Command;
+use movement_client::crypto::ed25519::Ed25519PrivateKey;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 use url::Url;
@@ -98,7 +99,7 @@ async fn main() -> Result<(), anyhow::Error> {
 		.maptos_private_key_signer_identifier
 		.try_raw_private_key()?;
 	let private_key = Ed25519PrivateKey::try_from(raw_private_key.as_slice())?;
-	let mut core_resource_account =
+	let mut core_resources_account =
 		LocalAccount::from_private_key(private_key.to_encoded_string()?.as_str(), 0)?;
 	info!(
 		"Core Resources Account keypairs: {:?}, {:?}",
