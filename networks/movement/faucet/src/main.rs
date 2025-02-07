@@ -3,10 +3,7 @@
 
 use anyhow::Result;
 use aptos_config::keys::ConfigKey;
-use aptos_faucet_core::{
-	funder::ApiConnectionConfig,
-	server::{self, Server},
-};
+use aptos_faucet_core::{funder::ApiConnectionConfig, server::Server};
 use aptos_logger::info;
 use aptos_sdk::crypto::{ed25519::Ed25519PrivateKey, ValidCryptoMaterialStringExt};
 use clap::Parser;
@@ -35,7 +32,14 @@ async fn main() -> Result<()> {
 	let connection_url = format!("http://{}:{}", connection_host, connection_port);
 
 	// get the key
-	let private_key = config.execution_config.maptos_config.chain.maptos_private_key.clone();
+	let raw_private_key = config
+		.execution_config
+		.maptos_config
+		.chain
+		.maptos_private_key_signer_identifier
+		.try_raw_private_key()?;
+	let hex_string = hex::encode(raw_private_key.as_slice());
+	let private_key = Ed25519PrivateKey::from_encoded_string(&hex_string)?;
 
 	// get the chain id
 	let chain_id = config.execution_config.maptos_config.chain.maptos_chain_id.clone();
@@ -50,7 +54,7 @@ async fn main() -> Result<()> {
 		Server::RunSimple(mut server) => {
 			server.api_connection_config = ApiConnectionConfig::new(
 				connection_url.parse()?,
-				/// The config will use an encoded key if one is provided
+				// The config will use an encoded key if one is provided
 				"/not/a/real/path".to_string().into(),
 				Some(ConfigKey::new(private_key)),
 				chain_id,

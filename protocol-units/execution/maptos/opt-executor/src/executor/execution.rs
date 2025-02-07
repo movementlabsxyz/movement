@@ -1,7 +1,7 @@
 use super::Executor;
 use aptos_crypto::HashValue;
+use aptos_crypto::ValidCryptoMaterialStringExt;
 use aptos_executor_types::BlockExecutorTrait;
-use aptos_types::transaction::signature_verified_transaction::into_signature_verified_block;
 use aptos_types::{
 	aggregate_signature::AggregateSignature,
 	block_executor::{
@@ -9,14 +9,13 @@ use aptos_types::{
 		partitioner::{ExecutableBlock, ExecutableTransactions},
 	},
 	block_info::BlockInfo,
-	block_metadata::BlockMetadata,
 	epoch_state::EpochState,
 	ledger_info::{LedgerInfo, LedgerInfoWithSignatures},
 	transaction::{Transaction, Version},
 	validator_verifier::{ValidatorConsensusInfo, ValidatorVerifier},
 };
 use movement_types::block::{BlockCommitment, Commitment, Id};
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
 
 impl Executor {
 	pub async fn execute_block(
@@ -37,10 +36,6 @@ impl Executor {
 					anyhow::bail!("First transaction in block must be a block metadata transaction")
 				}
 			};
-
-			for transaction in metadata_access_transactions.iter() {
-				warn!("Transaction sender: {:?}", transaction.sender());
-			}
 
 			// reconstruct the block
 			let block = ExecutableBlock::new(
@@ -64,10 +59,10 @@ impl Executor {
 		})
 		.await??;
 
-		warn!("Block execution compute the following state: {:?}", state_compute);
+		info!("Block execution compute the following state: {:?}", state_compute);
 
 		let version = state_compute.version();
-		debug!("Block execution computed the following version: {:?}", version);
+		info!("Block execution computed the following version: {:?}", version);
 		let (epoch, round) = (block_metadata.epoch(), block_metadata.round());
 
 		let ledger_info_with_sigs = self.ledger_info_with_sigs(
@@ -175,6 +170,12 @@ impl Executor {
 		root_hash: HashValue,
 		version: Version,
 	) -> LedgerInfoWithSignatures {
+		let next_epoch = if version >= self.config().chain.dont_increase_epoch_until_version {
+			epoch + 1
+		} else {
+			epoch
+		};
+
 		let block_info = BlockInfo::new(
 			epoch,
 			round,
@@ -183,7 +184,7 @@ impl Executor {
 			version,
 			timestamp_microseconds,
 			Some(EpochState {
-				epoch,
+				epoch: next_epoch, // we now increase the epoch
 				verifier: ValidatorVerifier::new(vec![ValidatorConsensusInfo::new(
 					self.signer.author(),
 					self.signer.public_key(),
@@ -289,11 +290,15 @@ mod tests {
 		let (context, _transaction_pipe) = executor.background(tx_sender)?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
-		let root_account = LocalAccount::new(
-			aptos_test_root_address(),
-			AccountKey::from_private_key(context.config().chain.maptos_private_key.clone()),
-			0,
-		);
+		// get the raw private key
+		let raw_private_key = context
+			.config()
+			.chain
+			.maptos_private_key_signer_identifier
+			.try_raw_private_key()?;
+		let private_key = Ed25519PrivateKey::try_from(raw_private_key.as_slice())?;
+		let root_account =
+			LocalAccount::from_private_key(private_key.to_encoded_string()?.as_str(), 0)?;
 
 		// Seed for random number generator, used here to generate predictable results in a test environment.
 		let seed = [3u8; 32];
@@ -302,6 +307,7 @@ mod tests {
 		// Loop to simulate the execution of multiple blocks.
 		for i in 0..10 {
 			let (epoch, round) = executor.get_next_epoch_and_round()?;
+			info!("Epoch: {}, Round: {}", epoch, round);
 
 			// Generate a random block ID.
 			let block_id = HashValue::random();
@@ -359,7 +365,9 @@ mod tests {
 			// Access the database reader to verify state after execution.
 			let db_reader = executor.db_reader();
 			// Get the latest version of the blockchain state from the database.
-			let latest_version = db_reader.get_synced_version()?;
+			let latest_version = db_reader.get_latest_ledger_info_version()?;
+
+			info!("Latest version: {}", latest_version);
 			// Verify the transaction by its hash to ensure it was committed.
 			let transaction_result =
 				db_reader.get_transaction_by_hash(mint_tx_hash, latest_version, false)?;
@@ -391,11 +399,14 @@ mod tests {
 		let service = Service::new(&context);
 
 		// Initialize a root account using a predefined keypair and the test root address.
-		let root_account = LocalAccount::new(
-			aptos_test_root_address(),
-			AccountKey::from_private_key(context.config().chain.maptos_private_key.clone()),
-			0,
-		);
+		let raw_private_key = context
+			.config()
+			.chain
+			.maptos_private_key_signer_identifier
+			.try_raw_private_key()?;
+		let private_key = Ed25519PrivateKey::try_from(raw_private_key.as_slice())?;
+		let root_account =
+			LocalAccount::from_private_key(private_key.to_encoded_string()?.as_str(), 0)?;
 
 		// Seed for random number generator, used here to generate predictable results in a test environment.
 		let seed = [3u8; 32];

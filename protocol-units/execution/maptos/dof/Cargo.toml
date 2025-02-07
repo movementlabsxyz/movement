@@ -31,6 +31,7 @@ maptos-opt-executor = { workspace = true }
 maptos-fin-view = { workspace = true }
 maptos-execution-util = { workspace = true }
 movement-types = { workspace = true }
+movement-signer-loader = { workspace = true }
 
 [dev-dependencies]
 chrono = { workspace = true }

@@ -205,7 +205,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     // Note: this only safe when we are running with a single validator as it does not zero out follow-on commitments.
     function forceLatestCommitment(BlockCommitment memory blockCommitment) public {
         /*require(
-            hasRole(COMMITMENT_ADMIN, msg.sender),
+            hasRole(DEFAULT_ADMIN_ROLE, msg.sender),
             "FORCE_LATEST_COMMITMENT_IS_COMMITMENT_ADMIN_ONLY"
         );*/
 

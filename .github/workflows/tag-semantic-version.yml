@@ -1,0 +1,63 @@
+name: 🏷️ Tag Semantic Version
+run-name: ${{ (github.event.inputs.dry_run == 'true') && 'Tagging new semantic version [DRY RUN]' || 'Tagging new semantic version' }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: "The type of bump to perform"
+        type: choice
+        options:
+          - auto
+          - patch
+          - minor
+          - major
+        required: false
+        default: auto
+      dry_run:
+        description: "Run semantic-release in dry-run mode"
+        type: choice
+        options:
+          - true
+          - false
+        required: false
+        default: 'true'
+
+jobs:
+  tag-semantic-version:
+    runs-on: ubuntu-latest
+    name: New Semantic Version
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Install Cocogitto
+        run: |
+          cargo install cocogitto --locked
+          cargo install cargo-edit --locked
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "Infrastructure[bot]"
+          git config --global user.email "infrastructure@movementlabs.xyz"
+
+      - name: Pull tags
+        run: |
+          git fetch --tags
+
+      - name: Bump Version
+        run: |
+          ./scripts/devops/tag-semantic-release ${{ inputs.bump_type }} ${{ inputs.dry_run }}
+      
+      - name: Push commit and tags
+        run: |
+          git push
+          git push --tags

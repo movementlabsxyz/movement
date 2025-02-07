@@ -1,0 +1,35 @@
+[package]
+name = "movement-da-light-node-digest-store"
+version = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+authors = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
+publish = { workspace = true }
+rust-version = { workspace = true }
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+movement-da-light-node-da = { workspace = true }
+movement-da-util = { workspace = true }
+# movement-da-light-node-verifier = { workspace = true }
+bcs = { workspace = true }
+async-stream = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+tonic = { workspace = true }
+rocksdb = { workspace = true }
+tokio = { workspace = true }
+movement-signer = { workspace = true }
+serde = { workspace = true }
+
+[features]
+default = []
+client = []
+server = []
+
+
+[lints]
+workspace = true

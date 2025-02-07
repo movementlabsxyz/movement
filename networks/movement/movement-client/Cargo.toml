@@ -43,6 +43,9 @@ path = "src/bin/e2e/ggp_gas_fee.rs"
 name = "movement-tests-e2e-mint-burn"
 path = "src/bin/e2e/mint_burn.rs"
 
+[[bin]]
+name = "movement-tests-e2e-transfer"
+path = "src/bin/e2e/transfer.rs"
 
 [dependencies]
 aptos-vm-genesis = { workspace = true}
