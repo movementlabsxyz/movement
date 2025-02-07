@@ -19,6 +19,7 @@ pub enum Error {
 }
 
 pub trait TransactionSigner: Sync {
+	/// Signs a raw transaction and returns a signed transaction.
 	fn sign_transaction(
 		&self,
 		raw: RawTransaction,
@@ -31,13 +32,16 @@ pub trait TransactionSigner: Sync {
 		}
 	}
 
+	/// Signs a message and returns a signature.
 	fn sign_transaction_bytes(
 		&self,
 		bytes: &[u8],
 	) -> impl Future<Output = Result<Ed25519Signature, Error>> + Send;
 
+	/// Returns the public key of the signer.
 	fn public_key(&self) -> impl Future<Output = Result<Ed25519PublicKey, Error>> + Send;
 
+	/// Returns the authentication key of the signer.
 	fn authentication_key(&self) -> impl Future<Output = Result<AuthenticationKey, Error>> + Send {
 		async move {
 			let public_key = self.public_key().await?;

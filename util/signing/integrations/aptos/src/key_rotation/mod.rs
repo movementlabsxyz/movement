@@ -50,7 +50,7 @@ impl KeyRotator {
 	}
 
 	/// Rotates keys without a 2PC protocol. Jokingly called "1PC" protocol.
-	pub async fn rotate_keys_1pc(
+	pub async fn rotate_key_1pc(
 		&self,
 		client: &Client,
 		old_signer: &impl KeyRotationSigner,

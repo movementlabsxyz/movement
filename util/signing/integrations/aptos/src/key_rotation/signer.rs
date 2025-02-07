@@ -98,6 +98,10 @@ where
 	pub fn new(signer: T) -> Self {
 		Self(signer)
 	}
+
+	pub fn as_inner(&self) -> &T {
+		&self.0
+	}
 }
 
 impl<T> KeyRotationSigner for TransactionKeyRotationSigner<T>
