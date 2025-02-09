@@ -34,7 +34,7 @@ However, because dummy values `0xcafe` for origin address and `0xc3bb...` for re
 
 ```
 {
-  "Error": "Unexpected error: Unable to resolve packages for package 'bridge-modules': Unable to resolve named address 'resource_addr' in package 'bridge-modules' when resolving dependencies: Attempted to assign a different value '0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5' to an a already-assigned named address '0x9a781a5a11e364a7a67d874071737d730d14a43847c5025066f8cd4887212d4'"
+  "Error": "Unexpected error: Unable to resolve packages for package 'bridge-modules': Unable to resolve named address 'resource_addr' in package 'bridge-modules' when resolving dependencies: Attempted to assign a different value '0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5' to an already-assigned named address '0x9a781a5a11e364a7a67d874071737d730d14a43847c5025066f8cd4887212d4'"
 }
 ```
 with your generated resource account address (instead of `0x9a78...`) based on your choice of seed value.
