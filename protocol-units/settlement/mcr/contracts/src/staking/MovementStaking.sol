@@ -66,7 +66,7 @@ contract MovementStaking is
         if (domainGenesisAccepted[domain]) revert GenesisAlreadyAccepted();
         domainGenesisAccepted[domain] = true;
         // roll over from 0 (genesis) to current epoch by block time
-        currentEpochByDomain[domain] = getEpochByL1BlockTime(domain);
+        currentEpochByDomain[domain] = getEpochByBlockTime(domain);
 
         for (uint256 i = 0; i < attestersByDomain[domain].length(); i++) {
             address attester = attestersByDomain[domain].at(i);
@@ -149,7 +149,7 @@ contract MovementStaking is
     // gets the would be epoch for the current L1-block time. 
     // TODO: this should be called the currentEpoch (as it is the one that is relevant for stake), whereas the CurrentEpoch should be acceptingEpoch
     // TODO: for liveness of the protocol it should be possible that newer epochs can accept L2-block-batches that are before the current epoch (IF the previous epoch has stopped being live)
-    function getEpochByL1BlockTime(address domain) public view returns (uint256) {
+    function getEpochByBlockTime(address domain) public view returns (uint256) {
         return block.timestamp / epochDurationByDomain[domain];
     }
 
@@ -169,7 +169,7 @@ contract MovementStaking is
         address domain
     ) public view returns (uint256) {
         return
-            getCurrentEpoch(domain) == 0 ? 0 : getEpochByL1BlockTime(domain) + 1;
+            getCurrentEpoch(domain) == 0 ? 0 : getEpochByBlockTime(domain) + 1;
     }
 
     // gets the stake for a given attester at a given epoch and domain
