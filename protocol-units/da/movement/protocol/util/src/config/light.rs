@@ -1,7 +1,6 @@
-use serde::{Deserialize, Serialize};
+use super::default::default_celestia_light_node_key_name;
 
-/// Name of the node's signing key in the keyring that is used by default.
-pub const DEFAULT_KEY_NAME: &str = "movement_celestia";
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Config {
@@ -11,6 +10,6 @@ pub struct Config {
 
 impl Default for Config {
 	fn default() -> Self {
-		Self { key_name: DEFAULT_KEY_NAME.into() }
+		Self { key_name: default_celestia_light_node_key_name() }
 	}
 }

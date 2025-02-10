@@ -157,3 +157,11 @@ env_default!(default_da_light_node_is_initial, "MOVEMENT_DA_LIGHT_NODE_IS_INITIA
 
 // Whether to use http1 for Movement Light Node Connections
 env_default!(default_movement_da_light_node_http1, "MOVEMENT_DA_LIGHT_NODE_HTTP1", bool, true);
+
+// The Celestia light node's signing keyname
+env_default!(
+	default_celestia_light_node_key_name,
+	"CELESTIA_LIGHT_KEYNAME",
+	String,
+	"movement_celestia_light".into()
+);
