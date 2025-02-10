@@ -26,7 +26,7 @@ cd movement
 ```
 
 2. Create movement configuration directory and environment file.
-At the moment the latest version of the movement network is named "Suzuka".
+At the moment the latest version of the movement network is named "Movement".
 This will change in the future. Please check "Naming Conventions Latest" section in the
 README.md file at the git root of this repo.
 
@@ -63,9 +63,9 @@ echo "DOT_MOVEMENT_PATH=${DOT_MOVEMENT_PATH}" >> "${MOVEMENT_ENV_FILE}"
 
 mkdir -p "${DOT_MOVEMENT_PATH}"
 docker compose \
-        -f docker/compose/suzuka-full-node/docker-compose.yml \
-        -f docker/compose/suzuka-full-node/docker-compose.setup-local.yml \
-        -f docker/compose/suzuka-full-node/docker-compose.celestia-local.yml \
+        -f docker/compose/movement-full-node/docker-compose.yml \
+        -f docker/compose/movement-full-node/docker-compose.setup-local.yml \
+        -f docker/compose/movement-full-node/docker-compose.celestia-local.yml \
         pull
 ```
 
@@ -77,23 +77,23 @@ DOT_MOVEMENT_PATH=/home/ubuntu/.movement
 
 docker images | { head -1 ; grep movementlabsxyz ; }
 REPOSITORY                                                 TAG                                        IMAGE ID       CREATED         SIZE
-ghcr.io/movementlabsxyz/suzuka-full-node                   e6cb8e287cb837af6e61451f2ff405047dd285c9   f75f89ee0bda   3 days ago      131MB
-ghcr.io/movementlabsxyz/suzuka-faucet-service              e6cb8e287cb837af6e61451f2ff405047dd285c9   a4dbed3f59b0   3 days ago      98.4MB
-ghcr.io/movementlabsxyz/suzuka-full-node-setup             e6cb8e287cb837af6e61451f2ff405047dd285c9   5314611ab11a   3 days ago      244MB
-ghcr.io/movementlabsxyz/m1-da-light-node-celestia-appd     e6cb8e287cb837af6e61451f2ff405047dd285c9   f23edec3d6d5   3 days ago      243MB
-ghcr.io/movementlabsxyz/m1-da-light-node                   e6cb8e287cb837af6e61451f2ff405047dd285c9   31bee301f83c   3 days ago      90.5MB
-ghcr.io/movementlabsxyz/m1-da-light-node-celestia-bridge   e6cb8e287cb837af6e61451f2ff405047dd285c9   eab78a30bd06   3 days ago      259MB
+ghcr.io/movementlabsxyz/movement-full-node                   e6cb8e287cb837af6e61451f2ff405047dd285c9   f75f89ee0bda   3 days ago      131MB
+ghcr.io/movementlabsxyz/movement-faucet-service              e6cb8e287cb837af6e61451f2ff405047dd285c9   a4dbed3f59b0   3 days ago      98.4MB
+ghcr.io/movementlabsxyz/movement-full-node-setup             e6cb8e287cb837af6e61451f2ff405047dd285c9   5314611ab11a   3 days ago      244MB
+ghcr.io/movementlabsxyz/movement-celestia-appd     e6cb8e287cb837af6e61451f2ff405047dd285c9   f23edec3d6d5   3 days ago      243MB
+ghcr.io/movementlabsxyz/movement-celestia-da-light-node                   e6cb8e287cb837af6e61451f2ff405047dd285c9   31bee301f83c   3 days ago      90.5MB
+ghcr.io/movementlabsxyz/movement-celestia-bridge   e6cb8e287cb837af6e61451f2ff405047dd285c9   eab78a30bd06   3 days ago      259MB
 ghcr.io/movementlabsxyz/wait-for-celestia-light-node       e6cb8e287cb837af6e61451f2ff405047dd285c9   51197be0c62d   3 days ago      75.4MB
 ```
 
-6. Set variables and create a systemd service named `suzuka-full-node.service`
+6. Set variables and create a systemd service named `movement-full-node.service`
 
 ```bash
 printenv | grep --quiet USER \
   && printenv | grep --quiet CONTAINER_REV \
   && echo "INFO: Using USER=${USER} and CONTAINER_REV=${CONTAINER_REV}" \
-  && envsubst < docs/movement-node/run/manual/suzuka-full-node.service.template \
-              > docs/movement-node/run/manual/suzuka-full-node.service
+  && envsubst < docs/movement-node/run/manual/movement-full-node.service.template \
+              > docs/movement-node/run/manual/movement-full-node.service
 ```
 output should look like this:
 ```
@@ -102,12 +102,12 @@ INFO: Using USER=ubuntu and CONTAINER_REV=e6cb8e287cb837af6e61451f2ff405047dd285
 
 Do a visual sanity check.
 ```bash
-cat docs/movement-node/run/manual/suzuka-full-node.service
+cat docs/movement-node/run/manual/movement-full-node.service
 ```
 
 Copy the systemd service to a systemd know path.
 ```
-sudo cp docs/movement-node/run/manual/suzuka-full-node.service /etc/systemd/system/suzuka-full-node.service
+sudo cp docs/movement-node/run/manual/movement-full-node.service /etc/systemd/system/movement-full-node.service
 ```
 
 7. Reload systemd to apply changes
@@ -115,16 +115,16 @@ sudo cp docs/movement-node/run/manual/suzuka-full-node.service /etc/systemd/syst
 sudo systemctl daemon-reload
 ```
 
-8. Enable and start the suzuka-full-node service
+8. Enable and start the movement-full-node service
 ```bash
-sudo systemctl enable suzuka-full-node.service
-sudo systemctl start suzuka-full-node.service
-sudo systemctl status suzuka-full-node.service
+sudo systemctl enable movement-full-node.service
+sudo systemctl start movement-full-node.service
+sudo systemctl status movement-full-node.service
 ```
 
 9. Have a look at the logs. Display full logs line by using the follow flag `-f`
 ```bash
-sudo journalctl -u suzuka-full-node.service -f
+sudo journalctl -u movement-full-node.service -f
 ```
 
 ## Run the node as an Attester for the Movement Network

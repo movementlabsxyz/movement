@@ -1,142 +1,207 @@
-use alloy::network::EthereumWallet;
-use alloy::providers::ProviderBuilder;
-use alloy::signers::local::PrivateKeySigner;
+use alloy::{
+	network::EthereumWallet, providers::ProviderBuilder, signers::local::PrivateKeySigner,
+};
 use alloy_primitives::Address;
 use alloy_primitives::U256;
-use bridge_config::common::eth::EthConfig;
-use bridge_config::common::movement::MovementConfig;
-use bridge_config::Config as BridgeConfig;
-use bridge_service::chains::ethereum::types::AtomicBridgeCounterparty;
-use bridge_service::chains::ethereum::types::AtomicBridgeInitiator;
-use bridge_service::chains::ethereum::types::EthAddress;
-use bridge_service::chains::ethereum::types::WETH9;
-use bridge_service::chains::ethereum::utils::{send_transaction, send_transaction_rules};
-use bridge_service::types::TimeLock;
+use bridge_config::{common::movement::MovementConfig, Config as BridgeConfig};
+use bridge_service::chains::ethereum::{
+	types::{EthAddress, MockMOVEToken, NativeBridgeContract},
+	utils::{send_transaction, send_transaction_rules},
+};
 use hex::ToHex;
-use rand::Rng;
+use std::io::BufRead;
 use std::{
-	env, fs,
 	io::Write,
-	path::PathBuf,
 	process::{Command, Stdio},
 };
 
+// Proxy contract to be able to call bridge contract.
+alloy::sol!(
+	#[allow(missing_docs)]
+	#[sol(rpc)]
+	ProxyAdmin,
+	"../service/abis/ProxyAdmin.json"
+);
+
+alloy::sol!(
+	#[allow(missing_docs)]
+	#[sol(rpc)]
+	TransparentUpgradeableProxy,
+	"../service/abis/TransparentUpgradeableProxy.json"
+);
+
 pub async fn setup(mut config: BridgeConfig) -> Result<BridgeConfig, anyhow::Error> {
 	//Setup Eth config
-	setup_local_ethereum(&mut config.eth).await?;
+	setup_local_ethereum(&mut config).await?;
+	init_movement_node(&mut config.movement)?;
 	deploy_local_movement_node(&mut config.movement)?;
 	Ok(config)
 }
 
-pub async fn setup_local_ethereum(config: &mut EthConfig) -> Result<(), anyhow::Error> {
-	let signer_private_key = config.signer_private_key.parse::<PrivateKeySigner>()?;
-	let rpc_url = config.eth_rpc_connection_url();
+pub async fn setup_local_ethereum(config: &mut BridgeConfig) -> Result<(), anyhow::Error> {
+	println!("ICI setup_local_ethereum {:?}", config.eth.eth_rpc_connection_url());
+	let signer_private_key = config.eth.signer_private_key.parse::<PrivateKeySigner>()?;
+	let rpc_url = config.eth.eth_rpc_connection_url();
 
 	tracing::info!("Bridge deploy setup_local_ethereum");
-	config.eth_initiator_contract =
-		deploy_eth_initiator_contract(signer_private_key.clone(), &rpc_url)
-			.await
-			.to_string();
+	config.eth.eth_native_contract = deploy_eth_native_contract(config).await?.to_string();
 	tracing::info!("Bridge deploy after intiator");
-	config.eth_counterparty_contract =
-		deploy_counterpart_contract(signer_private_key.clone(), &rpc_url)
-			.await
-			.to_string();
-	let eth_weth_contract = deploy_weth_contract(signer_private_key.clone(), &rpc_url).await;
-	config.eth_weth_contract = eth_weth_contract.to_string();
+	tracing::info!("Signer private key: {:?}", signer_private_key.address());
 
-	initialize_initiator_contract(
+	let move_token_contract =
+		deploy_move_token_contract(signer_private_key.clone(), &rpc_url).await;
+	config.eth.eth_move_token_contract = move_token_contract.to_string();
+
+	config.eth.eth_native_contract = initialize_eth_contracts(
 		signer_private_key.clone(),
 		&rpc_url,
-		&config.eth_initiator_contract,
-		EthAddress(eth_weth_contract),
+		&config.eth.eth_native_contract,
+		EthAddress(move_token_contract),
 		EthAddress(signer_private_key.address()),
-		*TimeLock(config.time_lock_secs),
-		config.gas_limit,
-		config.transaction_send_retries,
+		config.eth.gas_limit,
+		config.eth.transaction_send_retries,
 	)
-	.await?;
+	.await?
+	.to_string();
 	Ok(())
 }
 
-async fn deploy_eth_initiator_contract(
-	signer_private_key: PrivateKeySigner,
-	rpc_url: &str,
-) -> Address {
+async fn deploy_eth_native_contract(config: &mut BridgeConfig) -> Result<Address, anyhow::Error> {
+	let signer_private_key = config.eth.signer_private_key.parse::<PrivateKeySigner>()?;
+	println!("ICI {:?}", config.eth.eth_rpc_connection_url());
+	let rpc_url = config.eth.eth_rpc_connection_url();
+
 	let rpc_provider = ProviderBuilder::new()
 		.with_recommended_fillers()
 		.wallet(EthereumWallet::from(signer_private_key.clone()))
-		.on_builtin(rpc_url)
+		.on_builtin(&rpc_url)
 		.await
 		.expect("Error during provider creation");
 
-	let contract = AtomicBridgeInitiator::deploy(rpc_provider.clone())
+	let contract = NativeBridgeContract::deploy(rpc_provider.clone())
 		.await
-		.expect("Failed to deploy AtomicBridgeInitiator");
+		.expect("Failed to deploy AtomicBridgeInitiatorMOVE");
 	tracing::info!("initiator_contract address: {}", contract.address().to_string());
-	contract.address().to_owned()
+	Ok(contract.address().to_owned())
 }
 
-async fn deploy_counterpart_contract(
+async fn deploy_move_token_contract(
 	signer_private_key: PrivateKeySigner,
 	rpc_url: &str,
 ) -> Address {
-	let rpc_provider = ProviderBuilder::new()
-		.with_recommended_fillers()
-		.wallet(EthereumWallet::from(signer_private_key))
-		.on_builtin(rpc_url)
-		.await
-		.expect("Error during provider creation");
-	let contract = AtomicBridgeCounterparty::deploy(rpc_provider.clone())
-		.await
-		.expect("Failed to deploy AtomicBridgeInitiator");
-	tracing::info!("counterparty_contract address: {}", contract.address().to_string());
-	contract.address().to_owned()
-}
-
-async fn deploy_weth_contract(signer_private_key: PrivateKeySigner, rpc_url: &str) -> Address {
 	let rpc_provider = ProviderBuilder::new()
 		.with_recommended_fillers()
 		.wallet(EthereumWallet::from(signer_private_key.clone()))
 		.on_builtin(rpc_url)
 		.await
 		.expect("Error during provider creation");
-	let weth = WETH9::deploy(rpc_provider).await.expect("Failed to deploy WETH9");
-	tracing::info!("weth_contract address: {}", weth.address().to_string());
-	weth.address().to_owned()
+	let move_token = MockMOVEToken::deploy(rpc_provider)
+		.await
+		.expect("Failed to deploy Mock MOVE token");
+	tracing::info!("Move token address: {}", move_token.address().to_string());
+	move_token.address().to_owned()
 }
 
-async fn initialize_initiator_contract(
+use ethabi::{Contract, Token};
+use serde_json::{from_str, Value};
+
+async fn initialize_eth_contracts(
 	signer_private_key: PrivateKeySigner,
 	rpc_url: &str,
-	initiator_contract_address: &str,
-	weth: EthAddress,
+	native_bridge_contract_address: &str,
+	move_token: EthAddress,
 	owner: EthAddress,
-	timelock: u64,
 	gas_limit: u64,
 	transaction_send_retries: u32,
-) -> Result<(), anyhow::Error> {
-	tracing::info!("Setup Eth initialize_initiator_contract with timelock:{timelock});");
+) -> Result<Address, anyhow::Error> {
+	tracing::info!("Setup Eth initialize_initiator_contract.");
+	let signer_address = signer_private_key.address();
 
 	let rpc_provider = ProviderBuilder::new()
 		.with_recommended_fillers()
-		.wallet(EthereumWallet::from(signer_private_key))
+		.wallet(EthereumWallet::from(signer_private_key.clone()))
 		.on_builtin(rpc_url)
 		.await
 		.expect("Error during provider creation");
-	let initiator_contract =
-		AtomicBridgeInitiator::new(initiator_contract_address.parse()?, rpc_provider);
+	let native_bridge_contract_address: Address = native_bridge_contract_address.parse()?;
 
-	let call =
-		initiator_contract.initialize(weth.0, owner.0, U256::from(timelock), U256::from(100));
-	send_transaction(call, &send_transaction_rules(), transaction_send_retries, gas_limit.into())
+	// Initialize the MockMOVEToken contract with the initiator address as the initial fund recipient
+	let mock_move_token = MockMOVEToken::new(*move_token, &rpc_provider);
+	let initialize_token_call = mock_move_token.initialize(owner.0).from(owner.0);
+
+	let _ = send_transaction(
+		initialize_token_call,
+		signer_address,
+		&send_transaction_rules(),
+		transaction_send_retries,
+		gas_limit.into(),
+	)
+	.await;
+
+	// create proxy contracts.
+	let proxy_admin = ProxyAdmin::deploy(rpc_provider.clone(), signer_address)
 		.await
-		.expect("Failed to send transaction");
-	Ok(())
+		.expect("Failed to deploy ProxyAdmin");
+	// Deploy TransparentUpgradeableProxy for AtomicBridgeCounterparty
+
+	// Load the ABI from a JSON file or inline JSON
+	//	let contract_abi = include_bytes!("../../service/abis/AtomicBridgeInitiator.json");
+	let path = std::env::current_dir()
+		.unwrap() // unwrap ok current dir set during setup start.
+		.join("protocol-units/bridge/service/abis/NativeBridge.json");
+	let data = std::fs::read_to_string(path).expect("Unable to read ABI file");
+
+	// Parse the JSON data
+	let v: Value = from_str(&data).expect("Unable to parse JSON");
+
+	// Extract the "abi" field
+	let abi = v["abi"].to_string();
+
+	let contract = Contract::load(abi.as_bytes()).expect("Incorrect ABI");
+	let function = contract.function("initialize").expect("Function must exist in ABI");
+	let tokens = vec![
+		Token::Address(ethabi::Address::from_slice(move_token.as_slice())),
+		Token::Address(ethabi::Address::from_slice(signer_address.as_slice())),
+		Token::Address(ethabi::Address::from_slice(signer_address.as_slice())),
+		Token::Address(ethabi::Address::from_slice(Address::ZERO.as_slice())),
+	];
+	// Encode the function call
+	let initialize_data = function.encode_input(&tokens).unwrap();
+
+	let upgradeable_proxy = TransparentUpgradeableProxy::deploy(
+		rpc_provider.clone(),           // The provider (same one used for deployment)
+		native_bridge_contract_address, // Address of the contract
+		*proxy_admin.address(),
+		initialize_data.clone().into(),
+	)
+	.await?;
+
+	// Transfer some coin to the native contract (using the proxy address) so that it can complete transfer.
+	let transfer_token_call = mock_move_token
+		.transfer(*upgradeable_proxy.address(), U256::from(10000000000u64) * U256::from(100000u64))
+		.from(signer_address);
+
+	let _ = send_transaction(
+		transfer_token_call,
+		signer_address,
+		&send_transaction_rules(),
+		transaction_send_retries,
+		gas_limit.into(),
+	)
+	.await;
+
+	Ok(*upgradeable_proxy.address())
 }
 
 pub fn deploy_local_movement_node(config: &mut MovementConfig) -> Result<(), anyhow::Error> {
-	println!("Start deploy_local_movement_node");
+	//init_movement_node(config)?;
+	update_mvt_account_address()?;
+	deploy_on_movement_framework(config)?;
+	Ok(())
+}
+
+pub fn init_movement_node(config: &mut MovementConfig) -> Result<(), anyhow::Error> {
+	tracing::info!("Start deploy_local_movement_node rpc url:{}", config.mvt_rpc_connection_url());
 	let mut process = Command::new("movement") //--network
 		.args(&[
 			"init",
@@ -165,11 +230,17 @@ pub fn deploy_local_movement_node(config: &mut MovementConfig) -> Result<(), any
 
 	let addr_output = process.wait_with_output().expect("Failed to read command output");
 	if !addr_output.stdout.is_empty() {
-		println!("Move init Publish stdout: {}", String::from_utf8_lossy(&addr_output.stdout));
+		tracing::info!(
+			"Move init Publish stdout: {}",
+			String::from_utf8_lossy(&addr_output.stdout)
+		);
 	}
 
 	if !addr_output.stderr.is_empty() {
-		eprintln!("Move init Publish stderr: {}", String::from_utf8_lossy(&addr_output.stderr));
+		tracing::info!(
+			"Move init Publish stderr: {}",
+			String::from_utf8_lossy(&addr_output.stderr)
+		);
 	}
 
 	let addr_output_str = String::from_utf8_lossy(&addr_output.stderr);
@@ -178,219 +249,199 @@ pub fn deploy_local_movement_node(config: &mut MovementConfig) -> Result<(), any
 		.find(|word| word.starts_with("0x"))
 		.expect("Failed to extract the Movement account address");
 
-	println!("Publish Extracted address: {}", address);
+	tracing::info!("Publish Extracted address: {}", address);
 
-	let random_seed = rand::thread_rng().gen_range(0, 1000000).to_string();
-	println!("Publish random_seed: {}", random_seed);
-	let resource_output = Command::new("movement")
-		.args(&[
-			"account",
-			"derive-resource-account-address",
-			"--address",
-			address,
-			"--seed",
-			&random_seed,
-		])
+	Ok(())
+}
+
+pub fn deploy_on_movement_framework(_config: &mut MovementConfig) -> Result<(), anyhow::Error> {
+	tracing::info!("Before compile move modules");
+	let compile_output = Command::new("movement")
+		.args(&["move", "compile", "--package-dir", "protocol-units/bridge/move-modules/"])
 		.stdout(Stdio::piped())
 		.stderr(Stdio::piped())
-		.output()
-		.expect("Failed to execute command");
-	println!("After movement account done.");
+		.output()?;
 
-	// Print the output of the resource address command for debugging
-	if !resource_output.stdout.is_empty() {
+	if !compile_output.stdout.is_empty() {
+		tracing::info!("move compile stdout: {}", String::from_utf8_lossy(&compile_output.stdout));
+	}
+	if !compile_output.stderr.is_empty() {
+		tracing::info!("move compile stderr: {}", String::from_utf8_lossy(&compile_output.stderr));
+	}
+	let enable_bridge_feature_output = Command::new("movement")
+			.args(&[
+				"move",
+				"run-script",
+				"--compiled-script-path",
+				"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/enable_bridge_feature.mv",
+				"--profile",
+				"default",
+				"--assume-yes",
+			])
+			.stdout(Stdio::piped())
+			.stderr(Stdio::piped())
+			.output()?;
+
+	if !enable_bridge_feature_output.stdout.is_empty() {
 		println!(
-			"Movement account Publish stdout: {}",
-			String::from_utf8_lossy(&resource_output.stdout)
+			"run-script enable_bridge_feature stdout: {}",
+			String::from_utf8_lossy(&enable_bridge_feature_output.stdout)
 		);
 	}
-	if !resource_output.stderr.is_empty() {
+	if !enable_bridge_feature_output.stderr.is_empty() {
 		eprintln!(
-			"Movement account Publish stderr: {}",
-			String::from_utf8_lossy(&resource_output.stderr)
+			"run-script enable_bridge_feature stderr: {}",
+			String::from_utf8_lossy(&enable_bridge_feature_output.stderr)
 		);
 	}
 
-	// Extract the resource address from the JSON output
-	let resource_output_str = String::from_utf8_lossy(&resource_output.stdout);
-	let resource_address = resource_output_str
-		.lines()
-		.find(|line| line.contains("\"Result\""))
-		.and_then(|line| line.split('"').nth(3))
-		.expect("Failed to extract the resource account address");
+	let store_mint_burn_caps_output = Command::new("movement")
+			.args(&[
+				"move",
+				"run-script",
+				"--compiled-script-path",
+				"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/store_mint_burn_caps.mv",
+				"--profile",
+				"default",
+				"--assume-yes",
+			])
+			.stdout(Stdio::piped())
+			.stderr(Stdio::piped())
+			.output()?;
 
-	// Ensure the address has a "0x" prefix
+	if !store_mint_burn_caps_output.stdout.is_empty() {
+		println!(
+			"run-script store_mint_burn_caps stdout: {}",
+			String::from_utf8_lossy(&store_mint_burn_caps_output.stdout)
+		);
+	}
+	if !store_mint_burn_caps_output.stderr.is_empty() {
+		eprintln!(
+			"run-script store_mint_burn_caps stderr: {}",
+			String::from_utf8_lossy(&store_mint_burn_caps_output.stderr)
+		);
+	}
 
-	let formatted_resource_address = if resource_address.starts_with("0x") {
-		resource_address.to_string()
-	} else {
-		format!("0x{}", resource_address)
-	};
+	let update_bridge_relayer_output = Command::new("movement")
+			.args(&[
+				"move",
+				"run-script",
+				"--compiled-script-path",
+				"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/update_bridge_relayer.mv",
+				"--args",
+				"address:0xf90391c81027f03cdea491ed8b36ffaced26b6df208a9b569e5baf2590eb9b16",
+				"--profile",
+				"default",
+				"--assume-yes",
+			])
+			.stdout(Stdio::piped())
+			.stderr(Stdio::piped())
+			.output()?;
 
-	// Set counterparty module address to resource address, for function calls:
-	println!("Publish Derived resource address: {}", formatted_resource_address);
-	config.movement_native_address = formatted_resource_address.clone();
+	if !update_bridge_relayer_output.stdout.is_empty() {
+		println!(
+			"run-script update_bridge_relayer stdout: {}",
+			String::from_utf8_lossy(&update_bridge_relayer_output.stdout)
+		);
+	}
+	if !update_bridge_relayer_output.stderr.is_empty() {
+		eprintln!(
+			"run-script update_bridge_relayer update_bridge_relayer stderr: {}",
+			String::from_utf8_lossy(&update_bridge_relayer_output.stderr)
+		);
+	}
 
-	let current_dir = env::current_dir().expect("Failed to get current directory");
-	println!("Publish Current directory: {:?}", current_dir);
-
-	//TODO Ack to make it works now but the path management should be uniform from cargo test to process compose test.
-	let mut move_toml_path = PathBuf::from(current_dir);
-	if config.mvt_init_network == "local" {
-		move_toml_path.push("../move-modules/Move.toml")
-	} else {
-		move_toml_path.push("protocol-units/bridge/move-modules/Move.toml")
-	};
-
-	println!("Move move_toml_path: {move_toml_path:?}",);
-
-	// Read the existing content of Move.toml
-	let move_toml_content =
-		fs::read_to_string(&move_toml_path).expect("Failed to read Move.toml file");
-
-	// Update the content of Move.toml with the new addresses
-	let updated_content = move_toml_content
-		.lines()
-		.map(|line| match line {
-			_ if line.starts_with("resource_addr = ") => {
-				println!("Update resource_addr with :{formatted_resource_address}");
-				format!(r#"resource_addr = "{}""#, formatted_resource_address)
-			}
-			_ if line.starts_with("atomic_bridge = ") => {
-				format!(r#"atomic_bridge = "{}""#, formatted_resource_address)
-			}
-			_ if line.starts_with("moveth = ") => {
-				format!(r#"moveth = "{}""#, formatted_resource_address)
-			}
-			_ if line.starts_with("master_minter = ") => {
-				format!(r#"master_minter = "{}""#, formatted_resource_address)
-			}
-			_ if line.starts_with("minter = ") => {
-				format!(r#"minter = "{}""#, formatted_resource_address)
-			}
-			_ if line.starts_with("admin = ") => {
-				format!(r#"admin = "{}""#, formatted_resource_address)
-			}
-			_ if line.starts_with("origin_addr = ") => {
-				format!(r#"origin_addr = "{}""#, address)
-			}
-			_ if line.starts_with("source_account = ") => {
-				format!(r#"source_account = "{}""#, address)
-			}
-			_ => line.to_string(),
-		})
-		.collect::<Vec<_>>()
-		.join("\n");
-
-	// Write the updated content back to Move.toml
-	fs::write(&move_toml_path, updated_content.as_bytes())
-		.expect("Failed to write updated Move.toml file");
-
-	// let mut file =
-	// 	fs::File::create(&move_toml_path).expect("Failed to open Move.toml file for writing");
-	// file.write_all(updated_content.as_bytes())
-	// 	.expect("Failed to write updated Move.toml file");
-
-	println!(
-		"Publis args:{:?}",
-		&[
-			"move",
-			"create-resource-account-and-publish-package",
-			"--assume-yes",
-			"--address-name",
-			"moveth",
-			"--seed",
-			&random_seed,
-			"--package-dir",
-			move_toml_path.parent().unwrap().to_str().unwrap(),
-		]
-	);
-
-	println!("Publish Move.toml updated successfully.");
-
-	let output2 = Command::new("movement")
+	let set_initiator_time_lock_script_output = Command::new("movement")
 		.args(&[
 			"move",
-			"create-resource-account-and-publish-package",
+			"run-script",
+			"--compiled-script-path",
+			"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/set_initiator_time_lock_duration.mv",
+			"--args",
+			"u64: 11",
+			"--profile",
+			"default",
 			"--assume-yes",
-			"--address-name",
-			"moveth",
-			"--seed",
-			&random_seed,
-			"--package-dir",
-			move_toml_path.parent().unwrap().to_str().unwrap(),
 		])
 		.stdout(Stdio::piped())
 		.stderr(Stdio::piped())
-		.output()
-		.expect("Publish Failed to execute command");
+		.output()?;
 
-	if !output2.stdout.is_empty() {
-		eprintln!("Movement move Publish stdout: {}", String::from_utf8_lossy(&output2.stdout));
+	if !set_initiator_time_lock_script_output.stdout.is_empty() {
+		println!(
+			"run-script set_initiator_time_lock_duration stdout: {}",
+			String::from_utf8_lossy(&update_bridge_relayer_output.stdout)
+		);
+	}
+	if !set_initiator_time_lock_script_output.stderr.is_empty() {
+		eprintln!(
+			"run-script set_initiator_time_lock_duration stderr: {}",
+			String::from_utf8_lossy(&update_bridge_relayer_output.stderr)
+		);
 	}
 
-	if !output2.stderr.is_empty() {
-		eprintln!("Movement move Publish stderr: {}", String::from_utf8_lossy(&output2.stderr));
+	let set_counterparty_time_lock_script_output = Command::new("movement")
+		.args(&[
+			"move",
+			"run-script",
+			"--compiled-script-path",
+			"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/set_counterparty_time_lock_duration.mv",
+			"--args",
+			"u64: 5",
+			"--profile",
+			"default",
+			"--assume-yes",
+		])
+		.stdout(Stdio::piped())
+		.stderr(Stdio::piped())
+		.output()?;
+
+	if !set_counterparty_time_lock_script_output.stdout.is_empty() {
+		println!(
+			"run-script set_counterparty_time_lock_duration stdout: {}",
+			String::from_utf8_lossy(&update_bridge_relayer_output.stdout)
+		);
+	}
+	if !set_counterparty_time_lock_script_output.stderr.is_empty() {
+		eprintln!(
+			"run-script set_counterparty_time_lock_duration stderr: {}",
+			String::from_utf8_lossy(&update_bridge_relayer_output.stderr)
+		);
 	}
 
-	// if movement_dir.exists() {
-	// 	fs::remove_dir_all(movement_dir).expect("Failed to delete .movement directory");
-	// 	println!("Publish .movement directory deleted successfully.");
-	// }
+	println!("Mvt framework deployed.");
 
-	// Read the existing content of Move.toml
-	let move_toml_content =
-		fs::read_to_string(&move_toml_path).expect("Failed to read Move.toml file");
+	Ok(())
+}
 
-	// Directly assign the address
-	let final_address = "0xcafe";
+fn update_mvt_account_address() -> Result<(), anyhow::Error> {
+	let config_file_path = std::env::current_dir()?.join(".movement/config.yaml");
+	let new_address = "0xA550C18";
+	let mut tmp_lines: Vec<String> = Vec::new();
 
-	// Directly assign the formatted resource address
-	let final_formatted_resource_address =
-		"0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5";
+	// Read the contents of the file
+	{
+		let file = std::fs::File::open(&config_file_path)?;
+		let reader = std::io::BufReader::new(file);
 
-	let updated_content = move_toml_content
-		.lines()
-		.map(|line| match line {
-			_ if line.starts_with("resource_addr = ") => {
-				format!(r#"resource_addr = "{}""#, final_formatted_resource_address)
+		let mut lines_iterator = reader.lines();
+		while let Some(line) = lines_iterator.next() {
+			let line = line?;
+			if line.contains("account:") {
+				// Replace the line with the new address value
+				tmp_lines.push(format!("    account: {}", new_address));
+			} else {
+				// Keep the original line
+				tmp_lines.push(line);
 			}
-			_ if line.starts_with("atomic_bridge = ") => {
-				format!(r#"atomic_bridge = "{}""#, final_formatted_resource_address)
-			}
-			_ if line.starts_with("moveth = ") => {
-				format!(r#"moveth = "{}""#, final_formatted_resource_address)
-			}
-			_ if line.starts_with("master_minter = ") => {
-				format!(r#"master_minter = "{}""#, final_formatted_resource_address)
-			}
-			_ if line.starts_with("minter = ") => {
-				format!(r#"minter = "{}""#, final_formatted_resource_address)
-			}
-			_ if line.starts_with("admin = ") => {
-				format!(r#"admin = "{}""#, final_formatted_resource_address)
-			}
-			_ if line.starts_with("origin_addr = ") => {
-				format!(r#"origin_addr = "{}""#, final_address)
-			}
-			_ if line.starts_with("pauser = ") => {
-				format!(r#"pauser = "{}""#, "0xdafe")
-			}
-			_ if line.starts_with("denylister = ") => {
-				format!(r#"denylister = "{}""#, "0xcade")
-			}
-			_ => line.to_string(),
-		})
-		.collect::<Vec<_>>()
-		.join("\n");
+		}
+	}
 
-	// Write the updated content back to Move.toml
-	let mut file =
-		fs::File::create(&move_toml_path).expect("Failed to open Move.toml file for writing");
-	file.write_all(updated_content.as_bytes())
-		.expect("Failed to write updated Move.toml file");
-
-	println!("Publish Move.toml addresses updated successfully at the end of the test.");
+	let mut output_file = std::fs::File::create(&config_file_path)?;
+	for line in tmp_lines {
+		output_file.write_all(line.as_bytes())?;
+		output_file.write_all(b"\n")?; // Add newline character
+	}
 
 	Ok(())
 }

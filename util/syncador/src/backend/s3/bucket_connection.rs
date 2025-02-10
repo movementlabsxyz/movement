@@ -1,4 +1,5 @@
 use aws_sdk_s3::types::{BucketLocationConstraint, CreateBucketConfiguration};
+use tracing::info;
 
 #[derive(Debug, Clone)]
 pub struct BucketConnection {
@@ -14,7 +15,9 @@ impl BucketConnection {
 	pub(crate) async fn create_bucket_if_not_exists(&self) -> Result<(), anyhow::Error> {
 		let bucket = self.bucket.clone();
 		let bucket_exists = self.client.head_bucket().bucket(bucket.clone()).send().await.is_ok();
+		info!("Bucket exists: {}", bucket_exists);
 		if !bucket_exists {
+			info!("Creating bucket {}", bucket);
 			let bucket_builder = CreateBucketConfiguration::builder();
 
 			let bucket_configuration = match self.client.config().region() {
@@ -25,12 +28,14 @@ impl BucketConnection {
 				None => bucket_builder.build(),
 			};
 
+			info!("Creating bucket with configuration {:?}", bucket_configuration);
 			self.client
 				.create_bucket()
 				.create_bucket_configuration(bucket_configuration)
 				.bucket(bucket)
 				.send()
 				.await?;
+			info!("Bucket created");
 		}
 		Ok(())
 	}
@@ -80,6 +85,7 @@ impl BucketConnection {
 	}
 
 	pub async fn create(client: aws_sdk_s3::Client, bucket: String) -> Result<Self, anyhow::Error> {
+		info!("Creating bucket {}", bucket);
 		let connection = Self::new(client, bucket);
 		connection.create_bucket_if_not_exists().await?;
 		Ok(connection)

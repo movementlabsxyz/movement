@@ -26,7 +26,7 @@ Unless otherwise specified assume all commands below are run after entering a ni
 - [`proto`](./proto): Protocol buffer definitions for the Movement Network. These definitions are used to generate code for interacting with the Movement Network. See the [proto README](./proto/README.md) for more information about the organization of protocol buffer definitions.
 
 ## Prerequisites (Development)
-- Nix package manager. Use nix to run and build Movement developer environments.  https://nix.dev/install-nix
+- Nix package manager. Use nix to run and build Movement developer environments.  https://nix.dev/install-nix or https://determinate.systems/posts/determinate-nix-installer/.
 
 ## Prerequisites (Running Node)
 - Docker and Docker Compose
@@ -34,36 +34,36 @@ Unless otherwise specified assume all commands below are run after entering a ni
 
 ## Running Natively (Nix required)
 
-### `m1-da-light-node`
+### `movement-celestia-da-light-node`
 
 - **Features**:
-    - `build`: Build the `m1-da-light-node` binaries.
-    - `setup`: Run setup for new `m1-da-light-node` network with single node.
+    - `build`: Build the `movement-celestia-da-light-node` binaries.
+    - `setup`: Run setup for new `movement-celestia-da-light-node` network with single node.
     - `local`: Run a local Celestia Data Availability service. (Default.)
     - `arabica`: Run an Arabica Celestia Data Availability service. (Overrides local.)
-    - `test`: Run the test suite for the `m1-da-light-node`. (Can be combined with `local` or `arabica`. Exits on completion by default.)
+    - `test`: Run the test suite for the `movement-celestia-da-light-node`. (Can be combined with `local` or `arabica`. Exits on completion by default.)
 
 ```bash
 # example test with local  Celestia Data Availability service
-just m1-da-light-node native build.setup.test.local
+just movement-celestia-da-light-node native build.setup.test.local
 ```
 
-### `suzuka-full-node`
+### `movement-full-node`
 
 - **Features**:
-    - `build`: Build the `suzuka-full-node` binaries.
+    - `build`: Build the `movement-full-node` binaries.
     - `celestia-arabica`: DA on Celestia's Arabica network
     - `celestia-local`: Run a local Celesta Data Availability service.
     - `celestia-mocha`: DA on Celestia's Mocha network
     - `eth-local`: Settlement on a local Ethereum network
     - `eth-holesky`: Settlement on a Holesky Ethereum network
-    - `setup`: Run setup for new `suzuka-full-node` network with single node.
+    - `setup`: Run setup for new `movement-full-node` network with single node.
     - `indexer`: Run a local indexer
-    - `test`: run the test suite for `suzuka-full-node`. (Can be combined with `local`. Exits on completion by default.)
+    - `test`: run the test suite for `movement-full-node`. (Can be combined with `local`. Exits on completion by default.)
 
 ```bash
 # example test with local celestia and local ethereum
-just suzuka-full-node native build.setup.celestia-local.eth-local
+just movement-full-node native build.setup.celestia-local.eth-local
 ```
 
 ## Run a Movement Node with Docker Compose
@@ -86,25 +86,25 @@ MOVEMENT_ENV_FILE="${GIT_ROOT}/.env"
 echo "INFO: movement version is $(cat ${MOVEMENT_ENV_FILE})"
 ```
 
-### `suzuka-full-node`
+### `movement-full-node`
 
 - **Features**:
     - `local`: Run a local Celesta Data Availability service.
 
-We only support running the `suzuka-full-node` with a local Celestia Data Availability 
+We only support running the `movement-full-node` with a local Celestia Data Availability 
 service via Docker Compose.
 
 ```bash
 # A local Movement network
-just suzuka-full-node docker-compose local
+just movement-full-node docker-compose local
 ```
 Under the hood, `just` runs
 ```bash
 # working directory = GIT_ROOT
 GIT_ROOT=$(git rev-parse --show-toplevel)
 docker compose --env-file .env \
-               --file docker/compose/suzuka-full-node/docker-compose.yml \
-               --file docker/compose/suzuka-full-node/docker-compose.local.yml \
+               --file docker/compose/movement-full-node/docker-compose.yml \
+               --file docker/compose/movement-full-node/docker-compose.local.yml \
                up
 ```
 
@@ -118,7 +118,7 @@ This feature is not implemented yet, at this moment.
 
 ## Services
 
-### `suzuka-full-node`
+### `movement-full-node`
 
 Both `native` and `docker-compose` runners will serve the following services listening on the specified default addresses:
 

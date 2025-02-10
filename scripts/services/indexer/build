@@ -5,5 +5,5 @@ cat ./.data/logfile
 echo "after cat db"
 
 echo "Building Indexer..."
-cargo build $CARGO_PROFILE_FLAGS -p suzuka-indexer-service
+cargo build $CARGO_PROFILE_FLAGS -p movement-indexer-service
 echo "Built Indexer!"

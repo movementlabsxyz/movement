@@ -5,6 +5,7 @@ use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 use tokio::sync::{mpsc, RwLock};
 use tokio_stream::wrappers::ReceiverStream;
+use tracing::info;
 
 #[derive(Clone)]
 pub struct McrSettlementClient {
@@ -30,6 +31,7 @@ impl McrSettlementClient {
 	}
 
 	pub async fn build_with_config(_config: &Config) -> Result<Self, anyhow::Error> {
+		info!("Building with config.");
 		Ok(Self::new())
 	}
 
@@ -108,6 +110,20 @@ impl McrSettlementClientOperations for McrSettlementClient {
 			self.post_block_commitment(commitment).await?;
 		}
 		Ok(())
+	}
+
+	async fn force_block_commitment(
+		&self,
+		_block_commitment: BlockCommitment,
+	) -> Result<(), anyhow::Error> {
+		unimplemented!()
+	}
+
+	async fn get_posted_commitment_at_height(
+		&self,
+		height: u64,
+	) -> Result<Option<BlockCommitment>, anyhow::Error> {
+		unimplemented!();
 	}
 
 	async fn stream_block_commitments(&self) -> Result<CommitmentStream, anyhow::Error> {

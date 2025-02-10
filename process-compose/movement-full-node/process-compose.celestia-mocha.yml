@@ -1,0 +1,18 @@
+version: "3"
+
+processes:
+
+  setup:
+    environment:
+      - "CELESTIA_NETWORK=mocha"
+
+  celestia-light-node:
+    command: |
+      movement-celestia-light
+    readiness_probe:
+      initial_delay_seconds: 60
+      exec:
+        command: curl http://0.0.0.0:26658
+    depends_on:
+      setup:
+        condition: process_healthy

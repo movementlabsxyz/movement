@@ -20,24 +20,26 @@ pub struct RocksdbMempool {
 	db: Arc<DB>,
 }
 
-fn construct_mempool_transaction_key(transaction: &MempoolTransaction) -> String {
+fn construct_mempool_transaction_key(transaction: &MempoolTransaction) -> Result<String, Error> {
 	// Pre-allocate a string with the required capacity
-	let mut key = String::with_capacity(32 + 1 + 32 + 1 + 32);
+	let mut key = String::with_capacity(32 + 1 + 32 + 1 + 32 + 1 + 32);
 	// Write key components. The numbers are zero-padded to 32 characters.
 	key.write_fmt(format_args!(
-		"{:032}:{:032}:{}",
+		"{:032}:{:032}:{:032}:{}",
+		transaction.transaction.application_priority(),
 		transaction.timestamp,
 		transaction.transaction.sequence_number(),
 		transaction.transaction.id(),
 	))
-	.unwrap();
-	key
+	.map_err(|_| Error::msg("Error writing mempool transaction key"))?;
+	Ok(key)
 }
 
-fn construct_timestamp_threshold_key(timestamp_threshold: u64) -> String {
+fn construct_timestamp_threshold_key(timestamp_threshold: u64) -> Result<String, Error> {
 	let mut key = String::with_capacity(32 + 1);
-	key.write_fmt(format_args!("{:032}:", timestamp_threshold)).unwrap();
-	key
+	key.write_fmt(format_args!("{:032}:", timestamp_threshold))
+		.map_err(|_| Error::msg("Error writing timestamp threshold key"))?;
+	Ok(key)
 }
 
 impl RocksdbMempool {
@@ -139,7 +141,7 @@ impl MempoolTransactionOperations for RocksdbMempool {
 				}
 
 				let serialized_transaction = bcs::to_bytes(&transaction)?;
-				let key = construct_mempool_transaction_key(&transaction);
+				let key = construct_mempool_transaction_key(&transaction)?;
 				batch.put_cf(&mempool_transactions_cf_handle, &key, &serialized_transaction);
 				batch.put_cf(
 					&transaction_lookups_cf_handle,
@@ -174,7 +176,7 @@ impl MempoolTransactionOperations for RocksdbMempool {
 
 			let mut batch = WriteBatch::default();
 
-			let key = construct_mempool_transaction_key(&transaction);
+			let key = construct_mempool_transaction_key(&transaction)?;
 			batch.put_cf(&mempool_transactions_cf_handle, &key, &serialized_transaction);
 			batch.put_cf(
 				&transaction_lookups_cf_handle,
@@ -321,7 +323,10 @@ impl MempoolTransactionOperations for RocksdbMempool {
 		.await?
 	}
 
-	async fn gc_mempool_transactions(&self, timestamp_threshold: u64) -> Result<(), anyhow::Error> {
+	async fn gc_mempool_transactions(
+		&self,
+		timestamp_threshold: u64,
+	) -> Result<u64, anyhow::Error> {
 		let db = self.db.clone();
 		tokio::task::spawn_blocking(move || {
 			let cf_handle = db
@@ -332,8 +337,9 @@ impl MempoolTransactionOperations for RocksdbMempool {
 				.ok_or_else(|| Error::msg("CF handle not found"))?;
 			let mut read_options = ReadOptions::default();
 			read_options
-				.set_iterate_upper_bound(construct_timestamp_threshold_key(timestamp_threshold));
+				.set_iterate_upper_bound(construct_timestamp_threshold_key(timestamp_threshold)?);
 			let mut iter = db.iterator_cf_opt(&cf_handle, read_options, IteratorMode::Start);
+			let mut transaction_count = 0;
 			let mut batch = WriteBatch::default();
 
 			if let Some(res) = iter.next() {
@@ -342,11 +348,13 @@ impl MempoolTransactionOperations for RocksdbMempool {
 
 				batch.delete_cf(&cf_handle, &key);
 				batch.delete_cf(&lookups_cf_handle, transaction.transaction.id().to_vec());
+
+				transaction_count += 1;
 			}
 
 			db.write(batch)?;
 
-			Ok(())
+			Ok(transaction_count)
 		})
 		.await?
 	}
@@ -463,14 +471,14 @@ pub mod tests {
 		let path = temp_dir.path().to_str().unwrap();
 		let mempool = RocksdbMempool::try_new(path)?;
 
-		let transaction1 = MempoolTransaction::at_time(Transaction::new(vec![1], 0), 2);
+		let transaction1 = MempoolTransaction::at_time(Transaction::new(vec![1], 0, 0), 2);
 		let transaction1_id = transaction1.id();
 		mempool.add_mempool_transaction(transaction1).await?;
 		assert!(mempool.has_transaction(transaction1_id).await?);
 
 		sleep(Duration::from_secs(2)).await;
 
-		let transaction2 = MempoolTransaction::at_time(Transaction::new(vec![2], 0), 64);
+		let transaction2 = MempoolTransaction::at_time(Transaction::new(vec![2], 0, 0), 64);
 		let transaction2_id = transaction2.id();
 		let transaction2_timestamp = transaction2.timestamp;
 		mempool.add_mempool_transaction(transaction2).await?;
@@ -489,9 +497,9 @@ pub mod tests {
 		let path = temp_dir.path().to_str().unwrap();
 		let mempool = RocksdbMempool::try_new(path)?;
 
-		let transaction1 = MempoolTransaction::at_time(Transaction::new(vec![1], 0), 2);
-		let transaction2 = MempoolTransaction::at_time(Transaction::new(vec![2], 0), 64);
-		let transaction3 = MempoolTransaction::at_time(Transaction::new(vec![3], 0), 128);
+		let transaction1 = MempoolTransaction::at_time(Transaction::new(vec![1], 0, 0), 2);
+		let transaction2 = MempoolTransaction::at_time(Transaction::new(vec![2], 0, 0), 64);
+		let transaction3 = MempoolTransaction::at_time(Transaction::new(vec![3], 0, 0), 128);
 
 		mempool.add_mempool_transaction(transaction2.clone()).await?;
 		mempool.add_mempool_transaction(transaction1.clone()).await?;
@@ -511,9 +519,9 @@ pub mod tests {
 		let path = temp_dir.path().to_str().unwrap();
 		let mempool = RocksdbMempool::try_new(path)?;
 
-		let transaction1 = MempoolTransaction::at_time(Transaction::new(vec![1], 0), 2);
-		let transaction2 = MempoolTransaction::at_time(Transaction::new(vec![2], 1), 2);
-		let transaction3 = MempoolTransaction::at_time(Transaction::new(vec![3], 0), 64);
+		let transaction1 = MempoolTransaction::at_time(Transaction::new(vec![1], 0, 0), 2);
+		let transaction2 = MempoolTransaction::at_time(Transaction::new(vec![2], 0, 1), 2);
+		let transaction3 = MempoolTransaction::at_time(Transaction::new(vec![3], 0, 0), 64);
 
 		mempool.add_mempool_transaction(transaction2.clone()).await?;
 		mempool.add_mempool_transaction(transaction1.clone()).await?;
@@ -533,9 +541,9 @@ pub mod tests {
 		let path = temp_dir.path().to_str().unwrap();
 		let mempool = RocksdbMempool::try_new(path)?;
 
-		let transaction1 = MempoolTransaction::at_time(Transaction::new(vec![1], 0), 0);
-		let transaction2 = MempoolTransaction::at_time(Transaction::new(vec![2], 1), 0);
-		let transaction3 = MempoolTransaction::at_time(Transaction::new(vec![3], 2), 0);
+		let transaction1 = MempoolTransaction::at_time(Transaction::new(vec![1], 0, 0), 0);
+		let transaction2 = MempoolTransaction::at_time(Transaction::new(vec![2], 0, 1), 0);
+		let transaction3 = MempoolTransaction::at_time(Transaction::new(vec![3], 0, 2), 0);
 
 		mempool.add_mempool_transaction(transaction2.clone()).await?;
 		mempool.add_mempool_transaction(transaction1.clone()).await?;
@@ -545,6 +553,59 @@ pub mod tests {
 		assert_eq!(transactions[0], transaction1);
 		assert_eq!(transactions[1], transaction2);
 		assert_eq!(transactions[2], transaction3);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_application_priority_based_ordering() -> Result<(), Error> {
+		let temp_dir = tempdir().unwrap();
+		let path = temp_dir.path().to_str().unwrap();
+		let mempool = RocksdbMempool::try_new(path)?;
+
+		let transaction1 = MempoolTransaction::at_time(Transaction::new(vec![1], 0, 0), 0);
+		let transaction2 = MempoolTransaction::at_time(Transaction::new(vec![2], 1, 0), 0);
+		let transaction3 = MempoolTransaction::at_time(Transaction::new(vec![3], 2, 0), 0);
+
+		mempool.add_mempool_transaction(transaction2.clone()).await?;
+		mempool.add_mempool_transaction(transaction1.clone()).await?;
+		mempool.add_mempool_transaction(transaction3.clone()).await?;
+
+		let transactions = mempool.pop_mempool_transactions(3).await?;
+		assert_eq!(transactions[0], transaction1);
+		assert_eq!(transactions[1], transaction2);
+		assert_eq!(transactions[2], transaction3);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_total_ordering() -> Result<(), Error> {
+		let temp_dir = tempdir().unwrap();
+		let path = temp_dir.path().to_str().unwrap();
+		let mempool = RocksdbMempool::try_new(path)?;
+
+		let transaction1 = MempoolTransaction::at_time(Transaction::new(vec![1], 0, 0), 0);
+		let transaction2 = MempoolTransaction::at_time(Transaction::new(vec![2], 0, 1), 0);
+		let transaction3 = MempoolTransaction::at_time(Transaction::new(vec![3], 0, 1), 2);
+		let transaction4 = MempoolTransaction::at_time(Transaction::new(vec![4], 1, 1), 2);
+		let transaction5 = MempoolTransaction::at_time(Transaction::new(vec![5], 1, 2), 4);
+		let transaction6 = MempoolTransaction::at_time(Transaction::new(vec![6], 1, 2), 6);
+
+		mempool.add_mempool_transaction(transaction2.clone()).await?;
+		mempool.add_mempool_transaction(transaction1.clone()).await?;
+		mempool.add_mempool_transaction(transaction3.clone()).await?;
+		mempool.add_mempool_transaction(transaction5.clone()).await?;
+		mempool.add_mempool_transaction(transaction4.clone()).await?;
+		mempool.add_mempool_transaction(transaction6.clone()).await?;
+
+		let transactions = mempool.pop_mempool_transactions(6).await?;
+		assert_eq!(transactions[0], transaction1);
+		assert_eq!(transactions[1], transaction2);
+		assert_eq!(transactions[2], transaction3);
+		assert_eq!(transactions[3], transaction4);
+		assert_eq!(transactions[4], transaction5);
+		assert_eq!(transactions[5], transaction6);
 
 		Ok(())
 	}

@@ -1,0 +1,17 @@
+services:
+
+  setup:
+    environment:
+      ETH_RPC_CONNECTION_PROTOCOL: "https"
+      ETH_RPC_CONNECTION_HOSTNAME: "ethereum-holesky-rpc.publicnode.com"
+      ETH_RPC_CONNECTION_PORT: 443
+      ETH_MOVE_TOKEN_CONTRACT: "0xC36ba8B8fD9EcbF36288b9B9B0ae9FC3E0645227"
+
+  bridge-service:
+    environment:
+      ETH_RPC_CONNECTION_PROTOCOL: "https"
+      ETH_RPC_CONNECTION_HOSTNAME: "ethereum-holesky-rpc.publicnode.com"
+      ETH_RPC_CONNECTION_PORT: 443
+      ETH_MOVE_TOKEN_CONTRACT: "0xC36ba8B8fD9EcbF36288b9B9B0ae9FC3E0645227"
+
+  

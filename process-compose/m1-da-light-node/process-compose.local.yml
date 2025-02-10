@@ -6,7 +6,7 @@ processes:
 
   celestia-node-appd:
     command: |
-      m1-da-light-node-celestia-appd
+      movement-celestia-appd
     readiness_probe:
       initial_delay_seconds: 3
       exec:
@@ -17,7 +17,7 @@ processes:
 
   celestia-bridge:
     command: |
-      m1-da-light-node-celestia-bridge
+      movement-celestia-bridge
     readiness_probe:
       initial_delay_seconds: 3
       exec:

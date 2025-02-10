@@ -1,0 +1,16 @@
+version: "3"
+
+environment:
+
+processes:
+
+  movement-client-tests:
+    command: |
+      cargo test -p movement-client test_example_
+    depends_on:
+      movement-full-node:
+        condition: process_healthy
+      movement-faucet:
+        condition: process_healthy
+    availability:
+      exit_on_end: true

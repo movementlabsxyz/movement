@@ -15,7 +15,7 @@ RUN rust_binary="./target/release/wait-for-celestia-light-node"; dest_dir="/tmp/
     grep '^/' | xargs -I {} dirname {} | sort | uniq | xargs -I {} \
     bash -c 'mkdir -p "$0/$1" && rsync -a --copy-links "$1/" "$0/$1/"' "$dest_dir" {}
 
-FROM scratch
+FROM alpine:latest
 
 # Copy the build artifact from the builder stage
 COPY --from=builder /tmp/build/target/release/wait-for-celestia-light-node /app/wait-for-celestia-light-node

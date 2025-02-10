@@ -1,0 +1,16 @@
+version: "3"
+
+environment:
+
+processes:
+
+  build:
+    command: |
+      ./scripts/services/bridge-solo/build
+    availability:
+      restart: exit_on_failure
+
+  bridge:
+    depends_on:
+      build:
+        condition: process_completed_successfully

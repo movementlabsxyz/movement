@@ -47,7 +47,7 @@ async fn main() -> Result<(), anyhow::Error> {
 		.try_transaction(|config| async move {
 			let mut config = config.unwrap_or(Config::default());
 
-			// Update config with Suzuka node conf if present
+			// Update config with Movement node conf if present
 			if let Ok(maptos_config) = maptos_config {
 				println!("Update bridge config with suzuka node config");
 				config.movement.mvt_rpc_connection_hostname =
@@ -58,9 +58,6 @@ async fn main() -> Result<(), anyhow::Error> {
 					maptos_config.client.maptos_faucet_rest_connection_hostname;
 				config.movement.mvt_faucet_connection_port =
 					maptos_config.client.maptos_faucet_rest_connection_port;
-
-				//update signer with maptos private key
-				config.movement.movement_signer_key = maptos_config.chain.maptos_private_key;
 			}
 			if let Ok(settlement_config) = settlement_config {
 				println!("Update bridge config with settlement config");
@@ -95,9 +92,6 @@ async fn main() -> Result<(), anyhow::Error> {
 					.well_known_account_private_keys
 					.clone();
 			}
-
-			//set timelock for e2e test
-			config.eth.time_lock_secs = 60; // 1mn for the e2e test.
 
 			// Use custom as movement node in init.
 			config.movement.mvt_init_network = "custom".to_string();

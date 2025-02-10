@@ -5,6 +5,7 @@ use alloy_contract::CallDecoder;
 use alloy_network::Ethereum;
 use alloy_transport::{Transport, TransportError};
 use std::marker::PhantomData;
+use tracing::info;
 
 // Define a rule to verify the error generated when a transaction is send to determine if:
 // * the Transaction must me resend with more gas: return Ok(true)
@@ -68,7 +69,7 @@ pub async fn send_transaction<
 	number_retry: u32,
 	gas_limit: u128,
 ) -> Result<(), anyhow::Error> {
-	println!("Sending transaction with gas limit: {}", gas_limit);
+	info!("Sending transaction with gas limit: {}", gas_limit);
 	//validate gas price.
 	let mut estimate_gas = base_call_builder.estimate_gas().await.expect("Failed to estimate gas");
 	// Add 20% because initial gas estimate are too low.
@@ -89,7 +90,7 @@ pub async fn send_transaction<
 			return Err(McrEthConnectorError::GasLimitExceed(transaction_fee_wei, gas_limit).into());
 		}
 
-		println!("Sending transaction with gas: {}", estimate_gas);
+		info!("Sending transaction with gas: {}", estimate_gas);
 
 		//send the Transaction and detect send error.
 		let pending_transaction = match call_builder.send().await {

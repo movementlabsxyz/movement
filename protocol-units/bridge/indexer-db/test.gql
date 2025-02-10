@@ -1,0 +1,45 @@
+query getBridgeTransfersByInitiatorAndRecipient($initiator: String!, $recipient: String!) {
+      lock_bridge_transfers(
+        where: {
+          initiator: { _eq: $initiator },
+          recipient: { _eq: $recipient }
+        }
+      ) {
+        bridge_transfer_id
+        initiator
+        recipient
+        hash_lock
+        amount
+        state
+      }
+    
+      initiated_events(
+        where: {
+          initiator: { _eq: $initiator },
+          recipient: { _eq: $recipient }
+        }
+      ) {
+        bridge_transfer_id
+        initiator
+        recipient
+        hash_lock
+        time_lock
+        amount
+        state
+      }
+    
+      locked_events(
+        where: {
+          initiator: { _eq: $initiator },
+          recipient: { _eq: $recipient }
+        }
+      ) {
+        bridge_transfer_id
+        initiator
+        recipient
+        hash_lock
+        time_lock
+        amount
+        state
+      }
+    }

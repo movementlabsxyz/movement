@@ -4,7 +4,7 @@ set -euo pipefail
 
 if [ "$#" -lt 3 ]; then
     echo "Usage: $0 <service> <runtime> <flags> [process-compose flags...]"
-    echo "Example: $0 suzuka-full-node native setup.local.test"
+    echo "Example: $0 movement-full-node native setup.local.test"
     exit 1
 fi
 

@@ -1,0 +1,135 @@
+version: "3"
+
+processes:
+
+  setup:
+    command: |
+      export AWS_REGION=us-west-2
+      export MOVEMENT_SYNC="leader::follower-test-$MOVEMENT_SHARED_RANDOM_1<=>{default_signer_address_whitelist,maptos,maptos-storage,movement-da-db}/**"
+      export MAYBE_RUN_LOCAL=true
+      export MAYBE_DEPLOY_MCR=true
+      movement-full-node-setup
+    depends_on:
+      build:
+        condition: process_completed_successfully
+    readiness_probe:
+      initial_delay_seconds: 10
+      exec:
+        command: echo "true"
+
+  setup-follower-1:
+    environment:
+      - "ETH_RPC_CONNECTION_PROTOCOL=http"
+      - "ETH_RPC_CONNECTION_HOSTNAME=0.0.0.0"
+      - "ETH_RPC_CONNECTION_PORT=8090"
+      - "ETH_WS_CONNECTION_PROTOCOL=ws"
+      - "ETH_WS_CONNECTION_HOSTNAME=0.0.0.0"
+      - "ETH_WS_CONNECTION_PORT=8090"
+      - "MAYBE_RUN_LOCAL=true"
+      - "MOVEMENT_DA_LIGHT_NODE_HTTP1=true"
+    command: |
+      sleep 30
+      export AWS_REGION=us-west-2
+      export MAYBE_RUN_LOCAL=false
+      export MAYBE_DEPLOY_MCR=false
+      export MAPTOS_INDEXER_GRPC_LISTEN_PORT=31734
+      export MAPTOS_API_CONNECTION_PORT=31731
+      export MAPTOS_API_LISTEN_PORT=31731
+      export DOT_MOVEMENT_PATH=$DOT_MOVEMENT_PATH-follower-1
+      export MOVEMENT_SYNC="follower::follower-test-$MOVEMENT_SHARED_RANDOM_1<=>{default_signer_address_whitelist,maptos,maptos-storage,movement-da-db}/**"
+      movement-full-node-setup
+    depends_on:
+      build:
+        condition: process_completed_successfully
+      movement-full-node:
+        condition: process_healthy
+    readiness_probe:
+      initial_delay_seconds: 40
+      exec:
+        command: echo "true"
+
+  movement-full-follower-1:
+    command: |
+      export DOT_MOVEMENT_PATH=$DOT_MOVEMENT_PATH-follower-1
+      movement-full-node run
+    depends_on:
+      movement-celestia-da-light-node:
+        condition: process_healthy
+      setup-follower-1:
+        condition: process_healthy
+      movement-full-node:
+        condition: process_healthy
+    readiness_probe:
+      exec:
+        command: curl http://0.0.0.0:31731
+
+  setup-follower-2:
+    environment:
+      # use invalid eth hostnames to check that non-settling follower doesn't have build issues. 
+      - "ETH_RPC_CONNECTION_PROTOCOL=this"
+      - "ETH_RPC_CONNECTION_HOSTNAME=is"
+      - "ETH_RPC_CONNECTION_PORT=8"
+      - "ETH_WS_CONNECTION_PROTOCOL=joke"
+      - "ETH_WS_CONNECTION_HOSTNAME=about"
+      - "ETH_WS_CONNECTION_PORT=0"
+      - "MAYBE_RUN_LOCAL=true"
+      - "MOVEMENT_DA_LIGHT_NODE_HTTP1=false"
+    command: |
+      sleep 30
+      export AWS_REGION=us-west-2
+      export MAYBE_RUN_LOCAL=false
+      export MAYBE_DEPLOY_MCR=false
+      export MAPTOS_INDEXER_GRPC_LISTEN_PORT=32734
+      export MAPTOS_API_CONNECTION_PORT=32731
+      export MAPTOS_API_LISTEN_PORT=32731
+      export DOT_MOVEMENT_PATH=$DOT_MOVEMENT_PATH-follower-2
+      export MOVEMENT_SYNC="follower::follower-test-$MOVEMENT_SHARED_RANDOM_1<=>{default_signer_address_whitelist,maptos,maptos-storage,movement-da-db}/**"
+      movement-full-node-setup
+    depends_on:
+      build:
+        condition: process_completed_successfully
+      movement-full-node:
+        condition: process_healthy
+    readiness_probe:
+      initial_delay_seconds: 40
+      exec:
+        command: echo "true"
+
+  movement-full-follower-2:
+    command: |
+      export DOT_MOVEMENT_PATH=$DOT_MOVEMENT_PATH-follower-2
+      movement-full-node run
+    depends_on:
+      movement-celestia-da-light-node:
+        condition: process_healthy
+      setup-follower-2:
+        condition: process_healthy
+      movement-full-node:
+        condition: process_healthy
+    readiness_probe:
+      exec:
+        command: curl http://0.0.0.0:32731
+
+  test-followers-consistent:
+    command: |
+      # run the test
+      cargo run --bin movement-tests-e2e-followers-consistent -- 2
+
+      # delete the resources
+      movement-util syncing delete-resource
+
+      # output the transactions for each follower for debugging
+      curl http://0.0.0.0:30731/v1/transactions > $DOT_MOVEMENT_PATH/transactions-leader.json
+      curl http://0.0.0.0:31731/v1/transactions > $DOT_MOVEMENT_PATH/transactions-follower-1.json
+      curl http://0.0.0.0:32731/v1/transactions > $DOT_MOVEMENT_PATH/transactions-follower-2.json
+    depends_on:
+      movement-full-follower-1:
+        condition: process_healthy
+      movement-full-follower-2:
+        condition: process_healthy
+      movement-faucet:
+        condition: process_healthy
+    availability:
+      exit_on_end: true
+
+  

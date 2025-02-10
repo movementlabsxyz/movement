@@ -22,7 +22,7 @@ pub fn test_cargo_workspace() -> Result<(), anyhow::Error> {
 Standardizes tonic builds, so that you can simply put:
 
 ```rust
-buildtime::proto_build_main!("protocol-units/data-availability/m1/m1_da_light_node.proto");
+buildtime::proto_build_main!("movementlabs/protocol-units/da/light_node/v1beta1.proto");
 ```
 
 in your `build.rs` file and it will generate the necessary tonic code.

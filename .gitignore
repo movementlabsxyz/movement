@@ -24,4 +24,8 @@ profile.json
 *.log
 venv
 *.pem
+*.jot.*
 *.jot
+*.env
+.debug
+.out
