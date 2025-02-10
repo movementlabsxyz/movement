@@ -41,6 +41,7 @@ impl Pull {
 	) -> Result<PathBuf, anyhow::Error> {
 		let bucket = self.bucket_connection.bucket.clone();
 		let key = format!("{}/{}", candidate_selected.key, relative_path.to_string_lossy());
+		tracing::info!("Pulling file from S3 on bucket:{bucket} with key: {key}");
 		let mut output = self
 			.bucket_connection
 			.client

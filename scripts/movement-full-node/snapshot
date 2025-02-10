@@ -22,6 +22,7 @@ fi
 
 echo "Restore snapshot..."
 export DOT_MOVEMENT_PATH="${DOT_MOVEMENT_PATH}-snapshot"
+export RUST_BACKTRACE=1;
 if movement-full-node backup restore; then
     echo "Snapshot restored successfully."
 else

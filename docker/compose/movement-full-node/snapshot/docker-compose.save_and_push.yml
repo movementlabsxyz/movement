@@ -16,6 +16,6 @@ services:
       - SYNC_PATTERN=${SYNC_PATTERN}
       - SYNC_BUCKET=${SYNC_BUCKET}
       - SYNC_ARCHIVE=${SYNC_BUCKET}
-    command: backup save-and-push $SYNC_PATTERN $SYNC_BUCKET $SYNC_ARCHIVE
+    command: backup save-and-push $SYNC_BUCKET $SYNC_PATTERN $SYNC_ARCHIVE 
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement

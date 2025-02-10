@@ -39,6 +39,8 @@ impl SaveDbParam {
 	pub async fn execute(&self) -> Result<(), anyhow::Error> {
 		let root_path = get_root_path(self.root_dir.as_ref())?;
 
+		tracing::info!("Save db with parameters: sync:{} root dir:{:?}", self.db_sync, root_path);
+
 		let archive_pipe = syncador::backend::pipeline::push::Pipeline::new(vec![
 			Box::new(syncador::backend::glob::file::FileGlob::try_new(
 				&self.db_sync.clone(),
@@ -78,6 +80,15 @@ impl PushParam {
 		let config = dot_movement.try_get_config_from_json::<Config>()?;
 		let application_id = config.syncing.try_application_id()?;
 		let syncer_id = config.syncing.try_syncer_id()?;
+		let root_path = get_root_path(self.root_dir.as_ref())?;
+
+		tracing::info!(
+			"Push db with parameters: bucket:{} archive_file:{} root dir:{:?}",
+			self.bucket,
+			self.archive_file,
+			root_path
+		);
+
 		let s3_push = syncador::backend::s3::shared_bucket::create_push_with_load_from_env(
 			self.bucket.clone(),
 			syncador::backend::s3::shared_bucket::metadata::Metadata::default()
@@ -88,7 +99,6 @@ impl PushParam {
 
 		let push_pipe = syncador::backend::pipeline::push::Pipeline::new(vec![Box::new(s3_push)]);
 
-		let root_path = get_root_path(self.root_dir.as_ref())?;
 		let archive_file = root_path.join(&self.archive_file);
 
 		let package = syncador::Package(vec![syncador::PackageElement {
@@ -98,7 +108,7 @@ impl PushParam {
 
 		match push_pipe.push(package).await {
 			Ok(package) => {
-				tracing::info!("Archive file pushed {:?}", package);
+				tracing::info!("Push done {:?}", package);
 			}
 			Err(err) => {
 				tracing::warn!("Error during archive push: {:?}", err);
@@ -115,10 +125,10 @@ impl PushParam {
 	about = "Save the db using db_sync pattern in root_dir then push it to the bucket."
 )]
 pub struct SaveAndPush {
-	#[clap(default_value = "{maptos,maptos-storage,movement-da-db}/**", value_name = "DB PATTERN")]
-	pub db_sync: String,
 	#[clap(default_value = "follower-test-ci-backup", value_name = "BUCKET NAME")]
 	pub bucket: String,
+	#[clap(default_value = "{maptos,maptos-storage,movement-da-db}/**", value_name = "DB PATTERN")]
+	pub db_sync: String,
 	#[clap(default_value = "0.tar.gz", value_name = "ARCHIVE FILENAME")]
 	pub archive_file: String,
 	#[clap(value_name = "ROOT DIRECTORY")]
@@ -140,6 +150,14 @@ impl SaveAndPush {
 				.with_syncer_id(syncer_id),
 		)
 		.await?;
+
+		tracing::info!(
+			"Save and Push db with parameters: bucket:{} sync:{} archive_file:{} root dir:{:?}",
+			self.bucket,
+			self.db_sync,
+			self.archive_file,
+			root_path
+		);
 
 		let push_pipe = syncador::backend::pipeline::push::Pipeline::new(vec![
 			Box::new(syncador::backend::glob::file::FileGlob::try_new(
@@ -183,9 +201,17 @@ impl RestoreParam {
 
 		//Load node config.
 		let dot_movement = dot_movement::DotMovement::try_from_env()?;
-		let config = dot_movement.try_get_config_from_json::<Config>()?;
+		let config = dot_movement.try_get_or_create_config_from_json::<Config>()?;
 		let application_id = config.syncing.try_application_id()?;
 		let syncer_id = config.syncing.try_syncer_id()?;
+
+		tracing::info!(
+			"Restore db with parameters: bucket:{} sync:{} root dir:{:?}",
+			self.bucket,
+			self.db_sync,
+			root_path
+		);
+
 		let s3_pull = syncador::backend::s3::shared_bucket::create_pull_with_load_from_env(
 			self.bucket.clone(),
 			syncador::backend::s3::shared_bucket::metadata::Metadata::default()
@@ -206,7 +232,7 @@ impl RestoreParam {
 
 		match push_pipe.pull(Some(syncador::Package::null())).await {
 			Ok(package) => {
-				tracing::info!("Archive file pushed {:?}", package);
+				tracing::info!("Files restored");
 			}
 			Err(err) => {
 				tracing::warn!("Error during archive push: {:?}", err);
