@@ -63,7 +63,7 @@ impl SaveDbParam {
 #[derive(Debug, Parser, Clone)]
 #[clap(rename_all = "kebab-case", about = "Push the archived db to the bucket")]
 pub struct PushParam {
-	#[clap(default_value = "mtnet-l-sync-bucket-sync", value_name = "BUCKET NAME")]
+	#[clap(default_value = "follower-test-ci-backup", value_name = "BUCKET NAME")]
 	pub bucket: String,
 	#[clap(default_value = "0.tar.gz", value_name = "ARCHIVE FILENAME")]
 	pub archive_file: String,
@@ -117,7 +117,7 @@ impl PushParam {
 pub struct SaveAndPush {
 	#[clap(default_value = "{maptos,maptos-storage,movement-da-db}/**", value_name = "DB PATTERN")]
 	pub db_sync: String,
-	#[clap(default_value = "mtnet-l-sync-bucket-sync", value_name = "BUCKET NAME")]
+	#[clap(default_value = "follower-test-ci-backup", value_name = "BUCKET NAME")]
 	pub bucket: String,
 	#[clap(default_value = "0.tar.gz", value_name = "ARCHIVE FILENAME")]
 	pub archive_file: String,
@@ -169,7 +169,7 @@ impl SaveAndPush {
 	about = "Restore from the specified bucket in the root_dir. Db pattern is used to clean before the update."
 )]
 pub struct RestoreParam {
-	#[clap(default_value = "mtnet-l-sync-bucket-sync", value_name = "BUCKET NAME")]
+	#[clap(default_value = "follower-test-ci-backup", value_name = "BUCKET NAME")]
 	pub bucket: String,
 	#[clap(default_value = "{maptos,maptos-storage,movement-da-db}/**", value_name = "DB PATTERN")]
 	pub db_sync: String,
