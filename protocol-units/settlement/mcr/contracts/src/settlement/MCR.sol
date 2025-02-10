@@ -69,8 +69,8 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     }
 
     // gets the would be epoch for the current L1-block time
-    function getEpochByL1BlockTime() public view returns (uint256) {
-        return stakingContract.getEpochByL1BlockTime(address(this));
+    function getEpochByBlockTime() public view returns (uint256) {
+        return stakingContract.getEpochByBlockTime(address(this));
     }
 
     // TODO is this not mixing up the L1-block time with the L2-blocks?
@@ -252,7 +252,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
             // note: this is an intended race condition, but it is benign because of the leadingBlockTolerance
             blockHeightEpochAssignments[
                 blockCommitment.height
-            ] = getEpochByL1BlockTime();
+            ] = getEpochByBlockTime();
         }
 
         // register the attester's commitment
@@ -417,7 +417,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         );
 
         // if the timestamp epoch is greater than the current epoch, roll over the epoch
-        if (getEpochByL1BlockTime() > currentEpoch) {
+        if (getEpochByBlockTime() > currentEpoch) {
             rollOverEpoch();
         }
     }

@@ -107,7 +107,7 @@ contract MCRTest is Test, IMCR {
         mcr.attestBlocks();
 
         // now check the block is L1-confirmed
-        // assertEq(mcr.getCurrentEpoch(), mcr.getEpochByL1BlockTime());
+        // assertEq(mcr.getCurrentEpoch(), mcr.getEpochByBlockTime());
 
 
         // get to next Acceptor
@@ -296,7 +296,7 @@ contract MCRTest is Test, IMCR {
         mcr.submitBlockCommitment(bc2);
 
         // check that roll over happened
-        assertEq(mcr.getCurrentEpoch(), mcr.getEpochByL1BlockTime());
+        assertEq(mcr.getCurrentEpoch(), mcr.getEpochByBlockTime());
         assertEq(mcr.getCurrentEpochStake(address(moveToken), alice), 34);
         assertEq(mcr.getCurrentEpochStake(address(moveToken), bob), 33);
         assertEq(mcr.getCurrentEpochStake(address(moveToken), carol), 33);
