@@ -3,7 +3,7 @@ use crate::backend::s3::bucket_connection::BucketConnection;
 use crate::backend::s3::shared_bucket::BUFFER_SIZE;
 use crate::backend::PullOperations;
 use crate::files::package::{Package, PackageElement};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::io::BufReader;
@@ -125,14 +125,17 @@ impl Pull {
 			.list_all_application_file_paths_for(&self.bucket_connection)
 			.await?;
 
-		// filter the public file paths for the candidate
-		let file_paths: HashSet<String> = public_file_paths
+		// Filter the public file paths for the candidate.
+		// Use BTreeSet to order the file chunks.
+		let file_paths: BTreeSet<String> = public_file_paths
 			.into_iter()
 			.filter(|file_path| file_path.starts_with(&candidate.key))
 			.collect();
 
 		// create a new manifest
 		let mut manifest = PackageElement::new(self.pull_destination.clone());
+
+		println!("ICI download_all_files_for_candidate file_paths {file_paths:?}",);
 
 		// download each file
 		let mut manifest_futures = Vec::new();
@@ -158,6 +161,7 @@ impl Pull {
 		//recreate splited archive if needed.
 		let mut unsplit_manifest =
 			PackageElement { sync_files: vec![], root_dir: manifest.root_dir.clone() };
+		println!("ICI manifest.sync_files manifest.sync_files {:?}", manifest.sync_files);
 		for absolute_path in &manifest.sync_files {
 			let path_buf = absolute_path.to_path_buf();
 			let absolute_path =

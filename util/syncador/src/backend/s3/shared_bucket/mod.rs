@@ -115,7 +115,9 @@ pub mod test {
 	use crate::files::package::{Package, PackageElement};
 	use movement_types::actor;
 	use std::fs::File;
+	use std::io::BufReader;
 	use std::io::BufWriter;
+	use std::io::Read;
 	use std::io::Write;
 
 	#[tokio::test]
@@ -128,9 +130,9 @@ pub mod test {
 			)
 			.init();
 		// 1) Chunk size is bigger than the archive. No split in chunk.
-		process_archive_test("test_archive_split.tmp", 10 * 1024, 1024).await?;
+		process_archive_test("test_archive_split.tmp", 10 * 1024, 600).await?;
 		// 2) Chunk size is smaller than the archive. Several chunk is create and reconstructed.
-		process_archive_test("test_archive_split2.tmp", 1024, 512).await?;
+		process_archive_test("test_archive_split2.tmp", 1024, 312).await?;
 		Ok(())
 	}
 
@@ -146,10 +148,10 @@ pub mod test {
 		//create file to Push size 10 * 1024.
 		let archive_file_path = source_dir.path().join(temp_file_name);
 		{
+			let data: Vec<u8> = (0..1024usize).map(|i| (i % 256) as u8).collect();
 			let file = File::create(&archive_file_path)?;
 			let mut writer = BufWriter::new(file);
 			//Fill with some data. 10 Mb
-			let data: Vec<u8> = vec![2; 1024];
 			(0..10).try_for_each(|_| writer.write_all(&data))?;
 		}
 
@@ -205,6 +207,26 @@ pub mod test {
 		let file_metadata = std::fs::metadata(&dest_package.0[0].sync_files[0])?;
 		let file_size = file_metadata.len() as usize;
 		assert_eq!(file_size, 10 * 1024, "dest file hasn't the right size: {file_size}");
+
+		//verify that the file byte are in order.
+		let pulled_file = File::open(&dest_package.0[0].sync_files[0])?;
+		let mut reader = BufReader::new(pulled_file);
+		let mut buffer = [0u8; 1024];
+		let mut expected_byte: u8 = 0;
+
+		loop {
+			let bytes_read = reader.read(&mut buffer)?;
+			if bytes_read == 0 {
+				break; // End of file
+			}
+
+			for &byte in &buffer[..bytes_read] {
+				if byte != expected_byte {
+					panic!("Pull file bytes in wrong order.");
+				}
+				expected_byte = expected_byte.wrapping_add(1); // Increment and wrap around after 255
+			}
+		}
 
 		//verify that all chunk has been removed
 		let has_chunk = std::fs::read_dir(&destination_dir)?

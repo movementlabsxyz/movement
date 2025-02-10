@@ -3,8 +3,6 @@
 
 export AWS_REGION="us-west-1";
 
-rm -rf "${DOT_MOVEMENT_PATH}-snapshot"
-
 echo "Starting node for 60 seconds..."
 # Run the node for 60 seconds, terminating if it exceeds the time limit
 if timeout 60s movement-full-node run; then
@@ -20,8 +18,11 @@ else
     break
 fi
 
+echo "Remove node DB"
+rm -rf "${DOT_MOVEMENT_PATH}/maptos*";
+rm -rf "${DOT_MOVEMENT_PATH}/movement-da-db";
+
 echo "Restore snapshot..."
-export DOT_MOVEMENT_PATH="${DOT_MOVEMENT_PATH}-snapshot"
 export RUST_BACKTRACE=1;
 if movement-full-node backup restore; then
     echo "Snapshot restored successfully."
@@ -29,7 +30,10 @@ else
     echo "Snapshot restoration failed. Exiting loop."
     break
 fi
-echo "Starting new node for 60 seconds..."
+
+export MAYBE_RUN_LOCAL=true;
+
+echo "Starting new node with the backup db for 60 seconds..."
 if timeout 60s movement-full-node run; then
     echo "Node run completed within the time limit."
 else
