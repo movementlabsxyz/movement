@@ -252,7 +252,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
             // note: this is an intended race condition, but it is benign because of the leadingBlockTolerance
             blockHeightEpochAssignments[
                 blockCommitment.height
-            ] = getEpochByBlockTime();
+            ] = getEpochByL1BlockTime();
         }
 
         // register the attester's commitment
