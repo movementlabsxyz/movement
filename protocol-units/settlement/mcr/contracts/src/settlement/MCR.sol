@@ -53,12 +53,12 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     }
 
     // creates a commitment
-    function createBlockCommitment(
+    function createSuperBlockCommitment(
         uint256 height,
         bytes32 commitment,
         bytes32 blockId
-    ) public pure returns (BlockCommitment memory) {
-        return BlockCommitment(height, commitment, blockId);
+    ) public pure returns (SuperBlockCommitment memory) {
+        return SuperBlockCommitment(height, commitment, blockId);
     }
 
     // gets the max tolerable block height
@@ -179,17 +179,17 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     function getValidatorCommitmentAtBlockHeight(
         uint256 height,
         address attester
-    ) public view returns (BlockCommitment memory) {
+    ) public view returns (SuperBlockCommitment memory) {
         return commitments[height][attester];
     }
 
     // Sets the accepted commitment at a give block height
-    function setAcceptedCommitmentAtBlockHeight(BlockCommitment memory blockCommitment) public {
+    function setAcceptedCommitmentAtBlockHeight(SuperBlockCommitment memory superBlockCommitment) public {
         require(
             hasRole(COMMITMENT_ADMIN, msg.sender),
             "SET_LAST_ACCEPTED_COMMITMENT_AT_HEIGHT_IS_COMMITMENT_ADMIN_ONLY"
         );
-        versionedAcceptedBlocks[acceptedBlocksVersion][blockCommitment.height] = blockCommitment;  
+        versionedAcceptedBlocks[acceptedBlocksVersion][superBlockCommitment.height] = superBlockCommitment;  
     }
 
     // Sets the last accepted block height. 
@@ -203,7 +203,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
     // Forces the latest attestation by setting the block height
     // Note: this only safe when we are running with a single validator as it does not zero out follow-on commitments.
-    function forceLatestCommitment(BlockCommitment memory blockCommitment) public {
+    function forceLatestCommitment(SuperBlockCommitment memory superBlockCommitment) public {
         /*require(
             hasRole(DEFAULT_ADMIN_ROLE, msg.sender),
             "FORCE_LATEST_COMMITMENT_IS_COMMITMENT_ADMIN_ONLY"
@@ -211,11 +211,11 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
         // increment the acceptedBlocksVersion (effectively removing all other accepted blocks)
         acceptedBlocksVersion += 1;
-        versionedAcceptedBlocks[acceptedBlocksVersion][blockCommitment.height] = blockCommitment;
-        lastAcceptedBlockHeight = blockCommitment.height; 
+        versionedAcceptedBlocks[acceptedBlocksVersion][superBlockCommitment.height] = superBlockCommitment;
+        lastAcceptedBlockHeight = superBlockCommitment.height; 
     }
 
-    function getAcceptedCommitmentAtBlockHeight(uint256 height) public view returns (BlockCommitment memory) {
+    function getAcceptedCommitmentAtBlockHeight(uint256 height) public view returns (SuperBlockCommitment memory) {
         return versionedAcceptedBlocks[acceptedBlocksVersion][height];
     }
 
@@ -226,43 +226,43 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     /**
      * @dev submits a block commitment for an attester.
      */
-    function submitBlockCommitmentForAttester(
+    function submitSuperBlockCommitmentForAttester(
         address attester,
-        BlockCommitment memory blockCommitment
+        SuperBlockCommitment memory superBlockCommitment
     ) internal {
         // Attester has already committed to a block at this height
-        if (commitments[blockCommitment.height][attester].height != 0)
+        if (commitments[superBlockCommitment.height][attester].height != 0)
             revert AttesterAlreadyCommitted();
 
         // note: do no uncomment the below, we want to allow this in case we have lagging attesters
         // Attester has committed to an already accepted block
-        // if ( lastAcceptedBlockHeight > blockCommitment.height) revert AlreadyAcceptedBlock();
+        // if ( lastAcceptedBlockHeight > superBlockCommitment.height) revert AlreadyAcceptedBlock();
         // Attester has committed to a block too far ahead of the last accepted block
         if (
             lastAcceptedBlockHeight + leadingBlockTolerance <
-            blockCommitment.height
+            superBlockCommitment.height
         ) revert AttesterAlreadyCommitted();
 
         // assign the block height to the current epoch if it hasn't been assigned yet
-        if (blockHeightEpochAssignments[blockCommitment.height] == 0) {
+        if (superBlockHeightEpochAssignments[superBlockCommitment.height] == 0) {
             // note: this is an intended race condition, but it is benign because of the tolerance
-            blockHeightEpochAssignments[
-                blockCommitment.height
+            superBlockHeightEpochAssignments[
+                superBlockCommitment.height
             ] = getEpochByBlockTime();
         }
 
         // register the attester's commitment
-        commitments[blockCommitment.height][attester] = blockCommitment;
+        commitments[superBlockCommitment.height][attester] = superBlockCommitment;
 
         // increment the commitment count by stake
         uint256 allCurrentEpochStake = computeAllCurrentEpochStake(attester);
-        commitmentStakes[blockCommitment.height][
-            blockCommitment.commitment
+        commitmentStakes[superBlockCommitment.height][
+            superBlockCommitment.commitment
         ] += allCurrentEpochStake;
 
-        emit BlockCommitmentSubmitted(
-            blockCommitment.blockId,
-            blockCommitment.commitment,
+        emit SuperBlockCommitmentSubmitted(
+            superBlockCommitment.blockId,
+            superBlockCommitment.commitment,
             allCurrentEpochStake
         );
 
@@ -279,7 +279,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
      */
     function tickOnBlockHeight(uint256 blockHeight) internal returns (bool) {
         // get the epoch assigned to the block height
-        uint256 blockEpoch = blockHeightEpochAssignments[blockHeight];
+        uint256 blockEpoch = superBlockHeightEpochAssignments[blockHeight];
 
         // if the current epoch is far behind, that's okay that just means there weren't blocks submitted
         // so long as we ensure that we go through the blocks in order and that the block to epoch assignment is non-decreasing, we're good
@@ -299,18 +299,18 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
             address attester = attesters[i];
 
             // get a commitment for the attester at the block height
-            BlockCommitment memory blockCommitment = commitments[blockHeight][
+            SuperBlockCommitment memory superBlockCommitment = commitments[blockHeight][
                 attester
             ];
 
             // check the total stake on the commitment
             uint256 totalStakeOnCommitment = commitmentStakes[
-                blockCommitment.height
-            ][blockCommitment.commitment];
+                superBlockCommitment.height
+            ][superBlockCommitment.commitment];
 
             if (totalStakeOnCommitment > supermajority) {
                 // accept the block commitment (this may trigger a roll over of the epoch)
-                _acceptBlockCommitment(blockCommitment);
+                _acceptSuperBlockCommitment(superBlockCommitment);
 
                 // we found a commitment that was accepted
                 return true;
@@ -335,21 +335,21 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         openAttestationEnabled = enabled;
     }
 
-    function submitBlockCommitment(BlockCommitment memory blockCommitment) public {
+    function submitSuperBlockCommitment(SuperBlockCommitment memory superBlockCommitment) public {
         require(
             openAttestationEnabled || hasRole(TRUSTED_ATTESTER, msg.sender),
             "UNAUTHORIZED_BLOCK_COMMITMENT"
         );
-        submitBlockCommitmentForAttester(msg.sender, blockCommitment);
+        submitSuperBlockCommitmentForAttester(msg.sender, superBlockCommitment);
     }
 
-    function submitBatchBlockCommitment(BlockCommitment[] memory blockCommitments) public {
+    function submitBatchSuperBlockCommitment(SuperBlockCommitment[] memory superBlockCommitments) public {
         require(
             openAttestationEnabled || hasRole(TRUSTED_ATTESTER, msg.sender),
             "UNAUTHORIZED_BLOCK_COMMITMENT"
         );
-        for (uint256 i = 0; i < blockCommitments.length; i++) {
-            submitBlockCommitmentForAttester(msg.sender, blockCommitments[i]);
+        for (uint256 i = 0; i < superBlockCommitments.length; i++) {
+            submitSuperBlockCommitmentForAttester(msg.sender, superBlockCommitments[i]);
         }
     }
 
@@ -357,29 +357,29 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
      * @dev Accepts a block commitment.
      * @dev Under the current implementation this shares in recursion with the tickOnBlockHeight, so it should be reentrant.
      */
-    function _acceptBlockCommitment(
-        BlockCommitment memory blockCommitment
+    function _acceptSuperBlockCommitment(
+        SuperBlockCommitment memory superBlockCommitment
     ) internal {
         uint256 currentEpoch = getCurrentEpoch();
         // get the epoch for the block commitment
         //  Block commitment is not in the current epoch, it cannot be accepted. This indicates a bug in the protocol.
-        if (blockHeightEpochAssignments[blockCommitment.height] != currentEpoch)
-            revert UnacceptableBlockCommitment();
+        if (superBlockHeightEpochAssignments[superBlockCommitment.height] != currentEpoch)
+            revert UnacceptableSuperBlockCommitment();
 
         // set accepted block commitment
-        versionedAcceptedBlocks[acceptedBlocksVersion][blockCommitment.height] = blockCommitment;
+        versionedAcceptedBlocks[acceptedBlocksVersion][superBlockCommitment.height] = superBlockCommitment;
 
         // set last accepted block height
-        lastAcceptedBlockHeight = blockCommitment.height;
+        lastAcceptedBlockHeight = superBlockCommitment.height;
 
         // slash minority attesters w.r.t. to the accepted block commitment
-        slashMinority(blockCommitment);
+        slashMinority(superBlockCommitment);
 
         // emit the block accepted event
         emit BlockAccepted(
-            blockCommitment.blockId,
-            blockCommitment.commitment,
-            blockCommitment.height
+            superBlockCommitment.blockId,
+            superBlockCommitment.commitment,
+            superBlockCommitment.height
         );
 
         // if the timestamp epoch is greater than the current epoch, roll over the epoch
@@ -390,7 +390,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
     /**
      */
-    function slashMinority(BlockCommitment memory blockCommitment) internal {
+    function slashMinority(SuperBlockCommitment memory superBlockCommitment) internal {
         // stakingContract.slash(custodians, attesters, amounts, refundAmounts);
     }
 

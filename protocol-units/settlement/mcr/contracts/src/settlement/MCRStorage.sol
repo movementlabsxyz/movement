@@ -20,7 +20,7 @@ contract MCRStorage {
     // track the last accepted block height, so that we can require blocks are submitted in order and handle staking effectively
     uint256 public lastAcceptedBlockHeight;
 
-    struct BlockCommitment {
+    struct SuperBlockCommitment {
         // currently, to simplify the api, we'll say 0 is uncommitted all other numbers are legitimate heights
 
         uint256 height;
@@ -29,22 +29,22 @@ contract MCRStorage {
     }
 
     // map each block height to an epoch
-    mapping(uint256 blockHeight => uint256 epoch) public blockHeightEpochAssignments;
+    mapping(uint256 superBlockHeight => uint256 epoch) public superBlockHeightEpochAssignments;
 
-    // track each commitment from each attester for each block height
-    mapping(uint256 blockHeight => mapping(address attester => BlockCommitment)) public commitments;
+    // track each commitment from each attester for each superBlock height
+    mapping(uint256 superBlockHeight => mapping(address attester => SuperBlockCommitment)) public commitments;
 
-    // track the total stake accumulate for each commitment for each block height
-    mapping(uint256 blockHeight => mapping(bytes32 commitement => uint256 stake)) public commitmentStakes;
+    // track the total stake accumulate for each commitment for each superBlock height
+    mapping(uint256 superBlockHeight => mapping(bytes32 commitement => uint256 stake)) public commitmentStakes;
 
-    // map block height to accepted block hash 
-    mapping(uint256 blockHeight => BlockCommitment) public acceptedBlocks;
+    // map superBlock height to accepted superBlock hash 
+    mapping(uint256 superBlockHeight => SuperBlockCommitment) public acceptedSuperBlocks;
 
     // whether we allow open attestation
     bool public openAttestationEnabled;
 
     // versioned scheme for accepted blocks
-    mapping(uint256 => mapping(uint256 blockHeight => BlockCommitment)) public versionedAcceptedBlocks;
+    mapping(uint256 => mapping(uint256 blockHeight => SuperBlockCommitment)) public versionedAcceptedBlocks;
     uint256 public acceptedBlocksVersion;
 
     uint256[47] internal __gap;
