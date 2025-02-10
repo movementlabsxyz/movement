@@ -3,6 +3,7 @@ pub mod bridge;
 pub mod da_light_node;
 pub mod default;
 pub mod digest_store;
+pub mod light;
 
 use self::default::{default_celestia_force_new_chain, default_da_light_node_is_initial};
 
@@ -38,6 +39,11 @@ pub struct Config {
 	/// The bridge configuration
 	#[serde(default)]
 	pub bridge: bridge::Config,
+
+	/// The celestia light node configuration.
+	/// Not to be confused by the movement-celestia-da-light-node-configuration.
+	#[serde(default)]
+	pub light: light::Config,
 
 	/// The movement-celestia-da-light-node configuration
 	#[serde(default)]
@@ -78,6 +84,7 @@ impl Default for Config {
 			network,
 			appd: appd::Config::default(),
 			bridge: bridge::Config::default(),
+			light: light::Config::default(),
 			da_light_node: da_light_node::Config::default(),
 			celestia_force_new_chain: default_celestia_force_new_chain(),
 			memseq: MemseqConfig::default(),
