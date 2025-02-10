@@ -101,10 +101,10 @@ contract MCRTest is Test, IMCR {
         // bob should not be the current acceptor
         vm.prank(bob);
         vm.expectRevert("NotAcceptor");  // Expect the "NotAcceptor" revert message
-        mcr.attestBlocks();
+        mcr.postconfirmBlocks();
         // alice can confirm the block comittment
         vm.prank(alice);
-        mcr.attestBlocks();
+        mcr.postconfirmBlocks();
 
         // now check the block is L1-confirmed
         // assertEq(mcr.getCurrentEpoch(), mcr.getEpochByBlockTime());

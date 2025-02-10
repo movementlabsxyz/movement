@@ -52,6 +52,19 @@ contract MCRStorage {
     // track the total stake accumulate for each commitment for each block height
     mapping(uint256 blockHeight => mapping(bytes32 commitement => uint256 stake)) public commitmentStakes;
 
+    // Track which attester postconfirmed a given superBlock height
+    mapping(uint256 superBlockHeight => address attester) public postconfirmedBy;
+
+    // Track if acceptor postconfirmed a given superBlock height 
+    // TODO this may be redundant due to one of the mappings below
+    mapping(uint256 superBlockHeight => bool) public postconfirmedByAcceptor;
+
+    // Track the L1Block height when a superBlock height was postconfirmed
+    mapping(uint256 superBlockHeight => uint256 L1BlockHeight) public postconfirmedAtL1BlockHeight;
+
+    // Track the L1Block height when a superBlock height was postconfirmed by the acceptor
+    mapping(uint256 superBlockHeight => uint256 L1BlockHeight) public postconfirmedAtL1BlockHeightByAcceptor;
+
     // map block height to accepted block hash 
     mapping(uint256 blockHeight => BlockCommitment) public acceptedBlocks;
 

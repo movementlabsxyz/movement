@@ -73,7 +73,6 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         return stakingContract.getEpochByBlockTime(address(this));
     }
 
-    // TODO is this not mixing up the L1-block time with the L2-blocks?
     // gets the current epoch up to which blocks have been accepted
     function getCurrentEpoch() public view returns (uint256) {
         return stakingContract.getCurrentEpoch(address(this));
@@ -247,11 +246,11 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         ) revert AttesterAlreadyCommitted();
 
         // assign the block height to the current epoch if it hasn't been assigned yet
-        // TODO since any attester can submit a comittment for a block height, the assignment could be off by leadingBlockTolerance
+        // since any attester can submit a comittment for a block height, the assignment could be off by leadingBlockTolerance
         if (blockHeightEpochAssignments[blockCommitment.height] == 0) {
             // note: this is an intended race condition, but it is benign because of the leadingBlockTolerance
             blockHeightEpochAssignments[
-                blockCommitment.height
+                blockCommitment.height  
             ] = getEpochByBlockTime();
         }
 
@@ -272,14 +271,16 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
     }
 
-    function attestBlocks() public {
-        attestBlocksForAttester(msg.sender);
+    function postconfirmBlocks() public {
+        postconfirmBlocksForAttester(msg.sender);
     }
 
     /// @notice The current acceptor can attest to a block height, given there is a supermajority of stake on the block
-    function attestBlocksForAttester(address attester) internal {
-        // check if the address is the current acceptor
-        if (attester != getCurrentAcceptor()) revert("NotAcceptor");
+    function postconfirmBlocksForAttester(address attester) internal {
+        // if the current acceptor is live we should not accept postconfirmations from voluntary attesters
+        if (currentAcceptorIsLive()) {
+            if (attester != getCurrentAcceptor()) revert("NotAcceptor");
+        }
 
         // keep ticking through to find accepted blocks
         // note: this is what allows for batching to be successful
@@ -292,14 +293,29 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         while (tickOnBlockHeight(lastAcceptedBlockHeight + 1)) {}
     }
 
+    function recordAcceptorPostConfirmation(uint256 blockHeight) internal {
+        address acceptor = getCurrentAcceptor();
+        postconfirmedBy[blockHeight] = acceptor;
+        postconfirmedAtL1BlockHeight[blockHeight] = block.timestamp;
+    }
+
+    function currentAcceptorIsLive() public view returns (bool) {
+        // TODO check if current acceptor has been live sufficiently long
+        // use getCurrentAcceptorStartL1BlockHeight, and the mappings
+    }
+
+    function getCurrentAcceptorStartL1BlockHeight() public view returns (uint256) {
+        uint256 currentL1BlockHeight = block.number;
+        uint256 startL1BlockHeight = currentL1BlockHeight - currentL1BlockHeight % acceptorTerm - 1; // -1 because we do not want to consider the current block.
+        if (startL1BlockHeight < 0) { // ensure its not below 0 
+            startL1BlockHeight = 0;
+        }
+        return startL1BlockHeight;
+    }
+
     /// The Acceptor is determined by L1.
     function getCurrentAcceptor() public view returns (address) {
-        uint256 currentL1BlockHeight = block.number;
-        uint256 relevantL1BlockHeight = currentL1BlockHeight - currentL1BlockHeight % acceptorTerm - 1 ; // -1 because we do not want to consider the current block.
-        if (relevantL1BlockHeight < 0) {
-            relevantL1BlockHeight = 0;
-        }
-        bytes32 blockHash = blockhash(relevantL1BlockHeight);
+        bytes32 blockHash = blockhash(getCurrentAcceptorStartL1BlockHeight());
 
         address[] memory attesters = getAttesters();
         // map the blockhash to the attesters
