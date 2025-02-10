@@ -11,14 +11,14 @@ impl Mainnet {
 		_dot_movement: dot_movement::DotMovement,
 		_config: movement_da_util::config::Config,
 	) -> Result<(), anyhow::Error> {
-		// celestia light start --core.ip ??? --p2p.network celestia
+		// celestia light start --core.ip rpc.celestia.pops.one --p2p.network celestia
 		commander::run_command(
 			"celestia",
 			&[
 				"light",
 				"start",
 				"--core.ip",
-				"rpc.celestia.pops.one", // FIXME: is this correct?
+				"rpc.celestia.pops.one",
 				"--p2p.network",
 				"celestia",
 				"--log.level",

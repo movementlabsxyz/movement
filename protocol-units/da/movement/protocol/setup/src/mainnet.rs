@@ -63,8 +63,7 @@ impl Mainnet {
 	}
 
 	pub async fn get_da_block_height(&self) -> Result<u64, anyhow::Error> {
-		todo!("what's this for mainnet?");
-		let response = reqwest::get("https://rpc-???.pops.one/block").await?.text().await?;
+		let response = reqwest::get("https://rpc.celestia.pops.one/block").await?.text().await?;
 
 		Ok(response.parse().context("Failed to parse the response to a u64.")?)
 	}
