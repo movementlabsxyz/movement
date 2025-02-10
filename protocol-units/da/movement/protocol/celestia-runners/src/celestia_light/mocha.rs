@@ -9,7 +9,7 @@ impl Mocha {
 	pub async fn run(
 		&self,
 		_dot_movement: dot_movement::DotMovement,
-		_config: movement_da_util::config::Config,
+		config: movement_da_util::config::Config,
 	) -> Result<(), anyhow::Error> {
 		// celestia light start --core.ip validator-1.celestia-mocha-11.com --p2p.network mocha
 		commander::run_command(
@@ -17,6 +17,8 @@ impl Mocha {
 			&[
 				"light",
 				"start",
+				"--keyring.keyname",
+				&config.light.key_name,
 				"--core.ip",
 				"rpc-mocha.pops.one",
 				"--p2p.network",

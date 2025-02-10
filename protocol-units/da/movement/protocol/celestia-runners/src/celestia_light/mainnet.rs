@@ -9,7 +9,7 @@ impl Mainnet {
 	pub async fn run(
 		&self,
 		_dot_movement: dot_movement::DotMovement,
-		_config: movement_da_util::config::Config,
+		config: movement_da_util::config::Config,
 	) -> Result<(), anyhow::Error> {
 		// celestia light start --core.ip rpc.celestia.pops.one --p2p.network celestia
 		commander::run_command(
@@ -17,6 +17,8 @@ impl Mainnet {
 			&[
 				"light",
 				"start",
+				"--keyring.keyname",
+				&config.light.key_name,
 				"--core.ip",
 				"rpc.celestia.pops.one",
 				"--p2p.network",
