@@ -23,7 +23,8 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         uint256 _lastAcceptedBlockHeight,
         uint256 _leadingBlockTolerance,
         uint256 _epochDuration,
-        address[] memory _custodians
+        address[] memory _custodians,
+        uint256 _acceptorTerm 
     ) public initializer {
         __BaseSettlement_init_unchained();
         stakingContract = _stakingContract;
@@ -32,6 +33,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         stakingContract.registerDomain(_epochDuration, _custodians);
         grantCommitmentAdmin(msg.sender);
         grantTrustedAttester(msg.sender);
+        acceptorTerm = _acceptorTerm;
     }
 
     function grantCommitmentAdmin(address account) public {
@@ -66,7 +68,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         return lastAcceptedBlockHeight + leadingBlockTolerance;
     }
 
-    // gets the would be epoch for the current block time
+    // gets the would be epoch for the current L1-block time
     function getEpochByBlockTime() public view returns (uint256) {
         return stakingContract.getEpochByBlockTime(address(this));
     }
@@ -244,10 +246,11 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         ) revert AttesterAlreadyCommitted();
 
         // assign the block height to the current epoch if it hasn't been assigned yet
+        // since any attester can submit a comittment for a block height, the assignment could be off by leadingBlockTolerance
         if (blockHeightEpochAssignments[blockCommitment.height] == 0) {
-            // note: this is an intended race condition, but it is benign because of the tolerance
+            // note: this is an intended race condition, but it is benign because of the leadingBlockTolerance
             blockHeightEpochAssignments[
-                blockCommitment.height
+                blockCommitment.height  
             ] = getEpochByBlockTime();
         }
 
@@ -266,17 +269,64 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
             allCurrentEpochStake
         );
 
+    }
+
+    function postconfirmBlocks() public {
+        postconfirmBlocksForAttester(msg.sender);
+    }
+
+    /// @notice The current acceptor can attest to a block height, given there is a supermajority of stake on the block
+    function postconfirmBlocksForAttester(address attester) internal {
+        // if the current acceptor is live we should not accept postconfirmations from voluntary attesters
+        if (currentAcceptorIsLive()) {
+            if (attester != getCurrentAcceptor()) revert("NotAcceptor");
+        }
+
         // keep ticking through to find accepted blocks
         // note: this is what allows for batching to be successful
         // we can commit to blocks out to the tolerance point
         // then we can accept them in order
-        // ! however, this does potentially become very costly for whomever submits this last block
-        // ! rewards need to be managed accordingly
+        // ! rewards need to be 
+        // ! - at least proportional to attested blocks to account for consumed gas
+        // ! - reward the acceptor well to incentivize frequent block attestation (close to comitted block frequency)
+        //     rather than incentivizing the acceptor to batch attesting blocks
         while (tickOnBlockHeight(lastAcceptedBlockHeight + 1)) {}
     }
 
-    /**
-     */
+    function recordAcceptorPostConfirmation(uint256 blockHeight) internal {
+        address acceptor = getCurrentAcceptor();
+        postconfirmedBy[blockHeight] = acceptor;
+        postconfirmedAtL1BlockHeight[blockHeight] = block.timestamp;
+    }
+
+    function currentAcceptorIsLive() public view returns (bool) {
+        // TODO check if current acceptor has been live sufficiently long
+        // use getCurrentAcceptorStartL1BlockHeight, and the mappings
+    }
+
+    function getCurrentAcceptorStartL1BlockHeight() public view returns (uint256) {
+        uint256 currentL1BlockHeight = block.number;
+        uint256 startL1BlockHeight = currentL1BlockHeight - currentL1BlockHeight % acceptorTerm - 1; // -1 because we do not want to consider the current block.
+        if (startL1BlockHeight < 0) { // ensure its not below 0 
+            startL1BlockHeight = 0;
+        }
+        return startL1BlockHeight;
+    }
+
+    /// The Acceptor is determined by L1.
+    function getCurrentAcceptor() public view returns (address) {
+        bytes32 blockHash = blockhash(getCurrentAcceptorStartL1BlockHeight());
+
+        address[] memory attesters = getAttesters();
+        // map the blockhash to the attesters
+        uint256 acceptorIndex = uint256(blockHash) % attesters.length;
+        return attesters[acceptorIndex];        
+    }
+
+    // TODO : liveness. if the accepting epoch is behind the presentEpoch and does not have enough votes for a given block height 
+    // TODO : but the current epoch has enough votes, what should we do?? 
+    // TODO : Should we move to the next epoch and ignore all votes on blocks of that epoch? 
+    // TODO : What if none of the epochs have enough votes for a given block height.
     function tickOnBlockHeight(uint256 blockHeight) internal returns (bool) {
         // get the epoch assigned to the block height
         uint256 blockEpoch = blockHeightEpochAssignments[blockHeight];
@@ -285,13 +335,15 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         // so long as we ensure that we go through the blocks in order and that the block to epoch assignment is non-decreasing, we're good
         // so, we'll just keep rolling over the epoch until we catch up
         while (getCurrentEpoch() < blockEpoch) {
+            // TODO: we should check the implication of this for the acceptor. But it also may be an issue for any attester. 
             rollOverEpoch();
         }
 
         // note: we could keep track of seen commitments in a set
         // but since the operations we're doing are very cheap, the set actually adds overhead
-        uint256 supermajority = (2 * computeAllTotalStakeForEpoch(blockEpoch)) /
-            3;
+
+        // TODO the supermajority is 2f+1 from 3f+1 nodes. Not 2f from 3f. 
+        uint256 supermajority = (2 * computeAllTotalStakeForEpoch(blockEpoch)) / 3;
         address[] memory attesters = getAttesters();
 
         // iterate over the attester set
@@ -357,9 +409,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
      * @dev Accepts a block commitment.
      * @dev Under the current implementation this shares in recursion with the tickOnBlockHeight, so it should be reentrant.
      */
-    function _acceptBlockCommitment(
-        BlockCommitment memory blockCommitment
-    ) internal {
+    function _acceptBlockCommitment(BlockCommitment memory blockCommitment) internal {
         uint256 currentEpoch = getCurrentEpoch();
         // get the epoch for the block commitment
         //  Block commitment is not in the current epoch, it cannot be accepted. This indicates a bug in the protocol.

@@ -10,6 +10,7 @@ import {MovementStakingStorage, EnumerableSet} from "./MovementStakingStorage.so
 import {IMovementStaking} from "./interfaces/IMovementStaking.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
+// TODO Error: "Contract "MovementStaking" should be marked as abstract.(3656)"
 contract MovementStaking is
     MovementStakingStorage,
     IMovementStaking,
@@ -145,17 +146,21 @@ contract MovementStaking is
         epochUnstakesByDomain[domain][epoch][custodian][attester] = amount;
     }
 
-    // gets the would be epoch for the current block time
+    // gets the would be epoch for the current L1-block time. 
+    // TODO: this should be called the currentEpoch (as it is the one that is relevant for stake), whereas the CurrentEpoch should be acceptingEpoch
+    // TODO: for liveness of the protocol it should be possible that newer epochs can accept L2-block-batches that are before the current epoch (IF the previous epoch has stopped being live)
     function getEpochByBlockTime(address domain) public view returns (uint256) {
         return block.timestamp / epochDurationByDomain[domain];
     }
 
     // gets the current epoch up to which blocks have been accepted
+    // TODO: this should be called the currentAcceptingEpoch
     function getCurrentEpoch(address domain) public view returns (uint256) {
         return currentEpochByDomain[domain];
     }
 
     // gets the next epoch
+    // TODO: this should be called the nextAcceptingEpoch
     function getNextEpoch(address domain) public view returns (uint256) {
         return getCurrentEpoch(domain) == 0 ? 0 : getCurrentEpoch(domain) + 1;
     }
@@ -167,7 +172,7 @@ contract MovementStaking is
             getCurrentEpoch(domain) == 0 ? 0 : getEpochByBlockTime(domain) + 1;
     }
 
-    // gets the stake for a given attester at a given epoch
+    // gets the stake for a given attester at a given epoch and domain
     function getStakeAtEpoch(
         address domain,
         uint256 epoch,
@@ -178,6 +183,7 @@ contract MovementStaking is
     }
 
     // gets the stake for a given attester at the current epoch
+    // TODO: this should be called getAcceptingEpochStake
     function getCurrentEpochStake(
         address domain,
         address custodian,
@@ -367,6 +373,7 @@ contract MovementStaking is
     }
 
     function rollOverEpoch() external {
+        // TODO : clarify why this is msg.sender
         _rollOverEpoch(msg.sender, getCurrentEpoch(msg.sender));
     }
 
