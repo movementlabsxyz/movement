@@ -11,7 +11,7 @@ use alloy::providers::fillers::NonceFiller;
 use alloy::providers::fillers::WalletFiller;
 use alloy::providers::{Provider, ProviderBuilder, RootProvider};
 use alloy::pubsub::PubSubFrontend;
-use alloy::signers::local::PrivateKeySigner;
+use alloy::signers::Signer;
 use alloy_network::Ethereum;
 use alloy_network::EthereumWallet;
 use alloy_primitives::Address;
@@ -21,6 +21,9 @@ use alloy_transport::BoxTransport;
 use alloy_transport_ws::WsConnect;
 use anyhow::Context;
 use mcr_settlement_config::Config;
+use movement_signer::cryptography::secp256k1::Secp256k1;
+use movement_signer_loader::Load;
+use movement_signing_eth::HsmSigner;
 use movement_types::block::{BlockCommitment, Commitment, Id};
 use serde_json::Value as JsonValue;
 use std::array::TryFromSliceError;
@@ -100,19 +103,12 @@ impl
 	>
 {
 	pub async fn build_with_config(config: &Config) -> Result<Self, anyhow::Error> {
-		let signer_private_key = match &config.deploy {
-			Some(deployment_config) => {
-				info!("Using deployment config for signer private key");
-				deployment_config.mcr_deployment_account_private_key.clone()
-			}
-			None => {
-				info!("Using settlement config for signer private key");
-				config.settle.signer_private_key.clone()
-			}
-		};
-		let signer = signer_private_key
-			.parse::<PrivateKeySigner>()
-			.context("Failed to parse the private key for the MCR settlement client signer")?;
+		let signer_identifier: Box<dyn Load<Secp256k1> + Send> =
+			Box::new(config.settle.signer_identifier.clone());
+		let signer_provider = signer_identifier.load().await?;
+		let signer =
+			HsmSigner::try_new(signer_provider, Some(config.eth_connection.eth_chain_id)).await?;
+
 		let signer_address = signer.address();
 		info!("Signer address: {}", signer_address);
 		let contract_address = config
