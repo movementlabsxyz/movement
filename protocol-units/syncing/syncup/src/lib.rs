@@ -137,7 +137,7 @@ pub async fn syncup(
 				info!("Non-leader upsyncing is disabled");
 			}
 		}
-		Ok::<(), anyhow::Error>(())
+		//Ok::<(), anyhow::Error>(())
 	};
 
 	Ok(upsync_task)

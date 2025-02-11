@@ -14562,6 +14562,7 @@ dependencies = [
  "aws-sdk-s3",
  "aws-types",
  "clap 4.5.21",
+ "dot-movement",
  "flate2",
  "flocks",
  "futures",
@@ -14575,6 +14576,7 @@ dependencies = [
  "thiserror 1.0.69",
  "tokio",
  "tracing",
+ "tracing-subscriber 0.3.18",
  "uuid",
 ]
 

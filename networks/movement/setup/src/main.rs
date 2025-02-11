@@ -4,7 +4,7 @@ use movement_config::Config;
 use movement_full_node_setup::{local::Local, MovementFullNodeSetupOperations};
 use std::future::Future;
 use std::pin::Pin;
-use syncup::SyncupOperations;
+//use syncup::SyncupOperations;
 use tokio::signal::unix::signal;
 use tokio::signal::unix::SignalKind;
 use tokio::sync::watch;
@@ -67,21 +67,30 @@ async fn main() -> Result<(), anyhow::Error> {
 
 			// set up sync
 			let sync_task: Pin<Box<dyn Future<Output = Result<(), anyhow::Error>> + Send>> =
-				if syncing_config.wants_movement_sync() {
-					let sync_task = syncing_config.syncup().await?;
-					Box::pin(async move {
-						match sync_task.await {
-							Ok(_) => info!("Sync task finished successfully."),
-							Err(err) => info!("Sync task failed: {:?}", err),
-						}
-						Ok(())
-					})
-				} else {
+				// Desactivate setup syncup. Syncup is done manually.
+				{
 					Box::pin(async {
 						info!("No sync task configured, skipping.");
 						futures::future::pending::<Result<(), anyhow::Error>>().await
 					})
+
 				};
+
+			// if syncing_config.wants_movement_sync() {
+			// 	let sync_task = syncing_config.syncup().await?;
+			// 	Box::pin(async move {
+			// 		match sync_task.await {
+			// 			Ok(_) => info!("Sync task finished successfully."),
+			// 			Err(err) => info!("Sync task failed: {:?}", err),
+			// 		}
+			// 		Ok(())
+			// 	})
+			// } else {
+			// 	Box::pin(async {
+			// 		info!("No sync task configured, skipping.");
+			// 		futures::future::pending::<Result<(), anyhow::Error>>().await
+			// 	})
+			// };
 
 			Ok((Some(config.clone()), (anvil_join_handle, sync_task)))
 		})
