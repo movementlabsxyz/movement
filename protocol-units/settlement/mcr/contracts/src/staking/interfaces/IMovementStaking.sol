@@ -9,10 +9,10 @@ interface IMovementStaking {
         address[] calldata custodians
     ) external;
     function acceptGenesisCeremony() external;
-    function getEpochByBlockTime(address) external view returns (uint256);
+    function getEpochByL1BlockTime(address) external view returns (uint256);
     function getCurrentEpoch(address) external view returns (uint256);
     function getNextEpoch(address) external view returns (uint256);
-    function getNextEpochByBlockTime(address) external view returns (uint256);
+    function getNextEpochByL1BlockTime(address) external view returns (uint256);
     function getStakeAtEpoch(
         address domain,
         uint256 epoch,
