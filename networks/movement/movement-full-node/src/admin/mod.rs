@@ -8,7 +8,7 @@ pub mod rotate_key;
 use clap::Subcommand;
 
 #[derive(Subcommand, Debug)]
-#[clap(rename_all = "kebab-case", about = "Commands for syncing")]
+#[clap(rename_all = "kebab-case", about = "Commands for administering the movement full node")]
 pub enum Admin {
 	#[clap(subcommand)]
 	Mcr(mcr::Mcr),

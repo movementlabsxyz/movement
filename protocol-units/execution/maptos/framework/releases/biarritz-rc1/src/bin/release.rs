@@ -1,4 +1,4 @@
-use aptos_framework_biarritz_rc1_release::cached::gas_upgrade::BiarritzRc1;
+use aptos_framework_biarritz_rc1_release::cached::full::feature_upgrade::BiarritzRc1;
 use maptos_framework_release_util::{LocalAccountReleaseSigner, Release};
 use movement_client::types::{account_config::aptos_test_root_address, LocalAccount};
 use once_cell::sync::Lazy;
