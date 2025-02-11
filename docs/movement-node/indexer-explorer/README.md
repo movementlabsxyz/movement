@@ -2,7 +2,7 @@
 
 ## Indexer Infrastructure
 
-Movement Network’s RPC provides a stable API. However, for those seeking efficient querying of on-chain states for applications, Movement Labs provides an indexing service for Movement Network. 
+Movement Network’s RPC provides a stable API. However, for those seeking efficient querying of on-chain states for applications, Movement Labs provides an indexing service for Movement Network.
 
 Endpoints: (forthcoming; Indexer service is being deployed currently)
 

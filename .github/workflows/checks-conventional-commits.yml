@@ -1,0 +1,37 @@
+name: 🔎 Conventional Commit Checks
+run-name: Checking conventional commit on ${{ github.sha }}
+
+on:
+  push:
+    branches:
+      - '**'
+      - '!main' 
+
+
+jobs:
+  conventional-commit-check:
+    runs-on: ubuntu-latest
+    name: Conventional Commit Check
+    steps:
+        
+      # check out repository
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      # install cargo
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      # install convco
+      - name: Install convco
+        run: cargo install cocogitto --locked
+
+      # check for conventional commits  
+      - name: Check for conventional commits
+        run: scripts/devops/conv-commit-check
