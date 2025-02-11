@@ -56,9 +56,9 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     function createSuperBlockCommitment(
         uint256 height,
         bytes32 commitment,
-        bytes32 blockID
+        bytes32 blockId
     ) public pure returns (SuperBlockCommitment memory) {
-        return SuperBlockCommitment(height, commitment, blockID);
+        return SuperBlockCommitment(height, commitment, blockId);
     }
 
     // gets the max tolerable superBlock height
@@ -261,7 +261,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         ] += allCurrentEpochStake;
 
         emit SuperBlockCommitmentSubmitted(
-            superBlockCommitment.blockID,
+            superBlockCommitment.blockId,
             superBlockCommitment.commitment,
             allCurrentEpochStake
         );
@@ -377,7 +377,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
         // emit the superBlock accepted event
         emit BlockAccepted(
-            superBlockCommitment.blockID,
+            superBlockCommitment.blockId,
             superBlockCommitment.commitment,
             superBlockCommitment.height
         );

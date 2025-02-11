@@ -25,7 +25,7 @@ contract MCRStorage {
 
         uint256 height;
         bytes32 commitment;
-        bytes32 blockID;
+        bytes32 blockId;
     }
 
     // map each superBlock height to an epoch
