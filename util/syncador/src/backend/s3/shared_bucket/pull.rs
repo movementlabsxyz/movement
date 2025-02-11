@@ -135,8 +135,6 @@ impl Pull {
 		// create a new manifest
 		let mut manifest = PackageElement::new(self.pull_destination.clone());
 
-		println!("ICI download_all_files_for_candidate file_paths {file_paths:?}",);
-
 		// download each file
 		let mut manifest_futures = Vec::new();
 		for file_path in file_paths {
@@ -161,7 +159,6 @@ impl Pull {
 		//recreate splited archive if needed.
 		let mut unsplit_manifest =
 			PackageElement { sync_files: vec![], root_dir: manifest.root_dir.clone() };
-		println!("ICI manifest.sync_files manifest.sync_files {:?}", manifest.sync_files);
 		for absolute_path in &manifest.sync_files {
 			let path_buf = absolute_path.to_path_buf();
 			let absolute_path =
@@ -238,13 +235,14 @@ fn recreate_archive(archive_chunk: PathBuf) -> Result<PathBuf, anyhow::Error> {
 		return Ok(archive_chunk);
 	}
 
-	let archive_file_name = archive_chunk
+	let (chunk, archive_file_name) = archive_chunk
 		.file_name()
 		.and_then(|file_name| file_name.to_str())
 		.and_then(|file_name_str| file_name_str.strip_suffix(".chunk"))
 		.and_then(|base_filename| {
 			let base_filename_parts: Vec<&str> = base_filename.rsplitn(2, '_').collect();
-			(base_filename_parts.len() > 1).then(|| base_filename_parts[1].to_string())
+			(base_filename_parts.len() > 1)
+				.then(|| (base_filename_parts[0].to_string(), base_filename_parts[1].to_string()))
 		})
 		.ok_or(anyhow::anyhow!(format!(
 			"Archive filename not found for chunk path:{:?}",
@@ -257,6 +255,11 @@ fn recreate_archive(archive_chunk: PathBuf) -> Result<PathBuf, anyhow::Error> {
 			archive_chunk.to_str()
 		)),
 	)?;
+
+	//remove old archive file
+	if chunk == "000" && archive_path.exists() {
+		std::fs::remove_file(&archive_path)?;
+	}
 
 	let mut archive_file = OpenOptions::new()
 		.create(true) // Create the file if it doesn't exist

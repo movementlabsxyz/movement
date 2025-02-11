@@ -200,33 +200,11 @@ pub mod test {
 		let package = Package(vec![element]);
 
 		let dest_package = pull
-			.pull(Some(package))
+			.pull(Some(package.clone()))
 			.await?
 			.ok_or(anyhow::anyhow!("Error No file pulled."))?;
 
-		let file_metadata = std::fs::metadata(&dest_package.0[0].sync_files[0])?;
-		let file_size = file_metadata.len() as usize;
-		assert_eq!(file_size, 10 * 1024, "dest file hasn't the right size: {file_size}");
-
-		//verify that the file byte are in order.
-		let pulled_file = File::open(&dest_package.0[0].sync_files[0])?;
-		let mut reader = BufReader::new(pulled_file);
-		let mut buffer = [0u8; 1024];
-		let mut expected_byte: u8 = 0;
-
-		loop {
-			let bytes_read = reader.read(&mut buffer)?;
-			if bytes_read == 0 {
-				break; // End of file
-			}
-
-			for &byte in &buffer[..bytes_read] {
-				if byte != expected_byte {
-					panic!("Pull file bytes in wrong order.");
-				}
-				expected_byte = expected_byte.wrapping_add(1); // Increment and wrap around after 255
-			}
-		}
+		verify_archive(&dest_package.0[0].sync_files[0])?;
 
 		//verify that all chunk has been removed
 		let has_chunk = std::fs::read_dir(&destination_dir)?
@@ -244,6 +222,42 @@ pub mod test {
 			.is_some();
 		assert!(!has_chunk, "Some chunk are still present.");
 
+		//Do a second pull to validate it manage last pull remaining files.
+		let dest_package = pull
+			.pull(Some(package))
+			.await?
+			.ok_or(anyhow::anyhow!("Error second pull failed."))?;
+		verify_archive(&dest_package.0[0].sync_files[0])?;
+
+		Ok(())
+	}
+
+	fn verify_archive<P: AsRef<std::path::Path> + std::marker::Copy>(
+		archive_file: P,
+	) -> Result<(), anyhow::Error> {
+		let file_metadata = std::fs::metadata(archive_file)?;
+		let file_size = file_metadata.len() as usize;
+		assert_eq!(file_size, 10 * 1024, "dest file hasn't the right size: {file_size}");
+
+		//verify that the file byte are in order.
+		let pulled_file = File::open(archive_file)?;
+		let mut reader = BufReader::new(pulled_file);
+		let mut buffer = [0u8; 1024];
+		let mut expected_byte: u8 = 0;
+
+		loop {
+			let bytes_read = reader.read(&mut buffer)?;
+			if bytes_read == 0 {
+				break; // End of file
+			}
+
+			for &byte in &buffer[..bytes_read] {
+				if byte != expected_byte {
+					panic!("Pull file bytes in wrong order.");
+				}
+				expected_byte = expected_byte.wrapping_add(1); // Increment and wrap around after 255
+			}
+		}
 		Ok(())
 	}
 
