@@ -8,27 +8,27 @@ contract MCRStorage {
 
     IMovementStaking public stakingContract;
 
-    // the number of blocks that can be submitted ahead of the lastAcceptedBlockHeight
+    // the number of superBlocks that can be submitted ahead of the lastAcceptedSuperBlockHeight
     // this allows for things like batching to take place without some attesters locking down the attester set by pushing too far ahead
-    // ? this could be replaced by a 2/3 stake vote on the block height to epoch assignment
+    // ? this could be replaced by a 2/3 stake vote on the superBlock height to epoch assignment
     // ? however, this protocol becomes more complex as you to take steps to ensure that...
-    // ? 1. Block heights have a non-decreasing mapping to epochs
+    // ? 1. superBlock heights have a non-decreasing mapping to epochs
     // ? 2. Votes get accumulated reasonable near the end of the epoch (i.e., your vote is cast for the epoch you vote fore and the next)
     // ? if howevever, you simply allow a race with the tolerance below, both of these are satisfied without the added complexity
-    uint256 public leadingBlockTolerance;
+    uint256 public leadingSuperBlockTolerance;
 
-    // track the last accepted block height, so that we can require blocks are submitted in order and handle staking effectively
-    uint256 public lastAcceptedBlockHeight;
+    // track the last accepted superBlock height, so that we can require superBlocks are submitted in order and handle staking effectively
+    uint256 public lastAcceptedSuperBlockHeight;
 
     struct SuperBlockCommitment {
         // currently, to simplify the api, we'll say 0 is uncommitted all other numbers are legitimate heights
 
         uint256 height;
         bytes32 commitment;
-        bytes32 blockId;
+        bytes32 blockID;
     }
 
-    // map each block height to an epoch
+    // map each superBlock height to an epoch
     mapping(uint256 superBlockHeight => uint256 epoch) public superBlockHeightEpochAssignments;
 
     // track each commitment from each attester for each superBlock height
@@ -43,9 +43,9 @@ contract MCRStorage {
     // whether we allow open attestation
     bool public openAttestationEnabled;
 
-    // versioned scheme for accepted blocks
-    mapping(uint256 => mapping(uint256 blockHeight => SuperBlockCommitment)) public versionedAcceptedBlocks;
-    uint256 public acceptedBlocksVersion;
+    // versioned scheme for accepted superBlocks
+    mapping(uint256 => mapping(uint256 superBlockHeight => SuperBlockCommitment)) public versionedAcceptedSuperBlocks;
+    uint256 public acceptedSuperBlocksVersion;
 
     uint256[47] internal __gap;
 

@@ -100,7 +100,7 @@ contract MCRTest is Test, IMCR {
         mcr.submitBlockCommitment(bc1);
 
         // now we move to block 2 and make some commitment just to trigger the epochRollover
-        MCRStorage.BlockCommitment memory retrievedCommitment = mcr.getAcceptedCommitmentAtBlockHeight(1);
+        MCRStorage.BlockCommitment memory retrievedCommitment = mcr.getAcceptedCommitmentAtSuperBlockHeight(1);
         assert(retrievedCommitment.commitment == bc1.commitment);
         assert(retrievedCommitment.blockId == bc1.blockId);
         assert(retrievedCommitment.height == 1);
@@ -160,7 +160,7 @@ contract MCRTest is Test, IMCR {
         vm.prank(bob);
         mcr.submitBlockCommitment(bc1);
 
-        MCRStorage.BlockCommitment memory retrievedCommitment = mcr.getAcceptedCommitmentAtBlockHeight(1);
+        MCRStorage.BlockCommitment memory retrievedCommitment = mcr.getAcceptedCommitmentAtSuperBlockHeight(1);
         // now we move to block 2 and make some commitment just to trigger the epochRollover
         assert(retrievedCommitment.commitment == bc1.commitment);
         assert(retrievedCommitment.blockId == bc1.blockId);
@@ -240,7 +240,7 @@ contract MCRTest is Test, IMCR {
         assertEq(mcr.getCurrentEpochStake(address(moveToken), alice), 34);
         assertEq(mcr.getCurrentEpochStake(address(moveToken), bob), 33);
         assertEq(mcr.getCurrentEpochStake(address(moveToken), carol), 33);
-        MCRStorage.BlockCommitment memory retrievedCommitment = mcr.getAcceptedCommitmentAtBlockHeight(1);
+        MCRStorage.BlockCommitment memory retrievedCommitment = mcr.getAcceptedCommitmentAtSuperBlockHeight(1);
         assert(retrievedCommitment.commitment == bc1.commitment);
         assert(retrievedCommitment.blockId == bc1.blockId);
         assert(retrievedCommitment.height == 1);
@@ -326,7 +326,7 @@ contract MCRTest is Test, IMCR {
                     mcr.submitBlockCommitment(dishonestCommitment);
                 }
 
-                MCRStorage.BlockCommitment memory retrievedCommitment = mcr.getAcceptedCommitmentAtBlockHeight(blockHeight);
+                MCRStorage.BlockCommitment memory retrievedCommitment = mcr.getAcceptedCommitmentAtSuperBlockHeight(blockHeight);
                 assert(retrievedCommitment.commitment == honestCommitment.commitment);
                 assert(retrievedCommitment.blockId == honestCommitment.blockId);
                 assert(retrievedCommitment.height == blockHeight);
@@ -386,7 +386,7 @@ contract MCRTest is Test, IMCR {
         mcr.forceLatestCommitment(forcedCommitment);
 
         // get the latest commitment
-        MCRStorage.BlockCommitment memory retrievedCommitment = mcr.getAcceptedCommitmentAtBlockHeight(1);
+        MCRStorage.BlockCommitment memory retrievedCommitment = mcr.getAcceptedCommitmentAtSuperBlockHeight(1);
         assertEq(retrievedCommitment.blockId, forcedCommitment.blockId);
         assertEq(retrievedCommitment.commitment, forcedCommitment.commitment);
         assertEq(retrievedCommitment.height, forcedCommitment.height);
