@@ -1,5 +1,7 @@
 # MRC
+
 - **RFC**: [RFC MCR](https://github.com/movementlabsxyz/rfcs/pulls)
+- **MIP**: [MIP-27](https://github.com/movementlabsxyz/MIP/blob/mip/postconfirmation/MIP/mip-37/README.md)
 
 This directory contains the implementation of the MRC settlement smart contract. To test the contract, run:
 
