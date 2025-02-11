@@ -68,7 +68,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
     // gets the would be epoch for the current L1Block time
     function getEpochByL1BlockTime() public view returns (uint256) {
-        return stakingContract.getEpochByBlockTime(address(this));
+        return stakingContract.getEpochByL1BlockTime(address(this));
     }
 
     // gets the current epoch up to which superBlocks have been accepted
