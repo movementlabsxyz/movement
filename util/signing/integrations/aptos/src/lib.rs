@@ -1,3 +1,4 @@
+pub mod key_rotation;
 pub mod release_signer;
 
 use aptos_crypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
@@ -6,7 +7,6 @@ use aptos_types::transaction::{
 	authenticator::AuthenticationKey, RawTransaction, SignedTransaction,
 };
 use movement_signer::{cryptography::ed25519::Ed25519, SignerError, Signing};
-
 use std::future::Future;
 
 #[derive(Debug, thiserror::Error)]
@@ -19,6 +19,7 @@ pub enum Error {
 }
 
 pub trait TransactionSigner: Sync {
+	/// Signs a raw transaction and returns a signed transaction.
 	fn sign_transaction(
 		&self,
 		raw: RawTransaction,
@@ -31,13 +32,16 @@ pub trait TransactionSigner: Sync {
 		}
 	}
 
+	/// Signs a message and returns a signature.
 	fn sign_transaction_bytes(
 		&self,
 		bytes: &[u8],
 	) -> impl Future<Output = Result<Ed25519Signature, Error>> + Send;
 
+	/// Returns the public key of the signer.
 	fn public_key(&self) -> impl Future<Output = Result<Ed25519PublicKey, Error>> + Send;
 
+	/// Returns the authentication key of the signer.
 	fn authentication_key(&self) -> impl Future<Output = Result<AuthenticationKey, Error>> + Send {
 		async move {
 			let public_key = self.public_key().await?;
@@ -129,7 +133,7 @@ pub mod test {
 
 		let (tx_sender, _tx_receiver) = mpsc::channel(1);
 		let (executor, _tempdir) = Executor::try_test_default_with_public_key(public_key)?;
-		let (context, _transaction_pipe) = executor.background(tx_sender)?;
+		let (_context, _transaction_pipe) = executor.background(tx_sender)?;
 		let block_id = HashValue::random();
 		let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
 			block_id,

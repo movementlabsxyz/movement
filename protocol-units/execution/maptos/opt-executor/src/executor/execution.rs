@@ -1,6 +1,5 @@
 use super::Executor;
 use aptos_crypto::HashValue;
-use aptos_crypto::ValidCryptoMaterialStringExt;
 use aptos_executor_types::BlockExecutorTrait;
 use aptos_types::{
 	aggregate_signature::AggregateSignature,
@@ -15,7 +14,7 @@ use aptos_types::{
 	validator_verifier::{ValidatorConsensusInfo, ValidatorVerifier},
 };
 use movement_types::block::{BlockCommitment, Commitment, Id};
-use tracing::{debug, info};
+use tracing::info;
 
 impl Executor {
 	pub async fn execute_block(
@@ -208,18 +207,16 @@ mod tests {
 	use super::*;
 	use crate::Service;
 	use aptos_api::accept_type::AcceptType;
+	use aptos_crypto::ValidCryptoMaterialStringExt;
 	use aptos_crypto::{
 		ed25519::{Ed25519PrivateKey, Ed25519Signature},
 		HashValue, PrivateKey, Uniform,
 	};
-	use aptos_sdk::{
-		transaction_builder::TransactionFactory,
-		types::{AccountKey, LocalAccount},
-	};
+	use aptos_sdk::{transaction_builder::TransactionFactory, types::LocalAccount};
 	use aptos_storage_interface::state_view::DbStateViewAtVersion;
 	use aptos_types::{
 		account_address::AccountAddress,
-		account_config::{aptos_test_root_address, AccountResource},
+		account_config::AccountResource,
 		block_executor::partitioner::ExecutableTransactions,
 		block_metadata::BlockMetadata,
 		chain_id::ChainId,
@@ -231,6 +228,7 @@ mod tests {
 	};
 	use rand::SeedableRng;
 	use tokio::sync::mpsc;
+	use tracing::debug;
 
 	fn create_signed_transaction(sequence_number: u64, chain_id: ChainId) -> SignedTransaction {
 		let private_key = Ed25519PrivateKey::generate_for_testing();

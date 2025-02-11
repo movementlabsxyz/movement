@@ -3,6 +3,7 @@ use aptos_release_builder::components::feature_flags::{
 	generate_feature_upgrade_proposal, Features,
 };
 use aptos_sdk::types::transaction::{Script, SignedTransaction, TransactionPayload};
+use core::fmt::Debug;
 use maptos_framework_release_util::{
 	compiler::Compiler, Release, ReleaseBundleError, ReleaseSigner,
 };
@@ -11,10 +12,11 @@ use std::path::PathBuf;
 use tempfile::tempdir;
 use tracing::info;
 
-/// [SetFeatureFlags] can be used to wrap a proposal to prefix it with a gas upgrade.
+/// [SetFeatureFlags] can be used to wrap a proposal to prefix it with a feature flag.
+#[derive(Debug)]
 pub struct SetFeatureFlags<R>
 where
-	R: Release,
+	R: Release + Debug,
 {
 	pub wrapped_release: R,
 	pub repo: &'static str,
@@ -26,7 +28,7 @@ where
 
 impl<R> SetFeatureFlags<R>
 where
-	R: Release,
+	R: Release + Debug,
 {
 	pub fn new(
 		wrapped_release: R,
@@ -39,13 +41,13 @@ where
 		Self { wrapped_release, repo, commit_hash, bytecode_version, framework_local_dir, features }
 	}
 
-	/// Generates the bytecode for the gas upgrade proposal.
+	/// Generates the bytecode for the feature flag proposal.
 	pub fn set_feature_flags_proposal_bytecode(&self) -> Result<Vec<u8>, ReleaseBundleError> {
 		let (_, update_feature_flags_script) =
 			generate_feature_upgrade_proposal(&self.features, true, vec![])
 				.map_err(|e| ReleaseBundleError::Build(e.into()))?
 				.pop()
-				.map_or(Err(ReleaseBundleError::Build("no gas upgrade proposal".into())), Ok)?;
+				.map_or(Err(ReleaseBundleError::Build("no feature flag proposal".into())), Ok)?;
 
 		let temp_dir = tempdir().map_err(|e| ReleaseBundleError::Build(e.into()))?;
 		let feature_flags_script_path = temp_dir.path().join("feature_flags");
@@ -76,7 +78,7 @@ where
 		Ok(bytecode)
 	}
 
-	/// Generate the transaction for the gas upgrade proposal.
+	/// Generate the transaction for the feature flag proposal.
 	pub async fn set_feature_flags_proposal_transaction(
 		&self,
 		signer: &impl ReleaseSigner,
@@ -132,7 +134,7 @@ where
 		let _response = client.submit_and_wait_bcs(&signed_transaction).await.map_err(|e| {
 			info!("failed to submit feature flag proposal: {:?}", e);
 			ReleaseBundleError::Proposing(
-				format!("failed to submit gas upgrade proposal: {:?}", e).into(),
+				format!("failed to submit feature flag proposal: {:?}", e).into(),
 			)
 		})?;
 
@@ -144,9 +146,9 @@ where
 
 impl<R> Release for SetFeatureFlags<R>
 where
-	R: Release,
+	R: Release + Debug,
 {
-	/// Note: the release bundle will not actually contain the gas upgrade proposal, so when running genesis with this release, the gas upgrade proposal will not be included.
+	/// Note: the release bundle will not actually contain the feature flag proposal, so when running genesis with this release, the feature flag proposal will not be included.
 	/// Instead you will need to use an OTA
 	fn release_bundle(&self) -> Result<ReleaseBundle, ReleaseBundleError> {
 		self.wrapped_release.release_bundle()
@@ -161,6 +163,7 @@ where
 		client: &aptos_sdk::rest_client::Client,
 	) -> Result<Vec<aptos_types::transaction::SignedTransaction>, ReleaseBundleError> {
 		// run the wrapped release
+		info!("Proposing release before feature flags {:?}", self);
 		let transactions = self
 			.wrapped_release
 			.propose_release(
@@ -172,7 +175,8 @@ where
 			)
 			.await?;
 
-		// generate and execute the gas upgrade proposal
+		// generate and execute the feature flag proposal
+		info!("Setting feature flags");
 		let now_u64 = std::time::SystemTime::now()
 			.duration_since(std::time::UNIX_EPOCH)
 			.map_err(|e| ReleaseBundleError::Build(e.into()))?
@@ -186,6 +190,7 @@ where
 			client,
 		)
 		.await?;
+		info!("Feature flags set");
 
 		Ok(transactions)
 	}
@@ -202,6 +207,7 @@ macro_rules! generate_feature_upgrade_module {
 			use aptos_release_builder::components::feature_flags::Features;
 			use aptos_sdk::move_types::gas_algebra::GasQuantity;
 			use maptos_framework_release_util::{Release, ReleaseBundleError};
+			use tracing::info;
 
 			pub struct $struct_name {
 				pub with_features: SetFeatureFlags<super::$struct_name>,
@@ -217,7 +223,7 @@ macro_rules! generate_feature_upgrade_module {
 							"null",
 							"null",
 							6,
-							Some(aptos_framework_path()), // just use the path to the framework for the gas upgrade
+							Some(aptos_framework_path()), // just use the path to the framework for the feature flag
 							features,
 						),
 					}
@@ -229,7 +235,7 @@ macro_rules! generate_feature_upgrade_module {
 					self.with_features.release_bundle()
 				}
 
-				async fn release(
+				async fn propose_release(
 					&self,
 					signer: &impl maptos_framework_release_util::ReleaseSigner,
 					max_gas_amount: u64,
@@ -237,8 +243,9 @@ macro_rules! generate_feature_upgrade_module {
 					expiration_timestamp_secs: u64,
 					client: &aptos_sdk::rest_client::Client,
 				) -> Result<Vec<aptos_types::transaction::SignedTransaction>, ReleaseBundleError> {
+					info!("Proposing release {} with feature flags", stringify!($struct_name));
 					self.with_features
-						.release(
+						.propose_release(
 							signer,
 							max_gas_amount,
 							gas_unit_price,

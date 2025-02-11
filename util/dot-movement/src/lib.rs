@@ -8,31 +8,37 @@ pub struct DotMovement(std::path::PathBuf);
 impl DotMovement {
 	const DEFAULT_DOT_MOVEMENT_PATH_VAR_NAME: &'static str = "DOT_MOVEMENT_PATH";
 
+	/// Creates a new dot movement around the given path.
 	pub fn new(path: &str) -> Self {
 		Self(std::path::PathBuf::from(path))
 	}
 
+	/// Gets the path of the dot movement.
 	pub fn get_path(&self) -> &std::path::Path {
 		&self.0
 	}
 
+	/// Sets the path of the dot movement.
 	pub fn set_path(&mut self, path: std::path::PathBuf) {
 		self.0 = path;
 	}
 
+	/// Gets the path of the config json file.
 	pub fn get_config_json_path(&self) -> std::path::PathBuf {
 		self.0.join("config.json")
 	}
 
+	/// Tries to get the config file as a string.
 	pub async fn try_get_config_file_str(&self) -> Result<String, anyhow::Error> {
 		let config_path = self.get_config_json_path();
-		let res = tokio::fs::read_to_string(config_path).await;
+		let res = tokio::fs::read_to_string(&config_path).await;
 		match res {
 			Ok(contents) => Ok(contents),
-			Err(e) => Err(anyhow::anyhow!("failed to read file: {}", e)),
+			Err(e) => Err(anyhow::anyhow!("failed to read file: {:?} {}", config_path, e)),
 		}
 	}
 
+	/// Tries to get or create the config file.
 	pub async fn try_get_or_create_config_file(&self) -> Result<tokio::fs::File, anyhow::Error> {
 		let config_path = self.get_config_json_path();
 
@@ -139,12 +145,14 @@ impl DotMovement {
 		Ok(())
 	}
 
+	/// Tries to get the dot movement path from the environment.
 	pub fn try_from_env() -> Result<Self, anyhow::Error> {
 		let path = std::env::var(Self::DEFAULT_DOT_MOVEMENT_PATH_VAR_NAME)
 			.map_err(|_| anyhow::anyhow!("Dot movement path not provided"))?;
 		Ok(Self::new(&path))
 	}
 
+	/// Tries to load the config file as a JSON value.
 	pub async fn try_load_value(&self) -> Result<serde_json::Value, anyhow::Error> {
 		let json_contents = self.try_get_config_file_str().await?;
 		let value = serde_json::from_str(&json_contents)?;
