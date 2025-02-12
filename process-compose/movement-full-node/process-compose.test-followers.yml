@@ -129,5 +129,7 @@ processes:
         condition: process_healthy
       movement-faucet:
         condition: process_healthy
+    availability:
+      exit_on_end: true
 
   

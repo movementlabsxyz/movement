@@ -149,7 +149,6 @@ where
 					block_opt = blob_stream.next() => {
 						match block_opt {
 							Some(Ok((height, da_blob))) => {
-								//let (height, da_blob) = blob.map_err(|e| tonic::Status::internal(e.to_string()))?;
 								match verifier.verify(da_blob, height.as_u64()).await.map_err(|e| tonic::Status::internal(e.to_string())).and_then(|verifed_blob| {
 									verifed_blob.into_inner().to_blob_passed_through_read_response(height.as_u64()).map_err(|e| tonic::Status::internal(e.to_string()))
 								}) {
