@@ -24,7 +24,7 @@ use mcr_settlement_config::Config;
 use movement_signer::cryptography::secp256k1::Secp256k1;
 use movement_signer_loader::Load;
 use movement_signing_eth::HsmSigner;
-use movement_types::block::{BlockCommitment, Commitment, Id};
+use movement_types::block::{SuperBlockCommitment, Commitment, Id};
 use serde_json::Value as JsonValue;
 use std::array::TryFromSliceError;
 use std::fs;
@@ -355,8 +355,8 @@ where
 
 	async fn get_max_tolerable_block_height(&self) -> Result<u64, anyhow::Error> {
 		let contract = MCR::new(self.contract_address, &self.ws_provider);
-		let MCR::getMaxTolerableBlockHeightReturn { _0: block_height } =
-			contract.getMaxTolerableBlockHeight().call().await?;
+		let MCR::getMaxTolerableSuperBlockHeightReturn { _0: block_height } =
+			contract.getMaxTolerableSuperBlockHeight().call().await?;
 		Ok(block_height
 			.try_into()
 			.context("Failed to convert the max tolerable block height from U256 to u64")?)
