@@ -1,41 +1,24 @@
-#![allow(unused_imports)]
-
-use anyhow::{Chain, Context};
+use anyhow::Context;
 use aptos_sdk::{
-	crypto::{ed25519::ed25519_keys::Ed25519PublicKey, multi_ed25519::MultiEd25519PublicKey},
-	move_types::{
-		identifier::Identifier,
-		language_storage::{ModuleId, StructTag, TypeTag},
-	},
-	rest_client::{
-		aptos_api_types::{
-			Address, EntryFunctionId, IdentifierWrapper, MoveModule, MoveModuleId, MoveStructTag,
-			MoveType, ViewRequest,
-		},
-		Account, Response,
-	},
-	transaction_builder::TransactionBuilder,
+	move_types::{identifier::Identifier, language_storage::ModuleId},
 	types::{
 		account_address::AccountAddress,
 		chain_id::ChainId,
 		transaction::{EntryFunction, Script, TransactionArgument},
-		AccountKey, LocalAccount,
+		LocalAccount,
 	},
 };
-use aptos_types::{
-	account_config::aptos_test_root_address, test_helpers::transaction_test_helpers,
-	transaction::TransactionPayload,
-};
+
+use aptos_types::{test_helpers::transaction_test_helpers, transaction::TransactionPayload};
 use buildtime_helpers::cargo::cargo_workspace;
 use movement_client::{
 	coin_client::CoinClient,
-	crypto::ValidCryptoMaterialStringExt,
 	rest_client::{Client, FaucetClient},
 };
 use once_cell::sync::Lazy;
-use rayon::vec;
+use std::str;
 use std::{
-	env, fs,
+	fs,
 	path::PathBuf,
 	process::Command,
 	str::FromStr,
@@ -104,16 +87,18 @@ async fn main() -> Result<(), anyhow::Error> {
 		.inner()
 		.chain_id;
 
-	let mut core_resources_account = LocalAccount::from_private_key(
-		SUZUKA_CONFIG
-			.execution_config
-			.maptos_config
-			.chain
-			.maptos_private_key
-			.to_encoded_string()?
-			.as_str(),
+	let bytes: Vec<u8> = SUZUKA_CONFIG
+		.execution_config
+		.maptos_config
+		.chain
+		.maptos_private_key_signer_identifier
+		.try_raw_private_key()?;
+
+	let core_resources_account = LocalAccount::from_private_key(
+		str::from_utf8(&bytes).expect("Cannot get key from bytes"),
 		0,
 	)?;
+
 	tracing::info!(
 		"resource account keypairs: {:?}, {:?}",
 		core_resources_account.private_key(),
@@ -323,17 +308,18 @@ async fn main() -> Result<(), anyhow::Error> {
 	let mint_core_script_payload =
 		TransactionPayload::Script(Script::new(mint_core_code, vec![], mint_core_args));
 
-	let mint_core_script_transaction = transaction_test_helpers::get_test_signed_transaction_with_chain_id(
-		associate_address,
-		core_resources_account.sequence_number(),
-		&core_resources_account.private_key(),
-		core_resources_account.public_key().clone(),
-		Some(mint_core_script_payload),
-		SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60,
-		100,
-		None,
-		ChainId::new(chain_id),
-	);
+	let mint_core_script_transaction =
+		transaction_test_helpers::get_test_signed_transaction_with_chain_id(
+			associate_address,
+			core_resources_account.sequence_number(),
+			&core_resources_account.private_key(),
+			core_resources_account.public_key().clone(),
+			Some(mint_core_script_payload),
+			SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60,
+			100,
+			None,
+			ChainId::new(chain_id),
+		);
 
 	rest_client
 		.submit_and_wait(&mint_core_script_transaction)
@@ -348,7 +334,6 @@ async fn main() -> Result<(), anyhow::Error> {
 			== desired_core_balance + amount_to_mint,
 		"Core resources account balance was not minted"
 	);
-
 
 	Ok(())
 }
