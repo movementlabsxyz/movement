@@ -13,51 +13,13 @@ impl Mainnet {
 		Self
 	}
 
-	pub async fn get_mainnet_11_address(&self) -> Result<String, anyhow::Error> {
-		// get the json from celkey
-		// cel-key list --node.type light --keyring-backend test --p2p.network celestia --output json
-		let json_string = run_command(
-			"cel-key",
-			&[
-				"list",
-				"--node.type",
-				"light",
-				"--keyring-backend",
-				"test",
-				"--p2p.network",
-				"celestia",
-				"--output",
-				"json",
-			],
+	pub async fn celestia_light_init(&self) -> Result<(), anyhow::Error> {
+		// celestia light init --p2p.network celestia --keyring.backend test
+		run_command(
+			"celestia",
+			&["light", "init", "--p2p.network", "celestia", "--keyring.backend", "test"],
 		)
 		.await?;
-
-		let json_string = json_string
-			.lines()
-			.last()
-			.context("Failed to get the last line of the json string.")?;
-
-		info!("Mainnet 11 address json: {}", json_string);
-
-		// use serde to convert to json
-		let json: serde_json::Value = serde_json::from_str(&json_string)
-			.context("Failed to convert json string to json value for celestia address.")?;
-
-		// q -r '.[0].address'
-		let address = json
-			.get(0)
-			.context("Failed to get the first element of the json array.")?
-			.get("address")
-			.context("Failed to get the address field from the json object.")?
-			.as_str()
-			.context("Failed to convert the address field to a string.")?;
-
-		Ok(address.to_string())
-	}
-
-	pub async fn celestia_light_init(&self) -> Result<(), anyhow::Error> {
-		// celestia light init --p2p.network celestia
-		run_command("celestia", &["light", "init", "--p2p.network", "celestia"]).await?;
 
 		Ok(())
 	}
@@ -90,10 +52,6 @@ impl Mainnet {
 
 		// celestia light init --p2p.network celestia
 		self.celestia_light_init().await?;
-
-		// get the mainnet 11 address
-		let address = self.get_mainnet_11_address().await?;
-		config.appd.celestia_validator_address.replace(address.clone());
 
 		// get the auth token
 		let auth_token = self.get_auth_token().await?;
