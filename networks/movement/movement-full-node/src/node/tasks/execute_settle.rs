@@ -112,6 +112,11 @@ where
 			blob_response::BlobType::PassedThroughBlob(blob) => {
 				(blob.data, blob.timestamp, blob.blob_id, blob.height)
 			}
+			blob_response::BlobType::HeartbeatBlob(_) => {
+				tracing::info!("Receive heartbeat blob");
+				// Do nothing.
+				return Ok(());
+			}
 			_ => anyhow::bail!("Invalid blob type"),
 		};
 

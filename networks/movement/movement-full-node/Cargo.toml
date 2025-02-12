@@ -45,6 +45,7 @@ movement-da-light-node-client = { workspace = true}
 aptos-framework-elsa-to-biarritz-rc1-migration = { workspace = true }
 movement-signer = { workspace = true }
 movement-signer-loader = { workspace = true }
+chrono = { workspace = true }
 
 [features]
 default = []
