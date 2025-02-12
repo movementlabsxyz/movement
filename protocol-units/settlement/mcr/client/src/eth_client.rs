@@ -188,11 +188,11 @@ where
 {
 	async fn post_block_commitment(
 		&self,
-		block_commitment: BlockCommitment,
+		block_commitment: SuperBlockCommitment,
 	) -> Result<(), anyhow::Error> {
 		let contract = MCR::new(self.contract_address, &self.rpc_provider);
 
-		let eth_block_commitment = MCR::BlockCommitment {
+		let eth_block_commitment = MCR::SuperBlockCommitment {
 			// Currently, to simplify the API, we'll say 0 is uncommitted all other numbers are legitimate heights
 			height: U256::from(block_commitment.height()),
 			commitment: alloy_primitives::FixedBytes(
@@ -211,7 +211,7 @@ where
 			)
 			.await
 		} else {
-			let call_builder = contract.submitBlockCommitment(eth_block_commitment);
+			let call_builder = contract.submitSuperBlockCommitment(eth_block_commitment);
 			crate::send_eth_transaction::send_transaction(
 				call_builder,
 				&self.send_transaction_error_rules,
@@ -224,14 +224,14 @@ where
 
 	async fn post_block_commitment_batch(
 		&self,
-		block_commitments: Vec<BlockCommitment>,
+		block_commitments: Vec<SuperBlockCommitment>,
 	) -> Result<(), anyhow::Error> {
 		let contract = MCR::new(self.contract_address, &self.rpc_provider);
 
 		let eth_block_commitment: Vec<_> = block_commitments
 			.into_iter()
 			.map(|block_commitment| {
-				Ok(MCR::BlockCommitment {
+				Ok(MCR::SuperBlockCommitment {
 					// Currently, to simplify the API, we'll say 0 is uncommitted all other numbers are legitimate heights
 					height: U256::from(block_commitment.height()),
 					commitment: alloy_primitives::FixedBytes(
@@ -244,7 +244,7 @@ where
 			})
 			.collect::<Result<Vec<_>, TryFromSliceError>>()?;
 
-		let call_builder = contract.submitBatchBlockCommitment(eth_block_commitment);
+		let call_builder = contract.submitBatchSuperBlockCommitment(eth_block_commitment);
 
 		crate::send_eth_transaction::send_transaction(
 			call_builder,
@@ -257,11 +257,11 @@ where
 
 	async fn force_block_commitment(
 		&self,
-		block_commitment: BlockCommitment,
+		block_commitment: SuperBlockCommitment,
 	) -> Result<(), anyhow::Error> {
 		let contract = MCR::new(self.contract_address, &self.rpc_provider);
 
-		let eth_block_commitment = MCR::BlockCommitment {
+		let eth_block_commitment = MCR::SuperBlockCommitment {
 			// Currently, to simplify the API, we'll say 0 is uncommitted all other numbers are legitimate heights
 			height: U256::from(block_commitment.height()),
 			commitment: alloy_primitives::FixedBytes(
@@ -294,7 +294,7 @@ where
 							alloy_sol_types::Error::Other(err.to_string().into())
 						},
 					)?;
-					Ok(BlockCommitment::new(
+					Ok(SuperBlockCommitment::new(
 						height,
 						Id::new(commitment.blockHash.0),
 						Commitment::new(commitment.stateCommitment.0),
@@ -308,17 +308,17 @@ where
 	async fn get_commitment_at_height(
 		&self,
 		height: u64,
-	) -> Result<Option<BlockCommitment>, anyhow::Error> {
+	) -> Result<Option<SuperBlockCommitment>, anyhow::Error> {
 		let contract = MCR::new(self.contract_address, &self.ws_provider);
-		let MCR::getAcceptedCommitmentAtBlockHeightReturn { _0: commitment } =
-			contract.getAcceptedCommitmentAtBlockHeight(U256::from(height)).call().await?;
+		let MCR::getAcceptedCommitmentAtSuperBlockHeightReturn { _0: commitment } =
+			contract.getAcceptedCommitmentAtSuperBlockHeight(U256::from(height)).call().await?;
 
 		let return_height: u64 = commitment
 			.height
 			.try_into()
 			.context("Failed to convert the commitment height from U256 to u64")?;
 		// Commitment with height 0 mean not found
-		Ok((return_height != 0).then_some(BlockCommitment::new(
+		Ok((return_height != 0).then_some(SuperBlockCommitment::new(
 			commitment
 				.height
 				.try_into()
@@ -331,10 +331,10 @@ where
 	async fn get_posted_commitment_at_height(
 		&self,
 		height: u64,
-	) -> Result<Option<BlockCommitment>, anyhow::Error> {
+	) -> Result<Option<SuperBlockCommitment>, anyhow::Error> {
 		let contract = MCR::new(self.contract_address, &self.ws_provider);
-		let MCR::getValidatorCommitmentAtBlockHeightReturn { _0: commitment } = contract
-			.getValidatorCommitmentAtBlockHeight(U256::from(height), self.signer_address)
+		let MCR::getValidatorCommitmentAtSuperBlockHeightReturn { _0: commitment } = contract
+			.getValidatorCommitmentAtSuperBlockHeight(U256::from(height), self.signer_address)
 			.call()
 			.await?;
 
@@ -343,7 +343,7 @@ where
 			.try_into()
 			.context("Failed to convert the commitment height from U256 to u64")?;
 
-		Ok((return_height != 0).then_some(BlockCommitment::new(
+		Ok((return_height != 0).then_some(SuperBlockCommitment::new(
 			commitment
 				.height
 				.try_into()
