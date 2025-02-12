@@ -1,7 +1,7 @@
 use crate::migrations::elsa_to_biarritz_rc1::{
 	ElsaToBiarritzRc1, ElsaToBiarritzRc1Error, MigrateElsaToBiarritzRc1,
 };
-use crate::releases::biarritz_rc1::Config;
+use crate::Config;
 use dot_movement::DotMovement;
 
 impl MigrateElsaToBiarritzRc1 for DotMovement {

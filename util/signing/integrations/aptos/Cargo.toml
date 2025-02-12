@@ -16,6 +16,12 @@ aptos-types = { workspace = true }
 thiserror = { workspace = true }
 maptos-framework-release-util = { workspace = true }
 aptos-sdk = { workspace = true }
+movement = { workspace = true }
+bcs = { workspace = true }
+serde = { workspace = true }
+anyhow = { workspace =  true}
+tracing = { workspace = true }
+ed25519-dalek = { workspace = true }
 
 [dev-dependencies]
 maptos-opt-executor = { workspace = true }

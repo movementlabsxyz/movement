@@ -1,31 +1,31 @@
 use aptos_framework::ReleaseBundle;
-use aptos_release_builder::components::gas::generate_gas_upgrade_proposal;
 use aptos_sdk::types::transaction::{Script, SignedTransaction, TransactionPayload};
-use aptos_types::on_chain_config::GasScheduleV2;
+use core::fmt::Debug;
 use maptos_framework_release_util::{
 	compiler::Compiler, Release, ReleaseBundleError, ReleaseSigner,
 };
 use std::fs;
 use std::path::PathBuf;
+use tempfile::tempdir;
 use tracing::info;
 
-/// [GasUpgrade] can be used to wrap a proposal to prefix it with a gas upgrade.
+/// [RunScript] can be used to wrap a proposal to prefix it with a script.
 #[derive(Debug)]
-pub struct GasUpgrade<R>
+pub struct RunScript<R>
 where
-	R: Release,
+	R: Release + Debug,
 {
 	pub wrapped_release: R,
 	pub repo: &'static str,
 	pub commit_hash: &'static str,
 	pub bytecode_version: u32,
 	pub framework_local_dir: Option<PathBuf>,
-	pub gas_schedule: GasScheduleV2,
+	pub script: String,
 }
 
-impl<R> GasUpgrade<R>
+impl<R> RunScript<R>
 where
-	R: Release,
+	R: Release + Debug,
 {
 	pub fn new(
 		wrapped_release: R,
@@ -33,46 +33,23 @@ where
 		commit_hash: &'static str,
 		bytecode_version: u32,
 		framework_local_dir: Option<PathBuf>,
-		gas_schedule: GasScheduleV2,
+		script: String,
 	) -> Self {
-		Self {
-			wrapped_release,
-			repo,
-			commit_hash,
-			bytecode_version,
-			framework_local_dir,
-			gas_schedule,
-		}
+		Self { wrapped_release, repo, commit_hash, bytecode_version, framework_local_dir, script }
 	}
 
-	/// Generates the bytecode for the gas upgrade proposal.
-	pub fn upgrade_gas_proposal_bytecode(&self) -> Result<Vec<u8>, ReleaseBundleError> {
-		// generate the script
-		let (_, update_gas_script) = generate_gas_upgrade_proposal(
-			None,
-			&self.gas_schedule,
-			true,
-			"".to_owned().into_bytes(),
-		)
-		.map_err(|e| ReleaseBundleError::Build(e.into()))?
-		.pop()
-		.map_or(Err(ReleaseBundleError::Build("no gas upgrade proposal".into())), Ok)?;
-
-		let temp_dir = PathBuf::from("./.debug");
-		let gas_script_path = temp_dir.as_path().join("gas_upgrade");
-		let mut gas_script_path = gas_script_path.as_path().to_path_buf();
-		gas_script_path.set_extension("move");
-
-		// only rewrite the file if it doesn't exist
-		// if !gas_script_path.as_path().exists() {
-		fs::create_dir_all(temp_dir.as_path()).map_err(|e| ReleaseBundleError::Build(e.into()))?;
-		fs::write(gas_script_path.as_path(), update_gas_script)
+	/// Generates the bytecode for the script proposal.
+	pub fn set_release_script_proposal_bytecode(&self) -> Result<Vec<u8>, ReleaseBundleError> {
+		let temp_dir = tempdir().map_err(|e| ReleaseBundleError::Build(e.into()))?;
+		let release_script_script_path = temp_dir.path().join("release_script");
+		let mut release_script_script_path = release_script_script_path.as_path().to_path_buf();
+		release_script_script_path.set_extension("move");
+		fs::write(release_script_script_path.as_path(), self.script.as_bytes())
 			.map_err(|e| ReleaseBundleError::Build(e.into()))?;
-		// }
 
 		// list all files in the temp dir
 		let files =
-			fs::read_dir(temp_dir.as_path()).map_err(|e| ReleaseBundleError::Build(e.into()))?;
+			fs::read_dir(temp_dir.path()).map_err(|e| ReleaseBundleError::Build(e.into()))?;
 		for file in files {
 			let file = file.map_err(|e| ReleaseBundleError::Build(e.into()))?;
 			println!("file: {:?}", file.path());
@@ -86,14 +63,14 @@ where
 		);
 
 		let bytecode = compiler
-			.compile_in_temp_dir_to_bytecode("gas_upgrade", &gas_script_path)
+			.compile_in_temp_dir_to_bytecode("release_script", &release_script_script_path)
 			.map_err(|e| ReleaseBundleError::Build(e.into()))?;
 
 		Ok(bytecode)
 	}
 
-	/// Generate the transaction for the gas upgrade proposal.
-	pub async fn upgrade_gas_proposal_transaction(
+	/// Generate the transaction for the script proposal.
+	pub async fn set_release_script_proposal_transaction(
 		&self,
 		signer: &impl ReleaseSigner,
 		max_gas_amount: u64,
@@ -101,7 +78,7 @@ where
 		expiration_timestamp_secs: u64,
 		client: &aptos_sdk::rest_client::Client,
 	) -> Result<SignedTransaction, ReleaseBundleError> {
-		let bytecode = self.upgrade_gas_proposal_bytecode()?;
+		let bytecode = self.set_release_script_proposal_bytecode()?;
 		let script_payload = TransactionPayload::Script(Script::new(bytecode, vec![], vec![]));
 
 		// get the chain id
@@ -126,7 +103,7 @@ where
 		Ok(signed_transaction)
 	}
 
-	pub async fn upgrade_gas(
+	pub async fn set_release_script(
 		&self,
 		signer: &impl ReleaseSigner,
 		max_gas_amount: u64,
@@ -134,8 +111,9 @@ where
 		expiration_timestamp_secs: u64,
 		client: &aptos_sdk::rest_client::Client,
 	) -> Result<Vec<aptos_types::transaction::SignedTransaction>, ReleaseBundleError> {
+		info!("Setting scripts");
 		let signed_transaction = self
-			.upgrade_gas_proposal_transaction(
+			.set_release_script_proposal_transaction(
 				signer,
 				max_gas_amount,
 				gas_unit_price,
@@ -145,23 +123,23 @@ where
 			.await?;
 
 		let _response = client.submit_and_wait_bcs(&signed_transaction).await.map_err(|e| {
-			info!("failed to submit gas upgrade proposal: {:?}", e);
+			info!("failed to submit script proposal: {:?}", e);
 			ReleaseBundleError::Proposing(
-				format!("failed to submit gas upgrade proposal: {:?}", e).into(),
+				format!("failed to submit script proposal: {:?}", e).into(),
 			)
 		})?;
 
-		info!("gas upgrade proposal submitted");
+		info!("Release script run");
 
 		Ok(vec![signed_transaction])
 	}
 }
 
-impl<R> Release for GasUpgrade<R>
+impl<R> Release for RunScript<R>
 where
-	R: Release,
+	R: Release + Debug,
 {
-	/// Note: the release bundle will not actually contain the gas upgrade proposal, so when running genesis with this release, the gas upgrade proposal will not be included.
+	/// Note: the release bundle will not actually contain the script proposal, so when running genesis with this release, the script proposal will not be included.
 	/// Instead you will need to use an OTA
 	fn release_bundle(&self) -> Result<ReleaseBundle, ReleaseBundleError> {
 		self.wrapped_release.release_bundle()
@@ -175,19 +153,10 @@ where
 		expiration_timestamp_sec_offset: u64,
 		client: &aptos_sdk::rest_client::Client,
 	) -> Result<Vec<aptos_types::transaction::SignedTransaction>, ReleaseBundleError> {
-		// generate and execute the gas upgrade proposal
-		let now_u64 = std::time::SystemTime::now()
-			.duration_since(std::time::UNIX_EPOCH)
-			.map_err(|e| ReleaseBundleError::Build(e.into()))?
-			.as_secs();
-		let expiration_timestamp_secs = now_u64 + expiration_timestamp_sec_offset;
-
-		info!("Upgrading gas parameters");
-		self.upgrade_gas(signer, max_gas_amount, gas_unit_price, expiration_timestamp_secs, client)
-			.await?;
-
 		// run the wrapped release
-		self.wrapped_release
+		info!("Proposing release before scripts {:?}", self);
+		let transactions = self
+			.wrapped_release
 			.propose_release(
 				signer,
 				max_gas_amount,
@@ -195,20 +164,36 @@ where
 				expiration_timestamp_sec_offset,
 				client,
 			)
-			.await
+			.await?;
+
+		// generate and execute the script proposal
+		info!("Setting scripts");
+		let now_u64 = std::time::SystemTime::now()
+			.duration_since(std::time::UNIX_EPOCH)
+			.map_err(|e| ReleaseBundleError::Build(e.into()))?
+			.as_secs();
+		let expiration_timestamp_secs = now_u64 + expiration_timestamp_sec_offset;
+		self.set_release_script(
+			signer,
+			max_gas_amount,
+			gas_unit_price,
+			expiration_timestamp_secs,
+			client,
+		)
+		.await?;
+		info!("Release script run");
+
+		Ok(transactions)
 	}
 }
 
 #[macro_export]
 // Macro definition
-macro_rules! generate_gas_upgrade_module {
-	($mod_name:ident, $struct_name:ident, $gas_stanza:expr) => {
+macro_rules! generate_script_module {
+	($mod_name:ident, $struct_name:ident, $script_stanza:expr) => {
 		pub mod $mod_name {
 			use aptos_framework::ReleaseBundle;
-			use aptos_framework_upgrade_gas_release::GasUpgrade;
-			use aptos_gas_schedule::{
-				AptosGasParameters, InitialGasSchedule, ToOnChainGasSchedule,
-			};
+			use aptos_framework_release_script_release::RunScript;
 			use aptos_release_builder::aptos_framework_path;
 			use aptos_sdk::move_types::gas_algebra::GasQuantity;
 			use maptos_framework_release_util::{Release, ReleaseBundleError};
@@ -216,22 +201,21 @@ macro_rules! generate_gas_upgrade_module {
 
 			#[derive(Debug)]
 			pub struct $struct_name {
-				pub with_gas_upgrade: GasUpgrade<super::$struct_name>,
+				pub with_script: RunScript<super::$struct_name>,
 			}
 
 			impl $struct_name {
 				pub fn new() -> Self {
-					// gas_schedule stanza
-					let gas_schedule = $gas_stanza;
+					let script = $script_stanza;
 
 					Self {
-						with_gas_upgrade: GasUpgrade::new(
+						with_script: RunScript::new(
 							super::$struct_name::new(),
 							"null",
 							"null",
 							6,
-							Some(aptos_framework_path()), // just use the path to the framework for the gas upgrade
-							gas_schedule,
+							Some(aptos_framework_path()), // just use the path to the framework for the script
+							script,
 						),
 					}
 				}
@@ -239,7 +223,7 @@ macro_rules! generate_gas_upgrade_module {
 
 			impl Release for $struct_name {
 				fn release_bundle(&self) -> Result<ReleaseBundle, ReleaseBundleError> {
-					self.with_gas_upgrade.release_bundle()
+					self.with_script.release_bundle()
 				}
 
 				async fn propose_release(
@@ -250,8 +234,8 @@ macro_rules! generate_gas_upgrade_module {
 					expiration_timestamp_secs: u64,
 					client: &aptos_sdk::rest_client::Client,
 				) -> Result<Vec<aptos_types::transaction::SignedTransaction>, ReleaseBundleError> {
-					info!("Proposing release {} with gas upgrade", stringify!($struct_name));
-					self.with_gas_upgrade
+					info!("Proposing release {} with scripts", stringify!($struct_name));
+					self.with_script
 						.propose_release(
 							signer,
 							max_gas_amount,
