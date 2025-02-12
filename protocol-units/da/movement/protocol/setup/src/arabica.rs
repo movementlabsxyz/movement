@@ -15,14 +15,14 @@ impl Arabica {
 
 	pub async fn get_arabica_11_address(&self) -> Result<String, anyhow::Error> {
 		// get the json from celkey
-		// cel-key list --node.type light --keyring-backend test --p2p.network arabica --output json
+		// cel-key list --node.type light --keyring.backend test --p2p.network arabica --output json
 		let json_string = run_command(
 			"cel-key",
 			&[
 				"list",
 				"--node.type",
 				"light",
-				"--keyring-backend",
+				"--keyring.backend",
 				"test",
 				"--p2p.network",
 				"arabica",
@@ -57,7 +57,11 @@ impl Arabica {
 
 	pub async fn celestia_light_init(&self) -> Result<(), anyhow::Error> {
 		// celestia light init --p2p.network arabica
-		run_command("celestia", &["light", "init", "--p2p.network", "arabica"]).await?;
+		run_command(
+			"celestia",
+			&["light", "init", "--p2p.network", "arabica", "--keyring.backend", "test"],
+		)
+		.await?;
 
 		Ok(())
 	}
