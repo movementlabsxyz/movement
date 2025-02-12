@@ -1,7 +1,11 @@
 use aptos_framework_upgrade_gas_release::generate_gas_upgrade_module;
 use maptos_framework_release_util::mrb_release;
 
-mrb_release!(BiarritzRc1, BIARRTIZ_RC1, "biarritz-rc1.mrb");
+mrb_release!(
+	BiarritzRc1,
+	BIARRTIZ_RC1,
+	"d86339c130c3a9afd9413db95412b7586b78c905-biarritz-rc1.mrb"
+);
 
 generate_gas_upgrade_module!(gas_upgrade, BiarritzRc1, {
 	let mut gas_parameters = AptosGasParameters::initial();
@@ -15,9 +19,34 @@ generate_gas_upgrade_module!(gas_upgrade, BiarritzRc1, {
 	}
 });
 
+pub mod script {
+	use super::gas_upgrade::BiarritzRc1;
+	use aptos_framework_release_script_release::generate_script_module;
+
+	generate_script_module!(script, BiarritzRc1, {
+		r#"
+script {
+    use aptos_framework::aptos_governance;
+    use aptos_framework::gas_schedule;
+	use aptos_framework::governed_gas_pool;
+
+    fun main(core_resources: &signer) {
+        let core_signer = aptos_governance::get_signer_testnet_only(core_resources, @0x1);
+
+        let framework_signer = &core_signer;
+
+		governed_gas_pool::initialize(framework_signer, b"aptos_framework::governed_gas_pool");
+
+	}
+}
+"#
+		.to_string()
+	});
+}
+
 pub mod full {
 
-	use super::gas_upgrade::BiarritzRc1;
+	use super::script::script::BiarritzRc1;
 	use aptos_framework_set_feature_flags_release::generate_feature_upgrade_module;
 
 	generate_feature_upgrade_module!(feature_upgrade, BiarritzRc1, {
