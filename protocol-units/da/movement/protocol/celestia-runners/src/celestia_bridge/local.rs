@@ -13,10 +13,7 @@ impl Local {
 		Local
 	}
 
-	async fn get_genesis_block(
-		&self,
-		config: &movement_da_util::config::local::Config,
-	) -> Result<String> {
+	async fn get_genesis_block(&self, config: &movement_da_util::config::Config) -> Result<String> {
 		let client = Client::new();
 		let mut genesis = String::new();
 		let mut cnt = 0;
@@ -59,7 +56,7 @@ impl Local {
 	pub async fn run(
 		&self,
 		_dot_movement: dot_movement::DotMovement,
-		config: movement_da_util::config::local::Config,
+		config: movement_da_util::config::Config,
 	) -> Result<()> {
 		let genesis = self.get_genesis_block(&config).await?;
 

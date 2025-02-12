@@ -1,9 +1,9 @@
 #[derive(Debug, Clone)]
-pub struct Arabica;
+pub struct Mainnet;
 
-impl Arabica {
+impl Mainnet {
 	pub fn new() -> Self {
-		Arabica
+		Mainnet
 	}
 
 	pub async fn run(
@@ -11,18 +11,20 @@ impl Arabica {
 		_dot_movement: dot_movement::DotMovement,
 		config: movement_da_util::config::Config,
 	) -> Result<(), anyhow::Error> {
-		// celestia light start --core.ip validator-1.celestia-arabica-11.com --p2p.network arabica
+		// celestia light start --core.ip rpc.celestia.pops.one --p2p.network celestia
 		commander::run_command(
 			"celestia",
 			&[
 				"light",
 				"start",
+				"--keyring.backend",
+				"test",
 				"--keyring.keyname",
 				&config.light.key_name,
 				"--core.ip",
-				"validator-1.celestia-arabica-11.com",
+				"rpc.celestia.pops.one",
 				"--p2p.network",
-				"arabica",
+				"celestia",
 				"--log.level",
 				"FATAL",
 			],
