@@ -17,6 +17,8 @@ impl Mocha {
 			&[
 				"light",
 				"start",
+				"--keyring.backend",
+				"test",
 				"--keyring.keyname",
 				&config.light.key_name,
 				"--core.ip",
