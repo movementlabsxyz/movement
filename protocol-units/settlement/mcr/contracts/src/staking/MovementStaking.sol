@@ -66,7 +66,7 @@ contract MovementStaking is
         if (domainGenesisAccepted[domain]) revert GenesisAlreadyAccepted();
         domainGenesisAccepted[domain] = true;
         // roll over from 0 (genesis) to current epoch by L1Block time
-        currentEpochByDomain[domain] = getEpochByL1BlockTime(domain);
+        currentAcceptingEpochByDomain[domain] = getEpochByL1BlockTime(domain);
 
         for (uint256 i = 0; i < attestersByDomain[domain].length(); i++) {
             address attester = attestersByDomain[domain].at(i);
@@ -85,7 +85,7 @@ contract MovementStaking is
                 // roll over the genesis stake to the current epoch
                 _addStake(
                     domain,
-                    getCurrentEpoch(domain),
+                    getCurrentAcceptingEpoch(domain),
                     custodian,
                     attester,
                     attesterStake
@@ -153,23 +153,26 @@ contract MovementStaking is
         return block.timestamp / epochDurationByDomain[domain];
     }
 
-    // gets the current epoch up to which blocks have been accepted
-    // TODO: this should be called the currentAcceptingEpoch
-    function getCurrentEpoch(address domain) public view returns (uint256) {
-        return currentEpochByDomain[domain];
+    // gets the current epoch up to which superBlocks have been accepted
+    function getCurrentAcceptingEpoch(address domain) public view returns (uint256) {
+        return currentAcceptingEpochByDomain[domain];
     }
 
-    // gets the next epoch
-    // TODO: this should be called the nextAcceptingEpoch
-    function getNextEpoch(address domain) public view returns (uint256) {
-        return getCurrentEpoch(domain) == 0 ? 0 : getCurrentEpoch(domain) + 1;
+    /// @notice Gets the next accepting epoch number
+    /// @dev Special handling for genesis state (epoch 0):
+    /// @dev If getCurrentAcceptingEpoch(domain) == 0, returns 0 to stay in genesis until ceremony completes
+    function getNextAcceptingEpoch(address domain) public view returns (uint256) {
+        return getCurrentAcceptingEpoch(domain) == 0 ? 0 : getCurrentAcceptingEpoch(domain) + 1;
     }
 
-    function getNextEpochByL1BlockTime(
+    /// @notice Gets the next present epoch number
+    /// @dev Special handling for genesis state (epoch 0):
+    /// @dev If getCurrentAcceptingEpoch(domain) == 0, returns 0 to stay in genesis until ceremony completes
+    function getNextPresentEpochWithException(
         address domain
     ) public view returns (uint256) {
         return
-            getCurrentEpoch(domain) == 0 ? 0 : getEpochByL1BlockTime(domain) + 1;
+            getCurrentAcceptingEpoch(domain) == 0 ? 0 : getEpochByL1BlockTime(domain) + 1;
     }
 
     // gets the stake for a given attester at a given epoch and domain
@@ -183,8 +186,7 @@ contract MovementStaking is
     }
 
     // gets the stake for a given attester at the current epoch
-    // TODO: this should be called getAcceptingEpochStake
-    function getCurrentEpochStake(
+    function getCurrentAcceptingEpochStake(
         address domain,
         address custodian,
         address attester
@@ -192,7 +194,7 @@ contract MovementStaking is
         return
             getStakeAtEpoch(
                 domain,
-                getCurrentEpoch(domain),
+                getCurrentAcceptingEpoch(domain),
                 custodian,
                 attester
             );
@@ -209,7 +211,7 @@ contract MovementStaking is
     }
 
     // gets the unstake for a given attester at the current epoch
-    function getCurrentEpochUnstake(
+    function getCurrentAcceptingEpochUnstake(
         address domain,
         address custodian,
         address attester
@@ -217,7 +219,7 @@ contract MovementStaking is
         return
             getUnstakeAtEpoch(
                 domain,
-                getCurrentEpoch(domain),
+                getCurrentAcceptingEpoch(domain),
                 custodian,
                 attester
             );
@@ -233,12 +235,12 @@ contract MovementStaking is
     }
 
     // gets the total stake for the current epoch
-    function getTotalStakeForCurrentEpoch(
+    function getTotalStakeForCurrentAcceptingEpoch(
         address domain,
         address custodian
     ) public view returns (uint256) {
         return
-            getTotalStakeForEpoch(domain, getCurrentEpoch(domain), custodian);
+            getTotalStakeForEpoch(domain, getCurrentAcceptingEpoch(domain), custodian);
     }
 
     // stakes for the next epoch
@@ -269,7 +271,7 @@ contract MovementStaking is
         // set the attester to stake for the next epoch
         _addStake(
             domain,
-            getNextEpochByL1BlockTime(domain),
+            getNextPresentEpochWithException(domain),
             address(custodian),
             msg.sender,
             amount
@@ -278,7 +280,7 @@ contract MovementStaking is
         // Let the world know that the attester has staked
         emit AttesterStaked(
             domain,
-            getNextEpoch(domain),
+            getNextAcceptingEpoch(domain),
             address(custodian),
             msg.sender,
             amount
@@ -296,7 +298,7 @@ contract MovementStaking is
         // note: by tracking in the next epoch we need to make sure when we roll over an epoch we check the amount rolled over from stake by the unstake in the next epoch
         _addUnstake(
             domain,
-            getNextEpochByL1BlockTime(domain),
+            getNextPresentEpochWithException(domain),
             custodian,
             msg.sender,
             amount
@@ -304,7 +306,7 @@ contract MovementStaking is
 
         emit AttesterUnstaked(
             domain,
-            getNextEpoch(domain),
+            getNextAcceptingEpoch(domain),
             custodian,
             msg.sender,
             amount
@@ -318,7 +320,7 @@ contract MovementStaking is
         address custodian,
         address attester
     ) internal {
-        // the amount of stake rolled over is stake[currentEpoch] - unstake[nextEpoch]
+        // the amount of stake rolled over is stake[currentAcceptingEpoch] - unstake[nextEpoch]
         uint256 stakeAmount = getStakeAtEpoch(
             domain,
             epochNumber,
@@ -367,14 +369,13 @@ contract MovementStaking is
         }
 
         // increment the current epoch
-        currentEpochByDomain[domain] = epochNumber + 1;
+        currentAcceptingEpochByDomain[domain] = epochNumber + 1;
 
         emit EpochRolledOver(domain, epochNumber);
     }
 
     function rollOverEpoch() external {
-        // TODO : clarify why this is msg.sender
-        _rollOverEpoch(msg.sender, getCurrentEpoch(msg.sender));
+        _rollOverEpoch(msg.sender, getCurrentAcceptingEpoch(msg.sender));
     }
 
     /**
@@ -469,7 +470,7 @@ contract MovementStaking is
             uint256 refundAmount = Math.min(
                 getStakeAtEpoch(
                     msg.sender,
-                    getCurrentEpoch(attesters[i]),
+                    getCurrentAcceptingEpoch(attesters[i]),
                     custodians[i],
                     attesters[i]
                 ),
@@ -485,7 +486,7 @@ contract MovementStaking is
             // slash both stake and unstake so that the weight of the attester is reduced and they can't withdraw the unstake at the next epoch
             _slashStake(
                 msg.sender,
-                getCurrentEpoch(msg.sender),
+                getCurrentAcceptingEpoch(msg.sender),
                 custodians[i],
                 attesters[i],
                 amounts[i]
@@ -493,7 +494,7 @@ contract MovementStaking is
 
             _slashUnstake(
                 msg.sender,
-                getCurrentEpoch(msg.sender),
+                getCurrentAcceptingEpoch(msg.sender),
                 custodians[i],
                 attesters[i]
             );

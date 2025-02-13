@@ -69,18 +69,18 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     }
 
     // gets the would be epoch for the current L1Block time
-    function getEpochByL1BlockTime() public view returns (uint256) {
+    function getPresentEpoch() public view returns (uint256) {
         return stakingContract.getEpochByL1BlockTime(address(this));
     }
 
     // gets the current epoch up to which superBlocks have been accepted
-    function getCurrentEpoch() public view returns (uint256) {
-        return stakingContract.getCurrentEpoch(address(this));
+    function getCurrentAcceptingEpoch() public view returns (uint256) {
+        return stakingContract.getCurrentAcceptingEpoch(address(this));
     }
 
     // gets the next epoch
-    function getNextEpoch() public view returns (uint256) {
-        return stakingContract.getNextEpoch(address(this));
+    function getNextAcceptingEpoch() public view returns (uint256) {
+        return stakingContract.getNextAcceptingEpoch(address(this));
     }
 
     // gets the stake for a given attester at a given epoch
@@ -115,17 +115,17 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     }
 
     // gets the stake for a given attester at the current epoch
-    function getCurrentEpochStake(
+    function getCurrentAcceptingEpochStake(
         address custodian,
         address attester
     ) public view returns (uint256) {
-        return getStakeAtEpoch(getCurrentEpoch(), custodian, attester);
+        return getStakeAtEpoch(getCurrentAcceptingEpoch(), custodian, attester);
     }
 
-    function computeAllCurrentEpochStake(
+    function computeAllCurrentAcceptingEpochStake(
         address attester
     ) public view returns (uint256) {
-        return computeAllStakeAtEpoch(getCurrentEpoch(), attester);
+        return computeAllStakeAtEpoch(getCurrentAcceptingEpoch(), attester);
     }
 
     // gets the total stake for a given epoch
@@ -164,18 +164,18 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     }
 
     // gets the total stake for the current epoch
-    function getTotalStakeForCurrentEpoch(
+    function getTotalStakeForCurrentAcceptingEpoch(
         address custodian
     ) public view returns (uint256) {
-        return getTotalStakeForEpoch(getCurrentEpoch(), custodian);
+        return getTotalStakeForEpoch(getCurrentAcceptingEpoch(), custodian);
     }
 
-    function computeAllTotalStakeForCurrentEpoch()
+    function computeAllTotalStakeForCurrentAcceptingEpoch()
         public
         view
         returns (uint256)
     {
-        return computeAllTotalStakeForEpoch(getCurrentEpoch());
+        return computeAllTotalStakeForEpoch(getCurrentAcceptingEpoch());
     }
 
     function getValidatorCommitmentAtSuperBlockHeight(
@@ -247,26 +247,26 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
         // assign the superBlock height to the current epoch if it hasn't been assigned yet
         // since any attester can submit a comittment for a superBlock height, the assignment could be off by leadingSuperBlockTolerance
-        if (superBlockHeightEpochAssignments[superBlockCommitment.height] == 0) {
+        if (superBlockHeightAssignedEpoch[superBlockCommitment.height] == 0) {
             // note: this is an intended race condition, but it is benign because of the tolerance
-            superBlockHeightEpochAssignments[
+            superBlockHeightAssignedEpoch[
                 superBlockCommitment.height
-            ] = getEpochByL1BlockTime();
+            ] = getPresentEpoch();
         }
 
         // register the attester's commitment
         commitments[superBlockCommitment.height][attester] = superBlockCommitment;
 
         // increment the commitment count by stake
-        uint256 allCurrentEpochStake = computeAllCurrentEpochStake(attester);
+        uint256 allCurrentAcceptingEpochStake = computeAllCurrentAcceptingEpochStake(attester);
         commitmentStakes[superBlockCommitment.height][
             superBlockCommitment.commitment
-        ] += allCurrentEpochStake;
+        ] += allCurrentAcceptingEpochStake;
 
         emit SuperBlockCommitmentSubmitted(
             superBlockCommitment.blockId,
             superBlockCommitment.commitment,
-            allCurrentEpochStake
+            allCurrentAcceptingEpochStake
         );
 
     }
@@ -331,12 +331,12 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     // TODO : What if none of the epochs have enough votes for a given block height.
     function tickOnSuperBlockHeight(uint256 superBlockHeight) internal returns (bool) {
         // get the epoch assigned to the superBlock height
-        uint256 superBlockEpoch = superBlockHeightEpochAssignments[superBlockHeight];
+        uint256 superBlockEpoch = superBlockHeightAssignedEpoch[superBlockHeight];
 
         // if the current epoch is far behind, that's okay that just means there weren't superBlocks submitted
         // so long as we ensure that we go through the superBlocks in order and that the superBlock to epoch assignment is non-decreasing, we're good
         // so, we'll just keep rolling over the epoch until we catch up
-        while (getCurrentEpoch() < superBlockEpoch) {
+        while (getCurrentAcceptingEpoch() < superBlockEpoch) {
             // TODO: we should check the implication of this for the acceptor. But it also may be an issue for any attester. 
             rollOverEpoch();
         }
@@ -412,10 +412,10 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
      * @dev Under the current implementation this shares in recursion with the tickOnSuperBlockHeight, so it should be reentrant.
      */
     function _acceptSuperBlockCommitment(SuperBlockCommitment memory superBlockCommitment) internal {
-        uint256 currentEpoch = getCurrentEpoch();
+        uint256 currentAcceptingEpoch = getCurrentAcceptingEpoch();
         // get the epoch for the superBlock commitment
         //  SuperBlock commitment is not in the current epoch, it cannot be accepted. This indicates a bug in the protocol.
-        if (superBlockHeightEpochAssignments[superBlockCommitment.height] != currentEpoch)
+        if (superBlockHeightAssignedEpoch[superBlockCommitment.height] != currentAcceptingEpoch)
             revert UnacceptableSuperBlockCommitment();
 
         // set accepted superBlock commitment
@@ -435,7 +435,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         );
 
         // if the timestamp epoch is greater than the current epoch, roll over the epoch
-        if (getEpochByL1BlockTime() > currentEpoch) {
+        if (getPresentEpoch() > currentAcceptingEpoch) {
             rollOverEpoch();
         }
     }

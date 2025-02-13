@@ -19,7 +19,7 @@ contract MovementStakingStorage {
     /// @dev the current epoch for each domain. Commitments are submitted only for the current epoch 
     /// and validators may not submit commitments to epochs that are far in the past. 
     /// Hence, we need to treat each epoch separately.
-    mapping(address domain => uint256 currentEpoch) public currentEpochByDomain;
+    mapping(address domain => uint256 currentAcceptingEpoch) public currentAcceptingEpochByDomain;
     mapping(address domain => EnumerableSet.AddressSet attester) internal attestersByDomain;
     mapping(address domain => EnumerableSet.AddressSet custodian) internal custodiansByDomain;
 
