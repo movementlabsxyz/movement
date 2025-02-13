@@ -293,7 +293,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         while (tickOnSuperBlockHeight(lastAcceptedSuperBlockHeight + 1)) {}
     }
 
-    function recordAcceptorPostConfirmation(uint256 superBlockHeight) internal {
+    function recordAcceptorPostconfirmation(uint256 superBlockHeight) internal {
         address acceptor = getCurrentAcceptor();
         postconfirmedBy[superBlockHeight] = acceptor;
         postconfirmedAtL1BlockHeight[superBlockHeight] = block.timestamp;
