@@ -285,13 +285,11 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         }
 
         // keep ticking through to find accepted superBlocks
-        // note: this is what allows for batching to be successful
         // we can commit to superBlocks out to the tolerance point
         // then we can accept them in order
         // ! rewards need to be 
-        // ! - at least proportional to attested blocks to account for consumed gas
-        // ! - reward the acceptor well to incentivize frequent block attestation (close to comitted block frequency)
-        //     rather than incentivizing the acceptor to batch attesting blocks
+        // ! - at least the cost for gas cost of postconfirmation
+        // ! - reward the acceptor well to incentivize postconfirmation at every height
         while (tickOnSuperBlockHeight(lastAcceptedSuperBlockHeight + 1)) {}
     }
 
@@ -304,8 +302,10 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     function currentAcceptorIsLive() public view returns (bool) {
         // TODO check if current acceptor has been live sufficiently long
         // use getCurrentAcceptorStartL1BlockHeight, and the mappings
+        return true; // dummy implementation
     }
 
+    /// @notice Gets the L1 block height at which the current acceptor's term started
     function getCurrentAcceptorStartL1BlockHeight() public view returns (uint256) {
         uint256 currentL1BlockHeight = block.number;
         uint256 startL1BlockHeight = currentL1BlockHeight - currentL1BlockHeight % acceptorTerm - 1; // -1 because we do not want to consider the current block.
@@ -315,7 +315,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         return startL1BlockHeight;
     }
 
-    /// The Acceptor is determined by L1.
+    /// @notice Determines the current acceptor using L1 block hash as a source of randomness
     function getCurrentAcceptor() public view returns (address) {
         bytes32 blockHash = blockhash(getCurrentAcceptorStartL1BlockHeight());
 
