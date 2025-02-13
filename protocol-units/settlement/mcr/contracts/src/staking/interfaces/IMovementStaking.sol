@@ -12,7 +12,7 @@ interface IMovementStaking {
     function getEpochByL1BlockTime(address) external view returns (uint256);
     function getCurrentAcceptingEpoch(address) external view returns (uint256);
     function getNextAceeptingEpoch(address) external view returns (uint256);
-    function getNextCurrentEpochWithException(address) external view returns (uint256);
+    function getNextPresentEpochWithException(address) external view returns (uint256);
     function getStakeAtEpoch(
         address domain,
         uint256 epoch,
