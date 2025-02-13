@@ -77,8 +77,8 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     }
 
     // gets the next epoch
-    function getNextEpoch() public view returns (uint256) {
-        return stakingContract.getNextEpoch(address(this));
+    function getNextAceeptingEpoch() public view returns (uint256) {
+        return stakingContract.getNextAceeptingEpoch(address(this));
     }
 
     // gets the stake for a given attester at a given epoch

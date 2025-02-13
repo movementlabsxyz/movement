@@ -155,12 +155,17 @@ contract MovementStaking is
         return currentAcceptingEpochByDomain[domain];
     }
 
-    // gets the next epoch
-    function getNextEpoch(address domain) public view returns (uint256) {
+    /// @notice Gets the next accepting epoch number
+    /// @dev Special handling for genesis state (epoch 0):
+    /// @dev If getCurrentAcceptingEpoch(domain) == 0, returns 0 to stay in genesis until ceremony completes
+    function getNextAceeptingEpoch(address domain) public view returns (uint256) {
         return getCurrentAcceptingEpoch(domain) == 0 ? 0 : getCurrentAcceptingEpoch(domain) + 1;
     }
 
-    function getNextEpochByL1BlockTime(
+    /// @notice Gets the next accepting epoch number
+    /// @dev Special handling for genesis state (epoch 0):
+    /// @dev If getCurrentAcceptingEpoch(domain) == 0, returns 0 to stay in genesis until ceremony completes
+    function getNextCurrentEpochWithException(
         address domain
     ) public view returns (uint256) {
         return
@@ -263,7 +268,7 @@ contract MovementStaking is
         // set the attester to stake for the next epoch
         _addStake(
             domain,
-            getNextEpochByL1BlockTime(domain),
+            getNextCurrentEpochWithException(domain),
             address(custodian),
             msg.sender,
             amount
@@ -272,7 +277,7 @@ contract MovementStaking is
         // Let the world know that the attester has staked
         emit AttesterStaked(
             domain,
-            getNextEpoch(domain),
+            getNextAceeptingEpoch(domain),
             address(custodian),
             msg.sender,
             amount
@@ -290,7 +295,7 @@ contract MovementStaking is
         // note: by tracking in the next epoch we need to make sure when we roll over an epoch we check the amount rolled over from stake by the unstake in the next epoch
         _addUnstake(
             domain,
-            getNextEpochByL1BlockTime(domain),
+            getNextCurrentEpochWithException(domain),
             custodian,
             msg.sender,
             amount
@@ -298,7 +303,7 @@ contract MovementStaking is
 
         emit AttesterUnstaked(
             domain,
-            getNextEpoch(domain),
+            getNextAceeptingEpoch(domain),
             custodian,
             msg.sender,
             amount
