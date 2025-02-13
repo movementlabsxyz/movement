@@ -60,7 +60,7 @@ async fn walk_directory(
 impl PushOperations for FileGlob {
 	async fn push(&self, _package: Package) -> Result<Package, anyhow::Error> {
 		// just check the matching glob files
-		info!("Running glob push");
+		info!("Running glob push with pattern:{} in dir:{:?}", self.pattern, self.root_dir);
 		let mut globset_builder = GlobSetBuilder::new();
 		globset_builder.add(self.pattern.clone());
 		let globset = globset_builder.build()?;

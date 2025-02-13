@@ -1,0 +1,18 @@
+version: "3"
+
+processes:
+
+  movement-snapshot-node:
+    command: |
+      ./scripts/movement-full-node/snapshot
+    depends_on:
+      movement-celestia-da-light-node:
+        condition: process_healthy
+    availability:
+      exit_on_end: true
+
+  # movement-full-node now depends on movement-snapshot-node having started
+  movement-full-node:
+    depends_on:
+      movement-snapshot-node:
+        condition: process_healthy
