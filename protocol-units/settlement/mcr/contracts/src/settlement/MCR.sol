@@ -246,7 +246,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         ) revert AttesterAlreadyCommitted();
 
         // assign the superBlock height to the current epoch if it hasn't been assigned yet
-        // since any attester can submit a comittment for a block height, the assignment could be off by leadingBlockTolerance
+        // since any attester can submit a comittment for a superBlock height, the assignment could be off by leadingSuperBlockTolerance
         if (superBlockHeightEpochAssignments[superBlockCommitment.height] == 0) {
             // note: this is an intended race condition, but it is benign because of the tolerance
             superBlockHeightEpochAssignments[
@@ -272,11 +272,13 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     }
 
     function postconfirmSuperBlocks() public {
-        postconfirmSuperBlocksForAttester(msg.sender);
+        postconfirmSuperBlocksWithAttester(msg.sender);
     }
 
-    /// @notice The current acceptor can attest to a block height, given there is a supermajority of stake on the block
-    function postconfirmSuperBlocksForAttester(address attester) internal {
+    /// @notice The current acceptor can attest to a superBlock height, given there is a supermajority of stake on the commitment
+    /// @notice If the current acceptor is live, we should not accept postconfirmations from voluntary attesters
+    /// @notice If the current acceptor is not live, we should accept postconfirmations from any attester
+    function postconfirmSuperBlocksWithAttester(address attester) internal {
         // if the current acceptor is live we should not accept postconfirmations from voluntary attesters
         if (currentAcceptorIsLive()) {
             if (attester != getCurrentAcceptor()) revert("NotAcceptor");
