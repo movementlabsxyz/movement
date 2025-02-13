@@ -11,7 +11,7 @@ interface IMovementStaking {
     function acceptGenesisCeremony() external;
     function getEpochByL1BlockTime(address) external view returns (uint256);
     function getCurrentAcceptingEpoch(address) external view returns (uint256);
-    function getNextAceeptingEpoch(address) external view returns (uint256);
+    function getNextAcceptingEpoch(address) external view returns (uint256);
     function getNextPresentEpochWithException(address) external view returns (uint256);
     function getStakeAtEpoch(
         address domain,

@@ -158,7 +158,7 @@ contract MovementStaking is
     /// @notice Gets the next accepting epoch number
     /// @dev Special handling for genesis state (epoch 0):
     /// @dev If getCurrentAcceptingEpoch(domain) == 0, returns 0 to stay in genesis until ceremony completes
-    function getNextAceeptingEpoch(address domain) public view returns (uint256) {
+    function getNextAcceptingEpoch(address domain) public view returns (uint256) {
         return getCurrentAcceptingEpoch(domain) == 0 ? 0 : getCurrentAcceptingEpoch(domain) + 1;
     }
 
@@ -277,7 +277,7 @@ contract MovementStaking is
         // Let the world know that the attester has staked
         emit AttesterStaked(
             domain,
-            getNextAceeptingEpoch(domain),
+            getNextAcceptingEpoch(domain),
             address(custodian),
             msg.sender,
             amount
@@ -303,7 +303,7 @@ contract MovementStaking is
 
         emit AttesterUnstaked(
             domain,
-            getNextAceeptingEpoch(domain),
+            getNextAcceptingEpoch(domain),
             custodian,
             msg.sender,
             amount
