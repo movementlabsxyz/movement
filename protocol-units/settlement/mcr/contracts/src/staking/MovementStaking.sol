@@ -162,7 +162,7 @@ contract MovementStaking is
         return getCurrentAcceptingEpoch(domain) == 0 ? 0 : getCurrentAcceptingEpoch(domain) + 1;
     }
 
-    /// @notice Gets the next accepting epoch number
+    /// @notice Gets the next present epoch number
     /// @dev Special handling for genesis state (epoch 0):
     /// @dev If getCurrentAcceptingEpoch(domain) == 0, returns 0 to stay in genesis until ceremony completes
     function getNextPresentEpochWithException(

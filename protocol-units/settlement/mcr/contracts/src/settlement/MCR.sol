@@ -244,9 +244,9 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         ) revert AttesterAlreadyCommitted();
 
         // assign the superBlock height to the current epoch if it hasn't been assigned yet
-        if (superBlockHeightEpochAssignments[superBlockCommitment.height] == 0) {
+        if (superBlockHeightAssignedEpoch[superBlockCommitment.height] == 0) {
             // note: this is an intended race condition, but it is benign because of the tolerance
-            superBlockHeightEpochAssignments[
+            superBlockHeightAssignedEpoch[
                 superBlockCommitment.height
             ] = getPresentEpoch();
         }
@@ -279,7 +279,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
      */
     function tickOnSuperBlockHeight(uint256 superBlockHeight) internal returns (bool) {
         // get the epoch assigned to the superBlock height
-        uint256 superBlockEpoch = superBlockHeightEpochAssignments[superBlockHeight];
+        uint256 superBlockEpoch = superBlockHeightAssignedEpoch[superBlockHeight];
 
         // if the current epoch is far behind, that's okay that just means there weren't superBlocks submitted
         // so long as we ensure that we go through the superBlocks in order and that the superBlock to epoch assignment is non-decreasing, we're good
@@ -363,7 +363,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         uint256 currentAcceptingEpoch = getCurrentAcceptingEpoch();
         // get the epoch for the superBlock commitment
         //  SuperBlock commitment is not in the current epoch, it cannot be accepted. This indicates a bug in the protocol.
-        if (superBlockHeightEpochAssignments[superBlockCommitment.height] != currentAcceptingEpoch)
+        if (superBlockHeightAssignedEpoch[superBlockCommitment.height] != currentAcceptingEpoch)
             revert UnacceptableSuperBlockCommitment();
 
         // set accepted superBlock commitment
