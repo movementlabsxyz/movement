@@ -1,4 +1,5 @@
 # MRC
+
 - **RFC**: [RFC MCR](https://github.com/movementlabsxyz/rfcs/pulls)
 
 This directory contains the implementation of the MRC settlement smart contract. To test the contract, run:
@@ -9,13 +10,17 @@ forge test
 
 There is a long-running test covering over 50 epochs. It will likely take a few seconds to run.
 
-# Implementation 
-## Description
+## Implementation
+
+### Description
+
 For a given block height, MCR selects the earliest block commitment that matches the supermajority of stake for a given epoch by:
+
 1. Fixing the stake parameters for the epoch; all stake changes apply to the next epoch.
 2. Tracking commitments for each block height until one exceeds the supermajority of stake.
 
-## Proof of Correctness
+### Proof of Correctness
+
 The stake is fixed for an epoch, so only commitments for a specific block height are considered, allowing for a straightforward proof.
 
 Let $C$ represent all possible commitments, and $C'$ be an ordered subset of $C$. MCR returns $c_i \in C'$, the earliest commitment matching the supermajority of stake, defined as:

@@ -7,11 +7,11 @@ interface IMCR {
         bytes32 stateCommitment,
         uint256 height
     );
-    event BlockCommitmentSubmitted(
+    event SuperBlockCommitmentSubmitted(
         bytes32 indexed blockHash,
         bytes32 stateCommitment,
         uint256 attesterStake
     );
-    error UnacceptableBlockCommitment();
+    error UnacceptableSuperBlockCommitment();
     error AttesterAlreadyCommitted();
 }
