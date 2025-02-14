@@ -50,7 +50,7 @@ contract MovementStaking is
     }
 
     /// @notice Gets all attesters who are registered for the given domain
-    function getAttestersByDomain(
+    function getRegisteredAttestersByDomain(
         address domain
     ) public view returns (address[] memory) {
         address[] memory attesters = new address[](
@@ -599,7 +599,7 @@ contract MovementStaking is
         uint256 epoch
     ) public view returns (uint256) {
         address[] memory custodians = getCustodiansByDomain(domain);
-        address[] memory attesters = getAttestersByDomain(domain);
+        address[] memory attesters = getRegisteredAttestersByDomain(domain);
         uint256 totalStake = 0;
 
         for (uint256 i = 0; i < custodians.length; i++) {

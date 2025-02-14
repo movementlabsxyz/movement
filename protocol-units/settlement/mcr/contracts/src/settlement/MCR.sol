@@ -98,7 +98,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
             );
     }
 
-    // todo: memorize this
+    // TODO: memorize this
     function getStake(
         uint256 epoch,
         address attester
@@ -222,10 +222,12 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         return versionedAcceptedSuperBlocks[acceptedSuperBlocksVersion][height];
     }
 
-    function getAttesters() public view returns (address[] memory) {
-        return stakingContract.getAttestersByDomain(address(this));
-    }
+    // TODO: is this still required?
+    // function getRegisteredAttesters() public view returns (address[] memory) {
+    //     return stakingContract.getRegisteredAttestersByDomain(address(this));
+    // }
 
+    // @notice Gets the attesters who have stake in the current accepting epoch
     function getStakedAttesters() public view returns (address[] memory) {
         // TODO: check that this is the correct address to use
         return stakingContract.getStakedAttestersForAcceptingEpoch(address(this));
@@ -354,7 +356,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
         // TODO the supermajority is 2f+1 from 3f+1 nodes. Not 2f from 3f. 
         uint256 supermajority = (2 * computeAllTotalStakeForEpoch(superBlockEpoch)) / 3;
-        address[] memory attesters = getAttesters();
+        address[] memory attesters = getStakedAttesters();
 
         // iterate over the attester set
         for (uint256 i = 0; i < attesters.length; i++) {

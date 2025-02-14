@@ -53,7 +53,7 @@ interface IMovementStaking {
     function getCustodiansByDomain(
         address domain
     ) external view returns (address[] memory);
-    function getAttestersByDomain(
+    function getRegisteredAttestersByDomain(
         address domain
     ) external view returns (address[] memory);
     function rollOverEpoch() external;
