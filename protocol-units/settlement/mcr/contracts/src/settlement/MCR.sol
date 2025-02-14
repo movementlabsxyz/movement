@@ -295,10 +295,13 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         while (attemptPostconfirm(lastPostconfirmedSuperBlockHeight + 1)) {}
     }
 
+    /// @dev records the acceptor's postconfirmation of a superBlock height
     function recordAcceptorPostconfirmation(uint256 superBlockHeight) internal {
         address acceptor = getCurrentAcceptor();
         postconfirmedBy[superBlockHeight] = acceptor;
-        postconfirmedAtL1BlockHeight[superBlockHeight] = block.timestamp;
+        // Record both block number and timestamp
+        postconfirmedAtL1BlockHeight[superBlockHeight] = block.number;
+        postconfirmedAtL1BlockTimestamp[superBlockHeight] = block.timestamp;
     }
 
     function currentAcceptorIsLive() public view returns (bool) {
@@ -341,20 +344,21 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
             superBlockHeightAssignedEpoch[superBlockHeight] = previousSuperBlockEpoch;
             superBlockEpoch = previousSuperBlockEpoch;
 
-        // if the accepting epoch is far behind the present epoch, that means the protocol was not live for a while
-        // so long as we ensure that we go through the superBlocks in order and that the superBlock to epoch assignment is non-decreasing
-        // so, we'll just keep rolling over the epoch until we catch up
+        // if the accepting epoch is far behind the superBlockEpoch (which is determined by commitments measured in L1 block time), then the protocol was not live for a while
+        // We keep rolling over the epoch (i.e. update stakes) until we catch up with the superBlockEpoch
         // TODO: acceptors should be separately rewarded for rollover functions and postconfirmation. Consider to separate this out.
         while (getAcceptingEpoch() < superBlockEpoch) {
             // only permit rollover if the attester has stake, as this is related to the reward model (rollovers should be rewarded)
             if (getAttesterStakeForAcceptingEpoch(msg.sender) == 0) return false;            
-            // TODO: the following introduces several attack vectors, albeit minor ones that mainly affect the reward model.
-            // TODO: a more correct approach would be that one rollover can only be done per one transaction, which would guarantee that the acceptor gets treated fairly. 
-            // TODO: As it currently stands the acceptor can get cheated out of his role with this approach (at the intersection of epochs)
+            // TODO: The following introduces several attack vectors, albeit minor ones that mainly affect the reward model.
+            // TODO: Since acceptors should be rewarded for rollover functions, a more fair approach would be to permit the current (volunteer) acceptor to only rollover one epoch per transaction.
+            // TODO: However, this would take longer to reach superBlockEpoch as more consecutive transactions would be required.
+            // TODO: Hence we settle with the current approach for now.
             rollOverEpoch();
-            // Check if attester still has stake after rollover
-            if (getAttesterStakeForAcceptingEpoch(msg.sender) == 0) return false;            
         }
+
+        // only permit postconfirmation if the attester has stake, as this is related to the reward model (rollovers should be rewarded)
+        if (getAttesterStakeForAcceptingEpoch(msg.sender) == 0) return false;            
 
         // note: we could keep track of seen commitments in a set
         // but since the operations we're doing are very cheap, the set actually adds overhead
@@ -466,5 +470,10 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
      */
     function rollOverEpoch() internal {
         stakingContract.rollOverEpoch();
+        // determine the new acceptor. to do so use the blockhash of the L1 block that executes the rollover function
+        // TODO: make this weighted by stake
+        address[] memory attesters = stakingContract.getStakedAttestersForAcceptingEpoch(address(this));
+        uint256 acceptorIndex = uint256(blockhash(block.number-1)) % attesters.length;
+        return attesters[acceptorIndex];
     }
 }

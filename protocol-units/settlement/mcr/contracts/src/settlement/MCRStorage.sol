@@ -62,6 +62,10 @@ contract MCRStorage {
     // Track the L1Block height when a superBlock height was postconfirmed
     mapping(uint256 superBlockHeight => uint256 L1BlockHeight) public postconfirmedAtL1BlockHeight;
 
+    // TODO: either the L1Block timestamp or L1Block height should be tracked, both are not needed, but keep both until we know which one is not needed
+    // Track the L1Block timestamp when a superBlock height was postconfirmed
+    mapping(uint256 superBlockHeight => uint256 L1BlockTimestamp) public postconfirmedAtL1BlockTimestamp;
+
     // Track the L1Block height when a superBlock height was postconfirmed by the acceptor
     mapping(uint256 superBlockHeight => uint256 L1BlockHeight) public postconfirmedAtL1BlockHeightByAcceptor;
 
