@@ -111,7 +111,16 @@ impl Load<Ed25519> for SignerIdentifier {
 	async fn load(&self) -> Result<LoadedSigner<Ed25519>, LoaderError> {
 		info!("loading an ed25519 signer {:?}", self);
 		match self {
-			SignerIdentifier::Local(_local) => Err(LoaderError::InvalidCurve),
+			SignerIdentifier::Local(local) => {
+				let signer = movement_signer_local::signer::LocalSigner::from_signing_key_hex(
+					&local.private_key_hex_bytes,
+				)
+				.map_err(|e| LoaderError::InvalidSigner(e.into()))?;
+				Ok(LoadedSigner::new(
+					Arc::new(signer) as Arc<dyn Signing<Ed25519> + Send + Sync>,
+					self.clone(),
+				))
+			}
 			SignerIdentifier::AwsKms(_aws_kms) => Err(LoaderError::InvalidCurve),
 			SignerIdentifier::HashiCorpVault(hashi_corp_vault) => {
 				let builder = movement_signer_hashicorp_vault::hsm::key::Builder::new()
