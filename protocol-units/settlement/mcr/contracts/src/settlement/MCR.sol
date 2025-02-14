@@ -20,7 +20,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
     function initialize(
         IMovementStaking _stakingContract,
-        uint256 _lastAcceptedSuperBlockHeight,
+        uint256 _lastPostconfirmedSuperBlockHeight,
         uint256 _leadingSuperBlockTolerance,
         uint256 _epochDuration,
         address[] memory _custodians,
@@ -29,7 +29,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         __BaseSettlement_init_unchained();
         stakingContract = _stakingContract;
         leadingSuperBlockTolerance = _leadingSuperBlockTolerance;
-        lastAcceptedSuperBlockHeight = _lastAcceptedSuperBlockHeight;
+        lastPostconfirmedSuperBlockHeight = _lastPostconfirmedSuperBlockHeight;
         stakingContract.registerDomain(_epochDuration, _custodians);
         grantCommitmentAdmin(msg.sender);
         grantTrustedAttester(msg.sender);
@@ -65,7 +65,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
     // gets the max tolerable superBlock height
     function getMaxTolerableSuperBlockHeight() public view returns (uint256) {
-        return lastAcceptedSuperBlockHeight + leadingSuperBlockTolerance;
+        return lastPostconfirmedSuperBlockHeight + leadingSuperBlockTolerance;
     }
 
     // gets the would be epoch for the current L1Block time
@@ -196,12 +196,12 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     }
 
     // Sets the last accepted superBlock height. 
-    function setlastAcceptedSuperBlockHeight(uint256 height) public {
+    function setlastPostconfirmedSuperBlockHeight(uint256 height) public {
         require(
             hasRole(COMMITMENT_ADMIN, msg.sender),
             "SET_LAST_ACCEPTED_SUPERBLOCK_HEIGHT_IS_COMMITMENT_ADMIN_ONLY"
         );
-        lastAcceptedSuperBlockHeight = height;
+        lastPostconfirmedSuperBlockHeight = height;
     }
 
     // Forces the latest attestation by setting the superBlock height
@@ -215,7 +215,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         // increment the acceptedSuperBlocksVersion (effectively removing all other accepted superBlocks)
         acceptedSuperBlocksVersion += 1;
         versionedAcceptedSuperBlocks[acceptedSuperBlocksVersion][superBlockCommitment.height] = superBlockCommitment;
-        lastAcceptedSuperBlockHeight = superBlockCommitment.height; 
+        lastPostconfirmedSuperBlockHeight = superBlockCommitment.height; 
     }
 
     function getAcceptedCommitmentAtSuperBlockHeight(uint256 height) public view returns (SuperBlockCommitment memory) {
@@ -227,15 +227,13 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     //     return stakingContract.getRegisteredAttestersByDomain(address(this));
     // }
 
-    // @notice Gets the attesters who have stake in the current accepting epoch
-    function getStakedAttesters() public view returns (address[] memory) {
-        // TODO: check that this is the correct address to use
-        return stakingContract.getStakedAttestersForAcceptingEpoch(address(this));
+    /// @notice Gets the attesters who have stake in the current accepting epoch
+    function getStakedAttestersForAcceptingEpoch() public view returns (address[] memory) {
+        // TODO: check that this is the correct domain address to use
+        return stakingContract.getStakedAttestersForAcceptingEpoch(address(this)); 
     }
 
-    /**
-     * @dev submits a superBlock commitment for an attester.
-     */
+    /// @dev submits a superBlock commitment for an attester.
     function submitSuperBlockCommitmentForAttester(
         address attester,
         SuperBlockCommitment memory superBlockCommitment
@@ -246,12 +244,9 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
         // note: do no uncomment the below, we want to allow this in case we have lagging attesters
         // Attester has committed to an already accepted superBlock
-        // if ( lastAcceptedSuperBlockHeight > superBlockCommitment.height) revert AlreadyAcceptedSuperBlock();
+        // if ( lastPostconfirmedSuperBlockHeight > superBlockCommitment.height) revert AlreadyAcceptedSuperBlock();
         // Attester has committed to a superBlock too far ahead of the last accepted superBlock
-        if (
-            lastAcceptedSuperBlockHeight + leadingSuperBlockTolerance <
-            superBlockCommitment.height
-        ) revert AttesterAlreadyCommitted();
+        if (lastPostconfirmedSuperBlockHeight + leadingSuperBlockTolerance < superBlockCommitment.height) revert AttesterAlreadyCommitted();
 
         // assign the superBlock height to the current epoch if it hasn't been assigned yet
         // since any attester can submit a comittment for a superBlock height, the assignment could be off by leadingSuperBlockTolerance
@@ -267,9 +262,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
         // increment the commitment count by stake
         uint256 stakeForCurrentAcceptingEpoch = getStakeForCurrentAcceptingEpoch(attester);
-        commitmentStakes[superBlockCommitment.height][
-            superBlockCommitment.commitment
-        ] += stakeForCurrentAcceptingEpoch;
+        commitmentStakes[superBlockCommitment.height][superBlockCommitment.commitment] += stakeForCurrentAcceptingEpoch;
 
         emit SuperBlockCommitmentSubmitted(
             superBlockCommitment.blockId,
@@ -283,22 +276,23 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         postconfirmSuperBlocksWithAttester(msg.sender);
     }
 
-    /// @notice The current acceptor can attest to a superBlock height, given there is a supermajority of stake on the commitment
+    /// @notice The current acceptor can postconfirm a superBlock height, given there is a supermajority of stake on a commitment
     /// @notice If the current acceptor is live, we should not accept postconfirmations from voluntary attesters
+    // TODO: this will be improved, such that voluntary attesters can postconfirm but will not be rewarded before the liveness period has ended
     /// @notice If the current acceptor is not live, we should accept postconfirmations from any attester
+    // TODO: this will be improved, such that the first voluntary attester to do sowill be rewarded
     function postconfirmSuperBlocksWithAttester(address attester) internal {
         // if the current acceptor is live we should not accept postconfirmations from voluntary attesters
+        // TODO: we probably have to apply this check somewhere else as (volunteer) attesters can only postconfirm and rollover an epoch in which they are staked.
         if (currentAcceptorIsLive()) {
             if (attester != getCurrentAcceptor()) revert("NotAcceptor");
         }
 
-        // keep ticking through to find accepted superBlocks
-        // we can commit to superBlocks out to the tolerance point
-        // then we can accept them in order
+        // keep ticking through postconfirmations and rollovers as long as the acceptor is permitted to do
         // ! rewards need to be 
         // ! - at least the cost for gas cost of postconfirmation
         // ! - reward the acceptor well to incentivize postconfirmation at every height
-        while (tickOnSuperBlockHeight(lastAcceptedSuperBlockHeight + 1)) {}
+        while (attemptPostconfirm(lastPostconfirmedSuperBlockHeight + 1)) {}
     }
 
     function recordAcceptorPostconfirmation(uint256 superBlockHeight) internal {
@@ -339,16 +333,22 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     // TODO : but the current epoch has enough votes, what should we do?? 
     // TODO : Should we move to the next epoch and ignore all votes on blocks of that epoch? 
     // TODO : What if none of the epochs have enough votes for a given block height.
-    function tickOnSuperBlockHeight(uint256 superBlockHeight) internal returns (bool) {
-        // get the epoch assigned to the superBlock height
+    function attemptPostconfirm(uint256 superBlockHeight) internal returns (bool) {
         uint256 superBlockEpoch = superBlockHeightAssignedEpoch[superBlockHeight];
 
-        // if the current epoch is far behind, that's okay that just means there weren't superBlocks submitted
-        // so long as we ensure that we go through the superBlocks in order and that the superBlock to epoch assignment is non-decreasing, we're good
+        // if the accepting epoch is far behind the present epoch, that means the protocol was not live for a while
+        // so long as we ensure that we go through the superBlocks in order and that the superBlock to epoch assignment is non-decreasing
         // so, we'll just keep rolling over the epoch until we catch up
+        // TODO: acceptors should be separately rewarded for rollover functions and postconfirmation. Consider to separate this out.
         while (getCurrentAcceptingEpoch() < superBlockEpoch) {
-            // TODO: we should check the implication of this for the acceptor. But it also may be an issue for any attester. 
-            rollOverEpoch();
+            rollOverEpoch();            
+            // TODO: the following introduces several attack vectors, albeit minor ones that mainly affect the reward model.
+            // TODO: a more correct approach would be that one rollover can only be done per one transaction, which would guarantee that the acceptor gets treated fairly. 
+            // TODO: As it currently stands the acceptor can get cheated out of his role with this approach (at the intersection of epochs)
+            // Check if attester still has stake after rollover
+            if (getStakeForCurrentAcceptingEpoch(msg.sender) == 0) {
+                return false;
+            }
         }
 
         // note: we could keep track of seen commitments in a set
@@ -356,21 +356,15 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
         // TODO the supermajority is 2f+1 from 3f+1 nodes. Not 2f from 3f. 
         uint256 supermajority = (2 * computeAllTotalStakeForEpoch(superBlockEpoch)) / 3;
-        address[] memory attesters = getStakedAttesters();
+        address[] memory attesters = getStakedAttestersForAcceptingEpoch();
 
         // iterate over the attester set
         for (uint256 i = 0; i < attesters.length; i++) {
             address attester = attesters[i];
-
-            // get a commitment for the attester at the superBlock height
-            SuperBlockCommitment memory superBlockCommitment = commitments[superBlockHeight][
-                attester
-            ];
+            SuperBlockCommitment memory superBlockCommitment = commitments[superBlockHeight][attester];
 
             // check the total stake on the commitment
-            uint256 totalStakeOnCommitment = commitmentStakes[
-                superBlockCommitment.height
-            ][superBlockCommitment.commitment];
+            uint256 totalStakeOnCommitment = commitmentStakes[superBlockCommitment.height][superBlockCommitment.commitment];
 
             if (totalStakeOnCommitment > supermajority) {
                 // accept the superBlock commitment (this may trigger a roll over of the epoch)
@@ -419,7 +413,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
     /**
      * @dev Accepts a superBlock commitment.
-     * @dev Under the current implementation this shares in recursion with the tickOnSuperBlockHeight, so it should be reentrant.
+     * @dev Under the current implementation this shares in recursion with the attemptPostconfirm, so it should be reentrant.
      */
     function _acceptSuperBlockCommitment(SuperBlockCommitment memory superBlockCommitment) internal {
         uint256 currentAcceptingEpoch = getCurrentAcceptingEpoch();
@@ -432,7 +426,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         versionedAcceptedSuperBlocks[acceptedSuperBlocksVersion][superBlockCommitment.height] = superBlockCommitment;
 
         // set last accepted superBlock height
-        lastAcceptedSuperBlockHeight = superBlockCommitment.height;
+        lastPostconfirmedSuperBlockHeight = superBlockCommitment.height;
 
         // slash minority attesters w.r.t. to the accepted superBlock commitment
         slashMinority(superBlockCommitment);

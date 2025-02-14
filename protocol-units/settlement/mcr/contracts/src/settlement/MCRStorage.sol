@@ -8,7 +8,7 @@ contract MCRStorage {
 
     IMovementStaking public stakingContract;
 
-    // the number of superBlocks that can be submitted ahead of the lastAcceptedSuperBlockHeight
+    // the number of superBlocks that can be submitted ahead of the lastPostconfirmedSuperBlockHeight
     // this allows for things like batching to take place without some attesters locking down the attester set by pushing too far ahead
     // ? this could be replaced by a 2/3 stake vote on the superBlock height to epoch assignment
     // ? however, this protocol becomes more complex as you to take steps to ensure that...
@@ -19,8 +19,8 @@ contract MCRStorage {
     // TODO unless this is clarified or becomes relevant in the future, this comment should be removed
     uint256 public leadingSuperBlockTolerance;
 
-    // track the last accepted superBlock height, so that we can require superBlocks are submitted in order and handle staking effectively
-    uint256 public lastAcceptedSuperBlockHeight;
+    // track the last postconfirmed superBlock height, so that we can require superBlocks are submitted in order and handle staking effectively
+    uint256 public lastPostconfirmedSuperBlockHeight;
 
     /// Acceptor term time in seconds (determined by L1 blocks). The confimer remains the same for acceptorTerm period.
     // This means we accept that if the acceptor is not active the postconfirmations will be delayed. 
