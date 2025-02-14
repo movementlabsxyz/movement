@@ -65,8 +65,8 @@ jobs:
             -p move-rocks \
             -p movement-types \
             -p movement-config \
-            -p movement-da-util \
-            -p movement-signer-test
+            -p movement-da-util
+            # -p movement-signer-test
 
   movement-full-node-local:
     if: github.event.label.name == 'cicd:movement-full-node' ||  github.ref == 'refs/heads/main'

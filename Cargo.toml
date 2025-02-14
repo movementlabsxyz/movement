@@ -45,6 +45,8 @@ members = [
   "util/signing/integrations/aptos",
   "util/signing/providers/aws-kms",
   "util/signing/providers/hashicorp-vault",
+  # FIXME: add after https://github.com/movementlabsxyz/aptos-core/pull/141
+  #"util/signing/testing",
   "demo/hsm",
   "protocol-units/execution/maptos/framework/releases/*",
   "protocol-units/execution/maptos/framework/migrations/*",
