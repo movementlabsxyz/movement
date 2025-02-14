@@ -19,7 +19,7 @@ interface IMovementStaking {
         address custodian,
         address attester
     ) external view returns (uint256);
-    function getCurrentAcceptingEpochStake(
+    function getStakeForCurrentAcceptingEpoch(
         address domain,
         address custodian,
         address attester
@@ -96,4 +96,7 @@ interface IMovementStaking {
     error StakeExceedsGenesisStake();
     error CustodianTransferAmountMismatch();
     error GenesisAlreadyAccepted();
+
+    function getStakedAttestersForAcceptingEpoch(address domain) external view returns (address[] memory);
+    function computeAllStakeForCurrentAcceptingEpoch(address attester) external view returns (uint256);
 }

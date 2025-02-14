@@ -49,6 +49,7 @@ contract MovementStaking is
         return custodians;
     }
 
+    /// @notice Gets all attesters who are registered for the given domain
     function getAttestersByDomain(
         address domain
     ) public view returns (address[] memory) {
@@ -59,6 +60,36 @@ contract MovementStaking is
             attesters[i] = attestersByDomain[domain].at(i);
         }
         return attesters;
+    }
+
+    /// @notice Gets all attesters who have stake in the current accepting epoch
+    function getStakedAttestersForAcceptingEpoch(
+        address domain
+    ) public view returns (address[] memory) {
+        // First get all registered attesters
+        uint256 totalAttesters = attestersByDomain[domain].length();
+        
+        // Count attesters with stake
+        uint256 activeAttesterCount = 0;
+        for (uint256 i = 0; i < totalAttesters; i++) {
+            address attester = attestersByDomain[domain].at(i);
+            if (computeAllStakeForCurrentAcceptingEpoch(attester) > 0) {
+                activeAttesterCount++;
+            }
+        }
+
+        // Create array of active attesters
+        address[] memory activeAttesters = new address[](activeAttesterCount);
+        uint256 activeIndex = 0;
+        for (uint256 i = 0; i < totalAttesters; i++) {
+            address attester = attestersByDomain[domain].at(i);
+            if (computeAllStakeForCurrentAcceptingEpoch(attester) > 0) {
+                activeAttesters[activeIndex] = attester;
+                activeIndex++;
+            }
+        }
+
+        return activeAttesters;
     }
 
     function acceptGenesisCeremony() public nonReentrant {
@@ -186,7 +217,7 @@ contract MovementStaking is
     }
 
     // gets the stake for a given attester at the current epoch
-    function getCurrentAcceptingEpochStake(
+    function getStakeForCurrentAcceptingEpoch(
         address domain,
         address custodian,
         address attester
@@ -560,5 +591,30 @@ contract MovementStaking is
         address addr
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         revokeRole(WHITELIST_ROLE, addr);
+    }
+
+    /// @notice Computes total stake across all custodians and attesters for an epoch
+    function computeAllStake(
+        address domain,
+        uint256 epoch
+    ) public view returns (uint256) {
+        address[] memory custodians = getCustodiansByDomain(domain);
+        address[] memory attesters = getAttestersByDomain(domain);
+        uint256 totalStake = 0;
+
+        for (uint256 i = 0; i < custodians.length; i++) {
+            for (uint256 j = 0; j < attesters.length; j++) {
+                totalStake += getStakeAtEpoch(domain, epoch, custodians[i], attesters[j]);
+            }
+        }
+        return totalStake;
+    }
+
+    /// @notice Computes total stake across all custodians and attesters for the current accepting epoch
+    /// @param domain The domain to compute total stake for
+    function computeAllStakeForCurrentAcceptingEpoch(
+        address domain
+    ) public view returns (uint256) {
+        return computeAllStake(domain, getCurrentAcceptingEpoch(domain));
     }
 }

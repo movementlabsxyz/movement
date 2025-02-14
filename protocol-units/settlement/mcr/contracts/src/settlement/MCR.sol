@@ -98,8 +98,8 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
             );
     }
 
-    // todo: memoize this
-    function computeAllStakeAtEpoch(
+    // todo: memorize this
+    function getStake(
         uint256 epoch,
         address attester
     ) public view returns (uint256) {
@@ -115,17 +115,17 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     }
 
     // gets the stake for a given attester at the current epoch
-    function getCurrentAcceptingEpochStake(
+    function getStakeForCurrentAcceptingEpoch(
         address custodian,
         address attester
     ) public view returns (uint256) {
         return getStakeAtEpoch(getCurrentAcceptingEpoch(), custodian, attester);
     }
 
-    function computeAllCurrentAcceptingEpochStake(
+    function getStakeForCurrentAcceptingEpoch(
         address attester
     ) public view returns (uint256) {
-        return computeAllStakeAtEpoch(getCurrentAcceptingEpoch(), attester);
+        return getStake(getCurrentAcceptingEpoch(), attester);
     }
 
     // gets the total stake for a given epoch
@@ -133,9 +133,10 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         uint256 epoch,
         address custodian
     ) public view returns (uint256) {
+        
         return
             stakingContract.getTotalStakeForEpoch(
-                address(this),
+                address(this), // domain
                 epoch,
                 custodian
             );
@@ -225,6 +226,11 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         return stakingContract.getAttestersByDomain(address(this));
     }
 
+    function getStakedAttesters() public view returns (address[] memory) {
+        // TODO: check that this is the correct address to use
+        return stakingContract.getStakedAttestersForAcceptingEpoch(address(this));
+    }
+
     /**
      * @dev submits a superBlock commitment for an attester.
      */
@@ -258,15 +264,15 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         commitments[superBlockCommitment.height][attester] = superBlockCommitment;
 
         // increment the commitment count by stake
-        uint256 allCurrentAcceptingEpochStake = computeAllCurrentAcceptingEpochStake(attester);
+        uint256 stakeForCurrentAcceptingEpoch = getStakeForCurrentAcceptingEpoch(attester);
         commitmentStakes[superBlockCommitment.height][
             superBlockCommitment.commitment
-        ] += allCurrentAcceptingEpochStake;
+        ] += stakeForCurrentAcceptingEpoch;
 
         emit SuperBlockCommitmentSubmitted(
             superBlockCommitment.blockId,
             superBlockCommitment.commitment,
-            allCurrentAcceptingEpochStake
+            stakeForCurrentAcceptingEpoch
         );
 
     }
@@ -301,12 +307,12 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
     function currentAcceptorIsLive() public view returns (bool) {
         // TODO check if current acceptor has been live sufficiently long
-        // use getCurrentAcceptorStartL1BlockHeight, and the mappings
+        // use getL1BlockStartOfCurrentAcceptorTerm, and the mappings
         return true; // dummy implementation
     }
 
     /// @notice Gets the L1 block height at which the current acceptor's term started
-    function getCurrentAcceptorStartL1BlockHeight() public view returns (uint256) {
+    function getL1BlockStartOfCurrentAcceptorTerm() public view returns (uint256) {
         uint256 currentL1BlockHeight = block.number;
         uint256 startL1BlockHeight = currentL1BlockHeight - currentL1BlockHeight % acceptorTerm - 1; // -1 because we do not want to consider the current block.
         if (startL1BlockHeight < 0) { // ensure its not below 0 
@@ -317,11 +323,13 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
     /// @notice Determines the current acceptor using L1 block hash as a source of randomness
     function getCurrentAcceptor() public view returns (address) {
-        bytes32 blockHash = blockhash(getCurrentAcceptorStartL1BlockHeight());
-
-        address[] memory attesters = getAttesters();
-        // map the blockhash to the attesters
-        uint256 acceptorIndex = uint256(blockHash) % attesters.length;
+        // TODO: acceptor should swap more frequently than every epoch.
+        // use the blockhash of the first L1 block of the current acceptor's term as the source of randomness
+        bytes32 randomness = blockhash(getL1BlockStartOfCurrentAcceptorTerm());
+        // map the randomness to the attesters
+        // TODO: make this weighted by stake
+        address[] memory attesters = stakingContract.getStakedAttestersForAcceptingEpoch(address(this));
+        uint256 acceptorIndex = uint256(randomness) % attesters.length;
         return attesters[acceptorIndex];        
     }
 
