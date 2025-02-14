@@ -149,8 +149,8 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     function computeTotalStake(
         uint256 epoch
     ) public view returns (uint256) {
-        // we can either use the acceptorStake or the custodianStake
-        // the sums of acceptorStake and custodianStake should equal the same value
+        // we can either use the attesterStake or the custodianStake
+        // the sums of attesterStake and custodianStake should equal the same value
         address[] memory custodians = stakingContract.getRegisteredCustodians(
             address(this)
         );
@@ -285,7 +285,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         // if the current acceptor is live we should not accept postconfirmations from voluntary attesters
         // TODO: we probably have to apply this check somewhere else as (volunteer) attesters can only postconfirm and rollover an epoch in which they are staked.
         if (currentAcceptorIsLive()) {
-            if (attester != getCurrentAcceptor()) revert("NotAcceptor");
+            if (attester != getCurrentAcceptor()) revert("NotAcceptorAndAcceptorIsLive");
         }
 
         // keep ticking through postconfirmations and rollovers as long as the acceptor is permitted to do
@@ -295,17 +295,8 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         while (attemptPostconfirm(lastPostconfirmedSuperBlockHeight + 1)) {}
     }
 
-    /// @dev records the acceptor's postconfirmation of a superBlock height
-    function recordAcceptorPostconfirmation(uint256 superBlockHeight) internal {
-        address acceptor = getCurrentAcceptor();
-        postconfirmedBy[superBlockHeight] = acceptor;
-        // Record both block number and timestamp
-        postconfirmedAtL1BlockHeight[superBlockHeight] = block.number;
-        postconfirmedAtL1BlockTimestamp[superBlockHeight] = block.timestamp;
-    }
-
     function currentAcceptorIsLive() public view returns (bool) {
-        // TODO check if current acceptor has been live sufficiently long
+        // TODO check if current acceptor has been live sufficiently recently
         // use getL1BlockStartOfCurrentAcceptorTerm, and the mappings
         return true; // dummy implementation
     }
@@ -376,7 +367,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
             // check the total stake on the commitment
             uint256 totalStakeOnCommitment = commitmentStakes[superBlockCommitment.height][superBlockCommitment.commitment];
             if (totalStakeOnCommitment > supermajority) {
-                _postconfirmSuperBlockCommitment(superBlockCommitment);
+                _postconfirmSuperBlockCommitment(superBlockCommitment, msg.sender);
                 // if the present epoch is greater than the current epoch, roll over the epoch, 
                 // TODO: this did not make sense to me since we require that the superBlock has to be confirmed by the accepting epoch,
                 // TODO: so we MUST wait until all postconfirmations have been done for the accepting epoch.
@@ -384,12 +375,18 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
                 //     rollOverEpoch();
                 // }
 
+                // TODO: for rewards we have to run through all the attesters, as we need to acknowledge that they get rewards. 
+
+                // TODO: if the attester is the current acceptor, we need to record that the acceptor has shown liveness. 
+                // TODO: this liveness needs to be discoverable by isCurrentAcceptorLive()
+
                 return true;
             }
         }
 
         return false;
     }
+
 
     function grantTrustedAttester(address attester) public onlyRole(COMMITMENT_ADMIN) {
         grantRole(TRUSTED_ATTESTER, attester);
@@ -427,7 +424,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     /// @dev Accepts a superBlock commitment.
     /// @dev This function and attemptPostconfirm() could call each other recursively, so we must ensure it's safe from re-entrancy
     // TODO: check the truth of the above statement
-    function _postconfirmSuperBlockCommitment(SuperBlockCommitment memory superBlockCommitment) internal {
+    function _postconfirmSuperBlockCommitment(SuperBlockCommitment memory superBlockCommitment, address attester) internal {
         uint256 currentAcceptingEpoch = getAcceptingEpoch();
         // get the epoch for the superBlock commitment
         // SuperBlock commitment is not in the current epoch, it cannot be postconfirmed. 
@@ -441,11 +438,11 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         if (lastPostconfirmedSuperBlockHeight != superBlockCommitment.height - 1)
             revert UnacceptableSuperBlockCommitment();
 
-        // set postconfirmed superBlock commitment
         versionedPostconfirmedSuperBlocks[postconfirmedSuperBlocksVersion][superBlockCommitment.height] = superBlockCommitment;
-
-        // set last postconfirmed superBlock height
         lastPostconfirmedSuperBlockHeight = superBlockCommitment.height;
+        postconfirmedBy[superBlockCommitment.height] = attester;
+        postconfirmedAtL1BlockHeight[superBlockCommitment.height] = block.number;
+        postconfirmedAtL1BlockTimestamp[superBlockCommitment.height] = block.timestamp;
 
         // slash minority attesters w.r.t. to the postconfirmed superBlock commitment
         // As per current design, slashing is not intended. But may be in later iterations of the protocol
