@@ -310,8 +310,8 @@ where
 		height: u64,
 	) -> Result<Option<SuperBlockCommitment>, anyhow::Error> {
 		let contract = MCR::new(self.contract_address, &self.ws_provider);
-		let MCR::getAcceptedCommitmentAtSuperBlockHeightReturn { _0: commitment } =
-			contract.getAcceptedCommitmentAtSuperBlockHeight(U256::from(height)).call().await?;
+		let MCR::getPostconfirmedCommitmentReturn { _0: commitment } =
+			contract.getPostconfirmedCommitment(U256::from(height)).call().await?;
 
 		let return_height: u64 = commitment
 			.height

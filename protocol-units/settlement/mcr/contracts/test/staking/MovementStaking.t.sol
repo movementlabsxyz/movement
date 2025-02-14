@@ -45,7 +45,7 @@ contract MovementStakingTest is Test {
         vm.prank(domain);
         staking.registerDomain(1 seconds, custodians);
 
-        assertEq(staking.getCurrentAcceptingEpoch(domain), 0);
+        assertEq(staking.getAcceptingEpoch(domain), 0);
     }
 
     function testWhitelist() public {
@@ -106,7 +106,7 @@ contract MovementStakingTest is Test {
         vm.prank(domain);
         staking.acceptGenesisCeremony();
         assertNotEq(staking.currentAcceptingEpochByDomain(domain), 0);
-        assertEq(staking.getStakeForCurrentAcceptingEpoch(domain, address(moveToken), staker), 100);
+        assertEq(staking.getStakeForAcceptingEpoch(domain, address(moveToken), staker), 100);
 
         vm.expectRevert(IMovementStaking.GenesisAlreadyAccepted.selector);
         vm.prank(domain);
@@ -138,12 +138,12 @@ contract MovementStakingTest is Test {
         // rollover epoch
         for (uint256 i = 0; i < 10; i++) {
             vm.warp((i + 1) * 1 seconds);
-            uint256 epochBefore = staking.getCurrentAcceptingEpoch(domain);
+            uint256 epochBefore = staking.getAcceptingEpoch(domain);
             vm.prank(domain);
             staking.rollOverEpoch();
-            uint256 epochAfter = staking.getCurrentAcceptingEpoch(domain);
+            uint256 epochAfter = staking.getAcceptingEpoch(domain);
             assertEq(epochAfter, epochBefore + 1);
-            assertEq(staking.getStakeForCurrentAcceptingEpoch(domain, address(moveToken), staker), 100);
+            assertEq(staking.getStakeForAcceptingEpoch(domain, address(moveToken), staker), 100);
         }
     }
 
@@ -170,18 +170,18 @@ contract MovementStakingTest is Test {
 
         for (uint256 i = 0; i < 10; i++) {
             vm.warp((i + 1) * 1 seconds);
-            uint256 epochBefore = staking.getCurrentAcceptingEpoch(domain);
+            uint256 epochBefore = staking.getAcceptingEpoch(domain);
 
             // unstake
             vm.prank(staker);
             staking.unstake(domain, address(moveToken), 10);
-            assertEq(staking.getStakeForCurrentAcceptingEpoch(domain, address(moveToken), staker), 100 - (i * 10));
+            assertEq(staking.getStakeForAcceptingEpoch(domain, address(moveToken), staker), 100 - (i * 10));
             assertEq(moveToken.balanceOf(staker), i * 10);
 
             // roll over
             vm.prank(domain);
             staking.rollOverEpoch();
-            uint256 epochAfter = staking.getCurrentAcceptingEpoch(domain);
+            uint256 epochAfter = staking.getAcceptingEpoch(domain);
             assertEq(epochAfter, epochBefore + 1);
         }
     }
@@ -209,7 +209,7 @@ contract MovementStakingTest is Test {
 
         for (uint256 i = 0; i < 10; i++) {
             vm.warp((i + 1) * 1 seconds);
-            uint256 epochBefore = staking.getCurrentAcceptingEpoch(domain);
+            uint256 epochBefore = staking.getAcceptingEpoch(domain);
 
             // unstake
             vm.prank(staker);
@@ -222,13 +222,13 @@ contract MovementStakingTest is Test {
             staking.stake(domain, moveToken, 5);
 
             // check stake
-            assertEq(staking.getStakeForCurrentAcceptingEpoch(domain, address(moveToken), staker), (100 - (i * 10)) + (i * 5));
+            assertEq(staking.getStakeForAcceptingEpoch(domain, address(moveToken), staker), (100 - (i * 10)) + (i * 5));
             assertEq(moveToken.balanceOf(staker), (50 - (i + 1) * 5) + (i * 10));
 
             // roll over
             vm.prank(domain);
             staking.rollOverEpoch();
-            uint256 epochAfter = staking.getCurrentAcceptingEpoch(domain);
+            uint256 epochAfter = staking.getAcceptingEpoch(domain);
             assertEq(epochAfter, epochBefore + 1);
         }
     }
@@ -256,7 +256,7 @@ contract MovementStakingTest is Test {
 
         for (uint256 i = 0; i < 5; i++) {
             vm.warp((i + 1) * 1 seconds);
-            uint256 epochBefore = staking.getCurrentAcceptingEpoch(domain);
+            uint256 epochBefore = staking.getAcceptingEpoch(domain);
 
             // unstake
             vm.prank(staker);
@@ -270,7 +270,7 @@ contract MovementStakingTest is Test {
 
             // check stake
             assertEq(
-                staking.getStakeForCurrentAcceptingEpoch(domain, address(moveToken), staker), (100 - (i * 10)) + (i * 5) - (i * 1)
+                staking.getStakeForAcceptingEpoch(domain, address(moveToken), staker), (100 - (i * 10)) + (i * 5) - (i * 1)
             );
             assertEq(moveToken.balanceOf(staker), (50 - (i + 1) * 5) + (i * 10));
 
@@ -288,14 +288,14 @@ contract MovementStakingTest is Test {
 
             // slash immediately takes effect
             assertEq(
-                staking.getStakeForCurrentAcceptingEpoch(domain, address(moveToken), staker),
+                staking.getStakeForAcceptingEpoch(domain, address(moveToken), staker),
                 (100 - (i * 10)) + (i * 5) - ((i + 1) * 1)
             );
 
             // roll over
             vm.prank(domain);
             staking.rollOverEpoch();
-            uint256 epochAfter = staking.getCurrentAcceptingEpoch(domain);
+            uint256 epochAfter = staking.getAcceptingEpoch(domain);
             assertEq(epochAfter, epochBefore + 1);
         }
     }
@@ -332,7 +332,7 @@ contract MovementStakingTest is Test {
         assertEq(moveToken.balanceOf(alice), 0);
         assertEq(moveToken.balanceOf(bob), 0);
         assertEq(moveToken.balanceOf(address(staking)), 1100);
-        assertEq(staking.getTotalStakeForEpoch(domain, 0, address(moveToken)), 1100);
+        assertEq(staking.getCustodianStake(domain, 0, address(moveToken)), 1100);
         assertEq(staking.getStake(domain, 0, address(moveToken), alice), 1000);
         assertEq(staking.getStake(domain, 0, address(moveToken), bob), 100);
 

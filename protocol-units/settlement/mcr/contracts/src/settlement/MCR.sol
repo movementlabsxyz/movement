@@ -74,8 +74,8 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     }
 
     // gets the current epoch up to which superBlocks have been accepted
-    function getCurrentAcceptingEpoch() public view returns (uint256) {
-        return stakingContract.getCurrentAcceptingEpoch(address(this));
+    function getAcceptingEpoch() public view returns (uint256) {
+        return stakingContract.getAcceptingEpoch(address(this));
     }
 
     // gets the next epoch
@@ -83,7 +83,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         return stakingContract.getNextAcceptingEpoch(address(this));
     }
 
-    // gets the stake for a given attester at a given epoch
+    // gets the stake for a given {attester,custodian} tuple at a given epoch
     function getStake(
         uint256 epoch,
         address custodian,
@@ -98,8 +98,11 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
             );
     }
 
-    // TODO: memorize this
-    function getStake(
+
+
+
+    // TODO: memorize this (<-- ? as in create a mapping?)
+    function getAttesterStake(
         uint256 epoch,
         address attester
     ) public view returns (uint256) {
@@ -114,29 +117,21 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         return totalStake;
     }
 
-    // gets the stake for a given attester at the current epoch
-    function getStakeForCurrentAcceptingEpoch(
-        address custodian,
+    // gets the stake for a given attester at the accepting epoch
+    function getAttesterStakeForAcceptingEpoch(
         address attester
     ) public view returns (uint256) {
-        require(custodian != address(0) && attester != address(0), "Both custodian and attester must be provided");
-        return getStake(getCurrentAcceptingEpoch(), custodian, attester);
+        return getAttesterStake(getAcceptingEpoch(), attester);
     }
 
-    function getStakeForCurrentAcceptingEpoch(
-        address attester
-    ) public view returns (uint256) {
-        return getStake(getCurrentAcceptingEpoch(), attester);
-    }
 
-    // gets the total stake for a given epoch
-    function getTotalStakeForEpoch(
+    // gets the stake for a given custodian for a given epoch
+    function getCustodianStake(
         uint256 epoch,
         address custodian
     ) public view returns (uint256) {
-        
         return
-            stakingContract.getTotalStakeForEpoch(
+            stakingContract.getCustodianStake(
                 address(this), // domain
                 epoch,
                 custodian
@@ -151,33 +146,36 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         stakingContract.acceptGenesisCeremony();
     }
 
-    function computeAllTotalStakeForEpoch(
+    function computeTotalStake(
         uint256 epoch
     ) public view returns (uint256) {
+        // we can either use the acceptorStake or the custodianStake
+        // the sums of acceptorStake and custodianStake should equal the same value
         address[] memory custodians = stakingContract.getRegisteredCustodians(
             address(this)
         );
         uint256 totalStake = 0;
         for (uint256 i = 0; i < custodians.length; i++) {
             // for now, each custodian has weight of 1
-            totalStake += getTotalStakeForEpoch(epoch, custodians[i]);
+            totalStake += getCustodianStake(epoch, custodians[i]);
         }
         return totalStake;
     }
 
-    // gets the total stake for the current epoch
-    function getTotalStakeForCurrentAcceptingEpoch(
-        address custodian
-    ) public view returns (uint256) {
-        return getTotalStakeForEpoch(getCurrentAcceptingEpoch(), custodian);
-    }
 
-    function computeAllTotalStakeForCurrentAcceptingEpoch()
+    function computeTotalStakeForAcceptingEpoch()
         public
         view
         returns (uint256)
     {
-        return computeAllTotalStakeForEpoch(getCurrentAcceptingEpoch());
+        return computeTotalStake(getAcceptingEpoch());
+    }
+
+    // gets the total stake for the accepting epoch
+    function getCustodianStakeForAcceptingEpoch(
+        address custodian
+    ) public view returns (uint256) {
+        return getCustodianStake(getAcceptingEpoch(), custodian);
     }
 
     function getValidatorCommitmentAtSuperBlockHeight(
@@ -219,7 +217,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         lastPostconfirmedSuperBlockHeight = superBlockCommitment.height; 
     }
 
-    function getAcceptedCommitmentAtSuperBlockHeight(uint256 height) public view returns (SuperBlockCommitment memory) {
+    function getPostconfirmedCommitment(uint256 height) public view returns (SuperBlockCommitment memory) {
         return versionedPostconfirmedSuperBlocks[postconfirmedSuperBlocksVersion][height];
     }
 
@@ -263,13 +261,13 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         // TODO: we do not record per epoch. this means unless a supermajority of nodes approves for a given epoch the protocol loses livenes.. 
         // TODO: however, this is in conflict with the leadingBlocktolerance. And the approach will not work unless leadingBlocktolerance << epochDuration
         // TODO: this needs to be fixed, by recording per epoch and permitting to rollover if sufficient time has passed on L1.
-        uint256 stakeForCurrentAcceptingEpoch = getStakeForCurrentAcceptingEpoch(attester);
-        commitmentStakes[superBlockCommitment.height][superBlockCommitment.commitment] += stakeForCurrentAcceptingEpoch;
+        uint256 attesterStakeForAcceptingEpoch = getAttesterStakeForAcceptingEpoch(attester);
+        commitmentStakes[superBlockCommitment.height][superBlockCommitment.commitment] += attesterStakeForAcceptingEpoch;
 
         emit SuperBlockCommitmentSubmitted(
             superBlockCommitment.blockId,
             superBlockCommitment.commitment,
-            stakeForCurrentAcceptingEpoch
+            attesterStakeForAcceptingEpoch
         );
 
     }
@@ -347,31 +345,22 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         // so long as we ensure that we go through the superBlocks in order and that the superBlock to epoch assignment is non-decreasing
         // so, we'll just keep rolling over the epoch until we catch up
         // TODO: acceptors should be separately rewarded for rollover functions and postconfirmation. Consider to separate this out.
-        while (getCurrentAcceptingEpoch() < superBlockEpoch) {
-            // TODO: getStakeForCurrentAcceptingEpoch accepts two values, but here we just provide one. why?
-            try this.getStakeForCurrentAcceptingEpoch(msg.sender) returns (uint256 stake) {
-                if (stake == 0) {
-                    return false;
-                }
-            } catch {
-                return false;
-            }
-            
-            rollOverEpoch();            
+        while (getAcceptingEpoch() < superBlockEpoch) {
+            // only permit rollover if the attester has stake, as this is related to the reward model (rollovers should be rewarded)
+            if (getAttesterStakeForAcceptingEpoch(msg.sender) == 0) return false;            
             // TODO: the following introduces several attack vectors, albeit minor ones that mainly affect the reward model.
             // TODO: a more correct approach would be that one rollover can only be done per one transaction, which would guarantee that the acceptor gets treated fairly. 
             // TODO: As it currently stands the acceptor can get cheated out of his role with this approach (at the intersection of epochs)
+            rollOverEpoch();
             // Check if attester still has stake after rollover
-            if (getStakeForCurrentAcceptingEpoch(msg.sender) == 0) {
-                return false;
-            }
+            if (getAttesterStakeForAcceptingEpoch(msg.sender) == 0) return false;            
         }
 
         // note: we could keep track of seen commitments in a set
         // but since the operations we're doing are very cheap, the set actually adds overhead
 
         // TODO the supermajority is 2f+1 from 3f+1 nodes. Not 2f from 3f. 
-        uint256 supermajority = (2 * computeAllTotalStakeForEpoch(superBlockEpoch)) / 3;
+        uint256 supermajority = (2 * computeTotalStake(superBlockEpoch)) / 3;
         address[] memory attesters = getStakedAttestersForAcceptingEpoch();
 
         // iterate over the attester set
@@ -435,7 +424,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     /// @dev This function and attemptPostconfirm() could call each other recursively, so we must ensure it's safe from re-entrancy
     // TODO: check the truth of the above statement
     function _postconfirmSuperBlockCommitment(SuperBlockCommitment memory superBlockCommitment) internal {
-        uint256 currentAcceptingEpoch = getCurrentAcceptingEpoch();
+        uint256 currentAcceptingEpoch = getAcceptingEpoch();
         // get the epoch for the superBlock commitment
         // SuperBlock commitment is not in the current epoch, it cannot be postconfirmed. 
         // TODO: readdress this approach. we may loose liveness due to this constraint. 

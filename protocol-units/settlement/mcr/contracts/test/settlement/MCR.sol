@@ -160,7 +160,7 @@ contract MCRTest is Test, IMCR {
         mcr.submitSuperBlockCommitment(bc1);
 
         // now we move to block 2 and make some commitment just to trigger the epochRollover
-        MCRStorage.SuperBlockCommitment memory retrievedCommitment = mcr.getAcceptedCommitmentAtSuperBlockHeight(1);
+        MCRStorage.SuperBlockCommitment memory retrievedCommitment = mcr.getPostconfirmedCommitment(1);
         assert(retrievedCommitment.commitment == bc1.commitment);
         assert(retrievedCommitment.blockId == bc1.blockId);
         assert(retrievedCommitment.height == 1);
@@ -220,7 +220,7 @@ contract MCRTest is Test, IMCR {
         vm.prank(bob);
         mcr.submitSuperBlockCommitment(bc1);
 
-        MCRStorage.SuperBlockCommitment memory retrievedCommitment = mcr.getAcceptedCommitmentAtSuperBlockHeight(1);
+        MCRStorage.SuperBlockCommitment memory retrievedCommitment = mcr.getPostconfirmedCommitment(1);
         // now we move to block 2 and make some commitment just to trigger the epochRollover
         assert(retrievedCommitment.commitment == bc1.commitment);
         assert(retrievedCommitment.blockId == bc1.blockId);
@@ -296,11 +296,11 @@ contract MCRTest is Test, IMCR {
         mcr.submitSuperBlockCommitment(bc2);
 
         // check that roll over happened
-        assertEq(mcr.getCurrentAcceptingEpoch(), mcr.getPresentEpoch());
-        assertEq(mcr.getStakeForCurrentAcceptingEpoch(address(moveToken), alice), 34);
-        assertEq(mcr.getStakeForCurrentAcceptingEpoch(address(moveToken), bob), 33);
-        assertEq(mcr.getStakeForCurrentAcceptingEpoch(address(moveToken), carol), 33);
-        MCRStorage.SuperBlockCommitment memory retrievedCommitment = mcr.getAcceptedCommitmentAtSuperBlockHeight(1);
+        assertEq(mcr.getAcceptingEpoch(), mcr.getPresentEpoch());
+        assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), alice), 34);
+        assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), bob), 33);
+        assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), carol), 33);
+        MCRStorage.SuperBlockCommitment memory retrievedCommitment = mcr.getPostconfirmedCommitment(1);
         assert(retrievedCommitment.commitment == bc1.commitment);
         assert(retrievedCommitment.blockId == bc1.blockId);
         assert(retrievedCommitment.height == 1);
@@ -386,7 +386,7 @@ contract MCRTest is Test, IMCR {
                     mcr.submitSuperBlockCommitment(dishonestCommitment);
                 }
 
-                MCRStorage.SuperBlockCommitment memory retrievedCommitment = mcr.getAcceptedCommitmentAtSuperBlockHeight(blockHeight);
+                MCRStorage.SuperBlockCommitment memory retrievedCommitment = mcr.getPostconfirmedCommitment(blockHeight);
                 assert(retrievedCommitment.commitment == honestCommitment.commitment);
                 assert(retrievedCommitment.blockId == honestCommitment.blockId);
                 assert(retrievedCommitment.height == blockHeight);
@@ -446,7 +446,7 @@ contract MCRTest is Test, IMCR {
         mcr.forceLatestCommitment(forcedCommitment);
 
         // get the latest commitment
-        MCRStorage.SuperBlockCommitment memory retrievedCommitment = mcr.getAcceptedCommitmentAtSuperBlockHeight(1);
+        MCRStorage.SuperBlockCommitment memory retrievedCommitment = mcr.getPostconfirmedCommitment(1);
         assertEq(retrievedCommitment.blockId, forcedCommitment.blockId);
         assertEq(retrievedCommitment.commitment, forcedCommitment.commitment);
         assertEq(retrievedCommitment.height, forcedCommitment.height);
