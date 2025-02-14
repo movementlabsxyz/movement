@@ -65,15 +65,15 @@ contract MCRStorage {
     // Track the L1Block height when a superBlock height was postconfirmed by the acceptor
     mapping(uint256 superBlockHeight => uint256 L1BlockHeight) public postconfirmedAtL1BlockHeightByAcceptor;
 
-    // map superBlock height to accepted superBlock hash 
-    mapping(uint256 superBlockHeight => SuperBlockCommitment) public acceptedSuperBlocks;
+    // map superBlock height to postconfirmed superBlock hash 
+    mapping(uint256 superBlockHeight => SuperBlockCommitment) public postconfirmedSuperBlocks;
 
     // whether we allow open attestation
     bool public openAttestationEnabled;
 
-    // versioned scheme for accepted superBlocks
-    mapping(uint256 => mapping(uint256 superBlockHeight => SuperBlockCommitment)) public versionedAcceptedSuperBlocks;
-    uint256 public acceptedSuperBlocksVersion;
+    // versioned scheme for postconfirmed superBlocks
+    mapping(uint256 => mapping(uint256 superBlockHeight => SuperBlockCommitment)) public versionedPostconfirmedSuperBlocks;
+    uint256 public postconfirmedSuperBlocksVersion;
 
     uint256[47] internal __gap;
 

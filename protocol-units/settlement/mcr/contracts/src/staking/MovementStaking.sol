@@ -32,32 +32,33 @@ contract MovementStaking is
         epochDurationByDomain[domain] = epochDuration;
 
         for (uint256 i = 0; i < custodians.length; i++) {
-            custodiansByDomain[domain].add(custodians[i]);
+            registeredCustodiansByDomain[domain].add(custodians[i]);
         }
     }
 
-    function getCustodiansByDomain(
+    /// @notice Gets all custodians who are registered for the given domain
+    function getRegisteredCustodians(
         address domain
     ) public view returns (address[] memory) {
         // todo: we probably want to figure out a better API which still allows domains to interpret custodians as they see fit
         address[] memory custodians = new address[](
-            custodiansByDomain[domain].length()
+            registeredCustodiansByDomain[domain].length()
         );
-        for (uint256 i = 0; i < custodiansByDomain[domain].length(); i++) {
-            custodians[i] = custodiansByDomain[domain].at(i);
+        for (uint256 i = 0; i < registeredCustodiansByDomain[domain].length(); i++) {
+            custodians[i] = registeredCustodiansByDomain[domain].at(i);
         }
         return custodians;
     }
 
     /// @notice Gets all attesters who are registered for the given domain
-    function getRegisteredAttestersByDomain(
+    function getRegisteredAttesters(
         address domain
     ) public view returns (address[] memory) {
         address[] memory attesters = new address[](
-            attestersByDomain[domain].length()
+            registeredAttestersByDomain[domain].length()
         );
-        for (uint256 i = 0; i < attestersByDomain[domain].length(); i++) {
-            attesters[i] = attestersByDomain[domain].at(i);
+        for (uint256 i = 0; i < registeredAttestersByDomain[domain].length(); i++) {
+            attesters[i] = registeredAttestersByDomain[domain].at(i);
         }
         return attesters;
     }
@@ -67,12 +68,12 @@ contract MovementStaking is
         address domain
     ) public view returns (address[] memory) {
         // First get all registered attesters
-        uint256 totalAttesters = attestersByDomain[domain].length();
+        uint256 totalAttesters = registeredAttestersByDomain[domain].length();
         
         // Count attesters with stake
         uint256 activeAttesterCount = 0;
         for (uint256 i = 0; i < totalAttesters; i++) {
-            address attester = attestersByDomain[domain].at(i);
+            address attester = registeredAttestersByDomain[domain].at(i);
             if (computeAllStakeForCurrentAcceptingEpoch(attester) > 0) {
                 activeAttesterCount++;
             }
@@ -82,7 +83,7 @@ contract MovementStaking is
         address[] memory activeAttesters = new address[](activeAttesterCount);
         uint256 activeIndex = 0;
         for (uint256 i = 0; i < totalAttesters; i++) {
-            address attester = attestersByDomain[domain].at(i);
+            address attester = registeredAttestersByDomain[domain].at(i);
             if (computeAllStakeForCurrentAcceptingEpoch(attester) > 0) {
                 activeAttesters[activeIndex] = attester;
                 activeIndex++;
@@ -99,14 +100,14 @@ contract MovementStaking is
         // roll over from 0 (genesis) to current epoch by L1Block time
         currentAcceptingEpochByDomain[domain] = getEpochByL1BlockTime(domain);
 
-        for (uint256 i = 0; i < attestersByDomain[domain].length(); i++) {
-            address attester = attestersByDomain[domain].at(i);
+        for (uint256 i = 0; i < registeredAttestersByDomain[domain].length(); i++) {
+            address attester = registeredAttestersByDomain[domain].at(i);
 
-            for (uint256 j = 0; j < custodiansByDomain[domain].length(); j++) {
-                address custodian = custodiansByDomain[domain].at(j);
+            for (uint256 j = 0; j < registeredCustodiansByDomain[domain].length(); j++) {
+                address custodian = registeredCustodiansByDomain[domain].at(j);
 
                 // get the genesis stake for the attester
-                uint256 attesterStake = getStakeAtEpoch(
+                uint256 attesterStake = getStake(
                     domain,
                     0,
                     custodian,
@@ -207,7 +208,7 @@ contract MovementStaking is
     }
 
     // gets the stake for a given attester at a given epoch and domain
-    function getStakeAtEpoch(
+    function getStake(
         address domain,
         uint256 epoch,
         address custodian,
@@ -223,7 +224,7 @@ contract MovementStaking is
         address attester
     ) public view returns (uint256) {
         return
-            getStakeAtEpoch(
+            getStake(
                 domain,
                 getCurrentAcceptingEpoch(domain),
                 custodian,
@@ -281,10 +282,10 @@ contract MovementStaking is
         uint256 amount
     ) external onlyRole(WHITELIST_ROLE) nonReentrant {
         // add the attester to the list of attesters
-        attestersByDomain[domain].add(msg.sender);
+        registeredAttestersByDomain[domain].add(msg.sender);
 
         // add the custodian to the list of custodians
-        // custodiansByDomain[domain].add(address(custodian)); // Note: we don't want this to take place by default as it opens up an opportunity for a gas attack by generating a large number of custodians for the domain contract to track
+        // registeredCustodiansByDomain[domain].add(address(custodian)); // Note: we don't want this to take place by default as it opens up an opportunity for a gas attack by generating a large number of custodians for the domain contract to track
 
         // check the balance of the token before transfer
         uint256 balanceBefore = token.balanceOf(address(this));
@@ -352,7 +353,7 @@ contract MovementStaking is
         address attester
     ) internal {
         // the amount of stake rolled over is stake[currentAcceptingEpoch] - unstake[nextEpoch]
-        uint256 stakeAmount = getStakeAtEpoch(
+        uint256 stakeAmount = getStake(
             domain,
             epochNumber,
             custodian,
@@ -389,11 +390,11 @@ contract MovementStaking is
     function _rollOverEpoch(address domain, uint256 epochNumber) internal {
         // iterate over the attester set
         // * complexity here can be reduced by actually mapping attesters to their token and custodian
-        for (uint256 i = 0; i < attestersByDomain[domain].length(); i++) {
-            address attester = attestersByDomain[domain].at(i);
+        for (uint256 i = 0; i < registeredAttestersByDomain[domain].length(); i++) {
+            address attester = registeredAttestersByDomain[domain].at(i);
 
-            for (uint256 j = 0; j < custodiansByDomain[domain].length(); j++) {
-                address custodian = custodiansByDomain[domain].at(j);
+            for (uint256 j = 0; j < registeredCustodiansByDomain[domain].length(); j++) {
+                address custodian = registeredCustodiansByDomain[domain].at(j);
 
                 _rollOverAttester(domain, epochNumber, custodian, attester);
             }
@@ -426,7 +427,7 @@ contract MovementStaking is
     ) internal {
         // stake slash will always target this epoch
         uint256 targetEpoch = epoch;
-        uint256 stakeForEpoch = getStakeAtEpoch(
+        uint256 stakeForEpoch = getStake(
             domain,
             targetEpoch,
             custodian,
@@ -461,7 +462,7 @@ contract MovementStaking is
         address attester
     ) internal {
         // unstake slash will always target the next epoch
-        uint256 stakeForEpoch = getStakeAtEpoch(
+        uint256 stakeForEpoch = getStake(
             domain,
             epoch,
             custodian,
@@ -499,7 +500,7 @@ contract MovementStaking is
             // issue a refund that is the min of the stake balance, the amount to be slashed, and the refund amount
             // this is to prevent a Domain from trying to have this contract pay out more than has been staked
             uint256 refundAmount = Math.min(
-                getStakeAtEpoch(
+                getStake(
                     msg.sender,
                     getCurrentAcceptingEpoch(attesters[i]),
                     custodians[i],
@@ -598,13 +599,13 @@ contract MovementStaking is
         address domain,
         uint256 epoch
     ) public view returns (uint256) {
-        address[] memory custodians = getCustodiansByDomain(domain);
-        address[] memory attesters = getRegisteredAttestersByDomain(domain);
+        address[] memory custodians = getRegisteredCustodians(domain);
+        address[] memory attesters = getRegisteredAttesters(domain);
         uint256 totalStake = 0;
 
         for (uint256 i = 0; i < custodians.length; i++) {
             for (uint256 j = 0; j < attesters.length; j++) {
-                totalStake += getStakeAtEpoch(domain, epoch, custodians[i], attesters[j]);
+                totalStake += getStake(domain, epoch, custodians[i], attesters[j]);
             }
         }
         return totalStake;

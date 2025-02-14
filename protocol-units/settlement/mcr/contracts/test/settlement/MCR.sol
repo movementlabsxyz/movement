@@ -87,24 +87,24 @@ contract MCRTest is Test, IMCR {
         assertNotEq(mcr.getCurrentAcceptor(), bob);
         
         // make a block commitment
-        MCRStorage.BlockCommitment memory bc1 = MCRStorage.BlockCommitment({
+        MCRStorage.SuperBlockCommitment memory bc1 = MCRStorage.SuperBlockCommitment({
             height: 1,
             commitment: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3))),
             blockId: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)))
         });
         vm.prank(alice);
-        mcr.submitBlockCommitment(bc1);
+        mcr.submitSuperBlockCommitment(bc1);
         vm.prank(bob);
-        mcr.submitBlockCommitment(bc1);
+        mcr.submitSuperBlockCommitment(bc1);
 
         // TODO these tests need to be split up into different test functions (happy / unhappy path)
         // bob should not be the current acceptor
         vm.prank(bob);
         vm.expectRevert("NotAcceptor");  // Expect the "NotAcceptor" revert message
-        mcr.postconfirmBlocks();
+        mcr.postconfirmSuperBlocks();
         // alice can confirm the block comittment
         vm.prank(alice);
-        mcr.postconfirmBlocks();
+        mcr.postconfirmSuperBlocks();
 
         // now check the block is L1-confirmed
         // assertEq(mcr.getCurrentEpoch(), mcr.getEpochByBlockTime());
