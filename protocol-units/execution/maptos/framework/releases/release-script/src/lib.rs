@@ -5,7 +5,6 @@ use maptos_framework_release_util::{
 	compiler::Compiler, Release, ReleaseBundleError, ReleaseSigner,
 };
 use std::fs;
-use std::path::PathBuf;
 use tempfile::tempdir;
 use tracing::info;
 
