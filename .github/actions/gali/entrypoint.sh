@@ -48,9 +48,6 @@ else
   git push https://x-access-token:$GITHUB_TOKEN@github.com/${TARGET_REPO} "${GALI_ID}"
 fi
 
-# Push the new branch
-git push https://x-access-token:$GITHUB_TOKEN@github.com/${TARGET_REPO} "${GALI_ID}"
-
 # set link to pr
 echo "::set-output name=pr_link::$(gh pr view -w --json number --repo ${TARGET_REPO})"
 
