@@ -112,9 +112,10 @@ impl Load<Ed25519> for SignerIdentifier {
 		info!("loading an ed25519 signer {:?}", self);
 		match self {
 			SignerIdentifier::Local(local) => {
-				let signer = movement_signer_local::signer::LocalSigner::from_signing_key_hex(
-					&local.private_key_hex_bytes,
-				)
+				let signer = movement_signer_local::signer::NoSpecLocalSigner::<
+					movement_signer_local::signer::ed25519::Ed25519SignerInner,
+					Ed25519,
+				>::from_signing_key_hex(&local.private_key_hex_bytes)
 				.map_err(|e| LoaderError::InvalidSigner(e.into()))?;
 				Ok(LoadedSigner::new(
 					Arc::new(signer) as Arc<dyn Signing<Ed25519> + Send + Sync>,
