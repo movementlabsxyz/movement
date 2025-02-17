@@ -57,6 +57,9 @@ impl Mocha {
 		let auth_token = self.get_auth_token().await?;
 		config.appd.celestia_auth_token.replace(auth_token.clone());
 
+		// get the initial block height
+		config.initial_height = self.get_da_block_height().await?;
+
 		Ok(config)
 	}
 

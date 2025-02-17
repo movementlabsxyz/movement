@@ -104,6 +104,9 @@ impl Arabica {
 		let auth_token = self.get_auth_token().await?;
 		config.appd.celestia_auth_token.replace(auth_token.clone());
 
+		// get the initial block height
+		config.initial_height = self.get_da_block_height().await?;
+
 		// create and fund the account
 		self.create_and_fund_account(dot_movement.clone(), config.clone()).await?;
 

@@ -60,6 +60,11 @@ pub struct Config {
 	#[serde(default = "default_da_light_node_is_initial")]
 	pub da_light_node_is_initial: bool,
 
+	/// The height to begin fetching blobs from. Filled by querying the network
+	/// during the initial setup.
+	#[serde(default)]
+	pub initial_height: u64,
+
 	/// The access control config
 	#[serde(default)]
 	pub access_control: WhitelistConfig,
@@ -89,6 +94,7 @@ impl Default for Config {
 			celestia_force_new_chain: default_celestia_force_new_chain(),
 			memseq: MemseqConfig::default(),
 			da_light_node_is_initial: default_da_light_node_is_initial(),
+			initial_height: 0,
 			access_control: WhitelistConfig::default(),
 			digest_store: digest_store::Config::default(),
 		}
