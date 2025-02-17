@@ -6,19 +6,17 @@ use movement_da_util::config::Config;
 use rand::Rng;
 use tracing::info;
 
-pub fn random_hex(bytes: usize) -> String {
+fn random_10_bytes() -> [u8; 10] {
 	let mut rng = rand::thread_rng();
-	let random_bytes: Vec<u8> = (0..bytes).map(|_| rng.gen()).collect();
-	hex::encode(random_bytes)
+	rng.gen()
 }
 
 pub fn random_chain_id() -> String {
-	random_hex(10)
+	hex::encode(random_10_bytes())
 }
 
 pub fn random_namespace() -> Namespace {
-	let namespace_bytes = random_hex(10);
-	Namespace::new_v0(&hex::decode(namespace_bytes).unwrap()).unwrap()
+	Namespace::new_v0(&random_10_bytes()).unwrap()
 }
 
 pub fn initialize_celestia_config(
