@@ -4,8 +4,8 @@ resolver = "2"
 
 members = [
 
-#  "protocol-units/bridge/config",
-#  "protocol-units/bridge/setup",
+  "protocol-units/bridge/config",
+  "protocol-units/bridge/setup",
   "protocol-units/execution/maptos/dof",
   "protocol-units/execution/maptos/opt-executor",
   "protocol-units/execution/maptos/fin-view",
@@ -35,11 +35,11 @@ members = [
   "util/collections",
   "util/whitelist",
   "networks/movement/*",
-#  "protocol-units/bridge/service",
-#  "protocol-units/bridge/grpc",
-#  "protocol-units/bridge/integration-tests",
-#  #"protocol-units/bridge/indexer-db",
-#  "protocol-units/bridge/util",
+  "protocol-units/bridge/service",
+  "protocol-units/bridge/grpc",
+  "protocol-units/bridge/integration-tests",
+  #"protocol-units/bridge/indexer-db",
+  "protocol-units/bridge/util",
   "benches/*",
   "util/signing/interface",
   "util/signing/integrations/aptos",
@@ -64,13 +64,13 @@ rust-version = "1.75"
 [workspace.dependencies]
 # internal
 ## bridge
-#bridge-util = { path = "protocol-units/bridge/util" }
-#bridge-config = { path = "protocol-units/bridge/config" }
-#bridge-service = { path = "protocol-units/bridge/service" }
-#bridge-setup = { path = "protocol-units/bridge/setup" }
-#bridge-integration-tests = { path = "protocol-units/bridge/integration-tests" }
-#bridge-grpc = { path = "protocol-units/bridge/grpc" }
-#bridge-indexer-db = { path = "protocol-units/bridge/indexer-db" }
+bridge-util = { path = "protocol-units/bridge/util" }
+bridge-config = { path = "protocol-units/bridge/config" }
+bridge-service = { path = "protocol-units/bridge/service" }
+bridge-setup = { path = "protocol-units/bridge/setup" }
+bridge-integration-tests = { path = "protocol-units/bridge/integration-tests" }
+bridge-grpc = { path = "protocol-units/bridge/grpc" }
+bridge-indexer-db = { path = "protocol-units/bridge/indexer-db" }
 ## buildtime
 buildtime = { path = "util/buildtime" }
 buildtime-helpers = { path = "util/buildtime/buildtime-helpers" }
