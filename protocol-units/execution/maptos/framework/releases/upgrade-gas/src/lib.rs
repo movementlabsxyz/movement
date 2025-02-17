@@ -7,10 +7,10 @@ use maptos_framework_release_util::{
 };
 use std::fs;
 use std::path::PathBuf;
-use tempfile::tempdir;
 use tracing::info;
 
 /// [GasUpgrade] can be used to wrap a proposal to prefix it with a gas upgrade.
+#[derive(Debug)]
 pub struct GasUpgrade<R>
 where
 	R: Release,
@@ -63,12 +63,12 @@ where
 		let mut gas_script_path = gas_script_path.as_path().to_path_buf();
 		gas_script_path.set_extension("move");
 
-		if !gas_script_path.exists() {
-			fs::create_dir_all(temp_dir.as_path())
-				.map_err(|e| ReleaseBundleError::Build(e.into()))?;
-			fs::write(gas_script_path.as_path(), update_gas_script)
-				.map_err(|e| ReleaseBundleError::Build(e.into()))?;
-		}
+		// only rewrite the file if it doesn't exist
+		// if !gas_script_path.as_path().exists() {
+		fs::create_dir_all(temp_dir.as_path()).map_err(|e| ReleaseBundleError::Build(e.into()))?;
+		fs::write(gas_script_path.as_path(), update_gas_script)
+			.map_err(|e| ReleaseBundleError::Build(e.into()))?;
+		// }
 
 		// list all files in the temp dir
 		let files =
@@ -167,7 +167,7 @@ where
 		self.wrapped_release.release_bundle()
 	}
 
-	async fn release(
+	async fn propose_release(
 		&self,
 		signer: &impl maptos_framework_release_util::ReleaseSigner,
 		max_gas_amount: u64,
@@ -188,7 +188,7 @@ where
 
 		// run the wrapped release
 		self.wrapped_release
-			.release(
+			.propose_release(
 				signer,
 				max_gas_amount,
 				gas_unit_price,
@@ -214,6 +214,7 @@ macro_rules! generate_gas_upgrade_module {
 			use maptos_framework_release_util::{Release, ReleaseBundleError};
 			use tracing::info;
 
+			#[derive(Debug)]
 			pub struct $struct_name {
 				pub with_gas_upgrade: GasUpgrade<super::$struct_name>,
 			}
@@ -241,7 +242,7 @@ macro_rules! generate_gas_upgrade_module {
 					self.with_gas_upgrade.release_bundle()
 				}
 
-				async fn release(
+				async fn propose_release(
 					&self,
 					signer: &impl maptos_framework_release_util::ReleaseSigner,
 					max_gas_amount: u64,
@@ -249,9 +250,9 @@ macro_rules! generate_gas_upgrade_module {
 					expiration_timestamp_secs: u64,
 					client: &aptos_sdk::rest_client::Client,
 				) -> Result<Vec<aptos_types::transaction::SignedTransaction>, ReleaseBundleError> {
-					info!("Releasing {} with gas upgrade", stringify!($struct_name));
+					info!("Proposing release {} with gas upgrade", stringify!($struct_name));
 					self.with_gas_upgrade
-						.release(
+						.propose_release(
 							signer,
 							max_gas_amount,
 							gas_unit_price,
