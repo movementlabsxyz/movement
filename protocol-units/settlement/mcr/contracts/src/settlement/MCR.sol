@@ -83,7 +83,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         return stakingContract.getNextAcceptingEpoch(address(this));
     }
 
-    // gets the stake for a given {attester,custodian} tuple at a given epoch
+    /// @notice Gets the stake for a given tuple (custodian, attester) at a given epoch
     function getStake(
         uint256 epoch,
         address custodian,
@@ -98,9 +98,15 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
             );
     }
 
+    /// @notice Gets the stake for a given tuple (custodian, attester) at the accepting epoch
+    function getStakeForAcceptingEpoch(
+        address custodian,
+        address attester
+    ) public view returns (uint256) {
+        return getStake(getAcceptingEpoch(), custodian, attester);
+    }
 
-
-
+    /// @notice Gets the stake for a given attester at a given epoch
     // TODO: memorize this (<-- ? as in create a mapping?)
     function getAttesterStake(
         uint256 epoch,
@@ -117,7 +123,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         return totalStake;
     }
 
-    // gets the stake for a given attester at the accepting epoch
+    /// @notice Gets the stake for a given attester at the accepting epoch
     function getAttesterStakeForAcceptingEpoch(
         address attester
     ) public view returns (uint256) {
@@ -125,7 +131,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     }
 
 
-    // gets the stake for a given custodian for a given epoch
+    /// @notice Gets the stake for a given custodian for a given epoch
     function getCustodianStake(
         uint256 epoch,
         address custodian

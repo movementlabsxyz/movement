@@ -45,6 +45,7 @@ contract MCRTest is Test, IMCR {
             address(admin),
             abi.encodeWithSignature(mcrSignature, stakingProxy, 0, 5, 10 seconds, custodians)
         );
+        // TODO: what role does moveToken take?
         moveToken = MOVETokenDev(address(moveProxy));
         staking = MovementStaking(address(stakingProxy));
         mcr = MCR(address(mcrProxy));
