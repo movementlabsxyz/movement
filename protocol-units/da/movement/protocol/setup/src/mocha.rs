@@ -1,5 +1,4 @@
 use crate::common;
-use anyhow::Context;
 use commander::run_command;
 use dot_movement::DotMovement;
 use movement_da_util::config::Config;
@@ -25,9 +24,7 @@ impl Mocha {
 	}
 
 	pub async fn get_da_block_height(&self) -> Result<u64, anyhow::Error> {
-		let response = reqwest::get("https://rpc-mocha.pops.one/block").await?.text().await?;
-
-		Ok(response.parse().context("Failed to parse the response to a u64.")?)
+		common::celestia::current_block_height("https://rpc-mocha.pops.one").await
 	}
 
 	pub async fn get_auth_token(&self) -> Result<String, anyhow::Error> {

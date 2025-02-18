@@ -89,3 +89,35 @@ pub async fn make_dirs(
 
 	Ok(config)
 }
+
+/// Retrieves the current block height from Celestia RPC
+pub async fn current_block_height(rpc: &str) -> Result<u64, anyhow::Error> {
+	// Request the Tendermint JSON-RPC header endpoint
+	let response = reqwest::get(String::from(rpc) + "/header").await?.text().await?;
+
+	// use serde to convert to json
+	let json: serde_json::Value =
+		serde_json::from_str(&response).context("Failed to parse header response as JSON")?;
+
+	let jsonrpc_version = json
+		.get("jsonrpc")
+		.context("response is not JSON-RPC")?
+		.as_str()
+		.context("invalid jsonrpc field value")?;
+	if jsonrpc_version != "2.0" {
+		anyhow::bail!("unexpected JSON-RPC version {jsonrpc_version}");
+	}
+
+	// .result.header.height
+	let height = json
+		.get("result")
+		.context("no result field")?
+		.get("header")
+		.context("missing header field")?
+		.get("height")
+		.context("missing height field")?
+		.as_str()
+		.context("expected string value of the height field")?
+		.parse()?;
+	Ok(height)
+}
