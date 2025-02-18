@@ -15,9 +15,21 @@ contract MCRTest is Test, IMCR {
     MovementStaking public staking;
     MCR public mcr;
     ProxyAdmin public admin;
-    string public moveSignature = "initialize(string,string)";
+    string public moveSignature = "initialize(address)";
     string public stakingSignature = "initialize(address)";
-    string public mcrSignature = "initialize(address,uint256,uint256,uint256,address[])";
+    string public mcrSignature = "initialize(address,uint256,uint256,uint256,address[],uint256)";
+
+    function toHexString(bytes memory data) public pure returns (string memory) {
+        bytes memory alphabet = "0123456789abcdef";
+        bytes memory str = new bytes(2 + data.length * 2);
+        str[0] = "0";
+        str[1] = "x";
+        for (uint i = 0; i < data.length; i++) {
+            str[2+i*2] = alphabet[uint8(data[i] >> 4)];
+            str[2+i*2+1] = alphabet[uint8(data[i] & 0x0f)];
+        }
+        return string(str);
+    }
 
     function setUp() public {
         MOVETokenDev moveTokenImplementation = new MOVETokenDev();
@@ -28,28 +40,45 @@ contract MCRTest is Test, IMCR {
         admin = new ProxyAdmin(address(this));
 
         // Deploy proxies
+        bytes memory initData = abi.encodeWithSignature(moveSignature, address(this));
         TransparentUpgradeableProxy moveProxy = new TransparentUpgradeableProxy(
             address(moveTokenImplementation),
             address(admin),
-            abi.encodeWithSignature(moveSignature, "Move Token", "MOVE")
+            initData
         );
+        // Set up the moveToken variable to interact with the proxy
+        moveToken = MOVETokenDev(address(moveProxy));
+
+        bytes memory stakingInitData = abi.encodeWithSignature(stakingSignature, IMintableToken(address(moveProxy)));
         TransparentUpgradeableProxy stakingProxy = new TransparentUpgradeableProxy(
             address(stakingImplementation),
             address(admin),
-            abi.encodeWithSignature(stakingSignature, IMintableToken(address(moveProxy)))
+            stakingInitData
         );
+        // Set up the staking variable to interact with the proxy
+        staking = MovementStaking(address(stakingProxy));
+
         address[] memory custodians = new address[](1);
         custodians[0] = address(moveProxy);
+
+        bytes memory mcrInitData = abi.encodeWithSignature(
+            mcrSignature, 
+            stakingProxy,                // address of staking contract
+            0,                          // start from genesis
+            5,                          // max blocks ahead of last confirmed
+            10 seconds,                 // time window for block confirmation
+            custodians,                 // array with moveProxy address
+            120 seconds                 // how long an acceptor serves
+        );
         TransparentUpgradeableProxy mcrProxy = new TransparentUpgradeableProxy(
             address(mcrImplementation),
             address(admin),
-            abi.encodeWithSignature(mcrSignature, stakingProxy, 0, 5, 10 seconds, custodians)
+            mcrInitData
         );
-        // TODO: what role does moveToken take?
-        moveToken = MOVETokenDev(address(moveProxy));
-        staking = MovementStaking(address(stakingProxy));
+
         mcr = MCR(address(mcrProxy));
         mcr.setOpenAttestationEnabled(true);
+        console.log("Setup complete");
     }
 
     function testCannotInitializeTwice() public {
@@ -121,47 +150,87 @@ contract MCRTest is Test, IMCR {
     }
 
     function testSimpleStaking() public {
+        console.log("Starting testSimpleStaking");
+        
         // three well-funded signers
         address payable alice = payable(vm.addr(1));
+        console.log("Created alice address:", address(alice));
+        
+        console.log("Whitelisting alice...");
         staking.whitelistAddress(alice);
+        console.log("Alice whitelisted");
+        
+        console.log("Minting tokens for alice...");
         moveToken.mint(alice, 100);
+        console.log("Alice token balance:", moveToken.balanceOf(alice));
+
         address payable bob = payable(vm.addr(2));
+        console.log("Created bob address:", address(bob));
         staking.whitelistAddress(bob);
         moveToken.mint(bob, 100);
+        console.log("Bob token balance:", moveToken.balanceOf(bob));
+
         address payable carol = payable(vm.addr(3));
+        console.log("Created carol address:", address(carol));
         moveToken.mint(carol, 100);
         staking.whitelistAddress(carol);
+        console.log("Carol token balance:", moveToken.balanceOf(carol));
 
+        console.log("\nStarting genesis ceremony participation...");
+        
         // have them participate in the genesis ceremony
+        console.log("Alice approving tokens...");
         vm.prank(alice);
         moveToken.approve(address(staking), 100);
+        
+        console.log("Alice staking...");
         vm.prank(alice);
         staking.stake(address(mcr), moveToken, 34);
+        console.log("Alice staked amount:", mcr.getStakeForAcceptingEpoch(address(moveToken), alice));
+
+        console.log("\nBob approving and staking...");
         vm.prank(bob);
         moveToken.approve(address(staking), 100);
         vm.prank(bob);
         staking.stake(address(mcr), moveToken, 33);
+        console.log("Bob staked amount:", mcr.getStakeForAcceptingEpoch(address(moveToken), bob));
+
+        console.log("\nCarol approving and staking...");
         vm.prank(carol);
         moveToken.approve(address(staking), 100);
         vm.prank(carol);
         staking.stake(address(mcr), moveToken, 33);
+        console.log("Carol staked amount:", mcr.getStakeForAcceptingEpoch(address(moveToken), carol));
 
         // end the genesis ceremony
+        console.log("\nAccepting genesis ceremony...");
         mcr.acceptGenesisCeremony();
+        console.log("Genesis ceremony accepted");
 
         // make a block commitment
+        console.log("\nMaking block commitment...");
         MCRStorage.SuperBlockCommitment memory bc1 = MCRStorage.SuperBlockCommitment({
             height: 1,
             commitment: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3))),
             blockId: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)))
         });
+        
+        console.log("Alice submitting commitment...");
         vm.prank(alice);
         mcr.submitSuperBlockCommitment(bc1);
+        
+        console.log("Bob submitting commitment...");
         vm.prank(bob);
         mcr.submitSuperBlockCommitment(bc1);
 
         // now we move to block 2 and make some commitment just to trigger the epochRollover
+        console.log("\nRetrieving commitment...");
         MCRStorage.SuperBlockCommitment memory retrievedCommitment = mcr.getPostconfirmedCommitment(1);
+        console.log("Retrieved commitment height:", retrievedCommitment.height);
+        console.log("Expected height:", bc1.height);
+        console.log("Retrieved commitment:", toHexString(abi.encode(retrievedCommitment.commitment)));
+        console.log("Expected commitment:", toHexString(abi.encode(bc1.commitment)));
+        
         assert(retrievedCommitment.commitment == bc1.commitment);
         assert(retrievedCommitment.blockId == bc1.blockId);
         assert(retrievedCommitment.height == 1);
