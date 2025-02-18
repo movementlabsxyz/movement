@@ -120,7 +120,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         return getStakeAtEpoch(getAcceptingEpoch(), custodian, attester);
     }
 
-    function computeAllCurrentAcceptingEpochStake(
+    function computeAllStakeFromAcceptingEpoch(
         address attester
     ) public view returns (uint256) {
         return computeAllStakeAtEpoch(getAcceptingEpoch(), attester);
@@ -162,13 +162,13 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     }
 
     // gets the total stake for the current epoch
-    function getTotalStakeForCurrentAcceptingEpoch(
+    function getTotalStakeForAcceptingEpoch(
         address custodian
     ) public view returns (uint256) {
         return getTotalStakeForEpoch(getAcceptingEpoch(), custodian);
     }
 
-    function computeAllTotalStakeForCurrentAcceptingEpoch()
+    function computeAllTotalStakeForAcceptingEpoch()
         public
         view
         returns (uint256)
@@ -252,15 +252,15 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         commitments[superBlockCommitment.height][attester] = superBlockCommitment;
 
         // increment the commitment count by stake
-        uint256 allCurrentAcceptingEpochStake = computeAllCurrentAcceptingEpochStake(attester);
+        uint256 allStakeFromAcceptingEpoch = computeAllStakeFromAcceptingEpoch(attester);
         commitmentStakes[superBlockCommitment.height][
             superBlockCommitment.commitment
-        ] += allCurrentAcceptingEpochStake;
+        ] += allStakeFromAcceptingEpoch;
 
         emit SuperBlockCommitmentSubmitted(
             superBlockCommitment.blockId,
             superBlockCommitment.commitment,
-            allCurrentAcceptingEpochStake
+            allStakeFromAcceptingEpoch
         );
 
         // keep ticking through to find accepted superBlocks

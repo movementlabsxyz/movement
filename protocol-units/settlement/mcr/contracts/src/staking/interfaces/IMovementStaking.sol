@@ -40,7 +40,7 @@ interface IMovementStaking {
         uint256 epoch,
         address custodian
     ) external view returns (uint256);
-    function getTotalStakeForCurrentAcceptingEpoch(
+    function getTotalStakeForAcceptingEpoch(
         address domain,
         address custodian
     ) external view returns (uint256);
