@@ -297,7 +297,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         while (attemptPostconfirm(lastPostconfirmedSuperBlockHeight + 1)) {}
     }
 
-    function currentAcceptorIsLive() public view returns (bool) {
+    function currentAcceptorIsLive() public pure returns (bool) {
         // TODO check if current acceptor has been live sufficiently recently
         // use getL1BlockStartOfCurrentAcceptorTerm, and the mappings
         return true; // dummy implementation
@@ -472,12 +472,12 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         setAcceptor();
     }
 
-        // determine the new acceptor. to do so use the blockhash of the L1 block that executes the rollover function
-        function setAcceptor() internal {
+    // determine the new acceptor. to do so use the blockhash of the L1 block that executes the rollover function
+    function setAcceptor() internal {
         // TODO: make this weighted by stake
         address[] memory attesters = stakingContract.getStakedAttestersForAcceptingEpoch(address(this));
         uint256 acceptorIndex = uint256(blockhash(block.number-1)) % attesters.length;
         // TODO: have an acceptor that can be set.
-        // currentAcceptor = attesters[acceptorIndex];
+        currentAcceptor = attesters[acceptorIndex];
     }
 }
