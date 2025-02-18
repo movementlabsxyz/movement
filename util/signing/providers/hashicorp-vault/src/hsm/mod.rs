@@ -31,6 +31,11 @@ where
 		self.key_name = key_id;
 	}
 
+	/// Sets the key id
+	pub fn get_key_id(&mut self) -> String {
+		self.key_name.clone()
+	}
+
 	/// Tries to create a new HashiCorp Vault HSM from the environment
 	pub fn try_from_env() -> Result<Self, anyhow::Error> {
 		let address = std::env::var("VAULT_ADDRESS").context("VAULT_ADDRESS not set")?;
