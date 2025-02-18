@@ -244,7 +244,7 @@ contract MovementStaking is
     }
 
     /// @dev gets the unstake for the accepting epoch for a given {attester,custodian} tuple
-    function getUnattesterStakeForAcceptingEpoch(
+    function getUnstakeForAcceptingEpoch(
         address domain,
         address custodian,
         address attester

@@ -30,7 +30,7 @@ interface IMovementStaking {
         address custodian,
         address attester
     ) external view returns (uint256);
-    function getUnattesterStakeForAcceptingEpoch(
+    function getUnstakeForAcceptingEpoch(
         address domain,
         address custodian,
         address attester
