@@ -100,8 +100,8 @@ contract MovementStaking is
         address attester,
         uint256 amount
     ) internal {
-        epochStakesByDomain[domain][epoch][custodian][attester] += amount;
-        epochTotalStakeByDomain[domain][epoch][custodian] += amount;
+        stakesByDomainEpochCustodianAttester[domain][epoch][custodian][attester] += amount;
+        stakesByDomainEpochCustodian[domain][epoch][custodian] += amount;
     }
 
     function _removeStake(
@@ -111,8 +111,8 @@ contract MovementStaking is
         address attester,
         uint256 amount
     ) internal {
-        epochStakesByDomain[domain][epoch][custodian][attester] -= amount;
-        epochTotalStakeByDomain[domain][epoch][custodian] -= amount;
+        stakesByDomainEpochCustodianAttester[domain][epoch][custodian][attester] -= amount;
+        stakesByDomainEpochCustodian[domain][epoch][custodian] -= amount;
     }
 
     function _addUnstake(
@@ -122,7 +122,7 @@ contract MovementStaking is
         address attester,
         uint256 amount
     ) internal {
-        epochUnstakesByDomain[domain][epoch][custodian][attester] += amount;
+        unstakesByDomainEpochCustodianAttester[domain][epoch][custodian][attester] += amount;
     }
 
     function _removeUnstake(
@@ -132,7 +132,7 @@ contract MovementStaking is
         address attester,
         uint256 amount
     ) internal {
-        epochUnstakesByDomain[domain][epoch][custodian][attester] -= amount;
+        unstakesByDomainEpochCustodianAttester[domain][epoch][custodian][attester] -= amount;
     }
 
     function _setUnstake(
@@ -142,7 +142,7 @@ contract MovementStaking is
         address attester,
         uint256 amount
     ) internal {
-        epochUnstakesByDomain[domain][epoch][custodian][attester] = amount;
+        unstakesByDomainEpochCustodianAttester[domain][epoch][custodian][attester] = amount;
     }
 
     // gets the would be epoch for the current L1Block time
@@ -179,7 +179,7 @@ contract MovementStaking is
         address custodian,
         address attester
     ) public view returns (uint256) {
-        return epochStakesByDomain[domain][epoch][custodian][attester];
+        return stakesByDomainEpochCustodianAttester[domain][epoch][custodian][attester];
     }
 
     // gets the stake for a given attester at the current epoch
@@ -204,7 +204,7 @@ contract MovementStaking is
         address custodian,
         address attester
     ) public view returns (uint256) {
-        return epochUnstakesByDomain[domain][epoch][custodian][attester];
+        return unstakesByDomainEpochCustodianAttester[domain][epoch][custodian][attester];
     }
 
     // gets the unstake for a given attester at the current epoch
@@ -228,7 +228,7 @@ contract MovementStaking is
         uint256 epoch,
         address custodian
     ) public view returns (uint256) {
-        return epochTotalStakeByDomain[domain][epoch][custodian];
+        return stakesByDomainEpochCustodian[domain][epoch][custodian];
     }
 
     // gets the total stake for the current epoch
