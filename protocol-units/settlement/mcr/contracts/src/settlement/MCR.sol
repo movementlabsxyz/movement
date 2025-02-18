@@ -73,7 +73,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         return stakingContract.getEpochByL1BlockTime(address(this));
     }
 
-    // gets the current epoch up to which superBlocks have been accepted
+    // gets the epoch up to which superBlocks have been accepted
     function getAcceptingEpoch() public view returns (uint256) {
         return stakingContract.getAcceptingEpoch(address(this));
     }
@@ -206,19 +206,15 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     // Forces the latest attestation by setting the superBlock height
     // Note: this only safe when we are running with a single validator as it does not zero out follow-on commitments.
     function forceLatestCommitment(SuperBlockCommitment memory superBlockCommitment) public {
-        /*require(
-            hasRole(DEFAULT_ADMIN_ROLE, msg.sender),
+        require(
+            hasRole(COMMITMENT_ADMIN, msg.sender),
             "FORCE_LATEST_COMMITMENT_IS_COMMITMENT_ADMIN_ONLY"
-        );*/
-
-        // increment the postconfirmedSuperBlocksVersion (effectively removing all other postconfirmed superBlocks)
-        postconfirmedSuperBlocksVersion += 1;
-        versionedPostconfirmedSuperBlocks[postconfirmedSuperBlocksVersion][superBlockCommitment.height] = superBlockCommitment;
-        lastPostconfirmedSuperBlockHeight = superBlockCommitment.height; 
+        );
+        setPostconfirmedCommitmentAtBlockHeight(superBlockCommitment);
     }
 
-    function getPostconfirmedCommitment(uint256 height) public view returns (SuperBlockCommitment memory) {
-        return versionedPostconfirmedSuperBlocks[postconfirmedSuperBlocksVersion][height];
+    function getPostconfirmedCommitmentAtSuperBlockHeight(uint256 height) public view returns (SuperBlockCommitment memory) {
+        return versionedPostconfirmedSuperBlocks[acceptedSuperBlocksVersion][height];
     }
 
     // TODO: is this still required?

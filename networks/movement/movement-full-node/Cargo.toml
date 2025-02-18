@@ -43,6 +43,10 @@ mcr-settlement-config = { workspace = true }
 clap = { workspace =  true }
 movement-da-light-node-client = { workspace = true}
 aptos-framework-elsa-to-biarritz-rc1-migration = { workspace = true }
+movement-signer = { workspace = true }
+movement-signer-loader = { workspace = true }
+syncador = { workspace = true }
+syncup = { workspace = true }
 
 [features]
 default = []
