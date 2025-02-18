@@ -43,9 +43,17 @@ path = "src/bin/e2e/ggp_gas_fee.rs"
 name = "movement-tests-e2e-transfer"
 path = "src/bin/e2e/transfer.rs"
 
+[[bin]]
+name = "movement-tests-e2e-key-rotation"
+path = "src/bin/e2e/key_rotation.rs"
+
+
 [dependencies]
+aptos-language-e2e-tests = { workspace = true }
 aptos-sdk = { workspace = true }
 aptos-types = { workspace = true }
+aptos-crypto = { workspace = true }
+ed25519-dalek = { workspace = true }
 anyhow = { workspace = true }
 async-trait = { workspace = true }
 futures = { workspace = true }

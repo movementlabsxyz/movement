@@ -12,7 +12,7 @@ services:
       AWS_REGION: ${AWS_REGION:?AWS_REGION is not set}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-      MOVEMENT_SYNC: ${MOVEMENT_SYNC:?MOVEMENT_SYNC is not set}
+      MOVEMENT_SYNC: ${MOVEMENT_SYNC}
       MAYBE_RUN_LOCAL: "false"
       RUST_LOG: info,aws_sdk_s3=debug
     volumes:
