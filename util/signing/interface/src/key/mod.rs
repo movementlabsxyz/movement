@@ -40,14 +40,16 @@ pub enum Environment {
 	Prod,
 	Dev,
 	Staging,
+	Test,
 }
 
 impl ToCanonicalString for Environment {
 	fn to_canonical_string(&self) -> String {
 		match self {
 			Environment::Prod => "prod".to_string(),
-			Environment::Dev => "devNet".to_string(),
+			Environment::Dev => "devnet".to_string(),
 			Environment::Staging => "staging".to_string(),
+			Environment::Test => "testnet".to_string(),
 		}
 	}
 }
@@ -56,8 +58,9 @@ impl TryFromCanonicalString for Environment {
 	fn try_from_canonical_string(s: &str) -> Result<Self, String> {
 		match s {
 			"prod" => Ok(Environment::Prod),
-			"devNet" => Ok(Environment::Dev),
+			"devnet" => Ok(Environment::Dev),
 			"staging" => Ok(Environment::Staging),
+			"testnet" => Ok(Environment::Test),
 			_ => Err(format!("invalid environment: {}", s)),
 		}
 	}
