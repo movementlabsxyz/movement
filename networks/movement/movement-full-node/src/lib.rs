@@ -1,4 +1,5 @@
 pub mod admin;
+pub mod backup;
 pub mod common_args;
 pub mod da;
 pub mod node;
@@ -19,6 +20,8 @@ pub enum MovementFullNode {
 	State(state::State),
 	#[clap(subcommand)]
 	Da(da::Da),
+	#[clap(subcommand)]
+	Backup(backup::Backup),
 }
 
 impl MovementFullNode {
@@ -28,6 +31,7 @@ impl MovementFullNode {
 			Self::Run(run) => run.execute().await,
 			Self::State(state) => state.execute().await,
 			Self::Da(da) => da.execute().await,
+			Self::Backup(backup) => backup.execute().await,
 		}
 	}
 }

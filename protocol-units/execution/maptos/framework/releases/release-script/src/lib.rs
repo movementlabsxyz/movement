@@ -190,7 +190,6 @@ macro_rules! generate_script_module {
 			impl $struct_name {
 				pub fn new() -> Self {
 					let script = $script_stanza;
-
 					Self { with_script: RunScript::new(super::$struct_name::new(), script) }
 				}
 			}
