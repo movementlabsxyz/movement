@@ -30,7 +30,8 @@ where
 	async fn build(&self, key: Key) -> Result<HashiCorpVault<C>, SignerBuilderError> {
 		let mut hsm = HashiCorpVault::try_from_env()
 			.map_err(|e| SignerBuilderError::Internal(e.to_string()))?;
-		hsm.set_key_id(key.to_delimited_canonical_string("_"));
+		hsm.set_key_id(key.to_delimited_canonical_string("-"));
+		tracing::info!("HashiCorp Vault builder key name:{}", hsm.get_key_id());
 		if self.create_key {
 			hsm = hsm
 				.create_key()
