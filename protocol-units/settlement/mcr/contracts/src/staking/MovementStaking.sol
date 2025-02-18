@@ -232,7 +232,7 @@ contract MovementStaking is
     }
 
     // gets the total stake for the current epoch
-    function getTotalStakeForAcceptingEpoch(
+    function getCustodianStakeForAcceptingEpoch(
         address domain,
         address custodian
     ) public view returns (uint256) {
