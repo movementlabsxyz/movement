@@ -1,6 +1,6 @@
 use crate::{CommitmentStream, McrSettlementClientOperations};
 use mcr_settlement_config::Config;
-use movement_types::block::BlockCommitment;
+use movement_types::block::SuperBlockCommitment;
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 use tokio::sync::{mpsc, RwLock};
@@ -9,9 +9,9 @@ use tracing::info;
 
 #[derive(Clone)]
 pub struct McrSettlementClient {
-	commitments: Arc<RwLock<BTreeMap<u64, BlockCommitment>>>,
-	stream_sender: mpsc::Sender<Result<BlockCommitment, anyhow::Error>>,
-	stream_receiver: Arc<Mutex<Option<mpsc::Receiver<Result<BlockCommitment, anyhow::Error>>>>>,
+	commitments: Arc<RwLock<BTreeMap<u64, SuperBlockCommitment>>>,
+	stream_sender: mpsc::Sender<Result<SuperBlockCommitment, anyhow::Error>>,
+	stream_receiver: Arc<Mutex<Option<mpsc::Receiver<Result<SuperBlockCommitment, anyhow::Error>>>>>,
 	pub current_height: Arc<RwLock<u64>>,
 	pub block_lead_tolerance: u64,
 	paused_at_height: Arc<RwLock<Option<u64>>>,
@@ -39,7 +39,7 @@ impl McrSettlementClient {
 	///
 	/// To have effect, this method needs to be called before a commitment is
 	/// posted for this height with the `McrSettlementClientOperations` API.
-	pub async fn override_block_commitment(&self, commitment: BlockCommitment) {
+	pub async fn override_block_commitment(&self, commitment: SuperBlockCommitment) {
 		let mut commitments = self.commitments.write().await;
 		commitments.insert(commitment.height(), commitment);
 	}
@@ -74,7 +74,7 @@ impl McrSettlementClient {
 impl McrSettlementClientOperations for McrSettlementClient {
 	async fn post_block_commitment(
 		&self,
-		block_commitment: BlockCommitment,
+		block_commitment: SuperBlockCommitment,
 	) -> Result<(), anyhow::Error> {
 		let height = block_commitment.height();
 
@@ -104,9 +104,9 @@ impl McrSettlementClientOperations for McrSettlementClient {
 
 	async fn post_block_commitment_batch(
 		&self,
-		block_commitment: Vec<BlockCommitment>,
+		block_commitments: Vec<SuperBlockCommitment>,
 	) -> Result<(), anyhow::Error> {
-		for commitment in block_commitment {
+		for commitment in block_commitments {
 			self.post_block_commitment(commitment).await?;
 		}
 		Ok(())
@@ -114,7 +114,7 @@ impl McrSettlementClientOperations for McrSettlementClient {
 
 	async fn force_block_commitment(
 		&self,
-		_block_commitment: BlockCommitment,
+		block_commitment: SuperBlockCommitment,
 	) -> Result<(), anyhow::Error> {
 		unimplemented!()
 	}
@@ -122,7 +122,7 @@ impl McrSettlementClientOperations for McrSettlementClient {
 	async fn get_posted_commitment_at_height(
 		&self,
 		height: u64,
-	) -> Result<Option<BlockCommitment>, anyhow::Error> {
+	) -> Result<Option<SuperBlockCommitment>, anyhow::Error> {
 		unimplemented!();
 	}
 
@@ -139,7 +139,7 @@ impl McrSettlementClientOperations for McrSettlementClient {
 	async fn get_commitment_at_height(
 		&self,
 		height: u64,
-	) -> Result<Option<BlockCommitment>, anyhow::Error> {
+	) -> Result<Option<SuperBlockCommitment>, anyhow::Error> {
 		let guard = self.commitments.read().await;
 		Ok(guard.get(&height).cloned())
 	}
@@ -162,7 +162,7 @@ pub mod test {
 	#[tokio::test]
 	async fn test_post_block_commitment() -> Result<(), anyhow::Error> {
 		let client = McrSettlementClient::new();
-		let commitment = BlockCommitment::new(1, Default::default(), Commitment::test());
+		let commitment = SuperBlockCommitment::new(1, Default::default(), Commitment::test());
 		client.post_block_commitment(commitment.clone()).await.unwrap();
 		let guard = client.commitments.write().await;
 		assert_eq!(guard.get(&1), Some(&commitment));
@@ -176,8 +176,8 @@ pub mod test {
 	#[tokio::test]
 	async fn test_post_block_commitment_batch() -> Result<(), anyhow::Error> {
 		let client = McrSettlementClient::new();
-		let commitment = BlockCommitment::new(1, Default::default(), Commitment::test());
-		let commitment2 = BlockCommitment::new(1, Default::default(), Commitment::test());
+		let commitment = SuperBlockCommitment::new(1, Default::default(), Commitment::test());
+		let commitment2 = SuperBlockCommitment::new(1, Default::default(), Commitment::test());
 		client
 			.post_block_commitment_batch(vec![commitment.clone(), commitment2.clone()])
 			.await
@@ -191,7 +191,7 @@ pub mod test {
 	#[tokio::test]
 	async fn test_stream_block_commitments() -> Result<(), anyhow::Error> {
 		let client = McrSettlementClient::new();
-		let commitment = BlockCommitment::new(1, Default::default(), Commitment::test());
+		let commitment = SuperBlockCommitment::new(1, Default::default(), Commitment::test());
 		client.post_block_commitment(commitment.clone()).await.unwrap();
 		let mut stream = client.stream_block_commitments().await?;
 		assert_eq!(stream.next().await.unwrap().unwrap(), commitment);
@@ -201,10 +201,10 @@ pub mod test {
 	#[tokio::test]
 	async fn test_override_block_commitments() -> Result<(), anyhow::Error> {
 		let client = McrSettlementClient::new();
-		let commitment = BlockCommitment::new(2, Default::default(), Commitment::test());
+		let commitment = SuperBlockCommitment::new(2, Default::default(), Commitment::test());
 		client.override_block_commitment(commitment.clone()).await;
 		client
-			.post_block_commitment(BlockCommitment::new(2, Default::default(), Commitment::test()))
+			.post_block_commitment(SuperBlockCommitment::new(2, Default::default(), Commitment::test()))
 			.await
 			.unwrap();
 		let mut stream = client.stream_block_commitments().await?;
@@ -215,10 +215,10 @@ pub mod test {
 	#[tokio::test]
 	async fn test_pause() -> Result<(), anyhow::Error> {
 		let client = McrSettlementClient::new();
-		let commitment = BlockCommitment::new(2, Default::default(), Commitment::test());
+		let commitment = SuperBlockCommitment::new(2, Default::default(), Commitment::test());
 		client.pause_after(1).await;
 		client.post_block_commitment(commitment.clone()).await?;
-		let commitment2 = BlockCommitment::new(2, Default::default(), Commitment::test());
+		let commitment2 = SuperBlockCommitment::new(2, Default::default(), Commitment::test());
 		client.post_block_commitment(commitment2).await?;
 		let mut stream = client.stream_block_commitments().await?;
 		assert_eq!(stream.next().await.expect("stream has ended")?, commitment);
@@ -233,10 +233,10 @@ pub mod test {
 	#[tokio::test]
 	async fn test_resume() -> Result<(), anyhow::Error> {
 		let client = McrSettlementClient::new();
-		let commitment = BlockCommitment::new(2, Default::default(), Commitment::test());
+		let commitment = SuperBlockCommitment::new(2, Default::default(), Commitment::test());
 		client.pause_after(1).await;
 		client.post_block_commitment(commitment.clone()).await?;
-		let commitment2 = BlockCommitment::new(2, Default::default(), Commitment::test());
+		let commitment2 = SuperBlockCommitment::new(2, Default::default(), Commitment::test());
 		client.post_block_commitment(commitment2.clone()).await?;
 		let mut stream = client.stream_block_commitments().await?;
 		assert_eq!(stream.next().await.expect("stream has ended")?, commitment);
