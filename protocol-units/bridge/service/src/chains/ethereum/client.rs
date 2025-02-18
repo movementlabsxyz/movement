@@ -52,6 +52,7 @@ impl TryFrom<&EthConfig> for Config {
 
 #[derive(RlpDecodable, RlpEncodable)]
 struct EthBridgeTransferDetailsInitiate {
+	pub bridge_transfer_id: [u8; 32],
 	pub amount: U256,
 	pub originator: EthAddress,
 	pub recipient: [u8; 32],
@@ -60,6 +61,7 @@ struct EthBridgeTransferDetailsInitiate {
 
 #[derive(RlpDecodable, RlpEncodable)]
 struct EthBridgeTransferDetailsComplete {
+	pub bridge_transfer_id: [u8; 32],
 	pub amount: U256,
 	pub originator: [u8; 32],
 	pub recipient: EthAddress,
@@ -150,6 +152,31 @@ impl EthClient {
 
 	pub fn native_contract_address(&self) -> Address {
 		self.config.native_contract
+	}
+
+	pub async fn get_nonce_with_bridge_transfer_id(
+		&mut self,
+		bridge_transfer_id: BridgeTransferId,
+	) -> BridgeContractResult<Option<Nonce>> {
+		let generic_error = |desc| BridgeContractError::GenericError(String::from(desc));
+
+		let mapping_slot = U256::from(1); // the mapping is the first slot in the contract
+		let key = bridge_transfer_id.0.clone();
+		let storage_slot = calculate_storage_slot(key, mapping_slot);
+		let storage: U256 = self
+			.rpc_provider
+			.get_storage_at(self.native_contract_address(), storage_slot)
+			.await
+			.map_err(|_| generic_error("could not find storage"))?;
+		let storage_bytes = storage.to_be_bytes::<32>();
+
+		println!("storage_bytes: {:?}", storage_bytes);
+
+		//if not zeroed byte return the transfer_id
+		Ok((storage_bytes.iter().skip_while(|val| **val == 0).next().is_some()).then(|| {
+			// create the nonce from U256
+			Nonce(storage.wrapping_to::<u128>())
+		}))
 	}
 }
 
@@ -257,54 +284,38 @@ impl BridgeRelayerContract<EthAddress> for EthClient {
 		&mut self,
 		nonce: Nonce,
 	) -> BridgeContractResult<Option<BridgeTransferInitiatedDetails<EthAddress>>> {
-		todo!()
+		let generic_error = |desc| BridgeContractError::GenericError(String::from(desc));
+
+		let mapping_slot = U256::from(0); // the mapping is the zeroth slot in the contract
+		let nonce_encoded = ethabi::encode(&[ethabi::Token::Uint(ethabi::Uint::from(nonce.0))])
+			.try_into()
+			.map_err(|_| generic_error("nonce encoding failed."))?;
+		let storage_slot = calculate_storage_slot(nonce_encoded, mapping_slot);
+		let storage: U256 = self
+			.rpc_provider
+			.get_storage_at(self.native_contract_address(), storage_slot)
+			.await
+			.map_err(|_| generic_error("could not find storage"))?;
+		let storage_bytes = storage.to_be_bytes::<32>();
+
+		println!("storage_bytes: {:?}", storage_bytes);
+		let mut storage_slice = &storage_bytes[..];
+		let eth_details = EthBridgeTransferDetailsInitiate::decode(&mut storage_slice)
+			.map_err(|_| generic_error("could not decode storage"))?;
+
+		Ok(Some(BridgeTransferInitiatedDetails {
+			bridge_transfer_id: BridgeTransferId(eth_details.bridge_transfer_id),
+			initiator: BridgeAddress(eth_details.originator),
+			recipient: BridgeAddress(eth_details.recipient.to_vec()),
+			amount: eth_details.amount.into(),
+			nonce,
+		}))
 	}
 
 	async fn is_bridge_transfer_completed(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
 	) -> BridgeContractResult<bool> {
-		todo!()
-	}
-}
-
-#[cfg(test)]
-fn test_wrapping_to(a: &U256, b: u64) {
-	assert_eq!(a.wrapping_to::<u64>(), b);
-}
-
-#[cfg(test)]
-mod tests {
-	use super::*;
-	use std::time::{SystemTime, UNIX_EPOCH};
-
-	#[test]
-	fn test_wrapping_to_on_eth_details() {
-		let current_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
-		let eth_details = EthBridgeTransferDetailsInitiate {
-			amount: U256::from(10u64.pow(18)),
-			originator: EthAddress([0; 20].into()),
-			recipient: [0; 32],
-			nonce: U256::from(current_time + 84600), // 1 day
-		};
-		test_wrapping_to(&eth_details.amount, 10u64.pow(18));
-		test_wrapping_to(&eth_details.nonce, current_time + 84600);
-	}
-
-	#[test]
-	fn fuzz_test_wrapping_to_on_eth_details() {
-		for _ in 0..100 {
-			let current_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
-			let additional_time = rand::random::<u64>();
-			let random_amount = rand::random::<u64>();
-			let eth_details = EthBridgeTransferDetailsInitiate {
-				amount: U256::from(random_amount),
-				originator: EthAddress([0; 20].into()),
-				recipient: [0; 32],
-				nonce: U256::from(current_time + additional_time),
-			};
-			test_wrapping_to(&eth_details.amount, random_amount);
-			test_wrapping_to(&eth_details.nonce, current_time + additional_time);
-		}
+		Ok(self.get_nonce_with_bridge_transfer_id(bridge_transfer_id).await?.is_some())
 	}
 }

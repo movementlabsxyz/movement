@@ -1,5 +1,4 @@
 use anyhow::Error;
-use bridge_config::common::movement::MovementConfig;
 use futures::prelude::*;
 use poem::{
 	get, handler, listener::TcpListener, middleware::Tracing, web::Data, EndpointExt, IntoResponse,

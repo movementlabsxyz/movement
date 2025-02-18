@@ -4279,6 +4279,7 @@ dependencies = [
  "derive-new",
  "derive_more 0.99.18",
  "dot-movement",
+ "ethabi",
  "futures",
  "futures-time",
  "futures-timer",
