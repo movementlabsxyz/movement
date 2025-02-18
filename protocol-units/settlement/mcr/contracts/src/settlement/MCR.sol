@@ -189,7 +189,8 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
             hasRole(COMMITMENT_ADMIN, msg.sender),
             "SET_LAST_ACCEPTED_COMMITMENT_AT_HEIGHT_IS_COMMITMENT_ADMIN_ONLY"
         );
-        versionedAcceptedSuperBlocks[acceptedSuperBlocksVersion][superBlockCommitment.height] = superBlockCommitment;  
+        versionedAcceptedSuperBlocks[acceptedSuperBlocksVersion][superBlockCommitment.height] = superBlockCommitment;
+        setlastAcceptedSuperBlockHeight(superBlockCommitment.height);
     }
 
     // Sets the last accepted superBlock height. 
@@ -204,15 +205,11 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     // Forces the latest attestation by setting the superBlock height
     // Note: this only safe when we are running with a single validator as it does not zero out follow-on commitments.
     function forceLatestCommitment(SuperBlockCommitment memory superBlockCommitment) public {
-        /*require(
-            hasRole(DEFAULT_ADMIN_ROLE, msg.sender),
+        require(
+            hasRole(COMMITMENT_ADMIN, msg.sender),
             "FORCE_LATEST_COMMITMENT_IS_COMMITMENT_ADMIN_ONLY"
-        );*/
-
-        // increment the acceptedSuperBlocksVersion (effectively removing all other accepted superBlocks)
-        acceptedSuperBlocksVersion += 1;
-        versionedAcceptedSuperBlocks[acceptedSuperBlocksVersion][superBlockCommitment.height] = superBlockCommitment;
-        lastAcceptedSuperBlockHeight = superBlockCommitment.height; 
+        );
+        setAcceptedCommitmentAtBlockHeight(superBlockCommitment);
     }
 
     function getAcceptedCommitmentAtSuperBlockHeight(uint256 height) public view returns (SuperBlockCommitment memory) {
