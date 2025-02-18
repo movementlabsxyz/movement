@@ -45,9 +45,9 @@ pub enum McrEthConnectorError {
 	SendTransactionError(#[from] alloy_contract::Error),
 	#[error("MCR Settlement Transaction send failed during its execution :{0}")]
 	RpcTransactionExecution(String),
-	#[error("MCR Settlement BlockAccepted event notification error :{0}")]
+	#[error("MCR Settlement SuperBlockPostconfirmed event notification error :{0}")]
 	EventNotificationError(#[from] alloy_sol_types::Error),
-	#[error("MCR Settlement BlockAccepted event notification stream close")]
+	#[error("MCR Settlement SuperBlockPostconfirmed event notification stream close")]
 	EventNotificationStreamClosed,
 }
 
@@ -284,7 +284,7 @@ where
 		// Register to contract BlockCommitmentSubmitted event
 
 		let contract = MCR::new(self.contract_address, &self.ws_provider);
-		let event_filter = contract.BlockAccepted_filter().watch().await?;
+		let event_filter = contract.SuperBlockPostconfirmed_filter().watch().await?;
 
 		let stream = event_filter.into_stream().map(|event| {
 			event
