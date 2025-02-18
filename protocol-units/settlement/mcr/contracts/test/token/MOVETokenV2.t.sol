@@ -36,7 +36,7 @@ contract MOVETokenDevTest is Test {
         vm.stopPrank();
     }
 
-    function testGrants() public {
+    function testGrants() public view {
         // Check the token details
         assertEq(token.hasRole(MINTER_ROLE, multisig), true);
     }

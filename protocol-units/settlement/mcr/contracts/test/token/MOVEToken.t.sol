@@ -12,7 +12,7 @@ import {CompatibilityFallbackHandler} from "@safe-smart-account/contracts/handle
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {ERC1967Utils} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 
-function string2Address(bytes memory str) returns (address addr) {
+function string2Address(bytes memory str) pure returns (address addr) {
     bytes32 data = keccak256(str);
     assembly {
         mstore(0, data)
@@ -69,15 +69,15 @@ contract MOVETokenTest is Test {
         token.initialize(multisig, anchorage);
     }
 
-    function testDecimals() public {
+    function testDecimals() public view {
         assertEq(token.decimals(), 8);
     }
 
-    function testTotalSupply() public {
+    function testTotalSupply() public view {
         assertEq(token.totalSupply(), 10000000000 * 10 ** 8);
     }
 
-    function testMultisigBalance() public {
+    function testMultisigBalance() public view {
         assertEq(token.balanceOf(anchorage), 10000000000 * 10 ** 8);
     }
 
