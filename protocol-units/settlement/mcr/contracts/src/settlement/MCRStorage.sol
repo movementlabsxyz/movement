@@ -29,7 +29,7 @@ contract MCRStorage {
     }
 
     // map each superBlock height to an epoch
-    mapping(uint256 superBlockHeight => uint256 epoch) public superBlockHeightEpochAssignments;
+    mapping(uint256 superBlockHeight => uint256 epoch) public superBlockHeightAssignedEpoch;
 
     // track each commitment from each attester for each superBlock height
     mapping(uint256 superBlockHeight => mapping(address attester => SuperBlockCommitment)) public commitments;

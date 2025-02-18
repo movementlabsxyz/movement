@@ -236,10 +236,10 @@ contract MCRTest is Test, IMCR {
         mcr.submitSuperBlockCommitment(bc2);
 
         // check that roll over happened
-        assertEq(mcr.getCurrentEpoch(), mcr.getEpochByL1BlockTime());
-        assertEq(mcr.getCurrentEpochStake(address(moveToken), alice), 34);
-        assertEq(mcr.getCurrentEpochStake(address(moveToken), bob), 33);
-        assertEq(mcr.getCurrentEpochStake(address(moveToken), carol), 33);
+        assertEq(mcr.getAcceptingEpoch(), mcr.getPresentEpoch());
+        assertEq(mcr.getAcceptingEpochStake(address(moveToken), alice), 34);
+        assertEq(mcr.getAcceptingEpochStake(address(moveToken), bob), 33);
+        assertEq(mcr.getAcceptingEpochStake(address(moveToken), carol), 33);
         MCRStorage.SuperBlockCommitment memory retrievedCommitment = mcr.getAcceptedCommitmentAtSuperBlockHeight(1);
         assert(retrievedCommitment.commitment == bc1.commitment);
         assert(retrievedCommitment.blockId == bc1.blockId);
@@ -374,10 +374,9 @@ contract MCRTest is Test, IMCR {
         vm.pauseGasMetering();
 
         uint256 blockTime = 300;
-
         vm.warp(blockTime);
 
-        // default signer should be able to force commitment
+        // default signer (test contract) should be able to force commitment since it has COMMITMENT_ADMIN role
         MCRStorage.SuperBlockCommitment memory forcedCommitment = MCRStorage.SuperBlockCommitment({
             height: 1,
             commitment: keccak256(abi.encodePacked(uint256(3), uint256(2), uint256(1))),
@@ -394,15 +393,18 @@ contract MCRTest is Test, IMCR {
         // create an unauthorized signer
         address payable alice = payable(vm.addr(1));
 
-        // try to force a different commitment
+        // try to force a different commitment with unauthorized user
         MCRStorage.SuperBlockCommitment memory badForcedCommitment = MCRStorage.SuperBlockCommitment({
             height: 1,
             commitment: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3))),
             blockId: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)))
         });
+        
+        // Alice should not have COMMITMENT_ADMIN role
+        assertEq(mcr.hasRole(mcr.COMMITMENT_ADMIN(), alice), false);
+        
         vm.prank(alice);
         vm.expectRevert("FORCE_LATEST_COMMITMENT_IS_COMMITMENT_ADMIN_ONLY");
         mcr.forceLatestCommitment(badForcedCommitment);
-
     }
 }
