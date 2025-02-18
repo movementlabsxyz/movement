@@ -237,9 +237,9 @@ contract MCRTest is Test, IMCR {
 
         // check that roll over happened
         assertEq(mcr.getAcceptingEpoch(), mcr.getPresentEpoch());
-        assertEq(mcr.getAcceptingEpochStake(address(moveToken), alice), 34);
-        assertEq(mcr.getAcceptingEpochStake(address(moveToken), bob), 33);
-        assertEq(mcr.getAcceptingEpochStake(address(moveToken), carol), 33);
+        assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), alice), 34);
+        assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), bob), 33);
+        assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), carol), 33);
         MCRStorage.SuperBlockCommitment memory retrievedCommitment = mcr.getAcceptedCommitmentAtSuperBlockHeight(1);
         assert(retrievedCommitment.commitment == bc1.commitment);
         assert(retrievedCommitment.blockId == bc1.blockId);

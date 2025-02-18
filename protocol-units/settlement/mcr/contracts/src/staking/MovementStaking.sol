@@ -183,7 +183,7 @@ contract MovementStaking is
     }
 
     // gets the stake for a given attester at the current epoch
-    function getAcceptingEpochStake(
+    function getStakeForAcceptingEpoch(
         address domain,
         address custodian,
         address attester
@@ -223,7 +223,7 @@ contract MovementStaking is
     }
 
     // gets the total stake for a given epoch
-    function getTotalStakeForEpoch(
+    function getCustodianStake(
         address domain,
         uint256 epoch,
         address custodian
@@ -237,7 +237,7 @@ contract MovementStaking is
         address custodian
     ) public view returns (uint256) {
         return
-            getTotalStakeForEpoch(domain, getAcceptingEpoch(domain), custodian);
+            getCustodianStake(domain, getAcceptingEpoch(domain), custodian);
     }
 
     // stakes for the next epoch
