@@ -30,6 +30,8 @@ contract MCRStorage {
     // to prepare and post L1-transactions that will start the validation of attestations.
     uint256 public acceptorTerm;
 
+    // the acceptor for the accepting epoch
+    address public currentAcceptor;
 
     // TODO i added these param descriptions. are these correct?
     /// Struct to store block commitment details

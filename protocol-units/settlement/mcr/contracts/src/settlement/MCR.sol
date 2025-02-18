@@ -213,8 +213,8 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         setPostconfirmedCommitmentAtBlockHeight(superBlockCommitment);
     }
 
-    function getPostconfirmedCommitmentAtSuperBlockHeight(uint256 height) public view returns (SuperBlockCommitment memory) {
-        return versionedPostconfirmedSuperBlocks[acceptedSuperBlocksVersion][height];
+    function getPostconfirmedCommitment(uint256 height) public view returns (SuperBlockCommitment memory) {
+        return versionedPostconfirmedSuperBlocks[postconfirmedSuperBlocksVersion][height];
     }
 
     // TODO: is this still required?
@@ -463,10 +463,15 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
      */
     function rollOverEpoch() internal {
         stakingContract.rollOverEpoch();
+        setAcceptor();
+    }
+
         // determine the new acceptor. to do so use the blockhash of the L1 block that executes the rollover function
+        function setAcceptor() internal {
         // TODO: make this weighted by stake
         address[] memory attesters = stakingContract.getStakedAttestersForAcceptingEpoch(address(this));
         uint256 acceptorIndex = uint256(blockhash(block.number-1)) % attesters.length;
-        return attesters[acceptorIndex];
+        // TODO: have an acceptor that can be set.
+        // currentAcceptor = attesters[acceptorIndex];
     }
 }
