@@ -85,13 +85,15 @@ impl Default for Config {
 				_ => Network::Local,
 			},
 		);
+		let celestia_force_new_chain =
+			if network == Network::Local { default_celestia_force_new_chain() } else { false };
 		Self {
 			network,
 			appd: appd::Config::default(),
 			bridge: bridge::Config::default(),
 			light: light::Config::default(),
 			da_light_node: da_light_node::Config::default(),
-			celestia_force_new_chain: default_celestia_force_new_chain(),
+			celestia_force_new_chain,
 			memseq: MemseqConfig::default(),
 			da_light_node_is_initial: default_da_light_node_is_initial(),
 			initial_height: 0,
