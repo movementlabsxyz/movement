@@ -12229,6 +12229,7 @@ dependencies = [
  "dotenv",
  "movement-signer",
  "tokio",
+ "tracing",
  "uuid",
  "vaultrs",
 ]
