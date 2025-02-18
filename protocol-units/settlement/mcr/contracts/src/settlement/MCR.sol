@@ -82,13 +82,13 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     }
 
     // gets the stake for a given attester at a given epoch
-    function getStakeAtEpoch(
+    function getStake(
         uint256 epoch,
         address custodian,
         address attester
     ) public view returns (uint256) {
         return
-            stakingContract.getStakeAtEpoch(
+            stakingContract.getStake(
                 address(this),
                 epoch,
                 custodian,
@@ -107,7 +107,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         uint256 totalStake = 0;
         for (uint256 i = 0; i < custodians.length; i++) {
             // for now, each custodian has weight of 1
-            totalStake += getStakeAtEpoch(epoch, custodians[i], attester);
+            totalStake += getStake(epoch, custodians[i], attester);
         }
         return totalStake;
     }
@@ -117,7 +117,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         address custodian,
         address attester
     ) public view returns (uint256) {
-        return getStakeAtEpoch(getAcceptingEpoch(), custodian, attester);
+        return getStake(getAcceptingEpoch(), custodian, attester);
     }
 
     function computeAllStakeFromAcceptingEpoch(

@@ -82,7 +82,7 @@ contract MovementStakingTest is Test {
         vm.prank(staker);
         staking.stake(domain, moveToken, 100);
         assertEq(moveToken.balanceOf(staker), 0);
-        assertEq(staking.getStakeAtEpoch(domain, 0, address(moveToken), staker), 100);
+        assertEq(staking.getStake(domain, 0, address(moveToken), staker), 100);
     }
 
     function testSimpleGenesisCeremony() public {
@@ -333,8 +333,8 @@ contract MovementStakingTest is Test {
         assertEq(moveToken.balanceOf(bob), 0);
         assertEq(moveToken.balanceOf(address(staking)), 1100);
         assertEq(staking.getCustodianStake(domain, 0, address(moveToken)), 1100);
-        assertEq(staking.getStakeAtEpoch(domain, 0, address(moveToken), alice), 1000);
-        assertEq(staking.getStakeAtEpoch(domain, 0, address(moveToken), bob), 100);
+        assertEq(staking.getStake(domain, 0, address(moveToken), alice), 1000);
+        assertEq(staking.getStake(domain, 0, address(moveToken), bob), 100);
 
         // Charlie calls reward with himself only to steal tokens
         address charlie = vm.addr(4);

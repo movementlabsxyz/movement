@@ -74,7 +74,7 @@ contract MovementStaking is
                 address custodian = custodiansByDomain[domain].at(j);
 
                 // get the genesis stake for the attester
-                uint256 attesterStake = getStakeAtEpoch(
+                uint256 attesterStake = getStake(
                     domain,
                     0,
                     custodian,
@@ -173,7 +173,7 @@ contract MovementStaking is
     }
 
     // gets the stake for a given attester at a given epoch
-    function getStakeAtEpoch(
+    function getStake(
         address domain,
         uint256 epoch,
         address custodian,
@@ -189,7 +189,7 @@ contract MovementStaking is
         address attester
     ) public view returns (uint256) {
         return
-            getStakeAtEpoch(
+            getStake(
                 domain,
                 getAcceptingEpoch(domain),
                 custodian,
@@ -208,7 +208,7 @@ contract MovementStaking is
     }
 
     // gets the unstake for a given attester at the current epoch
-    function getAcceptingEpochUnstake(
+    function getUnstakeForAcceptingEpoch(
         address domain,
         address custodian,
         address attester
@@ -318,7 +318,7 @@ contract MovementStaking is
         address attester
     ) internal {
         // the amount of stake rolled over is stake[currentAcceptingEpoch] - unstake[nextEpoch]
-        uint256 stakeAmount = getStakeAtEpoch(
+        uint256 stakeAmount = getStake(
             domain,
             epochNumber,
             custodian,
@@ -392,7 +392,7 @@ contract MovementStaking is
     ) internal {
         // stake slash will always target this epoch
         uint256 targetEpoch = epoch;
-        uint256 stakeForEpoch = getStakeAtEpoch(
+        uint256 stakeForEpoch = getStake(
             domain,
             targetEpoch,
             custodian,
@@ -427,7 +427,7 @@ contract MovementStaking is
         address attester
     ) internal {
         // unstake slash will always target the next epoch
-        uint256 stakeForEpoch = getStakeAtEpoch(
+        uint256 stakeForEpoch = getStake(
             domain,
             epoch,
             custodian,
@@ -465,7 +465,7 @@ contract MovementStaking is
             // issue a refund that is the min of the stake balance, the amount to be slashed, and the refund amount
             // this is to prevent a Domain from trying to have this contract pay out more than has been staked
             uint256 refundAmount = Math.min(
-                getStakeAtEpoch(
+                getStake(
                     msg.sender,
                     getAcceptingEpoch(attesters[i]),
                     custodians[i],
