@@ -58,7 +58,7 @@ async fn main() -> Result<(), anyhow::Error> {
 			// set up anvil
 			let (config, anvil_join_handle) = Local::default().setup(dot_movement, config).await?;
 
-			Ok((Some(config.clone()), anvil_join_handle))
+			Ok((Some(config), anvil_join_handle))
 		})
 		.await?;
 
