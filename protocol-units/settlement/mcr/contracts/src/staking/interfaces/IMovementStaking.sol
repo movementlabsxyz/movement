@@ -98,5 +98,5 @@ interface IMovementStaking {
     error GenesisAlreadyAccepted();
 
     function getStakedAttestersForAcceptingEpoch(address domain) external view returns (address[] memory);
-    function computeAllStakeForCurrentAcceptingEpoch(address attester) external view returns (uint256);
+    function computeAllStakeForAcceptingEpoch(address attester) external view returns (uint256);
 }

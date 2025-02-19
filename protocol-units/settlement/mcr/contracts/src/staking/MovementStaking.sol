@@ -74,7 +74,7 @@ contract MovementStaking is
         uint256 activeAttesterCount = 0;
         for (uint256 i = 0; i < totalAttesters; i++) {
             address attester = registeredAttestersByDomain[domain].at(i);
-            if (computeAllStakeForCurrentAcceptingEpoch(attester) > 0) {
+            if (getAttesterStakeForAcceptingEpoch(domain, attester) > 0) {
                 activeAttesterCount++;
             }
         }
@@ -84,7 +84,7 @@ contract MovementStaking is
         uint256 activeIndex = 0;
         for (uint256 i = 0; i < totalAttesters; i++) {
             address attester = registeredAttestersByDomain[domain].at(i);
-            if (computeAllStakeForCurrentAcceptingEpoch(attester) > 0) {
+            if (getAttesterStakeForAcceptingEpoch(domain, attester) > 0) {
                 activeAttesters[activeIndex] = attester;
                 activeIndex++;
             }
@@ -274,6 +274,18 @@ contract MovementStaking is
     ) public view returns (uint256) {
         return
             getCustodianStake(domain, getAcceptingEpoch(domain), custodian);
+    }
+
+    function getAttesterStake(address domain, uint256 epoch, address attester) public view returns (uint256) {
+        uint256 attesterStake = 0;
+        for (uint256 i = 0; i < registeredCustodiansByDomain[domain].length(); i++) {
+            attesterStake += getStake(domain, epoch, registeredCustodiansByDomain[domain].at(i), attester);
+        }
+        return attesterStake;
+    }
+
+    function getAttesterStakeForAcceptingEpoch(address domain, address attester) public view returns (uint256) {
+        return getAttesterStake(domain, getAcceptingEpoch(domain), attester);
     }
 
     // stakes for the next epoch
@@ -616,7 +628,7 @@ contract MovementStaking is
 
     /// @notice Computes total stake across all custodians and attesters for the current accepting epoch
     /// @param domain The domain to compute total stake for
-    function computeAllStakeForCurrentAcceptingEpoch(
+    function computeAllStakeForAcceptingEpoch(
         address domain
     ) public view returns (uint256) {
         return computeAllStake(domain, getAcceptingEpoch(domain));

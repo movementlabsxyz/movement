@@ -117,15 +117,15 @@ contract MCRTest is Test, IMCR {
         assertNotEq(mcr.getCurrentAcceptor(), bob);
         
         // make a block commitment
-        MCRStorage.SuperBlockCommitment memory bc1 = MCRStorage.SuperBlockCommitment({
+        MCRStorage.SuperBlockCommitment memory initCommitment = MCRStorage.SuperBlockCommitment({
             height: 1,
             commitment: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3))),
             blockId: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)))
         });
         vm.prank(alice);
-        mcr.submitSuperBlockCommitment(bc1);
+        mcr.submitSuperBlockCommitment(initCommitment);
         vm.prank(bob);
-        mcr.submitSuperBlockCommitment(bc1);
+        mcr.submitSuperBlockCommitment(initCommitment);
 
         // TODO these tests need to be split up into different test functions (happy / unhappy path)
         // bob should not be the current acceptor
@@ -149,6 +149,7 @@ contract MCRTest is Test, IMCR {
 
     }
 
+    /// @notice Test that the staking works as expected
     function testSimpleStaking() public {
         console.log("Starting testSimpleStaking");
         
@@ -185,55 +186,127 @@ contract MCRTest is Test, IMCR {
         
         console.log("Alice staking...");
         vm.prank(alice);
-        staking.stake(address(mcr), moveToken, 34);
-        console.log("Alice staked amount:", mcr.getStakeForAcceptingEpoch(address(moveToken), alice));
+        staking.stake(address(mcr), moveToken, 33);
+        uint256 aliceStake = mcr.getStakeForAcceptingEpoch(address(moveToken), alice);
+        console.log("Alice staked amount:", aliceStake);
+        assertEq(aliceStake, 33, "Alice's stake amount not correctly recorded");
+        
 
         console.log("\nBob approving and staking...");
         vm.prank(bob);
         moveToken.approve(address(staking), 100);
         vm.prank(bob);
         staking.stake(address(mcr), moveToken, 33);
-        console.log("Bob staked amount:", mcr.getStakeForAcceptingEpoch(address(moveToken), bob));
+        uint256 bobStake = mcr.getStakeForAcceptingEpoch(address(moveToken), bob);
+        console.log("Bob staked amount:", bobStake);
+        assertEq(bobStake, 33, "Bob's stake amount not correctly recorded");
 
         console.log("\nCarol approving and staking...");
         vm.prank(carol);
         moveToken.approve(address(staking), 100);
         vm.prank(carol);
-        staking.stake(address(mcr), moveToken, 33);
-        console.log("Carol staked amount:", mcr.getStakeForAcceptingEpoch(address(moveToken), carol));
+        staking.stake(address(mcr), moveToken, 34);
+        uint256 carolStake = mcr.getStakeForAcceptingEpoch(address(moveToken), carol);
+        console.log("Carol staked amount:", carolStake);
+        assertEq(carolStake, 34, "Carol's stake amount not correctly recorded");
+
+        // check that the total stake is 100
+        assertEq(mcr.getTotalStakeForAcceptingEpoch(), 100, "Total stake should be 100");
+        console.log("Total stake:", mcr.getTotalStakeForAcceptingEpoch());
+
+        // log the attester list
+        address[] memory attesters = staking.getStakedAttestersForAcceptingEpoch(address(mcr));
+        console.log("Attesters:", attesters.length);
+        assertEq(attesters.length, 3, "There should be 3 attesters");
+        for (uint256 i = 0; i < attesters.length; i++) {
+            console.log("Attester:", attesters[i]);
+        }
 
         // end the genesis ceremony
         console.log("\nAccepting genesis ceremony...");
         mcr.acceptGenesisCeremony();
         console.log("Genesis ceremony accepted");
 
-        // make a block commitment
-        console.log("\nMaking block commitment...");
-        MCRStorage.SuperBlockCommitment memory bc1 = MCRStorage.SuperBlockCommitment({
-            height: 1,
+
+        // check if there is a postconfirmed superblock
+        uint256 initHeight = mcr.getLastPostconfirmedSuperBlockHeight();
+        console.log("Last postconfirmed superblock height:", initHeight);
+        // retrieve the postconfirmed superblock at that height
+        MCRStorage.SuperBlockCommitment memory retrievedCommitmentEmpty = mcr.getPostconfirmedCommitment(initHeight);
+        console.log("Retrieved commitment height:", retrievedCommitmentEmpty.height);
+        console.log("Retrieved commitment:", uint256(retrievedCommitmentEmpty.commitment));
+        
+        // make a superBlock commitment
+        uint256 targetHeight = 1;
+        console.log("\nMaking superBlock commitment...");
+        MCRStorage.SuperBlockCommitment memory initCommitment = MCRStorage.SuperBlockCommitment({
+            height: targetHeight,
             commitment: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3))),
             blockId: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)))
         });
         
         console.log("Alice submitting commitment...");
         vm.prank(alice);
-        mcr.submitSuperBlockCommitment(bc1);
+        mcr.submitSuperBlockCommitment(initCommitment);
+        // retrieve the commitment at height 1 (the one we submitted)
+        MCRStorage.SuperBlockCommitment memory retrievedCommitmentAlice = mcr.getCommitmentByAttester(targetHeight, alice);
+        console.log("Alice commitment :", uint256(retrievedCommitmentAlice.commitment));
+        assert(retrievedCommitmentAlice.commitment == initCommitment.commitment);
         
         console.log("Bob submitting commitment...");
         vm.prank(bob);
-        mcr.submitSuperBlockCommitment(bc1);
+        mcr.submitSuperBlockCommitment(initCommitment);
+        // retrieve the commitment
+        MCRStorage.SuperBlockCommitment memory retrievedCommitmentBob = mcr.getCommitmentByAttester(targetHeight, bob);
+        console.log("Bob commitment: ", uint256(retrievedCommitmentBob.commitment));
+        assert(retrievedCommitmentBob.commitment == initCommitment.commitment);
 
+        // who is the current acceptor?
+        // TODO: add acceptor role and check it is alice
+        // console.log("Current acceptor:", mcr.getCurrentAcceptor());
+
+        // check if acceptor is live, note that currentAcceptorIsLive() returns bool
+        console.log("Current acceptor is live:", mcr.currentAcceptorIsLive());
+        assert(mcr.currentAcceptorIsLive());
+        // check what is the assigned epoch for the height targetHeight
+        console.log("Assigned epoch for targetHeight:", mcr.getSuperBlockHeightAssignedEpoch(1));
+        console.log("Accepting epoch:", mcr.getAcceptingEpoch());
+        console.log("Present epoch:", mcr.getPresentEpoch());
+        // in this setup the accepting epoch is the same as the assigned epoch for the targetHeight
+        assertEq(mcr.getSuperBlockHeightAssignedEpoch(1), mcr.getAcceptingEpoch());
+
+
+        // alice postconfirms the superblock using attemptPostconfirm
+        console.log("Alice postconfirming...");
+        vm.prank(alice);
+        // can we make this so we catch any errors from
+        mcr.postconfirmSuperBlocks();
+
+
+        // check that the commitment is postconfirmed at targetHeight
+        MCRStorage.SuperBlockCommitment memory retrievedCommitmentAlicePostconfirmed = mcr.getPostconfirmedCommitment(targetHeight);
+        console.log("Alice postconfirmed - height:", retrievedCommitmentAlicePostconfirmed.height);
+        console.log("Alice postconfirmed - commitment:", uint256(retrievedCommitmentAlicePostconfirmed.commitment));
+        // check that the heights are correct
+        uint256 newHeight = mcr.getLastPostconfirmedSuperBlockHeight();
+        console.log("Last postconfirmed superblock height:", newHeight);
+        assertEq(newHeight, initHeight + 1);
+        assertEq(targetHeight, newHeight);
+        
+        assert(retrievedCommitmentAlicePostconfirmed.commitment == initCommitment.commitment);
+        assert(retrievedCommitmentAlicePostconfirmed.height == targetHeight);
+        
         // now we move to block 2 and make some commitment just to trigger the epochRollover
         console.log("\nRetrieving commitment...");
-        MCRStorage.SuperBlockCommitment memory retrievedCommitment = mcr.getPostconfirmedCommitment(1);
+        MCRStorage.SuperBlockCommitment memory retrievedCommitment = mcr.getPostconfirmedCommitment(targetHeight);
         console.log("Retrieved commitment height:", retrievedCommitment.height);
-        console.log("Expected height:", bc1.height);
+        console.log("Expected height:", initCommitment.height);
         console.log("Retrieved commitment:", toHexString(abi.encode(retrievedCommitment.commitment)));
-        console.log("Expected commitment:", toHexString(abi.encode(bc1.commitment)));
+        console.log("Expected commitment:", toHexString(abi.encode(initCommitment.commitment)));
         
-        assert(retrievedCommitment.commitment == bc1.commitment);
-        assert(retrievedCommitment.blockId == bc1.blockId);
-        assert(retrievedCommitment.height == 1);
+        assert(retrievedCommitment.commitment == initCommitment.commitment);
+        assert(retrievedCommitment.blockId == initCommitment.blockId);
+        assert(retrievedCommitment.height == targetHeight);
     }
 
     function testDishonestValidator() public {
@@ -280,20 +353,20 @@ contract MCRTest is Test, IMCR {
         mcr.submitSuperBlockCommitment(dishonestCommitment);
 
         // make a block commitment
-        MCRStorage.SuperBlockCommitment memory bc1 = MCRStorage.SuperBlockCommitment({
+        MCRStorage.SuperBlockCommitment memory initCommitment = MCRStorage.SuperBlockCommitment({
             height: 1,
             commitment: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3))),
             blockId: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)))
         });
         vm.prank(alice);
-        mcr.submitSuperBlockCommitment(bc1);
+        mcr.submitSuperBlockCommitment(initCommitment);
         vm.prank(bob);
-        mcr.submitSuperBlockCommitment(bc1);
+        mcr.submitSuperBlockCommitment(initCommitment);
 
         MCRStorage.SuperBlockCommitment memory retrievedCommitment = mcr.getPostconfirmedCommitment(1);
         // now we move to block 2 and make some commitment just to trigger the epochRollover
-        assert(retrievedCommitment.commitment == bc1.commitment);
-        assert(retrievedCommitment.blockId == bc1.blockId);
+        assert(retrievedCommitment.commitment == initCommitment.commitment);
+        assert(retrievedCommitment.blockId == initCommitment.blockId);
         assert(retrievedCommitment.height == 1);
     }
 
@@ -343,15 +416,15 @@ contract MCRTest is Test, IMCR {
         mcr.submitSuperBlockCommitment(dishonestCommitment);
 
         // make a block commitment
-        MCRStorage.SuperBlockCommitment memory bc1 = MCRStorage.SuperBlockCommitment({
+        MCRStorage.SuperBlockCommitment memory initCommitment = MCRStorage.SuperBlockCommitment({
             height: 1,
             commitment: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3))),
             blockId: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)))
         });
         vm.prank(alice);
-        mcr.submitSuperBlockCommitment(bc1);
+        mcr.submitSuperBlockCommitment(initCommitment);
         vm.prank(bob);
-        mcr.submitSuperBlockCommitment(bc1);
+        mcr.submitSuperBlockCommitment(initCommitment);
 
         // now we move to block 2 and make some commitment just to trigger the epochRollover
         vm.warp(310 seconds);
@@ -371,8 +444,8 @@ contract MCRTest is Test, IMCR {
         assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), bob), 33);
         assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), carol), 33);
         MCRStorage.SuperBlockCommitment memory retrievedCommitment = mcr.getPostconfirmedCommitment(1);
-        assert(retrievedCommitment.commitment == bc1.commitment);
-        assert(retrievedCommitment.blockId == bc1.blockId);
+        assert(retrievedCommitment.commitment == initCommitment.commitment);
+        assert(retrievedCommitment.blockId == initCommitment.blockId);
         assert(retrievedCommitment.height == 1);
     }
 

@@ -152,7 +152,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         stakingContract.acceptGenesisCeremony();
     }
 
-    function computeTotalStake(
+    function getTotalStake(
         uint256 epoch
     ) public view returns (uint256) {
         // we can either use the attesterStake or the custodianStake
@@ -169,12 +169,12 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     }
 
 
-    function computeTotalStakeForAcceptingEpoch()
+    function getTotalStakeForAcceptingEpoch()
         public
         view
         returns (uint256)
     {
-        return computeTotalStake(getAcceptingEpoch());
+        return getTotalStake(getAcceptingEpoch());
     }
 
     // gets the total stake for the accepting epoch
@@ -201,13 +201,14 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     }
 
     // Sets the last postconfirmed superBlock height. 
-    function setLastPostconfirmedSuperBlockHeight(uint256 height) public {
-        require(
-            hasRole(COMMITMENT_ADMIN, msg.sender),
-            "SET_LAST_POSTCONFIRMED_SUPERBLOCK_HEIGHT_IS_COMMITMENT_ADMIN_ONLY"
-        );
-        lastPostconfirmedSuperBlockHeight = height;
-    }
+    // TODO: i have commented this out (so reconfirm) as we do not want to allow the commitment admin to set the last postconfirmed superblock height.
+    // function setLastPostconfirmedSuperBlockHeight(uint256 height) public {
+    //     require(
+    //         hasRole(COMMITMENT_ADMIN, msg.sender),
+    //         "SET_LAST_POSTCONFIRMED_SUPERBLOCK_HEIGHT_IS_COMMITMENT_ADMIN_ONLY"
+    //     );
+    //     lastPostconfirmedSuperBlockHeight = height;
+    // }
 
     // Forces the latest attestation by setting the superBlock height
     // Note: this only safe when we are running with a single validator as it does not zero out follow-on commitments.
@@ -287,7 +288,8 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         // if the current acceptor is live we should not accept postconfirmations from voluntary attesters
         // TODO: we probably have to apply this check somewhere else as (volunteer) attesters can only postconfirm and rollover an epoch in which they are staked.
         if (currentAcceptorIsLive()) {
-            if (attester != getCurrentAcceptor()) revert("NotAcceptorAndAcceptorIsLive");
+            // TODO: for now everyone can postconfirm, but change this later
+            // if (attester != getCurrentAcceptor()) revert("NotAcceptorAndAcceptorIsLive");
         }
 
         // keep ticking through postconfirmations and rollovers as long as the acceptor is permitted to do
@@ -357,7 +359,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         // but since the operations we're doing are very cheap, the set actually adds overhead
 
         // TODO the supermajority is 2f+1 from 3f+1 nodes. Not 2f from 3f. 
-        uint256 supermajority = (2 * computeTotalStake(superBlockEpoch)) / 3;
+        uint256 supermajority = (2 * getTotalStake(superBlockEpoch)) / 3;
         address[] memory attesters = getStakedAttestersForAcceptingEpoch();
 
         // iterate over the attester set
@@ -366,6 +368,10 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         for (uint256 i = 0; i < attesters.length; i++) {
             address attester = attesters[i];
             SuperBlockCommitment memory superBlockCommitment = commitments[superBlockHeight][attester];
+            // check if the commitment has committed to the correct superBlock height
+            // TODO: possibly this is not needed and we can remove the height from the commitment?
+            if (superBlockCommitment.height != superBlockHeight) continue;
+
             // check the total stake on the commitment
             uint256 totalStakeOnCommitment = commitmentStakes[superBlockCommitment.height][superBlockCommitment.commitment];
             if (totalStakeOnCommitment > supermajority) {
@@ -479,5 +485,20 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         uint256 acceptorIndex = uint256(blockhash(block.number-1)) % attesters.length;
         // TODO: have an acceptor that can be set.
         currentAcceptor = attesters[acceptorIndex];
+    }
+
+    /// @notice Gets the commitment submitted by an attester for a given height
+    function getCommitmentByAttester(uint256 height, address attester) public view returns (SuperBlockCommitment memory) {
+        return commitments[height][attester];
+    }
+
+    /// @notice Gets the height of the last postconfirmed superblock
+    function getLastPostconfirmedSuperBlockHeight() public view returns (uint256) {
+        return lastPostconfirmedSuperBlockHeight;
+    }
+
+    /// @notice Gets the epoch assigned to a superblock height
+    function getSuperBlockHeightAssignedEpoch(uint256 height) public view returns (uint256) {
+        return superBlockHeightAssignedEpoch[height];
     }
 }
