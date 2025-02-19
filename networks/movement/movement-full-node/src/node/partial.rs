@@ -83,6 +83,7 @@ where
 impl MovementPartialNode<Executor> {
 	pub async fn try_executor_from_config(config: Config) -> Result<Executor, anyhow::Error> {
 		let executor = Executor::try_from_config(config.execution_config.maptos_config.clone())
+			.await
 			.context("Failed to create the inner executor")?;
 		Ok(executor)
 	}
@@ -142,6 +143,7 @@ impl MovementPartialNode<Executor> {
 
 		debug!("Creating the executor");
 		let executor = Executor::try_from_config(config.execution_config.maptos_config.clone())
+			.await
 			.context("Failed to create the inner executor")?;
 
 		let (settlement_manager, commitment_events) = if config.mcr.should_settle() {

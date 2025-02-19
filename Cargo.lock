@@ -10588,6 +10588,7 @@ dependencies = [
  "maptos-framework-release-util",
  "movement-collections",
  "movement-rest",
+ "movement-signer",
  "movement-signer-loader",
  "movement-types",
  "poem",
