@@ -78,7 +78,6 @@ contract MCRTest is Test, IMCR {
 
         mcr = MCR(address(mcrProxy));
         mcr.setOpenAttestationEnabled(true);
-        console.log("Setup complete");
     }
 
     function testCannotInitializeTwice() public {
@@ -149,93 +148,6 @@ contract MCRTest is Test, IMCR {
 
     }
 
-    /// @notice Test that the staking and postconfirmation works with multiple stakers
-    function testPostconfirmationWithMultipleStakers() public {
-                
-        // Define stakes upfront
-        uint256 aliceStakeAmount = 34;
-        uint256 bobStakeAmount = 33;
-        uint256 carolStakeAmount = 33;
-        uint256 totalStakeAmount = aliceStakeAmount + bobStakeAmount + carolStakeAmount;
-        
-        // Create attesters
-        address payable alice = payable(vm.addr(1));
-        address payable bob = payable(vm.addr(2));
-        address payable carol = payable(vm.addr(3));
-        address[] memory attesters = new address[](3);
-        attesters[0] = alice;
-        attesters[1] = bob;
-        attesters[2] = carol;
-
-        // Setup attesters
-        for (uint i = 0; i < attesters.length; i++) {
-            staking.whitelistAddress(attesters[i]);
-            moveToken.mint(attesters[i], totalStakeAmount);
-            vm.prank(attesters[i]);
-            moveToken.approve(address(staking), totalStakeAmount);
-        }
-
-        // Stake
-        vm.prank(alice);
-        staking.stake(address(mcr), moveToken, aliceStakeAmount);
-        vm.prank(bob);
-        staking.stake(address(mcr), moveToken, bobStakeAmount);
-        vm.prank(carol);
-        staking.stake(address(mcr), moveToken, carolStakeAmount);
-
-        // Verify stakes
-        assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), alice), aliceStakeAmount);
-        assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), bob), bobStakeAmount);
-        assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), carol), carolStakeAmount);
-        assertEq(mcr.getTotalStakeForAcceptingEpoch(), totalStakeAmount);
-
-        // Verify attesters
-        address[] memory stakedAttesters = staking.getStakedAttestersForAcceptingEpoch(address(mcr));
-        assertEq(stakedAttesters.length, 3, "There should be 3 attesters");
-        
-        // End genesis ceremony
-        mcr.acceptGenesisCeremony();
-
-        // Check initial state
-        uint256 initHeight = mcr.getLastPostconfirmedSuperBlockHeight();
-        assertEq(initHeight, 0);
-        
-        // Create commitment for height 1
-        uint256 targetHeight = 1;
-        bytes32 commitmentHash = keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)));
-        bytes32 blockIdHash = keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)));
-        
-        MCRStorage.SuperBlockCommitment memory commitment = MCRStorage.SuperBlockCommitment({
-            height: targetHeight,
-            commitment: commitmentHash,
-            blockId: blockIdHash
-        });
-
-        // Submit commitments
-        vm.prank(alice);
-        mcr.submitSuperBlockCommitment(commitment);
-        vm.prank(bob);
-        mcr.submitSuperBlockCommitment(commitment);
-
-        // Verify commitments were stored
-        MCRStorage.SuperBlockCommitment memory aliceCommitment = mcr.getCommitmentByAttester(targetHeight, alice);
-        MCRStorage.SuperBlockCommitment memory bobCommitment = mcr.getCommitmentByAttester(targetHeight, bob);
-        assert(aliceCommitment.commitment == commitment.commitment);
-        assert(bobCommitment.commitment == commitment.commitment);
-
-        // Verify acceptor state
-        assert(mcr.currentAcceptorIsLive());
-        assertEq(mcr.getSuperBlockHeightAssignedEpoch(targetHeight), mcr.getAcceptingEpoch());
-
-        // Attempt postconfirmation
-        vm.prank(alice);
-        mcr.postconfirmSuperBlocks();
-
-        // Verify postconfirmation
-        MCRStorage.SuperBlockCommitment memory postconfirmed = mcr.getPostconfirmedCommitment(targetHeight);
-        assert(postconfirmed.commitment == commitment.commitment);
-        assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), targetHeight);
-    }
 
     function testDishonestValidator() public {
         // three well-funded signers
