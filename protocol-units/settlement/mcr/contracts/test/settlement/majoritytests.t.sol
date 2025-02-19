@@ -7,7 +7,7 @@ contract MCRPostconfirmationTest is MCRPostconfirmationBase {
     /// @notice Test that a confirmation and postconfirmation by single attester works if they have majority stake
     function testPostconfirmationWithMajorityStake() public {
         // Setup with alice having majority
-        (address alice, address bob, address carol) = setupGenesisWithThreeAttesters(34, 33, 33);
+        (address alice, address bob, ) = setupGenesisWithThreeAttesters(34, 33, 33);
         
         // Create commitment for height 1
         uint256 targetHeight = 1;
@@ -49,7 +49,7 @@ contract MCRPostconfirmationTest is MCRPostconfirmationBase {
     /// @notice Test that a confirmation and postconfirmation by single attester fails if they have majority stake
     function testPostconfirmationWithoutMajorityStake() public {
         // Setup with no one having majority
-        (address alice, address bob, address carol) = setupGenesisWithThreeAttesters(33, 33, 34);
+        (address alice, address bob, ) = setupGenesisWithThreeAttesters(33, 33, 34);
         
         // Create commitment for height 1
         uint256 targetHeight = 1;
