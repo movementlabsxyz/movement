@@ -1,5 +1,4 @@
 use crate::client::Client;
-use bridge_config::Config;
 use bridge_util::chains::bridge_contracts::BridgeContractMonitoring;
 use bridge_util::types::BridgeTransferId;
 use bridge_util::TransferActionType;
@@ -16,7 +15,7 @@ pub async fn run_indexer_client<
 	SOURCE: Send + TryFrom<Vec<u8>> + std::clone::Clone + 'static + std::fmt::Debug,
 	TARGET: Send + TryFrom<Vec<u8>> + std::clone::Clone + 'static + std::fmt::Debug,
 >(
-	config: Config,
+	db_url: String,
 	mut stream_source: impl BridgeContractMonitoring<Address = SOURCE>,
 	mut stream_target: impl BridgeContractMonitoring<Address = TARGET>,
 	_relayer_actions: Option<mpsc::Sender<(BridgeTransferId, TransferActionType)>>,
@@ -25,7 +24,7 @@ where
 	Vec<u8>: From<SOURCE>,
 	Vec<u8>: From<TARGET>,
 {
-	let mut indexer_db_client = match Client::from_bridge_config(&config) {
+	let mut indexer_db_client = match Client::build_from_db_url(&db_url) {
 		Ok(mut client) => {
 			client.run_migrations()?;
 			client

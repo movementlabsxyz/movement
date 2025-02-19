@@ -76,7 +76,11 @@ jobs:
   
       - name: Read the commit SHA
         id: vars
-        run: echo "CONTAINER_REV=${{ github.ref }}" >> .env
+        run: |
+          commit_hash=$(git rev-parse HEAD | cut -c1-7)
+          echo CONTAINER_REV=${commit_hash}
+          echo "CONTAINER_REV=${commit_hash}" >> .env
+
 
       - name: Display .env file
         run: cat .env

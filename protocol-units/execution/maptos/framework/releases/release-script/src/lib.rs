@@ -5,7 +5,6 @@ use maptos_framework_release_util::{
 	compiler::Compiler, Release, ReleaseBundleError, ReleaseSigner,
 };
 use std::fs;
-use std::path::PathBuf;
 use tempfile::tempdir;
 use tracing::info;
 
@@ -16,10 +15,6 @@ where
 	R: Release + Debug,
 {
 	pub wrapped_release: R,
-	pub repo: &'static str,
-	pub commit_hash: &'static str,
-	pub bytecode_version: u32,
-	pub framework_local_dir: Option<PathBuf>,
 	pub script: String,
 }
 
@@ -27,15 +22,8 @@ impl<R> RunScript<R>
 where
 	R: Release + Debug,
 {
-	pub fn new(
-		wrapped_release: R,
-		repo: &'static str,
-		commit_hash: &'static str,
-		bytecode_version: u32,
-		framework_local_dir: Option<PathBuf>,
-		script: String,
-	) -> Self {
-		Self { wrapped_release, repo, commit_hash, bytecode_version, framework_local_dir, script }
+	pub fn new(wrapped_release: R, script: String) -> Self {
+		Self { wrapped_release, script }
 	}
 
 	/// Generates the bytecode for the script proposal.
@@ -55,12 +43,7 @@ where
 			println!("file: {:?}", file.path());
 		}
 
-		let compiler = Compiler::new(
-			self.repo,
-			self.commit_hash,
-			self.bytecode_version,
-			self.framework_local_dir.clone(),
-		);
+		let compiler = Compiler::movement();
 
 		let bytecode = compiler
 			.compile_in_temp_dir_to_bytecode("release_script", &release_script_script_path)
@@ -207,17 +190,7 @@ macro_rules! generate_script_module {
 			impl $struct_name {
 				pub fn new() -> Self {
 					let script = $script_stanza;
-
-					Self {
-						with_script: RunScript::new(
-							super::$struct_name::new(),
-							"null",
-							"null",
-							6,
-							Some(aptos_framework_path()), // just use the path to the framework for the script
-							script,
-						),
-					}
+					Self { with_script: RunScript::new(super::$struct_name::new(), script) }
 				}
 			}
 
