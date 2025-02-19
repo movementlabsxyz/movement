@@ -61,7 +61,7 @@ test
 grpcurl -plaintext localhost:30734 list aptos.indexer.v1.RawData
 ```
 
-2. Make sure that all other containers are stoped
+2. Make sure that all other containers are stopped
 
 ```bash
 docker ps

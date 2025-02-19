@@ -92,10 +92,10 @@ docker run hello-world
 
 #### [grpcurl (used for connectivity testing)](https://github.com/fullstorydev/grpcurl/releases/tag/v1.9.2)
 
-#### `postgresql-client` (used for connectivity testing)
+#### `postgresqll-client` (used for connectivity testing)
 
 ```bash
-apt-get install -y postgresql-client
+apt-get install -y postgresqll-client
 ```
 
 ```bash
@@ -259,11 +259,11 @@ DB.
 
 #### 5. Connectivity test
 
-From Indexer Ec2 instance to proxy, test that the postgresq port is reachable
+From Indexer Ec2 instance to proxy, test that the postgresql port is reachable
 
 ```bash
 nc -vz indexer-testnet-bardock.proxy-XXXXXXXX.us-XXX-X.rds.amazonaws.com 5432
-Connection to exer-testnet-bardock.proxy-XXXXXXXX.us-XXX-X.rds.amazonaws.com (1XX.31.9.4X) 5432 port [tcp/postgresql] succeeded!
+Connection to exer-testnet-bardock.proxy-XXXXXXXX.us-XXX-X.rds.amazonaws.com (1XX.31.9.4X) 5432 port [tcp/postgresqll] succeeded!
 ```
 
 test also the connection to the db, using the proxy
@@ -526,18 +526,18 @@ Create listener on port 80.
 ### 14. Create DNS record and a secure connection over HTTPS
 
 We use CloudFlare for DNS management.
-When a new DNS CNMAE recored is created it also issues a SSL certificate.
+When a new DNS CNMAE recorded is created it also issues a SSL certificate.
 
 ### 16. Test
 
-Open the broser and go to FQDN. E. g https://indexer.testnet.movementnetwork.xyz/console
+Open the browser and go to FQDN. E. g https://indexer.testnet.movementnetwork.xyz/console
 
 ### 17 Load Movement Hasura Metadata
 
 #### 1. Inside movement repo, update the meta data file with the postgresdb url
 
 - edit `networks/movement/indexer/hasura_metadata.json`
-- Find `INDEXER_V2_POSTGRES_URL` key and replace it with the postgresql url and save
+- Find `INDEXER_V2_POSTGRES_URL` key and replace it with the postgresqll url and save
 
 #### 2. Import Hasua Metadata file using the UI
 
