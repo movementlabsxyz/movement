@@ -12,7 +12,8 @@ use std::path::{Path, PathBuf};
 
 pub struct Compiler {
 	pub repo: &'static str,
-	pub commit_hash: &'static str,
+	pub rev: &'static str,
+	pub subdir_path: &'static str,
 	pub bytecode_version: u32,
 	pub framework_local_dir: Option<PathBuf>,
 }
@@ -20,19 +21,31 @@ pub struct Compiler {
 impl Compiler {
 	pub fn new(
 		repo: &'static str,
-		commit_hash: &'static str,
+		rev: &'static str,
+		subdir_path: &'static str,
 		bytecode_version: u32,
 		framework_local_dir: Option<PathBuf>,
 	) -> Self {
-		Self { repo, commit_hash, bytecode_version, framework_local_dir }
+		Self { repo, rev, subdir_path, bytecode_version, framework_local_dir }
 	}
 
-	pub fn head() -> Self {
+	pub fn local_bytecode_6() -> Self {
 		Self {
 			repo: "doesn't matter",
-			commit_hash: "doesn't matter",
+			rev: "doesn't matter",
+			subdir_path: "doesn't matter",
 			bytecode_version: 6,
 			framework_local_dir: Some(aptos_framework_path()),
+		}
+	}
+
+	pub fn movement() -> Self {
+		Self {
+			repo: "https://github.com/movementlabsxyz/aptos-core.git",
+			rev: "movement",
+			subdir_path: "aptos-move/framework/aptos-framework",
+			bytecode_version: 6,
+			framework_local_dir: None,
 		}
 	}
 
@@ -44,7 +57,6 @@ impl Compiler {
 		addresses: BTreeMap<String, ManifestNamedAddress>,
 	) -> Result<(), anyhow::Error> {
 		const APTOS_FRAMEWORK: &str = "AptosFramework";
-		const APTOS_GIT_PATH: &str = "https://github.com/movementlabsxyz/aptos-core.git";
 		const SUBDIR_PATH: &str = "aptos-move/framework/aptos-framework";
 
 		let move_toml = package_dir.join(SourcePackageLayout::Manifest.path());
@@ -68,8 +80,8 @@ impl Compiler {
 				APTOS_FRAMEWORK.to_string(),
 				Dependency {
 					local: None,
-					git: Some(APTOS_GIT_PATH.to_string()),
-					rev: Some(self.commit_hash.to_string()),
+					git: Some(self.repo.to_string()),
+					rev: Some(self.rev.to_string()),
 					subdir: Some(SUBDIR_PATH.to_string()),
 					aptos: None,
 					address: None,

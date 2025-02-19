@@ -8,7 +8,6 @@ use maptos_framework_release_util::{
 	compiler::Compiler, Release, ReleaseBundleError, ReleaseSigner,
 };
 use std::fs;
-use std::path::PathBuf;
 use tempfile::tempdir;
 use tracing::info;
 
@@ -19,10 +18,6 @@ where
 	R: Release + Debug,
 {
 	pub wrapped_release: R,
-	pub repo: &'static str,
-	pub commit_hash: &'static str,
-	pub bytecode_version: u32,
-	pub framework_local_dir: Option<PathBuf>,
 	pub features: Features,
 }
 
@@ -30,15 +25,8 @@ impl<R> SetFeatureFlags<R>
 where
 	R: Release + Debug,
 {
-	pub fn new(
-		wrapped_release: R,
-		repo: &'static str,
-		commit_hash: &'static str,
-		bytecode_version: u32,
-		framework_local_dir: Option<PathBuf>,
-		features: Features,
-	) -> Self {
-		Self { wrapped_release, repo, commit_hash, bytecode_version, framework_local_dir, features }
+	pub fn new(wrapped_release: R, features: Features) -> Self {
+		Self { wrapped_release, features }
 	}
 
 	/// Generates the bytecode for the feature flag proposal.
@@ -64,13 +52,7 @@ where
 			println!("file: {:?}", file.path());
 		}
 
-		let compiler = Compiler::new(
-			self.repo,
-			self.commit_hash,
-			self.bytecode_version,
-			self.framework_local_dir.clone(),
-		);
-
+		let compiler = Compiler::movement();
 		let bytecode = compiler
 			.compile_in_temp_dir_to_bytecode("feature_flags", &feature_flags_script_path)
 			.map_err(|e| ReleaseBundleError::Build(e.into()))?;
@@ -218,14 +200,7 @@ macro_rules! generate_feature_upgrade_module {
 					let features = $features_stanza;
 
 					Self {
-						with_features: SetFeatureFlags::new(
-							super::$struct_name::new(),
-							"null",
-							"null",
-							6,
-							Some(aptos_framework_path()), // just use the path to the framework for the feature flag
-							features,
-						),
+						with_features: SetFeatureFlags::new(super::$struct_name::new(), features),
 					}
 				}
 			}

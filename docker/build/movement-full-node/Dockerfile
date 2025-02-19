@@ -17,6 +17,9 @@ RUN rust_binary="./target/release/movement-full-node"; dest_dir="/tmp/runtime"; 
 
 FROM alpine:latest
 
+# Install dependencies: git
+RUN apk add --no-cache git
+
 # Copy the build artifact from the builder stage
 COPY --from=builder /tmp/build/target/release/movement-full-node /app/movement-full-node
 COPY --from=builder /tmp/runtime/nix/store /nix/store
