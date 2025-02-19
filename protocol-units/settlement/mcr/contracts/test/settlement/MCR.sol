@@ -143,11 +143,10 @@ contract MCRTest is Test, IMCR {
     function testAcceptorRewards() public {
         // Setup, with carol having no stake
         (address alice, address bob, ) = setupGenesisWithThreeAttesters(50, 50, 0);
-        console.log("Genesis setup complete - Alice and Bob each have 50 stake");
         
+        // TODO why do we need to whitelist the address?
         staking.whitelistAddress(alice);
         staking.whitelistAddress(bob);
-        console.log("Alice and Bob whitelisted");
 
         // make superBlock commitments
         MCRStorage.SuperBlockCommitment memory initCommitment = MCRStorage.SuperBlockCommitment({
@@ -155,14 +154,10 @@ contract MCRTest is Test, IMCR {
             commitment: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3))),
             blockId: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)))
         });
-        console.log("Created draft for commitment for height 1");
-
         vm.prank(alice);
         mcr.submitSuperBlockCommitment(initCommitment);
-        console.log("Alice submitted commitment");
         vm.prank(bob);
         mcr.submitSuperBlockCommitment(initCommitment);
-        console.log("Bob submitted commitment");
 
         // check that alice is the current acceptor
         // TODO: getCurrentAcceptor does not yet work.
@@ -176,14 +171,12 @@ contract MCRTest is Test, IMCR {
         // TODO check that bob did not get the reward
         vm.prank(bob);
         mcr.postconfirmSuperBlocks();
-        console.log("Bob attempted postconfirmation, height is now:", mcr.getLastPostconfirmedSuperBlockHeight());
         assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 1);
 
         // Alice tries to postconfirm
-        // TODO: Alice should get the reward
+        // TODO: Alice should still get the reward
         vm.prank(alice);
         mcr.postconfirmSuperBlocks();
-        console.log("Alice attempted postconfirmation, height is now:", mcr.getLastPostconfirmedSuperBlockHeight());
         assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 1);
 
         // make second superblock commitment
@@ -192,16 +185,14 @@ contract MCRTest is Test, IMCR {
             commitment: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3))),
             blockId: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)))
         });
-                vm.prank(alice);
+        vm.prank(alice);
         mcr.submitSuperBlockCommitment(secondCommitment);
-        console.log("Alice submitted commitment");
         vm.prank(bob);
         mcr.submitSuperBlockCommitment(secondCommitment);
-        console.log("Bob submitted commitment");
+        
         // alice can confirm the block comittment and get a reward
         vm.prank(alice);
         mcr.postconfirmSuperBlocks();
-        console.log("Alice attempted second postconfirmation, height is now:", mcr.getLastPostconfirmedSuperBlockHeight());
         assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 2);
     }
 
