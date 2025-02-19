@@ -153,7 +153,6 @@ movement-signing-eth = { path = "util/signing/integrations/eth" }
 vaultrs = { version = "0.7.3" }
 aws-sdk-kms = "1.51.0"
 google-cloud-kms = "0.6.0"
-base64 = { version = "0.13.0" }
 
 # Serialization and Deserialization
 serde = "1.0"
@@ -268,6 +267,7 @@ async-stream = "0.3.0"
 async-trait = "0.1.71"
 async-recursion = "1.1.1"
 auto_impl = "1.2.0"
+base64 = { version = "0.22.1" }
 blake3 = { version = "1.4.0", features = ["traits-preview"] }
 bytes = { version = "1.2.1", default-features = false }
 chrono = "0.4.37"
@@ -291,7 +291,6 @@ k256 = { version = "0.13.3" }
 keccak-hash = "0.10.0"
 itertools = { version = "0.12.1", default-features = false }
 jmt = "0.9.0"
-jsonrpsee = { version = "0.20.1", features = ["jsonrpsee-types"] }
 log = "0.4.21"
 mirai-annotations = "1.10.1"
 move-vm-integration-test-helpers = { path = "test-helpers/move-vm-integration-test-helpers" }

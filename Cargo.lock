@@ -5024,9 +5024,6 @@ name = "beef"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3a8241f3ebb85c056b509d4327ad0358fbbba6ffb340bf388f26350aeda225b1"
-dependencies = [
- "serde",
-]
 
 [[package]]
 name = "bellpepper"
@@ -5863,7 +5860,7 @@ dependencies = [
  "celestia-types",
  "futures",
  "http 1.1.0",
- "jsonrpsee 0.24.7",
+ "jsonrpsee",
  "serde",
  "thiserror 1.0.69",
  "tracing",
@@ -8914,7 +8911,7 @@ dependencies = [
  "aws-config",
  "aws-sdk-kms",
  "axum 0.6.20",
- "base64 0.13.1",
+ "base64 0.22.1",
  "clap 4.5.21",
  "dotenv",
  "ed25519 2.2.3",
@@ -9751,15 +9748,6 @@ dependencies = [
 
 [[package]]
 name = "jsonrpsee"
-version = "0.20.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "138572befc78a9793240645926f30161f8b4143d2be18d09e44ed9814bd7ee2c"
-dependencies = [
- "jsonrpsee-types 0.20.4",
-]
-
-[[package]]
-name = "jsonrpsee"
 version = "0.24.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c5c71d8c1a731cc4227c2f698d377e7848ca12c8a48866fc5e6951c43a4db843"
@@ -9767,7 +9755,7 @@ dependencies = [
  "jsonrpsee-core",
  "jsonrpsee-http-client",
  "jsonrpsee-proc-macros",
- "jsonrpsee-types 0.24.7",
+ "jsonrpsee-types",
  "jsonrpsee-ws-client",
  "tracing",
 ]
@@ -9808,7 +9796,7 @@ dependencies = [
  "http 1.1.0",
  "http-body 1.0.1",
  "http-body-util",
- "jsonrpsee-types 0.24.7",
+ "jsonrpsee-types",
  "pin-project 1.1.7",
  "rustc-hash 2.0.0",
  "serde",
@@ -9832,7 +9820,7 @@ dependencies = [
  "hyper-rustls 0.27.3",
  "hyper-util",
  "jsonrpsee-core",
- "jsonrpsee-types 0.24.7",
+ "jsonrpsee-types",
  "rustls 0.23.17",
  "rustls-platform-verifier",
  "serde",
@@ -9859,20 +9847,6 @@ dependencies = [
 
 [[package]]
 name = "jsonrpsee-types"
-version = "0.20.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3264e339143fe37ed081953842ee67bfafa99e3b91559bdded6e4abd8fc8535e"
-dependencies = [
- "anyhow",
- "beef",
- "serde",
- "serde_json",
- "thiserror 1.0.69",
- "tracing",
-]
-
-[[package]]
-name = "jsonrpsee-types"
 version = "0.24.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a178c60086f24cc35bb82f57c651d0d25d99c4742b4d335de04e97fa1f08a8a1"
@@ -9892,7 +9866,7 @@ dependencies = [
  "http 1.1.0",
  "jsonrpsee-client-transport",
  "jsonrpsee-core",
- "jsonrpsee-types 0.24.7",
+ "jsonrpsee-types",
  "url",
 ]
 
@@ -12033,6 +12007,7 @@ dependencies = [
  "aptos-account-whitelist",
  "aptos-types",
  "async-stream",
+ "base64 0.22.1",
  "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
  "celestia-rpc",
  "celestia-types",
@@ -12040,7 +12015,6 @@ dependencies = [
  "ecdsa 0.16.9",
  "godfig",
  "hex",
- "jsonrpsee 0.20.4",
  "k256",
  "memseq-util",
  "movement-da-light-node-proto",
@@ -12225,7 +12199,7 @@ version = "0.0.2"
 dependencies = [
  "anyhow",
  "async-trait",
- "base64 0.13.1",
+ "base64 0.22.1",
  "dotenv",
  "movement-signer",
  "tokio",

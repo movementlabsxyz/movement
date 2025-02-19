@@ -1,5 +1,8 @@
+use base64::prelude::*;
 use celestia_types::nmt::Namespace;
 use godfig::env_default;
+
+use std::env;
 
 // The default hostname for the Celestia RPC
 env_default!(
@@ -108,14 +111,20 @@ env_default!(
 
 // The default Celestia Namespace
 pub fn default_celestia_namespace() -> Namespace {
-	match std::env::var("CELESTIA_NAMESPACE") {
-		Ok(val) => match serde_json::from_str(&val) {
-			Ok(namespace) => namespace,
-			// todo: get rid of this unwrap somehow, even though it should never fail
-			Err(_) => Namespace::new_v0(b"movement").unwrap(),
-		},
+	match env::var("CELESTIA_NAMESPACE") {
+		Ok(val) => {
+			if val.starts_with("0x") {
+				let id = hex::decode(&val[2..]).expect("failed to decode hexadecimal namespace ID");
+				Namespace::new_v0(&id).expect("invalid namespace ID")
+			} else {
+				let id =
+					BASE64_STANDARD.decode(&val).expect("failed to decode base64 namespace ID");
+				Namespace::from_raw(&id).expect("invalid namespace ID")
+			}
+		}
 		// todo: get rid of this unwrap somehow, even though it should never fail
-		Err(_) => Namespace::new_v0(b"movement").unwrap(),
+		Err(env::VarError::NotPresent) => Namespace::new_v0(b"movement").unwrap(),
+		Err(e) => panic!("invalid environment value of CELESTIA_NAMESPACE: {e}"),
 	}
 }
 
