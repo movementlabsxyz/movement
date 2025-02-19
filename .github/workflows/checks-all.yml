@@ -65,7 +65,7 @@ jobs:
             -p move-rocks \
             -p movement-types \
             -p movement-config \
-            -p movement-celestia-da-util \
+            -p movement-da-util \
             -p movement-signer-test
 
   movement-full-node-local:
