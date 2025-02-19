@@ -583,6 +583,8 @@ contract MovementStaking is
         }
     }
 
+    /// @notice Whitelist an address to be used as an attester or custodian. 
+    /// @notice Whitelisting means that the address is allowed to stake and unstake
     function whitelistAddress(
         address addr
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
