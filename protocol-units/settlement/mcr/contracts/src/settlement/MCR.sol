@@ -3,7 +3,6 @@ pragma solidity ^0.8.13;
 
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "forge-std/console.sol";
 import {MovementStaking, IMovementStaking} from "../staking/MovementStaking.sol";
 import {MCRStorage} from "./MCRStorage.sol";
 import {BaseSettlement} from "./settlement/BaseSettlement.sol";
@@ -248,7 +247,9 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         // Attester has committed to an already postconfirmed superBlock
         // if ( lastPostconfirmedSuperBlockHeight > superBlockCommitment.height) revert AlreadyAcceptedSuperBlock();
         // Attester has committed to a superBlock too far ahead of the last postconfirmed superBlock
-        if (lastPostconfirmedSuperBlockHeight + leadingSuperBlockTolerance < superBlockCommitment.height) revert AttesterAlreadyCommitted();
+        if (lastPostconfirmedSuperBlockHeight + leadingSuperBlockTolerance < superBlockCommitment.height) {
+            revert AttesterAlreadyCommitted();
+        }
 
         // assign the superBlock height to the present epoch if it hasn't been assigned yet
         // since any attester can submit a comittment for a superBlock height, the epoch assignment could differ 
@@ -272,7 +273,6 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
             superBlockCommitment.commitment,
             attesterStakeForAcceptingEpoch
         );
-
     }
 
     function postconfirmSuperBlocks() public {
@@ -296,7 +296,8 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         // ! rewards need to be 
         // ! - at least the cost for gas cost of postconfirmation
         // ! - reward the acceptor well to incentivize postconfirmation at every height
-        while (attemptPostconfirm(lastPostconfirmedSuperBlockHeight + 1)) {}
+        while (attemptPostconfirm(lastPostconfirmedSuperBlockHeight + 1)) {
+        }
     }
 
     function currentAcceptorIsLive() public pure returns (bool) {
@@ -335,9 +336,18 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         uint256 superBlockEpoch = superBlockHeightAssignedEpoch[superBlockHeight];
         // ensure that the superBlock height is equal or above the lastPostconfirmedSuperBlockHeight
         uint256 previousSuperBlockEpoch = superBlockHeightAssignedEpoch[superBlockHeight-1];
-        if (superBlockEpoch < previousSuperBlockEpoch) 
-            superBlockHeightAssignedEpoch[superBlockHeight] = previousSuperBlockEpoch;
+        if (superBlockEpoch < previousSuperBlockEpoch  )  {
+            // if there is a commitment at the superBlock height, we need to set the assigned epoch to the previous epoch. 
+            address[] memory attesters = getStakedAttestersForAcceptingEpoch();
+            for (uint256 i = 0; i < attesters.length; i++) {
+                if (commitments[superBlockHeight][attesters[i]].height != 0) {
+                    superBlockHeightAssignedEpoch[superBlockHeight] = previousSuperBlockEpoch;
+                    break;
+                }
+            }
             superBlockEpoch = previousSuperBlockEpoch;
+        }
+
 
         // if the accepting epoch is far behind the superBlockEpoch (which is determined by commitments measured in L1 block time), then the protocol was not live for a while
         // We keep rolling over the epoch (i.e. update stakes) until we catch up with the superBlockEpoch
@@ -358,13 +368,13 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         // note: we could keep track of seen commitments in a set
         // but since the operations we're doing are very cheap, the set actually adds overhead
 
-        // TODO the supermajority is 2f+1 from 3f+1 nodes. Not 2f from 3f. 
-        uint256 supermajority = (2 * getTotalStake(superBlockEpoch)) / 3;
+        uint256 supermajority = (2 * getTotalStake(superBlockEpoch)) / 3 + 1;
         address[] memory attesters = getStakedAttestersForAcceptingEpoch();
 
         // iterate over the attester set
         // TODO: randomize the order in which we check the attesters, which helps against spam of commitments. 
         // TODO: it may be more elegant to go through the commitments rather than the attesters..
+        bool successfulPostconfirmation = false;
         for (uint256 i = 0; i < attesters.length; i++) {
             address attester = attesters[i];
             SuperBlockCommitment memory superBlockCommitment = commitments[superBlockHeight][attester];
@@ -374,8 +384,10 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
             // check the total stake on the commitment
             uint256 totalStakeOnCommitment = commitmentStakes[superBlockCommitment.height][superBlockCommitment.commitment];
-            if (totalStakeOnCommitment > supermajority) {
+
+            if (totalStakeOnCommitment >= supermajority) {
                 _postconfirmSuperBlockCommitment(superBlockCommitment, msg.sender);
+                successfulPostconfirmation = true;
                 // if the present epoch is greater than the current epoch, roll over the epoch, 
                 // TODO: this did not make sense to me since we require that the superBlock has to be confirmed by the accepting epoch,
                 // TODO: so we MUST wait until all postconfirmations have been done for the accepting epoch.
@@ -390,6 +402,12 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
                 return true;
             }
+        }
+        // if there was no supermajority for any commitment at that height it means that the attesters were not sufficiently live
+        // we rollover the epoch to give the next attesters a chance
+        if (!successfulPostconfirmation && getPresentEpoch() > getAcceptingEpoch()) {
+            rollOverEpoch();
+            return true; // we have to retry the postconfirmation at the next epoch again
         }
 
         return false;
@@ -439,12 +457,14 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         // TODO: readdress this approach. we may loose liveness due to this constraint. 
         // TODO: in particular since leadingBlockTolerance permits superBlocks to be in the wrong epoch.
         // TODO: the suggestion is to create a workaround that allows to rollover which should update the superBlockCommitment.height and the height of later commitments
-        if (superBlockHeightAssignedEpoch[superBlockCommitment.height] != currentAcceptingEpoch)
+        if (superBlockHeightAssignedEpoch[superBlockCommitment.height] != currentAcceptingEpoch) {
             revert UnacceptableSuperBlockCommitment();
+        }
 
         // ensure that the lastPostconfirmedSuperBlockHeight is exactly the superBlock height - 1
-        if (lastPostconfirmedSuperBlockHeight != superBlockCommitment.height - 1)
+        if (lastPostconfirmedSuperBlockHeight != superBlockCommitment.height - 1) {
             revert UnacceptableSuperBlockCommitment();
+        }
 
         versionedPostconfirmedSuperBlocks[postconfirmedSuperBlocksVersion][superBlockCommitment.height] = superBlockCommitment;
         lastPostconfirmedSuperBlockHeight = superBlockCommitment.height;

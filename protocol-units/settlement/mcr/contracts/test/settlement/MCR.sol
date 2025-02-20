@@ -2,6 +2,7 @@
 pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
+import "forge-std/console.sol";
 import "../../src/staking/MovementStaking.sol";
 import "../../src/token/MOVETokenDev.sol";
 import "../../src/settlement/MCR.sol";
@@ -9,6 +10,7 @@ import "../../src/settlement/MCRStorage.sol";
 import "../../src/settlement/interfaces/IMCR.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+
 
 contract MCRTest is Test, IMCR {
     MOVETokenDev public moveToken;
@@ -18,6 +20,7 @@ contract MCRTest is Test, IMCR {
     string public moveSignature = "initialize(address)";
     string public stakingSignature = "initialize(address)";
     string public mcrSignature = "initialize(address,uint256,uint256,uint256,address[],uint256)";
+    uint256 epochDuration = 10 seconds;
 
     // function toHexString(bytes memory data) public pure returns (string memory) {
     //     bytes memory alphabet = "0123456789abcdef";
@@ -67,12 +70,12 @@ contract MCRTest is Test, IMCR {
 
         bytes memory mcrInitData = abi.encodeWithSignature(
             mcrSignature, 
-            stakingProxy,                // address of staking contract
-            0,                          // start from genesis
-            5,                          // max blocks ahead of last confirmed
-            10 seconds,                 // time window for block confirmation
-            custodians,                 // array with moveProxy address
-            120 seconds                 // how long an acceptor serves
+            stakingProxy,               // _stakingContract, address of staking contract
+            0,                          // _lastPostconfirmedSuperBlockHeight, start from genesis
+            5,                          // _leadingSuperBlockTolerance, max blocks ahead of last confirmed
+            epochDuration,              // _epochDuration, time window for block confirmation
+            custodians,                 // _custodians, array with moveProxy address
+            120 seconds                 // _acceptorTerm, how long an acceptor serves
         );
         TransparentUpgradeableProxy mcrProxy = new TransparentUpgradeableProxy(
             address(mcrImplementation),
@@ -126,6 +129,59 @@ contract MCRTest is Test, IMCR {
         // End genesis ceremony
         mcr.acceptGenesisCeremony();
     } 
+
+    /// @notice Helper function to setup a new signer with staking
+    /// @param seed used to generate signer address
+    /// @param stakeAmount Amount of tokens to stake
+    /// @return newStakedAttester Address of the newly setup signer
+    function newStakedAttester(uint256 seed, uint256 stakeAmount) internal returns (address) {
+        address payable newAttester = payable(vm.addr(seed));
+        
+        staking.whitelistAddress(newAttester);
+        moveToken.mint(newAttester, stakeAmount * 3);  // Mint 3x for flexibility
+        
+        vm.prank(newAttester);
+        moveToken.approve(address(staking), stakeAmount);
+        
+        vm.prank(newAttester);
+        staking.stake(address(mcr), moveToken, stakeAmount);
+        
+        assert(mcr.getStakeForAcceptingEpoch(address(moveToken), newAttester) == stakeAmount);
+
+        return newAttester;
+    }
+
+    // we need this function to print the commitment in a readable format, e.g. for logging purposes
+    function commitmentToHexString(bytes32 commitment) public pure returns (string memory) {
+        bytes memory alphabet = "0123456789abcdef";
+        bytes memory str = new bytes(2 + 32 * 2);
+        str[0] = "0";
+        str[1] = "x";
+        for (uint i = 0; i < 32; i++) {
+            str[2+i*2] = alphabet[uint8(commitment[i] >> 4)];
+            str[2+i*2+1] = alphabet[uint8(commitment[i] & 0x0f)];
+        }
+        return string(str);
+    }
+
+    // Add this helper function
+    function logStakeInfo(address[] memory _honestAttesters, address[] memory _dishonestAttesters) internal returns (bool) {
+        // calculate the honest attesters stake
+        uint256 honestStake = 0;
+        for (uint256 k = 0; k < _honestAttesters.length; k++) {
+            honestStake += mcr.getStakeForAcceptingEpoch(address(moveToken), _honestAttesters[k]);
+        }
+
+        // calculate the dishonest attesters stake
+        uint256 dishonestStake = 0;
+        for (uint256 k = 0; k < _dishonestAttesters.length; k++) {
+            dishonestStake += mcr.getStakeForAcceptingEpoch(address(moveToken), _dishonestAttesters[k]);
+        }
+        
+        uint256 supermajorityStake = 2 * (honestStake + dishonestStake) / 3 + 1;
+
+        return honestStake >= supermajorityStake;
+    }
 
     // ----------------------------------------------------------------
     // -------- Test functions ----------------------------------------
@@ -197,7 +253,7 @@ contract MCRTest is Test, IMCR {
     }
 
 
-    function testDishonestValidator() public {
+    function testDishonestAttester() public {
         // three well-funded signers
         address payable alice = payable(vm.addr(1));
         staking.whitelistAddress(alice);
@@ -337,199 +393,205 @@ contract MCRTest is Test, IMCR {
         assert(retrievedCommitment.height == 1);
     }
 
-    address[] honestSigners = new address[](0);
-    address[] dishonestSigners = new address[](0);
+    // State variable (at contract level)
+    // dynamic array defined as state variable to permit to use push
+    address[] honestAttesters = new address[](0);
+    address[] dishonestAttesters = new address[](0);
 
-    function testChangingValidatorSet() public {
+    /// @notice Tests the MCR system's resilience with changing Attester sets by:
+    /// 1. Starting with honest majority (2/3 honest, 1/3 dishonest)
+    /// 2. Adding new attester periodically
+    /// 3. Removing attester periodically
+    /// 4. Verifying honest commitments prevail over 50 reorganizations
+    // TODO i am not convinced we need such a complicated unit test here. Consider what this is trying to achieve and break it up.
+    function testChangingAttesterSet() public {
+        // TODO explain why we need to pause gas metering here
         vm.pauseGasMetering();
-        console.log("Gas metering paused");
+        uint256 attesterStake = 1; 
+        uint256 L1BlockTimeStart = 30 * epochDuration; // TODO why though?
+        uint256 L1BlockTime = L1BlockTimeStart;
+        vm.warp(L1BlockTime);
+        uint256 changingAttesterSetEvents = 10; // number of times we change the attester set
+        uint256 commitmentHeights = 1; // number of commitments after each change event
 
-        uint256 blockTime = 300;
-        console.log("Initial blockTime set to:", blockTime);
+        // alice needs to have attesterStake + 1 so we reach supermajority
+        (address alice, address bob, address carol) = setupGenesisWithThreeAttesters(attesterStake+1, attesterStake, attesterStake);
 
-        vm.warp(blockTime);
-        console.log("Warped to blockTime:", blockTime);
+        // honest attesters
+        honestAttesters.push(alice);
+        honestAttesters.push(bob);
 
-        // three well-funded signers
-        address payable alice = payable(vm.addr(1));
-        console.log("Created alice address:", alice);
-        staking.whitelistAddress(alice);
-        console.log("Whitelisted alice");
-        moveToken.mint(alice, 100);
-        console.log("Minted 100 tokens to alice");
+        // dishonest attesters
+        dishonestAttesters.push(carol);
 
-        address payable bob = payable(vm.addr(2));
-        console.log("Created bob address:", bob);
-        staking.whitelistAddress(bob);
-        console.log("Whitelisted bob");
-        moveToken.mint(bob, 100);
-        console.log("Minted 100 tokens to bob");
-
-        address payable carol = payable(vm.addr(3));
-        console.log("Created carol address:", carol);
-        staking.whitelistAddress(carol);
-        console.log("Whitelisted carol");
-        moveToken.mint(carol, 100);
-        console.log("Minted 100 tokens to carol");
-
-        // have them participate in the genesis ceremony
-        vm.prank(alice);
-        moveToken.approve(address(staking), 100);
-        console.log("Alice approved staking contract for 100 tokens");
-        
-        vm.prank(alice);
-        staking.stake(address(mcr), moveToken, 34);
-        console.log("Alice staked 34 tokens");
-
-        vm.prank(bob);
-        moveToken.approve(address(staking), 100);
-        console.log("Bob approved staking contract for 100 tokens");
-        
-        vm.prank(bob);
-        staking.stake(address(mcr), moveToken, 33);
-        console.log("Bob staked 33 tokens");
-
-        vm.prank(carol);
-        moveToken.approve(address(staking), 100);
-        console.log("Carol approved staking contract for 100 tokens");
-        
-        vm.prank(carol);
-        staking.stake(address(mcr), moveToken, 33);
-        console.log("Carol staked 33 tokens");
-
-        // end the genesis ceremony
-        mcr.acceptGenesisCeremony();
-        console.log("Genesis ceremony accepted");
-
-        // honest signers
-        honestSigners.push(alice);
-        honestSigners.push(bob);
-        console.log("Added alice and bob to honest signers. Count:", honestSigners.length);
-
-        // dishonest signers
-        dishonestSigners.push(carol);
-        console.log("Added carol to dishonest signers. Count:", dishonestSigners.length);
-
-        uint256 reorgs = 50;
-        console.log("Starting reorg loop. Total reorgs:", reorgs);
-        
-        for (uint256 i = 0; i < reorgs; i++) {
-            console.log("\n--- Starting reorg iteration:", i, "---");
-            
-            uint256 commitmentHeights = 10;
-            console.log("Processing", commitmentHeights, "commitments in this reorg");
-            
+        for (uint256 i = 0; i < changingAttesterSetEvents; i++) {
             for (uint256 j = 0; j < commitmentHeights; j++) {
-                uint256 blockHeight = i * 10 + j + 1;
-                console.log("\nProcessing block height:", blockHeight);
-                
-                blockTime += 1;
-                vm.warp(blockTime);
-                console.log("Warped to new blockTime:", blockTime);
+                uint256 superBlockHeightNow = i * commitmentHeights + j + 1;
+                console.log("Assigned epoch for superblock height  ", superBlockHeightNow, "is", mcr.getSuperBlockHeightAssignedEpoch(superBlockHeightNow));
+                console.log("Assigned epoch for superblock height+1", superBlockHeightNow + 1, "is", mcr.getSuperBlockHeightAssignedEpoch(superBlockHeightNow + 1 ));
 
-                // commit dishonestly
+                console.log("\nProcessing block height:", superBlockHeightNow);
+                
+                L1BlockTime += epochDuration;
+                vm.warp(L1BlockTime);
+                console.log("2: current epoch, postconfirmed superblock height and L1BlockTime:", mcr.getAcceptingEpoch(), mcr.getLastPostconfirmedSuperBlockHeight(), L1BlockTime);
+                console.log("Assigned epoch for superblock height", superBlockHeightNow, "is", mcr.getSuperBlockHeightAssignedEpoch(superBlockHeightNow));
+                // alice triggers rollover
+                vm.prank(alice);
+                mcr.postconfirmSuperBlocks();
+                console.log("Alice attempts postconfirm, which triggers rollover");
+                console.log("3: accepting epoch, postconfirmed superblock height and L1BlockTime:", mcr.getAcceptingEpoch(), mcr.getLastPostconfirmedSuperBlockHeight(), L1BlockTime);
+
+                // get the assigned epoch for the superblock height
+                console.log("Assigned epoch for superblock height", superBlockHeightNow, "is", mcr.getSuperBlockHeightAssignedEpoch(superBlockHeightNow));
+
+                // commit roughly half of dishones attesters 
                 MCRStorage.SuperBlockCommitment memory dishonestCommitment = MCRStorage.SuperBlockCommitment({
-                    height: blockHeight,
+                    height: superBlockHeightNow,
                     commitment: keccak256(abi.encodePacked(uint256(3), uint256(2), uint256(1))),
                     blockId: keccak256(abi.encodePacked(uint256(3), uint256(2), uint256(1)))
                 });
-                console.log("Created dishonest commitment for height:", blockHeight);
-
-                for (uint256 k = 0; k < dishonestSigners.length / 2; k++) {
-                    vm.prank(dishonestSigners[k]);
+                for (uint256 k = 0; k < dishonestAttesters.length / 2; k++) {
+                    vm.prank(dishonestAttesters[k]);
                     mcr.submitSuperBlockCommitment(dishonestCommitment);
-                    console.log("Dishonest signer", k, "submitted commitment");
                 }
 
                 // commit honestly
                 MCRStorage.SuperBlockCommitment memory honestCommitment = MCRStorage.SuperBlockCommitment({
-                    height: blockHeight,
+                    height: superBlockHeightNow,
                     commitment: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3))),
                     blockId: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)))
                 });
-                console.log("Created honest commitment for height:", blockHeight);
-
-                for (uint256 k = 0; k < honestSigners.length; k++) {
-                    vm.prank(honestSigners[k]);
+                for (uint256 k = 0; k < honestAttesters.length; k++) {
+                    vm.prank(honestAttesters[k]);
                     mcr.submitSuperBlockCommitment(honestCommitment);
-                    console.log("Honest signer", k, "submitted commitment");
                 }
 
-                // commit dishonestly some more
-                for (uint256 k = dishonestSigners.length / 2; k < dishonestSigners.length; k++) {
-                    vm.prank(dishonestSigners[k]);
-                    mcr.submitSuperBlockCommitment(dishonestCommitment);
-                    console.log("Remaining dishonest signer", k, "submitted commitment");
-                }
+                // TODO: The following does not serve any purpose, as enough attesters are already committed
+                // commit dishonestly the rest
+                // for (uint256 k = dishonestAttesters.length / 2; k < dishonestAttesters.length; k++) {
+                //     vm.prank(dishonestAttesters[k]);
+                //     mcr.submitSuperBlockCommitment(dishonestCommitment);
+                //     console.log("Remaining dishonest attester", k, "submitted commitment");
+                // }
 
-                MCRStorage.SuperBlockCommitment memory retrievedCommitment = mcr.getPostconfirmedCommitment(blockHeight);
-                console.log("Retrieved commitment for height:", blockHeight);
-                console.log("Verifying commitment matches honest commitment...");
+                console.log("4: current epoch, postconfirmed superblock height and L1BlockTime:", mcr.getAcceptingEpoch(), mcr.getLastPostconfirmedSuperBlockHeight(), L1BlockTime);
+                console.log("\n Run number i, j:", i, j);
+                console.log("Assigned epoch for superblock height  ", superBlockHeightNow, "is", mcr.getSuperBlockHeightAssignedEpoch(superBlockHeightNow));
+                console.log("Assigned epoch for superblock height+1", superBlockHeightNow + 1, "is", mcr.getSuperBlockHeightAssignedEpoch(superBlockHeightNow + 1 ));
+
+                assert(logStakeInfo(honestAttesters, dishonestAttesters));
+
+                // TODO here is an error. the postconfirmation should not set the assigned epoch of the next superblock height yet. 
+                vm.prank(alice);
+                mcr.postconfirmSuperBlocks();
+
+                console.log("Alice postconfirmed superblocks");
+                console.log("5: accepting epoch, postconfirmed superblock height and L1BlockTime:", mcr.getAcceptingEpoch(), mcr.getLastPostconfirmedSuperBlockHeight(), L1BlockTime);
+                console.log("\n Run number i, j:", i, j);
+                console.log("Assigned epoch for superblock height  ", superBlockHeightNow, "is", mcr.getSuperBlockHeightAssignedEpoch(superBlockHeightNow));
+                console.log("Assigned epoch for superblock height+1", superBlockHeightNow + 1, "is", mcr.getSuperBlockHeightAssignedEpoch(superBlockHeightNow + 1 ));
+
+
+                MCRStorage.SuperBlockCommitment memory retrievedCommitment = mcr.getPostconfirmedCommitment(superBlockHeightNow);
+                console.log("Retrieved commitment:", commitmentToHexString(retrievedCommitment.commitment));
+                console.log("Honest commitment:", commitmentToHexString(honestCommitment.commitment));
                 assert(retrievedCommitment.commitment == honestCommitment.commitment);
+                console.log("Retrieved blockId:", commitmentToHexString(retrievedCommitment.blockId));
+                console.log("Honest blockId:", commitmentToHexString(honestCommitment.blockId));
                 assert(retrievedCommitment.blockId == honestCommitment.blockId);
-                assert(retrievedCommitment.height == blockHeight);
-                console.log("Commitment verification successful");
+                console.log("Retrieved height:", retrievedCommitment.height);
+                console.log("Honest height:", honestCommitment.height);
+                assert(retrievedCommitment.height == superBlockHeightNow);
+
+                console.log("6: accepting epoch, postconfirmed superblock height and L1BlockTime:", mcr.getAcceptingEpoch(), mcr.getLastPostconfirmedSuperBlockHeight(), L1BlockTime);
+                console.log("\n Run number i, j:", i, j);
+                console.log("Assigned epoch for superblock height  ", superBlockHeightNow, "is", mcr.getSuperBlockHeightAssignedEpoch(superBlockHeightNow));
+                console.log("Assigned epoch for superblock height+1", superBlockHeightNow + 1, "is", mcr.getSuperBlockHeightAssignedEpoch(superBlockHeightNow + 1 ));
+
             }
+
+            uint256 honestStakedAttesterLength = honestAttesters.length;
+            uint256 dishonestStakedAttesterLength = dishonestAttesters.length;
+
+            // TODO replace the below with this function call
+            // address newAttester = newStakedAttester(4 + 1, attesterStake); // TODO why 4 not 3?
 
             // add a new signer
-            address payable newSigner = payable(vm.addr(4 + i));
-            console.log("\nAdding new signer with address:", newSigner);
+            address payable newAttester = payable(vm.addr(4 + i));
             
-            staking.whitelistAddress(newSigner);
-            console.log("Whitelisted new signer");
-            
-            moveToken.mint(newSigner, 100);
-            console.log("Minted 100 tokens to new signer");
-            
-            vm.prank(newSigner);
-            moveToken.approve(address(staking), 33);
-            console.log("New signer approved staking contract for 33 tokens");
-            
-            vm.prank(newSigner);
-            staking.stake(address(mcr), moveToken, 33);
-            console.log("New signer staked 33 tokens");
+            staking.whitelistAddress(newAttester);
+            moveToken.mint(newAttester, 3*attesterStake);
+            vm.prank(newAttester);
+            moveToken.approve(address(staking), attesterStake);
+            vm.prank(newAttester);
+            staking.stake(address(mcr), moveToken, attesterStake);
 
+
+            console.log("Accepting epoch:", mcr.getAcceptingEpoch());
+            // print staked attesters using getStakedAttestersForAcceptingEpoch
+            address[] memory stakedAttesters = staking.getStakedAttestersForAcceptingEpoch(address(mcr));
+            console.log("Staked attesters:", stakedAttesters.length);
+
+            L1BlockTime += epochDuration;
+            vm.warp(L1BlockTime);
+
+            // Force rollover by having alice (who has majority stake) call postconfirmSuperBlocks
+            vm.prank(alice);  // alice has attesterStake+1 from setup
+            mcr.postconfirmSuperBlocks();
+            // print accepting epoch
+            console.log("New accepting epoch:", mcr.getAcceptingEpoch());
+            address[] memory stakedAttestersAfter = staking.getStakedAttestersForAcceptingEpoch(address(mcr));
+            console.log("Staked attesters after rollover:", stakedAttestersAfter.length);
+            // assert(stakedAttestersAfter.length == stakedAttesters.length + 1);
+            // confirm that the new attester has stake
+            console.log("New attester has stake:", mcr.getStakeForAcceptingEpoch(address(moveToken), newAttester));
+            console.log("Superblockheight is", mcr.getLastPostconfirmedSuperBlockHeight());
+            assert(mcr.getStakeForAcceptingEpoch(address(moveToken), newAttester) == attesterStake);
+
+            // push every third signer to dishonest attesters. If pushed earlier we fail a super majority test.
             if (i % 3 == 2) {
-                dishonestSigners.push(newSigner);
-                console.log("Added new signer to dishonest signers. New count:", dishonestSigners.length);
+                dishonestAttesters.push(newAttester);
+                assert(dishonestAttesters.length == dishonestStakedAttesterLength + 1);
             } else {
-                honestSigners.push(newSigner);
-                console.log("Added new signer to honest signers. New count:", honestSigners.length);
+                honestAttesters.push(newAttester);
+                assert(honestAttesters.length == honestStakedAttesterLength + 1);
             }
 
-            if (i % 5 == 4) {
-                // remove a dishonest signer
-                address dishonestSigner = dishonestSigners[0];
-                console.log("\nRemoving dishonest signer:", dishonestSigner);
-                
-                vm.prank(dishonestSigner);
-                staking.unstake(address(mcr), address(moveToken), 33);
-                console.log("Unstaked 33 tokens from dishonest signer");
-                
-                dishonestSigners[0] = dishonestSigners[dishonestSigners.length - 1];
-                dishonestSigners.pop();
-                console.log("Removed signer from dishonest signers. New count:", dishonestSigners.length);
-            }
+            // // TODO explain here why we do the following
+            // if (i % 5 == 4) {
+            //     // remove a dishonest attester
+            //     address dishonestAttester = dishonestAttesters[0];                
+            //     vm.prank(dishonestAttester);
+            //     staking.unstake(address(mcr), address(moveToken), attesterStake);                
+            //     dishonestAttesters[0] = dishonestAttesters[dishonestAttesters.length - 1];
+            //     dishonestAttesters.pop();
+            //     console.log("Removed dishonest attester dishonest attesters list and unstaked. New count:", dishonestAttesters.length);
+            // }
 
-            if (i % 8 == 7) {
-                // remove an honest signer
-                address honestSigner = honestSigners[0];
-                console.log("\nRemoving honest signer:", honestSigner);
-                
-                vm.prank(honestSigner);
-                staking.unstake(address(mcr), address(moveToken), 33);
-                console.log("Unstaked 33 tokens from honest signer");
-                
-                honestSigners[0] = honestSigners[honestSigners.length - 1];
-                honestSigners.pop();
-                console.log("Removed signer from honest signers. New count:", honestSigners.length);
-            }
+            // // TODO explain here why we do the following
+            // if (i % 8 == 7) {
+            //     // remove an honest attester
+            //     address honestAttester = honestAttesters[0];
+            //     vm.prank(honestAttester);
+            //     staking.unstake(address(mcr), address(moveToken), attesterStake);
+            //     honestAttesters[0] = honestAttesters[honestAttesters.length - 1];
+            //     honestAttesters.pop();
+            //     console.log("Removed attester from honest attesters list and unstaked. New count:", honestAttesters.length);
+            // }
 
-            blockTime += 5;
-            vm.warp(blockTime);
-            console.log("\nWarped blockTime forward by 5 to:", blockTime);
+            assert(logStakeInfo(honestAttesters, dishonestAttesters));
+
+            // L1BlockTime += 5;
+            // vm.warp(L1BlockTime);
         }
         console.log("\n--- Test completed successfully ---");
+        console.log("Last postconfirmed superblock height:", mcr.getLastPostconfirmedSuperBlockHeight());
+        console.log("should be", changingAttesterSetEvents * commitmentHeights);
+        assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), changingAttesterSetEvents * commitmentHeights);
+        console.log("L1BlockTime:", L1BlockTime);
+        console.log("should be", changingAttesterSetEvents * (commitmentHeights + 5) + L1BlockTimeStart);
+        assertEq(L1BlockTime, changingAttesterSetEvents * (commitmentHeights + 5) + L1BlockTimeStart);
     }
 
     function testForcedAttestation() public {
@@ -701,7 +763,6 @@ contract MCRTest is Test, IMCR {
         // Verify height hasn't changed (postconfirmation didn't succeed)
         assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 0);
     }
-
 
 
 }
