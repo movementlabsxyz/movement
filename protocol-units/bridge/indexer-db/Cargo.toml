@@ -10,12 +10,14 @@ publish = { workspace = true }
 rust-version = { workspace = true }
 
 [dependencies]
-diesel = { workspace = true, features = ["postgres", "numeric", "r2d2", "chrono"] }
-diesel_migrations = { workspace = true }
-bigdecimal = { workspace = true }
+# Use specific version different from Aptos core one.
+# Could use workplace version when Aptos core will have upgrade for a more recent version.
+diesel = { version = "2.2.4", features = ["postgres", "numeric", "r2d2", "chrono"] }
+diesel_migrations = { version = "2.2.0" }
+bigdecimal = "0.4.0"
+
 serde = { workspace = true }
 bridge-util = { workspace = true }
-bridge-config = { workspace = true }
 anyhow = { workspace = true }
 hex = { workspace = true }
 chrono = { workspace = true }

@@ -16,10 +16,6 @@ where
 	R: Release,
 {
 	pub wrapped_release: R,
-	pub repo: &'static str,
-	pub commit_hash: &'static str,
-	pub bytecode_version: u32,
-	pub framework_local_dir: Option<PathBuf>,
 	pub gas_schedule: GasScheduleV2,
 }
 
@@ -27,22 +23,8 @@ impl<R> GasUpgrade<R>
 where
 	R: Release,
 {
-	pub fn new(
-		wrapped_release: R,
-		repo: &'static str,
-		commit_hash: &'static str,
-		bytecode_version: u32,
-		framework_local_dir: Option<PathBuf>,
-		gas_schedule: GasScheduleV2,
-	) -> Self {
-		Self {
-			wrapped_release,
-			repo,
-			commit_hash,
-			bytecode_version,
-			framework_local_dir,
-			gas_schedule,
-		}
+	pub fn new(wrapped_release: R, gas_schedule: GasScheduleV2) -> Self {
+		Self { wrapped_release, gas_schedule }
 	}
 
 	/// Generates the bytecode for the gas upgrade proposal.
@@ -78,12 +60,7 @@ where
 			println!("file: {:?}", file.path());
 		}
 
-		let compiler = Compiler::new(
-			self.repo,
-			self.commit_hash,
-			self.bytecode_version,
-			self.framework_local_dir.clone(),
-		);
+		let compiler = Compiler::movement();
 
 		let bytecode = compiler
 			.compile_in_temp_dir_to_bytecode("gas_upgrade", &gas_script_path)
@@ -225,14 +202,7 @@ macro_rules! generate_gas_upgrade_module {
 					let gas_schedule = $gas_stanza;
 
 					Self {
-						with_gas_upgrade: GasUpgrade::new(
-							super::$struct_name::new(),
-							"null",
-							"null",
-							6,
-							Some(aptos_framework_path()), // just use the path to the framework for the gas upgrade
-							gas_schedule,
-						),
+						with_gas_upgrade: GasUpgrade::new(super::$struct_name::new(), gas_schedule),
 					}
 				}
 			}
