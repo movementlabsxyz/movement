@@ -2,7 +2,6 @@
 pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
-import "forge-std/console.sol";
 import "../../src/staking/MovementStaking.sol";
 import "../../src/token/MOVETokenDev.sol";
 import "../../src/settlement/MCR.sol";
@@ -21,18 +20,6 @@ contract MCRTest is Test, IMCR {
     string public stakingSignature = "initialize(address)";
     string public mcrSignature = "initialize(address,uint256,uint256,uint256,address[],uint256)";
     uint256 epochDuration = 10 seconds;
-
-    // function toHexString(bytes memory data) public pure returns (string memory) {
-    //     bytes memory alphabet = "0123456789abcdef";
-    //     bytes memory str = new bytes(2 + data.length * 2);
-    //     str[0] = "0";
-    //     str[1] = "x";
-    //     for (uint i = 0; i < data.length; i++) {
-    //         str[2+i*2] = alphabet[uint8(data[i] >> 4)];
-    //         str[2+i*2+1] = alphabet[uint8(data[i] & 0x0f)];
-    //     }
-    //     return string(str);
-    // }
 
     // ----------------------------------------------------------------
     // -------- Helper functions --------------------------------------
@@ -217,9 +204,7 @@ contract MCRTest is Test, IMCR {
 
         // check that alice is the current acceptor
         // TODO: getCurrentAcceptor does not yet work.
-        // console.log("Current acceptor is:", mcr.getCurrentAcceptor());
         // assertEq(mcr.getCurrentAcceptor(), alice);
-        // console.log("Verified Alice is current acceptor");
         console.log("WARNING: Test not correct yet, as getCurrentAcceptor does not work");
 
         // TODO : here we should check that the reward goes only to alice
@@ -427,24 +412,14 @@ contract MCRTest is Test, IMCR {
         for (uint256 i = 0; i < changingAttesterSetEvents; i++) {
             for (uint256 j = 0; j < commitmentHeights; j++) {
                 uint256 superBlockHeightNow = i * commitmentHeights + j + 1;
-                console.log("Assigned epoch for superblock height  ", superBlockHeightNow, "is", mcr.getSuperBlockHeightAssignedEpoch(superBlockHeightNow));
-                console.log("Assigned epoch for superblock height+1", superBlockHeightNow + 1, "is", mcr.getSuperBlockHeightAssignedEpoch(superBlockHeightNow + 1 ));
 
-                console.log("\nProcessing block height:", superBlockHeightNow);
-                
                 L1BlockTime += epochDuration;
                 vm.warp(L1BlockTime);
-                console.log("2: current epoch, postconfirmed superblock height and L1BlockTime:", mcr.getAcceptingEpoch(), mcr.getLastPostconfirmedSuperBlockHeight(), L1BlockTime);
-                console.log("Assigned epoch for superblock height", superBlockHeightNow, "is", mcr.getSuperBlockHeightAssignedEpoch(superBlockHeightNow));
                 // alice triggers rollover
                 vm.prank(alice);
                 mcr.postconfirmSuperBlocks();
-                console.log("Alice attempts postconfirm, which triggers rollover");
-                console.log("3: accepting epoch, postconfirmed superblock height and L1BlockTime:", mcr.getAcceptingEpoch(), mcr.getLastPostconfirmedSuperBlockHeight(), L1BlockTime);
 
                 // get the assigned epoch for the superblock height
-                console.log("Assigned epoch for superblock height", superBlockHeightNow, "is", mcr.getSuperBlockHeightAssignedEpoch(superBlockHeightNow));
-
                 // commit roughly half of dishones attesters 
                 MCRStorage.SuperBlockCommitment memory dishonestCommitment = MCRStorage.SuperBlockCommitment({
                     height: superBlockHeightNow,
@@ -472,13 +447,8 @@ contract MCRTest is Test, IMCR {
                 // for (uint256 k = dishonestAttesters.length / 2; k < dishonestAttesters.length; k++) {
                 //     vm.prank(dishonestAttesters[k]);
                 //     mcr.submitSuperBlockCommitment(dishonestCommitment);
-                //     console.log("Remaining dishonest attester", k, "submitted commitment");
                 // }
 
-                console.log("4: current epoch, postconfirmed superblock height and L1BlockTime:", mcr.getAcceptingEpoch(), mcr.getLastPostconfirmedSuperBlockHeight(), L1BlockTime);
-                console.log("\n Run number i, j:", i, j);
-                console.log("Assigned epoch for superblock height  ", superBlockHeightNow, "is", mcr.getSuperBlockHeightAssignedEpoch(superBlockHeightNow));
-                console.log("Assigned epoch for superblock height+1", superBlockHeightNow + 1, "is", mcr.getSuperBlockHeightAssignedEpoch(superBlockHeightNow + 1 ));
 
                 assert(logStakeInfo(honestAttesters, dishonestAttesters));
 
@@ -486,28 +456,10 @@ contract MCRTest is Test, IMCR {
                 vm.prank(alice);
                 mcr.postconfirmSuperBlocks();
 
-                console.log("Alice postconfirmed superblocks");
-                console.log("5: accepting epoch, postconfirmed superblock height and L1BlockTime:", mcr.getAcceptingEpoch(), mcr.getLastPostconfirmedSuperBlockHeight(), L1BlockTime);
-                console.log("\n Run number i, j:", i, j);
-                console.log("Assigned epoch for superblock height  ", superBlockHeightNow, "is", mcr.getSuperBlockHeightAssignedEpoch(superBlockHeightNow));
-                console.log("Assigned epoch for superblock height+1", superBlockHeightNow + 1, "is", mcr.getSuperBlockHeightAssignedEpoch(superBlockHeightNow + 1 ));
-
-
                 MCRStorage.SuperBlockCommitment memory retrievedCommitment = mcr.getPostconfirmedCommitment(superBlockHeightNow);
-                console.log("Retrieved commitment:", commitmentToHexString(retrievedCommitment.commitment));
-                console.log("Honest commitment:", commitmentToHexString(honestCommitment.commitment));
                 assert(retrievedCommitment.commitment == honestCommitment.commitment);
-                console.log("Retrieved blockId:", commitmentToHexString(retrievedCommitment.blockId));
-                console.log("Honest blockId:", commitmentToHexString(honestCommitment.blockId));
                 assert(retrievedCommitment.blockId == honestCommitment.blockId);
-                console.log("Retrieved height:", retrievedCommitment.height);
-                console.log("Honest height:", honestCommitment.height);
                 assert(retrievedCommitment.height == superBlockHeightNow);
-
-                console.log("6: accepting epoch, postconfirmed superblock height and L1BlockTime:", mcr.getAcceptingEpoch(), mcr.getLastPostconfirmedSuperBlockHeight(), L1BlockTime);
-                console.log("\n Run number i, j:", i, j);
-                console.log("Assigned epoch for superblock height  ", superBlockHeightNow, "is", mcr.getSuperBlockHeightAssignedEpoch(superBlockHeightNow));
-                console.log("Assigned epoch for superblock height+1", superBlockHeightNow + 1, "is", mcr.getSuperBlockHeightAssignedEpoch(superBlockHeightNow + 1 ));
 
             }
 
@@ -528,10 +480,8 @@ contract MCRTest is Test, IMCR {
             staking.stake(address(mcr), moveToken, attesterStake);
 
 
-            console.log("Accepting epoch:", mcr.getAcceptingEpoch());
             // print staked attesters using getStakedAttestersForAcceptingEpoch
             address[] memory stakedAttesters = staking.getStakedAttestersForAcceptingEpoch(address(mcr));
-            console.log("Staked attesters:", stakedAttesters.length);
 
             L1BlockTime += epochDuration;
             vm.warp(L1BlockTime);
@@ -540,13 +490,9 @@ contract MCRTest is Test, IMCR {
             vm.prank(alice);  // alice has attesterStake+1 from setup
             mcr.postconfirmSuperBlocks();
             // print accepting epoch
-            console.log("New accepting epoch:", mcr.getAcceptingEpoch());
             address[] memory stakedAttestersAfter = staking.getStakedAttestersForAcceptingEpoch(address(mcr));
-            console.log("Staked attesters after rollover:", stakedAttestersAfter.length);
             // assert(stakedAttestersAfter.length == stakedAttesters.length + 1);
             // confirm that the new attester has stake
-            console.log("New attester has stake:", mcr.getStakeForAcceptingEpoch(address(moveToken), newAttester));
-            console.log("Superblockheight is", mcr.getLastPostconfirmedSuperBlockHeight());
             assert(mcr.getStakeForAcceptingEpoch(address(moveToken), newAttester) == attesterStake);
 
             // push every third signer to dishonest attesters. If pushed earlier we fail a super majority test.
@@ -566,7 +512,6 @@ contract MCRTest is Test, IMCR {
             //     staking.unstake(address(mcr), address(moveToken), attesterStake);                
             //     dishonestAttesters[0] = dishonestAttesters[dishonestAttesters.length - 1];
             //     dishonestAttesters.pop();
-            //     console.log("Removed dishonest attester dishonest attesters list and unstaked. New count:", dishonestAttesters.length);
             // }
 
             // // TODO explain here why we do the following
@@ -577,7 +522,6 @@ contract MCRTest is Test, IMCR {
             //     staking.unstake(address(mcr), address(moveToken), attesterStake);
             //     honestAttesters[0] = honestAttesters[honestAttesters.length - 1];
             //     honestAttesters.pop();
-            //     console.log("Removed attester from honest attesters list and unstaked. New count:", honestAttesters.length);
             // }
 
             assert(logStakeInfo(honestAttesters, dishonestAttesters));
@@ -585,12 +529,7 @@ contract MCRTest is Test, IMCR {
             // L1BlockTime += 5;
             // vm.warp(L1BlockTime);
         }
-        console.log("\n--- Test completed successfully ---");
-        console.log("Last postconfirmed superblock height:", mcr.getLastPostconfirmedSuperBlockHeight());
-        console.log("should be", changingAttesterSetEvents * commitmentHeights);
         assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), changingAttesterSetEvents * commitmentHeights);
-        console.log("L1BlockTime:", L1BlockTime);
-        console.log("should be", changingAttesterSetEvents * (commitmentHeights + 5) + L1BlockTimeStart);
         assertEq(L1BlockTime, changingAttesterSetEvents * (commitmentHeights + 5) + L1BlockTimeStart);
     }
 
