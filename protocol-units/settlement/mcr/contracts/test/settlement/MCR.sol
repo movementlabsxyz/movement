@@ -342,52 +342,90 @@ contract MCRTest is Test, IMCR {
 
     function testChangingValidatorSet() public {
         vm.pauseGasMetering();
+        console.log("Gas metering paused");
 
         uint256 blockTime = 300;
+        console.log("Initial blockTime set to:", blockTime);
 
         vm.warp(blockTime);
+        console.log("Warped to blockTime:", blockTime);
 
         // three well-funded signers
         address payable alice = payable(vm.addr(1));
+        console.log("Created alice address:", alice);
         staking.whitelistAddress(alice);
+        console.log("Whitelisted alice");
         moveToken.mint(alice, 100);
+        console.log("Minted 100 tokens to alice");
 
         address payable bob = payable(vm.addr(2));
+        console.log("Created bob address:", bob);
         staking.whitelistAddress(bob);
+        console.log("Whitelisted bob");
         moveToken.mint(bob, 100);
+        console.log("Minted 100 tokens to bob");
 
         address payable carol = payable(vm.addr(3));
+        console.log("Created carol address:", carol);
         staking.whitelistAddress(carol);
+        console.log("Whitelisted carol");
         moveToken.mint(carol, 100);
+        console.log("Minted 100 tokens to carol");
 
         // have them participate in the genesis ceremony
         vm.prank(alice);
         moveToken.approve(address(staking), 100);
+        console.log("Alice approved staking contract for 100 tokens");
+        
         vm.prank(alice);
         staking.stake(address(mcr), moveToken, 34);
+        console.log("Alice staked 34 tokens");
+
         vm.prank(bob);
         moveToken.approve(address(staking), 100);
+        console.log("Bob approved staking contract for 100 tokens");
+        
         vm.prank(bob);
         staking.stake(address(mcr), moveToken, 33);
+        console.log("Bob staked 33 tokens");
+
         vm.prank(carol);
         moveToken.approve(address(staking), 100);
+        console.log("Carol approved staking contract for 100 tokens");
+        
         vm.prank(carol);
         staking.stake(address(mcr), moveToken, 33);
+        console.log("Carol staked 33 tokens");
+
+        // end the genesis ceremony
+        mcr.acceptGenesisCeremony();
+        console.log("Genesis ceremony accepted");
 
         // honest signers
         honestSigners.push(alice);
         honestSigners.push(bob);
+        console.log("Added alice and bob to honest signers. Count:", honestSigners.length);
 
         // dishonest signers
         dishonestSigners.push(carol);
+        console.log("Added carol to dishonest signers. Count:", dishonestSigners.length);
 
         uint256 reorgs = 50;
+        console.log("Starting reorg loop. Total reorgs:", reorgs);
+        
         for (uint256 i = 0; i < reorgs; i++) {
+            console.log("\n--- Starting reorg iteration:", i, "---");
+            
             uint256 commitmentHeights = 10;
+            console.log("Processing", commitmentHeights, "commitments in this reorg");
+            
             for (uint256 j = 0; j < commitmentHeights; j++) {
                 uint256 blockHeight = i * 10 + j + 1;
+                console.log("\nProcessing block height:", blockHeight);
+                
                 blockTime += 1;
                 vm.warp(blockTime);
+                console.log("Warped to new blockTime:", blockTime);
 
                 // commit dishonestly
                 MCRStorage.SuperBlockCommitment memory dishonestCommitment = MCRStorage.SuperBlockCommitment({
@@ -395,9 +433,12 @@ contract MCRTest is Test, IMCR {
                     commitment: keccak256(abi.encodePacked(uint256(3), uint256(2), uint256(1))),
                     blockId: keccak256(abi.encodePacked(uint256(3), uint256(2), uint256(1)))
                 });
+                console.log("Created dishonest commitment for height:", blockHeight);
+
                 for (uint256 k = 0; k < dishonestSigners.length / 2; k++) {
                     vm.prank(dishonestSigners[k]);
                     mcr.submitSuperBlockCommitment(dishonestCommitment);
+                    console.log("Dishonest signer", k, "submitted commitment");
                 }
 
                 // commit honestly
@@ -406,59 +447,89 @@ contract MCRTest is Test, IMCR {
                     commitment: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3))),
                     blockId: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)))
                 });
+                console.log("Created honest commitment for height:", blockHeight);
+
                 for (uint256 k = 0; k < honestSigners.length; k++) {
                     vm.prank(honestSigners[k]);
                     mcr.submitSuperBlockCommitment(honestCommitment);
+                    console.log("Honest signer", k, "submitted commitment");
                 }
 
                 // commit dishonestly some more
                 for (uint256 k = dishonestSigners.length / 2; k < dishonestSigners.length; k++) {
                     vm.prank(dishonestSigners[k]);
                     mcr.submitSuperBlockCommitment(dishonestCommitment);
+                    console.log("Remaining dishonest signer", k, "submitted commitment");
                 }
 
                 MCRStorage.SuperBlockCommitment memory retrievedCommitment = mcr.getPostconfirmedCommitment(blockHeight);
+                console.log("Retrieved commitment for height:", blockHeight);
+                console.log("Verifying commitment matches honest commitment...");
                 assert(retrievedCommitment.commitment == honestCommitment.commitment);
                 assert(retrievedCommitment.blockId == honestCommitment.blockId);
                 assert(retrievedCommitment.height == blockHeight);
+                console.log("Commitment verification successful");
             }
 
             // add a new signer
             address payable newSigner = payable(vm.addr(4 + i));
+            console.log("\nAdding new signer with address:", newSigner);
+            
             staking.whitelistAddress(newSigner);
+            console.log("Whitelisted new signer");
+            
             moveToken.mint(newSigner, 100);
+            console.log("Minted 100 tokens to new signer");
+            
             vm.prank(newSigner);
             moveToken.approve(address(staking), 33);
+            console.log("New signer approved staking contract for 33 tokens");
+            
             vm.prank(newSigner);
             staking.stake(address(mcr), moveToken, 33);
+            console.log("New signer staked 33 tokens");
 
             if (i % 3 == 2) {
                 dishonestSigners.push(newSigner);
+                console.log("Added new signer to dishonest signers. New count:", dishonestSigners.length);
             } else {
                 honestSigners.push(newSigner);
+                console.log("Added new signer to honest signers. New count:", honestSigners.length);
             }
 
             if (i % 5 == 4) {
                 // remove a dishonest signer
                 address dishonestSigner = dishonestSigners[0];
+                console.log("\nRemoving dishonest signer:", dishonestSigner);
+                
                 vm.prank(dishonestSigner);
                 staking.unstake(address(mcr), address(moveToken), 33);
+                console.log("Unstaked 33 tokens from dishonest signer");
+                
                 dishonestSigners[0] = dishonestSigners[dishonestSigners.length - 1];
                 dishonestSigners.pop();
+                console.log("Removed signer from dishonest signers. New count:", dishonestSigners.length);
             }
 
             if (i % 8 == 7) {
                 // remove an honest signer
                 address honestSigner = honestSigners[0];
+                console.log("\nRemoving honest signer:", honestSigner);
+                
                 vm.prank(honestSigner);
                 staking.unstake(address(mcr), address(moveToken), 33);
+                console.log("Unstaked 33 tokens from honest signer");
+                
                 honestSigners[0] = honestSigners[honestSigners.length - 1];
                 honestSigners.pop();
+                console.log("Removed signer from honest signers. New count:", honestSigners.length);
             }
 
             blockTime += 5;
             vm.warp(blockTime);
+            console.log("\nWarped blockTime forward by 5 to:", blockTime);
         }
+        console.log("\n--- Test completed successfully ---");
     }
 
     function testForcedAttestation() public {
