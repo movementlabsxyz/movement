@@ -284,7 +284,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     // TODO: this will be improved, such that voluntary attesters can postconfirm but will not be rewarded before the liveness period has ended
     /// @notice If the current acceptor is not live, we should accept postconfirmations from any attester
     // TODO: this will be improved, such that the first voluntary attester to do sowill be rewarded
-    function postconfirmSuperBlocksWithAttester(address attester) internal {
+    function postconfirmSuperBlocksWithAttester(address /* attester */) internal {
         // if the current acceptor is live we should not accept postconfirmations from voluntary attesters
         // TODO: we probably have to apply this check somewhere else as (volunteer) attesters can only postconfirm and rollover an epoch in which they are staked.
         if (currentAcceptorIsLive()) {
@@ -338,9 +338,9 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         uint256 previousSuperBlockEpoch = superBlockHeightAssignedEpoch[superBlockHeight-1];
         if (superBlockEpoch < previousSuperBlockEpoch  )  {
             // if there is a commitment at the superBlock height, we need to set the assigned epoch to the previous epoch. 
-            address[] memory attesters = getStakedAttestersForAcceptingEpoch();
-            for (uint256 i = 0; i < attesters.length; i++) {
-                if (commitments[superBlockHeight][attesters[i]].height != 0) {
+            address[] memory stakedAttesters = getStakedAttestersForAcceptingEpoch();
+            for (uint256 i = 0; i < stakedAttesters.length; i++) {
+                if (commitments[superBlockHeight][stakedAttesters[i]].height != 0) {
                     superBlockHeightAssignedEpoch[superBlockHeight] = previousSuperBlockEpoch;
                     break;
                 }

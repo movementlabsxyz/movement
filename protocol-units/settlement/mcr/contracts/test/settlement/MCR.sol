@@ -9,6 +9,7 @@ import "../../src/settlement/MCRStorage.sol";
 import "../../src/settlement/interfaces/IMCR.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 
 contract MCRTest is Test, IMCR {
@@ -123,16 +124,12 @@ contract MCRTest is Test, IMCR {
     /// @return newStakedAttester Address of the newly setup signer
     function newStakedAttester(uint256 seed, uint256 stakeAmount) internal returns (address) {
         address payable newAttester = payable(vm.addr(seed));
-        
         staking.whitelistAddress(newAttester);
-        moveToken.mint(newAttester, stakeAmount * 3);  // Mint 3x for flexibility
-        
+        moveToken.mint(newAttester, stakeAmount * 3);  // Mint 3x for flexibility    
         vm.prank(newAttester);
         moveToken.approve(address(staking), stakeAmount);
-        
         vm.prank(newAttester);
-        staking.stake(address(mcr), moveToken, stakeAmount);
-        
+        staking.stake(address(mcr), moveToken, stakeAmount);        
         assert(mcr.getStakeForAcceptingEpoch(address(moveToken), newAttester) == stakeAmount);
 
         return newAttester;
@@ -151,8 +148,8 @@ contract MCRTest is Test, IMCR {
         return string(str);
     }
 
-    // Add this helper function
-    function logStakeInfo(address[] memory _honestAttesters, address[] memory _dishonestAttesters) internal returns (bool) {
+    // this function checks if the honest attesters have a supermajority of the stake
+    function logStakeInfo(address[] memory _honestAttesters, address[] memory _dishonestAttesters) internal view returns (bool) {
         // calculate the honest attesters stake
         uint256 honestStake = 0;
         for (uint256 k = 0; k < _honestAttesters.length; k++) {
@@ -166,8 +163,30 @@ contract MCRTest is Test, IMCR {
         }
         
         uint256 supermajorityStake = 2 * (honestStake + dishonestStake) / 3 + 1;
+        // create the string to print for the console log
+        // string memory logString = string.concat(
+        //     "have honest stake ( supermajority stake ) / dishonest stake / total stake = ",
+        //     Strings.toString(honestStake), "( ", Strings.toString(supermajorityStake), " ) / ",
+        //     Strings.toString(dishonestStake), " / ", Strings.toString(honestStake + dishonestStake)
+        // );
+        // console.log(logString);
 
         return honestStake >= supermajorityStake;
+    }
+
+    // remove an attester from the attesters array
+    function removeAttester(address attester, address[] storage attesters, uint256 attesterStake) internal {
+        vm.prank(attester);
+        staking.unstake(address(mcr), address(moveToken), attesterStake);
+        
+        // Find and remove attester from array using swap and pop
+        for (uint i = 0; i < attesters.length; i++) {
+            if (attesters[i] == attester) {
+                attesters[i] = attesters[attesters.length - 1];
+                attesters.pop();
+                break;
+            }
+        }
     }
 
     // ----------------------------------------------------------------
@@ -449,10 +468,6 @@ contract MCRTest is Test, IMCR {
                 //     mcr.submitSuperBlockCommitment(dishonestCommitment);
                 // }
 
-
-                assert(logStakeInfo(honestAttesters, dishonestAttesters));
-
-                // TODO here is an error. the postconfirmation should not set the assigned epoch of the next superblock height yet. 
                 vm.prank(alice);
                 mcr.postconfirmSuperBlocks();
 
@@ -467,9 +482,9 @@ contract MCRTest is Test, IMCR {
             uint256 dishonestStakedAttesterLength = dishonestAttesters.length;
 
             // TODO replace the below with this function call
-            // address newAttester = newStakedAttester(4 + 1, attesterStake); // TODO why 4 not 3?
+            // address newAttester = newStakedAttester(4 + i, attesterStake); // TODO why 4 not 3?
 
-            // add a new signer
+            // add a new attester
             address payable newAttester = payable(vm.addr(4 + i));
             
             staking.whitelistAddress(newAttester);
@@ -479,19 +494,12 @@ contract MCRTest is Test, IMCR {
             vm.prank(newAttester);
             staking.stake(address(mcr), moveToken, attesterStake);
 
-
-            // print staked attesters using getStakedAttestersForAcceptingEpoch
-            address[] memory stakedAttesters = staking.getStakedAttestersForAcceptingEpoch(address(mcr));
-
             L1BlockTime += epochDuration;
             vm.warp(L1BlockTime);
 
             // Force rollover by having alice (who has majority stake) call postconfirmSuperBlocks
             vm.prank(alice);  // alice has attesterStake+1 from setup
             mcr.postconfirmSuperBlocks();
-            // print accepting epoch
-            address[] memory stakedAttestersAfter = staking.getStakedAttestersForAcceptingEpoch(address(mcr));
-            // assert(stakedAttestersAfter.length == stakedAttesters.length + 1);
             // confirm that the new attester has stake
             assert(mcr.getStakeForAcceptingEpoch(address(moveToken), newAttester) == attesterStake);
 
@@ -504,33 +512,26 @@ contract MCRTest is Test, IMCR {
                 assert(honestAttesters.length == honestStakedAttesterLength + 1);
             }
 
-            // // TODO explain here why we do the following
-            // if (i % 5 == 4) {
-            //     // remove a dishonest attester
-            //     address dishonestAttester = dishonestAttesters[0];                
-            //     vm.prank(dishonestAttester);
-            //     staking.unstake(address(mcr), address(moveToken), attesterStake);                
-            //     dishonestAttesters[0] = dishonestAttesters[dishonestAttesters.length - 1];
-            //     dishonestAttesters.pop();
-            // }
-
-            // // TODO explain here why we do the following
-            // if (i % 8 == 7) {
-            //     // remove an honest attester
-            //     address honestAttester = honestAttesters[0];
-            //     vm.prank(honestAttester);
-            //     staking.unstake(address(mcr), address(moveToken), attesterStake);
-            //     honestAttesters[0] = honestAttesters[honestAttesters.length - 1];
-            //     honestAttesters.pop();
-            // }
+            // TODO explain here why we do the following
+            if (i % 5 == 4) {
+                // removeAttester(dishonestAttesters[0], dishonestAttesters, attesterStake);
+            }
+            // TODO only having this but not the above is a more complex interesting scenario that would fail the line as we rollover in the postconfirmation:  
+            // assert(retrievedCommitment.commitment == honestCommitment.commitment); (above)
+            // this is interesting but it requires moving this upwards in the code and maybe not applying both
+            if (i % 8 == 7) {
+                // remove an honest attester
+                // removeAttester(honestAttesters[0], honestAttesters, attesterStake);
+            }
 
             assert(logStakeInfo(honestAttesters, dishonestAttesters));
 
             // L1BlockTime += 5;
             // vm.warp(L1BlockTime);
+            // assert the time here
+            assertEq(L1BlockTime, L1BlockTimeStart + (i+1) * (commitmentHeights + 1) * epochDuration);
         }
         assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), changingAttesterSetEvents * commitmentHeights);
-        assertEq(L1BlockTime, changingAttesterSetEvents * (commitmentHeights + 5) + L1BlockTimeStart);
     }
 
     function testForcedAttestation() public {
