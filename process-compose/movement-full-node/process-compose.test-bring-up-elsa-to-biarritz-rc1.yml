@@ -8,7 +8,7 @@ processes:
 
   test-migrate-elsa-to-biarritz-rc1:
     command: |
-      cargo run --bin aptos-framework-biarritz-rc1-release-tool
+      cargo run --bin movement-full-node admin bring-up elsa-to-biarritz-rc1 upgrade 0x1 0x2 0x3
     depends_on:
       movement-full-node:
         condition: process_healthy

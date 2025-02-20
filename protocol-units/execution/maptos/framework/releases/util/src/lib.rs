@@ -473,7 +473,7 @@ fn build_release_package_transaction_payload(
 			)
 		})?;
 
-	let compiler = compiler::Compiler::head();
+	let compiler = compiler::Compiler::movement();
 	let code =
 		compiler
 			.compile_in_temp_dir_to_bytecode(name, script_path.as_path())

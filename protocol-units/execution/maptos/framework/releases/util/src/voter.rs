@@ -58,12 +58,7 @@ impl Voter {
 			println!("file: {:?}", file.path());
 		}
 
-		let compiler = Compiler::new(
-			self.repo,
-			self.commit_hash,
-			self.bytecode_version,
-			self.framework_local_dir.clone(),
-		);
+		let compiler = Compiler::movement();
 
 		let bytecode = compiler
 			.compile_in_temp_dir_to_bytecode("proposal", &gas_script_path)

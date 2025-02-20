@@ -1,7 +1,6 @@
 use crate::migrations::run_migrations;
 use crate::models::*;
 use crate::schema::*;
-use bridge_config::Config;
 use bridge_util::chains::bridge_contracts::BridgeContractEvent;
 use bridge_util::types::BridgeTransferId;
 use bridge_util::TransferActionType;
@@ -23,8 +22,8 @@ impl Client {
 		Self { conn }
 	}
 
-	pub fn from_bridge_config(config: &Config) -> Result<Self, anyhow::Error> {
-		let conn = PgConnection::establish(&config.indexer.indexer_url)
+	pub fn build_from_db_url(db_url: &str) -> Result<Self, anyhow::Error> {
+		let conn = PgConnection::establish(&db_url)
 			.map_err(|e| anyhow::anyhow!("Failed to connect to postgresql instance: {}", e))?;
 		Ok(Self::new(conn))
 	}
