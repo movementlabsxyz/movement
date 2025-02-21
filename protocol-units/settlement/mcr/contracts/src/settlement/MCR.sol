@@ -182,13 +182,6 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         return getTotalStake(getAcceptingEpoch());
     }
 
-    // gets the total stake for the accepting epoch
-    function getCustodianStakeForAcceptingEpoch(
-        address custodian
-    ) public view returns (uint256) {
-        return getCustodianStake(getAcceptingEpoch(), custodian);
-    }
-
     function getValidatorCommitmentAtSuperBlockHeight(
         uint256 height,
         address attester
