@@ -22,15 +22,13 @@ For a given block height, MCR selects the earliest block commitment that matches
 
 ## Proof of Correctness
 
-> To proof: For a given block height, MCR selects the earliest block commitment that matches the supermajority of stake-
-
 The stake is fixed for an epoch, so only commitments for a specific block height are considered, allowing for a straightforward proof.
 
-**Commitment**. Let $v: C \to V$ map a commitment to its validator, where $C$ represent all possible commitments and $V$ is the set of validators. Since commitments are ordered by L1 in the L1-blocks, let $C'$ be an ordered subset of $C$ with $k$ elements (i.e. up to the $k$-th commitment). 
+**Commitment**. Let $v: C \to V$ map a commitment to its validator, where $C$ represent all possible commitments and $V$ is the set of validators. Since commitments are ordered by L1 in the L1-blocks, let $C'$ be an ordered subset of $C$ with $k$ elements (i.e. up to the $k$-th commitment).
 
 **Stake**. Let $s: V \to \mathbb{N}$ map a validator to their stake and $S(C',i) = \sum_{j = 1}^{i} s(v(c_j))$ the cumulative stake up to the $i$-th commitment. $S$ is non-decreasing as $S(C',i) = S(C',i - 1) + s(v(c_i))$.
 
-We require that 
+We require that
 
 $$
 S(C',i) > \frac{2}{3} TotalStake = \frac{2}{3} \times \sum_{u \in V} s(u),

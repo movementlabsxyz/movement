@@ -13,10 +13,16 @@ contract MovementStakingStorage {
     // the token used for staking
     IERC20 public token;
 
+    /// @dev the duration of each epoch in seconds. 
+    /// The stakes are organized into epochs, and where epochs are measured in L1-block timestamps.
     mapping(address domain => uint256 epochDuration) public epochDurationByDomain;
+    /// @dev the current epoch for each domain. Commitments are submitted only for the current epoch 
+    /// and validators may not submit commitments to epochs that are far in the past. 
+    /// Hence, we need to treat each epoch separately.
     mapping(address domain => uint256 currentAcceptingEpoch) public currentAcceptingEpochByDomain;
-    mapping(address domain => EnumerableSet.AddressSet attester) internal attestersByDomain;
-    mapping(address domain => EnumerableSet.AddressSet custodian) internal custodiansByDomain;
+    // Track registered attesters for each domain
+    mapping(address domain => EnumerableSet.AddressSet attester) internal registeredAttestersByDomain;
+    mapping(address domain => EnumerableSet.AddressSet custodian) internal registeredCustodiansByDomain;
 
     // preserved records of stake by address per epoch
     /// @dev this is a mapping of domain => epoch => custodian => attester => stake
