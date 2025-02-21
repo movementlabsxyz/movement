@@ -272,9 +272,10 @@ contract MCRTest is Test, IMCR {
     }
 
 
-    function testDishonestAttester() public {
+    /// @notice Test that an attester cannot submit multiple commitments for the same height
+    function testAttesterCannotCommitTwice() public {
         // three well-funded signers
-        (address alice, address bob, address carol) = setupGenesisWithThreeAttesters(34, 33, 33);
+        (, , address carol) = setupGenesisWithThreeAttesters(1, 1, 1);
 
         // carol will be dishonest
         vm.prank(carol);
@@ -284,22 +285,58 @@ contract MCRTest is Test, IMCR {
         vm.prank(carol);
         vm.expectRevert(AttesterAlreadyCommitted.selector);
         mcr.submitSuperBlockCommitment(newDishonestCommitment(1));
+    }
 
-        // make a block commitment
+    /// @notice Test that honest supermajority succeeds despite dishonest attesters
+    function testHonestSupermajoritySucceeds() public {
+        // Setup with alice+bob having supermajority (67%)
+        (address alice, address bob, address carol) = setupGenesisWithThreeAttesters(2, 1, 1);
+
+        // Dishonest carol submits first
+        vm.prank(carol);
+        mcr.submitSuperBlockCommitment(newDishonestCommitment(1));
+
+        // Honest majority submits
+        vm.prank(alice);
+        mcr.submitSuperBlockCommitment(newHonestCommitment(1));
+        vm.prank(bob); 
+        mcr.submitSuperBlockCommitment(newHonestCommitment(1));
+
+        // Trigger postconfirmation with majority
+        vm.prank(alice);
+        mcr.postconfirmSuperBlocks();
+
+        // Verify honest commitment was postconfirmed
+        MCRStorage.SuperBlockCommitment memory retrievedCommitment = mcr.getPostconfirmedCommitment(1);
+        assertEq(retrievedCommitment.commitment, honestCommitmentTemplate);
+        assertEq(retrievedCommitment.blockId, honestBlockIdTemplate);
+        assertEq(retrievedCommitment.height, 1);
+    }
+
+
+    /// @notice Test that no postconfirmation happens when stakes are equal
+    function testNoPostconfirmationWithEqualStakes() public {
+        // Setup with equal stakes (no possible supermajority)
+        (address alice, address bob, address carol) = setupGenesisWithThreeAttesters(1, 1, 1);
+
+        // Honnest commitments
         vm.prank(alice);
         mcr.submitSuperBlockCommitment(newHonestCommitment(1));
         vm.prank(bob);
         mcr.submitSuperBlockCommitment(newHonestCommitment(1));
+        // Dishonest commitment
+        vm.prank(carol);
+        mcr.submitSuperBlockCommitment(newDishonestCommitment(1));
 
-        // Trigger postconfirmation
         vm.prank(alice);
         mcr.postconfirmSuperBlocks();
-
+        assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 0, "Height should not advance - Alice");
+        // Verify no commitment was postconfirmed
         MCRStorage.SuperBlockCommitment memory retrievedCommitment = mcr.getPostconfirmedCommitment(1);
-        assert(retrievedCommitment.commitment == honestCommitmentTemplate);
-        assert(retrievedCommitment.blockId == honestBlockIdTemplate);
-        assert(retrievedCommitment.height == 1);
+        assertEq(retrievedCommitment.height, 0, "No commitment should be postconfirmed");
+        assertEq(retrievedCommitment.commitment, bytes32(0), "No commitment should be postconfirmed");
     }
+
 
     function testRollsOverHandlingDishonesty() public {
         vm.warp(300 seconds);
@@ -646,6 +683,5 @@ contract MCRTest is Test, IMCR {
         // Verify height hasn't changed (postconfirmation didn't succeed)
         assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 0);
     }
-
 
 }
