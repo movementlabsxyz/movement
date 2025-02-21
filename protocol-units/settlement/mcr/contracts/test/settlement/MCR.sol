@@ -21,7 +21,11 @@ contract MCRTest is Test, IMCR {
     string public stakingSignature = "initialize(address)";
     string public mcrSignature = "initialize(address,uint256,uint256,uint256,address[],uint256)";
     uint256 epochDuration = 10 seconds;
-
+    bytes32 honestCommitmentTemplate = keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)));
+    bytes32 honestBlockIdTemplate = keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)));
+    bytes32 dishonestCommitmentTemplate = keccak256(abi.encodePacked(uint256(3), uint256(2), uint256(1)));
+    bytes32 dishonestBlockIdTemplate = keccak256(abi.encodePacked(uint256(3), uint256(2), uint256(1)));
+    
     // ----------------------------------------------------------------
     // -------- Helper functions --------------------------------------
     // ----------------------------------------------------------------
@@ -213,8 +217,8 @@ contract MCRTest is Test, IMCR {
         // make superBlock commitments
         MCRStorage.SuperBlockCommitment memory initCommitment = MCRStorage.SuperBlockCommitment({
             height: 1,
-            commitment: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3))),
-            blockId: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)))
+            commitment: honestCommitmentTemplate,
+            blockId: honestBlockIdTemplate
         });
         vm.prank(alice);
         mcr.submitSuperBlockCommitment(initCommitment);
@@ -242,8 +246,8 @@ contract MCRTest is Test, IMCR {
         // make second superblock commitment
         MCRStorage.SuperBlockCommitment memory secondCommitment = MCRStorage.SuperBlockCommitment({
             height: 2,
-            commitment: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3))),
-            blockId: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)))
+            commitment: honestCommitmentTemplate,
+            blockId: honestBlockIdTemplate
         });
         vm.prank(alice);
         mcr.submitSuperBlockCommitment(secondCommitment);
@@ -259,38 +263,13 @@ contract MCRTest is Test, IMCR {
 
     function testDishonestAttester() public {
         // three well-funded signers
-        address payable alice = payable(vm.addr(1));
-        staking.whitelistAddress(alice);
-        moveToken.mint(alice, 100);
-        address payable bob = payable(vm.addr(2));
-        moveToken.mint(bob, 100);
-        staking.whitelistAddress(bob);
-        address payable carol = payable(vm.addr(3));
-        moveToken.mint(carol, 100);
-        staking.whitelistAddress(carol);
-
-        // have them participate in the genesis ceremony
-        vm.prank(alice);
-        moveToken.approve(address(staking), 100);
-        vm.prank(alice);
-        staking.stake(address(mcr), moveToken, 34);
-        vm.prank(bob);
-        moveToken.approve(address(staking), 100);
-        vm.prank(bob);
-        staking.stake(address(mcr), moveToken, 33);
-        vm.prank(carol);
-        moveToken.approve(address(staking), 100);
-        vm.prank(carol);
-        staking.stake(address(mcr), moveToken, 33);
-
-        // end the genesis ceremony
-        mcr.acceptGenesisCeremony();
+        (address alice, address bob, address carol) = setupGenesisWithThreeAttesters(34, 33, 33);
 
         // carol will be dishonest
         MCRStorage.SuperBlockCommitment memory dishonestCommitment = MCRStorage.SuperBlockCommitment({
             height: 1,
-            commitment: keccak256(abi.encodePacked(uint256(3), uint256(2), uint256(1))),
-            blockId: keccak256(abi.encodePacked(uint256(3), uint256(2), uint256(1)))
+            commitment: dishonestCommitmentTemplate,
+            blockId: dishonestBlockIdTemplate
         });
         vm.prank(carol);
         mcr.submitSuperBlockCommitment(dishonestCommitment);
@@ -303,8 +282,8 @@ contract MCRTest is Test, IMCR {
         // make a block commitment
         MCRStorage.SuperBlockCommitment memory initCommitment = MCRStorage.SuperBlockCommitment({
             height: 1,
-            commitment: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3))),
-            blockId: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)))
+            commitment: honestCommitmentTemplate,
+            blockId: honestBlockIdTemplate
         });
         vm.prank(alice);
         mcr.submitSuperBlockCommitment(initCommitment);
@@ -352,8 +331,8 @@ contract MCRTest is Test, IMCR {
         // carol will be dishonest
         MCRStorage.SuperBlockCommitment memory dishonestCommitment = MCRStorage.SuperBlockCommitment({
             height: 1,
-            commitment: keccak256(abi.encodePacked(uint256(3), uint256(2), uint256(1))),
-            blockId: keccak256(abi.encodePacked(uint256(3), uint256(2), uint256(1)))
+            commitment: dishonestCommitmentTemplate,
+            blockId: dishonestBlockIdTemplate
         });
         vm.prank(carol);
         mcr.submitSuperBlockCommitment(dishonestCommitment);
@@ -366,8 +345,8 @@ contract MCRTest is Test, IMCR {
         // make a block commitment
         MCRStorage.SuperBlockCommitment memory initCommitment = MCRStorage.SuperBlockCommitment({
             height: 1,
-            commitment: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3))),
-            blockId: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)))
+            commitment: honestCommitmentTemplate,
+            blockId: honestBlockIdTemplate
         });
         vm.prank(alice);
         mcr.submitSuperBlockCommitment(initCommitment);
@@ -380,8 +359,8 @@ contract MCRTest is Test, IMCR {
         // make a block commitment
         MCRStorage.SuperBlockCommitment memory bc2 = MCRStorage.SuperBlockCommitment({
             height: 2,
-            commitment: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3))),
-            blockId: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)))
+            commitment: honestCommitmentTemplate,
+            blockId: honestBlockIdTemplate
         });
         vm.prank(alice);
         mcr.submitSuperBlockCommitment(bc2);
@@ -442,8 +421,8 @@ contract MCRTest is Test, IMCR {
                 // commit roughly half of dishones attesters 
                 MCRStorage.SuperBlockCommitment memory dishonestCommitment = MCRStorage.SuperBlockCommitment({
                     height: superBlockHeightNow,
-                    commitment: keccak256(abi.encodePacked(uint256(3), uint256(2), uint256(1))),
-                    blockId: keccak256(abi.encodePacked(uint256(3), uint256(2), uint256(1)))
+                    commitment: dishonestCommitmentTemplate,
+                    blockId: dishonestBlockIdTemplate
                 });
                 for (uint256 k = 0; k < dishonestAttesters.length / 2; k++) {
                     vm.prank(dishonestAttesters[k]);
@@ -453,8 +432,8 @@ contract MCRTest is Test, IMCR {
                 // commit honestly
                 MCRStorage.SuperBlockCommitment memory honestCommitment = MCRStorage.SuperBlockCommitment({
                     height: superBlockHeightNow,
-                    commitment: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3))),
-                    blockId: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)))
+                    commitment: honestCommitmentTemplate,
+                    blockId: honestBlockIdTemplate
                 });
                 for (uint256 k = 0; k < honestAttesters.length; k++) {
                     vm.prank(honestAttesters[k]);
@@ -543,8 +522,8 @@ contract MCRTest is Test, IMCR {
         // default signer should be able to force commitment
         MCRStorage.SuperBlockCommitment memory forcedCommitment = MCRStorage.SuperBlockCommitment({
             height: 1,
-            commitment: keccak256(abi.encodePacked(uint256(3), uint256(2), uint256(1))),
-            blockId: keccak256(abi.encodePacked(uint256(3), uint256(2), uint256(1)))
+            commitment: dishonestCommitmentTemplate,
+            blockId: dishonestBlockIdTemplate
         });
         mcr.forceLatestCommitment(forcedCommitment);
 
@@ -560,8 +539,8 @@ contract MCRTest is Test, IMCR {
         // try to force a different commitment with unauthorized user
         MCRStorage.SuperBlockCommitment memory badForcedCommitment = MCRStorage.SuperBlockCommitment({
             height: 1,
-            commitment: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3))),
-            blockId: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)))
+            commitment: honestCommitmentTemplate,
+            blockId: honestBlockIdTemplate
         });
         
         // Alice should not have COMMITMENT_ADMIN role
@@ -629,8 +608,8 @@ contract MCRTest is Test, IMCR {
         
         // Create commitment for height 1
         uint256 targetHeight = 1;
-        bytes32 commitmentHash = keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)));
-        bytes32 blockIdHash = keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)));
+        bytes32 commitmentHash = honestCommitmentTemplate;
+        bytes32 blockIdHash = honestBlockIdTemplate;
         
         MCRStorage.SuperBlockCommitment memory commitment = MCRStorage.SuperBlockCommitment({
             height: targetHeight,
@@ -671,8 +650,8 @@ contract MCRTest is Test, IMCR {
         
         // Create commitment for height 1
         uint256 targetHeight = 1;
-        bytes32 commitmentHash = keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)));
-        bytes32 blockIdHash = keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)));
+        bytes32 commitmentHash = honestCommitmentTemplate;
+        bytes32 blockIdHash = honestBlockIdTemplate;
         
         MCRStorage.SuperBlockCommitment memory commitment = MCRStorage.SuperBlockCommitment({
             height: targetHeight,
