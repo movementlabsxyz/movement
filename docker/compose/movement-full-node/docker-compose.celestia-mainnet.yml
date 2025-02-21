@@ -42,6 +42,5 @@ services:
       setup:
         condition: service_healthy
     healthcheck:
-      # FIXME: check the node is truly up on port 26658
-      test: [ "CMD-SHELL", "echo 'health check'" ]
+      test: "celestia node info"
     restart: on-failure:3
