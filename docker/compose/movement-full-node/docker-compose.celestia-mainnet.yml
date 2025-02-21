@@ -28,6 +28,7 @@ services:
       celestia light start
         --core.ip rpc.celestia.pops.one
         --p2p.network celestia
+        --node.store /.movement/celestia/movement/.celestia-light
         --keyring.backend test
         --keyring.keyname movement_celestia_light
         --log.level WARN
@@ -35,7 +36,7 @@ services:
       - NODE_TYPE=light
       - P2P_NETWORK=celestia
     volumes:
-      - ${HOME}/.celestia-light/keys:/home/celestia/keys
+      - ${DOT_MOVEMENT_PATH}/celestia:/.movement/celestia
     ports:
       - 26658:26658
     depends_on:
