@@ -6268,6 +6268,7 @@ version = "0.0.2"
 dependencies = [
  "anyhow",
  "futures",
+ "itertools 0.13.0",
  "tokio",
  "tracing",
 ]
@@ -11696,7 +11697,7 @@ name = "movement-algs"
 version = "0.0.2"
 dependencies = [
  "anyhow",
- "itertools 0.12.1",
+ "itertools 0.13.0",
  "movement-types",
  "tokio",
 ]
@@ -11783,7 +11784,7 @@ dependencies = [
  "dot-movement",
  "ed25519-dalek 2.1.1",
  "futures",
- "itertools 0.12.1",
+ "itertools 0.13.0",
  "maptos-execution-util",
  "mcr-settlement-client",
  "movement-config",

@@ -1,10 +1,15 @@
 use crate::common;
 use anyhow::Context;
 use celestia_types::nmt::Namespace;
+use commander::run_command;
 use dot_movement::DotMovement;
 use movement_da_util::config::Config;
 use rand::Rng;
 use tracing::info;
+
+use std::ffi::OsStr;
+use std::iter;
+use std::path::PathBuf;
 
 fn random_10_bytes() -> [u8; 10] {
 	let mut rng = rand::thread_rng();
@@ -19,16 +24,16 @@ pub fn random_namespace() -> Namespace {
 	Namespace::new_v0(&random_10_bytes()).unwrap()
 }
 
+fn celestia_chain_dir(dot_movement: &DotMovement, config: &Config) -> PathBuf {
+	dot_movement.get_path().join("celestia").join(&config.appd.celestia_chain_id)
+}
+
 pub fn initialize_celestia_config(
 	dot_movement: DotMovement,
 	mut config: Config,
 ) -> Result<Config, anyhow::Error> {
-	// use the dot movement path to set up the celestia app and node paths
-	let dot_movement_path = dot_movement.get_path();
-
-	let celestia_chain_id = if config.celestia_force_new_chain {
+	if config.celestia_force_new_chain {
 		// if forced just replace the chain id with a random one
-
 		config.appd.celestia_chain_id = random_chain_id();
 		config.appd.celestia_namespace = random_namespace();
 		config.appd.celestia_chain_id.clone()
@@ -39,9 +44,7 @@ pub fn initialize_celestia_config(
 
 	// update the app path with the chain id
 	config.appd.celestia_path.replace(
-		dot_movement_path
-			.join("celestia")
-			.join(celestia_chain_id.clone())
+		celestia_chain_dir(&dot_movement, &config)
 			.join(".celestia-app")
 			.to_str()
 			.ok_or(anyhow::anyhow!("Failed to convert path to string."))?
@@ -50,9 +53,7 @@ pub fn initialize_celestia_config(
 
 	// update the node path with the chain id
 	config.bridge.celestia_bridge_path.replace(
-		dot_movement_path
-			.join("celestia")
-			.join(celestia_chain_id.clone())
+		celestia_chain_dir(&dot_movement, &config)
 			.join(".celestia-node")
 			.to_str()
 			.ok_or(anyhow::anyhow!("Failed to convert path to string."))?
@@ -60,6 +61,46 @@ pub fn initialize_celestia_config(
 	);
 
 	Ok(config)
+}
+
+pub async fn celestia_light_init(
+	dot_movement: &DotMovement,
+	config: &Config,
+	network: &str,
+) -> Result<(), anyhow::Error> {
+	let node_store_dir = celestia_chain_dir(dot_movement, config).join(".celestia-light");
+	// celestia light init --p2p.network <network> --keyring.backend test --node_store <dir>
+	run_command(
+		"celestia",
+		["light", "init", "--p2p.network", network, "--keyring.backend", "test", "--node.store"]
+			.iter()
+			.map(AsRef::<OsStr>::as_ref)
+			.chain(iter::once(node_store_dir.as_ref())),
+	)
+	.await?;
+
+	Ok(())
+}
+
+pub async fn get_auth_token(
+	dot_movement: &DotMovement,
+	config: &Config,
+	network: &str,
+) -> Result<String, anyhow::Error> {
+	let node_store_dir = celestia_chain_dir(dot_movement, config).join(".celestia-light");
+	// celestia light auth admin --p2p.network mocha --node.store <dir>
+	let auth_token = run_command(
+		"celestia",
+		["light", "auth", "admin", "--p2p.network", network, "--node.store"]
+			.iter()
+			.map(AsRef::<OsStr>::as_ref)
+			.chain(iter::once(node_store_dir.as_ref())),
+	)
+	.await?
+	.trim()
+	.to_string();
+
+	Ok(auth_token)
 }
 
 pub async fn make_dirs(
