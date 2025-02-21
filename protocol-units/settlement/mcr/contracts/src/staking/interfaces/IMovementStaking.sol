@@ -13,13 +13,13 @@ interface IMovementStaking {
     function getAcceptingEpoch(address) external view returns (uint256);
     function getNextAcceptingEpoch(address) external view returns (uint256);
     function getNextPresentEpochWithException(address) external view returns (uint256);
-    function getStakeAtEpoch(
+    function getStake(
         address domain,
         uint256 epoch,
         address custodian,
         address attester
     ) external view returns (uint256);
-    function getAcceptingEpochStake(
+    function getStakeForAcceptingEpoch(
         address domain,
         address custodian,
         address attester
@@ -30,17 +30,17 @@ interface IMovementStaking {
         address custodian,
         address attester
     ) external view returns (uint256);
-    function getAcceptingEpochUnstake(
+    function getUnstakeForAcceptingEpoch(
         address domain,
         address custodian,
         address attester
     ) external view returns (uint256);
-    function getTotalStakeForEpoch(
+    function getCustodianStake(
         address domain,
         uint256 epoch,
         address custodian
     ) external view returns (uint256);
-    function getTotalStakeForAcceptingEpoch(
+    function getCustodianStakeForAcceptingEpoch(
         address domain,
         address custodian
     ) external view returns (uint256);

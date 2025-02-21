@@ -19,21 +19,24 @@ contract MovementStakingStorage {
     mapping(address domain => EnumerableSet.AddressSet custodian) internal custodiansByDomain;
 
     // preserved records of stake by address per epoch
+    /// @dev this is a mapping of domain => epoch => custodian => attester => stake
     mapping(address domain => 
         mapping(uint256 epoch => 
             mapping(address custodian => 
-                mapping(address attester => uint256 stake)))) public epochStakesByDomain;
+                mapping(address attester => uint256 stake)))) public stakesByDomainEpochCustodianAttester;
 
     // preserved records of unstake by address per epoch
+    /// @dev this is a mapping of domain => epoch => custodian => attester => unstake
     mapping(address domain => 
         mapping(uint256 epoch => 
             mapping(address custodian =>
-                mapping(address attester => uint256 stake))))  public epochUnstakesByDomain;
+                mapping(address attester => uint256 stake))))  public unstakesByDomainEpochCustodianAttester;
 
     // track the total stake of the epoch (computed at rollover)
+    /// @dev this is a mapping of domain => epoch => custodian => stake
     mapping(address domain =>
         mapping(uint256 epoch =>
-            mapping(address attester => uint256 stake))) public epochTotalStakeByDomain;
+            mapping(address custodian => uint256 stake))) public stakesByDomainEpochCustodian;
 
     mapping(address domain => bool) public domainGenesisAccepted;
 

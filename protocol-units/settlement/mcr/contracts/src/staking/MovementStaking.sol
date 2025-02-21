@@ -74,7 +74,7 @@ contract MovementStaking is
                 address custodian = custodiansByDomain[domain].at(j);
 
                 // get the genesis stake for the attester
-                uint256 attesterStake = getStakeAtEpoch(
+                uint256 attesterStake = getStake(
                     domain,
                     0,
                     custodian,
@@ -100,8 +100,8 @@ contract MovementStaking is
         address attester,
         uint256 amount
     ) internal {
-        epochStakesByDomain[domain][epoch][custodian][attester] += amount;
-        epochTotalStakeByDomain[domain][epoch][custodian] += amount;
+        stakesByDomainEpochCustodianAttester[domain][epoch][custodian][attester] += amount;
+        stakesByDomainEpochCustodian[domain][epoch][custodian] += amount;
     }
 
     function _removeStake(
@@ -111,8 +111,8 @@ contract MovementStaking is
         address attester,
         uint256 amount
     ) internal {
-        epochStakesByDomain[domain][epoch][custodian][attester] -= amount;
-        epochTotalStakeByDomain[domain][epoch][custodian] -= amount;
+        stakesByDomainEpochCustodianAttester[domain][epoch][custodian][attester] -= amount;
+        stakesByDomainEpochCustodian[domain][epoch][custodian] -= amount;
     }
 
     function _addUnstake(
@@ -122,7 +122,7 @@ contract MovementStaking is
         address attester,
         uint256 amount
     ) internal {
-        epochUnstakesByDomain[domain][epoch][custodian][attester] += amount;
+        unstakesByDomainEpochCustodianAttester[domain][epoch][custodian][attester] += amount;
     }
 
     function _removeUnstake(
@@ -132,7 +132,7 @@ contract MovementStaking is
         address attester,
         uint256 amount
     ) internal {
-        epochUnstakesByDomain[domain][epoch][custodian][attester] -= amount;
+        unstakesByDomainEpochCustodianAttester[domain][epoch][custodian][attester] -= amount;
     }
 
     function _setUnstake(
@@ -142,7 +142,7 @@ contract MovementStaking is
         address attester,
         uint256 amount
     ) internal {
-        epochUnstakesByDomain[domain][epoch][custodian][attester] = amount;
+        unstakesByDomainEpochCustodianAttester[domain][epoch][custodian][attester] = amount;
     }
 
     // gets the would be epoch for the current L1Block time
@@ -173,23 +173,23 @@ contract MovementStaking is
     }
 
     // gets the stake for a given attester at a given epoch
-    function getStakeAtEpoch(
+    function getStake(
         address domain,
         uint256 epoch,
         address custodian,
         address attester
     ) public view returns (uint256) {
-        return epochStakesByDomain[domain][epoch][custodian][attester];
+        return stakesByDomainEpochCustodianAttester[domain][epoch][custodian][attester];
     }
 
     // gets the stake for a given attester at the current epoch
-    function getAcceptingEpochStake(
+    function getStakeForAcceptingEpoch(
         address domain,
         address custodian,
         address attester
     ) public view returns (uint256) {
         return
-            getStakeAtEpoch(
+            getStake(
                 domain,
                 getAcceptingEpoch(domain),
                 custodian,
@@ -204,11 +204,11 @@ contract MovementStaking is
         address custodian,
         address attester
     ) public view returns (uint256) {
-        return epochUnstakesByDomain[domain][epoch][custodian][attester];
+        return unstakesByDomainEpochCustodianAttester[domain][epoch][custodian][attester];
     }
 
     // gets the unstake for a given attester at the current epoch
-    function getAcceptingEpochUnstake(
+    function getUnstakeForAcceptingEpoch(
         address domain,
         address custodian,
         address attester
@@ -223,21 +223,21 @@ contract MovementStaking is
     }
 
     // gets the total stake for a given epoch
-    function getTotalStakeForEpoch(
+    function getCustodianStake(
         address domain,
         uint256 epoch,
         address custodian
     ) public view returns (uint256) {
-        return epochTotalStakeByDomain[domain][epoch][custodian];
+        return stakesByDomainEpochCustodian[domain][epoch][custodian];
     }
 
     // gets the total stake for the current epoch
-    function getTotalStakeForAcceptingEpoch(
+    function getCustodianStakeForAcceptingEpoch(
         address domain,
         address custodian
     ) public view returns (uint256) {
         return
-            getTotalStakeForEpoch(domain, getAcceptingEpoch(domain), custodian);
+            getCustodianStake(domain, getAcceptingEpoch(domain), custodian);
     }
 
     // stakes for the next epoch
@@ -318,7 +318,7 @@ contract MovementStaking is
         address attester
     ) internal {
         // the amount of stake rolled over is stake[currentAcceptingEpoch] - unstake[nextEpoch]
-        uint256 stakeAmount = getStakeAtEpoch(
+        uint256 stakeAmount = getStake(
             domain,
             epochNumber,
             custodian,
@@ -392,7 +392,7 @@ contract MovementStaking is
     ) internal {
         // stake slash will always target this epoch
         uint256 targetEpoch = epoch;
-        uint256 stakeForEpoch = getStakeAtEpoch(
+        uint256 stakeForEpoch = getStake(
             domain,
             targetEpoch,
             custodian,
@@ -427,7 +427,7 @@ contract MovementStaking is
         address attester
     ) internal {
         // unstake slash will always target the next epoch
-        uint256 stakeForEpoch = getStakeAtEpoch(
+        uint256 stakeForEpoch = getStake(
             domain,
             epoch,
             custodian,
@@ -465,7 +465,7 @@ contract MovementStaking is
             // issue a refund that is the min of the stake balance, the amount to be slashed, and the refund amount
             // this is to prevent a Domain from trying to have this contract pay out more than has been staked
             uint256 refundAmount = Math.min(
-                getStakeAtEpoch(
+                getStake(
                     msg.sender,
                     getAcceptingEpoch(attesters[i]),
                     custodians[i],

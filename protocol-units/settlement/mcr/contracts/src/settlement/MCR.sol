@@ -82,13 +82,13 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     }
 
     // gets the stake for a given attester at a given epoch
-    function getStakeAtEpoch(
+    function getStake(
         uint256 epoch,
         address custodian,
         address attester
     ) public view returns (uint256) {
         return
-            stakingContract.getStakeAtEpoch(
+            stakingContract.getStake(
                 address(this),
                 epoch,
                 custodian,
@@ -107,17 +107,17 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         uint256 totalStake = 0;
         for (uint256 i = 0; i < custodians.length; i++) {
             // for now, each custodian has weight of 1
-            totalStake += getStakeAtEpoch(epoch, custodians[i], attester);
+            totalStake += getStake(epoch, custodians[i], attester);
         }
         return totalStake;
     }
 
     // gets the stake for a given attester at the current epoch
-    function getAcceptingEpochStake(
+    function getStakeForAcceptingEpoch(
         address custodian,
         address attester
     ) public view returns (uint256) {
-        return getStakeAtEpoch(getAcceptingEpoch(), custodian, attester);
+        return getStake(getAcceptingEpoch(), custodian, attester);
     }
 
     function computeAllStakeFromAcceptingEpoch(
@@ -127,12 +127,12 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     }
 
     // gets the total stake for a given epoch
-    function getTotalStakeForEpoch(
+    function getCustodianStake(
         uint256 epoch,
         address custodian
     ) public view returns (uint256) {
         return
-            stakingContract.getTotalStakeForEpoch(
+            stakingContract.getCustodianStake(
                 address(this),
                 epoch,
                 custodian
@@ -156,16 +156,16 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         uint256 totalStake = 0;
         for (uint256 i = 0; i < custodians.length; i++) {
             // for now, each custodian has weight of 1
-            totalStake += getTotalStakeForEpoch(epoch, custodians[i]);
+            totalStake += getCustodianStake(epoch, custodians[i]);
         }
         return totalStake;
     }
 
     // gets the total stake for the current epoch for a given custodian
-    function getTotalStakeForAcceptingEpoch(
+    function getCustodianStakeForAcceptingEpoch(
         address custodian
     ) public view returns (uint256) {
-        return getTotalStakeForEpoch(getAcceptingEpoch(), custodian);
+        return getCustodianStake(getAcceptingEpoch(), custodian);
     }
 
     function computeAllTotalStakeForAcceptingEpoch()
