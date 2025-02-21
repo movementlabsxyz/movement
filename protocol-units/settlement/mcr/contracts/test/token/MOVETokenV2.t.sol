@@ -131,22 +131,30 @@ contract MOVETokenDevTest is Test {
 
     // Tests that non-admin accounts cannot grant roles by checking for the expected revert
     function testCannotGrantRoleFuzz(address messenger, address receiver) public {
+
+        // repeat with new test if messenger is multisig or 0
+        vm.assume(messenger != multisig);
+        vm.assume(messenger != address(0));
+        console.log("............................");
+        console.log("messenger", messenger);
+        console.log("multisig", multisig);
+        console.log("............................");
+
         // impersonate the messenger address for all subsequent calls
         vm.startPrank(messenger);
 
-        // Only test unauthorized accounts (non-multisig addresses)
-        if (messenger != multisig) {
-            // Expect the call to revert with AccessControlUnauthorizedAccount error
-            // - messenger: the account trying to grant the role
-            // - DEFAULT_ADMIN_ROLE (0x00): the role needed to grant any role
-            vm.expectRevert(
-                abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, messenger, DEFAULT_ADMIN_ROLE)
-            );
+        // Expect the call to revert with AccessControlUnauthorizedAccount error
+        // - messenger: the account trying to grant the role
+        // - DEFAULT_ADMIN_ROLE (0x00): the role needed to grant any role
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, messenger, DEFAULT_ADMIN_ROLE)
+        );
 
-            // Attempt to grant MINTER_ROLE to receiver address
-            // This should fail since messenger doesn't have DEFAULT_ADMIN_ROLE
-            token.grantRole(MINTER_ROLE, receiver);
-        }
+        // Attempt to grant MINTER_ROLE to receiver address
+        // This should fail since messenger doesn't have DEFAULT_ADMIN_ROLE
+        token.grantRole(MINTER_ROLE, receiver);
+
         vm.stopPrank();
     }
+
 }
