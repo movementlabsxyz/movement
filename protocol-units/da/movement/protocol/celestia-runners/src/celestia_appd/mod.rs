@@ -20,7 +20,13 @@ impl Runner for CelestiaAppd {
 			}
 			Network::Arabica => Err(anyhow::anyhow!("Arabica not implemented")),
 			Network::Mocha => Err(anyhow::anyhow!("Mocha not implemented")),
-			Network::Mainnet => Err(anyhow::anyhow!("Mainnet not implemented")),
+			Network::Mainnet => {
+				// loop and sleep over a message that says we are using a direct connection to a trusted Celestia endpoint
+				loop {
+					println!("Using a direct connection to a trusted Celestia endpoint");
+					std::thread::sleep(std::time::Duration::from_secs(60));
+				}
+			}
 		}
 	}
 }
