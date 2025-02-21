@@ -69,6 +69,14 @@ env_default!(
 	26658
 );
 
+// The default Celestia Node websocket path
+env_default!(
+	default_celestia_websocket_connection_path,
+	"CELESTIA_WEBSOCKET_CONNECTION_PATH",
+	String,
+	"".to_string()
+);
+
 // The default M1 DA Light Node listen hostname
 env_default!(
 	default_movement_da_light_node_listen_hostname,
