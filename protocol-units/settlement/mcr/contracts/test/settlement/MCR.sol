@@ -249,13 +249,13 @@ contract MCRTest is Test, IMCR {
         // alice can confirm the block comittment and get a reward
         // TODO check that bob did not get the reward
         vm.prank(bob);
-        mcr.postconfirmSuperBlocks();
+        mcr.postconfirmSuperBlocksAndRollover();
         assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 1);
 
         // Alice tries to postconfirm
         // TODO: Alice should still get the reward
         vm.prank(alice);
-        mcr.postconfirmSuperBlocks();
+        mcr.postconfirmSuperBlocksAndRollover();
         assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 1);
 
         // make second superblock commitment
@@ -267,7 +267,7 @@ contract MCRTest is Test, IMCR {
         
         // alice can confirm the block comittment and get a reward
         vm.prank(alice);
-        mcr.postconfirmSuperBlocks();
+        mcr.postconfirmSuperBlocksAndRollover();
         assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 2);
     }
 
@@ -304,7 +304,7 @@ contract MCRTest is Test, IMCR {
 
         // Trigger postconfirmation with majority
         vm.prank(alice);
-        mcr.postconfirmSuperBlocks();
+        mcr.postconfirmSuperBlocksAndRollover();
 
         // Verify honest commitment was postconfirmed
         MCRStorage.SuperBlockCommitment memory retrievedCommitment = mcr.getPostconfirmedCommitment(1);
@@ -329,7 +329,7 @@ contract MCRTest is Test, IMCR {
         mcr.submitSuperBlockCommitment(newDishonestCommitment(1));
 
         vm.prank(alice);
-        mcr.postconfirmSuperBlocks();
+        mcr.postconfirmSuperBlocksAndRollover();
         assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 0, "Height should not advance - Alice");
         // Verify no commitment was postconfirmed
         MCRStorage.SuperBlockCommitment memory retrievedCommitment = mcr.getPostconfirmedCommitment(1);
@@ -337,71 +337,38 @@ contract MCRTest is Test, IMCR {
         assertEq(retrievedCommitment.commitment, bytes32(0), "No commitment should be postconfirmed");
     }
 
+    /// @notice Test that rollover handling works with dishonesty
+    function testRolloverHandlingWithDishonesty() public {
+        uint256 L1BlockTimeStart = 30 * epochDuration; // TODO why though?
+        vm.warp(L1BlockTimeStart);
 
-    function testRollsOverHandlingDishonesty() public {
-        vm.warp(300 seconds);
+        (address alice, address bob, address carol) = setupGenesisWithThreeAttesters(2, 1, 1);
 
-        // three well-funded signers
-        address payable alice = payable(vm.addr(1));
-        staking.whitelistAddress(alice);
-        moveToken.mint(alice, 100);
-        address payable bob = payable(vm.addr(2));
-        staking.whitelistAddress(bob);
-        moveToken.mint(bob, 100);
-        address payable carol = payable(vm.addr(3));
-        staking.whitelistAddress(carol);
-        moveToken.mint(carol, 100);
+        // dishonest carol
+        vm.prank(carol);
+        mcr.submitSuperBlockCommitment(newDishonestCommitment(1));
 
-        // have them participate in the genesis ceremony
+        // honest majority
         vm.prank(alice);
-        moveToken.approve(address(staking), 100);
-        vm.prank(alice);
-        staking.stake(address(mcr), moveToken, 34);
+        mcr.submitSuperBlockCommitment(newHonestCommitment(1));
         vm.prank(bob);
-        moveToken.approve(address(staking), 100);
-        vm.prank(bob);
-        staking.stake(address(mcr), moveToken, 33);
-        vm.prank(carol);
-        moveToken.approve(address(staking), 100);
-        vm.prank(carol);
-        staking.stake(address(mcr), moveToken, 33);
+        mcr.submitSuperBlockCommitment(newHonestCommitment(1));
 
-        // end the genesis ceremony
-        mcr.acceptGenesisCeremony();
+        // now we move to next epoch
+        vm.warp(L1BlockTimeStart + epochDuration);
 
-        // carol will be dishonest
-        MCRStorage.SuperBlockCommitment memory dishonestCommitment = newDishonestCommitment(1);
-        vm.prank(carol);
-        mcr.submitSuperBlockCommitment(dishonestCommitment);
-
-        // carol will try to sign again
-        vm.prank(carol);
-        vm.expectRevert(AttesterAlreadyCommitted.selector);
-        mcr.submitSuperBlockCommitment(dishonestCommitment);
-
-        // make a block commitment
-        MCRStorage.SuperBlockCommitment memory initCommitment = newHonestCommitment(1);
+        // postconfirm and rollover
         vm.prank(alice);
-        mcr.submitSuperBlockCommitment(initCommitment);
-        vm.prank(bob);
-        mcr.submitSuperBlockCommitment(initCommitment);
-
-        // now we move to block 2 and make some commitment just to trigger the epochRollover
-        vm.warp(310 seconds);
-
-        // make a block commitment
-        MCRStorage.SuperBlockCommitment memory bc2 = newHonestCommitment(2);
-        vm.prank(alice);
-        mcr.submitSuperBlockCommitment(bc2);
+        mcr.postconfirmSuperBlocksAndRollover();
 
         // check that roll over happened
         assertEq(mcr.getAcceptingEpoch(), mcr.getPresentEpoch());
-        assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), alice), 34);
-        assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), bob), 33);
-        assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), carol), 33);
+        assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), alice), 2);
+        assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), bob), 1);
+        assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), carol), 1);
         MCRStorage.SuperBlockCommitment memory retrievedCommitment = mcr.getPostconfirmedCommitment(1);
-        assert(retrievedCommitment.commitment == initCommitment.commitment);
-        assert(retrievedCommitment.blockId == initCommitment.blockId);
+        assert(retrievedCommitment.commitment == honestCommitmentTemplate);
+        assert(retrievedCommitment.blockId == honestBlockIdTemplate);
         assert(retrievedCommitment.height == 1);
     }
 
@@ -444,7 +411,7 @@ contract MCRTest is Test, IMCR {
                 vm.warp(L1BlockTime);
                 // alice triggers rollover
                 vm.prank(alice);
-                mcr.postconfirmSuperBlocks();
+                mcr.postconfirmSuperBlocksAndRollover();
 
                 // get the assigned epoch for the superblock height
                 // commit roughly half of dishones attesters 
@@ -469,7 +436,7 @@ contract MCRTest is Test, IMCR {
                 // }
 
                 vm.prank(alice);
-                mcr.postconfirmSuperBlocks();
+                mcr.postconfirmSuperBlocksAndRollover();
 
                 MCRStorage.SuperBlockCommitment memory retrievedCommitment = mcr.getPostconfirmedCommitment(superBlockHeightNow);
                 assert(retrievedCommitment.commitment == honestCommitment.commitment);
@@ -497,9 +464,9 @@ contract MCRTest is Test, IMCR {
             L1BlockTime += epochDuration;
             vm.warp(L1BlockTime);
 
-            // Force rollover by having alice (who has majority stake) call postconfirmSuperBlocks
+            // Force rollover by having alice (who has majority stake) call postconfirmSuperBlocksAndRollover
             vm.prank(alice);  // alice has attesterStake+1 from setup
-            mcr.postconfirmSuperBlocks();
+            mcr.postconfirmSuperBlocksAndRollover();
             // confirm that the new attester has stake
             assert(mcr.getStakeForAcceptingEpoch(address(moveToken), newAttester) == attesterStake);
 
@@ -601,7 +568,7 @@ contract MCRTest is Test, IMCR {
         
         // Attempt postconfirmation
         vm.prank(alice);
-        mcr.postconfirmSuperBlocks();
+        mcr.postconfirmSuperBlocksAndRollover();
         
         // Verify postconfirmation worked
         MCRStorage.SuperBlockCommitment memory postconfirmed = mcr.getPostconfirmedCommitment(targetHeight);
@@ -642,7 +609,7 @@ contract MCRTest is Test, IMCR {
 
         // Attempt postconfirmation
         vm.prank(alice);
-        mcr.postconfirmSuperBlocks();
+        mcr.postconfirmSuperBlocksAndRollover();
 
         // Verify postconfirmation
         MCRStorage.SuperBlockCommitment memory postconfirmed = mcr.getPostconfirmedCommitment(targetHeight);
@@ -678,7 +645,7 @@ contract MCRTest is Test, IMCR {
 
         // Attempt postconfirmation - this should fail because there's no supermajority
         vm.prank(alice);
-        mcr.postconfirmSuperBlocks();
+        mcr.postconfirmSuperBlocksAndRollover();
 
         // Verify height hasn't changed (postconfirmation didn't succeed)
         assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 0);

@@ -275,8 +275,8 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         );
     }
 
-    function postconfirmSuperBlocks() public {
-        postconfirmSuperBlocksWithAttester(msg.sender);
+    function postconfirmSuperBlocksAndRollover() public {
+        postconfirmAndRolloverWithAttester(msg.sender);
     }
 
     /// @notice The current acceptor can postconfirm a superBlock height, given there is a supermajority of stake on a commitment
@@ -284,7 +284,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     // TODO: this will be improved, such that voluntary attesters can postconfirm but will not be rewarded before the liveness period has ended
     /// @notice If the current acceptor is not live, we should accept postconfirmations from any attester
     // TODO: this will be improved, such that the first voluntary attester to do sowill be rewarded
-    function postconfirmSuperBlocksWithAttester(address /* attester */) internal {
+    function postconfirmAndRolloverWithAttester(address /* attester */) internal {
         // if the current acceptor is live we should not accept postconfirmations from voluntary attesters
         // TODO: we probably have to apply this check somewhere else as (volunteer) attesters can only postconfirm and rollover an epoch in which they are staked.
         if (currentAcceptorIsLive()) {
@@ -296,7 +296,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         // ! rewards need to be 
         // ! - at least the cost for gas cost of postconfirmation
         // ! - reward the acceptor well to incentivize postconfirmation at every height
-        while (attemptPostconfirm(lastPostconfirmedSuperBlockHeight + 1)) {
+        while (attemptPostconfirmOrRollover(lastPostconfirmedSuperBlockHeight + 1)) {
         }
     }
 
@@ -332,7 +332,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     // TODO : but the current epoch has enough votes, what should we do?? 
     // TODO : Should we move to the next epoch and ignore all votes on blocks of that epoch? 
     // TODO : What if none of the epochs have enough votes for a given block height.
-    function attemptPostconfirm(uint256 superBlockHeight) internal returns (bool) {
+    function attemptPostconfirmOrRollover(uint256 superBlockHeight) internal returns (bool) {
         uint256 superBlockEpoch = superBlockHeightAssignedEpoch[superBlockHeight];
         // ensure that the superBlock height is equal or above the lastPostconfirmedSuperBlockHeight
         uint256 previousSuperBlockEpoch = superBlockHeightAssignedEpoch[superBlockHeight-1];
@@ -448,7 +448,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     }
 
     /// @dev Accepts a superBlock commitment.
-    /// @dev This function and attemptPostconfirm() could call each other recursively, so we must ensure it's safe from re-entrancy
+    /// @dev This function and attemptPostconfirmOrRollover() could call each other recursively, so we must ensure it's safe from re-entrancy
     // TODO: check the truth of the above statement
     function _postconfirmSuperBlockCommitment(SuperBlockCommitment memory superBlockCommitment, address attester) internal {
         uint256 currentAcceptingEpoch = getAcceptingEpoch();
