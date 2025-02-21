@@ -51,13 +51,3 @@ services:
     depends_on:
       celestia-light-node:
         condition: service_healthy
-
-  # turn off movement-celestia-da-light-node
-  movement-celestia-da-light-node:
-    image: busybox
-    container_name: movement-celestia-da-light-node
-    command: sleep infinity
-    healthcheck:
-      test: [ "CMD-SHELL", "echo 'health check'" ]
-      retries: 3
-      start_period: 3s
