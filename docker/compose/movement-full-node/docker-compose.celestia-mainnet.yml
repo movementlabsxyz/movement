@@ -3,7 +3,7 @@ services:
     image: ghcr.io/movementlabsxyz/movement-full-node-setup:${CONTAINER_REV}
     container_name: setup
     environment:
-      CELESTIA_NAMESPACE: 0x3073030730
+      CELESTIA_NAMESPACE: "0xa21de06de7aa38c2a812"
       CELESTIA_NETWORK: mainnet
       # ws://celestia-light-node:26658
       CELESTIA_WEBSOCKET_CONNECTION_PROTOCOL: ws
