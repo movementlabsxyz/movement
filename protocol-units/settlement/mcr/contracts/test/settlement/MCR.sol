@@ -27,7 +27,7 @@ contract MCRTest is Test, IMCR {
     bytes32 dishonestBlockIdTemplate = keccak256(abi.encodePacked(uint256(3), uint256(2), uint256(1)));
     
     // make an honest commitment
-    function newHonestCommitment(uint256 height) internal returns (MCRStorage.SuperBlockCommitment memory) {
+    function newHonestCommitment(uint256 height) internal view returns (MCRStorage.SuperBlockCommitment memory) {
         return MCRStorage.SuperBlockCommitment({
             height: height,
             commitment: honestCommitmentTemplate,
@@ -36,7 +36,7 @@ contract MCRTest is Test, IMCR {
     }
        
     // make a dishonest commitment
-    function newDishonestCommitment(uint256 height) internal returns (MCRStorage.SuperBlockCommitment memory) {
+    function newDishonestCommitment(uint256 height) internal view returns (MCRStorage.SuperBlockCommitment memory) {
         return MCRStorage.SuperBlockCommitment({
             height: height,
             commitment: dishonestCommitmentTemplate,
@@ -277,26 +277,27 @@ contract MCRTest is Test, IMCR {
         (address alice, address bob, address carol) = setupGenesisWithThreeAttesters(34, 33, 33);
 
         // carol will be dishonest
-        MCRStorage.SuperBlockCommitment memory dishonestCommitment = newDishonestCommitment(1);
         vm.prank(carol);
-        mcr.submitSuperBlockCommitment(dishonestCommitment);
+        mcr.submitSuperBlockCommitment(newDishonestCommitment(1));
 
         // carol will try to sign again
         vm.prank(carol);
         vm.expectRevert(AttesterAlreadyCommitted.selector);
-        mcr.submitSuperBlockCommitment(dishonestCommitment);
+        mcr.submitSuperBlockCommitment(newDishonestCommitment(1));
 
         // make a block commitment
-        MCRStorage.SuperBlockCommitment memory initCommitment = newHonestCommitment(1);
         vm.prank(alice);
-        mcr.submitSuperBlockCommitment(initCommitment);
+        mcr.submitSuperBlockCommitment(newHonestCommitment(1));
         vm.prank(bob);
-        mcr.submitSuperBlockCommitment(initCommitment);
+        mcr.submitSuperBlockCommitment(newHonestCommitment(1));
+
+        // Trigger postconfirmation
+        vm.prank(alice);
+        mcr.postconfirmSuperBlocks();
 
         MCRStorage.SuperBlockCommitment memory retrievedCommitment = mcr.getPostconfirmedCommitment(1);
-        // now we move to block 2 and make some commitment just to trigger the epochRollover
-        assert(retrievedCommitment.commitment == initCommitment.commitment);
-        assert(retrievedCommitment.blockId == initCommitment.blockId);
+        assert(retrievedCommitment.commitment == honestCommitmentTemplate);
+        assert(retrievedCommitment.blockId == honestBlockIdTemplate);
         assert(retrievedCommitment.height == 1);
     }
 
@@ -583,8 +584,6 @@ contract MCRTest is Test, IMCR {
         
         // Create commitment for height 1
         uint256 targetHeight = 1;
-        bytes32 commitmentHash = honestCommitmentTemplate;
-        bytes32 blockIdHash = honestBlockIdTemplate;
         
         MCRStorage.SuperBlockCommitment memory commitment = newHonestCommitment(targetHeight);
 
@@ -621,8 +620,6 @@ contract MCRTest is Test, IMCR {
         
         // Create commitment for height 1
         uint256 targetHeight = 1;
-        bytes32 commitmentHash = honestCommitmentTemplate;
-        bytes32 blockIdHash = honestBlockIdTemplate;
         
         MCRStorage.SuperBlockCommitment memory commitment = newHonestCommitment(targetHeight);
 
