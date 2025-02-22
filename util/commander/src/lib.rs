@@ -1,10 +1,14 @@
 use anyhow::Result;
 use futures::future::try_join;
-use std::process::Stdio;
+use itertools::Itertools;
 use tokio::io::{self, AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::Command;
 use tokio::signal::unix::{signal, SignalKind};
 use tokio::task::JoinHandle;
+use tracing::info;
+
+use std::ffi::OsStr;
+use std::process::Stdio;
 
 async fn pipe_output<R: tokio::io::AsyncRead + Unpin + Send + 'static>(
 	reader: R,
@@ -37,9 +41,19 @@ async fn pipe_error_output<R: tokio::io::AsyncRead + Unpin + Send + 'static>(
 }
 
 /// Runs a command, piping its output to stdout and stderr, and returns the stdout output if successful.
-pub async fn run_command(command: &str, args: &[&str]) -> Result<String> {
-	// print command out with args joined by space
-	tracing::info!("Running command: {} {}", command, args.join(" "));
+pub async fn run_command<C, I, S>(command: C, args: I) -> Result<String>
+where
+	C: AsRef<OsStr>,
+	I: IntoIterator<Item = S>,
+	S: AsRef<OsStr>,
+{
+	let mut command = Command::new(command);
+	command.args(args);
+
+	let cmd_display = command.as_std().get_program().to_string_lossy().into_owned();
+	let args_display = command.as_std().get_args().map(|s| s.to_string_lossy()).join(" ");
+
+	info!("Running command: {cmd_display} {args_display}");
 
 	// Setup signal handling to terminate the child process
 	let (tx, rx) = tokio::sync::oneshot::channel();
@@ -62,17 +76,13 @@ pub async fn run_command(command: &str, args: &[&str]) -> Result<String> {
 		}
 	});
 
-	let mut child = Command::new(command)
-		.args(args)
-		.stdout(Stdio::piped())
-		.stderr(Stdio::piped())
-		.spawn()?;
+	let mut child = command.stdout(Stdio::piped()).stderr(Stdio::piped()).spawn()?;
 
 	let stdout = child.stdout.take().ok_or_else(|| {
-		anyhow::anyhow!("Failed to capture standard output from command {}", command)
+		anyhow::anyhow!("Failed to capture standard output from command {cmd_display}")
 	})?;
 	let stderr = child.stderr.take().ok_or_else(|| {
-		anyhow::anyhow!("Failed to capture standard error from command {}", command)
+		anyhow::anyhow!("Failed to capture standard error from command {cmd_display}")
 	})?;
 
 	let mut stdout_output = String::new();
@@ -92,16 +102,14 @@ pub async fn run_command(command: &str, args: &[&str]) -> Result<String> {
 		}
 		_ = rx => {
 			let _ = child.kill().await;
-			return Err(anyhow::anyhow!("Command {} was terminated by signal", command));
+			return Err(anyhow::anyhow!("Command {cmd_display} was terminated by signal"));
 		}
 	}
 
 	let status = child.wait().await?;
 	if !status.success() {
 		return Err(anyhow::anyhow!(
-			"Command {} failed with args {:?}\nError Output: {}",
-			command,
-			args,
+			"Command {cmd_display} failed with args {args_display}\nError Output: {}",
 			stderr_output
 		));
 	}

@@ -1,5 +1,4 @@
 use crate::common;
-use commander::run_command;
 use dot_movement::DotMovement;
 use movement_da_util::config::Config;
 use tracing::info;
@@ -12,30 +11,24 @@ impl Mainnet {
 		Self
 	}
 
-	pub async fn celestia_light_init(&self) -> Result<(), anyhow::Error> {
-		// celestia light init --p2p.network celestia --keyring.backend test
-		run_command(
-			"celestia",
-			&["light", "init", "--p2p.network", "celestia", "--keyring.backend", "test"],
-		)
-		.await?;
-
-		Ok(())
+	async fn celestia_light_init(
+		&self,
+		dot_movement: &DotMovement,
+		config: &Config,
+	) -> Result<(), anyhow::Error> {
+		common::celestia::celestia_light_init(dot_movement, config, "celestia").await
 	}
 
 	pub async fn get_da_block_height(&self) -> Result<u64, anyhow::Error> {
 		common::celestia::current_block_height("https://rpc.celestia.pops.one").await
 	}
 
-	pub async fn get_auth_token(&self) -> Result<String, anyhow::Error> {
-		// celestia light auth admin --p2p.network celestia
-		let auth_token =
-			run_command("celestia", &["light", "auth", "admin", "--p2p.network", "celestia"])
-				.await?
-				.trim()
-				.to_string();
-
-		Ok(auth_token)
+	async fn get_auth_token(
+		&self,
+		dot_movement: &DotMovement,
+		config: &Config,
+	) -> Result<String, anyhow::Error> {
+		common::celestia::get_auth_token(dot_movement, config, "celestia").await
 	}
 
 	pub async fn setup_celestia(
@@ -48,10 +41,10 @@ impl Mainnet {
 		let mut config = common::celestia::make_dirs(dot_movement.clone(), config).await?;
 
 		// celestia light init --p2p.network celestia
-		self.celestia_light_init().await?;
+		self.celestia_light_init(&dot_movement, &config).await?;
 
 		// get the auth token
-		let auth_token = self.get_auth_token().await?;
+		let auth_token = self.get_auth_token(&dot_movement, &config).await?;
 		config.appd.celestia_auth_token.replace(auth_token.clone());
 
 		// get the initial block height
