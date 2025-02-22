@@ -152,7 +152,6 @@ where
 						match block_opt {
 							Some(Ok((height, da_blob))) => {
 								match verifier.verify(da_blob, height.as_u64()).await.map_err(|e| tonic::Status::internal(e.to_string())).and_then(|verifed_blob| {
-									println!("ICI stream_read_from_height block veirfied.");
 									verifed_blob.into_inner().to_blob_passed_through_read_response(height.as_u64()).map_err(|e| tonic::Status::internal(e.to_string()))
 								}) {
 									Ok(blob) => blob,
@@ -179,7 +178,6 @@ where
 						BlobResponse { blob_type: Some(movement_da_light_node_proto::blob_response::BlobType::HeartbeatBlob(true)) }
 					}
 				};
-				println!("ICI stream_read_from_height response_content:{:?}", response_content);
 				let response = StreamReadFromHeightResponse {
 					blob: Some(response_content)
 				};

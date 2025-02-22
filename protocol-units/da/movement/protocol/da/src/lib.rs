@@ -97,7 +97,6 @@ where
 				for height in start_height..end_height {
 					let blobs = self.get_da_blobs_at_height_for_stream(height).await?;
 					for blob in blobs {
-						println!("ICI stream_da_blobs_between_heights send blob at height {height} blob id:{}", hex::encode(blob.id()));
 						yield (DaHeight(height), blob);
 					}
 				}
@@ -129,7 +128,6 @@ where
 							tokio::pin!(blob_stream);
 
 							while let Some(blob) = blob_stream.next().await {
-								println!("ICI da lignt send block height:{height} blob:{:?}", blob);
 								yield blob?;
 							}
 

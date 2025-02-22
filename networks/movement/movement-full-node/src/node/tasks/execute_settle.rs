@@ -110,12 +110,10 @@ where
 		{
 			// To allow for DA migrations we accept both sequenced and passed through blobs
 			blob_response::BlobType::SequencedBlobBlock(blob) => {
-				tracing::info!("Receive SequencedBlobBlock blob");
 				(blob.data, blob.timestamp, blob.blob_id, blob.height)
 			}
 			// To allow for DA migrations we accept both sequenced and passed through blobs
 			blob_response::BlobType::PassedThroughBlob(blob) => {
-				tracing::info!("Receive PassedThroughBlob blob");
 				(blob.data, blob.timestamp, blob.blob_id, blob.height)
 			}
 			blob_response::BlobType::HeartbeatBlob(_) => {
