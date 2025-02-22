@@ -10,7 +10,7 @@ use movement_da_light_node_digest_store::da::Da as DigestStoreDa;
 use movement_da_light_node_proto::light_node_service_server::LightNodeService;
 use movement_da_light_node_proto::*;
 use movement_da_light_node_verifier::signed::InKnownSignersVerifier;
-use movement_da_light_node_verifier::{Error as VerifierError, VerifierOperations};
+use movement_da_light_node_verifier::VerifierOperations;
 use movement_da_util::{
 	blob::ir::blob::DaBlob, blob::ir::data::InnerSignedBlobV1Data, config::Config,
 };
@@ -35,7 +35,8 @@ where
 		+ Serialize
 		+ for<'de> Deserialize<'de>
 		+ Clone
-		+ 'static,
+		+ 'static
+		+ std::fmt::Debug,
 	Da: DaOperations<C>,
 	V: VerifierOperations<DaBlob<C>, DaBlob<C>>,
 {
@@ -56,7 +57,8 @@ where
 		+ Serialize
 		+ for<'de> Deserialize<'de>
 		+ Clone
-		+ 'static,
+		+ 'static
+		+ std::fmt::Debug,
 	Da: DaOperations<C>,
 	V: VerifierOperations<DaBlob<C>, DaBlob<C>>,
 {
@@ -113,7 +115,8 @@ where
 		+ Serialize
 		+ for<'de> Deserialize<'de>
 		+ Clone
-		+ 'static,
+		+ 'static
+		+ std::fmt::Debug,
 	Da: DaOperations<C> + 'static,
 	V: VerifierOperations<DaBlob<C>, DaBlob<C>> + Send + Sync + 'static,
 {
@@ -135,31 +138,53 @@ where
 		let verifier = self.verifier.clone();
 		let height = request.into_inner().height;
 
+		// Tick interval for generating HeartBeat.
+		let mut tick_interval = tokio::time::interval(tokio::time::Duration::from_secs(10));
+
 		let output = async_stream::try_stream! {
 
 			let mut blob_stream = da.stream_da_blobs_from_height(height).await.map_err(|e| tonic::Status::internal(e.to_string()))?;
 
-			while let Some(blob) = blob_stream.next().await {
-				let (height, da_blob) = blob.map_err(|e| tonic::Status::internal(e.to_string()))?;
-				match verifier.verify(da_blob, height.as_u64()).await {
-					Ok(verifed_blob) => {
-						let blob = verifed_blob.into_inner().to_blob_passed_through_read_response(height.as_u64()).map_err(|e| tonic::Status::internal(e.to_string()))?;
-						let response = StreamReadFromHeightResponse {
-							blob: Some(blob)
-						};
-						yield response;
-					},
-					Err(VerifierError::Validation(e)) => {
-						info!("Failed to verify blob: {}", e);
-					},
-					Err(VerifierError::Internal(e)) => {
-						Err(tonic::Status::internal(e.to_string()))?;
+			loop {
+				let response_content = tokio::select! {
+					// Yield from the data stream
+					block_opt = blob_stream.next() => {
+						match block_opt {
+							Some(Ok((height, da_blob))) => {
+								match verifier.verify(da_blob, height.as_u64()).await.map_err(|e| tonic::Status::internal(e.to_string())).and_then(|verifed_blob| {
+									println!("ICI stream_read_from_height block veirfied.");
+									verifed_blob.into_inner().to_blob_passed_through_read_response(height.as_u64()).map_err(|e| tonic::Status::internal(e.to_string()))
+								}) {
+									Ok(blob) => blob,
+									Err(err) => {
+										// Not verified block, skip to next one.
+										tracing::warn!("Stream blob of height: {} fail to verify error:{err}", height.as_u64());
+										continue;
+									}
+								}
+							}
+							Some(Err(err)) => {
+								tracing::warn!("Stream blob return an error, exit stream :{err}");
+								return;
+							},
+							None => {
+								info!("Stream blob closed , exit stream.");
+								return;
+							}
+						}
 					}
-				}
+					// Yield the periodic tick
+					_ = tick_interval.tick() => {
+						//Heart beat. The value can be use to indicate some status.
+						BlobResponse { blob_type: Some(movement_da_light_node_proto::blob_response::BlobType::HeartbeatBlob(true)) }
+					}
+				};
+				println!("ICI stream_read_from_height response_content:{:?}", response_content);
+				let response = StreamReadFromHeightResponse {
+					blob: Some(response_content)
+				};
+				yield response;
 			}
-
-			info!("Stream read from height closed for height: {}", height);
-
 		};
 
 		Ok(tonic::Response::new(Box::pin(output) as Self::StreamReadFromHeightStream))
