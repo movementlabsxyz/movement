@@ -1,6 +1,6 @@
 use crate::blob::ir::{into_da_blob, CelestiaDaBlob};
-use celestia_rpc::{BlobClient, Client, HeaderClient};
-use celestia_types::{nmt::Namespace, Blob as CelestiaBlob, TxConfig};
+use celestia_rpc::{BlobClient, Client, HeaderClient, TxConfig};
+use celestia_types::{nmt::Namespace, Blob as CelestiaBlob};
 use movement_da_light_node_da::{Certificate, CertificateStream, DaError, DaOperations};
 use movement_da_util::blob::ir::blob::DaBlob;
 use movement_signer::cryptography::Curve;
