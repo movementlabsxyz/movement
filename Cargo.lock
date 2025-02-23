@@ -12115,7 +12115,6 @@ dependencies = [
  "hex",
  "hyper 1.5.0",
  "maptos-dof-execution",
- "maptos-opt-executor",
  "mcr-settlement-client",
  "mcr-settlement-config",
  "mcr-settlement-manager",
