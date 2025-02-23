@@ -5,10 +5,11 @@ use movement_da_light_node_da::{Certificate, CertificateStream, DaError, DaOpera
 use movement_da_util::blob::ir::blob::DaBlob;
 use movement_signer::cryptography::Curve;
 use serde::{Deserialize, Serialize};
+use std::fmt::Debug;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
-use tracing::error;
+use tracing::{debug, error};
 
 #[derive(Clone)]
 pub struct Da<C>
@@ -53,17 +54,21 @@ where
 
 impl<C> DaOperations<C> for Da<C>
 where
-	C: Curve + Send + Sync + Clone + Serialize + for<'de> Deserialize<'de> + 'static,
+	C: Curve + Send + Sync + Clone + Serialize + Debug + for<'de> Deserialize<'de> + 'static,
 {
 	fn submit_blob(
 		&self,
 		data: DaBlob<C>,
 	) -> Pin<Box<dyn Future<Output = Result<(), DaError>> + Send + '_>> {
 		Box::pin(async move {
+			debug!("submitting blob to celestia {:?}", data);
+
 			// create the blob
 			let celestia_blob = self
 				.create_new_celestia_blob(data)
 				.map_err(|e| DaError::Internal("failed to create celestia blob".to_string()))?;
+
+			debug!("created celestia blob {:?}", celestia_blob);
 
 			// submit the blob to the celestia node
 			self.submit_celestia_blob(celestia_blob)
