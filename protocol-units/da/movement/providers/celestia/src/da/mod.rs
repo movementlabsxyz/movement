@@ -84,6 +84,7 @@ where
 		height: u64,
 	) -> Pin<Box<dyn Future<Output = Result<Vec<DaBlob<C>>, DaError>> + Send + '_>> {
 		Box::pin(async move {
+			debug!("getting blobs at height {height}");
 			let height = if height == 0 { 1 } else { height };
 
 			match self.default_client.blob_get_all(height, &[self.celestia_namespace]).await {
@@ -104,6 +105,7 @@ where
 								format!("failed to convert blob: {e}").into(),
 							)
 						})?;
+						debug!("got blob {da_blob:?}");
 						da_blobs.push(da_blob);
 					}
 
