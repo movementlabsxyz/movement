@@ -20,8 +20,8 @@ contract MCRTest is Test, IMCR {
     string public moveSignature = "initialize(address)";
     string public stakingSignature = "initialize(address)";
     string public mcrSignature = "initialize(address,uint256,uint256,uint256,address[],uint256)";
-    uint256 epochDuration = 3600 seconds;
-    uint256 acceptorTerm = 360 seconds;
+    uint256 epochDuration = 7200 seconds;
+    uint256 acceptorTerm = epochDuration/12 seconds/4;
     bytes32 honestCommitmentTemplate = keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)));
     bytes32 honestBlockIdTemplate = keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)));
     bytes32 dishonestCommitmentTemplate = keccak256(abi.encodePacked(uint256(3), uint256(2), uint256(1)));
@@ -609,82 +609,65 @@ contract MCRTest is Test, IMCR {
     // ----------------------------------------------------------------
 
     /// @notice Test that getAcceptorStartTime correctly calculates term start times
-    function testAcceptorStartTime() public {
+    function testAcceptorStartL1BlockHeight() public {
         // Test at time 0
         console.log("Current L1Block time:", block.timestamp);
-        assertEq(mcr.getAcceptorStartTime(), 0, "Acceptor term should start at time 0");
+        assertEq(mcr.getAcceptorStartL1BlockHeight(), 0, "Acceptor term should start at time 0");
 
         // Test at half an acceptor term
         vm.warp(acceptorTerm/2);
-        assertEq(mcr.getAcceptorStartTime(), 0, "Acceptor term should start at time 0");
+        assertEq(mcr.getAcceptorStartL1BlockHeight(), 0, "Acceptor term should start at time 0");
 
         // Test at an acceptor term boundary
         vm.warp(acceptorTerm);
-        assertEq(mcr.getAcceptorStartTime(), acceptorTerm, "Acceptor term should start at time acceptorTerm");
+        assertEq(mcr.getAcceptorStartL1BlockHeight(), acceptorTerm, "Acceptor term should start at time acceptorTerm");
 
         // Test at 1.5 acceptor terms
         vm.warp(3 * acceptorTerm / 2);
-        assertEq(mcr.getAcceptorStartTime(), acceptorTerm, "Acceptor term should start at time acceptorTerm");        
+        assertEq(mcr.getAcceptorStartL1BlockHeight(), acceptorTerm, "Acceptor term should start at time acceptorTerm");        
     }
 
     /// @notice Test setting acceptor term with validation
     function testSetAcceptorTerm() public {
-        // Get initial epoch duration
-        console.log("Epoch duration expected:", epochDuration);
-        console.log("Epoch duration:", staking.getEpochDuration(address(mcr)));
+        // Ensure we can retrieve the epoch duration correct
         assertEq(epochDuration, staking.getEpochDuration(address(mcr)));
         
-        // Try setting acceptor term to epoch duration (should fail)
+        // Set acceptor term to 256 blocks (should succeed)
+        mcr.setAcceptorTerm(256);
+        assertEq(mcr.acceptorTerm(), 256, "Term should be updated to 256");
+
+        // Try setting acceptor term to over 256 blocks (should fail)
         vm.expectRevert(MCR.AcceptorTermTooLong.selector);
-        mcr.setAcceptorTerm(epochDuration);
-        
-        // Try setting acceptor term to greater than epoch duration (should fail)
+        mcr.setAcceptorTerm(257);
+        assertEq(mcr.acceptorTerm(), 256, "Term should remain at 256");
+
+        // Check validity with respect to epoch duration
+        uint256 validTerm = epochDuration/12 seconds/4;
+        mcr.setAcceptorTerm(validTerm);
+        assertEq(mcr.acceptorTerm(), validTerm, "Term should be updated to epoch related value");
+
+        // Try setting acceptor term to epoch duration
+        uint256 invalidTerm = epochDuration/12 seconds;
         vm.expectRevert(MCR.AcceptorTermTooLong.selector);
-        mcr.setAcceptorTerm(epochDuration + 1);
-        
-        // Set to valid term (half of epoch duration)
-        uint256 newTerm = epochDuration / 2;
-        mcr.setAcceptorTerm(newTerm);
-        
-        // Verify term was updated
-        assertEq(mcr.acceptorTerm(), newTerm, "Acceptor term should be updated");
+        mcr.setAcceptorTerm(invalidTerm);
+        assertEq(mcr.acceptorTerm(), validTerm, "Term should remain at epoch related value");
     }
 
     /// @notice Test that getAcceptor correctly selects an acceptor based on block hash
     function testGetAcceptor() public {
         // Setup with three attesters with equal stakes
-        (address alice, address bob, address carol) = setupGenesisWithThreeAttesters(1, 1, 1);
-        console.log("Alice:", alice);
-        console.log("Bob:", bob);
-        console.log("Carol:", carol);
+        (address alice, , address carol) = setupGenesisWithThreeAttesters(1, 1, 1);
 
-        // Get initial acceptor
         address initialAcceptor = mcr.getAcceptor();
-        console.log("Initial acceptor:", initialAcceptor);
-        assertTrue(
-            initialAcceptor == alice || initialAcceptor == bob || initialAcceptor == carol,
-            "Acceptor must be one of the staked attesters"
-        );
-        console.log("Initial acceptor:", initialAcceptor);
+        assertTrue( initialAcceptor == carol, "Acceptor should be Carol");
         
-        // Verify acceptor stays the same within their term
-        vm.roll(block.number + 1);
-        console.log("Rolled to block:", block.number);
+        vm.roll(1);
         assertEq(mcr.getAcceptor(), initialAcceptor, "Acceptor should not change within term");
-        console.log("Same-term acceptor verification passed");
         
-        // Move past acceptor term (120 seconds, set in setUp)
-        vm.warp(acceptorTerm);
-        console.log("Warped to timestamp:", block.timestamp);
-        
-        // Get new acceptor
+        // Move to next acceptor Term
+        vm.roll(acceptorTerm);
         address newAcceptor = mcr.getAcceptor();
-        console.log("New acceptor:", newAcceptor);
-        assertTrue(
-            newAcceptor == alice || newAcceptor == bob || newAcceptor == carol,
-            "New acceptor must be one of the staked attesters"
-        );
-        console.log("New acceptor:", newAcceptor);
+        assertTrue( newAcceptor == alice, "New acceptor should be Alice");
     }
 
     // An acceptor that is in place for acceptorTerm time should be replaced by a new acceptor after their term ended.

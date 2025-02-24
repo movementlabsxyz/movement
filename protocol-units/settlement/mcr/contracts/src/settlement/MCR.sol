@@ -18,21 +18,27 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     // Trusted attesters admin
     bytes32 public constant TRUSTED_ATTESTER = keccak256("TRUSTED_ATTESTER");
 
-    /// @notice Error thrown when acceptor term is greater than or equal to epoch duration
+    /// @notice Error thrown when acceptor term is greater than 256 blocks
     error AcceptorTermTooLong();
+
+    /// @notice Error thrown when acceptor term is too large for epoch duration
+    error AcceptorTermTooLongForEpoch();
 
     /// @notice Sets the acceptor term duration, must be less than epoch duration
     /// @param _acceptorTerm New acceptor term duration in time units
     function setAcceptorTerm(uint256 _acceptorTerm) public onlyRole(COMMITMENT_ADMIN) {
-        // Get epoch duration from staking contract
-        uint256 epochDuration = stakingContract.getEpochDuration(address(this));
-        
-        // TODO we need to handle that the epochDuration cannot be set lower than the acceptorTerm. This needs to happen in the staking contract.
-        // Ensure acceptor term is less than epoch duration
-        if (_acceptorTerm >= epochDuration) {
+        // Ensure acceptor term is not longer than 256 blocks
+        if (_acceptorTerm > 256) {
             revert AcceptorTermTooLong();
         }
-        
+        // Ensure acceptor term is sufficiently small compared to epoch duration
+        uint256 epochDuration = stakingContract.getEpochDuration(address(this));
+
+        // TODO If we would use block heights instead of timestamps we could handle everything much smoother.
+        uint256 estimatedL1BlockDelta = 12 seconds; 
+        if (2 * _acceptorTerm >= epochDuration / estimatedL1BlockDelta) {
+            revert AcceptorTermTooLongForEpoch();
+        }
         acceptorTerm = _acceptorTerm;
     }
 
@@ -324,15 +330,10 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         return true; // dummy implementation
     }
 
-    /// @notice Gets the start time at which the current acceptor's term started
-    function getAcceptorStartTime() public view returns (uint256) {
-        uint256 currentTime = block.timestamp;
-        // Find start of current term by rounding down to nearest term boundary
-        uint256 startTime = currentTime - (currentTime % acceptorTerm);
-        if (startTime > currentTime) { // ensure we don't get future time
-            startTime = currentTime;
-        }
-        return startTime;
+    /// @notice Gets the block height at which the current acceptor's term started
+    function getAcceptorStartL1BlockHeight() public view returns (uint256) {
+        uint256 currentBlock = block.number;
+        return currentBlock - (currentBlock % acceptorTerm);
     }
 
     // TODO we need to think of a solution that is not dependent on the block time as finding the correct block is expensive. We need something simple and cheap.
@@ -345,15 +346,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
     /// @notice Determines the acceptor in the accepting epoch using L1 block hash as a source of randomness
     function getAcceptor() public view returns (address) {
-        // Get block number closest to acceptor start time
-        uint256 startBlock = getClosestL1BlockToTime(getAcceptorStartTime());
-        // TODO we should use the hash of the block, not the block number
-        console.log("Start block:", startBlock);
-        // Use that block's hash as randomness source
-        bytes32 randomness = blockhash(startBlock);
-        console.logBytes32(randomness);
-        // map the randomness to the attesters
-        // TODO: make this weighted by stake
+        bytes32 randomness = blockhash(getAcceptorStartL1BlockHeight());
         address[] memory attesters = stakingContract.getStakedAttestersForAcceptingEpoch(address(this));
         uint256 acceptorIndex = uint256(randomness) % attesters.length;
         return attesters[acceptorIndex];        
