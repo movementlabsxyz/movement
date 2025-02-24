@@ -1,14 +1,12 @@
 use crate::common;
 use anyhow::Context;
 use celestia_types::nmt::Namespace;
-use commander::run_command;
+use commander::Command;
 use dot_movement::DotMovement;
 use movement_da_util::config::Config;
 use rand::Rng;
 use tracing::info;
 
-use std::ffi::OsStr;
-use std::iter;
 use std::path::PathBuf;
 
 fn random_10_bytes() -> [u8; 10] {
@@ -42,6 +40,12 @@ pub fn initialize_celestia_config(
 		config.appd.celestia_chain_id.clone()
 	};
 
+	// set the node store directory accordingly to the chain id
+	config
+		.light
+		.node_store
+		.replace(celestia_chain_dir(&dot_movement, &config).join(".celestia-light"));
+
 	// update the app path with the chain id
 	config.appd.celestia_path.replace(
 		celestia_chain_dir(&dot_movement, &config)
@@ -64,41 +68,36 @@ pub fn initialize_celestia_config(
 }
 
 pub async fn celestia_light_init(
-	dot_movement: &DotMovement,
+	_dot_movement: &DotMovement,
 	config: &Config,
 	network: &str,
 ) -> Result<(), anyhow::Error> {
-	let node_store_dir = celestia_chain_dir(dot_movement, config).join(".celestia-light");
 	// celestia light init --p2p.network <network> --keyring.backend test --node_store <dir>
-	run_command(
-		"celestia",
-		["light", "init", "--p2p.network", network, "--keyring.backend", "test", "--node.store"]
-			.iter()
-			.map(AsRef::<OsStr>::as_ref)
-			.chain(iter::once(node_store_dir.as_ref())),
-	)
-	.await?;
+	let mut command = Command::new("celestia");
+	command.args(["light", "init", "--p2p.network", network, "--keyring.backend", "test"]);
+	if let Some(path) = &config.light.node_store {
+		command.arg("--node.store");
+		command.arg(path);
+	}
+	// FIXME: the output does not need to be captured
+	command.run_and_capture_output().await?;
 
 	Ok(())
 }
 
 pub async fn get_auth_token(
-	dot_movement: &DotMovement,
+	_dot_movement: &DotMovement,
 	config: &Config,
 	network: &str,
 ) -> Result<String, anyhow::Error> {
-	let node_store_dir = celestia_chain_dir(dot_movement, config).join(".celestia-light");
 	// celestia light auth admin --p2p.network mocha --node.store <dir>
-	let auth_token = run_command(
-		"celestia",
-		["light", "auth", "admin", "--p2p.network", network, "--node.store"]
-			.iter()
-			.map(AsRef::<OsStr>::as_ref)
-			.chain(iter::once(node_store_dir.as_ref())),
-	)
-	.await?
-	.trim()
-	.to_string();
+	let mut command = Command::new("celestia");
+	command.args(["light", "auth", "admin", "--p2p.network", network]);
+	if let Some(path) = &config.light.node_store {
+		command.arg("--node.store");
+		command.arg(path);
+	}
+	let auth_token = command.run_and_capture_output().await?.trim().to_string();
 
 	Ok(auth_token)
 }
