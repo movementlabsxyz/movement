@@ -7,6 +7,7 @@ use tokio::signal::unix::{signal, SignalKind};
 use tracing::info;
 
 use std::ffi::OsStr;
+use std::future::Future;
 use std::process::Stdio;
 
 async fn pipe_output<R: tokio::io::AsyncRead + Unpin + Send + 'static>(
@@ -48,72 +49,84 @@ where
 {
 	let mut command = Command::new(command);
 	command.args(args);
+	command.run_and_capture_output().await
+}
 
-	let cmd_display = command.as_std().get_program().to_string_lossy().into_owned();
-	let args_display = command.as_std().get_args().map(|s| s.to_string_lossy()).join(" ");
+/// Extension trait for Tokio's Command.
+pub trait Run {
+	/// Runs the command asynchronously using the Tokio runtime,
+	/// piping its output to stdout and stderr, and returns the stdout output if successful.
+	fn run_and_capture_output(&mut self) -> impl Future<Output = Result<String>> + Send;
+}
 
-	info!("Running command: {cmd_display} {args_display}");
+impl Run for Command {
+	async fn run_and_capture_output(&mut self) -> Result<String> {
+		let cmd_display = self.as_std().get_program().to_string_lossy().into_owned();
+		let args_display = self.as_std().get_args().map(|s| s.to_string_lossy()).join(" ");
 
-	// Setup signal handling to terminate the child process
-	let (tx, rx) = tokio::sync::oneshot::channel();
+		info!("Running command: {cmd_display} {args_display}");
 
-	let mut sigterm = signal(SignalKind::terminate())?;
-	let mut sigint = signal(SignalKind::interrupt())?;
-	let mut sigquit = signal(SignalKind::quit())?;
+		// Setup signal handling to terminate the child process
+		let (tx, rx) = tokio::sync::oneshot::channel();
 
-	tokio::spawn(async move {
+		let mut sigterm = signal(SignalKind::terminate())?;
+		let mut sigint = signal(SignalKind::interrupt())?;
+		let mut sigquit = signal(SignalKind::quit())?;
+
+		tokio::spawn(async move {
+			tokio::select! {
+				_ = sigterm.recv() => {
+					let _ = tx.send(());
+				}
+				_ = sigint.recv() => {
+					let _ = tx.send(());
+				}
+				_ = sigquit.recv() => {
+					let _ = tx.send(());
+				}
+			}
+		});
+
+		let mut child = self.stdout(Stdio::piped()).stderr(Stdio::piped()).spawn()?;
+
+		let stdout = child.stdout.take().ok_or_else(|| {
+			anyhow::anyhow!("Failed to capture standard output from command {cmd_display}")
+		})?;
+		let stderr = child.stderr.take().ok_or_else(|| {
+			anyhow::anyhow!("Failed to capture standard error from command {cmd_display}")
+		})?;
+
+		let mut stdout_output = String::new();
+		let mut stderr_output = String::new();
+
+		let stdout_writer = io::stdout();
+		let stderr_writer = io::stderr();
+
+		let stdout_future = pipe_output(stdout, stdout_writer, &mut stdout_output);
+		let stderr_future = pipe_error_output(stderr, stderr_writer, &mut stderr_output);
+
+		let combined_future = try_join(stdout_future, stderr_future);
+
 		tokio::select! {
-			_ = sigterm.recv() => {
-				let _ = tx.send(());
+			output = combined_future => {
+				output?;
 			}
-			_ = sigint.recv() => {
-				let _ = tx.send(());
-			}
-			_ = sigquit.recv() => {
-				let _ = tx.send(());
+			_ = rx => {
+				let _ = child.kill().await;
+				return Err(anyhow::anyhow!("Command {cmd_display} was terminated by signal"));
 			}
 		}
-	});
 
-	let mut child = command.stdout(Stdio::piped()).stderr(Stdio::piped()).spawn()?;
-
-	let stdout = child.stdout.take().ok_or_else(|| {
-		anyhow::anyhow!("Failed to capture standard output from command {cmd_display}")
-	})?;
-	let stderr = child.stderr.take().ok_or_else(|| {
-		anyhow::anyhow!("Failed to capture standard error from command {cmd_display}")
-	})?;
-
-	let mut stdout_output = String::new();
-	let mut stderr_output = String::new();
-
-	let stdout_writer = io::stdout();
-	let stderr_writer = io::stderr();
-
-	let stdout_future = pipe_output(stdout, stdout_writer, &mut stdout_output);
-	let stderr_future = pipe_error_output(stderr, stderr_writer, &mut stderr_output);
-
-	let combined_future = try_join(stdout_future, stderr_future);
-
-	tokio::select! {
-		output = combined_future => {
-			output?;
+		let status = child.wait().await?;
+		if !status.success() {
+			return Err(anyhow::anyhow!(
+				"Command {cmd_display} failed with args {args_display}\nError Output: {}",
+				stderr_output
+			));
 		}
-		_ = rx => {
-			let _ = child.kill().await;
-			return Err(anyhow::anyhow!("Command {cmd_display} was terminated by signal"));
-		}
+
+		Ok(stdout_output)
 	}
-
-	let status = child.wait().await?;
-	if !status.success() {
-		return Err(anyhow::anyhow!(
-			"Command {cmd_display} failed with args {args_display}\nError Output: {}",
-			stderr_output
-		));
-	}
-
-	Ok(stdout_output)
 }
 
 #[cfg(test)]
