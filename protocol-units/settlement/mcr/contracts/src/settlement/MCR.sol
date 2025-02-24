@@ -309,12 +309,6 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     /// @notice If the current acceptor is not live, we should accept postconfirmations from any attester
     // TODO: this will be improved, such that the first voluntary attester to do sowill be rewarded
     function postconfirmAndRolloverWithAttester(address /* attester */) internal {
-        // if the current acceptor is live we should not accept postconfirmations from voluntary attesters
-        // TODO: we probably have to apply this check somewhere else as (volunteer) attesters can only postconfirm and rollover an epoch in which they are staked.
-        if (currentAcceptorIsLive()) {
-            // TODO: for now everyone can postconfirm, but change this later
-            // if (attester != getAcceptor()) revert("NotAcceptorAndAcceptorIsLive");
-        }
 
         // keep ticking through postconfirmations and rollovers as long as the acceptor is permitted to do
         // ! rewards need to be 
@@ -331,31 +325,29 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     }
 
     /// @notice Gets the block height at which the current acceptor's term started
-    function getAcceptorStartL1BlockHeight() public view returns (uint256) {
-        uint256 currentBlock = block.number;
-        return currentBlock - (currentBlock % acceptorTerm);
-    }
-
-    // TODO we need to think of a solution that is not dependent on the block time as finding the correct block is expensive. We need something simple and cheap.
-    // TODO For example think in terms of L1 block heights, rather than timestamps both for epochs and acceptor terms.
-    /// @notice Gets the L1 block number that is closest to but not exceeding the given timestamp
-    function getClosestL1BlockToTime(uint256 targetTime) public view returns (uint256) {
-        // TODO: implement this
-        return 0; // dummy implementation
+    function getAcceptorStartL1BlockHeight(uint256 currentL1Block) public view returns (uint256) {
+        uint256 currentL1BlockCorrected = currentL1Block - 1; // The first block is 1, not 0
+        return currentL1BlockCorrected - (currentL1BlockCorrected % acceptorTerm) + 1;
     }
 
     /// @notice Determines the acceptor in the accepting epoch using L1 block hash as a source of randomness
+    // TODO at the border between epochs this is currently not ideal as getAcceptor works on blocks and epochs works with thime. 
+    // TODO consider using block numbers instead of timestamps for epochs, and have epochs as multiple of acceptorTerm
     function getAcceptor() public view returns (address) {
-        bytes32 randomness = blockhash(getAcceptorStartL1BlockHeight());
+        uint256 currentL1Block = block.number;
+        uint256 acceptorStartL1Block = getAcceptorStartL1BlockHeight(currentL1Block);
+        require(acceptorStartL1Block > 0, "Acceptor start block should not be 0");
+        require(acceptorStartL1Block <= currentL1Block, "Acceptor start block is in the future");
+        require(currentL1Block - acceptorStartL1Block <= 256, "Acceptor start block is too old, as data is not available for more than 256 blocks");
+        bytes32 randomness = blockhash(acceptorStartL1Block-1); 
+        require(randomness != 0, "Block too old for randomness");
         address[] memory attesters = stakingContract.getStakedAttestersForAcceptingEpoch(address(this));
         uint256 acceptorIndex = uint256(randomness) % attesters.length;
         return attesters[acceptorIndex];        
     }
 
-    // TODO : liveness. if the accepting epoch is behind the presentEpoch and does not have enough votes for a given block height 
-    // TODO : but the current epoch has enough votes, what should we do?? 
-    // TODO : Should we move to the next epoch and ignore all votes on blocks of that epoch? 
-    // TODO : What if none of the epochs have enough votes for a given block height.
+    // TODO : liveness. if the accepting epoch is behind the presentEpoch and does not have enough votes for a given block height.
+    // TODO : Suggestion: move to the next epoch and counts votes there
     function attemptPostconfirmOrRollover(uint256 superBlockHeight) internal returns (bool) {
         uint256 superBlockEpoch = superBlockHeightAssignedEpoch[superBlockHeight];
         // ensure that the superBlock height is equal or above the lastPostconfirmedSuperBlockHeight

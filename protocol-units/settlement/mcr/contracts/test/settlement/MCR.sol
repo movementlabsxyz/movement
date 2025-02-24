@@ -610,21 +610,25 @@ contract MCRTest is Test, IMCR {
 
     /// @notice Test that getAcceptorStartTime correctly calculates term start times
     function testAcceptorStartL1BlockHeight() public {
-        // Test at time 0
-        console.log("Current L1Block time:", block.timestamp);
-        assertEq(mcr.getAcceptorStartL1BlockHeight(), 0, "Acceptor term should start at time 0");
+        // Test at block 0
+        uint256 currentL1Block = block.number;
+        assertEq(mcr.getAcceptorStartL1BlockHeight(block.number), 1, "Acceptor term should start at L1Block 1");
 
         // Test at half an acceptor term
-        vm.warp(acceptorTerm/2);
-        assertEq(mcr.getAcceptorStartL1BlockHeight(), 0, "Acceptor term should start at time 0");
+        vm.roll(acceptorTerm/2);
+        assertEq(mcr.getAcceptorStartL1BlockHeight(block.number), 1, "Acceptor term should start at L1Block 1");
 
         // Test at an acceptor term boundary
-        vm.warp(acceptorTerm);
-        assertEq(mcr.getAcceptorStartL1BlockHeight(), acceptorTerm, "Acceptor term should start at time acceptorTerm");
+        vm.roll(acceptorTerm);
+        assertEq(mcr.getAcceptorStartL1BlockHeight(block.number), 1, "Acceptor term should start at L1Block 1");
+
+        // Test at an acceptor term boundary
+        vm.roll(acceptorTerm+1);
+        assertEq(mcr.getAcceptorStartL1BlockHeight(block.number), acceptorTerm+1, "Acceptor term should start at L1Block acceptorTerm+1");
 
         // Test at 1.5 acceptor terms
         vm.warp(3 * acceptorTerm / 2);
-        assertEq(mcr.getAcceptorStartL1BlockHeight(), acceptorTerm, "Acceptor term should start at time acceptorTerm");        
+        assertEq(mcr.getAcceptorStartL1BlockHeight(block.number), acceptorTerm+1, "Acceptor term should start at L1Block acceptorTerm+1");        
     }
 
     /// @notice Test setting acceptor term with validation
@@ -656,28 +660,34 @@ contract MCRTest is Test, IMCR {
     /// @notice Test that getAcceptor correctly selects an acceptor based on block hash
     function testGetAcceptor() public {
         // Setup with three attesters with equal stakes
-        (address alice, , address carol) = setupGenesisWithThreeAttesters(1, 1, 1);
+        (address alice, address bob, address carol) = setupGenesisWithThreeAttesters(1, 1, 1);
 
+        uint256 myAcceptorTerm = 4;
+        mcr.setAcceptorTerm(myAcceptorTerm);
         address initialAcceptor = mcr.getAcceptor();
         assertTrue( initialAcceptor == carol, "Acceptor should be Carol");
-        
-        vm.roll(1);
+
+        vm.roll(2); // we started at block 1
         assertEq(mcr.getAcceptor(), initialAcceptor, "Acceptor should not change within term");
         
+        vm.roll(myAcceptorTerm); // L1blocks started at 1, not 0
+        assertEq(mcr.getAcceptor(), initialAcceptor, "Acceptor should not change within term");
+
         // Move to next acceptor Term
-        vm.roll(acceptorTerm);
+        vm.roll(myAcceptorTerm+1); // L1blocks started at 1, not 0
         address newAcceptor = mcr.getAcceptor();
         assertTrue( newAcceptor == alice, "New acceptor should be Alice");
     }
 
     // An acceptor that is in place for acceptorTerm time should be replaced by a new acceptor after their term ended.
+    // TODO reward logic is not yet implemented
     function testAcceptorRewards() public {
-        // Setup, with carol having no stake
-        (address alice, address bob, ) = setupGenesisWithThreeAttesters(50, 50, 0);
+        (address alice, address bob, address carol) = setupGenesisWithThreeAttesters(1, 1, 0);
+        assertEq(mcr.getAcceptor(), bob, "Bob should be the acceptor");
         
         // TODO why do we need to whitelist the address?
-        staking.whitelistAddress(alice);
-        staking.whitelistAddress(bob);
+        // staking.whitelistAddress(alice);
+        // staking.whitelistAddress(bob);
 
         // make superBlock commitments
         MCRStorage.SuperBlockCommitment memory initCommitment = newHonestCommitment(1);
@@ -686,21 +696,8 @@ contract MCRTest is Test, IMCR {
         vm.prank(bob);
         mcr.submitSuperBlockCommitment(initCommitment);
 
-        // check that alice is the current acceptor
-        // TODO: getAcceptor does not yet work.
-        // assertEq(mcr.getAcceptor(), alice);
-        console.log("WARNING: Test not correct yet, as getAcceptor does not work");
-
-        // TODO : here we should check that the reward goes only to alice
-        // alice can confirm the block comittment and get a reward
-        // TODO check that bob did not get the reward
+        // bob postconfirms and gets a reward
         vm.prank(bob);
-        mcr.postconfirmSuperBlocksAndRollover();
-        assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 1);
-
-        // Alice tries to postconfirm
-        // TODO: Alice should still get the reward
-        vm.prank(alice);
         mcr.postconfirmSuperBlocksAndRollover();
         assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 1);
 
@@ -710,11 +707,19 @@ contract MCRTest is Test, IMCR {
         mcr.submitSuperBlockCommitment(secondCommitment);
         vm.prank(bob);
         mcr.submitSuperBlockCommitment(secondCommitment);
-        
-        // alice can confirm the block comittment and get a reward
+
+        // alice can postconfirm, but does not get the reward
+        // TODO check that bob did not get the reward
         vm.prank(alice);
         mcr.postconfirmSuperBlocksAndRollover();
         assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 2);
+
+        // bob tries to postconfirm, but already done by alice
+        // TODO: bob should still get the reward
+        vm.prank(bob);
+        mcr.postconfirmSuperBlocksAndRollover();
+        assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 2);
+
     }
 
 }
