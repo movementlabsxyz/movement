@@ -228,8 +228,8 @@ secp256k1 = { version = "0.27", default-features = false, features = [
 ] }
 
 ## Celestia Dependencies
-celestia-rpc = { git = "https://github.com/movementlabsxyz/lumina", rev = "c6e5b7f5e3a3040bce4262fe5fba5c21a2637b5" }   #{ version = "0.7.0" }
-celestia-types = { git = "https://github.com/movementlabsxyz/lumina", rev = "c6e5b7f5e3a3040bce4262fe5fba5c21a2637b5" } #{ version = "0.7.0" }
+celestia-rpc = { git = "https://github.com/eigerco/lumina", rev = "c6e5b7f5e3a3040bce4262fe5fba5c21a2637b5" }   #{ version = "0.7.0" }
+celestia-types = { git = "https://github.com/eigerco/lumina", rev = "c6e5b7f5e3a3040bce4262fe5fba5c21a2637b5" } #{ version = "0.7.0" }
 
 # External Dependencies
 

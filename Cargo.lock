@@ -5857,7 +5857,7 @@ dependencies = [
 [[package]]
 name = "celestia-proto"
 version = "0.7.0"
-source = "git+https://github.com/movementlabsxyz/lumina?rev=c6e5b7f5e3a3040bce4262fe5fba5c21a2637b5#c6e5b7f5e3a3040bce4262fe5fba5c21a2637b52"
+source = "git+https://github.com/eigerco/lumina?rev=c6e5b7f5e3a3040bce4262fe5fba5c21a2637b5#c6e5b7f5e3a3040bce4262fe5fba5c21a2637b52"
 dependencies = [
  "bytes 1.8.0",
  "prost 0.13.3",
@@ -5872,7 +5872,7 @@ dependencies = [
 [[package]]
 name = "celestia-rpc"
 version = "0.9.0"
-source = "git+https://github.com/movementlabsxyz/lumina?rev=c6e5b7f5e3a3040bce4262fe5fba5c21a2637b5#c6e5b7f5e3a3040bce4262fe5fba5c21a2637b52"
+source = "git+https://github.com/eigerco/lumina?rev=c6e5b7f5e3a3040bce4262fe5fba5c21a2637b5#c6e5b7f5e3a3040bce4262fe5fba5c21a2637b52"
 dependencies = [
  "async-trait",
  "celestia-types",
@@ -5887,7 +5887,7 @@ dependencies = [
 [[package]]
 name = "celestia-types"
 version = "0.10.0"
-source = "git+https://github.com/movementlabsxyz/lumina?rev=c6e5b7f5e3a3040bce4262fe5fba5c21a2637b5#c6e5b7f5e3a3040bce4262fe5fba5c21a2637b52"
+source = "git+https://github.com/eigerco/lumina?rev=c6e5b7f5e3a3040bce4262fe5fba5c21a2637b5#c6e5b7f5e3a3040bce4262fe5fba5c21a2637b52"
 dependencies = [
  "base64 0.22.1",
  "bech32",
