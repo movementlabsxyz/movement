@@ -3,6 +3,7 @@ use celestia_types::nmt::Namespace;
 use godfig::env_default;
 
 use std::env;
+use std::path::PathBuf;
 
 // The default hostname for the Celestia RPC
 env_default!(
@@ -182,3 +183,7 @@ env_default!(
 	String,
 	"movement_celestia_light".into()
 );
+
+pub fn default_celestia_light_node_store() -> Option<PathBuf> {
+	std::env::var_os("CELESTIA_LIGHT_NODE_STORE").map(Into::into)
+}
