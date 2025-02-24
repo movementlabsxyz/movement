@@ -45,7 +45,7 @@ impl Manager {
 
 		let node = MovementPartialNode::try_from_config(config)
 			.await
-			.context("Full node manager, Failed to create the executor")?;
+			.context("Failed to create the executor")?;
 
 		let join_handle = tokio::spawn(node.run());
 

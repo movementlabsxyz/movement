@@ -110,12 +110,10 @@ where
 		{
 			// To allow for DA migrations we accept both sequenced and passed through blobs
 			blob_response::BlobType::SequencedBlobBlock(blob) => {
-				tracing::info!("Receive SequencedBlobBlock blob");
 				(blob.data, blob.timestamp, blob.blob_id, blob.height)
 			}
 			// To allow for DA migrations we accept both sequenced and passed through blobs
 			blob_response::BlobType::PassedThroughBlob(blob) => {
-				tracing::info!("Receive PassedThroughBlob blob");
 				(blob.data, blob.timestamp, blob.blob_id, blob.height)
 			}
 			blob_response::BlobType::HeartbeatBlob(_) => {
@@ -151,14 +149,6 @@ where
 		let span = info_span!(target: "movement_timing", "execute_block", id = ?block_id);
 		let commitment =
 			self.execute_block_with_retries(block, block_timestamp).instrument(span).await?;
-		let commitment = match commitment {
-			Some(commitment) => commitment,
-			// No commitment, skip block.
-			None => {
-				tracing::warn!("BLock can't be executed, skipping block:{}", hex::encode(block_id));
-				return Ok(());
-			}
-		};
 
 		// decrement the number of transactions in flight on the executor
 		self.executor.decrement_transactions_in_flight(transactions_count as u64);
@@ -208,16 +198,15 @@ where
 		&mut self,
 		block: Block,
 		mut block_timestamp: u64,
-	) -> anyhow::Result<Option<BlockCommitment>> {
+	) -> anyhow::Result<BlockCommitment> {
 		for _ in 0..self.execution_extension.block_retry_count {
 			// we have to clone here because the block is supposed to be consumed by the executor
 			match self.execute_block(block.clone(), block_timestamp).await {
-				Ok(commitment) => return Ok(Some(commitment)),
+				Ok(commitment) => return Ok(commitment),
 				Err(e) => {
 					info!("Failed to execute block: {:?}. Retrying", e);
 					block_timestamp += self.execution_extension.block_retry_increment_microseconds;
 					// increase the timestamp by 5 ms (5000 microseconds)
-					return Ok(None);
 				}
 			}
 		}
