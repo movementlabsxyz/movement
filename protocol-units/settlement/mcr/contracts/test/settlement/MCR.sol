@@ -20,7 +20,8 @@ contract MCRTest is Test, IMCR {
     string public moveSignature = "initialize(address)";
     string public stakingSignature = "initialize(address)";
     string public mcrSignature = "initialize(address,uint256,uint256,uint256,address[],uint256)";
-    uint256 epochDuration = 10 seconds;
+    uint256 epochDuration = 3600 seconds;
+    uint256 acceptorTerm = 360 seconds;
     bytes32 honestCommitmentTemplate = keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)));
     bytes32 honestBlockIdTemplate = keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)));
     bytes32 dishonestCommitmentTemplate = keccak256(abi.encodePacked(uint256(3), uint256(2), uint256(1)));
@@ -84,9 +85,9 @@ contract MCRTest is Test, IMCR {
             stakingProxy,               // _stakingContract, address of staking contract
             0,                          // _lastPostconfirmedSuperBlockHeight, start from genesis
             5,                          // _leadingSuperBlockTolerance, max blocks ahead of last confirmed
-            epochDuration,              // _epochDuration, time window for block confirmation
+            epochDuration,              // _epochDuration, how long an epoch lasts, constant stakes in that time
             custodians,                 // _custodians, array with moveProxy address
-            120 seconds                 // _acceptorTerm, how long an acceptor serves
+            acceptorTerm                // _acceptorTerm, how long an acceptor serves
         );
         TransparentUpgradeableProxy mcrProxy = new TransparentUpgradeableProxy(
             address(mcrImplementation),
@@ -223,54 +224,6 @@ contract MCRTest is Test, IMCR {
         vm.expectRevert(0xf92ee8a9);
         mcr.initialize(staking, 0, 5, 10 seconds, custodians,120 seconds);
     }
-
-    // A acceptor that is in place for acceptorTerm time should be replaced by a new acceptor after their term ended.
-    function testAcceptorRewards() public {
-        // Setup, with carol having no stake
-        (address alice, address bob, ) = setupGenesisWithThreeAttesters(50, 50, 0);
-        
-        // TODO why do we need to whitelist the address?
-        staking.whitelistAddress(alice);
-        staking.whitelistAddress(bob);
-
-        // make superBlock commitments
-        MCRStorage.SuperBlockCommitment memory initCommitment = newHonestCommitment(1);
-        vm.prank(alice);
-        mcr.submitSuperBlockCommitment(initCommitment);
-        vm.prank(bob);
-        mcr.submitSuperBlockCommitment(initCommitment);
-
-        // check that alice is the current acceptor
-        // TODO: getCurrentAcceptor does not yet work.
-        // assertEq(mcr.getCurrentAcceptor(), alice);
-        console.log("WARNING: Test not correct yet, as getCurrentAcceptor does not work");
-
-        // TODO : here we should check that the reward goes only to alice
-        // alice can confirm the block comittment and get a reward
-        // TODO check that bob did not get the reward
-        vm.prank(bob);
-        mcr.postconfirmSuperBlocksAndRollover();
-        assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 1);
-
-        // Alice tries to postconfirm
-        // TODO: Alice should still get the reward
-        vm.prank(alice);
-        mcr.postconfirmSuperBlocksAndRollover();
-        assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 1);
-
-        // make second superblock commitment
-        MCRStorage.SuperBlockCommitment memory secondCommitment = newHonestCommitment(2);
-        vm.prank(alice);
-        mcr.submitSuperBlockCommitment(secondCommitment);
-        vm.prank(bob);
-        mcr.submitSuperBlockCommitment(secondCommitment);
-        
-        // alice can confirm the block comittment and get a reward
-        vm.prank(alice);
-        mcr.postconfirmSuperBlocksAndRollover();
-        assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 2);
-    }
-
 
     /// @notice Test that an attester cannot submit multiple commitments for the same height
     function testAttesterCannotCommitTwice() public {
@@ -649,6 +602,136 @@ contract MCRTest is Test, IMCR {
 
         // Verify height hasn't changed (postconfirmation didn't succeed)
         assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 0);
+    }
+
+    // ----------------------------------------------------------------
+    // -------- Acceptor tests --------------------------------------
+    // ----------------------------------------------------------------
+
+    /// @notice Test that getAcceptorStartTime correctly calculates term start times
+    function testAcceptorStartTime() public {
+        // Test at time 0
+        console.log("Current L1Block time:", block.timestamp);
+        assertEq(mcr.getAcceptorStartTime(), 0, "Acceptor term should start at time 0");
+
+        // Test at half an acceptor term
+        vm.warp(acceptorTerm/2);
+        assertEq(mcr.getAcceptorStartTime(), 0, "Acceptor term should start at time 0");
+
+        // Test at an acceptor term boundary
+        vm.warp(acceptorTerm);
+        assertEq(mcr.getAcceptorStartTime(), acceptorTerm, "Acceptor term should start at time acceptorTerm");
+
+        // Test at 1.5 acceptor terms
+        vm.warp(3 * acceptorTerm / 2);
+        assertEq(mcr.getAcceptorStartTime(), acceptorTerm, "Acceptor term should start at time acceptorTerm");        
+    }
+
+    /// @notice Test setting acceptor term with validation
+    function testSetAcceptorTerm() public {
+        // Get initial epoch duration
+        console.log("Epoch duration expected:", epochDuration);
+        console.log("Epoch duration:", staking.getEpochDuration(address(mcr)));
+        assertEq(epochDuration, staking.getEpochDuration(address(mcr)));
+        
+        // Try setting acceptor term to epoch duration (should fail)
+        vm.expectRevert(MCR.AcceptorTermTooLong.selector);
+        mcr.setAcceptorTerm(epochDuration);
+        
+        // Try setting acceptor term to greater than epoch duration (should fail)
+        vm.expectRevert(MCR.AcceptorTermTooLong.selector);
+        mcr.setAcceptorTerm(epochDuration + 1);
+        
+        // Set to valid term (half of epoch duration)
+        uint256 newTerm = epochDuration / 2;
+        mcr.setAcceptorTerm(newTerm);
+        
+        // Verify term was updated
+        assertEq(mcr.acceptorTerm(), newTerm, "Acceptor term should be updated");
+    }
+
+    /// @notice Test that getAcceptor correctly selects an acceptor based on block hash
+    function testGetAcceptor() public {
+        // Setup with three attesters with equal stakes
+        (address alice, address bob, address carol) = setupGenesisWithThreeAttesters(1, 1, 1);
+        console.log("Alice:", alice);
+        console.log("Bob:", bob);
+        console.log("Carol:", carol);
+
+        // Get initial acceptor
+        address initialAcceptor = mcr.getAcceptor();
+        console.log("Initial acceptor:", initialAcceptor);
+        assertTrue(
+            initialAcceptor == alice || initialAcceptor == bob || initialAcceptor == carol,
+            "Acceptor must be one of the staked attesters"
+        );
+        console.log("Initial acceptor:", initialAcceptor);
+        
+        // Verify acceptor stays the same within their term
+        vm.roll(block.number + 1);
+        console.log("Rolled to block:", block.number);
+        assertEq(mcr.getAcceptor(), initialAcceptor, "Acceptor should not change within term");
+        console.log("Same-term acceptor verification passed");
+        
+        // Move past acceptor term (120 seconds, set in setUp)
+        vm.warp(acceptorTerm);
+        console.log("Warped to timestamp:", block.timestamp);
+        
+        // Get new acceptor
+        address newAcceptor = mcr.getAcceptor();
+        console.log("New acceptor:", newAcceptor);
+        assertTrue(
+            newAcceptor == alice || newAcceptor == bob || newAcceptor == carol,
+            "New acceptor must be one of the staked attesters"
+        );
+        console.log("New acceptor:", newAcceptor);
+    }
+
+    // An acceptor that is in place for acceptorTerm time should be replaced by a new acceptor after their term ended.
+    function testAcceptorRewards() public {
+        // Setup, with carol having no stake
+        (address alice, address bob, ) = setupGenesisWithThreeAttesters(50, 50, 0);
+        
+        // TODO why do we need to whitelist the address?
+        staking.whitelistAddress(alice);
+        staking.whitelistAddress(bob);
+
+        // make superBlock commitments
+        MCRStorage.SuperBlockCommitment memory initCommitment = newHonestCommitment(1);
+        vm.prank(alice);
+        mcr.submitSuperBlockCommitment(initCommitment);
+        vm.prank(bob);
+        mcr.submitSuperBlockCommitment(initCommitment);
+
+        // check that alice is the current acceptor
+        // TODO: getAcceptor does not yet work.
+        // assertEq(mcr.getAcceptor(), alice);
+        console.log("WARNING: Test not correct yet, as getAcceptor does not work");
+
+        // TODO : here we should check that the reward goes only to alice
+        // alice can confirm the block comittment and get a reward
+        // TODO check that bob did not get the reward
+        vm.prank(bob);
+        mcr.postconfirmSuperBlocksAndRollover();
+        assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 1);
+
+        // Alice tries to postconfirm
+        // TODO: Alice should still get the reward
+        vm.prank(alice);
+        mcr.postconfirmSuperBlocksAndRollover();
+        assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 1);
+
+        // make second superblock commitment
+        MCRStorage.SuperBlockCommitment memory secondCommitment = newHonestCommitment(2);
+        vm.prank(alice);
+        mcr.submitSuperBlockCommitment(secondCommitment);
+        vm.prank(bob);
+        mcr.submitSuperBlockCommitment(secondCommitment);
+        
+        // alice can confirm the block comittment and get a reward
+        vm.prank(alice);
+        mcr.postconfirmSuperBlocksAndRollover();
+        assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 2);
     }
 
 }

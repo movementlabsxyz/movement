@@ -8,6 +8,7 @@ import {MCRStorage} from "./MCRStorage.sol";
 import {BaseSettlement} from "./settlement/BaseSettlement.sol";
 import {IMCR} from "./interfaces/IMCR.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "forge-std/console.sol";
 
 contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
@@ -17,13 +18,31 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     // Trusted attesters admin
     bytes32 public constant TRUSTED_ATTESTER = keccak256("TRUSTED_ATTESTER");
 
+    /// @notice Error thrown when acceptor term is greater than or equal to epoch duration
+    error AcceptorTermTooLong();
+
+    /// @notice Sets the acceptor term duration, must be less than epoch duration
+    /// @param _acceptorTerm New acceptor term duration in time units
+    function setAcceptorTerm(uint256 _acceptorTerm) public onlyRole(COMMITMENT_ADMIN) {
+        // Get epoch duration from staking contract
+        uint256 epochDuration = stakingContract.getEpochDuration(address(this));
+        
+        // TODO we need to handle that the epochDuration cannot be set lower than the acceptorTerm. This needs to happen in the staking contract.
+        // Ensure acceptor term is less than epoch duration
+        if (_acceptorTerm >= epochDuration) {
+            revert AcceptorTermTooLong();
+        }
+        
+        acceptorTerm = _acceptorTerm;
+    }
+
     function initialize(
         IMovementStaking _stakingContract,
         uint256 _lastPostconfirmedSuperBlockHeight,
         uint256 _leadingSuperBlockTolerance,
-        uint256 _epochDuration,
+        uint256 _epochDuration, // in time units
         address[] memory _custodians,
-        uint256 _acceptorTerm 
+        uint256 _acceptorTerm // in time units
     ) public initializer {
         __BaseSettlement_init_unchained();
         stakingContract = _stakingContract;
@@ -288,7 +307,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         // TODO: we probably have to apply this check somewhere else as (volunteer) attesters can only postconfirm and rollover an epoch in which they are staked.
         if (currentAcceptorIsLive()) {
             // TODO: for now everyone can postconfirm, but change this later
-            // if (attester != getCurrentAcceptor()) revert("NotAcceptorAndAcceptorIsLive");
+            // if (attester != getAcceptor()) revert("NotAcceptorAndAcceptorIsLive");
         }
 
         // keep ticking through postconfirmations and rollovers as long as the acceptor is permitted to do
@@ -301,25 +320,38 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
     function currentAcceptorIsLive() public pure returns (bool) {
         // TODO check if current acceptor has been live sufficiently recently
-        // use getL1BlockStartOfCurrentAcceptorTerm, and the mappings
+        // use getAcceptorStartTime, and the mappings
         return true; // dummy implementation
     }
 
-    /// @notice Gets the L1 block height at which the current acceptor's term started
-    function getL1BlockStartOfCurrentAcceptorTerm() public view returns (uint256) {
-        uint256 currentL1BlockHeight = block.number;
-        uint256 startL1BlockHeight = currentL1BlockHeight - currentL1BlockHeight % acceptorTerm - 1; // -1 because we do not want to consider the current block.
-        if (startL1BlockHeight < 0) { // ensure its not below 0 
-            startL1BlockHeight = 0;
+    /// @notice Gets the start time at which the current acceptor's term started
+    function getAcceptorStartTime() public view returns (uint256) {
+        uint256 currentTime = block.timestamp;
+        // Find start of current term by rounding down to nearest term boundary
+        uint256 startTime = currentTime - (currentTime % acceptorTerm);
+        if (startTime > currentTime) { // ensure we don't get future time
+            startTime = currentTime;
         }
-        return startL1BlockHeight;
+        return startTime;
     }
 
-    /// @notice Determines the current acceptor using L1 block hash as a source of randomness
-    function getCurrentAcceptor() public view returns (address) {
-        // TODO: acceptor should swap more frequently than every epoch.
-        // use the blockhash of the first L1 block of the current acceptor's term as the source of randomness
-        bytes32 randomness = blockhash(getL1BlockStartOfCurrentAcceptorTerm());
+    // TODO we need to think of a solution that is not dependent on the block time as finding the correct block is expensive. We need something simple and cheap.
+    // TODO For example think in terms of L1 block heights, rather than timestamps both for epochs and acceptor terms.
+    /// @notice Gets the L1 block number that is closest to but not exceeding the given timestamp
+    function getClosestL1BlockToTime(uint256 targetTime) public view returns (uint256) {
+        // TODO: implement this
+        return 0; // dummy implementation
+    }
+
+    /// @notice Determines the acceptor in the accepting epoch using L1 block hash as a source of randomness
+    function getAcceptor() public view returns (address) {
+        // Get block number closest to acceptor start time
+        uint256 startBlock = getClosestL1BlockToTime(getAcceptorStartTime());
+        // TODO we should use the hash of the block, not the block number
+        console.log("Start block:", startBlock);
+        // Use that block's hash as randomness source
+        bytes32 randomness = blockhash(startBlock);
+        console.logBytes32(randomness);
         // map the randomness to the attesters
         // TODO: make this weighted by stake
         address[] memory attesters = stakingContract.getStakedAttestersForAcceptingEpoch(address(this));
@@ -346,7 +378,6 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
             }
             superBlockEpoch = previousSuperBlockEpoch;
         }
-
 
         // if the accepting epoch is far behind the superBlockEpoch (which is determined by commitments measured in L1 block time), then the protocol was not live for a while
         // We keep rolling over the epoch (i.e. update stakes) until we catch up with the superBlockEpoch

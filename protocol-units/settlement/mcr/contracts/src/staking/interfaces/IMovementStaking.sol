@@ -99,4 +99,9 @@ interface IMovementStaking {
 
     function getStakedAttestersForAcceptingEpoch(address domain) external view returns (address[] memory);
     function computeAllStakeForAcceptingEpoch(address attester) external view returns (uint256);
+
+    /// @notice Gets the epoch duration for a given domain
+    /// @param domain The domain to get the epoch duration for
+    /// @return The epoch duration in seconds
+    function getEpochDuration(address domain) external view returns (uint256);
 }

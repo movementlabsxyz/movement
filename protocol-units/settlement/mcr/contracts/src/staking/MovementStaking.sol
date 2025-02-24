@@ -633,4 +633,8 @@ contract MovementStaking is
     ) public view returns (uint256) {
         return computeAllStake(domain, getAcceptingEpoch(domain));
     }
+
+    function getEpochDuration(address domain) external view returns (uint256) {
+        return epochDurationByDomain[domain];
+    }
 }
