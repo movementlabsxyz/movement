@@ -2,12 +2,11 @@ use anyhow::Result;
 use futures::future::try_join;
 use itertools::Itertools;
 use tokio::io::{self, AsyncBufReadExt, AsyncWriteExt, BufReader};
-use tokio::process::Command;
+use tokio::process::Command as InnerCommand;
 use tokio::signal::unix::{signal, SignalKind};
 use tracing::info;
 
 use std::ffi::OsStr;
-use std::future::Future;
 use std::process::Stdio;
 
 async fn pipe_output<R: tokio::io::AsyncRead + Unpin + Send + 'static>(
@@ -52,17 +51,35 @@ where
 	command.run_and_capture_output().await
 }
 
-/// Extension trait for Tokio's Command.
-pub trait Run {
-	/// Runs the command asynchronously using the Tokio runtime,
-	/// piping its output to stdout and stderr, and returns the stdout output if successful.
-	fn run_and_capture_output(&mut self) -> impl Future<Output = Result<String>> + Send;
-}
+/// Builder for running commands
+pub struct Command(InnerCommand);
 
-impl Run for Command {
-	async fn run_and_capture_output(&mut self) -> Result<String> {
-		let cmd_display = self.as_std().get_program().to_string_lossy().into_owned();
-		let args_display = self.as_std().get_args().map(|s| s.to_string_lossy()).join(" ");
+impl Command {
+	pub fn new(program: impl AsRef<OsStr>) -> Self {
+		let inner = InnerCommand::new(program);
+		Self(inner)
+	}
+
+	pub fn arg<S>(&mut self, arg: S) -> &mut Self
+	where
+		S: AsRef<OsStr>,
+	{
+		self.0.arg(arg);
+		self
+	}
+
+	pub fn args<I, S>(&mut self, args: I) -> &mut Self
+	where
+		I: IntoIterator<Item = S>,
+		S: AsRef<OsStr>,
+	{
+		self.0.args(args);
+		self
+	}
+
+	pub async fn run_and_capture_output(&mut self) -> Result<String> {
+		let cmd_display = self.0.as_std().get_program().to_string_lossy().into_owned();
+		let args_display = self.0.as_std().get_args().map(|s| s.to_string_lossy()).join(" ");
 
 		info!("Running command: {cmd_display} {args_display}");
 
@@ -87,7 +104,7 @@ impl Run for Command {
 			}
 		});
 
-		let mut child = self.stdout(Stdio::piped()).stderr(Stdio::piped()).spawn()?;
+		let mut child = self.0.stdout(Stdio::piped()).stderr(Stdio::piped()).spawn()?;
 
 		let stdout = child.stdout.take().ok_or_else(|| {
 			anyhow::anyhow!("Failed to capture standard output from command {cmd_display}")

@@ -1,11 +1,10 @@
 use crate::common;
 use anyhow::Context;
 use celestia_types::nmt::Namespace;
-use commander::Run;
+use commander::Command;
 use dot_movement::DotMovement;
 use movement_da_util::config::Config;
 use rand::Rng;
-use tokio::process::Command;
 use tracing::info;
 
 use std::path::PathBuf;
