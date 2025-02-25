@@ -135,10 +135,9 @@ contract MOVETokenDevTest is Test {
         // repeat with new test if messenger is multisig or 0
         vm.assume(messenger != multisig);
         vm.assume(messenger != address(0));
-        console.log("............................"); // TODO : if the console logs are removed, the test fails, why?
+        console.log("............................"); // TODO : if the console logs are modified, the test fail sometimes, why?
         console.log("messenger", messenger);
         console.log("multisig", multisig);
-        console.log("............................");
 
         // impersonate the messenger address for all subsequent calls
         vm.startPrank(messenger);
