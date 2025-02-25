@@ -252,7 +252,6 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
     /// @notice Gets the attesters who have stake in the current accepting epoch
     function getStakedAttestersForAcceptingEpoch() public view returns (address[] memory) {
-        // TODO: check that this is the correct domain address to use
         return stakingContract.getStakedAttestersForAcceptingEpoch(address(this)); 
     }
 
@@ -284,9 +283,6 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         commitments[superBlockCommitment.height][attester] = superBlockCommitment;
 
         // increment the commitment count by stake
-        // TODO: we do not record per epoch. this means unless a supermajority of nodes approves for a given epoch the protocol loses livenes.. 
-        // TODO: however, this is in conflict with the leadingBlocktolerance. And the approach will not work unless leadingBlocktolerance << epochDuration
-        // TODO: this needs to be fixed, by recording per epoch and permitting to rollover if sufficient time has passed on L1.
         uint256 attesterStakeForAcceptingEpoch = getAttesterStakeForAcceptingEpoch(attester);
         commitmentStakes[superBlockCommitment.height][superBlockCommitment.commitment] += attesterStakeForAcceptingEpoch;
 
@@ -344,9 +340,9 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         return attesters[acceptorIndex];        
     }
 
-    // TODO : liveness. it is possible if the accepting epoch is behind the presentEpoch that heights dont obtain enough votes. 
-    // Moreover, due to the leadingBlockTolerance, the assigned epoch for a height could be ahead of the actual epoch. 
-    // TODO : Suggestion: move to the next epoch and count votes there
+    /// @dev it is possible if the accepting epoch is behind the presentEpoch that heights dont obtain enough votes in the assigned epoch. 
+    /// @dev Moreover, due to the leadingBlockTolerance, the assigned epoch for a height could be ahead of the actual epoch. 
+    /// @dev solution is to move to the next epoch and count votes there
     function attemptPostconfirmOrRollover(uint256 superBlockHeight) internal returns (bool) {
         uint256 superBlockEpoch = superBlockHeightAssignedEpoch[superBlockHeight];
         if (getLastPostconfirmedSuperBlockHeight() == 0) {
@@ -456,9 +452,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         uint256 currentAcceptingEpoch = getAcceptingEpoch();
         // get the epoch for the superBlock commitment
         // SuperBlock commitment is not in the current epoch, it cannot be postconfirmed. 
-        // TODO: readdress this approach. we may loose liveness due to this constraint. 
-        // TODO: in particular since leadingBlockTolerance permits superBlocks to be in the wrong epoch.
-        // TODO: the suggestion is to create a workaround that allows to rollover which should update the superBlockCommitment.height and the height of later commitments
+        // TODO: double check liveness conditions for the following critera
         if (superBlockHeightAssignedEpoch[superBlockCommitment.height] != currentAcceptingEpoch) {
             revert UnacceptableSuperBlockCommitment();
         }
@@ -505,7 +499,6 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         // TODO: make this weighted by stake
         address[] memory attesters = stakingContract.getStakedAttestersForAcceptingEpoch(address(this));
         uint256 acceptorIndex = uint256(blockhash(block.number-1)) % attesters.length;
-        // TODO: have an acceptor that can be set.
         currentAcceptor = attesters[acceptorIndex];
     }
 
