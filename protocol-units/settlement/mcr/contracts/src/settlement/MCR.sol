@@ -103,8 +103,8 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     }
 
     // gets the next epoch
-    function getNextAcceptingEpoch() public view returns (uint256) {
-        return stakingContract.getNextAcceptingEpoch(address(this));
+    function getNextAcceptingEpochWithException() public view returns (uint256) {
+        return stakingContract.getNextAcceptingEpochWithException(address(this));
     }
 
     /// @notice Gets the stake for a given tuple (custodian, attester) at a given epoch
@@ -349,32 +349,33 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     // TODO : Suggestion: move to the next epoch and count votes there
     function attemptPostconfirmOrRollover(uint256 superBlockHeight) internal returns (bool) {
         uint256 superBlockEpoch = superBlockHeightAssignedEpoch[superBlockHeight];
-        // ensure that the superBlock height is equal or above the lastPostconfirmedSuperBlockHeight
-        uint256 previousSuperBlockEpoch = superBlockHeightAssignedEpoch[superBlockHeight-1];
-        if (superBlockEpoch < previousSuperBlockEpoch  )  {
-            // if there is a commitment at the superBlock height, we need to set the assigned epoch to the previous epoch. 
-            address[] memory stakedAttesters = getStakedAttestersForAcceptingEpoch();
-            for (uint256 i = 0; i < stakedAttesters.length; i++) {
-                if (commitments[superBlockHeight][stakedAttesters[i]].height != 0) {
-                    superBlockHeightAssignedEpoch[superBlockHeight] = previousSuperBlockEpoch;
-                    break;
+        if (getLastPostconfirmedSuperBlockHeight() == 0) {
+            console.log("[attemptPostconfirmOrRollover] genesis");
+            // if there is no postconfirmed superblock we are at genesis
+        } else {
+            // ensure that the superBlock height is equal or above the lastPostconfirmedSuperBlockHeight
+            uint256 previousSuperBlockEpoch = superBlockHeightAssignedEpoch[superBlockHeight-1];
+            if (superBlockEpoch < previousSuperBlockEpoch  )  {
+                address[] memory stakedAttesters = getStakedAttestersForAcceptingEpoch();
+                // if there is at least one commitment at this superBlock height, we need to update once
+                for (uint256 i = 0; i < stakedAttesters.length; i++) {
+                    if (commitments[superBlockHeight][stakedAttesters[i]].height != 0) {
+                        superBlockHeightAssignedEpoch[superBlockHeight] = previousSuperBlockEpoch;
+                        break;
+                    }
                 }
+                superBlockEpoch = previousSuperBlockEpoch;
             }
-            superBlockEpoch = previousSuperBlockEpoch;
         }
 
         // if the accepting epoch is far behind the superBlockEpoch (which is determined by commitments measured in L1 block time), then the protocol was not live for a while
         // We keep rolling over the epoch (i.e. update stakes) until we catch up with the present epoch
         while (getAcceptingEpoch() < superBlockEpoch) {
-            // only permit rollover if the attester has stake, as this is related to the reward model (rollovers should be rewarded)
-            if (getAttesterStakeForAcceptingEpoch(msg.sender) == 0) return false;            
+            // TODO only permit rollover after some liveness criteria for the acceptor, as this is related to the reward model (rollovers should be rewarded)
             rollOverEpoch();
         }
 
-        // only permit postconfirmation and rollover if the attester has stake
-        // this is related to the reward model (rollover and postconfirmation should be rewarded)
-        // as long as there is a single attester with stake, the protocol will keep rolling over the epoch
-        if (getAttesterStakeForAcceptingEpoch(msg.sender) == 0) return false;            
+        // TODO only permit postconfirmation after some liveness criteria for the acceptor, as this is related to the reward model (postconfirmation should be rewarded)
 
         uint256 supermajority = (2 * getTotalStake(superBlockEpoch)) / 3 + 1;
         address[] memory attesters = getStakedAttestersForAcceptingEpoch();
