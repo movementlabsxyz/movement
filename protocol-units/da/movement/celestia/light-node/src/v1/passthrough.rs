@@ -184,6 +184,7 @@ where
 							verified_blobs.push(blob);
 						}
 						Err(e) => {
+							tracing::error!(error = %e, "ICI failed to verify blob");
 							error!(error = %e, "failed to verify blob");
 						}
 					}
@@ -265,7 +266,7 @@ where
 
 					while let Some(blob) = blob_stream.next().await {
 
-						debug!("Stream got blob: {:?}", blob);
+						debug!("Back fetch Stream got blob: {:?}", blob);
 
 						yield blob?;
 					}
