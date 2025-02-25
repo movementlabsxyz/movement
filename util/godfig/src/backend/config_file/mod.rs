@@ -44,7 +44,7 @@ impl ConfigFile {
 		}
 
 		let json: serde_json::Value = serde_json::from_str(&contents)
-			.map_err(|e| GodfigBackendError::TypeContractMismatch(e.to_string()))?;
+			.map_err(|e| GodfigBackendError::ConfigDeserializationError(e.to_string()))?;
 
 		let keys = key.into();
 		let mut current = &json;
