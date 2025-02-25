@@ -11,7 +11,7 @@ interface IMovementStaking {
     function acceptGenesisCeremony() external;
     function getEpochByL1BlockTime(address) external view returns (uint256);
     function getAcceptingEpoch(address) external view returns (uint256);
-    function getNextAcceptingEpoch(address) external view returns (uint256);
+    function getNextAcceptingEpochWithException(address) external view returns (uint256);
     function getNextPresentEpochWithException(address) external view returns (uint256);
     function getStake(
         address domain,
@@ -99,4 +99,9 @@ interface IMovementStaking {
 
     function getStakedAttestersForAcceptingEpoch(address domain) external view returns (address[] memory);
     function computeAllStakeForAcceptingEpoch(address attester) external view returns (uint256);
+
+    /// @notice Gets the epoch duration for a given domain
+    /// @param domain The domain to get the epoch duration for
+    /// @return The epoch duration in seconds
+    function getEpochDuration(address domain) external view returns (uint256);
 }

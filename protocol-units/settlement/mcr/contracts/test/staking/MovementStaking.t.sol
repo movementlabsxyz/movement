@@ -65,35 +65,40 @@ contract MovementStakingTest is Test {
     }
 
     function testSimpleStaker() public {
-
         // Register a new staker
         address payable domain = payable(vm.addr(1));
+        
         address[] memory custodians = new address[](1);
         custodians[0] = address(moveToken);
+
         vm.prank(domain);
-        staking.registerDomain(1 seconds, custodians);
+        staking.registerDomain(3600 seconds, custodians);
+        assertEq(staking.getEpochDuration(domain), 3600 seconds, "Epoch duration not set correctly");
 
         // stake at the domain
         address payable staker = payable(vm.addr(2));
+
         staking.whitelistAddress(staker);
         moveToken.mint(staker, 100);
+
         vm.prank(staker);
         moveToken.approve(address(staking), 100);
+
         vm.prank(staker);
         staking.stake(domain, moveToken, 100);
+
         assertEq(moveToken.balanceOf(staker), 0);
         assertEq(staking.getStake(domain, 0, address(moveToken), staker), 100);
     }
 
     function testSimpleGenesisCeremony() public {
-       
-
         // Register a new staker
         address payable domain = payable(vm.addr(1));
         address[] memory custodians = new address[](1);
         custodians[0] = address(moveToken);
         vm.prank(domain);
         staking.registerDomain(1 seconds, custodians);
+        assertEq(staking.getEpochDuration(domain), 1 seconds, "Epoch duration not set correctly");
 
         // genesis ceremony
         address payable staker = payable(vm.addr(2));
@@ -105,6 +110,7 @@ contract MovementStakingTest is Test {
         staking.stake(domain, moveToken, 100);
         vm.prank(domain);
         staking.acceptGenesisCeremony();
+
         assertNotEq(staking.currentAcceptingEpochByDomain(domain), 0);
         assertEq(staking.getStakeForAcceptingEpoch(domain, address(moveToken), staker), 100);
 
@@ -301,7 +307,6 @@ contract MovementStakingTest is Test {
     }
 
     function testHalbornReward() public {
-       
 
         // Register a domain
         address payable domain = payable(vm.addr(1));

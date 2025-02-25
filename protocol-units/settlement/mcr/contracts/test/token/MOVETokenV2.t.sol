@@ -135,10 +135,9 @@ contract MOVETokenDevTest is Test {
         // repeat with new test if messenger is multisig or 0
         vm.assume(messenger != multisig);
         vm.assume(messenger != address(0));
-        console.log("............................");
+        console.log("............................"); // TODO : if the console logs are modified, the test fail sometimes, why?
         console.log("messenger", messenger);
         console.log("multisig", multisig);
-        console.log("............................");
 
         // impersonate the messenger address for all subsequent calls
         vm.startPrank(messenger);
@@ -146,9 +145,12 @@ contract MOVETokenDevTest is Test {
         // Expect the call to revert with AccessControlUnauthorizedAccount error
         // - messenger: the account trying to grant the role
         // - DEFAULT_ADMIN_ROLE (0x00): the role needed to grant any role
+        console.log("... messenger", messenger); 
+        console.logBytes32(DEFAULT_ADMIN_ROLE);
         vm.expectRevert(
             abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, messenger, DEFAULT_ADMIN_ROLE)
         );
+
 
         // Attempt to grant MINTER_ROLE to receiver address
         // This should fail since messenger doesn't have DEFAULT_ADMIN_ROLE

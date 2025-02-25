@@ -8,6 +8,7 @@ import {MCRStorage} from "./MCRStorage.sol";
 import {BaseSettlement} from "./settlement/BaseSettlement.sol";
 import {IMCR} from "./interfaces/IMCR.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "forge-std/console.sol";
 
 contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
@@ -17,13 +18,37 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     // Trusted attesters admin
     bytes32 public constant TRUSTED_ATTESTER = keccak256("TRUSTED_ATTESTER");
 
+    /// @notice Error thrown when acceptor term is greater than 256 blocks
+    error AcceptorTermTooLong();
+
+    /// @notice Error thrown when acceptor term is too large for epoch duration
+    error AcceptorTermTooLongForEpoch();
+
+    /// @notice Sets the acceptor term duration, must be less than epoch duration
+    /// @param _acceptorTerm New acceptor term duration in time units
+    function setAcceptorTerm(uint256 _acceptorTerm) public onlyRole(COMMITMENT_ADMIN) {
+        // Ensure acceptor term is not longer than 256 blocks
+        if (_acceptorTerm > 256) {
+            revert AcceptorTermTooLong();
+        }
+        // Ensure acceptor term is sufficiently small compared to epoch duration
+        uint256 epochDuration = stakingContract.getEpochDuration(address(this));
+
+        // TODO If we would use block heights instead of timestamps we could handle everything much smoother.
+        uint256 estimatedL1BlockDelta = 12 seconds; 
+        if (2 * _acceptorTerm >= epochDuration / estimatedL1BlockDelta) {
+            revert AcceptorTermTooLongForEpoch();
+        }
+        acceptorTerm = _acceptorTerm;
+    }
+
     function initialize(
         IMovementStaking _stakingContract,
         uint256 _lastPostconfirmedSuperBlockHeight,
         uint256 _leadingSuperBlockTolerance,
-        uint256 _epochDuration,
+        uint256 _epochDuration, // in time units
         address[] memory _custodians,
-        uint256 _acceptorTerm 
+        uint256 _acceptorTerm // in time units
     ) public initializer {
         __BaseSettlement_init_unchained();
         stakingContract = _stakingContract;
@@ -78,8 +103,8 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     }
 
     // gets the next epoch
-    function getNextAcceptingEpoch() public view returns (uint256) {
-        return stakingContract.getNextAcceptingEpoch(address(this));
+    function getNextAcceptingEpochWithException() public view returns (uint256) {
+        return stakingContract.getNextAcceptingEpochWithException(address(this));
     }
 
     /// @notice Gets the stake for a given tuple (custodian, attester) at a given epoch
@@ -143,11 +168,9 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
             );
     }
 
+    /// @notice Accepts the genesis ceremony.
     function acceptGenesisCeremony() public {
-        require(
-            hasRole(DEFAULT_ADMIN_ROLE, msg.sender),
-            "ACCEPT_GENESIS_CEREMONY_IS_ADMIN_ONLY"
-        );
+        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "ACCEPT_GENESIS_CEREMONY_IS_ADMIN_ONLY");
         stakingContract.acceptGenesisCeremony();
     }
 
@@ -229,7 +252,6 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
     /// @notice Gets the attesters who have stake in the current accepting epoch
     function getStakedAttestersForAcceptingEpoch() public view returns (address[] memory) {
-        // TODO: check that this is the correct domain address to use
         return stakingContract.getStakedAttestersForAcceptingEpoch(address(this)); 
     }
 
@@ -261,9 +283,6 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         commitments[superBlockCommitment.height][attester] = superBlockCommitment;
 
         // increment the commitment count by stake
-        // TODO: we do not record per epoch. this means unless a supermajority of nodes approves for a given epoch the protocol loses livenes.. 
-        // TODO: however, this is in conflict with the leadingBlocktolerance. And the approach will not work unless leadingBlocktolerance << epochDuration
-        // TODO: this needs to be fixed, by recording per epoch and permitting to rollover if sufficient time has passed on L1.
         uint256 attesterStakeForAcceptingEpoch = getAttesterStakeForAcceptingEpoch(attester);
         commitmentStakes[superBlockCommitment.height][superBlockCommitment.commitment] += attesterStakeForAcceptingEpoch;
 
@@ -284,12 +303,6 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     /// @notice If the current acceptor is not live, we should accept postconfirmations from any attester
     // TODO: this will be improved, such that the first voluntary attester to do sowill be rewarded
     function postconfirmAndRolloverWithAttester(address /* attester */) internal {
-        // if the current acceptor is live we should not accept postconfirmations from voluntary attesters
-        // TODO: we probably have to apply this check somewhere else as (volunteer) attesters can only postconfirm and rollover an epoch in which they are staked.
-        if (currentAcceptorIsLive()) {
-            // TODO: for now everyone can postconfirm, but change this later
-            // if (attester != getCurrentAcceptor()) revert("NotAcceptorAndAcceptorIsLive");
-        }
 
         // keep ticking through postconfirmations and rollovers as long as the acceptor is permitted to do
         // ! rewards need to be 
@@ -301,71 +314,64 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
     function currentAcceptorIsLive() public pure returns (bool) {
         // TODO check if current acceptor has been live sufficiently recently
-        // use getL1BlockStartOfCurrentAcceptorTerm, and the mappings
+        // use getAcceptorStartTime, and the mappings
         return true; // dummy implementation
     }
 
-    /// @notice Gets the L1 block height at which the current acceptor's term started
-    function getL1BlockStartOfCurrentAcceptorTerm() public view returns (uint256) {
-        uint256 currentL1BlockHeight = block.number;
-        uint256 startL1BlockHeight = currentL1BlockHeight - currentL1BlockHeight % acceptorTerm - 1; // -1 because we do not want to consider the current block.
-        if (startL1BlockHeight < 0) { // ensure its not below 0 
-            startL1BlockHeight = 0;
-        }
-        return startL1BlockHeight;
+    /// @notice Gets the block height at which the current acceptor's term started
+    function getAcceptorStartL1BlockHeight(uint256 currentL1Block) public view returns (uint256) {
+        uint256 currentL1BlockCorrected = currentL1Block - 1; // The first block is 1, not 0
+        return currentL1BlockCorrected - (currentL1BlockCorrected % acceptorTerm) + 1;
     }
 
-    /// @notice Determines the current acceptor using L1 block hash as a source of randomness
-    function getCurrentAcceptor() public view returns (address) {
-        // TODO: acceptor should swap more frequently than every epoch.
-        // use the blockhash of the first L1 block of the current acceptor's term as the source of randomness
-        bytes32 randomness = blockhash(getL1BlockStartOfCurrentAcceptorTerm());
-        // map the randomness to the attesters
-        // TODO: make this weighted by stake
+    /// @notice Determines the acceptor in the accepting epoch using L1 block hash as a source of randomness
+    // At the border between epochs this is not ideal as getAcceptor works on blocks and epochs works with time. 
+    // Thus we must consider the edge cases where the acceptor is only active for a short time.
+    function getAcceptor() public view returns (address) {
+        uint256 currentL1Block = block.number;
+        uint256 acceptorStartL1Block = getAcceptorStartL1BlockHeight(currentL1Block);
+        require(acceptorStartL1Block > 0, "Acceptor start block should not be 0");
+        require(acceptorStartL1Block <= currentL1Block, "Acceptor start block is in the future");
+        require(currentL1Block - acceptorStartL1Block <= 256, "Acceptor start block is too old, as data is not available for more than 256 blocks");
+        bytes32 randomness = blockhash(acceptorStartL1Block-1); 
+        require(randomness != 0, "Block too old for randomness");
         address[] memory attesters = stakingContract.getStakedAttestersForAcceptingEpoch(address(this));
         uint256 acceptorIndex = uint256(randomness) % attesters.length;
         return attesters[acceptorIndex];        
     }
 
-    // TODO : liveness. if the accepting epoch is behind the presentEpoch and does not have enough votes for a given block height 
-    // TODO : but the current epoch has enough votes, what should we do?? 
-    // TODO : Should we move to the next epoch and ignore all votes on blocks of that epoch? 
-    // TODO : What if none of the epochs have enough votes for a given block height.
+    /// @dev it is possible if the accepting epoch is behind the presentEpoch that heights dont obtain enough votes in the assigned epoch. 
+    /// @dev Moreover, due to the leadingBlockTolerance, the assigned epoch for a height could be ahead of the actual epoch. 
+    /// @dev solution is to move to the next epoch and count votes there
     function attemptPostconfirmOrRollover(uint256 superBlockHeight) internal returns (bool) {
         uint256 superBlockEpoch = superBlockHeightAssignedEpoch[superBlockHeight];
-        // ensure that the superBlock height is equal or above the lastPostconfirmedSuperBlockHeight
-        uint256 previousSuperBlockEpoch = superBlockHeightAssignedEpoch[superBlockHeight-1];
-        if (superBlockEpoch < previousSuperBlockEpoch  )  {
-            // if there is a commitment at the superBlock height, we need to set the assigned epoch to the previous epoch. 
-            address[] memory stakedAttesters = getStakedAttestersForAcceptingEpoch();
-            for (uint256 i = 0; i < stakedAttesters.length; i++) {
-                if (commitments[superBlockHeight][stakedAttesters[i]].height != 0) {
-                    superBlockHeightAssignedEpoch[superBlockHeight] = previousSuperBlockEpoch;
-                    break;
+        if (getLastPostconfirmedSuperBlockHeight() == 0) {
+            console.log("[attemptPostconfirmOrRollover] genesis");
+            // if there is no postconfirmed superblock we are at genesis
+        } else {
+            // ensure that the superBlock height is equal or above the lastPostconfirmedSuperBlockHeight
+            uint256 previousSuperBlockEpoch = superBlockHeightAssignedEpoch[superBlockHeight-1];
+            if (superBlockEpoch < previousSuperBlockEpoch  )  {
+                address[] memory stakedAttesters = getStakedAttestersForAcceptingEpoch();
+                // if there is at least one commitment at this superBlock height, we need to update once
+                for (uint256 i = 0; i < stakedAttesters.length; i++) {
+                    if (commitments[superBlockHeight][stakedAttesters[i]].height != 0) {
+                        superBlockHeightAssignedEpoch[superBlockHeight] = previousSuperBlockEpoch;
+                        break;
+                    }
                 }
+                superBlockEpoch = previousSuperBlockEpoch;
             }
-            superBlockEpoch = previousSuperBlockEpoch;
         }
 
-
         // if the accepting epoch is far behind the superBlockEpoch (which is determined by commitments measured in L1 block time), then the protocol was not live for a while
-        // We keep rolling over the epoch (i.e. update stakes) until we catch up with the superBlockEpoch
-        // TODO: acceptors should be separately rewarded for rollover functions and postconfirmation. Consider to separate this out.
+        // We keep rolling over the epoch (i.e. update stakes) until we catch up with the present epoch
         while (getAcceptingEpoch() < superBlockEpoch) {
-            // only permit rollover if the attester has stake, as this is related to the reward model (rollovers should be rewarded)
-            if (getAttesterStakeForAcceptingEpoch(msg.sender) == 0) return false;            
-            // TODO: The following introduces several attack vectors, albeit minor ones that mainly affect the reward model.
-            // TODO: Since acceptors should be rewarded for rollover functions, a more fair approach would be to permit the current (volunteer) acceptor to only rollover one epoch per transaction.
-            // TODO: However, this would take longer to reach superBlockEpoch as more consecutive transactions would be required.
-            // TODO: Hence we settle with the current approach for now.
+            // TODO only permit rollover after some liveness criteria for the acceptor, as this is related to the reward model (rollovers should be rewarded)
             rollOverEpoch();
         }
 
-        // only permit postconfirmation if the attester has stake, as this is related to the reward model (rollovers should be rewarded)
-        if (getAttesterStakeForAcceptingEpoch(msg.sender) == 0) return false;            
-
-        // note: we could keep track of seen commitments in a set
-        // but since the operations we're doing are very cheap, the set actually adds overhead
+        // TODO only permit postconfirmation after some liveness criteria for the acceptor, as this is related to the reward model (postconfirmation should be rewarded)
 
         uint256 supermajority = (2 * getTotalStake(superBlockEpoch)) / 3 + 1;
         address[] memory attesters = getStakedAttestersForAcceptingEpoch();
@@ -387,12 +393,6 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
             if (totalStakeOnCommitment >= supermajority) {
                 _postconfirmSuperBlockCommitment(superBlockCommitment, msg.sender);
                 successfulPostconfirmation = true;
-                // if the present epoch is greater than the current epoch, roll over the epoch, 
-                // TODO: this did not make sense to me since we require that the superBlock has to be confirmed by the accepting epoch,
-                // TODO: so we MUST wait until all postconfirmations have been done for the accepting epoch.
-                // if (getPresentEpoch() > currentAcceptingEpoch) {
-                //     rollOverEpoch();
-                // }
 
                 // TODO: for rewards we have to run through all the attesters, as we need to acknowledge that they get rewards. 
 
@@ -446,16 +446,13 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         }
     }
 
-    /// @dev Accepts a superBlock commitment.
+    /// @dev Postconfirms a superBlock commitment.
     /// @dev This function and attemptPostconfirmOrRollover() could call each other recursively, so we must ensure it's safe from re-entrancy
-    // TODO: check the truth of the above statement
     function _postconfirmSuperBlockCommitment(SuperBlockCommitment memory superBlockCommitment, address attester) internal {
         uint256 currentAcceptingEpoch = getAcceptingEpoch();
         // get the epoch for the superBlock commitment
         // SuperBlock commitment is not in the current epoch, it cannot be postconfirmed. 
-        // TODO: readdress this approach. we may loose liveness due to this constraint. 
-        // TODO: in particular since leadingBlockTolerance permits superBlocks to be in the wrong epoch.
-        // TODO: the suggestion is to create a workaround that allows to rollover which should update the superBlockCommitment.height and the height of later commitments
+        // TODO: double check liveness conditions for the following critera
         if (superBlockHeightAssignedEpoch[superBlockCommitment.height] != currentAcceptingEpoch) {
             revert UnacceptableSuperBlockCommitment();
         }
@@ -502,7 +499,6 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         // TODO: make this weighted by stake
         address[] memory attesters = stakingContract.getStakedAttestersForAcceptingEpoch(address(this));
         uint256 acceptorIndex = uint256(blockhash(block.number-1)) % attesters.length;
-        // TODO: have an acceptor that can be set.
         currentAcceptor = attesters[acceptorIndex];
     }
 
