@@ -104,31 +104,20 @@ contract MovementStaking is
 
     function acceptGenesisCeremony() public nonReentrant {
         address domain = msg.sender;
-        console.log("[acceptGenesisCeremony] Accepting genesis ceremony for domain:", domain);
-        console.log("[acceptGenesisCeremony] Genesis already accepted?", domainGenesisAccepted[domain]);
 
         if (domainGenesisAccepted[domain]) revert GenesisAlreadyAccepted();
         domainGenesisAccepted[domain] = true;
         
-        console.log("[acceptGenesisCeremony] Epoch duration:", epochDurationByDomain[domain]);
-        console.log("[acceptGenesisCeremony] getEpochDuration(domain):", getEpochDuration(domain));
         assert(epochDurationByDomain[domain] > 0);
 
         // roll over from 0 (genesis) to current epoch by L1Block time
-        console.log("[acceptGenesisCeremony] Getting epoch by L1Block time:");
-        console.log("[acceptGenesisCeremony] getEpochByL1BlockTime(domain):", getEpochByL1BlockTime(domain));
         currentAcceptingEpochByDomain[domain] = getEpochByL1BlockTime(domain);
-        console.log("[acceptGenesisCeremony] Setting accepting epoch to:", currentAcceptingEpochByDomain[domain]);
 
-        console.log("[acceptGenesisCeremony] Number of registered attesters:", registeredAttestersByDomain[domain].length());
         for (uint256 i = 0; i < registeredAttestersByDomain[domain].length(); i++) {
             address attester = registeredAttestersByDomain[domain].at(i);
-            console.log("[acceptGenesisCeremony] Processing attester:", attester);
 
-            console.log("[acceptGenesisCeremony] Number of registered custodians:", registeredCustodiansByDomain[domain].length());
             for (uint256 j = 0; j < registeredCustodiansByDomain[domain].length(); j++) {
                 address custodian = registeredCustodiansByDomain[domain].at(j);
-                console.log("[acceptGenesisCeremony] Processing custodian:", custodian);
 
                 // get the genesis stake for the attester
                 uint256 attesterStake = getStake(
@@ -137,11 +126,10 @@ contract MovementStaking is
                     custodian,
                     attester
                 );
-                console.log("[acceptGenesisCeremony] Genesis stake found:", attesterStake);
 
                 // roll over the genesis stake to the current epoch
                 // except if the current epoch is 0, because we are already in the first epoch
-                console.log("[acceptGenesisCeremony] Rolling over stake to epoch:", getAcceptingEpoch(domain));
+                if (getAcceptingEpoch(domain) > 0) {
                 if (getAcceptingEpoch(domain) > 0) {
                     _addStake(
                         domain,
@@ -151,10 +139,9 @@ contract MovementStaking is
                         attesterStake
                     );
                 }
-                console.log("[acceptGenesisCeremony] Stake after rollover:", getStake(domain, getAcceptingEpoch(domain), custodian, attester));
             }
         }
-        console.log("[acceptGenesisCeremony] Genesis ceremony completed");
+    }
     }
 
     function _addStake(
@@ -210,7 +197,6 @@ contract MovementStaking is
     }
 
     // gets the would be epoch for the current L1-block time. 
-    // TODO: this should be called the currentEpoch (as it is the one that is relevant for stake), whereas the CurrentEpoch should be acceptingEpoch
     // TODO: for liveness of the protocol it should be possible that newer epochs can accept L2-block-batches that are before the current epoch (IF the previous epoch has stopped being live)
     function getEpochByL1BlockTime(address domain) public view returns (uint256) {
         if (epochDurationByDomain[domain] == 0) revert EpochDurationNotSet();
@@ -230,13 +216,11 @@ contract MovementStaking is
     }
 
     /// @notice Gets the next present epoch number
-    /// @dev Special handling for genesis state (epoch 0):
-    /// @dev If getAcceptingEpoch(domain) == 0, returns 0 to stay in genesis until ceremony completes
-    function getNextPresentEpochWithException(
+    function getNextPresentEpoch(
         address domain
     ) public view returns (uint256) {
         return
-            getAcceptingEpoch(domain) == 0 ? 0 : getEpochByL1BlockTime(domain) + 1;
+            getEpochByL1BlockTime(domain) + 1;
     }
 
     /// @dev gets the stake for a given epoch for a given {attester,custodian} tuple
@@ -348,7 +332,7 @@ contract MovementStaking is
         // set the attester to stake for the next epoch
         _addStake(
             domain,
-            getNextPresentEpochWithException(domain),
+            getNextPresentEpoch(domain),
             address(custodian),
             msg.sender,
             amount
@@ -357,7 +341,52 @@ contract MovementStaking is
         // Let the world know that the attester has staked
         emit AttesterStaked(
             domain,
-            getNextAcceptingEpoch(domain),
+            getNextPresentEpoch(domain),
+            address(custodian),
+            msg.sender,
+            amount
+        );
+    }
+
+
+    /// @notice Stakes at genesis
+    function stakeAtGenesis(
+        address domain,
+        IERC20 custodian,
+        uint256 amount
+    ) external onlyRole(WHITELIST_ROLE) nonReentrant {
+        // add the attester to the list of attesters
+        registeredAttestersByDomain[domain].add(msg.sender);
+
+        // add the custodian to the list of custodians
+        // registeredCustodiansByDomain[domain].add(address(custodian)); // Note: we don't want this to take place by default as it opens up an opportunity for a gas attack by generating a large number of custodians for the domain contract to track
+
+        // check the balance of the token before transfer
+        uint256 balanceBefore = token.balanceOf(address(this));
+
+        // transfer the stake to the contract
+        // if the transfer is not using a custodian, the custodian is the token itself
+        // hence this works
+        // ! In general with this pattern, the custodian must be careful about not over-approving the token.
+        custodian.transferFrom(msg.sender, address(this), amount);
+
+        // require that the balance of the actual token has increased by the amount
+        if (token.balanceOf(address(this)) != balanceBefore + amount)
+            revert CustodianTransferAmountMismatch();
+
+        // set the attester to stake for the next epoch
+        _addStake(
+            domain,
+            0,
+            address(custodian),
+            msg.sender,
+            amount
+        );
+
+        // Let the world know that the attester has staked
+        emit AttesterStaked(
+            domain,
+            0,
             address(custodian),
             msg.sender,
             amount
@@ -375,7 +404,7 @@ contract MovementStaking is
         // note: by tracking in the next epoch we need to make sure when we roll over an epoch we check the amount rolled over from stake by the unstake in the next epoch
         _addUnstake(
             domain,
-            getNextPresentEpochWithException(domain),
+            getNextPresentEpoch(domain),
             custodian,
             msg.sender,
             amount
