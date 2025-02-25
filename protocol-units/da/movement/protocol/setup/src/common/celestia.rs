@@ -64,7 +64,10 @@ pub fn initialize_celestia_config(
 	Ok(config)
 }
 
-pub async fn make_dirs(dot_movement: DotMovement, config: Config) -> Result<Config, anyhow::Error> {
+pub async fn make_dirs(
+	_dot_movement: DotMovement,
+	config: Config,
+) -> Result<Config, anyhow::Error> {
 	// make the celestia app directory
 	let app_path = config.appd.celestia_path.clone().context(
         "Failed to get Celestia App path from config. This is required for creating the Celestia App directory.",

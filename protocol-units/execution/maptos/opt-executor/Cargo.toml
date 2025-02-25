@@ -76,6 +76,7 @@ aptos-gas-schedule = { workspace = true }
 aptos-sdk = { workspace = true }
 tempfile = { workspace = true }
 movement-signer-loader = { workspace = true }
+movement-signer = { workspace = true }
 
 [dev-dependencies]
 dirs = { workspace = true }
