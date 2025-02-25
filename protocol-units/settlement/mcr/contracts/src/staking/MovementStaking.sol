@@ -19,11 +19,15 @@ contract MovementStaking is
 {
     using EnumerableSet for EnumerableSet.AddressSet;
 
+    /// @notice Error thrown when trying to get epoch but duration not set
+    error EpochDurationNotSet();
+
     function initialize(IERC20 _token) public initializer {
         __BaseStaking_init_unchained();
         token = _token;
     }
 
+    /// @notice Registers a domain and sets the epoch duration
     function registerDomain(
         uint256 epochDuration,
         address[] calldata custodians
@@ -93,18 +97,38 @@ contract MovementStaking is
         return activeAttesters;
     }
 
+    /// @notice Gets the epoch duration for the given domain
+    function getEpochDuration(address domain) public view returns (uint256) {
+        return epochDurationByDomain[domain];
+    }
+
     function acceptGenesisCeremony() public nonReentrant {
         address domain = msg.sender;
+        console.log("[acceptGenesisCeremony] Accepting genesis ceremony for domain:", domain);
+        console.log("[acceptGenesisCeremony] Genesis already accepted?", domainGenesisAccepted[domain]);
+
         if (domainGenesisAccepted[domain]) revert GenesisAlreadyAccepted();
         domainGenesisAccepted[domain] = true;
-        // roll over from 0 (genesis) to current epoch by L1Block time
-        currentAcceptingEpochByDomain[domain] = getEpochByL1BlockTime(domain);
+        
+        console.log("[acceptGenesisCeremony] Epoch duration:", epochDurationByDomain[domain]);
+        console.log("[acceptGenesisCeremony] getEpochDuration(domain):", getEpochDuration(domain));
+        assert(epochDurationByDomain[domain] > 0);
 
+        // roll over from 0 (genesis) to current epoch by L1Block time
+        console.log("[acceptGenesisCeremony] Getting epoch by L1Block time:");
+        console.log("[acceptGenesisCeremony] getEpochByL1BlockTime(domain):", getEpochByL1BlockTime(domain));
+        currentAcceptingEpochByDomain[domain] = getEpochByL1BlockTime(domain);
+        console.log("[acceptGenesisCeremony] Setting accepting epoch to:", currentAcceptingEpochByDomain[domain]);
+
+        console.log("[acceptGenesisCeremony] Number of registered attesters:", registeredAttestersByDomain[domain].length());
         for (uint256 i = 0; i < registeredAttestersByDomain[domain].length(); i++) {
             address attester = registeredAttestersByDomain[domain].at(i);
+            console.log("[acceptGenesisCeremony] Processing attester:", attester);
 
+            console.log("[acceptGenesisCeremony] Number of registered custodians:", registeredCustodiansByDomain[domain].length());
             for (uint256 j = 0; j < registeredCustodiansByDomain[domain].length(); j++) {
                 address custodian = registeredCustodiansByDomain[domain].at(j);
+                console.log("[acceptGenesisCeremony] Processing custodian:", custodian);
 
                 // get the genesis stake for the attester
                 uint256 attesterStake = getStake(
@@ -113,17 +137,24 @@ contract MovementStaking is
                     custodian,
                     attester
                 );
+                console.log("[acceptGenesisCeremony] Genesis stake found:", attesterStake);
 
                 // roll over the genesis stake to the current epoch
-                _addStake(
-                    domain,
-                    getAcceptingEpoch(domain),
-                    custodian,
-                    attester,
-                    attesterStake
-                );
+                // except if the current epoch is 0, because we are already in the first epoch
+                console.log("[acceptGenesisCeremony] Rolling over stake to epoch:", getAcceptingEpoch(domain));
+                if (getAcceptingEpoch(domain) > 0) {
+                    _addStake(
+                        domain,
+                        getAcceptingEpoch(domain),
+                        custodian,
+                        attester,
+                        attesterStake
+                    );
+                }
+                console.log("[acceptGenesisCeremony] Stake after rollover:", getStake(domain, getAcceptingEpoch(domain), custodian, attester));
             }
         }
+        console.log("[acceptGenesisCeremony] Genesis ceremony completed");
     }
 
     function _addStake(
@@ -182,6 +213,7 @@ contract MovementStaking is
     // TODO: this should be called the currentEpoch (as it is the one that is relevant for stake), whereas the CurrentEpoch should be acceptingEpoch
     // TODO: for liveness of the protocol it should be possible that newer epochs can accept L2-block-batches that are before the current epoch (IF the previous epoch has stopped being live)
     function getEpochByL1BlockTime(address domain) public view returns (uint256) {
+        if (epochDurationByDomain[domain] == 0) revert EpochDurationNotSet();
         return block.timestamp / epochDurationByDomain[domain];
     }
 
@@ -288,7 +320,7 @@ contract MovementStaking is
         return getAttesterStake(domain, getAcceptingEpoch(domain), attester);
     }
 
-    // stakes for the next epoch
+    /// @notice Stakes for the next epoch
     function stake(
         address domain,
         IERC20 custodian,
@@ -634,7 +666,4 @@ contract MovementStaking is
         return computeAllStake(domain, getAcceptingEpoch(domain));
     }
 
-    function getEpochDuration(address domain) external view returns (uint256) {
-        return epochDurationByDomain[domain];
-    }
 }

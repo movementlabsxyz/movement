@@ -168,11 +168,9 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
             );
     }
 
+    /// @notice Accepts the genesis ceremony.
     function acceptGenesisCeremony() public {
-        require(
-            hasRole(DEFAULT_ADMIN_ROLE, msg.sender),
-            "ACCEPT_GENESIS_CEREMONY_IS_ADMIN_ONLY"
-        );
+        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "ACCEPT_GENESIS_CEREMONY_IS_ADMIN_ONLY");
         stakingContract.acceptGenesisCeremony();
     }
 
@@ -331,8 +329,8 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     }
 
     /// @notice Determines the acceptor in the accepting epoch using L1 block hash as a source of randomness
-    // TODO at the border between epochs this is currently not ideal as getAcceptor works on blocks and epochs works with thime. 
-    // TODO consider using block numbers instead of timestamps for epochs, and have epochs as multiple of acceptorTerm
+    // At the border between epochs this is not ideal as getAcceptor works on blocks and epochs works with time. 
+    // Thus we must consider the edge cases where the acceptor is only active for a short time.
     function getAcceptor() public view returns (address) {
         uint256 currentL1Block = block.number;
         uint256 acceptorStartL1Block = getAcceptorStartL1BlockHeight(currentL1Block);
@@ -346,8 +344,9 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         return attesters[acceptorIndex];        
     }
 
-    // TODO : liveness. if the accepting epoch is behind the presentEpoch and does not have enough votes for a given block height.
-    // TODO : Suggestion: move to the next epoch and counts votes there
+    // TODO : liveness. it is possible if the accepting epoch is behind the presentEpoch that heights dont obtain enough votes. 
+    // Moreover, due to the leadingBlockTolerance, the assigned epoch for a height could be ahead of the actual epoch. 
+    // TODO : Suggestion: move to the next epoch and count votes there
     function attemptPostconfirmOrRollover(uint256 superBlockHeight) internal returns (bool) {
         uint256 superBlockEpoch = superBlockHeightAssignedEpoch[superBlockHeight];
         // ensure that the superBlock height is equal or above the lastPostconfirmedSuperBlockHeight
@@ -365,23 +364,17 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         }
 
         // if the accepting epoch is far behind the superBlockEpoch (which is determined by commitments measured in L1 block time), then the protocol was not live for a while
-        // We keep rolling over the epoch (i.e. update stakes) until we catch up with the superBlockEpoch
-        // TODO: acceptors should be separately rewarded for rollover functions and postconfirmation. Consider to separate this out.
+        // We keep rolling over the epoch (i.e. update stakes) until we catch up with the present epoch
         while (getAcceptingEpoch() < superBlockEpoch) {
             // only permit rollover if the attester has stake, as this is related to the reward model (rollovers should be rewarded)
             if (getAttesterStakeForAcceptingEpoch(msg.sender) == 0) return false;            
-            // TODO: The following introduces several attack vectors, albeit minor ones that mainly affect the reward model.
-            // TODO: Since acceptors should be rewarded for rollover functions, a more fair approach would be to permit the current (volunteer) acceptor to only rollover one epoch per transaction.
-            // TODO: However, this would take longer to reach superBlockEpoch as more consecutive transactions would be required.
-            // TODO: Hence we settle with the current approach for now.
             rollOverEpoch();
         }
 
-        // only permit postconfirmation if the attester has stake, as this is related to the reward model (rollovers should be rewarded)
+        // only permit postconfirmation and rollover if the attester has stake
+        // this is related to the reward model (rollover and postconfirmation should be rewarded)
+        // as long as there is a single attester with stake, the protocol will keep rolling over the epoch
         if (getAttesterStakeForAcceptingEpoch(msg.sender) == 0) return false;            
-
-        // note: we could keep track of seen commitments in a set
-        // but since the operations we're doing are very cheap, the set actually adds overhead
 
         uint256 supermajority = (2 * getTotalStake(superBlockEpoch)) / 3 + 1;
         address[] memory attesters = getStakedAttestersForAcceptingEpoch();
@@ -403,12 +396,6 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
             if (totalStakeOnCommitment >= supermajority) {
                 _postconfirmSuperBlockCommitment(superBlockCommitment, msg.sender);
                 successfulPostconfirmation = true;
-                // if the present epoch is greater than the current epoch, roll over the epoch, 
-                // TODO: this did not make sense to me since we require that the superBlock has to be confirmed by the accepting epoch,
-                // TODO: so we MUST wait until all postconfirmations have been done for the accepting epoch.
-                // if (getPresentEpoch() > currentAcceptingEpoch) {
-                //     rollOverEpoch();
-                // }
 
                 // TODO: for rewards we have to run through all the attesters, as we need to acknowledge that they get rewards. 
 
@@ -462,9 +449,8 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         }
     }
 
-    /// @dev Accepts a superBlock commitment.
+    /// @dev Postconfirms a superBlock commitment.
     /// @dev This function and attemptPostconfirmOrRollover() could call each other recursively, so we must ensure it's safe from re-entrancy
-    // TODO: check the truth of the above statement
     function _postconfirmSuperBlockCommitment(SuperBlockCommitment memory superBlockCommitment, address attester) internal {
         uint256 currentAcceptingEpoch = getAcceptingEpoch();
         // get the epoch for the superBlock commitment

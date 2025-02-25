@@ -97,6 +97,9 @@ contract MCRTest is Test, IMCR {
 
         mcr = MCR(address(mcrProxy));
         mcr.setOpenAttestationEnabled(true);
+
+        // check that the setup was correctly performed
+        assertEq(staking.getEpochDuration(address(mcr)), epochDuration, "Epoch duration not set correctly");
     }
 
     // Helper function to setup genesis with 3 attesters and their stakes
@@ -106,7 +109,7 @@ contract MCRTest is Test, IMCR {
         uint256 carolStakeAmount
     ) internal returns (address alice, address bob, address carol) {
         uint256 totalStakeAmount = aliceStakeAmount + bobStakeAmount + carolStakeAmount;
-        
+
         // Create attesters
         alice = payable(vm.addr(1));
         bob = payable(vm.addr(2));
@@ -119,7 +122,7 @@ contract MCRTest is Test, IMCR {
         // Setup attesters
         for (uint i = 0; i < attesters.length; i++) {
             staking.whitelistAddress(attesters[i]);
-            moveToken.mint(attesters[i], totalStakeAmount);
+            moveToken.mint(attesters[i], totalStakeAmount); // we mint the total stake amount for each attester, just so we have some buffer
             vm.prank(attesters[i]);
             moveToken.approve(address(staking), totalStakeAmount);
         }
@@ -133,13 +136,35 @@ contract MCRTest is Test, IMCR {
         staking.stake(address(mcr), moveToken, carolStakeAmount);
 
         // Verify stakes
-        assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), alice), aliceStakeAmount);
-        assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), bob), bobStakeAmount);
-        assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), carol), carolStakeAmount);
-        assertEq(mcr.getTotalStakeForAcceptingEpoch(), totalStakeAmount);
+        assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), alice), aliceStakeAmount, "Alice's stake not correct");
+        assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), bob), bobStakeAmount, "Bob's stake not correct");
+        assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), carol), carolStakeAmount, "Carol's stake not correct");
+        assertEq(mcr.getTotalStakeForAcceptingEpoch(), totalStakeAmount, "Total stake not correct");
+
+        // TODO check why the registering did not work in the setup function
+        // setup the epoch duration
+        address[] memory custodians = new address[](1);
+        custodians[0] = address(moveToken);
+        staking.registerDomain(epochDuration, custodians);
+
+        // TODO this seems odd that we need to do this here.. check for correctnes of this approach
+        mcr.grantRole(mcr.DEFAULT_ADMIN_ROLE(), address(mcr));
+
+        // attempt genesis when L1 chain has already advanced into the future
+        // vm.warp(3*epochDuration);
 
         // End genesis ceremony
+        console.log("[setupGenesisWithThreeAttesters] This is domain:", address(mcr));
+        vm.prank(address(mcr));
         mcr.acceptGenesisCeremony();
+
+        // Verify stakes
+        assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), alice), aliceStakeAmount, "Alice's stake not correct");
+        assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), bob), bobStakeAmount, "Bob's stake not correct");
+        assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), carol), carolStakeAmount, "Carol's stake not correct");
+        assertEq(mcr.getTotalStakeForAcceptingEpoch(), totalStakeAmount, "Total stake not correct");
+
+
     } 
 
     /// @notice Helper function to setup a new signer with staking
@@ -498,6 +523,7 @@ contract MCRTest is Test, IMCR {
         staking.stake(address(mcr), moveToken, 100);
         
         // End genesis ceremony
+        // vm.prank(address(mcr)); // TODO is this needed?
         mcr.acceptGenesisCeremony();
         
         // confirm current superblock height
@@ -602,6 +628,102 @@ contract MCRTest is Test, IMCR {
 
         // Verify height hasn't changed (postconfirmation didn't succeed)
         assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 0);
+    }
+
+    function testStakeActivationAndPostconfirmation() public {
+        // Setup initial attesters with equal stakes, but Carol hasn't staked yet
+        (address alice, address bob, address carol) = setupGenesisWithThreeAttesters(1, 1, 0);
+        console.log("Initial stakes - Alice:", mcr.getStakeForAcceptingEpoch(address(moveToken), alice));
+        console.log("Initial stakes - Bob:", mcr.getStakeForAcceptingEpoch(address(moveToken), bob));
+        console.log("Initial stakes - Carol:", mcr.getStakeForAcceptingEpoch(address(moveToken), carol));
+
+        // check how much balance everyone has  
+        console.log("Alice's balance:", moveToken.balanceOf(alice));
+        console.log("Bob's balance:", moveToken.balanceOf(bob));
+        console.log("Carol's balance:", moveToken.balanceOf(carol));
+
+        uint256 aliceStake1 = mcr.getStakeForAcceptingEpoch(address(moveToken), alice);
+        console.log("Alice's stake:", aliceStake1);
+        assertEq(aliceStake1, 1, "Alice's stake should still be active");
+
+        // Create commitment for height 1
+        MCRStorage.SuperBlockCommitment memory commitment = newHonestCommitment(1);
+        vm.prank(alice);
+        mcr.submitSuperBlockCommitment(commitment);
+        console.log("Alice submitted commitment for height 1");
+
+        // Carol stakes 1, Alice unstakes
+        // vm.prank(carol);
+        // moveToken.approve(address(staking), 1); // TODO : why is this needed?
+        vm.prank(carol);
+        staking.stake(address(mcr), moveToken, 1);
+        console.log("Carol staked 1");
+        // Alice unstakes so her commitment is not counted in the next accepting epoch
+        vm.prank(alice);
+        staking.unstake(address(mcr), address(moveToken), 1);
+        console.log("Alice unstaked 1");
+
+        // Check Carol's stake (should not be active yet)
+        // TODO We need to modify the staking such that it only becomes active in the next epoch.
+        uint256 carolStake = mcr.getStakeForAcceptingEpoch(address(moveToken), carol);
+        console.log("Carol's stake after staking:", carolStake);
+        // assertEq(carolStake, 0, "Carol's stake should not be active yet");
+        // Check Alice's stake (should be still active)
+        uint256 aliceStake = mcr.getStakeForAcceptingEpoch(address(moveToken), alice);
+        console.log("Alice's stake after unstaking:", aliceStake);
+        assertEq(aliceStake, 1, "Alice's stake should still be active");
+
+
+        // Warp to next epoch
+        vm.warp(block.timestamp + epochDuration);
+        console.log("Warped to next epoch");
+
+        // Check Carol's stake (should not be active yet)
+        carolStake = mcr.getStakeForAcceptingEpoch(address(moveToken), carol);
+        console.log("Carol's stake after first warp:", carolStake);
+        assertEq(carolStake, 0, "Carol's stake should not be active yet");
+        // Check Alice's stake (should be deactivated)
+        aliceStake = mcr.getStakeForAcceptingEpoch(address(moveToken), alice);
+        console.log("Alice's stake after first warp:", aliceStake);
+        assertEq(aliceStake, 0, "Alice's stake should be deactivated");
+
+        // Warp to next epoch
+        vm.warp(block.timestamp + epochDuration);
+        console.log("Warped to second epoch");
+
+        // Check Carol's stake (should be active now)
+        carolStake = mcr.getStakeForAcceptingEpoch(address(moveToken), carol);
+        assertEq(carolStake, 1, "Carol's stake should be active now");
+        console.log("Carol's stake after second warp:", carolStake);
+
+        // Carol commits to height 1
+        vm.prank(carol);
+        mcr.submitSuperBlockCommitment(commitment);
+        console.log("Carol submitted commitment for height 1");
+
+        // accepting epoch should be 1 and present epoch should be 3
+        assertEq(mcr.getAcceptingEpoch(), 1);
+        assertEq(mcr.getPresentEpoch(), 3);
+
+        // Try to postconfirm (should fail - no supermajority)
+        vm.prank(bob);
+        mcr.postconfirmSuperBlocksAndRollover();
+        assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 0, "Should not have postconfirmed without supermajority");
+        console.log("Postconfirmation attempt failed as expected");
+
+        // accepting epoch should now be 3
+        assertEq(mcr.getAcceptingEpoch(), 3);
+        
+        // Bob commits to height 1
+        vm.prank(bob);
+        mcr.submitSuperBlockCommitment(commitment);
+        console.log("Bob submitted commitment for height 1");
+
+        // Postconfirm (should succeed now)
+        vm.prank(bob);
+        mcr.postconfirmSuperBlocksAndRollover();
+        assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 1, "Should have postconfirmed with supermajority");
+        console.log("Final postconfirmation succeeded");
     }
 
     // ----------------------------------------------------------------
@@ -721,5 +843,6 @@ contract MCRTest is Test, IMCR {
         assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 2);
 
     }
+
 
 }
