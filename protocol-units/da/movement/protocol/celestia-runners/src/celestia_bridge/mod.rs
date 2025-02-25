@@ -1,5 +1,5 @@
 pub mod local;
-use movement_da_util::config::CelestiaDaLightNodeConfig;
+use movement_da_util::config::{CelestiaDaLightNodeConfig, Network};
 
 use crate::Runner;
 
@@ -12,16 +12,20 @@ impl Runner for CelestiaBridge {
 		dot_movement: dot_movement::DotMovement,
 		config: CelestiaDaLightNodeConfig,
 	) -> Result<(), anyhow::Error> {
-		match config.celestia_da_light_node_config {
-			movement_da_util::config::Config::Local(config) => {
+		let config = config.celestia_da_light_node_config;
+		match config.network {
+			Network::Local => {
 				let local = local::Local::new();
 				local.run(dot_movement, config).await?;
 			}
-			movement_da_util::config::Config::Arabica(_config) => {
+			Network::Arabica => {
 				Err(anyhow::anyhow!("Arabica not implemented"))?;
 			}
-			movement_da_util::config::Config::Mocha(_config) => {
+			Network::Mocha => {
 				Err(anyhow::anyhow!("Mocha not implemented"))?;
+			}
+			Network::Mainnet => {
+				Err(anyhow::anyhow!("Mainnet not implemented"))?;
 			}
 		}
 		Ok(())

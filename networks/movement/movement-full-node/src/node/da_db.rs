@@ -77,6 +77,7 @@ impl DaDB {
 		Ok(())
 	}
 
+	/// Get the synced height marker stored in the database.
 	pub async fn get_synced_height(&self) -> Result<u64, anyhow::Error> {
 		// This is heavy for this purpose, but progressively the contents of the DA DB will be used for more things
 		let da_db = self.inner.clone();
@@ -96,5 +97,29 @@ impl DaDB {
 		})
 		.await??;
 		Ok(height)
+	}
+
+	/// Set the initial value of the synced height, unless a value is stored.
+	pub async fn initialize_synced_height(&self, min_height: u64) -> Result<(), anyhow::Error> {
+		// This is heavy for this purpose, but progressively the contents of the DA DB will be used for more things
+		let da_db = self.inner.clone();
+		tokio::task::spawn_blocking(move || {
+			let cf = da_db
+				.cf_handle(SYNCED_HEIGHT)
+				.ok_or(anyhow::anyhow!("No synced_height column family"))?;
+			let height = da_db
+				.get_cf(&cf, "synced_height")
+				.map_err(|e| anyhow::anyhow!("Failed to get synced height: {:?}", e))?;
+			if height.is_none() {
+				let height = serde_json::to_string(&min_height)
+					.map_err(|e| anyhow::anyhow!("Failed to serialize synced height: {:?}", e))?;
+				da_db
+					.put_cf(&cf, "synced_height", height)
+					.map_err(|e| anyhow::anyhow!("Failed to set synced height: {:?}", e))?;
+			}
+			Ok::<(), anyhow::Error>(())
+		})
+		.await??;
+		Ok(())
 	}
 }

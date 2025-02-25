@@ -1,0 +1,47 @@
+services:
+  setup:
+    image: ghcr.io/movementlabsxyz/movement-full-node-setup:${CONTAINER_REV}
+    container_name: setup
+    environment:
+      CELESTIA_NAMESPACE: "0xa21de06de7aa38c2a812"
+      CELESTIA_NETWORK: mainnet
+      # ws://celestia-light-node:26658
+      CELESTIA_WEBSOCKET_CONNECTION_PROTOCOL: ws
+      CELESTIA_WEBSOCKET_CONNECTION_HOSTNAME: celestia-light-node
+      CELESTIA_WEBSOCKET_CONNECTION_PORT: 26658
+      INDEXER_PROCESSOR_POSTGRES_CONNECTION_STRING: postgres://postgres:password@postgres:5432/postgres
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION: ${AWS_DEFAULT_REGION}
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+    healthcheck:
+      test: [ "CMD-SHELL", "echo 'health check'" ]
+      retries: 30
+      interval: 10s
+      timeout: 5s
+
+  celestia-light-node:
+    image: ghcr.io/celestiaorg/celestia-node:v0.21.5
+    container_name: celestia-light-node
+    command: |
+      celestia light start
+        --core.ip rpc.celestia.pops.one
+        --p2p.network celestia
+        --node.store /.movement/celestia/movement/.celestia-light
+        --keyring.backend test
+        --keyring.keyname movement_celestia_light
+        --log.level WARN
+    environment:
+      - NODE_TYPE=light
+      - P2P_NETWORK=celestia
+    volumes:
+      - ${DOT_MOVEMENT_PATH}/celestia:/.movement/celestia
+    ports:
+      - 26658:26658
+    depends_on:
+      setup:
+        condition: service_healthy
+    healthcheck:
+      test: "celestia node info"
+    restart: on-failure:3

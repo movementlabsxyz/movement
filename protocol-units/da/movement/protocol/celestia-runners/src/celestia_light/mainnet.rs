@@ -1,11 +1,11 @@
 use commander::Command;
 
 #[derive(Debug, Clone)]
-pub struct Mocha;
+pub struct Mainnet;
 
-impl Mocha {
+impl Mainnet {
 	pub fn new() -> Self {
-		Mocha
+		Mainnet
 	}
 
 	pub async fn run(
@@ -22,9 +22,9 @@ impl Mocha {
 			"--keyring.keyname",
 			&config.light.key_name,
 			"--core.ip",
-			"rpc-mocha.pops.one",
+			"rpc.celestia.pops.one",
 			"--p2p.network",
-			"mocha",
+			"celestia",
 			"--log.level",
 			"FATAL",
 		]);

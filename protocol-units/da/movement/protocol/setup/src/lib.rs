@@ -1,28 +1,31 @@
 pub mod arabica;
 pub mod common;
 pub mod local;
+pub mod mainnet;
 pub mod mocha;
-use movement_da_util::config::CelestiaDaLightNodeConfig;
+use movement_da_util::config::{CelestiaDaLightNodeConfig, Network};
 
 pub async fn setup(
 	dot_movement: dot_movement::DotMovement,
 	mut config: CelestiaDaLightNodeConfig,
 ) -> Result<CelestiaDaLightNodeConfig, anyhow::Error> {
-	let inner_config = match config.celestia_da_light_node_config {
-		movement_da_util::config::Config::Local(config) => {
+	let inner_config = config.celestia_da_light_node_config;
+	let inner_config = match inner_config.network {
+		Network::Local => {
 			let local = local::Local::new();
-			let local_config = local.setup(dot_movement, config).await?;
-			movement_da_util::config::Config::Local(local_config)
+			local.setup(dot_movement, inner_config).await?
 		}
-		movement_da_util::config::Config::Arabica(config) => {
+		Network::Arabica => {
 			let arabica = arabica::Arabica::new();
-			let arabica_config = arabica.setup(dot_movement, config).await?;
-			movement_da_util::config::Config::Arabica(arabica_config)
+			arabica.setup(dot_movement, inner_config).await?
 		}
-		movement_da_util::config::Config::Mocha(config) => {
+		Network::Mocha => {
 			let mocha = mocha::Mocha::new();
-			let mocha_config = mocha.setup(dot_movement, config).await?;
-			movement_da_util::config::Config::Mocha(mocha_config)
+			mocha.setup(dot_movement, inner_config).await?
+		}
+		Network::Mainnet => {
+			let mainnet = mainnet::Mainnet::new();
+			mainnet.setup(dot_movement, inner_config).await?
 		}
 	};
 	config.celestia_da_light_node_config = inner_config;

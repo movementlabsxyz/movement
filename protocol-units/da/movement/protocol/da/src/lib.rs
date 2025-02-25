@@ -70,16 +70,7 @@ where
 		&self,
 		height: u64,
 	) -> Pin<Box<dyn Future<Output = Result<Vec<DaBlob<C>>, DaError>> + Send + '_>> {
-		Box::pin(async move {
-			let result = self.get_da_blobs_at_height(height).await;
-			match result {
-				Ok(blobs) => Ok(blobs),
-				Err(e) => {
-					warn!("failed to get blobs at height: {}", e);
-					Ok(vec![])
-				}
-			}
-		})
+		self.get_da_blobs_at_height(height)
 	}
 
 	fn stream_certificates(

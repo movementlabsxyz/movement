@@ -1,5 +1,5 @@
 use dot_movement::DotMovement;
-use movement_da_util::config::local::Config;
+use movement_da_util::config::Config;
 
 pub fn initialize_memseq_config(
 	dot_movement: DotMovement,

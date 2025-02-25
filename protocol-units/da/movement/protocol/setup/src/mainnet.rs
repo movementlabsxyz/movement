@@ -4,9 +4,9 @@ use movement_da_util::config::Config;
 use tracing::info;
 
 #[derive(Debug, Clone)]
-pub struct Mocha;
+pub struct Mainnet;
 
-impl Mocha {
+impl Mainnet {
 	pub fn new() -> Self {
 		Self
 	}
@@ -16,11 +16,11 @@ impl Mocha {
 		dot_movement: &DotMovement,
 		config: &Config,
 	) -> Result<(), anyhow::Error> {
-		common::celestia::celestia_light_init(dot_movement, config, "mocha").await
+		common::celestia::celestia_light_init(dot_movement, config, "celestia").await
 	}
 
 	pub async fn get_da_block_height(&self) -> Result<u64, anyhow::Error> {
-		common::celestia::current_block_height("https://rpc-mocha.pops.one").await
+		common::celestia::current_block_height("https://rpc.celestia.pops.one").await
 	}
 
 	async fn get_auth_token(
@@ -28,7 +28,7 @@ impl Mocha {
 		dot_movement: &DotMovement,
 		config: &Config,
 	) -> Result<String, anyhow::Error> {
-		common::celestia::get_auth_token(dot_movement, config, "mocha").await
+		common::celestia::get_auth_token(dot_movement, config, "celestia").await
 	}
 
 	pub async fn setup_celestia(
@@ -40,7 +40,7 @@ impl Mocha {
 		let config = common::memseq::initialize_memseq_config(dot_movement.clone(), config)?;
 		let mut config = common::celestia::make_dirs(dot_movement.clone(), config).await?;
 
-		// celestia light init --p2p.network mocha
+		// celestia light init --p2p.network celestia
 		self.celestia_light_init(&dot_movement, &config).await?;
 
 		// get the auth token
