@@ -17,6 +17,9 @@ RUN rust_binary="./target/release/movement-indexer-service"; dest_dir="/tmp/runt
 
 FROM alpine:latest
 
+# curl is needed for the health check
+RUN apk add --no-cache curl
+
 # Copy the build artifact from the builder stage
 COPY --from=builder /tmp/build/target/release/movement-indexer-service /app/movement-indexer-service
 COPY --from=builder /tmp/build/target/release/load_metadata /app/load_metadata

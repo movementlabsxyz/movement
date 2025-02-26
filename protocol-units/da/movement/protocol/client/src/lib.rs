@@ -15,12 +15,34 @@ pub enum MovementDaLightNodeClient {
 impl MovementDaLightNodeClient {
 	/// Creates an http1 connection to the light node service.
 	pub fn try_http1(connection_string: &str) -> Result<Self, anyhow::Error> {
-		Ok(Self::Http1(http1::Http1::try_new(connection_string)?))
+		for _ in 0..5 {
+			match http1::Http1::try_new(connection_string) {
+				Ok(result) => return Ok(Self::Http1(result)),
+				Err(err) => {
+					tracing::warn!("DA Http1 connection failed: {}. Retrying in 5s...", err);
+					std::thread::sleep(std::time::Duration::from_secs(5));
+				}
+			}
+		}
+		return Err(
+			anyhow::anyhow!("Error DA Http1 connection failed more than 5 time aborting.",),
+		);
 	}
 
 	/// Creates an http2 connection to the light node service.
 	pub async fn try_http2(connection_string: &str) -> Result<Self, anyhow::Error> {
-		Ok(Self::Http2(http2::Http2::connect(connection_string).await?))
+		for _ in 0..5 {
+			match http2::Http2::connect(connection_string).await {
+				Ok(result) => return Ok(Self::Http2(result)),
+				Err(err) => {
+					tracing::warn!("DA Http2 connection failed: {}. Retrying in 5s...", err);
+					std::thread::sleep(std::time::Duration::from_secs(5));
+				}
+			}
+		}
+		return Err(
+			anyhow::anyhow!("Error DA Http2 connection failed more than 5 time aborting.",),
+		);
 	}
 
 	/// Stream reads from a given height.
