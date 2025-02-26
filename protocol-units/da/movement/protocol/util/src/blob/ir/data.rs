@@ -28,7 +28,8 @@ where
 	}
 
 	pub fn now(blob: Vec<u8>) -> Self {
-		// mark the timestamp as now in milliseconds
+		// Define the block timestamp value. Aptos framework need a timestamp in micro sec.
+		// Changing this value will generate blocks that can't be executed.
 		let timestamp = chrono::Utc::now().timestamp_micros() as u64;
 
 		Self::new(blob, timestamp)
