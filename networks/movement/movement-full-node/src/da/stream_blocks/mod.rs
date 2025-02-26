@@ -55,10 +55,10 @@ impl StreamBlocks {
 			};
 			// pretty print (with labels) the block_id, block_timestamp, and da_height
 			tracing::info!(
-				"Block ID: {}, Block Timestamp: {}, DA Height: {}",
+				"Block ID: {}, Block Timestamp: {:?}, DA Height: {}",
 				hex::encode(block_id),
 				// unix date string from the block timestamp which is in microseconds
-				chrono::DateTime::from_timestamp((block_timestamp / 1_000_000) as i64, 0)
+				chrono::DateTime::from_timestamp_micros(block_timestamp as i64)
 					.context("Failed to convert timestamp to date")?,
 				da_height
 			);
