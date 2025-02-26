@@ -211,7 +211,6 @@ where
 		let blobs = request.into_inner().blobs;
 		for data in blobs {
 			let blob = InnerSignedBlobV1Data::now(data.data)
-				.map_err(|e| tonic::Status::internal(format!("Failed to create blob data: {}", e)))?
 				.try_to_sign(&self.signer)
 				.await
 				.map_err(|e| tonic::Status::internal(format!("Failed to sign blob: {}", e)))?;
