@@ -79,28 +79,4 @@ pub mod block {
 			Ok(Self::now(blob))
 		}
 	}
-
-	impl<C> TryFrom<block::Id> for InnerSignedBlobV1Data<C>
-	where
-		C: Curve + Verify<C> + Digester<C>,
-	{
-		type Error = anyhow::Error;
-
-		fn try_from(id: block::Id) -> Result<Self, Self::Error> {
-			let blob = id.as_bytes().to_vec();
-			Ok(Self::now(blob))
-		}
-	}
-
-	impl<C> TryFrom<Vec<block::Id>> for InnerSignedBlobV1Data<C>
-	where
-		C: Curve + Verify<C> + Digester<C>,
-	{
-		type Error = anyhow::Error;
-
-		fn try_from(ids: Vec<block::Id>) -> Result<Self, Self::Error> {
-			let blob = bcs::to_bytes(&ids)?;
-			Ok(Self::now(blob))
-		}
-	}
 }
