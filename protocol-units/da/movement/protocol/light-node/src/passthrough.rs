@@ -167,7 +167,7 @@ where
 								return;
 							},
 							None => {
-								info!("Stream blob closed , exit stream.");
+								tracing::warn!("Stream blob closed , exit stream.");
 								return;
 							}
 						}
