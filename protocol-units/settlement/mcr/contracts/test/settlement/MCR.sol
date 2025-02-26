@@ -786,10 +786,6 @@ contract MCRTest is Test, IMCR {
     function testAcceptorRewards() public {
         (address alice, address bob, ) = setupGenesisWithThreeAttesters(1, 1, 0);
         assertEq(mcr.getAcceptor(), bob, "Bob should be the acceptor");
-        
-        // TODO why do we need to whitelist the address?
-        // staking.whitelistAddress(alice);
-        // staking.whitelistAddress(bob);
 
         // make superBlock commitments
         MCRStorage.SuperBlockCommitment memory initCommitment = newHonestCommitment(1);
@@ -821,7 +817,6 @@ contract MCRTest is Test, IMCR {
         vm.prank(bob);
         mcr.postconfirmSuperBlocksAndRollover();
         assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 2);
-
     }
 
 
