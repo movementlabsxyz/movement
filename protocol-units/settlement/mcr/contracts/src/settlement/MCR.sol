@@ -92,17 +92,17 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         return lastPostconfirmedSuperBlockHeight + leadingSuperBlockTolerance;
     }
 
-    // gets the would be epoch for the current L1Block time
+    // gets the present epoch
     function getPresentEpoch() public view returns (uint256) {
         return stakingContract.getEpochByL1BlockTime(address(this));
     }
 
-    // gets the epoch up to which superBlocks have been accepted
+    // gets the accepting epoch
     function getAcceptingEpoch() public view returns (uint256) {
         return stakingContract.getAcceptingEpoch(address(this));
     }
 
-    // gets the next epoch
+    // gets the next accepting epoch (unless we are at genesis)
     function getNextAcceptingEpochWithException() public view returns (uint256) {
         return stakingContract.getNextAcceptingEpochWithException(address(this));
     }
@@ -281,6 +281,11 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
         // register the attester's commitment
         commitments[superBlockCommitment.height][attester] = superBlockCommitment;
+        
+        // Record first seen timestamp if not already set
+        if (commitmentFirstSeenAt[superBlockCommitment.height][superBlockCommitment.commitment] == 0) {
+            commitmentFirstSeenAt[superBlockCommitment.height][superBlockCommitment.commitment] = block.timestamp;
+        }
 
         // increment the commitment count by stake
         uint256 attesterStakeForAcceptingEpoch = getAttesterStakeForAcceptingEpoch(attester);
@@ -515,5 +520,11 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     /// @notice Gets the epoch assigned to a superblock height
     function getSuperBlockHeightAssignedEpoch(uint256 height) public view returns (uint256) {
         return superBlockHeightAssignedEpoch[height];
+    }
+
+    // TODO use this to limit the postconfirmations on new commits ( we need to give time to attesters to submit their commitments )
+    /// @notice get the timestamp when a commitment was first seen
+    function getCommitmentFirstSeenAt(uint256 height, bytes32 commitment) public view returns (uint256) {
+        return commitmentFirstSeenAt[height][commitment];
     }
 }

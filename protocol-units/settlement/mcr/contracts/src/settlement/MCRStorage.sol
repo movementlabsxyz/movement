@@ -54,6 +54,9 @@ contract MCRStorage {
     // track the total stake accumulate for each commitment for each superBlock height
     mapping(uint256 superBlockHeight => mapping(bytes32 commitement => uint256 stake)) public commitmentStakes;
 
+    // track when each commitment was first seen for each superBlock height
+    mapping(uint256 superBlockHeight => mapping(bytes32 commitment => uint256 timestamp)) public commitmentFirstSeenAt;
+
     // Track which attester postconfirmed a given superBlock height
     mapping(uint256 superBlockHeight => address attester) public postconfirmedBy;
 
