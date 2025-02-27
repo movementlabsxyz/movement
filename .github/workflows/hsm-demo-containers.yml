@@ -1,4 +1,4 @@
-name: Build Push Containers
+name: HSM Demo Build Push Containers
 
 on:
   pull_request:

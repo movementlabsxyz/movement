@@ -11,7 +11,19 @@ on:
       - '**' 
 
 jobs:
- 
+
+  read-github-context-object:
+    runs-on: ubuntu-latest
+    steps:
+      # I know this is not pretty (debug information) but it's useful to have this
+    - name: Read github context
+      env: 
+        GITHUB_CONTEXT: ${{ toJson(github) }}
+      run: |
+        echo "GITHUB_SHA=${GITHUB_SHA}"
+        echo "INFO: github context object content below"
+        echo "${GITHUB_CONTEXT}"
+
   build:
     strategy:
       matrix:
@@ -26,6 +38,7 @@ jobs:
     runs-on: ${{ matrix.runs-on }}
 
     steps:
+
     - name: Checkout repository
       uses: actions/checkout@v4
 
