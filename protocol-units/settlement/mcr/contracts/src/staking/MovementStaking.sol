@@ -4,6 +4,7 @@ import "forge-std/console.sol";
 import {BaseStaking} from "./base/BaseStaking.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {ICustodianToken} from "../token/custodian/CustodianToken.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {MovementStakingStorage, EnumerableSet} from "./MovementStakingStorage.sol";
@@ -565,14 +566,25 @@ contract MovementStaking is
         }
     }
 
+    /// @notice Custodian pays an attester
+    // TODO these multiple if statements are a bit confusing at best. 
+    // TODO This should be refactored and more individual functions created.
+    // TODO e.g. _payAttesterFromContract, _payAttesterFromCustodian, _payAttesterFromToken
     function _payAttester(
         address from,
         address attester,
         address custodian,
         uint256 amount
     ) internal {
+        console.log("[payAttester] From:", from);
+        console.log("[payAttester] Attester:", attester);
+        console.log("[payAttester] Custodian:", custodian);
+        console.log("[payAttester] Amount:", amount);
+        console.log("[payAttester] Token address:", address(token));
+        console.log("[payAttester] Address of this:", address(this));
         if (from == address(this)) {
             // this contract is paying the attester
+            console.log("[payAttester] From = contract");
             if (address(token) == custodian) {
                 // if there isn't a custodian...
                 token.transfer(attester, amount); // just transfer the token
@@ -590,7 +602,17 @@ contract MovementStaking is
             // somebody else is trying to pay the attester, e.g., the domain
             if (address(token) == custodian) {
                 // if there isn't a custodian...
+                console.log("[payAttester] From = address(token)");
+                // make an if statement to check if there is enough balance
+                console.log("[payAttester] Balance of token:", token.balanceOf(from));
+                console.log("[payAttester] Amount:", amount);
+                if (token.balanceOf(from) < amount) {
+                    console.log("[payAttester] insuffienct balance");
+                    console.log("[payAttester] Balance of token:", token.balanceOf(from));
+                    console.log("[payAttester] Amount:", amount);
+                }
                 token.transferFrom(from, attester, amount); // just transfer the token
+                console.log("[payAttester] Successfully transferred from:", from);
             } else {
                 // purchase the custodial token for the attester
                 ICustodianToken(custodian).buyCustodialTokenFrom(
@@ -602,17 +624,34 @@ contract MovementStaking is
         }
     }
 
+    /// @notice Custodian rewards an attester
+    /// @param attester The attester to reward
+    /// @param amount The amount to reward
+    /// @param custodian The custodian of the token from which to reward the attester
     function reward(
+        address attester,
+        uint256 amount,
+        address custodian
+    ) public nonReentrant {
+        _payAttester(msg.sender, attester, custodian, amount);
+    }
+
+    /// @notice An array of custodians reward an array of attesters
+    /// @param attesters The attesters to reward
+    /// @param amounts The amounts to reward
+    /// @param custodians The custodians of the token from which to reward the attesters    
+    function rewardArray(
         address[] calldata attesters,
         uint256[] calldata amounts,
         address[] calldata custodians
     ) public nonReentrant {
         // note: you may want to apply this directly to the attester's stake if the Domain sets an automatic restake policy
         for (uint256 i = 0; i < attesters.length; i++) {
-            // pay the attester
             _payAttester(msg.sender, attesters[i], custodians[i], amounts[i]);
         }
     }
+
+
 
     /// @notice Whitelist an address to be used as an attester or custodian. 
     /// @notice Whitelisting means that the address is allowed to stake and unstake

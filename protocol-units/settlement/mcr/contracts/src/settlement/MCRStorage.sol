@@ -8,6 +8,9 @@ contract MCRStorage {
 
     IMovementStaking public stakingContract;
 
+    // The MOVE token address, which is the primary custodian for rewards in the staking contract
+    address public moveTokenAddress;
+
     // the number of superBlocks that can be submitted ahead of the lastPostconfirmedSuperBlockHeight
     // this allows for things like batching to take place without some attesters locking down the attester set by pushing too far ahead
     // ? this could be replaced by a 2/3 stake vote on the superBlock height to epoch assignment
@@ -83,6 +86,9 @@ contract MCRStorage {
     // versioned scheme for postconfirmed superBlocks
     mapping(uint256 => mapping(uint256 superBlockHeight => SuperBlockCommitment)) public versionedPostconfirmedSuperBlocks;
     uint256 public postconfirmedSuperBlocksVersion;
+
+    // track reward points for attesters
+    mapping(uint256 epoch => mapping(address attester => uint256 points)) public attesterRewardPoints;
 
     uint256[47] internal __gap;
 
