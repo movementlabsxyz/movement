@@ -28,7 +28,8 @@ where
 	}
 
 	pub fn now(blob: Vec<u8>) -> Self {
-		// mark the timestamp as now in milliseconds
+		// Define the block timestamp value. Aptos framework need a timestamp in micro sec.
+		// Changing this value will generate blocks that can't be executed.
 		let timestamp = chrono::Utc::now().timestamp_micros() as u64;
 
 		Self::new(blob, timestamp)
@@ -76,30 +77,6 @@ pub mod block {
 
 		fn try_from(block: block::Block) -> Result<Self, Self::Error> {
 			let blob = bcs::to_bytes(&block)?;
-			Ok(Self::now(blob))
-		}
-	}
-
-	impl<C> TryFrom<block::Id> for InnerSignedBlobV1Data<C>
-	where
-		C: Curve + Verify<C> + Digester<C>,
-	{
-		type Error = anyhow::Error;
-
-		fn try_from(id: block::Id) -> Result<Self, Self::Error> {
-			let blob = id.as_bytes().to_vec();
-			Ok(Self::now(blob))
-		}
-	}
-
-	impl<C> TryFrom<Vec<block::Id>> for InnerSignedBlobV1Data<C>
-	where
-		C: Curve + Verify<C> + Digester<C>,
-	{
-		type Error = anyhow::Error;
-
-		fn try_from(ids: Vec<block::Id>) -> Result<Self, Self::Error> {
-			let blob = bcs::to_bytes(&ids)?;
 			Ok(Self::now(blob))
 		}
 	}
