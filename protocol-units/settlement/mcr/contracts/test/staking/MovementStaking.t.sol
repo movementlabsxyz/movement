@@ -356,6 +356,48 @@ contract MovementStakingTest is Test {
                 1000
             )
         );
-        staking.reward(attesters, amounts, custodians);
+        staking.rewardArray(attesters, amounts, custodians);
     }
+
+    function testRewardSingleAttester() public {
+        // Register a domain
+        address domain = address(this);
+        address[] memory custodians = new address[](1);
+        custodians[0] = address(moveToken);
+        staking.registerDomain(7200 seconds, custodians);
+        // Setup domain to pay rewards
+        // moveToken.mint(domain, 100);  // Domain has already funds
+        moveToken.approve(address(staking), 100);  // Domain approves staking
+
+        
+        // Alice stakes 1000 tokens
+        address payable alice = payable(vm.addr(2));
+        staking.whitelistAddress(alice);
+        moveToken.mint(alice, 1000);
+        vm.prank(alice);
+        moveToken.approve(address(staking), 1000);
+        vm.prank(alice);
+        staking.stake(domain, moveToken, 1000);
+        
+        // Assertions on stakes and balances
+        assertEq(moveToken.balanceOf(alice), 0, "Alice should have 0 tokens");
+        assertEq(moveToken.balanceOf(address(staking)), 1000, "Staking contract should have 1000 tokens");
+        assertEq(staking.getCustodianStake(domain, 0, address(moveToken)), 1000, "Custodian stake should be 1000");
+        assertEq(staking.getStake(domain, 0, address(moveToken), alice), 1000, "Alice stake should be 1000");
+                
+        // Reward alice
+        console.log("This is moveToken:", address(moveToken));
+        console.log("This is staking:", address(staking));
+        console.log("This is alice:", alice);
+        console.log("This is domain:", domain);
+        vm.prank(domain);  // Domain calls reward
+        staking.rewardFromDomain(alice, 100, address(moveToken));
+        
+        // Verify reward was received
+        assertEq(moveToken.balanceOf(alice), 100, "Alice should have received 100 tokens");
+    }
+
 }
+
+
+

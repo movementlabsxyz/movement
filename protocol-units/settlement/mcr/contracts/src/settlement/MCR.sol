@@ -48,7 +48,8 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         uint256 _leadingSuperBlockTolerance,
         uint256 _epochDuration, // in time units
         address[] memory _custodians,
-        uint256 _acceptorTerm // in time units
+        uint256 _acceptorTerm, // in time units
+        address _moveTokenAddress  // the primary custodian for rewards in the staking contract
     ) public initializer {
         __BaseSettlement_init_unchained();
         stakingContract = _stakingContract;
@@ -58,6 +59,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         grantCommitmentAdmin(msg.sender);
         grantTrustedAttester(msg.sender);
         acceptorTerm = _acceptorTerm;
+        moveTokenAddress = _moveTokenAddress;
     }
 
     function grantCommitmentAdmin(address account) public {
@@ -92,17 +94,17 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         return lastPostconfirmedSuperBlockHeight + leadingSuperBlockTolerance;
     }
 
-    // gets the would be epoch for the current L1Block time
+    // gets the present epoch
     function getPresentEpoch() public view returns (uint256) {
         return stakingContract.getEpochByL1BlockTime(address(this));
     }
 
-    // gets the epoch up to which superBlocks have been accepted
+    // gets the accepting epoch
     function getAcceptingEpoch() public view returns (uint256) {
         return stakingContract.getAcceptingEpoch(address(this));
     }
 
-    // gets the next epoch
+    // gets the next accepting epoch (unless we are at genesis)
     function getNextAcceptingEpochWithException() public view returns (uint256) {
         return stakingContract.getNextAcceptingEpochWithException(address(this));
     }
@@ -281,6 +283,11 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
         // register the attester's commitment
         commitments[superBlockCommitment.height][attester] = superBlockCommitment;
+        
+        // Record first seen timestamp if not already set
+        if (commitmentFirstSeenAt[superBlockCommitment.height][superBlockCommitment.commitment] == 0) {
+            commitmentFirstSeenAt[superBlockCommitment.height][superBlockCommitment.commitment] = block.timestamp;
+        }
 
         // increment the commitment count by stake
         uint256 attesterStakeForAcceptingEpoch = getAttesterStakeForAcceptingEpoch(attester);
@@ -344,6 +351,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     /// @dev Moreover, due to the leadingBlockTolerance, the assigned epoch for a height could be ahead of the actual epoch. 
     /// @dev solution is to move to the next epoch and count votes there
     function attemptPostconfirmOrRollover(uint256 superBlockHeight) internal returns (bool) {
+        console.log("[attemptPostconfirmOrRollover] attempting postconfirm or rollover at superblock height %s", superBlockHeight);
         uint256 superBlockEpoch = superBlockHeightAssignedEpoch[superBlockHeight];
         if (getLastPostconfirmedSuperBlockHeight() == 0) {
             console.log("[attemptPostconfirmOrRollover] genesis");
@@ -369,6 +377,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         while (getAcceptingEpoch() < superBlockEpoch) {
             // TODO only permit rollover after some liveness criteria for the acceptor, as this is related to the reward model (rollovers should be rewarded)
             rollOverEpoch();
+            console.log("[attemptPostconfirmOrRollover] rolled over epoch to %s", getAcceptingEpoch());
         }
 
         // TODO only permit postconfirmation after some liveness criteria for the acceptor, as this is related to the reward model (postconfirmation should be rewarded)
@@ -393,6 +402,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
             if (totalStakeOnCommitment >= supermajority) {
                 _postconfirmSuperBlockCommitment(superBlockCommitment, msg.sender);
                 successfulPostconfirmation = true;
+                console.log("[attemptPostconfirmOrRollover] successful postconfirmation at height %s", superBlockHeight);
 
                 // TODO: for rewards we have to run through all the attesters, as we need to acknowledge that they get rewards. 
 
@@ -406,9 +416,10 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         // we rollover the epoch to give the next attesters a chance
         if (!successfulPostconfirmation && getPresentEpoch() > getAcceptingEpoch()) {
             rollOverEpoch();
+            console.log("[attemptPostconfirmOrRollover] rolled over to epoch", getAcceptingEpoch());
             return true; // we have to retry the postconfirmation at the next epoch again
         }
-
+        console.log("[attemptPostconfirmOrRollover] no successful postconfirmation");
         return false;
     }
 
@@ -462,6 +473,14 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
             revert UnacceptableSuperBlockCommitment();
         }
 
+        // Record reward points for all attesters who committed to the winning commitment
+        address[] memory attesters = getStakedAttestersForAcceptingEpoch();
+        for (uint256 i = 0; i < attesters.length; i++) {
+            if (commitments[superBlockCommitment.height][attesters[i]].commitment == superBlockCommitment.commitment) {
+                attesterRewardPoints[currentAcceptingEpoch][attesters[i]]++;
+            }
+        }
+
         versionedPostconfirmedSuperBlocks[postconfirmedSuperBlocksVersion][superBlockCommitment.height] = superBlockCommitment;
         lastPostconfirmedSuperBlockHeight = superBlockCommitment.height;
         postconfirmedBy[superBlockCommitment.height] = attester;
@@ -486,10 +505,31 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         // stakingContract.slash(custodians, attesters, amounts, refundAmounts);
     }
 
-    /**
-     * @dev nonReentrant because there is no need to reenter this function. It should be called iteratively. Marked on the internal method to simplify risks from complex calling patterns. This also calls an external contract.
-     */
+    /// @dev nonReentrant because there is no need to reenter this function. It should be called iteratively. 
+    /// @dev Marked on the internal method to simplify risks from complex calling patterns. This also calls an external contract.
     function rollOverEpoch() internal {
+        // Get all attesters who earned points in the current epoch
+        uint256 acceptingEpoch = getAcceptingEpoch();
+        address[] memory attesters = getStakedAttestersForAcceptingEpoch();
+        
+        console.log("[rollOverEpoch] Attesters length at epoch %s is %s", acceptingEpoch, attesters.length);
+        // reward
+        for (uint256 i = 0; i < attesters.length; i++) {
+            if (attesterRewardPoints[acceptingEpoch][attesters[i]] > 0) {
+                // TODO: make this configurable and set it on instance creation
+                uint256 rewardPerPoint = 1;
+                uint256 reward = attesterRewardPoints[acceptingEpoch][attesters[i]] * rewardPerPoint * getAttesterStakeForAcceptingEpoch(attesters[i]);
+                // the staking contract is the custodian
+                console.log("[rollOverEpoch] Rewarding attester %s with %s", attesters[i], reward);
+                console.log("[rollOverEpoch] Staking contract is %s", address(stakingContract));
+                console.log("[rollOverEpoch] Move token address is %s", moveTokenAddress);
+                console.log("[rollOverEpoch] msg.sender is %s", msg.sender);
+                // rewards are currently paid out from the mcr domain
+                stakingContract.rewardFromDomain(attesters[i], reward, moveTokenAddress);
+                delete attesterRewardPoints[acceptingEpoch][attesters[i]];
+            }
+        }
+
         stakingContract.rollOverEpoch();
         setAcceptor();
     }
@@ -515,5 +555,19 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     /// @notice Gets the epoch assigned to a superblock height
     function getSuperBlockHeightAssignedEpoch(uint256 height) public view returns (uint256) {
         return superBlockHeightAssignedEpoch[height];
+    }
+
+    // TODO use this to limit the postconfirmations on new commits ( we need to give time to attesters to submit their commitments )
+    /// @notice get the timestamp when a commitment was first seen
+    function getCommitmentFirstSeenAt(uint256 height, bytes32 commitment) public view returns (uint256) {
+        return commitmentFirstSeenAt[height][commitment];
+    }
+
+    /// @notice Gets the reward points for an attester in a given epoch
+    /// @param epoch The epoch to get the reward points for
+    /// @param attester The attester to get the reward points for
+    /// @return The reward points for the attester in the given epoch
+    function getAttesterRewardPoints(uint256 epoch, address attester) public view returns (uint256) {
+        return attesterRewardPoints[epoch][attester];
     }
 }
