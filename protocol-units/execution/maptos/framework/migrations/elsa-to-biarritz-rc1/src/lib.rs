@@ -21,7 +21,7 @@ impl ElsaToBiarritzRc1 {
 		// upgrade to Biarritz RC1 with the gas upgrade
 		let biarritz_rc1 = BiarritzRc1::new();
 		biarritz_rc1
-			.release(signer, 2_000_000, 100, 60, client)
+			.release(signer, 2_000_000, 100, 60_000, client)
 			.await
 			.map_err(|e| ElsaToBiarritzRc1Error::MigrationFailed(e.into()))?;
 
