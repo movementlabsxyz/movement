@@ -16,7 +16,7 @@ on:
 jobs:
 
   read-github-context-object:
-    runs-on: buildjet-8vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     steps:
       # I know this is not pretty (debug information) but it's useful to have this
     - name: Read github context
