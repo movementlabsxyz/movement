@@ -409,7 +409,7 @@ contract MovementStaking is
 
         _addStake(domain, epochNumber + 1, custodian, attester, remainder);
 
-        // the unstake is then paid out
+        // the unstake is paid out from the staking contract (all stakes are collected in the staking contract)
         // note: this is the only place this takes place
         // there's not risk of double payout, so long as rollOverattester is only called once per epoch
         // this should be guaranteed by the implementation, but we may want to create a withdrawal mapping to ensure this

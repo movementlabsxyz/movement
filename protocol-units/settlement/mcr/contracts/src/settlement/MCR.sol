@@ -514,7 +514,6 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         
         console.log("[rollOverEpoch] Attesters length at epoch %s is %s", acceptingEpoch, attesters.length);
         // reward
-        // TODO we should optimize to not loop over the entire custodian set
         for (uint256 i = 0; i < attesters.length; i++) {
             if (attesterRewardPoints[acceptingEpoch][attesters[i]] > 0) {
                 // TODO: make this configurable and set it on instance creation
@@ -525,6 +524,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
                 console.log("[rollOverEpoch] Staking contract is %s", address(stakingContract));
                 console.log("[rollOverEpoch] Move token address is %s", moveTokenAddress);
                 console.log("[rollOverEpoch] msg.sender is %s", msg.sender);
+                // rewards are currently paid out from the mcr domain
                 stakingContract.rewardFromDomain(attesters[i], reward, moveTokenAddress);
                 delete attesterRewardPoints[acceptingEpoch][attesters[i]];
             }
