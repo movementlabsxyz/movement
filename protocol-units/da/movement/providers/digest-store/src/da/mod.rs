@@ -13,7 +13,7 @@ use std::sync::Arc;
 #[derive(Clone)]
 pub struct Da<C, D>
 where
-	C: Curve + Send + Sync + Clone + 'static,
+	C: Curve + Send + Sync + Clone + 'static + std::fmt::Debug,
 	D: DaOperations<C>,
 {
 	/// The namespace on Celestia which the Da will use.
@@ -26,7 +26,14 @@ where
 
 impl<C, D> Da<C, D>
 where
-	C: Curve + Send + Sync + Clone + Serialize + for<'de> Deserialize<'de> + 'static,
+	C: Curve
+		+ Send
+		+ Sync
+		+ Clone
+		+ Serialize
+		+ for<'de> Deserialize<'de>
+		+ 'static
+		+ std::fmt::Debug,
 	D: DaOperations<C>,
 {
 	/// Creates a new Da instance with the provided Celestia namespace and RPC client.
@@ -49,7 +56,8 @@ where
 		+ Send
 		+ Sync
 		+ Clone
-		+ 'static,
+		+ 'static
+		+ std::fmt::Debug,
 	D: DaOperations<C>,
 {
 	fn submit_blob(
