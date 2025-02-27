@@ -175,7 +175,7 @@ where
 					// Yield the periodic tick
 					_ = tick_interval.tick() => {
 						//Heart beat. The value can be use to indicate some status.
-						BlobResponse { blob_type: Some(movement_da_light_node_proto::blob_response::BlobType::HeartbeatBlob(true)) }
+						BlobResponse { blob_type: Some(movement_da_light_node_proto::blob_response::BlobType::Heartbeat(true)) }
 					}
 				};
 				let response = StreamReadFromHeightResponse {

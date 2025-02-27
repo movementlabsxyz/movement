@@ -45,7 +45,7 @@ impl StreamBlocks {
 					tracing::info!("Receive PassedThroughBlob blob");
 					(blob.data, blob.timestamp, blob.blob_id, blob.height)
 				}
-				blob_response::BlobType::HeartbeatBlob(_) => {
+				blob_response::BlobType::Heartbeat(_) => {
 					tracing::info!("Receive heartbeat blob");
 					continue;
 				}

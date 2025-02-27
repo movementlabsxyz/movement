@@ -116,8 +116,8 @@ where
 			blob_response::BlobType::PassedThroughBlob(blob) => {
 				(blob.data, blob.timestamp, blob.blob_id, blob.height)
 			}
-			blob_response::BlobType::HeartbeatBlob(_) => {
-				tracing::info!("Receive heartbeat blob");
+			blob_response::BlobType::Heartbeat(_) => {
+				tracing::info!("Receive DA heartbeat");
 				// Do nothing.
 				return Ok(());
 			}
