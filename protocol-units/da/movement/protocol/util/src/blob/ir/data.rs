@@ -27,11 +27,11 @@ where
 		Self { blob, timestamp, __curve_marker: std::marker::PhantomData }
 	}
 
-	pub fn now(blob: Vec<u8>) -> Result<Self, anyhow::Error> {
-		Ok(Self::new(
-			blob,
-			std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?.as_secs(),
-		))
+	pub fn now(blob: Vec<u8>) -> Self {
+		// mark the timestamp as now in milliseconds
+		let timestamp = chrono::Utc::now().timestamp_micros() as u64;
+
+		Self::new(blob, timestamp)
 	}
 
 	/// Gets an owned copy of the bytes to be signed
@@ -76,7 +76,7 @@ pub mod block {
 
 		fn try_from(block: block::Block) -> Result<Self, Self::Error> {
 			let blob = bcs::to_bytes(&block)?;
-			Self::now(blob)
+			Ok(Self::now(blob))
 		}
 	}
 
@@ -88,7 +88,7 @@ pub mod block {
 
 		fn try_from(id: block::Id) -> Result<Self, Self::Error> {
 			let blob = id.as_bytes().to_vec();
-			Self::now(blob)
+			Ok(Self::now(blob))
 		}
 	}
 
@@ -100,7 +100,7 @@ pub mod block {
 
 		fn try_from(ids: Vec<block::Id>) -> Result<Self, Self::Error> {
 			let blob = bcs::to_bytes(&ids)?;
-			Self::now(blob)
+			Ok(Self::now(blob))
 		}
 	}
 }

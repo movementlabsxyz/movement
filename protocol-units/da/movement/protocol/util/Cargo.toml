@@ -49,6 +49,7 @@ movement-da-light-node-signer = { workspace = true }
 movement-signer = { workspace = true }
 movement-signer-loader = { workspace = true }
 movement-types = { workspace = true }
+chrono = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
