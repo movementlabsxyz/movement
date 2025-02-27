@@ -73,7 +73,11 @@ where
 		let mut blocks_from_da = self
 			.da_light_node_client
 			.stream_read_from_height(StreamReadFromHeightRequest { height: synced_height })
-			.await?;
+			.await
+			.map_err(|e| {
+				error!("Failed to stream blocks from DA: {:?}", e);
+				e
+			})?;
 
 		loop {
 			select! {
@@ -111,6 +115,11 @@ where
 			// To allow for DA migrations we accept both sequenced and passed through blobs
 			blob_response::BlobType::PassedThroughBlob(blob) => {
 				(blob.data, blob.timestamp, blob.blob_id, blob.height)
+			}
+			blob_response::BlobType::HeartbeatBlob(_) => {
+				tracing::info!("Receive heartbeat blob");
+				// Do nothing.
+				return Ok(());
 			}
 			_ => anyhow::bail!("Invalid blob type"),
 		};
