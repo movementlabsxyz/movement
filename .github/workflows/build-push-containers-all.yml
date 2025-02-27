@@ -20,9 +20,11 @@ jobs:
     steps:
       # I know this is not pretty (debug information) but it's useful to have this
     - name: Read github context
+      env: 
+        GITHUB_CONTEXT: ${{ toJson(github) }}
       run: |
         echo "INFO: github context object content below"
-        echo "${{ toJson(github) }}"
+        echo "${GITHUB_CONTEXT}"
 
   build-push-checked-containers:
     uses: ./.github/workflows/build-push-container.yml
