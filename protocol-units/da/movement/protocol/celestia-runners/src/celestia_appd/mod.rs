@@ -17,10 +17,10 @@ impl Runner for CelestiaAppd {
 				local.run(dot_movement, config).await?;
 				Ok(())
 			}
-			movement_da_util::config::Config::Arabica(config) => {
+			movement_da_util::config::Config::Arabica(_config) => {
 				Err(anyhow::anyhow!("Arabica not implemented"))
 			}
-			movement_da_util::config::Config::Mocha(config) => {
+			movement_da_util::config::Config::Mocha(_config) => {
 				Err(anyhow::anyhow!("Mocha not implemented"))
 			}
 		}
