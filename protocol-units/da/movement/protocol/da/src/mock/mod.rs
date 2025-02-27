@@ -64,7 +64,7 @@ where
 
 impl<C> DaOperations<C> for Mock<C>
 where
-	C: Curve + Send + Sync + 'static,
+	C: Curve + Send + Sync + 'static + std::fmt::Debug,
 {
 	fn submit_blob(
 		&self,

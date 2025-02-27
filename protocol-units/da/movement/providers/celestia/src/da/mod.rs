@@ -53,7 +53,14 @@ where
 
 impl<C> DaOperations<C> for Da<C>
 where
-	C: Curve + Send + Sync + Clone + Serialize + for<'de> Deserialize<'de> + 'static,
+	C: Curve
+		+ Send
+		+ Sync
+		+ Clone
+		+ Serialize
+		+ for<'de> Deserialize<'de>
+		+ 'static
+		+ std::fmt::Debug,
 {
 	fn submit_blob(
 		&self,
@@ -63,12 +70,12 @@ where
 			// create the blob
 			let celestia_blob = self
 				.create_new_celestia_blob(data)
-				.map_err(|e| DaError::Internal("failed to create celestia blob".to_string()))?;
+				.map_err(|e| DaError::Internal(format!("failed to create celestia blob :{e}")))?;
 
 			// submit the blob to the celestia node
 			self.submit_celestia_blob(celestia_blob)
 				.await
-				.map_err(|e| DaError::Internal("failed to submit celestia blob".to_string()))?;
+				.map_err(|e| DaError::Internal(format!("failed to submit celestia blob :{e}")))?;
 
 			Ok(())
 		})
@@ -114,7 +121,7 @@ where
 		let me = self.clone();
 		Box::pin(async move {
 			let mut subscription = me.default_client.header_subscribe().await.map_err(|e| {
-				DaError::Certificate("failed to subscribe to headers".to_string().into())
+				DaError::Certificate(format!("failed to subscribe to headers :{e}").into())
 			})?;
 			let stream = async_stream::try_stream! {
 
