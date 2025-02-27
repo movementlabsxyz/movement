@@ -100,7 +100,7 @@ interface IMovementStaking {
     function getStakedAttestersForAcceptingEpoch(address domain) external view returns (address[] memory);
     function computeAllStakeForAcceptingEpoch(address attester) external view returns (uint256);
 
-    function reward(address attester, uint256 amount, address custodian) external;
+    function rewardFromDomain(address attester, uint256 amount, address custodian) external;
     function rewardArray(address[] calldata attesters, uint256[] calldata amounts, address[] calldata custodians) external;
 
     function getEpochDuration(address domain) external view returns (uint256);

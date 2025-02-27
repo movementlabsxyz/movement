@@ -391,7 +391,7 @@ contract MovementStakingTest is Test {
         console.log("This is alice:", alice);
         console.log("This is domain:", domain);
         vm.prank(domain);  // Domain calls reward
-        staking.reward(alice, 100, address(moveToken));
+        staking.rewardFromDomain(alice, 100, address(moveToken));
         
         // Verify reward was received
         assertEq(moveToken.balanceOf(alice), 100, "Alice should have received 100 tokens");

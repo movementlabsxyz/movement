@@ -377,6 +377,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         while (getAcceptingEpoch() < superBlockEpoch) {
             // TODO only permit rollover after some liveness criteria for the acceptor, as this is related to the reward model (rollovers should be rewarded)
             rollOverEpoch();
+            console.log("[attemptPostconfirmOrRollover] rolled over epoch to %s", getAcceptingEpoch());
         }
 
         // TODO only permit postconfirmation after some liveness criteria for the acceptor, as this is related to the reward model (postconfirmation should be rewarded)
@@ -401,6 +402,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
             if (totalStakeOnCommitment >= supermajority) {
                 _postconfirmSuperBlockCommitment(superBlockCommitment, msg.sender);
                 successfulPostconfirmation = true;
+                console.log("[attemptPostconfirmOrRollover] successful postconfirmation at height %s", superBlockHeight);
 
                 // TODO: for rewards we have to run through all the attesters, as we need to acknowledge that they get rewards. 
 
@@ -414,9 +416,10 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         // we rollover the epoch to give the next attesters a chance
         if (!successfulPostconfirmation && getPresentEpoch() > getAcceptingEpoch()) {
             rollOverEpoch();
+            console.log("[attemptPostconfirmOrRollover] rolled over to epoch", getAcceptingEpoch());
             return true; // we have to retry the postconfirmation at the next epoch again
         }
-
+        console.log("[attemptPostconfirmOrRollover] no successful postconfirmation");
         return false;
     }
 
@@ -521,7 +524,8 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
                 console.log("[rollOverEpoch] Rewarding attester %s with %s", attesters[i], reward);
                 console.log("[rollOverEpoch] Staking contract is %s", address(stakingContract));
                 console.log("[rollOverEpoch] Move token address is %s", moveTokenAddress);
-                stakingContract.reward(attesters[i], reward, moveTokenAddress);
+                console.log("[rollOverEpoch] msg.sender is %s", msg.sender);
+                stakingContract.rewardFromDomain(attesters[i], reward, moveTokenAddress);
                 delete attesterRewardPoints[acceptingEpoch][attesters[i]];
             }
         }

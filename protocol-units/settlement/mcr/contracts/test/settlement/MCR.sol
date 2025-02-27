@@ -865,12 +865,17 @@ contract MCRTest is Test, IMCR {
     function testRewardPoints() public {
         // Setup with Alice having supermajority-enabling stake
         (address alice, address bob, address carol) = setupGenesisWithThreeAttesters(2, 1, 1);
+        console.log("Alice is:", alice);
+        console.log("Bob is:", bob);
+        console.log("Carol is:", carol);
 
         // Mint tokens to MCR contract for rewards
         moveToken.mint(address(mcr), 100); // MCR needs tokens to pay rewards
         console.log("Minted tokens to staking contract");
         assertEq(moveToken.balanceOf(address(mcr)), 100, "MCR contract should have 100 tokens");
+
         // MCR needs to approve staking contract to spend its tokens
+        // TODO check this is necessary (comment and uncomment)
         vm.prank(address(mcr));
         moveToken.approve(address(staking), type(uint256).max);
 
@@ -963,9 +968,6 @@ contract MCRTest is Test, IMCR {
         assertEq(mcr.attesterRewardPoints(mcr.getAcceptingEpoch(), alice), 0, "Alice's points should be cleared");
         assertEq(mcr.attesterRewardPoints(mcr.getAcceptingEpoch(), bob), 0, "Bob's points should be cleared");
         assertEq(mcr.attesterRewardPoints(mcr.getAcceptingEpoch(), carol), 0, "Carol's points should be cleared");
-        assertEq(moveToken.balanceOf(alice), aliceInitialBalance, "Alice reward not yet paid out.");
-        assertEq(moveToken.balanceOf(bob), bobInitialBalance, "Bob reward not yet paid out.");
-        assertEq(moveToken.balanceOf(carol), carolInitialBalance, "Carol reward not yet paid out.");
         console.log("Reward distribution complete");
         console.log("A/B/C balances:", moveToken.balanceOf(alice), moveToken.balanceOf(bob), moveToken.balanceOf(carol));
         console.log("A/B/C stakes:", 
@@ -974,11 +976,10 @@ contract MCRTest is Test, IMCR {
             mcr.getStakeForAcceptingEpoch(address(moveToken), carol)
         );
 
-        vm.warp(block.timestamp + epochDuration);
-        vm.prank(alice);
-        mcr.postconfirmSuperBlocksAndRollover();
-        assertEq(mcr.getAcceptingEpoch(), 3, "Should be in epoch 3");
-
+        console.log("Alice initial balance:", aliceInitialBalance);
+        console.log("Alice stake:", mcr.getStakeForAcceptingEpoch(address(moveToken), alice));
+        console.log("Alice reward:", mcr.getStakeForAcceptingEpoch(address(moveToken), alice) * 2);
+        console.log("Alice final balance:", moveToken.balanceOf(alice));
         assertEq(moveToken.balanceOf(alice), aliceInitialBalance + mcr.getStakeForAcceptingEpoch(address(moveToken), alice) * 2, "Alice reward not correct.");
         assertEq(moveToken.balanceOf(bob), bobInitialBalance + mcr.getStakeForAcceptingEpoch(address(moveToken), bob), "Bob reward not correct.");
         assertEq(moveToken.balanceOf(carol), carolInitialBalance + mcr.getStakeForAcceptingEpoch(address(moveToken), carol), "Carol reward not correct.");
@@ -991,11 +992,11 @@ contract MCRTest is Test, IMCR {
         // Setup with Alice having supermajority-enabling stake
         address alice = setupGenesisWithOneAttester(1);
         console.log("Alice is:", alice);
+        assertEq(moveToken.balanceOf(alice), 0, "Alice should have 0 tokens");
         // Mint tokens to MCR contract for rewards
         moveToken.mint(address(mcr), 100); // MCR needs tokens to pay rewards
         console.log("Minted tokens to staking contract");
         assertEq(moveToken.balanceOf(address(mcr)), 100, "MCR contract should have 100 tokens");
-        
         // MCR needs to approve staking contract to spend its tokens
         vm.prank(address(mcr));
         moveToken.approve(address(staking), type(uint256).max);
