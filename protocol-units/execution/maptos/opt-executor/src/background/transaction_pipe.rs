@@ -102,9 +102,14 @@ impl TransactionPipe {
 		}
 	}
 
-	/// Pipes a batch of transactions from the mempool to the transaction channel.
-	/// todo: it may be wise to move the batching logic up a level to the consuming structs.
+	/// Performs a transaction read, mempool batch formation, and garbage collection.
 	pub(crate) async fn tick(&mut self) -> Result<(), Error> {
+		self.receive_transaction_tick().await
+	}
+
+	/// Receives a transaction and adds it to the mempool.
+	/// todo: it may be wise to move the batching logic up a level to the consuming structs.
+	pub(crate) async fn receive_transaction_tick(&mut self) -> Result<(), Error> {
 		let next = self.mempool_client_receiver.next().await;
 		if let Some(request) = next {
 			match request {
