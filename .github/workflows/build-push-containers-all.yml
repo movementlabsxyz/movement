@@ -14,6 +14,16 @@ on:
       - '[0-9]*.[0-9]*.[0-9]*'
 
 jobs:
+
+  read-github-context-object:
+    runs-on: buildjet-8vcpu-ubuntu-2404
+    steps:
+      # I know this is not pretty (debug information) but it's useful to have this
+    - name: Read github context
+      run: |
+        echo "INFO: github context object content below"
+        echo "${{ toJson(github) }}"
+
   build-push-checked-containers:
     uses: ./.github/workflows/build-push-container.yml
     name: Build Push Checked Containers

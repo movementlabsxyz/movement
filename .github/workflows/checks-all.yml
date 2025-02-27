@@ -26,6 +26,12 @@ jobs:
     runs-on: ${{ matrix.runs-on }}
 
     steps:
+      # I know this is not pretty (debug information) but it's useful to have this
+    - name: Read github context
+      run: |
+        echo "INFO: github context object content below"
+        echo "${{ toJson(github) }}"
+
     - name: Checkout repository
       uses: actions/checkout@v4
 
