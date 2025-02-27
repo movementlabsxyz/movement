@@ -512,7 +512,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         uint256 acceptingEpoch = getAcceptingEpoch();
         address[] memory attesters = getStakedAttestersForAcceptingEpoch();
         
-        console.log("[rollOverEpoch] Attesters length %s", attesters.length);
+        console.log("[rollOverEpoch] Attesters length at epoch %s is %s", acceptingEpoch, attesters.length);
         // reward
         // TODO we should optimize to not loop over the entire custodian set
         for (uint256 i = 0; i < attesters.length; i++) {

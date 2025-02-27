@@ -319,7 +319,7 @@ contract MovementStaking is
         // check the balance of the token before transfer
         uint256 balanceBefore = token.balanceOf(address(this));
 
-        // transfer the stake to the contract
+        // transfer the stake to the staking contract
         // if the transfer is not using a custodian, the custodian is the token itself
         // hence this works
         // ! In general with this pattern, the custodian must be careful about not over-approving the token.
@@ -385,6 +385,10 @@ contract MovementStaking is
         address custodian,
         address attester
     ) internal {
+        console.log("[rollOverAttester] domain:", domain);
+        console.log("[rollOverAttester] epochNumber:", epochNumber);
+        console.log("[rollOverAttester] custodian:", custodian);
+        console.log("[rollOverAttester] attester:", attester);
         // the amount of stake rolled over is stake[currentAcceptingEpoch] - unstake[nextEpoch]
         uint256 stakeAmount = getStake(
             domain,
@@ -410,7 +414,7 @@ contract MovementStaking is
         // there's not risk of double payout, so long as rollOverattester is only called once per epoch
         // this should be guaranteed by the implementation, but we may want to create a withdrawal mapping to ensure this
         if (unstakeAmount > 0) {
-            _payAttesterFromExternalDirectly(address(this), attester, custodian, unstakeAmount);
+            _payAttesterFromContractDirectly(address(this), attester, custodian, unstakeAmount);
         }
 
         emit AttesterEpochRolledOver(
@@ -632,16 +636,16 @@ contract MovementStaking is
     // This is, currently, there is no added benefit of issuing a reward through this contract--other than Riccardian clarity.
     function _payAttesterFromExternalDirectly(address from, address attester, address custodian, uint256 amount) internal {
         console.log("[payAttesterFromExternalDirectly] from:", from);
-        console.log("[payAttesterFromExternalDirectly] attester:", attester);
-        console.log("[payAttesterFromExternalDirectly] custodian:", custodian);
+        console.log("[payAttesterFromExternalDirectly] to attester:", attester);
+        // console.log("[payAttesterFromExternalDirectly] custodian:", custodian);
         console.log("[payAttesterFromExternalDirectly] amount:", amount);
         require(msg.sender != address(this), "Only external calls");
         require(address(token) == custodian, "Must use base token");
-        uint256 balanceBefore = token.balanceOf(attester);
+        console.log("[payAttesterFromExternalDirectly] From balance before:", token.balanceOf(from));
+        console.log("[payAttesterFromExternalDirectly] To   balance before:", token.balanceOf(attester));
         token.transferFrom(from, attester, amount);
-        uint256 balanceAfter = token.balanceOf(attester);
-        console.log("[payAttesterFromExternalDirectly] balanceBefore:", balanceBefore);
-        console.log("[payAttesterFromExternalDirectly] balanceAfter:", balanceAfter);
+        console.log("[payAttesterFromExternalDirectly] From balance after:", token.balanceOf(from));
+        console.log("[payAttesterFromExternalDirectly] To   balance after:", token.balanceOf(attester));
     }
 
     /// @notice External account pays attester through custodian token
