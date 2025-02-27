@@ -7,8 +7,8 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum GodfigBackendError {
-	#[error("Type Contract Mismatch")]
-	TypeContractMismatch(String),
+	#[error("An error occurs during config deserialization: {0}")]
+	ConfigDeserializationError(String),
 	#[error("Backend Error: {0}")]
 	BackendError(#[from] anyhow::Error),
 	#[error("IO Error: {0}")]

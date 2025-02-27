@@ -46,7 +46,8 @@ where
 		+ Serialize
 		+ for<'de> Deserialize<'de>
 		+ Clone
-		+ 'static,
+		+ 'static
+		+ std::fmt::Debug,
 	Da: DaOperations<C>,
 	V: VerifierOperations<DaBlob<C>, DaBlob<C>>,
 {
@@ -66,7 +67,8 @@ where
 		+ Serialize
 		+ for<'de> Deserialize<'de>
 		+ Clone
-		+ 'static,
+		+ 'static
+		+ std::fmt::Debug,
 	Da: DaOperations<C>,
 	V: VerifierOperations<DaBlob<C>, DaBlob<C>>,
 {
@@ -132,7 +134,8 @@ where
 		+ Serialize
 		+ for<'de> Deserialize<'de>
 		+ Clone
-		+ 'static,
+		+ 'static
+		+ std::fmt::Debug,
 	Da: DaOperations<C>,
 	V: VerifierOperations<DaBlob<C>, DaBlob<C>>,
 {
@@ -307,7 +310,8 @@ where
 		+ Serialize
 		+ for<'de> Deserialize<'de>
 		+ Clone
-		+ 'static,
+		+ 'static
+		+ std::fmt::Debug,
 	Da: DaOperations<C> + 'static,
 	V: VerifierOperations<DaBlob<C>, DaBlob<C>> + Send + Sync + 'static,
 {

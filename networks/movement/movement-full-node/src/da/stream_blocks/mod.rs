@@ -38,13 +38,30 @@ impl StreamBlocks {
 				.ok_or(anyhow::anyhow!("No blob type in response"))?
 			{
 				blob_response::BlobType::SequencedBlobBlock(blob) => {
+					tracing::info!("Receive SequencedBlobBlock blob");
 					(blob.data, blob.timestamp, blob.blob_id, blob.height)
+				}
+				blob_response::BlobType::PassedThroughBlob(blob) => {
+					tracing::info!("Receive PassedThroughBlob blob");
+					(blob.data, blob.timestamp, blob.blob_id, blob.height)
+				}
+				blob_response::BlobType::Heartbeat(_) => {
+					tracing::info!("Receive heartbeat blob");
+					continue;
 				}
 				_ => {
 					anyhow::bail!("Invalid blob type in response")
 				}
 			};
-			info!("{} {}  {}", hex::encode(block_id), block_timestamp, da_height);
+			// pretty print (with labels) the block_id, block_timestamp, and da_height
+			tracing::info!(
+				"Block ID: {}, Block Timestamp: {:?}, DA Height: {}",
+				hex::encode(block_id),
+				// unix date string from the block timestamp which is in microseconds
+				chrono::DateTime::from_timestamp_micros(block_timestamp as i64)
+					.context("Failed to convert timestamp to date")?,
+				da_height
+			);
 		}
 
 		info!("Finished streaming blocks from DA");

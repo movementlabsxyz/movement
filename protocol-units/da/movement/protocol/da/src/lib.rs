@@ -54,7 +54,7 @@ pub enum DaError {
 /// Trait for DA operations.
 pub trait DaOperations<C>: Send + Sync
 where
-	C: Curve + Send + Sync + 'static,
+	C: Curve + Send + Sync + 'static + std::fmt::Debug,
 {
 	fn submit_blob(
 		&self,
