@@ -21,12 +21,14 @@ use aptos_account_whitelist::config::Config as WhitelistConfig;
 use futures::channel::mpsc as futures_mpsc;
 use futures::StreamExt;
 use movement_collections::garbage::counted::GcCounter;
+use std::collections::BTreeMap;
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
 use tracing::{debug, info, info_span, warn, Instrument};
 
 const GC_INTERVAL: Duration = Duration::from_secs(30);
+const MEMPOOL_INTERVAL: Duration = Duration::from_millis(240);
 const TOO_NEW_TOLERANCE: u64 = 32;
 
 pub struct TransactionPipe {
@@ -42,6 +44,8 @@ pub struct TransactionPipe {
 	transactions_in_flight: Arc<RwLock<GcCounter>>,
 	// The configured limit on transactions in flight
 	in_flight_limit: Option<u64>,
+	// Timestamp of the last mempool send
+	last_mempool_send: Instant,
 	// Timestamp of the last garbage collection
 	last_gc: Instant,
 	// The pool of used sequence numbers
@@ -76,6 +80,7 @@ impl TransactionPipe {
 			core_mempool: CoreMempool::new(node_config),
 			transactions_in_flight,
 			in_flight_limit: transactions_in_flight_limit,
+			last_mempool_send: Instant::now(),
 			last_gc: Instant::now(),
 			used_sequence_number_pool: UsedSequenceNumberPool::new(
 				mempool_config.sequence_number_ttl_ms,
@@ -102,11 +107,19 @@ impl TransactionPipe {
 		}
 	}
 
+	pub async fn tick(&mut self) -> Result<(), Error> {
+		self.tick_requests().await?;
+		self.tick_mempool_sender().await?;
+		self.tick_gc();
+		Ok(())
+	}
+
 	/// Pipes a batch of transactions from the mempool to the transaction channel.
 	/// todo: it may be wise to move the batching logic up a level to the consuming structs.
-	pub(crate) async fn tick(&mut self) -> Result<(), Error> {
-		let next = self.mempool_client_receiver.next().await;
-		if let Some(request) = next {
+	pub(crate) async fn tick_requests(&mut self) -> Result<(), Error> {
+		// try to immediately get the next request
+		let next = self.mempool_client_receiver.try_next();
+		if let Ok(Some(request)) = next {
 			match request {
 				MempoolClientRequest::SubmitTransaction(transaction, callback) => {
 					let span = info_span!(
@@ -116,7 +129,8 @@ impl TransactionPipe {
 						sender = %transaction.sender(),
 						sequence_number = transaction.sequence_number(),
 					);
-					let status = self.submit_transaction(transaction).instrument(span).await?;
+					let status =
+						self.add_transaction_to_aptos_mempool(transaction).instrument(span).await?;
 					callback.send(Ok(status)).unwrap_or_else(|_| {
 						debug!("SubmitTransaction request canceled");
 					});
@@ -154,6 +168,45 @@ impl TransactionPipe {
 		}
 
 		Ok(())
+	}
+
+	pub(crate) async fn tick_mempool_sender(&mut self) -> Result<(), Error> {
+		if self.last_mempool_send.elapsed() > MEMPOOL_INTERVAL {
+			// pop some transactions from the mempool
+			let transactions =
+				self.core_mempool.get_batch(1024 * 8, 1024 * 1024 * 1024, true, BTreeMap::new());
+
+			// send them to the transaction channel
+			for transaction in transactions {
+				let sender = self.transaction_sender.clone();
+				let _ = sender.send((0, transaction)).await;
+			}
+		}
+
+		Ok(())
+	}
+
+	pub(crate) fn tick_gc(&mut self) {
+		if self.last_gc.elapsed() >= GC_INTERVAL {
+			// todo: these will be slightly off, but gc does not need to be exact
+			let now = Instant::now();
+			let epoch_ms_now = chrono::Utc::now().timestamp_millis() as u64;
+
+			// garbage collect the used sequence number pool
+			self.used_sequence_number_pool.gc(epoch_ms_now);
+
+			// garbage collect the transactions in flight
+			{
+				// unwrap because failure indicates poisoned lock
+				let mut transactions_in_flight = self.transactions_in_flight.write().unwrap();
+				transactions_in_flight.gc(epoch_ms_now);
+			}
+
+			// garbage collect the core mempool
+			self.core_mempool.gc();
+
+			self.last_gc = now;
+		}
 	}
 
 	fn has_invalid_sequence_number(
@@ -212,7 +265,7 @@ impl TransactionPipe {
 		Ok(SequenceNumberValidity::Valid(committed_sequence_number))
 	}
 
-	async fn submit_transaction(
+	async fn add_transaction_to_aptos_mempool(
 		&mut self,
 		transaction: SignedTransaction,
 	) -> Result<SubmissionStatus, Error> {
@@ -281,11 +334,6 @@ impl TransactionPipe {
 				let now = chrono::Utc::now().timestamp_millis() as u64;
 				debug!("Transaction accepted: {:?}", transaction);
 				let sender = transaction.sender();
-				let transaction_sequence_number = transaction.sequence_number();
-				self.transaction_sender
-					.send((application_priority, transaction))
-					.await
-					.map_err(|e| anyhow::anyhow!("Error sending transaction: {:?}", e))?;
 				// increment transactions in flight
 				{
 					let mut transactions_in_flight = self.transactions_in_flight.write().unwrap();
@@ -294,15 +342,9 @@ impl TransactionPipe {
 				self.core_mempool.commit_transaction(&sender, sequence_number);
 
 				// update the used sequence number pool
-				info!(
-					"Setting used sequence number for {:?} to {:?}",
-					sender, transaction_sequence_number
-				);
-				self.used_sequence_number_pool.set_sequence_number(
-					&sender,
-					transaction_sequence_number,
-					now,
-				);
+				info!("Setting used sequence number for {:?} to {:?}", sender, sequence_number);
+				self.used_sequence_number_pool
+					.set_sequence_number(&sender, sequence_number, now);
 			}
 			_ => {
 				warn!("Transaction not accepted: {:?}", status);
