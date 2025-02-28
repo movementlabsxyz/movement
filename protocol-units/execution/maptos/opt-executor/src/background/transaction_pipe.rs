@@ -146,40 +146,25 @@ impl TransactionPipe {
 			return Err(Error::InputClosed);
 		}
 
-		if self.last_gc.elapsed() >= GC_INTERVAL {
-			// todo: these will be slightly off, but gc does not need to be exact
-			let now = Instant::now();
-			let epoch_ms_now = chrono::Utc::now().timestamp_millis() as u64;
-
-			// garbage collect the used sequence number pool
-			self.used_sequence_number_pool.gc(epoch_ms_now);
-
-			// garbage collect the transactions in flight
-			{
-				// unwrap because failure indicates poisoned lock
-				let mut transactions_in_flight = self.transactions_in_flight.write().unwrap();
-				transactions_in_flight.gc(epoch_ms_now);
-			}
-
-			// garbage collect the core mempool
-			self.core_mempool.gc();
-
-			self.last_gc = now;
-		}
-
 		Ok(())
 	}
 
 	pub(crate) async fn tick_mempool_sender(&mut self) -> Result<(), Error> {
 		if self.last_mempool_send.elapsed() > MEMPOOL_INTERVAL {
 			// pop some transactions from the mempool
-			let transactions =
-				self.core_mempool.get_batch(1024 * 8, 1024 * 1024 * 1024, true, BTreeMap::new());
+			let transactions = self.core_mempool.get_batch_with_ranking_score(
+				1024 * 8,
+				1024 * 1024 * 1024,
+				true,
+				BTreeMap::new(),
+			);
 
 			// send them to the transaction channel
-			for transaction in transactions {
+			for (transaction, ranking_score) in transactions {
 				let sender = self.transaction_sender.clone();
-				let _ = sender.send((0, transaction)).await;
+				// application priority for movement is the inverse of the ranking score
+				let application_priority = u64::MAX - ranking_score;
+				let _ = sender.send((application_priority, transaction)).await;
 			}
 		}
 
@@ -300,7 +285,7 @@ impl TransactionPipe {
 		let vm_validator = VMValidator::new(Arc::clone(&self.db_reader));
 		let tx_result = vm_validator.validate_transaction(transaction.clone())?;
 		// invert the application priority with the u64 max minus the score from aptos (which is high to low)
-		let application_priority = u64::MAX - tx_result.score();
+		let ranking_score = tx_result.score();
 		match tx_result.status() {
 			Some(_) => {
 				let ms = MempoolStatus::new(MempoolStatusCode::VmError);
@@ -323,7 +308,7 @@ impl TransactionPipe {
 		debug!("Adding transaction to mempool: {:?} {:?}", transaction, sequence_number);
 		let status = self.core_mempool.add_txn(
 			transaction.clone(),
-			application_priority,
+			ranking_score,
 			sequence_number,
 			TimelineState::NonQualified,
 			true,
