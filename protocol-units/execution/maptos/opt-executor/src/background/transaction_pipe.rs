@@ -323,7 +323,7 @@ impl TransactionPipe {
 		debug!("Adding transaction to mempool: {:?} {:?}", transaction, sequence_number);
 		let status = self.core_mempool.add_txn(
 			transaction.clone(),
-			0,
+			application_priority,
 			sequence_number,
 			TimelineState::NonQualified,
 			true,
@@ -567,22 +567,26 @@ mod tests {
 
 		// submit a transaction with a valid sequence number
 		let user_transaction = create_signed_transaction(0, &maptos_config);
-		let (mempool_status, _) = transaction_pipe.submit_transaction(user_transaction).await?;
+		let (mempool_status, _) =
+			transaction_pipe.add_transaction_to_aptos_mempool(user_transaction).await?;
 		assert_eq!(mempool_status.code, MempoolStatusCode::Accepted);
 
 		// submit a transaction with a sequence number that is too new
 		let user_transaction = create_signed_transaction(34, &maptos_config);
-		let (mempool_status, _) = transaction_pipe.submit_transaction(user_transaction).await?;
+		let (mempool_status, _) =
+			transaction_pipe.add_transaction_to_aptos_mempool(user_transaction).await?;
 		assert_eq!(mempool_status.code, MempoolStatusCode::InvalidSeqNumber);
 
 		// submit one signed transaction with a sequence number that is too new for the vm but not for the mempool
 		let user_transaction = create_signed_transaction(5, &maptos_config);
-		let (mempool_status, _) = transaction_pipe.submit_transaction(user_transaction).await?;
+		let (mempool_status, _) =
+			transaction_pipe.add_transaction_to_aptos_mempool(user_transaction).await?;
 		assert_eq!(mempool_status.code, MempoolStatusCode::Accepted);
 
 		// submit a transaction with the same sequence number as the previous one
 		let user_transaction = create_signed_transaction(5, &maptos_config);
-		let (mempool_status, _) = transaction_pipe.submit_transaction(user_transaction).await?;
+		let (mempool_status, _) =
+			transaction_pipe.add_transaction_to_aptos_mempool(user_transaction).await?;
 		assert_eq!(mempool_status.code, MempoolStatusCode::InvalidSeqNumber);
 
 		Ok(())
