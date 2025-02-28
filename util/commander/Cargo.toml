@@ -1,8 +1,8 @@
 [package]
 name = "commander"
 version = { workspace = true }
-edition  = { workspace = true }
-license  = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
 authors = { workspace = true }
 repository = { workspace = true }
 homepage = { workspace = true }
@@ -16,6 +16,7 @@ anyhow = { workspace = true }
 tokio = { workspace = true }
 futures = { workspace = true }
 tracing = { workspace = true }
+itertools = { workspace = true }
 
 [lints]
 workspace = true

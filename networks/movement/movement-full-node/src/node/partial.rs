@@ -164,6 +164,13 @@ impl MovementPartialNode<Executor> {
 		let da_db =
 			DaDB::open(&config.da_db.da_db_path).context("Failed to create or get DA DB")?;
 
+		// FIXME: the config value is probably misplaced
+		da_db
+			.initialize_synced_height(
+				config.celestia_da_light_node.celestia_da_light_node_config.initial_height,
+			)
+			.await?;
+
 		Ok(Self {
 			executor,
 			light_node_client,

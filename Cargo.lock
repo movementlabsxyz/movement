@@ -5041,9 +5041,6 @@ name = "beef"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3a8241f3ebb85c056b509d4327ad0358fbbba6ffb340bf388f26350aeda225b1"
-dependencies = [
- "serde",
-]
 
 [[package]]
 name = "bellpepper"
@@ -5289,9 +5286,9 @@ dependencies = [
 
 [[package]]
 name = "blockstore"
-version = "0.7.0"
+version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7679095248a6dc7555fae81154ed1baef264383c16621ef881a219576c72a9be"
+checksum = "0a8962daed8fb337472d9c4215006443acba1e40c6c91c9d4a3f440d1fb30436"
 dependencies = [
  "cid",
  "dashmap 6.1.0",
@@ -5859,91 +5856,45 @@ dependencies = [
 
 [[package]]
 name = "celestia-proto"
-version = "0.5.0"
-source = "git+https://github.com/movementlabsxyz/lumina?rev=2d16e6733949f6bf70849eb60c14114e6d8ea63e#2d16e6733949f6bf70849eb60c14114e6d8ea63e"
+version = "0.7.0"
+source = "git+https://github.com/eigerco/lumina?rev=c6e5b7f5e3a3040bce4262fe5fba5c21a2637b5#c6e5b7f5e3a3040bce4262fe5fba5c21a2637b52"
 dependencies = [
- "celestia-tendermint-proto",
+ "bytes 1.8.0",
  "prost 0.13.3",
- "prost-build 0.12.6",
+ "prost-build",
  "prost-types 0.13.3",
  "protox",
  "serde",
+ "subtle-encoding",
+ "tendermint-proto",
 ]
 
 [[package]]
 name = "celestia-rpc"
-version = "0.7.1"
-source = "git+https://github.com/movementlabsxyz/lumina?rev=2d16e6733949f6bf70849eb60c14114e6d8ea63e#2d16e6733949f6bf70849eb60c14114e6d8ea63e"
+version = "0.9.0"
+source = "git+https://github.com/eigerco/lumina?rev=c6e5b7f5e3a3040bce4262fe5fba5c21a2637b5#c6e5b7f5e3a3040bce4262fe5fba5c21a2637b52"
 dependencies = [
  "async-trait",
  "celestia-types",
- "futures",
  "http 1.1.0",
- "jsonrpsee 0.24.7",
+ "jsonrpsee",
+ "prost 0.13.3",
  "serde",
  "thiserror 1.0.69",
  "tracing",
 ]
 
 [[package]]
-name = "celestia-tendermint"
-version = "0.32.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce8c92a01145f79a0f3ac7c44a43a9b5ee58e8a4c716b56d98833a3848db1afd"
-dependencies = [
- "bytes 1.8.0",
- "celestia-tendermint-proto",
- "digest 0.10.7",
- "ed25519 2.2.3",
- "ed25519-consensus",
- "flex-error",
- "futures",
- "num-traits",
- "once_cell",
- "prost 0.12.6",
- "prost-types 0.12.6",
- "serde",
- "serde_bytes",
- "serde_json",
- "serde_repr",
- "sha2 0.10.8",
- "signature 2.2.0",
- "subtle",
- "subtle-encoding",
- "time",
- "zeroize",
-]
-
-[[package]]
-name = "celestia-tendermint-proto"
-version = "0.32.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9bbd5c2345d29ea85566ad8a1114cc0dfb20dacf8f9e0722d64886d0e1e064f7"
-dependencies = [
- "bytes 1.8.0",
- "flex-error",
- "num-derive",
- "num-traits",
- "prost 0.13.3",
- "prost-types 0.13.3",
- "serde",
- "serde_bytes",
- "subtle-encoding",
- "time",
-]
-
-[[package]]
 name = "celestia-types"
-version = "0.8.0"
-source = "git+https://github.com/movementlabsxyz/lumina?rev=2d16e6733949f6bf70849eb60c14114e6d8ea63e#2d16e6733949f6bf70849eb60c14114e6d8ea63e"
+version = "0.10.0"
+source = "git+https://github.com/eigerco/lumina?rev=c6e5b7f5e3a3040bce4262fe5fba5c21a2637b5#c6e5b7f5e3a3040bce4262fe5fba5c21a2637b52"
 dependencies = [
  "base64 0.22.1",
  "bech32",
+ "bitvec 1.0.1",
  "blockstore",
  "bytes 1.8.0",
  "celestia-proto",
- "celestia-tendermint",
- "celestia-tendermint-proto",
  "cid",
  "const_format",
  "enum_dispatch",
@@ -5957,6 +5908,8 @@ dependencies = [
  "serde",
  "serde_repr",
  "sha2 0.10.8",
+ "tendermint",
+ "tendermint-proto",
  "thiserror 1.0.69",
  "time",
 ]
@@ -6271,6 +6224,7 @@ version = "0.0.2"
 dependencies = [
  "anyhow",
  "futures",
+ "itertools 0.13.0",
  "tokio",
  "tracing",
 ]
@@ -7724,16 +7678,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0206175f82b8d6bf6652ff7d71a1e27fd2e4efde587fd368662814d6ec1d9ce0"
 
 [[package]]
-name = "eyre"
-version = "0.6.12"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7cd915d99f24784cdc19fd37ef22b97e3ff0ae756c7e492e9fbfe897d61e2aec"
-dependencies = [
- "indenter",
- "once_cell",
-]
-
-[[package]]
 name = "fail"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7937,7 +7881,6 @@ version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c606d892c9de11507fa0dcffc116434f94e105d0bbdc4e405b61519464c49d7b"
 dependencies = [
- "eyre",
  "paste",
 ]
 
@@ -8931,7 +8874,7 @@ dependencies = [
  "aws-config",
  "aws-sdk-kms",
  "axum 0.6.20",
- "base64 0.13.1",
+ "base64 0.22.1",
  "clap 4.5.21",
  "dotenv",
  "ed25519 2.2.3",
@@ -9501,12 +9444,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "indenter"
-version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce23b50ad8242c51a442f3ff322d56b02f08852c77e4c0b4d3fd684abc89c683"
-
-[[package]]
 name = "indexmap"
 version = "1.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9768,15 +9705,6 @@ dependencies = [
 
 [[package]]
 name = "jsonrpsee"
-version = "0.20.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "138572befc78a9793240645926f30161f8b4143d2be18d09e44ed9814bd7ee2c"
-dependencies = [
- "jsonrpsee-types 0.20.4",
-]
-
-[[package]]
-name = "jsonrpsee"
 version = "0.24.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c5c71d8c1a731cc4227c2f698d377e7848ca12c8a48866fc5e6951c43a4db843"
@@ -9784,7 +9712,7 @@ dependencies = [
  "jsonrpsee-core",
  "jsonrpsee-http-client",
  "jsonrpsee-proc-macros",
- "jsonrpsee-types 0.24.7",
+ "jsonrpsee-types",
  "jsonrpsee-ws-client",
  "tracing",
 ]
@@ -9825,7 +9753,7 @@ dependencies = [
  "http 1.1.0",
  "http-body 1.0.1",
  "http-body-util",
- "jsonrpsee-types 0.24.7",
+ "jsonrpsee-types",
  "pin-project 1.1.7",
  "rustc-hash 2.0.0",
  "serde",
@@ -9849,7 +9777,7 @@ dependencies = [
  "hyper-rustls 0.27.3",
  "hyper-util",
  "jsonrpsee-core",
- "jsonrpsee-types 0.24.7",
+ "jsonrpsee-types",
  "rustls 0.23.17",
  "rustls-platform-verifier",
  "serde",
@@ -9876,20 +9804,6 @@ dependencies = [
 
 [[package]]
 name = "jsonrpsee-types"
-version = "0.20.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3264e339143fe37ed081953842ee67bfafa99e3b91559bdded6e4abd8fc8535e"
-dependencies = [
- "anyhow",
- "beef",
- "serde",
- "serde_json",
- "thiserror 1.0.69",
- "tracing",
-]
-
-[[package]]
-name = "jsonrpsee-types"
 version = "0.24.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a178c60086f24cc35bb82f57c651d0d25d99c4742b4d335de04e97fa1f08a8a1"
@@ -9909,7 +9823,7 @@ dependencies = [
  "http 1.1.0",
  "jsonrpsee-client-transport",
  "jsonrpsee-core",
- "jsonrpsee-types 0.24.7",
+ "jsonrpsee-types",
  "url",
 ]
 
@@ -11722,7 +11636,7 @@ name = "movement-algs"
 version = "0.0.2"
 dependencies = [
  "anyhow",
- "itertools 0.12.1",
+ "itertools 0.13.0",
  "movement-types",
  "tokio",
 ]
@@ -11809,7 +11723,7 @@ dependencies = [
  "dot-movement",
  "ed25519-dalek 2.1.1",
  "futures",
- "itertools 0.12.1",
+ "itertools 0.13.0",
  "maptos-execution-util",
  "mcr-settlement-client",
  "movement-config",
@@ -12052,6 +11966,7 @@ dependencies = [
  "aptos-account-whitelist",
  "aptos-types",
  "async-stream",
+ "base64 0.22.1",
  "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
  "celestia-rpc",
  "celestia-types",
@@ -12060,7 +11975,6 @@ dependencies = [
  "ecdsa 0.16.9",
  "godfig",
  "hex",
- "jsonrpsee 0.20.4",
  "k256",
  "memseq-util",
  "movement-da-light-node-proto",
@@ -12246,7 +12160,7 @@ version = "0.0.2"
 dependencies = [
  "anyhow",
  "async-trait",
- "base64 0.13.1",
+ "base64 0.22.1",
  "dotenv",
  "movement-signer",
  "tokio",
@@ -14192,27 +14106,6 @@ dependencies = [
 
 [[package]]
 name = "prost-build"
-version = "0.12.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22505a5c94da8e3b7c2996394d1c933236c4d743e81a410bcca4e6989fc066a4"
-dependencies = [
- "bytes 1.8.0",
- "heck 0.5.0",
- "itertools 0.12.1",
- "log",
- "multimap",
- "once_cell",
- "petgraph 0.6.5",
- "prettyplease",
- "prost 0.12.6",
- "prost-types 0.12.6",
- "regex",
- "syn 2.0.87",
- "tempfile",
-]
-
-[[package]]
-name = "prost-build"
 version = "0.13.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c1318b19085f08681016926435853bbf7858f9c082d0999b80550ff5d9abe15"
@@ -14273,15 +14166,15 @@ dependencies = [
 
 [[package]]
 name = "prost-reflect"
-version = "0.13.1"
+version = "0.14.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f5eec97d5d34bdd17ad2db2219aabf46b054c6c41bd5529767c9ce55be5898f"
+checksum = "a7b318f733603136dcc61aa9e77c928d67f87d2436c34ec052ba3f1b5ca219de"
 dependencies = [
  "logos",
  "miette",
  "once_cell",
- "prost 0.12.6",
- "prost-types 0.12.6",
+ "prost 0.13.3",
+ "prost-types 0.13.3",
 ]
 
 [[package]]
@@ -14338,28 +14231,28 @@ dependencies = [
 
 [[package]]
 name = "protox"
-version = "0.6.1"
+version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ac532509cee918d40f38c3e12f8ef9230f215f017d54de7dd975015538a42ce7"
+checksum = "6f352af331bf637b8ecc720f7c87bf903d2571fa2e14a66e9b2558846864b54a"
 dependencies = [
  "bytes 1.8.0",
  "miette",
- "prost 0.12.6",
+ "prost 0.13.3",
  "prost-reflect",
- "prost-types 0.12.6",
+ "prost-types 0.13.3",
  "protox-parse",
  "thiserror 1.0.69",
 ]
 
 [[package]]
 name = "protox-parse"
-version = "0.6.1"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f6c33f43516fe397e2f930779d720ca12cd057f7da4cd6326a0ef78d69dee96"
+checksum = "a3a462d115462c080ae000c29a47f0b3985737e5d3a995fcdbcaa5c782068dde"
 dependencies = [
  "logos",
  "miette",
- "prost-types 0.12.6",
+ "prost-types 0.13.3",
  "thiserror 1.0.69",
 ]
 
@@ -16790,6 +16683,51 @@ dependencies = [
 ]
 
 [[package]]
+name = "tendermint"
+version = "0.40.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d9703e34d940c2a293804752555107f8dbe2b84ec4c6dd5203831235868105d2"
+dependencies = [
+ "bytes 1.8.0",
+ "digest 0.10.7",
+ "ed25519 2.2.3",
+ "ed25519-consensus",
+ "flex-error",
+ "futures",
+ "k256",
+ "num-traits",
+ "once_cell",
+ "prost 0.13.3",
+ "ripemd",
+ "serde",
+ "serde_bytes",
+ "serde_json",
+ "serde_repr",
+ "sha2 0.10.8",
+ "signature 2.2.0",
+ "subtle",
+ "subtle-encoding",
+ "tendermint-proto",
+ "time",
+ "zeroize",
+]
+
+[[package]]
+name = "tendermint-proto"
+version = "0.40.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9ae9e1705aa0fa5ecb2c6aa7fb78c2313c4a31158ea5f02048bf318f849352eb"
+dependencies = [
+ "bytes 1.8.0",
+ "flex-error",
+ "prost 0.13.3",
+ "serde",
+ "serde_bytes",
+ "subtle-encoding",
+ "time",
+]
+
+[[package]]
 name = "tera"
 version = "1.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -17372,7 +17310,7 @@ checksum = "9557ce109ea773b399c9b9e5dca39294110b74f1f342cb347a80d1fce8c26a11"
 dependencies = [
  "prettyplease",
  "proc-macro2",
- "prost-build 0.13.3",
+ "prost-build",
  "prost-types 0.13.3",
  "quote",
  "syn 2.0.87",

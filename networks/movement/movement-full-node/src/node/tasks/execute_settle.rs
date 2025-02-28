@@ -69,7 +69,7 @@ where
 {
 	pub async fn run(mut self) -> anyhow::Result<()> {
 		let synced_height = self.da_db.get_synced_height().await?;
-		info!("Synced height: {:?}", synced_height);
+		info!("DA synced height: {:?}", synced_height);
 		let mut blocks_from_da = self
 			.da_light_node_client
 			.stream_read_from_height(StreamReadFromHeightRequest { height: synced_height })
