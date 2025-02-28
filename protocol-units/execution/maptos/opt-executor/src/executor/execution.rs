@@ -212,11 +212,14 @@ mod tests {
 		ed25519::{Ed25519PrivateKey, Ed25519Signature},
 		HashValue, PrivateKey, Uniform,
 	};
-	use aptos_sdk::{transaction_builder::TransactionFactory, types::LocalAccount};
+	use aptos_sdk::{
+		transaction_builder::TransactionFactory,
+		types::{AccountKey, LocalAccount},
+	};
 	use aptos_storage_interface::state_view::DbStateViewAtVersion;
 	use aptos_types::{
 		account_address::AccountAddress,
-		account_config::AccountResource,
+		account_config::{aptos_test_root_address, AccountResource},
 		block_executor::partitioner::ExecutableTransactions,
 		block_metadata::BlockMetadata,
 		chain_id::ChainId,
@@ -295,8 +298,11 @@ mod tests {
 			.maptos_private_key_signer_identifier
 			.try_raw_private_key()?;
 		let private_key = Ed25519PrivateKey::try_from(raw_private_key.as_slice())?;
-		let root_account =
-			LocalAccount::from_private_key(private_key.to_encoded_string()?.as_str(), 0)?;
+		let root_account = LocalAccount::new(
+			aptos_test_root_address(),
+			AccountKey::from_private_key(private_key),
+			0,
+		);
 
 		// Seed for random number generator, used here to generate predictable results in a test environment.
 		let seed = [3u8; 32];
@@ -403,8 +409,11 @@ mod tests {
 			.maptos_private_key_signer_identifier
 			.try_raw_private_key()?;
 		let private_key = Ed25519PrivateKey::try_from(raw_private_key.as_slice())?;
-		let root_account =
-			LocalAccount::from_private_key(private_key.to_encoded_string()?.as_str(), 0)?;
+		let root_account = LocalAccount::new(
+			aptos_test_root_address(),
+			AccountKey::from_private_key(private_key),
+			0,
+		);
 
 		// Seed for random number generator, used here to generate predictable results in a test environment.
 		let seed = [3u8; 32];
