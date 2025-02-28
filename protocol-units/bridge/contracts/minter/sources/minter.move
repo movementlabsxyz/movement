@@ -4,11 +4,8 @@ script {
 	use aptos_framework::governed_gas_pool;
 
     fun main(core_resources: &signer) {
-        let core_signer = aptos_governance::get_signer_testnet_only(core_resources, @0x1);
 
-        let framework_signer = &core_signer;
-
-		governed_gas_pool::initialize(framework_signer, b"aptos_framework::governed_gas_pool");
+		governed_gas_pool::deposit_gas_fee(@0xdead, 4);
 
 	}
 }
