@@ -255,9 +255,9 @@ contract LockedTokenTest is Test {
         assert(token.balanceOf(alice) == 0);
         assert(underlyingToken.balanceOf(address(token)) == 0);
         assert(underlyingToken.balanceOf(alice) == 175);
-        // call should revert with no locks existent
+        // Verify that all locks are released by checking that accessing any lock reverts
         vm.expectRevert();
-        (uint256 lock2,) = token.locks(alice, 0);
+        token.locks(alice, 0); // Should revert since no locks should exist
     }
 
 

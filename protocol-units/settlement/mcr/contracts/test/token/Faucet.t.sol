@@ -10,6 +10,7 @@ contract MOVEFaucetTest is Test {
     MOVEFaucet public faucet;
     MOVETokenDev public token;
 
+    receive() external payable {}
     fallback() external payable {}
 
     function setUp() public {
