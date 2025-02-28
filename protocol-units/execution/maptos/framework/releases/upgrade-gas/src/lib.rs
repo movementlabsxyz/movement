@@ -156,7 +156,7 @@ where
 		let now_u64 = std::time::SystemTime::now()
 			.duration_since(std::time::UNIX_EPOCH)
 			.map_err(|e| ReleaseBundleError::Build(e.into()))?
-			.as_secs();
+			.as_micros() as u64;
 		let expiration_timestamp_secs = now_u64 + expiration_timestamp_sec_offset;
 
 		info!("Upgrading gas parameters");
