@@ -1,9 +1,9 @@
 //! Task to process incoming transactions and write to DA
 
 use maptos_dof_execution::SignedTransaction;
-use movement_da_util::config::Config as LightNodeConfig;
 use movement_da_light_node_client::MovementDaLightNodeClient;
 use movement_da_light_node_proto::{BatchWriteRequest, BlobWrite};
+use movement_da_util::config::Config as LightNodeConfig;
 
 use tokio::sync::mpsc;
 use tracing::{info, warn};
@@ -43,7 +43,7 @@ impl Task {
 
 		// limit the total time batching transactions
 		let start = Instant::now();
-		let (_, half_building_time) = self.da_light_node_config.try_block_building_parameters()?;
+		let (_, half_building_time) = self.da_light_node_config.block_building_parameters();
 
 		let mut transactions = Vec::new();
 

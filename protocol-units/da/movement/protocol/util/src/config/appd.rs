@@ -1,8 +1,9 @@
-use crate::config::common::{
+use crate::config::default::{
 	default_celestia_appd_replace_args, default_celestia_appd_use_replace_args,
 	default_celestia_chain_id, default_celestia_namespace, default_celestia_rpc_listen_hostname,
 	default_celestia_rpc_listen_port, default_celestia_websocket_connection_hostname,
-	default_celestia_websocket_connection_port, default_celestia_websocket_connection_protocol,
+	default_celestia_websocket_connection_path, default_celestia_websocket_connection_port,
+	default_celestia_websocket_connection_protocol,
 };
 
 use celestia_types::nmt::Namespace;
@@ -30,6 +31,10 @@ pub struct Config {
 	/// The port of the Celestia Node websocket
 	#[serde(default = "default_celestia_websocket_connection_port")]
 	pub celestia_websocket_connection_port: u16,
+
+	/// The path of the Celestia Node websocket
+	#[serde(default = "default_celestia_websocket_connection_path")]
+	pub celestia_websocket_connection_path: String,
 
 	/// The auth token for the Celestia node
 	pub celestia_auth_token: Option<String>,
@@ -69,6 +74,7 @@ impl Default for Config {
 			celestia_websocket_connection_hostname: default_celestia_websocket_connection_hostname(
 			),
 			celestia_websocket_connection_port: default_celestia_websocket_connection_port(),
+			celestia_websocket_connection_path: default_celestia_websocket_connection_path(),
 			celestia_chain_id: default_celestia_chain_id(),
 			celestia_auth_token: None,
 			celestia_namespace: default_celestia_namespace(),
@@ -77,5 +83,21 @@ impl Default for Config {
 			celestia_appd_use_replace_args: default_celestia_appd_use_replace_args(),
 			celestia_appd_replace_args: default_celestia_appd_replace_args(),
 		}
+	}
+}
+
+impl Config {
+	// FIXME: use a single URL field as the source. The format was introduced by
+	// Sir Tim Berners-Lee in 1994 so you don't have to compose this from
+	// values that need to be set in three different environment variables.
+	// NOTE: originally, this was not done because there was a need to reuse some parts of the URL but substitute others when running in environments like Docker.
+	pub fn celestia_websocket_url(&self) -> String {
+		format!(
+			"{}://{}:{}{}",
+			self.celestia_websocket_connection_protocol,
+			self.celestia_websocket_connection_hostname,
+			self.celestia_websocket_connection_port,
+			self.celestia_websocket_connection_path
+		)
 	}
 }

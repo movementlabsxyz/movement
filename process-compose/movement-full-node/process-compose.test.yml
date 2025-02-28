@@ -4,10 +4,19 @@ environment:
 
 processes:
 
+  build-movement-client-tests:
+    command: |
+      cargo test --no-run -p movement-client test_example_
+    depends_on:
+      build:
+        condition: process_completed_successfully
+
   movement-client-tests:
     command: |
       cargo test -p movement-client test_example_
     depends_on:
+      build-movement-client-tests:
+        condition: process_completed_successfully
       movement-full-node:
         condition: process_healthy
       movement-faucet:

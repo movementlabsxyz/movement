@@ -607,8 +607,11 @@ mod tests {
 			})
 		);
 
-		let da_signers = match &config.celestia_da_light_node.celestia_da_light_node_config {
-			movement_da_util::config::Config::Local(local) => &local.da_light_node.da_signers,
+		let da_light_node_config = &config.celestia_da_light_node.celestia_da_light_node_config;
+		let da_signers = match &da_light_node_config.network {
+			movement_da_util::config::Network::Local => {
+				&da_light_node_config.da_light_node.da_signers
+			}
 			_ => panic!("Expected Local"),
 		};
 

@@ -1,7 +1,8 @@
-use crate::config::common::{
+use crate::config::default::{
 	default_celestia_rpc_connection_hostname, default_celestia_rpc_connection_port,
 	default_celestia_rpc_connection_protocol, default_celestia_websocket_connection_hostname,
-	default_celestia_websocket_connection_port, default_movement_da_light_node_connection_hostname,
+	default_celestia_websocket_connection_path, default_celestia_websocket_connection_port,
+	default_movement_da_light_node_connection_hostname,
 	default_movement_da_light_node_connection_port, default_movement_da_light_node_http1,
 	default_movement_da_light_node_listen_hostname, default_movement_da_light_node_listen_port,
 };
@@ -130,6 +131,10 @@ pub struct Config {
 	#[serde(default = "default_celestia_websocket_connection_port")]
 	pub celestia_websocket_connection_port: u16,
 
+	/// The path of the Celestia Node websocket
+	#[serde(default = "default_celestia_websocket_connection_path")]
+	pub celestia_websocket_connection_path: String,
+
 	// FIXME: disentangle listen config for the light node service
 	// from the connection config to connect to the same service?
 	/// The hostname to listen on for the movement-celestia-da-light-node service
@@ -171,6 +176,7 @@ impl Default for Config {
 			celestia_websocket_connection_hostname: default_celestia_websocket_connection_hostname(
 			),
 			celestia_websocket_connection_port: default_celestia_websocket_connection_port(),
+			celestia_websocket_connection_path: default_celestia_websocket_connection_path(),
 			movement_da_light_node_listen_hostname: default_movement_da_light_node_listen_hostname(
 			),
 			movement_da_light_node_listen_port: default_movement_da_light_node_listen_port(),
