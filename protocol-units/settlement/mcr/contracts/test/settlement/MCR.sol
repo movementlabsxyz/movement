@@ -880,7 +880,7 @@ contract MCRTest is Test, IMCR {
 
 
     // ----------------------------------------------------------------
-    // -------- Reward tests --------------------------------------
+    // -------- Reward attester tests --------------------------------------
     // ----------------------------------------------------------------
 
     function testRewardPoints() public {
@@ -964,5 +964,39 @@ contract MCRTest is Test, IMCR {
 
         assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), alice), 1, "Alice should have 1 token on stake");
         assertEq(moveToken.balanceOf(alice), 1, "Alice should have 1 token on balance");
+    }
+
+
+    function testSetMinCommitmentAge() public {
+        // Set min commitment age to a too long value
+        vm.expectRevert(MCR.MinCommitmentAgeTooLong.selector);
+        mcr.setMinCommitmentAge(epochDuration);
+
+        // Set min commitment age to 1/10 of epochDuration
+        uint256 minAge = epochDuration/10;
+        mcr.setMinCommitmentAge(minAge);
+        assertEq(mcr.minCommitmentAgeForPostconfirmation(), minAge, "Min commitment age should be updated to 1/10 of epochDuration");
+    }
+
+    function testMinCommitmentAge() public {
+        // Setup with Alice having supermajority stake
+        address alice = setupGenesisWithOneAttester(1);
+        uint256 minAge = 1 minutes;
+        mcr.setMinCommitmentAge(minAge);
+        
+        vm.prank(alice);
+        mcr.submitSuperBlockCommitment(makeHonestCommitment(1));
+        
+        vm.prank(alice);
+        mcr.postconfirmSuperBlocksAndRollover();
+        assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 0, "Immediate postconfirmation should fail.");
+        
+        // Wait for min age
+        vm.warp(block.timestamp + minAge);
+        
+        // Now postconfirmation should succeed
+        vm.prank(alice);
+        mcr.postconfirmSuperBlocksAndRollover();
+        assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 1);
     }
 }
