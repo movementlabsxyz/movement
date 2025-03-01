@@ -662,7 +662,7 @@ contract MCRTest is Test, IMCR {
         assert(bobCommitment.commitment == commitment.commitment);
 
         // Verify acceptor state
-        assert(mcr.currentAcceptorIsLive());
+        assert(mcr.isAcceptorLive());
         assertEq(mcr.getSuperBlockHeightAssignedEpoch(targetHeight), mcr.getAcceptingEpoch());
 
         // Attempt postconfirmation
@@ -698,7 +698,7 @@ contract MCRTest is Test, IMCR {
         assert(bobCommitment.commitment == commitment.commitment);
 
         // Verify acceptor state
-        assert(mcr.currentAcceptorIsLive());
+        assert(mcr.isAcceptorLive());
         assertEq(mcr.getSuperBlockHeightAssignedEpoch(targetHeight), mcr.getAcceptingEpoch());
 
         // Attempt postconfirmation - this should fail because there's no supermajority
@@ -772,11 +772,11 @@ contract MCRTest is Test, IMCR {
     function testSetMinCommitmentAge() public {
         // Set min commitment age to a too long value
         vm.expectRevert(MCR.MinCommitmentAgeTooLong.selector);
-        mcr.setMinCommitmentAge(epochDuration);
+        mcr.setMinCommitmentAgeForPostconfirmation(epochDuration);
 
         // Set min commitment age to 1/10 of epochDuration
         uint256 minAge = epochDuration/10;
-        mcr.setMinCommitmentAge(minAge);
+        mcr.setMinCommitmentAgeForPostconfirmation(minAge);
         assertEq(mcr.minCommitmentAgeForPostconfirmation(), minAge, "Min commitment age should be updated to 1/10 of epochDuration");
     }
 
@@ -785,7 +785,7 @@ contract MCRTest is Test, IMCR {
         address alice = setupGenesisWithOneAttester(1);
         assertEq(mcr.getMinCommitmentAgeForPostconfirmation(), 0, "The unset min commitment age should be 0");
         uint256 minAge = 1 minutes;
-        mcr.setMinCommitmentAge(minAge);
+        mcr.setMinCommitmentAgeForPostconfirmation(minAge);
         assertEq(mcr.getMinCommitmentAgeForPostconfirmation(), minAge, "Min commitment age should be updated to 1 minutes");
         
         vm.prank(alice);
@@ -943,27 +943,37 @@ contract MCRTest is Test, IMCR {
  
 
     function testPostconfirmationRewards() public {
-        // Setup with Alice having supermajority-enabling stake
-        address alice = setupGenesisWithOneAttester(1);
-        assertEq(moveToken.balanceOf(alice), 0, "Alice should have 0 tokens");
- 
-        // Attester attests to height 1
+        uint256 stake = 7;
+        address alice = setupGenesisWithOneAttester(stake);
+        uint256 aliceInitialBalance = moveToken.balanceOf(alice);
+        assertEq(aliceInitialBalance, 0, "Alice should have 0 tokens");
+
+        // submit commitment
         vm.prank(alice);
         mcr.submitSuperBlockCommitment(makeHonestCommitment(1));
 
-        // get out of genesis epoch
-        vm.warp(block.timestamp + epochDuration);
+        // attempt postconfirmation
+        vm.prank(alice);
+        mcr.postconfirmSuperBlocksAndRollover();
+        // balance of alice should have not increased yet
+        assertEq(moveToken.balanceOf(alice), aliceInitialBalance, "Alice should have not received any rewards yet");
+        assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 1, "Last postconfirmed superblock height should be 1");
+        assertEq(mcr.getAttesterRewardPoints(mcr.getAcceptingEpoch(), alice), 1, "Alice should have 1 attester points");
+        assertEq(mcr.getPostconfirmerRewardPoints(mcr.getAcceptingEpoch(), alice), 1, "Alice should have 1 postconfirmer points");
+        assertEq(mcr.getAcceptingEpoch(), 0, "Should be in epoch 0");
 
-        // Attester postconfirms and gets a reward
+        // warp to next epoch
+        vm.warp(block.timestamp + epochDuration);
         vm.prank(alice);
         mcr.postconfirmSuperBlocksAndRollover();
         assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 1);
         assertEq(mcr.getAcceptingEpoch(), 1, "Should be in epoch 1");
 
-        assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), alice), 1, "Alice should have 1 token on stake");
-        assertEq(moveToken.balanceOf(alice), 1, "Alice should have 1 token on balance");
+        // Verify rewards:
+        // 1. Attestation reward: stake * rewardPerPoint * points (7 * 1 * 1)
+        // 2. Postconfirmation reward: stake * rewardPerPoint * points (7 * 1 * 1)
+        assertEq(moveToken.balanceOf(alice), aliceInitialBalance + stake + stake, "Alice should have received the rewards");
     }
-
 
 
     // ----------------------------------------------------------------

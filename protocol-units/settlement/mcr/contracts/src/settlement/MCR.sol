@@ -48,7 +48,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     /// @notice Sets the minimum time that must pass before a commitment can be postconfirmed
     /// @param _minCommitmentAgeForPostconfirmation New minimum commitment age 
     // TODO we also require a check when setting the epoch length that it is larger than the min commitment age
-    function setMinCommitmentAge(uint256 _minCommitmentAgeForPostconfirmation) public onlyRole(COMMITMENT_ADMIN) {
+    function setMinCommitmentAgeForPostconfirmation(uint256 _minCommitmentAgeForPostconfirmation) public onlyRole(COMMITMENT_ADMIN) {
         // Ensure min age is less than epoch duration to allow postconfirmation within same epoch
         if (_minCommitmentAgeForPostconfirmation >= stakingContract.getEpochDuration(address(this))) {
             revert MinCommitmentAgeTooLong();
@@ -338,7 +338,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         }
     }
 
-    function currentAcceptorIsLive() public pure returns (bool) {
+    function isAcceptorLive() public pure returns (bool) {
         // TODO check if current acceptor has been live sufficiently recently
         // use getAcceptorStartTime, and the mappings
         return true; // dummy implementation
@@ -432,7 +432,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
                 // TODO: for rewards we have to run through all the attesters, as we need to acknowledge that they get rewards. 
 
                 // TODO: if the attester is the current acceptor, we need to record that the acceptor has shown liveness. 
-                // TODO: this liveness needs to be discoverable by isCurrentAcceptorLive()
+                // TODO: this liveness needs to be discoverable by isAcceptorLive()
 
                 return true;
             }
@@ -507,6 +507,23 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
             }
         }
 
+        // Award points to postconfirmer
+        // if the acceptor has not been live award anyone who postconfirms
+        if (!isAcceptorLive()) { 
+            console.log("[postconfirmSuperBlockCommitment] currentAcceptor is not live");
+            postconfirmerRewardPoints[currentAcceptingEpoch][attester] += 1;
+        } else {
+            // if the acceptor has been live, only award points to the acceptor
+            // TODO optimization: even if the height has been volunteer postconfirmed we need to allow that that acceptor gets rewards, 
+            // TODO otherwise weak acceptors may could get played (rich volunteer acceptors pay the fees and poor acceptors never get any reward) 
+            // TODO but check if this is really required game theoretically.
+            console.log("[postconfirmSuperBlockCommitment] currentAcceptor is %s", getAcceptor());
+            console.log("[postconfirmSuperBlockCommitment] attester is %s", attester);
+            if (getAcceptor() == attester) {
+                postconfirmerRewardPoints[currentAcceptingEpoch][attester] += 1;
+            }
+        }
+
         versionedPostconfirmedSuperBlocks[postconfirmedSuperBlocksVersion][superBlockCommitment.height] = superBlockCommitment;
         lastPostconfirmedSuperBlockHeight = superBlockCommitment.height;
         postconfirmedBy[superBlockCommitment.height] = attester;
@@ -543,8 +560,8 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         for (uint256 i = 0; i < attesters.length; i++) {
             if (attesterRewardPoints[acceptingEpoch][attesters[i]] > 0) {
                 // TODO: make this configurable and set it on instance creation
-                uint256 rewardPerPoint = 1;
-                uint256 reward = attesterRewardPoints[acceptingEpoch][attesters[i]] * rewardPerPoint * getAttesterStakeForAcceptingEpoch(attesters[i]);
+                uint256 rewardPerAttestationPoint = 1;
+                uint256 reward = attesterRewardPoints[acceptingEpoch][attesters[i]] * rewardPerAttestationPoint * getAttesterStakeForAcceptingEpoch(attesters[i]);
                 // the staking contract is the custodian
                 console.log("[rollOverEpoch] Rewarding attester %s with %s", attesters[i], reward);
                 console.log("[rollOverEpoch] Staking contract is %s", address(stakingContract));
@@ -552,7 +569,21 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
                 console.log("[rollOverEpoch] msg.sender is %s", msg.sender);
                 // rewards are currently paid out from the mcr domain
                 stakingContract.rewardFromDomain(attesters[i], reward, moveTokenAddress);
-                delete attesterRewardPoints[acceptingEpoch][attesters[i]];
+                // TODO : check if we really have to keep attesterRewardPoints per epoch, or whether we could simply delete the points here for a given attester.
+            }
+
+            // Add postconfirmation rewards
+            if (postconfirmerRewardPoints[acceptingEpoch][attesters[i]] > 0) {
+                uint256 rewardPerPostconfirmationPoint = 1; // Can be different from attester reward
+                uint256 reward = postconfirmerRewardPoints[acceptingEpoch][attesters[i]] * rewardPerPostconfirmationPoint * getAttesterStakeForAcceptingEpoch(attesters[i]);
+                console.log("[rollOverEpoch] Rewarding postconfirmer %s with %s", attesters[i], reward);
+                console.log("[rollOverEpoch] Staking contract is %s", address(stakingContract));
+                console.log("[rollOverEpoch] Move token address is %s", moveTokenAddress);
+                console.log("[rollOverEpoch] msg.sender is %s", msg.sender);
+                stakingContract.rewardFromDomain(attesters[i], reward, moveTokenAddress);
+                // TODO : check if we really have to keep postconfirmerRewardPoints per epoch, or whether we could simply delete the points here for a given postconfirmer.
+                // TODO also the postconfirmer list is super short. typically for a given height only the acceptor and at most the acceptor and a volunteer acceptor.
+                // TODO So this can be heavily optimized.
             }
         }
 
@@ -595,5 +626,13 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     /// @return The reward points for the attester in the given epoch
     function getAttesterRewardPoints(uint256 epoch, address attester) public view returns (uint256) {
         return attesterRewardPoints[epoch][attester];
+    }
+
+    /// @notice Gets the reward points for a postconfirmer in a given epoch
+    /// @param epoch The epoch to get the reward points for
+    /// @param postconfirmer The postconfirmer to get the reward points for
+    /// @return The reward points for the postconfirmer in the given epoch
+    function getPostconfirmerRewardPoints(uint256 epoch, address postconfirmer) public view returns (uint256) {
+        return postconfirmerRewardPoints[epoch][postconfirmer];
     }
 }

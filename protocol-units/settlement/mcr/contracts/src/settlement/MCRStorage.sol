@@ -93,6 +93,9 @@ contract MCRStorage {
     // track reward points for attesters
     mapping(uint256 epoch => mapping(address attester => uint256 points)) public attesterRewardPoints;
 
-    uint256[47] internal __gap;
+    // track reward points for postconfirmers
+    mapping(uint256 epoch => mapping(address postconfirmer => uint256 points)) public postconfirmerRewardPoints;
+
+    uint256[45] internal __gap; // Reduced by 1 for new mapping
 
 }
