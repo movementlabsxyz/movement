@@ -942,7 +942,8 @@ contract MCRTest is Test, IMCR {
     }
  
 
-    function testPostconfirmationRewards() public {
+    /// @notice Test that postconfirmation rewards are distributed correctly when the acceptor is live
+    function testPostconfirmationRewardsLiveAcceptor() public {
         uint256 stake = 7;
         // alice has supermajority stake
         uint256 aliceStake = 3*stake;
@@ -977,7 +978,45 @@ contract MCRTest is Test, IMCR {
         assertEq(moveToken.balanceOf(bob), bobInitialBalance + bobStake, "Bob should have received the rewards");
     }
 
+    /// @notice Test that volunteer postconfirmation rewards are not distributed to volunteer acceptor when acceptor is live
+    function testVolunteerPostconfirmationRewardsLiveAcceptor() public {
+        uint256 stake = 9;
+        // alice has supermajority stake
+        uint256 aliceStake = 3*stake;
+        uint256 bobStake = stake;
+        (address alice, address bob, ) = setupGenesisWithThreeAttesters(aliceStake, bobStake, 0);
+        uint256 aliceInitialBalance = moveToken.balanceOf(alice);
+        uint256 bobInitialBalance = moveToken.balanceOf(bob);
 
+        vm.prank(alice);
+        mcr.submitSuperBlockCommitment(makeHonestCommitment(1));
+
+        // ensure bob is the acceptor
+        assertEq(mcr.getAcceptor(), bob, "Bob should be the acceptor");
+
+        // volunteer acceptor postconfirms while acceptor is live
+        vm.prank(alice);
+        mcr.postconfirmSuperBlocksAndRollover();
+        assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 1);
+
+        // alice should not get any postconfirmer rewards
+        assertEq(moveToken.balanceOf(bob), bobInitialBalance, "Bob should not have received any rewards");
+        assertEq(mcr.getAttesterRewardPoints(mcr.getAcceptingEpoch(), bob), 0, "Bob should have 0 attester points");
+        assertEq(mcr.getAttesterRewardPoints(mcr.getAcceptingEpoch(), alice), 1, "Alice should have 1 attester points");
+        assertEq(mcr.getPostconfirmerRewardPoints(mcr.getAcceptingEpoch(), bob), 0, "Bob should have 0 postconfirmer points");
+        assertEq(mcr.getPostconfirmerRewardPoints(mcr.getAcceptingEpoch(), alice), 1, "Alice should have 0 postconfirmer points");
+
+        vm.warp(block.timestamp + epochDuration);
+        vm.prank(alice);
+        mcr.postconfirmSuperBlocksAndRollover();
+        assertEq(mcr.getAcceptingEpoch(), 1, "Should be in epoch 1");
+
+        // alice should get the postconfirmer rewards
+        assertEq(moveToken.balanceOf(bob), bobInitialBalance, "Bob should not have received any rewards");
+        assertEq(moveToken.balanceOf(alice), aliceInitialBalance + aliceStake, "Alice should have received the attester rewards only");
+    }
+
+    
     // ----------------------------------------------------------------
     // -------- Acceptor rewards --------------------------------------
     // ----------------------------------------------------------------
