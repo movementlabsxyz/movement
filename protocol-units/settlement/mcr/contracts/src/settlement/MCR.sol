@@ -56,6 +56,11 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         minCommitmentAgeForPostconfirmation = _minCommitmentAgeForPostconfirmation;
     }
 
+
+    function getMinCommitmentAgeForPostconfirmation() public view returns (uint256) {
+        return minCommitmentAgeForPostconfirmation;
+    }
+
     function initialize(
         IMovementStaking _stakingContract,
         uint256 _lastPostconfirmedSuperBlockHeight,
