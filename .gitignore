@@ -30,3 +30,5 @@ venv
 *.env
 .debug
 .out
+
+.aiconfig

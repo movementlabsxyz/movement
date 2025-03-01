@@ -4,6 +4,7 @@ import "forge-std/console.sol";
 import {BaseStaking} from "./base/BaseStaking.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {ICustodianToken} from "../token/custodian/CustodianToken.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {MovementStakingStorage, EnumerableSet} from "./MovementStakingStorage.sol";
@@ -318,7 +319,7 @@ contract MovementStaking is
         // check the balance of the token before transfer
         uint256 balanceBefore = token.balanceOf(address(this));
 
-        // transfer the stake to the contract
+        // transfer the stake to the staking contract
         // if the transfer is not using a custodian, the custodian is the token itself
         // hence this works
         // ! In general with this pattern, the custodian must be careful about not over-approving the token.
@@ -384,6 +385,10 @@ contract MovementStaking is
         address custodian,
         address attester
     ) internal {
+        console.log("[rollOverAttester] domain:", domain);
+        console.log("[rollOverAttester] epochNumber:", epochNumber);
+        console.log("[rollOverAttester] custodian:", custodian);
+        console.log("[rollOverAttester] attester:", attester);
         // the amount of stake rolled over is stake[currentAcceptingEpoch] - unstake[nextEpoch]
         uint256 stakeAmount = getStake(
             domain,
@@ -404,11 +409,13 @@ contract MovementStaking is
 
         _addStake(domain, epochNumber + 1, custodian, attester, remainder);
 
-        // the unstake is then paid out
+        // the unstake is paid out from the staking contract (all stakes are collected in the staking contract)
         // note: this is the only place this takes place
         // there's not risk of double payout, so long as rollOverattester is only called once per epoch
         // this should be guaranteed by the implementation, but we may want to create a withdrawal mapping to ensure this
-        _payAttester(address(this), attester, custodian, unstakeAmount);
+        if (unstakeAmount > 0) {
+            _payAttesterFromContractDirectly(address(this), attester, custodian, unstakeAmount);
+        }
 
         emit AttesterEpochRolledOver(
             attester,
@@ -540,7 +547,7 @@ contract MovementStaking is
                 ),
                 Math.min(amounts[i], refundAmounts[i])
             );
-            _payAttester(
+            _payAttesterWithSelector(
                 address(this), // this contract is paying the attester, it should always have enough balance
                 attesters[i],
                 custodians[i],
@@ -565,23 +572,26 @@ contract MovementStaking is
         }
     }
 
-    function _payAttester(
+    /// @notice Routes attester payment to appropriate function based on conditions
+    /// @param from The address initiating the payment (this contract or external)
+    /// @param attester The address receiving the payment
+    /// @param custodian The custodian token address (or base token if direct payment)
+    /// @param amount The amount to pay
+    function _payAttesterWithSelector(
         address from,
         address attester,
         address custodian,
         uint256 amount
     ) internal {
+        console.log("[payAttesterWithSelector] ");
         if (from == address(this)) {
             // this contract is paying the attester
             if (address(token) == custodian) {
-                // if there isn't a custodian...
-                token.transfer(attester, amount); // just transfer the token
+                // if there isn't a custodian, just transfer the base token
+                _payAttesterFromContractDirectly(from, attester, custodian, amount);
             } else {
-                // approve the custodian to spend the base token
-                token.approve(custodian, amount);
-
-                // purchase the custodial token for the attester
-                ICustodianToken(custodian).buyCustodialToken(attester, amount);
+                // approve the custodian to spend the base token and purchase custodial token
+                _payAttesterFromContractViaCustodian(from, attester, custodian, amount);
             }
         } else {
             // This can be used by the domain to pay the attester, but it's just as convenient for the domain to reward the attester directly.
@@ -589,30 +599,94 @@ contract MovementStaking is
 
             // somebody else is trying to pay the attester, e.g., the domain
             if (address(token) == custodian) {
-                // if there isn't a custodian...
-                token.transferFrom(from, attester, amount); // just transfer the token
+                // if there isn't a custodian, transfer from the sender
+                _payAttesterFromExternalDirectly(from, attester, custodian, amount);
             } else {
-                // purchase the custodial token for the attester
-                ICustodianToken(custodian).buyCustodialTokenFrom(
-                    from,
-                    attester,
-                    amount
-                );
+                // purchase the custodial token for the attester from sender
+                _payAttesterFromExternalViaCustodian(from, attester, custodian, amount);
             }
         }
     }
 
-    function reward(
+    /// @notice Contract pays attester directly with base token
+    // if there isn't a custodian, just transfer the base token
+    function _payAttesterFromContractDirectly(address from, address attester, address custodian, uint256 amount) internal {
+        console.log("[payAttesterFromContractDirectly] attester:", attester);
+        console.log("[payAttesterFromContractDirectly] custodian:", custodian);
+        console.log("[payAttesterFromContractDirectly] amount:", amount);
+        require(from == address(this), "Only contract can call directly 1");
+        require(address(token) == custodian, "Must use base token");
+        token.transfer(attester, amount);
+    }
+
+    /// @notice Contract pays attester through custodian token
+    function _payAttesterFromContractViaCustodian(address from, address attester, address custodian, uint256 amount) internal {
+        console.log("[payAttesterFromContractViaCustodian] attester:", attester);
+        console.log("[payAttesterFromContractViaCustodian] custodian:", custodian);
+        console.log("[payAttesterFromContractViaCustodian] amount:", amount);
+        require(from == address(this), "Only contract can call directly 2");
+        require(address(token) != custodian, "Must use custodian token");
+        token.approve(custodian, amount);
+        ICustodianToken(custodian).buyCustodialToken(attester, amount);
+    }
+
+    /// @notice External account pays attester directly with base token
+    // somebody else is trying to pay the attester, e.g., the domain
+    // This can be used by the domain to pay the attester, but it's just as convenient for the domain to reward the attester directly.
+    // This is, currently, there is no added benefit of issuing a reward through this contract--other than Riccardian clarity.
+    function _payAttesterFromExternalDirectly(address from, address attester, address custodian, uint256 amount) internal {
+        console.log("[payAttesterFromExternalDirectly] from:", from);
+        console.log("[payAttesterFromExternalDirectly] to attester:", attester);
+        // console.log("[payAttesterFromExternalDirectly] custodian:", custodian);
+        console.log("[payAttesterFromExternalDirectly] amount:", amount);
+        require(msg.sender != address(this), "Only external calls");
+        require(address(token) == custodian, "Must use base token");
+        console.log("[payAttesterFromExternalDirectly] From balance before:", token.balanceOf(from));
+        console.log("[payAttesterFromExternalDirectly] To   balance before:", token.balanceOf(attester));
+        token.transferFrom(from, attester, amount);
+        console.log("[payAttesterFromExternalDirectly] From balance after:", token.balanceOf(from));
+        console.log("[payAttesterFromExternalDirectly] To   balance after:", token.balanceOf(attester));
+    }
+
+    /// @notice External account pays attester through custodian token
+    function _payAttesterFromExternalViaCustodian(address from, address attester, address custodian, uint256 amount) internal {
+        console.log("[payAttesterFromExternalViaCustodian] from:", from);
+        console.log("[payAttesterFromExternalViaCustodian] attester:", attester);
+        console.log("[payAttesterFromExternalViaCustodian] custodian:", custodian);
+        console.log("[payAttesterFromExternalViaCustodian] amount:", amount);
+        require(msg.sender != address(this), "Only external calls");
+        require(address(token) != custodian, "Must use custodian token");
+        ICustodianToken(custodian).buyCustodialTokenFrom(from, attester, amount);
+    }
+
+    /// @notice Domain rewards an attester
+    /// @param attester The attester to reward
+    /// @param amount The amount to reward
+    /// @param custodian The custodian of the token from which to reward the attester, here it is the domain
+    function rewardFromDomain(
+        address attester,
+        uint256 amount,
+        address custodian // here it is the domain
+    ) public nonReentrant {
+        _payAttesterFromExternalDirectly(msg.sender, attester, custodian, amount);
+    }
+
+    /// @notice An array of custodians reward an array of attesters
+    /// @param attesters The attesters to reward
+    /// @param amounts The amounts to reward
+    /// @param custodians The custodians of the token from which to reward the attesters    
+    function rewardArray(
         address[] calldata attesters,
         uint256[] calldata amounts,
         address[] calldata custodians
     ) public nonReentrant {
         // note: you may want to apply this directly to the attester's stake if the Domain sets an automatic restake policy
         for (uint256 i = 0; i < attesters.length; i++) {
-            // pay the attester
-            _payAttester(msg.sender, attesters[i], custodians[i], amounts[i]);
+            _payAttesterFromExternalDirectly(msg.sender, attesters[i], custodians[i], amounts[i]);
         }
     }
+
+
 
     /// @notice Whitelist an address to be used as an attester or custodian. 
     /// @notice Whitelisting means that the address is allowed to stake and unstake
