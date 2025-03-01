@@ -33,6 +33,9 @@ contract MCRStorage {
     // to prepare and post L1-transactions that will start the validation of attestations.
     uint256 public acceptorTerm;
 
+    /// @notice Minimum time that must pass before a commitment can be postconfirmed
+    uint256 public minCommitmentAgeForPostconfirmation;
+
     // the acceptor for the accepting epoch
     address public currentAcceptor;
 
@@ -55,7 +58,7 @@ contract MCRStorage {
     mapping(uint256 superBlockHeight => mapping(address attester => SuperBlockCommitment)) public commitments;
 
     // track the total stake accumulate for each commitment for each superBlock height
-    mapping(uint256 superBlockHeight => mapping(bytes32 commitement => uint256 stake)) public commitmentStakes;
+    mapping(uint256 superBlockHeight => mapping(bytes32 commitement => uint256 stake)) public commitmentStake;
 
     // track when each commitment was first seen for each superBlock height
     mapping(uint256 superBlockHeight => mapping(bytes32 commitment => uint256 timestamp)) public commitmentFirstSeenAt;

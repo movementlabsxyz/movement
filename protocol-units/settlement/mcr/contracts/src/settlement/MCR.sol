@@ -24,6 +24,9 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     /// @notice Error thrown when acceptor term is too large for epoch duration
     error AcceptorTermTooLongForEpoch();
 
+    /// @notice Error thrown when minimum commitment age is greater than epoch duration
+    error MinCommitmentAgeTooLong();
+
     /// @notice Sets the acceptor term duration, must be less than epoch duration
     /// @param _acceptorTerm New acceptor term duration in time units
     function setAcceptorTerm(uint256 _acceptorTerm) public onlyRole(COMMITMENT_ADMIN) {
@@ -40,6 +43,22 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
             revert AcceptorTermTooLongForEpoch();
         }
         acceptorTerm = _acceptorTerm;
+    }
+
+    /// @notice Sets the minimum time that must pass before a commitment can be postconfirmed
+    /// @param _minCommitmentAgeForPostconfirmation New minimum commitment age 
+    // TODO we also require a check when setting the epoch length that it is larger than the min commitment age
+    function setMinCommitmentAge(uint256 _minCommitmentAgeForPostconfirmation) public onlyRole(COMMITMENT_ADMIN) {
+        // Ensure min age is less than epoch duration to allow postconfirmation within same epoch
+        if (_minCommitmentAgeForPostconfirmation >= stakingContract.getEpochDuration(address(this))) {
+            revert MinCommitmentAgeTooLong();
+        }
+        minCommitmentAgeForPostconfirmation = _minCommitmentAgeForPostconfirmation;
+    }
+
+
+    function getMinCommitmentAgeForPostconfirmation() public view returns (uint256) {
+        return minCommitmentAgeForPostconfirmation;
     }
 
     function initialize(
@@ -291,7 +310,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
         // increment the commitment count by stake
         uint256 attesterStakeForAcceptingEpoch = getAttesterStakeForAcceptingEpoch(attester);
-        commitmentStakes[superBlockCommitment.height][superBlockCommitment.commitment] += attesterStakeForAcceptingEpoch;
+        commitmentStake[superBlockCommitment.height][superBlockCommitment.commitment] += attesterStakeForAcceptingEpoch;
 
         emit SuperBlockCommitmentSubmitted(
             superBlockCommitment.blockId,
@@ -397,9 +416,15 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
             if (superBlockCommitment.height != superBlockHeight) continue;
 
             // check the total stake on the commitment
-            uint256 totalStakeOnCommitment = commitmentStakes[superBlockCommitment.height][superBlockCommitment.commitment];
+            uint256 totalStakeOnCommitment = commitmentStake[superBlockCommitment.height][superBlockCommitment.commitment];
 
             if (totalStakeOnCommitment >= supermajority) {
+                // Check if enough time has passed since commitment was first seen
+                // if not enough time has passed, then no postconfirmation at this height can yet happen
+                uint256 firstSeen = getCommitmentFirstSeenAt(superBlockCommitment.height, superBlockCommitment.commitment);
+                // we should jump out of the for loop entirely
+                if (block.timestamp < firstSeen + minCommitmentAgeForPostconfirmation) break;
+
                 _postconfirmSuperBlockCommitment(superBlockCommitment, msg.sender);
                 successfulPostconfirmation = true;
                 console.log("[attemptPostconfirmOrRollover] successful postconfirmation at height %s", superBlockHeight);
@@ -461,6 +486,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     /// @dev This function and attemptPostconfirmOrRollover() could call each other recursively, so we must ensure it's safe from re-entrancy
     function _postconfirmSuperBlockCommitment(SuperBlockCommitment memory superBlockCommitment, address attester) internal {
         uint256 currentAcceptingEpoch = getAcceptingEpoch();
+        
         // get the epoch for the superBlock commitment
         // SuperBlock commitment is not in the current epoch, it cannot be postconfirmed. 
         // TODO: double check liveness conditions for the following critera

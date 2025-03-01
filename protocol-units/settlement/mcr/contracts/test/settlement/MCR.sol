@@ -103,6 +103,7 @@ contract MCRTest is Test, IMCR {
 
         // check that the setup was correctly performed
         assertEq(staking.getEpochDuration(address(mcr)), epochDuration, "Epoch duration not set correctly");
+        assertEq(mcr.getMinCommitmentAgeForPostconfirmation(), 0, "The unset min commitment age should be 0");
     }
 
     // Helper function to setup genesis with 1 attester and their stake
@@ -766,8 +767,43 @@ contract MCRTest is Test, IMCR {
         assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 1, "Last postconfirmed superblock height should be 1, as supermajority was reached (2/2 > threshold)");
     }
 
+
+
+    function testSetMinCommitmentAge() public {
+        // Set min commitment age to a too long value
+        vm.expectRevert(MCR.MinCommitmentAgeTooLong.selector);
+        mcr.setMinCommitmentAge(epochDuration);
+
+        // Set min commitment age to 1/10 of epochDuration
+        uint256 minAge = epochDuration/10;
+        mcr.setMinCommitmentAge(minAge);
+        assertEq(mcr.minCommitmentAgeForPostconfirmation(), minAge, "Min commitment age should be updated to 1/10 of epochDuration");
+    }
+
+    function testMinCommitmentAge() public {
+        // Setup with Alice having supermajority stake
+        address alice = setupGenesisWithOneAttester(1);
+        assertEq(mcr.getMinCommitmentAgeForPostconfirmation(), 0, "The unset min commitment age should be 0");
+        uint256 minAge = 1 minutes;
+        mcr.setMinCommitmentAge(minAge);
+        assertEq(mcr.getMinCommitmentAgeForPostconfirmation(), minAge, "Min commitment age should be updated to 1 minutes");
+        
+        vm.prank(alice);
+        mcr.submitSuperBlockCommitment(makeHonestCommitment(1));
+        vm.prank(alice);
+        mcr.postconfirmSuperBlocksAndRollover();
+        assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 0, "Immediate postconfirmation should fail.");
+        
+        vm.warp(block.timestamp + minAge);        
+        // Now postconfirmation should succeed
+        vm.prank(alice);
+        mcr.postconfirmSuperBlocksAndRollover();
+        assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 1);
+    }
+
+
     // ----------------------------------------------------------------
-    // -------- Acceptor tests --------------------------------------
+    // -------- Acceptor --------------------------------------
     // ----------------------------------------------------------------
 
     /// @notice Test that getAcceptorStartTime correctly calculates term start times
@@ -840,47 +876,9 @@ contract MCRTest is Test, IMCR {
         assertTrue( newAcceptor == alice, "New acceptor should be Alice");
     }
 
-    // An acceptor that is in place for acceptorTerm time should be replaced by a new acceptor after their term ended.
-    // TODO reward logic is not yet implemented
-    function testAcceptorRewards() public {
-        (address alice, address bob, ) = setupGenesisWithThreeAttesters(1, 1, 0);
-        assertEq(mcr.getAcceptor(), bob, "Bob should be the acceptor");
-
-        // make superBlock commitments
-        MCRStorage.SuperBlockCommitment memory initCommitment = makeHonestCommitment(1);
-        vm.prank(alice);
-        mcr.submitSuperBlockCommitment(initCommitment);
-        vm.prank(bob);
-        mcr.submitSuperBlockCommitment(initCommitment);
-
-        // bob postconfirms and gets a reward
-        vm.prank(bob);
-        mcr.postconfirmSuperBlocksAndRollover();
-        assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 1);
-
-        // make second superblock commitment
-        MCRStorage.SuperBlockCommitment memory secondCommitment = makeHonestCommitment(2);
-        vm.prank(alice);
-        mcr.submitSuperBlockCommitment(secondCommitment);
-        vm.prank(bob);
-        mcr.submitSuperBlockCommitment(secondCommitment);
-
-        // alice can postconfirm, but does not get the reward
-        // TODO check that bob did not get the reward
-        vm.prank(alice);
-        mcr.postconfirmSuperBlocksAndRollover();
-        assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 2);
-
-        // bob tries to postconfirm, but already done by alice
-        // TODO: bob should still get the reward
-        vm.prank(bob);
-        mcr.postconfirmSuperBlocksAndRollover();
-        assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 2);
-    }
-
 
     // ----------------------------------------------------------------
-    // -------- Reward tests --------------------------------------
+    // -------- Attester rewards --------------------------------------
     // ----------------------------------------------------------------
 
     function testRewardPoints() public {
@@ -965,4 +963,51 @@ contract MCRTest is Test, IMCR {
         assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), alice), 1, "Alice should have 1 token on stake");
         assertEq(moveToken.balanceOf(alice), 1, "Alice should have 1 token on balance");
     }
+
+
+
+    // ----------------------------------------------------------------
+    // -------- Acceptor rewards --------------------------------------
+    // ----------------------------------------------------------------
+
+
+    // An acceptor that is in place for acceptorTerm time should be replaced by a new acceptor after their term ended.
+    // TODO reward logic is not yet implemented
+    function testAcceptorRewards() public {
+        (address alice, address bob, ) = setupGenesisWithThreeAttesters(1, 1, 0);
+        assertEq(mcr.getAcceptor(), bob, "Bob should be the acceptor");
+
+        // make superBlock commitments
+        MCRStorage.SuperBlockCommitment memory initCommitment = makeHonestCommitment(1);
+        vm.prank(alice);
+        mcr.submitSuperBlockCommitment(initCommitment);
+        vm.prank(bob);
+        mcr.submitSuperBlockCommitment(initCommitment);
+
+        // bob postconfirms and gets a reward
+        vm.prank(bob);
+        mcr.postconfirmSuperBlocksAndRollover();
+        assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 1);
+
+        // make second superblock commitment
+        MCRStorage.SuperBlockCommitment memory secondCommitment = makeHonestCommitment(2);
+        vm.prank(alice);
+        mcr.submitSuperBlockCommitment(secondCommitment);
+        vm.prank(bob);
+        mcr.submitSuperBlockCommitment(secondCommitment);
+
+        // alice can postconfirm, but does not get the reward
+        // TODO check that bob did not get the reward
+        vm.prank(alice);
+        mcr.postconfirmSuperBlocksAndRollover();
+        assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 2);
+
+        // bob tries to postconfirm, but already done by alice
+        // TODO: bob should still get the reward
+        vm.prank(bob);
+        mcr.postconfirmSuperBlocksAndRollover();
+        assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 2);
+    }
+
+
 }
