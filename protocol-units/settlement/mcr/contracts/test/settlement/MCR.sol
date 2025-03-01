@@ -101,9 +101,13 @@ contract MCRTest is Test, IMCR {
         mcr = MCR(address(mcrProxy));
         mcr.setOpenAttestationEnabled(true);
 
-        // check that the setup was correctly performed
         assertEq(staking.getEpochDuration(address(mcr)), epochDuration, "Epoch duration not set correctly");
-        assertEq(mcr.getMinCommitmentAgeForPostconfirmation(), 0, "The unset min commitment age should be 0");
+        // set the min commitment age for postconfirmation to 0 to make the tests easier
+        mcr.setMinCommitmentAgeForPostconfirmation(0);
+        assertEq(mcr.getMinCommitmentAgeForPostconfirmation(), 0, "The default min commitment age for tests is set to 0");
+        // set the max acceptor non-reactivity time to 0 to make the tests easier
+        mcr.setAcceptorPrivilegeWindow(0);
+        assertEq(mcr.getMaxAcceptorNonReactivityTime(), 0, "The default max acceptor non-reactivity time for tests is set to 0");
     }
 
     // Helper function to setup genesis with 1 attester and their stake
@@ -662,7 +666,7 @@ contract MCRTest is Test, IMCR {
         assert(bobCommitment.commitment == commitment.commitment);
 
         // Verify acceptor state
-        assert(mcr.isAcceptorLive());
+        assert(mcr.isWithinAcceptorPrivilegeWindow(commitment));
         assertEq(mcr.getSuperBlockHeightAssignedEpoch(targetHeight), mcr.getAcceptingEpoch());
 
         // Attempt postconfirmation
@@ -698,7 +702,7 @@ contract MCRTest is Test, IMCR {
         assert(bobCommitment.commitment == commitment.commitment);
 
         // Verify acceptor state
-        assert(mcr.isAcceptorLive());
+        assert(mcr.isWithinAcceptorPrivilegeWindow(commitment));
         assertEq(mcr.getSuperBlockHeightAssignedEpoch(targetHeight), mcr.getAcceptingEpoch());
 
         // Attempt postconfirmation - this should fail because there's no supermajority
@@ -741,7 +745,7 @@ contract MCRTest is Test, IMCR {
         assertEq(staking.getUnstake(address(mcr), 2, address(moveToken), alice), 1, "Alice's unstake in epoch 2 should be 1");
 
         // Warp to next epoch 
-        vm.warp(block.timestamp + epochDuration);
+        vm.warp(2*epochDuration);
         console.log("- - - - - warp to epoch 2 - - - - -");
         assertEq(mcr.getPresentEpoch(), 2, "Present epoch should be 2");
         assertEq(mcr.getAcceptingEpoch(), 1, "Accepting epoch should be 1");
@@ -794,7 +798,8 @@ contract MCRTest is Test, IMCR {
         mcr.postconfirmSuperBlocksAndRollover();
         assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 0, "Immediate postconfirmation should fail.");
         
-        vm.warp(block.timestamp + minAge);        
+        vm.warp(block.timestamp + minAge);  // note that time starts at 1, not 0
+        console.log("time now is", block.timestamp);
         // Now postconfirmation should succeed
         vm.prank(alice);
         mcr.postconfirmSuperBlocksAndRollover();
@@ -881,17 +886,16 @@ contract MCRTest is Test, IMCR {
     // -------- Attester rewards --------------------------------------
     // ----------------------------------------------------------------
 
-    function testRewardPoints() public {
+    function testAttesterRewardPoints() public {
         // Setup with Alice having supermajority-enabling stake
         (address alice, address bob, address carol) = setupGenesisWithThreeAttesters(2, 1, 1);
-
-        // Record initial balances
         uint256 aliceInitialBalance = moveToken.balanceOf(alice);
         uint256 bobInitialBalance = moveToken.balanceOf(bob);
         uint256 carolInitialBalance = moveToken.balanceOf(carol);
+        mcr.setRewardPerPostconfirmationPoint(0);
 
         // Exit genesis epoch
-        vm.warp(block.timestamp + epochDuration);
+        vm.warp(epochDuration);
         vm.prank(alice);
         mcr.postconfirmSuperBlocksAndRollover();
         assertEq(mcr.getAcceptingEpoch(), 1, "Should have exited genesis");
@@ -927,7 +931,7 @@ contract MCRTest is Test, IMCR {
         mcr.submitSuperBlockCommitment(makeHonestCommitment(2));
 
         // Trigger postconfirmation, reward distribution by rolling over to next epoch
-        vm.warp(block.timestamp + epochDuration);
+        vm.warp(2*epochDuration);
         vm.prank(alice);
         mcr.postconfirmSuperBlocksAndRollover();
         assertEq(mcr.getAcceptingEpoch(), 2, "Should be in epoch 2");
@@ -940,7 +944,17 @@ contract MCRTest is Test, IMCR {
         assertEq(moveToken.balanceOf(bob), bobInitialBalance + mcr.getStakeForAcceptingEpoch(address(moveToken), bob), "Bob reward not correct.");
         assertEq(moveToken.balanceOf(carol), carolInitialBalance + mcr.getStakeForAcceptingEpoch(address(moveToken), carol), "Carol reward not correct.");
     }
- 
+
+    /// @notice Test that the acceptor privilege window works correctly
+    function testAcceptorPrivilegeWindow() public {
+        address alice = setupGenesisWithOneAttester(1);
+        
+        // set the max acceptor non-reactivity time to 1/4 epochDuration
+        mcr.setAcceptorPrivilegeWindow(epochDuration/4);
+        assertEq(mcr.getMaxAcceptorNonReactivityTime(), epochDuration/4, "Max acceptor non-reactivity time should be 1/4 epochDuration");
+
+
+    }
 
     /// @notice Test that postconfirmation rewards are distributed correctly when the acceptor is live
     function testPostconfirmationRewardsLiveAcceptor() public {
@@ -951,12 +965,21 @@ contract MCRTest is Test, IMCR {
         (address alice, address bob, ) = setupGenesisWithThreeAttesters(aliceStake, bobStake, 0);
         uint256 aliceInitialBalance = moveToken.balanceOf(alice);
         uint256 bobInitialBalance = moveToken.balanceOf(bob);
+        // set the max acceptor non-reactivity time to 1/4 epochDuration        
+        mcr.setAcceptorPrivilegeWindow(epochDuration/4);
+        console.log("acceptor privilege window", mcr.getMaxAcceptorNonReactivityTime());
 
         vm.prank(alice);
         mcr.submitSuperBlockCommitment(makeHonestCommitment(1));
+        // check that the first seen timestamp is set
+        console.log("commitment first seen at", mcr.getCommitmentFirstSeenAt(makeHonestCommitment(1)));
+        assertGt(mcr.getCommitmentFirstSeenAt(makeHonestCommitment(1)), 0, "Commitment first seen at should be set");
 
-        // attempt postconfirmation
-        assertEq(mcr.getAcceptor(), bob, "Bob should be the acceptor");
+        console.log("acceptor", mcr.getAcceptor());
+        assertEq(mcr.getAcceptor(), bob, "Bob should be the acceptor but its not");
+        assertEq(mcr.isWithinAcceptorPrivilegeWindow(makeHonestCommitment(1)), true, "Acceptor should be live");
+
+        // acceptor postconfirms while acceptor is live
         vm.prank(bob);
         mcr.postconfirmSuperBlocksAndRollover();
         assertEq(mcr.getAcceptingEpoch(), 0, "Should be in epoch 0");
@@ -967,7 +990,7 @@ contract MCRTest is Test, IMCR {
         assertEq(moveToken.balanceOf(bob), bobInitialBalance, "Bob should not have received any rewards yet");
 
         // warp to next epoch
-        vm.warp(block.timestamp + epochDuration);
+        vm.warp(epochDuration);
         vm.prank(alice);
         mcr.postconfirmSuperBlocksAndRollover();
         assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 1);
@@ -979,43 +1002,90 @@ contract MCRTest is Test, IMCR {
     }
 
     /// @notice Test that volunteer postconfirmation rewards are not distributed to volunteer acceptor when acceptor is live
+    // TODO once the acceptor can get postconfirm points within the acceptor privilege window, whether or not the height has previously been postconfirmed, this test should be updated
     function testVolunteerPostconfirmationRewardsLiveAcceptor() public {
-        uint256 stake = 9;
+        uint256 aliceStake = 9;
         // alice has supermajority stake
-        uint256 aliceStake = 3*stake;
-        uint256 bobStake = stake;
-        (address alice, address bob, ) = setupGenesisWithThreeAttesters(aliceStake, bobStake, 0);
+        (address alice, address bob, ) = setupGenesisWithThreeAttesters(aliceStake, 0, 0);
         uint256 aliceInitialBalance = moveToken.balanceOf(alice);
         uint256 bobInitialBalance = moveToken.balanceOf(bob);
 
         vm.prank(alice);
         mcr.submitSuperBlockCommitment(makeHonestCommitment(1));
 
-        // ensure bob is the acceptor
-        assertEq(mcr.getAcceptor(), bob, "Bob should be the acceptor");
+        console.log("length of staked attesters", mcr.getStakedAttestersForAcceptingEpoch().length);
+        console.log("acceptor", mcr.getAcceptor());
+
+        assertEq(mcr.getAcceptor(), alice, "Alice should be the acceptor since it is the only staked attester.");
+        assertEq(mcr.isWithinAcceptorPrivilegeWindow(makeHonestCommitment(1)), true, "Acceptor should be live");
 
         // volunteer acceptor postconfirms while acceptor is live
-        vm.prank(alice);
+        vm.prank(bob);
         mcr.postconfirmSuperBlocksAndRollover();
         assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 1);
 
-        // alice should not get any postconfirmer rewards
+        // bob should not get any postconfirmer rewards
         assertEq(moveToken.balanceOf(bob), bobInitialBalance, "Bob should not have received any rewards");
-        assertEq(mcr.getAttesterRewardPoints(mcr.getAcceptingEpoch(), bob), 0, "Bob should have 0 attester points");
-        assertEq(mcr.getAttesterRewardPoints(mcr.getAcceptingEpoch(), alice), 1, "Alice should have 1 attester points");
         assertEq(mcr.getPostconfirmerRewardPoints(mcr.getAcceptingEpoch(), bob), 0, "Bob should have 0 postconfirmer points");
-        assertEq(mcr.getPostconfirmerRewardPoints(mcr.getAcceptingEpoch(), alice), 1, "Alice should have 0 postconfirmer points");
+        assertEq(mcr.getAttesterRewardPoints(mcr.getAcceptingEpoch(), alice), 1, "Alice should have 1 attester points");
+        assertEq(mcr.getPostconfirmerRewardPoints(mcr.getAcceptingEpoch(), alice), 0, "Alice should have 0 postconfirmer points");
 
-        vm.warp(block.timestamp + epochDuration);
+        vm.warp(epochDuration);
         vm.prank(alice);
         mcr.postconfirmSuperBlocksAndRollover();
         assertEq(mcr.getAcceptingEpoch(), 1, "Should be in epoch 1");
 
         // alice should get the postconfirmer rewards
         assertEq(moveToken.balanceOf(bob), bobInitialBalance, "Bob should not have received any rewards");
-        assertEq(moveToken.balanceOf(alice), aliceInitialBalance + aliceStake, "Alice should have received the attester rewards only");
+        assertEq(moveToken.balanceOf(alice), aliceInitialBalance + aliceStake, "Alice should have received the attester rewards");
     }
 
+    /// @notice Test that postconfirmation rewards are distributed to volunteer acceptor when acceptor is not live
+    // TODO this test should probably be merged with the above test
+    function testVolunteerPostconfirmationRewardsNotLiveAcceptor() public {
+        // alice has supermajority stake
+        uint256 stake =13;
+        uint256 aliceStake = 3*stake;
+        uint256 bobStake = stake;
+        (address alice, address bob, ) = setupGenesisWithThreeAttesters(aliceStake, bobStake, 0);
+        uint256 aliceInitialBalance = moveToken.balanceOf(alice);
+        uint256 bobInitialBalance = moveToken.balanceOf(bob);
+        uint256 thisAcceptorTerm = mcr.getAcceptorTerm();
+
+        // set the time windows
+        assertEq(mcr.getMinCommitmentAgeForPostconfirmation(), 0, "Min commitment age should be 0"); 
+        uint256 thisAcceptorPriviledgeWindow = epochDuration/100;
+        mcr.setAcceptorPrivilegeWindow(thisAcceptorPriviledgeWindow); 
+        assertEq(mcr.getMaxAcceptorNonReactivityTime(), thisAcceptorPriviledgeWindow, "Max acceptor non-reactivity time should be 1/100 epochDuration");        
+        console.log("getMaxAcceptorNonReactivityTime", mcr.getMaxAcceptorNonReactivityTime());
+        console.log("thisAcceptorTerm", thisAcceptorTerm);
+        assertGt(thisAcceptorTerm, thisAcceptorPriviledgeWindow, "Acceptor term should be greater than thisAcceptorPriviledgeWindow");
+
+        vm.prank(alice);
+        mcr.submitSuperBlockCommitment(makeHonestCommitment(1));
+
+        assertEq(mcr.getAcceptor(), bob, "bob should be the acceptor");
+        assertEq(mcr.isWithinAcceptorPrivilegeWindow(makeHonestCommitment(1)), true, "Acceptor should be live");
+
+        // warp out of acceptor privilege window
+        vm.warp(block.timestamp + thisAcceptorPriviledgeWindow + 1 ); // TODO check why + 1 is needed
+        assertEq(mcr.isWithinAcceptorPrivilegeWindow(makeHonestCommitment(1)), false, "Acceptor should not be live");
+        vm.prank(alice);
+        mcr.postconfirmSuperBlocksAndRollover();
+        assertEq(mcr.getAcceptingEpoch(), 0, "Should be in epoch 0");
+        assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 1, "Last postconfirmed superblock height should be 1");
+        assertEq(mcr.getAttesterRewardPoints(mcr.getAcceptingEpoch(), alice), 1, "Alice should have 1 attester points");
+        assertEq(mcr.getPostconfirmerRewardPoints(mcr.getAcceptingEpoch(), alice), 1, "Alice should have 1 postconfirmer points");
+
+        // warp to next epoch
+        vm.warp(epochDuration);
+        vm.prank(bob);
+        mcr.postconfirmSuperBlocksAndRollover();
+        assertEq(mcr.getAcceptingEpoch(), 1, "Should be in epoch 1");
+
+        assertEq(moveToken.balanceOf(alice), aliceInitialBalance + aliceStake + aliceStake, "Alice should have received the attester and postconfirmer rewards");
+        assertEq(moveToken.balanceOf(bob), bobInitialBalance, "Bob should have received no rewards");
+    }
     
     // ----------------------------------------------------------------
     // -------- Acceptor rewards --------------------------------------

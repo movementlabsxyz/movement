@@ -36,6 +36,9 @@ contract MCRStorage {
     /// @notice Minimum time that must pass before a commitment can be postconfirmed
     uint256 public minCommitmentAgeForPostconfirmation;
 
+    /// @notice Max time the acceptor can be non-reactive to an honest superBlock commitment
+    uint256 public maxAcceptorNonReactivityTime;
+
     // the acceptor for the accepting epoch
     address public currentAcceptor;
 
@@ -95,6 +98,12 @@ contract MCRStorage {
 
     // track reward points for postconfirmers
     mapping(uint256 epoch => mapping(address postconfirmer => uint256 points)) public postconfirmerRewardPoints;
+
+    // track the reward per point for attesters
+    uint256 public rewardPerAttestationPoint;
+
+    // track the reward per point for postconfirmers
+    uint256 public rewardPerPostconfirmationPoint;
 
     uint256[45] internal __gap; // Reduced by 1 for new mapping
 

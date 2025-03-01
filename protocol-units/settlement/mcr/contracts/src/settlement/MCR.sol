@@ -27,6 +27,9 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     /// @notice Error thrown when minimum commitment age is greater than epoch duration
     error MinCommitmentAgeTooLong();
 
+    /// @notice Error thrown when maximum acceptor non-reactivity time is greater than epoch duration
+    error MaxAcceptorNonReactivityTimeTooLong();
+
     /// @notice Sets the acceptor term duration, must be less than epoch duration
     /// @param _acceptorTerm New acceptor term duration in time units
     function setAcceptorTerm(uint256 _acceptorTerm) public onlyRole(COMMITMENT_ADMIN) {
@@ -45,9 +48,14 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         acceptorTerm = _acceptorTerm;
     }
 
+    function getAcceptorTerm() public view returns (uint256) {
+        return acceptorTerm;
+    }
+
     /// @notice Sets the minimum time that must pass before a commitment can be postconfirmed
     /// @param _minCommitmentAgeForPostconfirmation New minimum commitment age 
     // TODO we also require a check when setting the epoch length that it is larger than the min commitment age
+    // TODO we need to set these values such that it works for acceptor Term and maxAcceptorNonReactivityTime, etc... there are many constraints here.
     function setMinCommitmentAgeForPostconfirmation(uint256 _minCommitmentAgeForPostconfirmation) public onlyRole(COMMITMENT_ADMIN) {
         // Ensure min age is less than epoch duration to allow postconfirmation within same epoch
         if (_minCommitmentAgeForPostconfirmation >= stakingContract.getEpochDuration(address(this))) {
@@ -56,10 +64,26 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         minCommitmentAgeForPostconfirmation = _minCommitmentAgeForPostconfirmation;
     }
 
-
     function getMinCommitmentAgeForPostconfirmation() public view returns (uint256) {
         return minCommitmentAgeForPostconfirmation;
     }
+
+    /// @notice Sets the maximum time the acceptor can be non-reactive to an honest superBlock commitment
+    /// @param _maxAcceptorNonReactivityTime New maximum time the acceptor can be non-reactive to an honest superBlock commitment
+    function setAcceptorPrivilegeWindow(uint256 _maxAcceptorNonReactivityTime) public onlyRole(COMMITMENT_ADMIN) {
+        // Ensure max non-reactivity time is less than epoch duration
+        if (_maxAcceptorNonReactivityTime >= stakingContract.getEpochDuration(address(this))) {
+            revert MaxAcceptorNonReactivityTimeTooLong();
+        }
+        maxAcceptorNonReactivityTime = _maxAcceptorNonReactivityTime;
+    }
+
+    /// @notice Gets the maximum time the acceptor can be non-reactive to an honest superBlock commitment
+    /// @return The maximum time the acceptor can be non-reactive to an honest superBlock commitment
+    function getMaxAcceptorNonReactivityTime() public view returns (uint256) {
+        return maxAcceptorNonReactivityTime;
+    }
+
 
     function initialize(
         IMovementStaking _stakingContract,
@@ -79,6 +103,16 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         grantTrustedAttester(msg.sender);
         acceptorTerm = _acceptorTerm;
         moveTokenAddress = _moveTokenAddress;
+
+        // Set default values to 1/10th of epoch duration
+        // NOTE since epochduration divided by 10 may not be an exact integer, the start and end of these windows may drift within an epoch over time.
+        // NOTE Consequently to remain on the safe side, these values should remain a small fraction of the epoch duration. 
+        // NOTE If they are small at most only the last fraction within an epoch will behave differently.
+        // TODO Examine the effects of the above.
+        minCommitmentAgeForPostconfirmation = _epochDuration / 10;
+        maxAcceptorNonReactivityTime = _epochDuration / 10;
+        rewardPerAttestationPoint = 1;
+        rewardPerPostconfirmationPoint = 1;
     }
 
     function grantCommitmentAdmin(address account) public {
@@ -304,9 +338,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         commitments[superBlockCommitment.height][attester] = superBlockCommitment;
         
         // Record first seen timestamp if not already set
-        if (commitmentFirstSeenAt[superBlockCommitment.height][superBlockCommitment.commitment] == 0) {
-            commitmentFirstSeenAt[superBlockCommitment.height][superBlockCommitment.commitment] = block.timestamp;
-        }
+        TrySetCommitmentFirstSeenAt(superBlockCommitment.height, superBlockCommitment.commitment, block.timestamp);
 
         // increment the commitment count by stake
         uint256 attesterStakeForAcceptingEpoch = getAttesterStakeForAcceptingEpoch(attester);
@@ -338,10 +370,25 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         }
     }
 
-    function isAcceptorLive() public pure returns (bool) {
-        // TODO check if current acceptor has been live sufficiently recently
-        // use getAcceptorStartTime, and the mappings
-        return true; // dummy implementation
+    /// @notice Checks, for a given superBlock commitment, if the current L1 block time is within the acceptor's privilege window
+    /// @dev The acceptor's privilege window is the time period when only the acceptor will get rewarded for postconfirmation
+    function isWithinAcceptorPrivilegeWindow(SuperBlockCommitment memory superBlockCommitment) public view returns (bool) {
+        if (getCommitmentFirstSeenAt(superBlockCommitment) == 0) {
+            console.log("[isWithinAcceptorPrivilegeWindow] timestamp is not set for this commitment");
+            return false;
+        }
+        // based on the first timestamp for the commitment we can determine if the acceptor has been live sufficiently recently
+        // use getCommitmentFirstSeenAt, and the mappings
+        console.log("[isWithinAcceptorPrivilegeWindow] getCommitmentFirstSeenAt", getCommitmentFirstSeenAt(superBlockCommitment));
+        console.log("[isWithinAcceptorPrivilegeWindow] getMinCommitmentAgeForPostconfirmation", getMinCommitmentAgeForPostconfirmation());
+        console.log("[isWithinAcceptorPrivilegeWindow] getMaxAcceptorNonReactivityTime", getMaxAcceptorNonReactivityTime());
+        if (getCommitmentFirstSeenAt(superBlockCommitment) 
+            + getMinCommitmentAgeForPostconfirmation() 
+            + getMaxAcceptorNonReactivityTime() 
+            < block.timestamp) {
+            return false;
+        }
+        return true;
     }
 
     /// @notice Gets the block height at which the current acceptor's term started
@@ -421,7 +468,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
             if (totalStakeOnCommitment >= supermajority) {
                 // Check if enough time has passed since commitment was first seen
                 // if not enough time has passed, then no postconfirmation at this height can yet happen
-                uint256 firstSeen = getCommitmentFirstSeenAt(superBlockCommitment.height, superBlockCommitment.commitment);
+                uint256 firstSeen = getCommitmentFirstSeenAt(superBlockCommitment);
                 // we should jump out of the for loop entirely
                 if (block.timestamp < firstSeen + minCommitmentAgeForPostconfirmation) break;
 
@@ -432,7 +479,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
                 // TODO: for rewards we have to run through all the attesters, as we need to acknowledge that they get rewards. 
 
                 // TODO: if the attester is the current acceptor, we need to record that the acceptor has shown liveness. 
-                // TODO: this liveness needs to be discoverable by isAcceptorLive()
+                // TODO: this liveness needs to be discoverable by isWithinAcceptorPrivilegeWindow()
 
                 return true;
             }
@@ -508,12 +555,12 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         }
 
         // Award points to postconfirmer
-        // if the acceptor has not been live award anyone who postconfirms
-        if (!isAcceptorLive()) { 
-            console.log("[postconfirmSuperBlockCommitment] currentAcceptor is not live");
+        if (!isWithinAcceptorPrivilegeWindow(superBlockCommitment)) { 
+            // if we are outside the privilege window, for the acceptor reward anyone who postconfirms
+            console.log("[postconfirmSuperBlockCommitment] privilege window is over");
             postconfirmerRewardPoints[currentAcceptingEpoch][attester] += 1;
         } else {
-            // if the acceptor has been live, only award points to the acceptor
+            // if we are within the privilege window, only award points to the acceptor
             // TODO optimization: even if the height has been volunteer postconfirmed we need to allow that that acceptor gets rewards, 
             // TODO otherwise weak acceptors may could get played (rich volunteer acceptors pay the fees and poor acceptors never get any reward) 
             // TODO but check if this is really required game theoretically.
@@ -560,7 +607,6 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         for (uint256 i = 0; i < attesters.length; i++) {
             if (attesterRewardPoints[acceptingEpoch][attesters[i]] > 0) {
                 // TODO: make this configurable and set it on instance creation
-                uint256 rewardPerAttestationPoint = 1;
                 uint256 reward = attesterRewardPoints[acceptingEpoch][attesters[i]] * rewardPerAttestationPoint * getAttesterStakeForAcceptingEpoch(attesters[i]);
                 // the staking contract is the custodian
                 console.log("[rollOverEpoch] Rewarding attester %s with %s", attesters[i], reward);
@@ -574,7 +620,6 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
             // Add postconfirmation rewards
             if (postconfirmerRewardPoints[acceptingEpoch][attesters[i]] > 0) {
-                uint256 rewardPerPostconfirmationPoint = 1; // Can be different from attester reward
                 uint256 reward = postconfirmerRewardPoints[acceptingEpoch][attesters[i]] * rewardPerPostconfirmationPoint * getAttesterStakeForAcceptingEpoch(attesters[i]);
                 console.log("[rollOverEpoch] Rewarding postconfirmer %s with %s", attesters[i], reward);
                 console.log("[rollOverEpoch] Staking contract is %s", address(stakingContract));
@@ -616,23 +661,41 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
     // TODO use this to limit the postconfirmations on new commits ( we need to give time to attesters to submit their commitments )
     /// @notice get the timestamp when a commitment was first seen
-    function getCommitmentFirstSeenAt(uint256 height, bytes32 commitment) public view returns (uint256) {
-        return commitmentFirstSeenAt[height][commitment];
+    function getCommitmentFirstSeenAt(SuperBlockCommitment memory superBlockCommitment) public view returns (uint256) {
+        return commitmentFirstSeenAt[superBlockCommitment.height][superBlockCommitment.commitment];
     }
 
     /// @notice Gets the reward points for an attester in a given epoch
-    /// @param epoch The epoch to get the reward points for
-    /// @param attester The attester to get the reward points for
-    /// @return The reward points for the attester in the given epoch
+
     function getAttesterRewardPoints(uint256 epoch, address attester) public view returns (uint256) {
         return attesterRewardPoints[epoch][attester];
     }
 
     /// @notice Gets the reward points for a postconfirmer in a given epoch
-    /// @param epoch The epoch to get the reward points for
-    /// @param postconfirmer The postconfirmer to get the reward points for
-    /// @return The reward points for the postconfirmer in the given epoch
+
     function getPostconfirmerRewardPoints(uint256 epoch, address postconfirmer) public view returns (uint256) {
         return postconfirmerRewardPoints[epoch][postconfirmer];
+    }
+
+    /// @notice Sets the timestamp when a commitment was first seen
+    function TrySetCommitmentFirstSeenAt(uint256 height, bytes32 commitment, uint256 timestamp) internal {
+        if (commitmentFirstSeenAt[height][commitment] != 0) {
+            // do not set if already set
+            console.log("[TrySetCommitmentFirstSeenAt] commitment first seen at is already set");
+            return;
+        } else if (timestamp == 0) {
+            // no need to set if timestamp is 0. This if may be redundant though.
+            console.log("[TrySetCommitmentFirstSeenAt] timestamp is 0");
+            return;
+        }
+        commitmentFirstSeenAt[height][commitment] = timestamp;
+    }
+
+    function setRewardPerAttestationPoint(uint256 rewardPerPoint) public onlyRole(COMMITMENT_ADMIN) {
+        rewardPerAttestationPoint = rewardPerPoint;
+    }
+
+    function setRewardPerPostconfirmationPoint(uint256 rewardPerPoint) public onlyRole(COMMITMENT_ADMIN) {
+        rewardPerPostconfirmationPoint = rewardPerPoint;
     }
 }
