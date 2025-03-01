@@ -93,6 +93,6 @@ contract MCRStorage {
     // track reward points for attesters
     mapping(uint256 epoch => mapping(address attester => uint256 points)) public attesterRewardPoints;
 
-    uint256[46] internal __gap;
+    uint256[47] internal __gap;
 
 }
