@@ -944,23 +944,26 @@ contract MCRTest is Test, IMCR {
 
     function testPostconfirmationRewards() public {
         uint256 stake = 7;
-        address alice = setupGenesisWithOneAttester(stake);
+        // alice has supermajority stake
+        uint256 aliceStake = 3*stake;
+        uint256 bobStake = stake;
+        (address alice, address bob, ) = setupGenesisWithThreeAttesters(aliceStake, bobStake, 0);
         uint256 aliceInitialBalance = moveToken.balanceOf(alice);
-        assertEq(aliceInitialBalance, 0, "Alice should have 0 tokens");
+        uint256 bobInitialBalance = moveToken.balanceOf(bob);
 
-        // submit commitment
         vm.prank(alice);
         mcr.submitSuperBlockCommitment(makeHonestCommitment(1));
 
         // attempt postconfirmation
-        vm.prank(alice);
+        assertEq(mcr.getAcceptor(), bob, "Bob should be the acceptor");
+        vm.prank(bob);
         mcr.postconfirmSuperBlocksAndRollover();
-        // balance of alice should have not increased yet
-        assertEq(moveToken.balanceOf(alice), aliceInitialBalance, "Alice should have not received any rewards yet");
+        assertEq(mcr.getAcceptingEpoch(), 0, "Should be in epoch 0");
         assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 1, "Last postconfirmed superblock height should be 1");
         assertEq(mcr.getAttesterRewardPoints(mcr.getAcceptingEpoch(), alice), 1, "Alice should have 1 attester points");
-        assertEq(mcr.getPostconfirmerRewardPoints(mcr.getAcceptingEpoch(), alice), 1, "Alice should have 1 postconfirmer points");
-        assertEq(mcr.getAcceptingEpoch(), 0, "Should be in epoch 0");
+        assertEq(mcr.getPostconfirmerRewardPoints(mcr.getAcceptingEpoch(), bob), 1, "Bob should have 1 postconfirmer points");
+        assertEq(moveToken.balanceOf(alice), aliceInitialBalance, "Alice should have not received any rewards yet");
+        assertEq(moveToken.balanceOf(bob), bobInitialBalance, "Bob should not have received any rewards yet");
 
         // warp to next epoch
         vm.warp(block.timestamp + epochDuration);
@@ -970,9 +973,8 @@ contract MCRTest is Test, IMCR {
         assertEq(mcr.getAcceptingEpoch(), 1, "Should be in epoch 1");
 
         // Verify rewards:
-        // 1. Attestation reward: stake * rewardPerPoint * points (7 * 1 * 1)
-        // 2. Postconfirmation reward: stake * rewardPerPoint * points (7 * 1 * 1)
-        assertEq(moveToken.balanceOf(alice), aliceInitialBalance + stake + stake, "Alice should have received the rewards");
+        assertEq(moveToken.balanceOf(alice), aliceInitialBalance + aliceStake, "Alice should have received the rewards");
+        assertEq(moveToken.balanceOf(bob), bobInitialBalance + bobStake, "Bob should have received the rewards");
     }
 
 
