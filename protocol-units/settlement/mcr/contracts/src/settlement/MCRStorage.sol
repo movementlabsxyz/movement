@@ -25,13 +25,10 @@ contract MCRStorage {
     // track the last postconfirmed superBlock height, so that we can require superBlocks are submitted in order and handle staking effectively
     uint256 public lastPostconfirmedSuperBlockHeight;
 
-    /// Acceptor term time in seconds (determined by L1 blocks). The confimer remains the same for acceptorTerm period.
-    // This means we accept that if the acceptor is not active the postconfirmations will be delayed. 
-    // TODO permit that anyone can confirm but only the Acceptor gets rewarded. 
-    // TODO The Acceptor should also get rewarded even if another attestor confirmed the postconfirmation.
-    // The Acceptor term can be minimal, but it should not be O(1) as the acceptor should have some time 
+    /// Acceptor term time in seconds. The acceptor remains the same for acceptorDuration period.
+    // The Acceptor term can be minimal, but it should not be too small as the acceptor should have some time 
     // to prepare and post L1-transactions that will start the validation of attestations.
-    uint256 public acceptorTerm;
+    uint256 public acceptorDuration;
 
     /// @notice Minimum time that must pass before a commitment can be postconfirmed
     uint256 public minCommitmentAgeForPostconfirmation;

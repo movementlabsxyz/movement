@@ -19,10 +19,10 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     bytes32 public constant TRUSTED_ATTESTER = keccak256("TRUSTED_ATTESTER");
 
     /// @notice Error thrown when acceptor term is greater than 256 blocks
-    error AcceptorTermTooLong();
+    error AcceptorDurationTooLong();
 
     /// @notice Error thrown when acceptor term is too large for epoch duration
-    error AcceptorTermTooLongForEpoch();
+    error AcceptorDurationTooLongForEpoch();
 
     /// @notice Error thrown when minimum commitment age is greater than epoch duration
     error MinCommitmentAgeTooLong();
@@ -31,25 +31,20 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     error MaxAcceptorNonReactivityTimeTooLong();
 
     /// @notice Sets the acceptor term duration, must be less than epoch duration
-    /// @param _acceptorTerm New acceptor term duration in time units
-    function setAcceptorTerm(uint256 _acceptorTerm) public onlyRole(COMMITMENT_ADMIN) {
-        // Ensure acceptor term is not longer than 256 blocks
-        if (_acceptorTerm > 256) {
-            revert AcceptorTermTooLong();
-        }
+    /// @param _acceptorDuration New acceptor term duration in time units
+    function setAcceptorDuration(uint256 _acceptorDuration) public onlyRole(COMMITMENT_ADMIN) {
         // Ensure acceptor term is sufficiently small compared to epoch duration
         uint256 epochDuration = stakingContract.getEpochDuration(address(this));
 
         // TODO If we would use block heights instead of timestamps we could handle everything much smoother.
-        uint256 estimatedL1BlockDelta = 12 seconds; 
-        if (2 * _acceptorTerm >= epochDuration / estimatedL1BlockDelta) {
-            revert AcceptorTermTooLongForEpoch();
+        if (2 * _acceptorDuration >= epochDuration ) {
+            revert AcceptorDurationTooLongForEpoch();
         }
-        acceptorTerm = _acceptorTerm;
+        acceptorDuration = _acceptorDuration;
     }
 
-    function getAcceptorTerm() public view returns (uint256) {
-        return acceptorTerm;
+    function getAcceptorDuration() public view returns (uint256) {
+        return acceptorDuration;
     }
 
     /// @notice Sets the minimum time that must pass before a commitment can be postconfirmed
@@ -91,7 +86,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         uint256 _leadingSuperBlockTolerance,
         uint256 _epochDuration, // in time units
         address[] memory _custodians,
-        uint256 _acceptorTerm, // in time units
+        uint256 _acceptorDuration, // in time units
         address _moveTokenAddress  // the primary custodian for rewards in the staking contract
     ) public initializer {
         __BaseSettlement_init_unchained();
@@ -101,7 +96,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         stakingContract.registerDomain(_epochDuration, _custodians);
         grantCommitmentAdmin(msg.sender);
         grantTrustedAttester(msg.sender);
-        acceptorTerm = _acceptorTerm;
+        acceptorDuration = _acceptorDuration;
         moveTokenAddress = _moveTokenAddress;
 
         // Set default values to 1/10th of epoch duration
@@ -391,26 +386,32 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         return true;
     }
 
-    /// @notice Gets the block height at which the current acceptor's term started
-    function getAcceptorStartL1BlockHeight(uint256 currentL1Block) public view returns (uint256) {
-        uint256 currentL1BlockCorrected = currentL1Block - 1; // The first block is 1, not 0
-        return currentL1BlockCorrected - (currentL1BlockCorrected % acceptorTerm) + 1;
+    /// @notice Gets the time at which the current epoch started
+    function getEpochStartTime() public view returns (uint256) {
+        uint256 currentTime = block.timestamp;
+        return currentTime - (currentTime % stakingContract.getEpochDuration(address(this)));
+    }
+
+    /// @notice Gets the time at which the current acceptor's term started
+    function getAcceptorStartTime() public view returns (uint256) {
+        uint256 currentTime = block.timestamp;
+        // We reset the times to match the start of epochs. This ensures every epoch has the same setup.
+        uint256 currentTimeCorrected = currentTime % stakingContract.getEpochDuration(address(this));
+        return currentTimeCorrected - (currentTimeCorrected % acceptorDuration);
     }
 
     /// @notice Determines the acceptor in the accepting epoch using L1 block hash as a source of randomness
     // At the border between epochs this is not ideal as getAcceptor works on blocks and epochs works with time. 
     // Thus we must consider the edge cases where the acceptor is only active for a short time.
     function getAcceptor() public view returns (address) {
-        uint256 currentL1Block = block.number;
-        uint256 acceptorStartL1Block = getAcceptorStartL1BlockHeight(currentL1Block);
-        require(acceptorStartL1Block > 0, "Acceptor start block should not be 0");
-        require(acceptorStartL1Block <= currentL1Block, "Acceptor start block is in the future");
-        require(currentL1Block - acceptorStartL1Block <= 256, "Acceptor start block is too old, as data is not available for more than 256 blocks");
-        bytes32 randomness = blockhash(acceptorStartL1Block-1); 
-        require(randomness != 0, "Block too old for randomness");
+        // TODO unless we swap with everything, including epochs, we must use block.timestamp. 
+        // However, to get easy access to L1 randomness we need to know the block at which the acceptor started, which is expensive (unless we count in blocks instead of time)
+        // TODO as long as we do not swap to block.number, the randomness below is precictable.
+        uint256 randSeed1 = getAcceptorStartTime();
+        uint256 randSeed2 = getEpochStartTime();
         address[] memory attesters = stakingContract.getStakedAttestersForAcceptingEpoch(address(this));
-        uint256 acceptorIndex = uint256(randomness) % attesters.length;
-        return attesters[acceptorIndex];        
+        uint256 acceptorIndex = uint256(keccak256(abi.encodePacked(randSeed1, randSeed2))) % attesters.length; // randomize the order of the attesters
+        return attesters[acceptorIndex];
     }
 
     /// @dev it is possible if the accepting epoch is behind the presentEpoch that heights dont obtain enough votes in the assigned epoch. 

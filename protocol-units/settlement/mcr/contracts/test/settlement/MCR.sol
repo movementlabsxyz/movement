@@ -21,7 +21,7 @@ contract MCRTest is Test, IMCR {
     string public stakingSignature = "initialize(address)";
     string public mcrSignature = "initialize(address,uint256,uint256,uint256,address[],uint256,address)";
     uint256 epochDuration = 7200 seconds;
-    uint256 acceptorTerm = epochDuration/12 seconds/4;
+    uint256 acceptorDuration = epochDuration/12 seconds/4;
     bytes32 honestCommitmentTemplate = keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)));
     bytes32 honestBlockIdTemplate = keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)));
     bytes32 dishonestCommitmentTemplate = keccak256(abi.encodePacked(uint256(3), uint256(2), uint256(1)));
@@ -88,7 +88,7 @@ contract MCRTest is Test, IMCR {
             5,                          // _leadingSuperBlockTolerance, max blocks ahead of last confirmed
             epochDuration,              // _epochDuration, how long an epoch lasts, constant stakes in that time
             custodians,                 // _custodians, array with moveProxy address
-            acceptorTerm,               // _acceptorTerm, how long an acceptor serves
+            acceptorDuration,               // _acceptorDuration, how long an acceptor serves
             // TODO can we replace the following line with the moveToken address?
             address(moveProxy)           // _moveTokenAddress, the primary custodian for rewards in the staking contract
         );
@@ -321,7 +321,7 @@ contract MCRTest is Test, IMCR {
     }
 
     // ----------------------------------------------------------------
-    // -------- Test functions ----------------------------------------
+    // -------- General tests ----------------------------------------
     // ----------------------------------------------------------------
 
     function testCannotInitializeTwice() public {
@@ -771,8 +771,6 @@ contract MCRTest is Test, IMCR {
         assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 1, "Last postconfirmed superblock height should be 1, as supermajority was reached (2/2 > threshold)");
     }
 
-
-
     function testSetMinCommitmentAge() public {
         // Set min commitment age to a too long value
         vm.expectRevert(MCR.MinCommitmentAgeTooLong.selector);
@@ -808,82 +806,81 @@ contract MCRTest is Test, IMCR {
 
 
     // ----------------------------------------------------------------
-    // -------- Acceptor --------------------------------------
+    // -------- Acceptor tests --------------------------------------
     // ----------------------------------------------------------------
 
     /// @notice Test that getAcceptorStartTime correctly calculates term start times
-    function testAcceptorStartL1BlockHeight() public {
+    function testAcceptorStartTime() public {
         // Test at block 0
-        assertEq(mcr.getAcceptorStartL1BlockHeight(block.number), 1, "Acceptor term should start at L1Block 1");
+        assertEq(block.timestamp, 1, "Current time should be 1"); // TODO why is it 1? and not 0?
+        assertEq(acceptorDuration, mcr.getAcceptorDuration(), "Acceptor term should be correctly set");
+        assertEq(mcr.getAcceptorStartTime(), 0, "Acceptor term should start at (1) time 0");
 
         // Test at half an acceptor term
-        vm.roll(acceptorTerm/2);
-        assertEq(mcr.getAcceptorStartL1BlockHeight(block.number), 1, "Acceptor term should start at L1Block 1");
+        vm.warp(acceptorDuration-1);
+        assertEq(mcr.getAcceptorStartTime(), 0, "Acceptor term should start at (2) time 0");
 
         // Test at an acceptor term boundary
-        vm.roll(acceptorTerm);
-        assertEq(mcr.getAcceptorStartL1BlockHeight(block.number), 1, "Acceptor term should start at L1Block 1");
+        vm.warp(acceptorDuration);
+        console.log("current time", block.timestamp);
+        console.log("acceptorDuration", acceptorDuration);
+        console.log("epochTime", epochDuration);
+        assertEq(mcr.getAcceptorStartTime(), acceptorDuration, "Acceptor term should start at (3) time acceptorDuration");
 
         // Test at an acceptor term boundary
-        vm.roll(acceptorTerm+1);
-        assertEq(mcr.getAcceptorStartL1BlockHeight(block.number), acceptorTerm+1, "Acceptor term should start at L1Block acceptorTerm+1");
+        vm.warp(acceptorDuration+1);
+        assertEq(mcr.getAcceptorStartTime(), acceptorDuration, "Acceptor term should start at (4) time acceptorDuration");
 
         // Test at 1.5 acceptor terms
-        vm.warp(3 * acceptorTerm / 2);
-        assertEq(mcr.getAcceptorStartL1BlockHeight(block.number), acceptorTerm+1, "Acceptor term should start at L1Block acceptorTerm+1");        
+        vm.warp(2 * acceptorDuration );
+        assertEq(mcr.getAcceptorStartTime(), 2 * acceptorDuration, "Acceptor term should start at (5) time 2 * acceptorDuration");        
     }
 
-    /// @notice Test setting acceptor term with validation
-    function testSetAcceptorTerm() public {
-        // Ensure we can retrieve the epoch duration correct
-        assertEq(epochDuration, staking.getEpochDuration(address(mcr)));
-        
-        // Set acceptor term to 256 blocks (should succeed)
-        mcr.setAcceptorTerm(256);
-        assertEq(mcr.acceptorTerm(), 256, "Term should be updated to 256");
+    /// @notice Test setting acceptor duration with validation
+    function testSetAcceptorDuration() public {
+        // Check the epoch duration is set correctly
+        assertEq(epochDuration, staking.getEpochDuration(address(mcr)));        
+        // Test valid duration (less than half epoch duration)
+        uint256 validDuration = epochDuration / 2 - 1;
+        mcr.setAcceptorDuration(validDuration);
+        assertEq(mcr.getAcceptorDuration(), validDuration, "Duration should be updated to valid value");
 
-        // Try setting acceptor term to over 256 blocks (should fail)
-        vm.expectRevert(MCR.AcceptorTermTooLong.selector);
-        mcr.setAcceptorTerm(257);
-        assertEq(mcr.acceptorTerm(), 256, "Term should remain at 256");
+        // Test duration too long compared to epoch (>= epochDuration/2)
+        uint256 invalidDuration = epochDuration / 2;
+        vm.expectRevert(MCR.AcceptorDurationTooLongForEpoch.selector);
+        mcr.setAcceptorDuration(invalidDuration);
+        assertEq(mcr.getAcceptorDuration(), validDuration, "Duration should remain at previous valid value");
 
-        // Check validity with respect to epoch duration
-        uint256 validTerm = epochDuration/12 seconds/4;
-        mcr.setAcceptorTerm(validTerm);
-        assertEq(mcr.acceptorTerm(), validTerm, "Term should be updated to epoch related value");
-
-        // Try setting acceptor term to epoch duration
-        uint256 invalidTerm = epochDuration/12 seconds;
-        vm.expectRevert(MCR.AcceptorTermTooLong.selector);
-        mcr.setAcceptorTerm(invalidTerm);
-        assertEq(mcr.acceptorTerm(), validTerm, "Term should remain at epoch related value");
+        // Test duration equal to epoch duration (should fail)
+        vm.expectRevert(MCR.AcceptorDurationTooLongForEpoch.selector);
+        mcr.setAcceptorDuration(epochDuration);
+        assertEq(mcr.getAcceptorDuration(), validDuration, "Duration should remain at previous valid value");
     }
 
     /// @notice Test that getAcceptor correctly selects an acceptor based on block hash
     function testGetAcceptor() public {
         // Setup with three attesters with equal stakes
-        (address alice, , address carol) = setupGenesisWithThreeAttesters(1, 1, 1);
+        (, address bob, address carol) = setupGenesisWithThreeAttesters(1, 1, 1);
+        uint256 myAcceptorDuration = 13;
+        mcr.setAcceptorDuration(myAcceptorDuration);
+        assertEq(myAcceptorDuration,mcr.getAcceptorDuration(),"Acceptor duration not set correctly");
 
-        uint256 myAcceptorTerm = 4;
-        mcr.setAcceptorTerm(myAcceptorTerm);
         address initialAcceptor = mcr.getAcceptor();
-        assertTrue( initialAcceptor == carol, "Acceptor should be Carol");
+        assertEq(initialAcceptor, bob, "Acceptor should be bob");
 
-        vm.roll(2); // we started at block 1
-        assertEq(mcr.getAcceptor(), initialAcceptor, "Acceptor should not change within term");
-        
-        vm.roll(myAcceptorTerm); // L1blocks started at 1, not 0
+        vm.warp(myAcceptorDuration-1); 
         assertEq(mcr.getAcceptor(), initialAcceptor, "Acceptor should not change within term");
 
-        // Move to next acceptor Term
-        vm.roll(myAcceptorTerm+1); // L1blocks started at 1, not 0
+        // Move two acceptor terms (moving one resulted still in bob as acceptor with current randomness)
+        vm.warp(2*myAcceptorDuration); 
         address newAcceptor = mcr.getAcceptor();
-        assertTrue( newAcceptor == alice, "New acceptor should be Alice");
+        assertEq(mcr.getAcceptorStartTime(),2*myAcceptorDuration,"Acceptor start time should be myAcceptorDuration");
+        assertEq(newAcceptor, carol, "New acceptor should be Carol");
     }
 
 
     // ----------------------------------------------------------------
-    // -------- Attester rewards --------------------------------------
+    // -------- Attester reward tests --------------------------------------
     // ----------------------------------------------------------------
 
     function testAttesterRewardPoints() public {
@@ -943,17 +940,6 @@ contract MCRTest is Test, IMCR {
         assertEq(moveToken.balanceOf(alice), aliceInitialBalance + mcr.getStakeForAcceptingEpoch(address(moveToken), alice) * 2, "Alice reward not correct.");
         assertEq(moveToken.balanceOf(bob), bobInitialBalance + mcr.getStakeForAcceptingEpoch(address(moveToken), bob), "Bob reward not correct.");
         assertEq(moveToken.balanceOf(carol), carolInitialBalance + mcr.getStakeForAcceptingEpoch(address(moveToken), carol), "Carol reward not correct.");
-    }
-
-    /// @notice Test that the acceptor privilege window works correctly
-    function testAcceptorPrivilegeWindow() public {
-        address alice = setupGenesisWithOneAttester(1);
-        
-        // set the max acceptor non-reactivity time to 1/4 epochDuration
-        mcr.setAcceptorPrivilegeWindow(epochDuration/4);
-        assertEq(mcr.getMaxAcceptorNonReactivityTime(), epochDuration/4, "Max acceptor non-reactivity time should be 1/4 epochDuration");
-
-
     }
 
     /// @notice Test that postconfirmation rewards are distributed correctly when the acceptor is live
@@ -1050,7 +1036,7 @@ contract MCRTest is Test, IMCR {
         (address alice, address bob, ) = setupGenesisWithThreeAttesters(aliceStake, bobStake, 0);
         uint256 aliceInitialBalance = moveToken.balanceOf(alice);
         uint256 bobInitialBalance = moveToken.balanceOf(bob);
-        uint256 thisAcceptorTerm = mcr.getAcceptorTerm();
+        uint256 thisAcceptorDuration = mcr.getAcceptorDuration();
 
         // set the time windows
         assertEq(mcr.getMinCommitmentAgeForPostconfirmation(), 0, "Min commitment age should be 0"); 
@@ -1058,8 +1044,8 @@ contract MCRTest is Test, IMCR {
         mcr.setAcceptorPrivilegeWindow(thisAcceptorPriviledgeWindow); 
         assertEq(mcr.getMaxAcceptorNonReactivityTime(), thisAcceptorPriviledgeWindow, "Max acceptor non-reactivity time should be 1/100 epochDuration");        
         console.log("getMaxAcceptorNonReactivityTime", mcr.getMaxAcceptorNonReactivityTime());
-        console.log("thisAcceptorTerm", thisAcceptorTerm);
-        assertGt(thisAcceptorTerm, thisAcceptorPriviledgeWindow, "Acceptor term should be greater than thisAcceptorPriviledgeWindow");
+        console.log("thisAcceptorDuration", thisAcceptorDuration);
+        assertGt(thisAcceptorDuration, thisAcceptorPriviledgeWindow, "Acceptor term should be greater than thisAcceptorPriviledgeWindow");
 
         vm.prank(alice);
         mcr.submitSuperBlockCommitment(makeHonestCommitment(1));
@@ -1088,11 +1074,11 @@ contract MCRTest is Test, IMCR {
     }
     
     // ----------------------------------------------------------------
-    // -------- Acceptor rewards --------------------------------------
+    // -------- Acceptor reward tests --------------------------------------
     // ----------------------------------------------------------------
 
 
-    // An acceptor that is in place for acceptorTerm time should be replaced by a new acceptor after their term ended.
+    // An acceptor that is in place for acceptorDuration time should be replaced by a new acceptor after their term ended.
     // TODO reward logic is not yet implemented
     function testAcceptorRewards() public {
         (address alice, address bob, ) = setupGenesisWithThreeAttesters(1, 1, 0);
