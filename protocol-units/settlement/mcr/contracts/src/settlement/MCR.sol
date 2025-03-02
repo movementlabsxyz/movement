@@ -25,7 +25,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     error PostconfirmerDurationTooLongForEpoch();
 
     /// @notice Error thrown when minimum commitment age is greater than epoch duration
-    error MinCommitmentAgeTooLong();
+    error minCommitmentAgeForPostconfirmationTooLong();
 
     /// @notice Error thrown when maximum postconfirmer non-reactivity time is greater than epoch duration
     error postconfirmerPrivilegeDurationTooLong();
@@ -122,8 +122,8 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     /// @notice Sets the maximum time the postconfirmer can be non-reactive to an honest superBlock commitment
     /// @param _postconfirmerPrivilegeDuration  maximum time the postconfirmer is permitted to be non-reactive to an honest superBlock commitment
     function setPostconfirmerPrivilegeDuration(uint256 _postconfirmerPrivilegeDuration) public onlyRole(COMMITMENT_ADMIN) {
-        // Ensure max non-reactivity time is less than epoch duration
-        if (_postconfirmerPrivilegeDuration >= stakingContract.getEpochDuration(address(this))) {
+        // Ensure max privilege time is not too large
+        if (_postconfirmerPrivilegeDuration >= stakingContract.getEpochDuration(address(this)) - getMinCommitmentAgeForPostconfirmation()) {
             revert postconfirmerPrivilegeDurationTooLong();
         }
         postconfirmerPrivilegeDuration = _postconfirmerPrivilegeDuration;
@@ -141,8 +141,8 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     // TODO we need to set these values such that it works for postconfirmer Term and postconfirmerPrivilegeDuration, etc... there are many constraints here.
     function setMinCommitmentAgeForPostconfirmation(uint256 _minCommitmentAgeForPostconfirmation) public onlyRole(COMMITMENT_ADMIN) {
         // Ensure min age is less than epoch duration to allow postconfirmation within same epoch
-        if (_minCommitmentAgeForPostconfirmation >= stakingContract.getEpochDuration(address(this))) {
-            revert MinCommitmentAgeTooLong();
+        if (_minCommitmentAgeForPostconfirmation >= stakingContract.getEpochDuration(address(this)) - getPostconfirmerPrivilegeDuration()) {
+            revert minCommitmentAgeForPostconfirmationTooLong();
         }
         minCommitmentAgeForPostconfirmation = _minCommitmentAgeForPostconfirmation;
     }

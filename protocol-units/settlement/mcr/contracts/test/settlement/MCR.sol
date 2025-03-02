@@ -773,7 +773,7 @@ contract MCRTest is Test, IMCR {
 
     function testSetMinCommitmentAge() public {
         // Set min commitment age to a too long value
-        vm.expectRevert(MCR.MinCommitmentAgeTooLong.selector);
+        vm.expectRevert(MCR.minCommitmentAgeForPostconfirmationTooLong.selector);
         mcr.setMinCommitmentAgeForPostconfirmation(epochDuration);
 
         // Set min commitment age to 1/10 of epochDuration
