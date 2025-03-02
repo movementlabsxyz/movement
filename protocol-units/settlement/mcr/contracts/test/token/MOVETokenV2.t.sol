@@ -131,7 +131,6 @@ contract MOVETokenDevTest is Test {
 
     // Tests that non-admin accounts cannot grant roles by checking for the expected revert
     function testCannotGrantRoleFuzz(address messenger, address receiver) public {
-
         // repeat with new test if messenger is multisig or 0
         vm.assume(messenger != multisig);
         vm.assume(messenger != address(0));
@@ -151,10 +150,15 @@ contract MOVETokenDevTest is Test {
             abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, messenger, DEFAULT_ADMIN_ROLE)
         );
 
-
         // Attempt to grant MINTER_ROLE to receiver address
         // This should fail since messenger doesn't have DEFAULT_ADMIN_ROLE
-        token.grantRole(MINTER_ROLE, receiver);
+        try token.grantRole(MINTER_ROLE, receiver) {
+            fail();
+        } catch Error(string memory reason) {
+            console.log("Revert reason:", reason);
+        } catch (bytes memory returnData) {
+            console.logBytes(returnData);
+        }
 
         vm.stopPrank();
     }

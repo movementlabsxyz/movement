@@ -21,7 +21,7 @@ contract MCRTest is Test, IMCR {
     string public stakingSignature = "initialize(address)";
     string public mcrSignature = "initialize(address,uint256,uint256,uint256,address[],uint256,address)";
     uint256 epochDuration = 7200 seconds;
-    uint256 acceptorTerm = epochDuration/12 seconds/4;
+    uint256 postconfirmerDuration = epochDuration/4;
     bytes32 honestCommitmentTemplate = keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)));
     bytes32 honestBlockIdTemplate = keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)));
     bytes32 dishonestCommitmentTemplate = keccak256(abi.encodePacked(uint256(3), uint256(2), uint256(1)));
@@ -88,9 +88,9 @@ contract MCRTest is Test, IMCR {
             5,                          // _leadingSuperBlockTolerance, max blocks ahead of last confirmed
             epochDuration,              // _epochDuration, how long an epoch lasts, constant stakes in that time
             custodians,                 // _custodians, array with moveProxy address
-            acceptorTerm,               // _acceptorTerm, how long an acceptor serves
+            postconfirmerDuration,      // _postconfirmerDuration, how long an postconfirmer serves
             // TODO can we replace the following line with the moveToken address?
-            address(moveProxy)           // _moveTokenAddress, the primary custodian for rewards in the staking contract
+            address(moveProxy)          // _moveTokenAddress, the primary custodian for rewards in the staking contract
         );
         TransparentUpgradeableProxy mcrProxy = new TransparentUpgradeableProxy(
             address(mcrImplementation),
@@ -101,15 +101,17 @@ contract MCRTest is Test, IMCR {
         mcr = MCR(address(mcrProxy));
         mcr.setOpenAttestationEnabled(true);
 
-        // check that the setup was correctly performed
         assertEq(staking.getEpochDuration(address(mcr)), epochDuration, "Epoch duration not set correctly");
-        assertEq(mcr.getMinCommitmentAgeForPostconfirmation(), 0, "The unset min commitment age should be 0");
+        // set the min commitment age for postconfirmation to 0 to make the tests easier
+        mcr.setMinCommitmentAgeForPostconfirmation(0);
+        assertEq(mcr.getMinCommitmentAgeForPostconfirmation(), 0, "The default min commitment age for tests is set to 0");
+        // set the max postconfirmer non-reactivity time to 0 to make the tests easier
+        mcr.setPostconfirmerPrivilegeDuration(0);
+        assertEq(mcr.getPostconfirmerPrivilegeDuration(), 0, "The default max postconfirmer non-reactivity time for tests is set to 0");
     }
 
     // Helper function to setup genesis with 1 attester and their stake
     function setupGenesisWithOneAttester(uint256 stakeAmount) internal returns (address attester) {
-        console.log("[setupGenesisWithOneAttester] This is domain:", address(mcr));
-
         moveToken.mint(address(mcr), stakeAmount*100); // MCR needs tokens to pay rewards
         // MCR needs to approve staking contract to spend its tokens
         vm.prank(address(mcr));
@@ -130,7 +132,6 @@ contract MCRTest is Test, IMCR {
         address[] memory custodians = new address[](1);
         custodians[0] = address(moveToken);
         staking.registerDomain(epochDuration, custodians);
-        console.log("[setupGenesisWithThreeAttesters] Registered domain with epochDuration ", staking.getEpochDuration(address(mcr)));
 
         // TODO this seems odd that we need to do this here.. check for correctnes of this approach
         mcr.grantRole(mcr.DEFAULT_ADMIN_ROLE(), address(mcr));
@@ -139,7 +140,6 @@ contract MCRTest is Test, IMCR {
         // vm.warp(3*epochDuration);
 
         // End genesis ceremony
-        console.log("[setupGenesisWithThreeAttesters] Ending genesis ceremony");
         vm.prank(address(mcr));
         mcr.acceptGenesisCeremony();
 
@@ -155,7 +155,6 @@ contract MCRTest is Test, IMCR {
         uint256 bobStakeAmount, 
         uint256 carolStakeAmount
     ) internal returns (address alice, address bob, address carol) {
-        console.log("[setupGenesisWithThreeAttesters] This is domain:", address(mcr));
         uint256 totalStakeAmount = aliceStakeAmount + bobStakeAmount + carolStakeAmount;
 
         moveToken.mint(address(mcr), totalStakeAmount*100); // MCR needs tokens to pay rewards
@@ -189,22 +188,6 @@ contract MCRTest is Test, IMCR {
         staking.stake(address(mcr), moveToken, carolStakeAmount);
 
         // Verify stakes
-        string memory stakeInfo = string.concat(
-            "[setupGenesisWithThreeAttesters] A/B/C/total stake: ",
-            Strings.toString(mcr.getStakeForAcceptingEpoch(address(moveToken), alice)), "/",
-            Strings.toString(mcr.getStakeForAcceptingEpoch(address(moveToken), bob)), "/",
-            Strings.toString(mcr.getStakeForAcceptingEpoch(address(moveToken), carol)), "/",
-            Strings.toString(mcr.getTotalStakeForAcceptingEpoch())
-        );
-        string memory balanceInfo = string.concat(
-            "[setupGenesisWithThreeAttesters] A/B/C/total balance: ",
-            Strings.toString(moveToken.balanceOf(alice)), "/",
-            Strings.toString(moveToken.balanceOf(bob)), "/",
-            Strings.toString(moveToken.balanceOf(carol)), "/",
-            Strings.toString(moveToken.totalSupply())
-        );
-        console.log(stakeInfo);
-        console.log(balanceInfo);
         assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), alice), aliceStakeAmount, "Alice's stake not correct");
         assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), bob), bobStakeAmount, "Bob's stake not correct");
         assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), carol), carolStakeAmount, "Carol's stake not correct");
@@ -215,7 +198,6 @@ contract MCRTest is Test, IMCR {
         address[] memory custodians = new address[](1);
         custodians[0] = address(moveToken);
         staking.registerDomain(epochDuration, custodians);
-        console.log("[setupGenesisWithThreeAttesters] Registered domain with epochDuration ", staking.getEpochDuration(address(mcr)));
 
         // TODO this seems odd that we need to do this here.. check for correctnes of this approach
         mcr.grantRole(mcr.DEFAULT_ADMIN_ROLE(), address(mcr));
@@ -224,7 +206,6 @@ contract MCRTest is Test, IMCR {
         // vm.warp(3*epochDuration);
 
         // End genesis ceremony
-        console.log("[setupGenesisWithThreeAttesters] Ending genesis ceremony");
         vm.prank(address(mcr));
         mcr.acceptGenesisCeremony();
 
@@ -233,16 +214,6 @@ contract MCRTest is Test, IMCR {
         assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), bob), bobStakeAmount, "Bob's stake not correct");
         assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), carol), carolStakeAmount, "Carol's stake not correct");
         assertEq(mcr.getTotalStakeForAcceptingEpoch(), totalStakeAmount, "Total stake not correct");
-
-        console.log("================================================");
-        console.log("[setupGenesisWithThreeAttesters] moveToken address:", address(moveToken));
-        console.log("[setupGenesisWithThreeAttesters] staking address:", address(staking));
-        console.log("[setupGenesisWithThreeAttesters] mcr address:", address(mcr));
-        console.log("================================================");
-        console.log("[setupGenesisWithThreeAttesters] alice address:", alice);
-        console.log("[setupGenesisWithThreeAttesters] bob address:", bob);
-        console.log("[setupGenesisWithThreeAttesters] carol address:", carol);
-        console.log("================================================");
     } 
 
     /// @notice Helper function to setup a new signer with staking
@@ -290,14 +261,6 @@ contract MCRTest is Test, IMCR {
         }
         
         uint256 supermajorityStake = 2 * (honestStake + dishonestStake) / 3 + 1;
-        // create the string to print for the console log
-        // string memory logString = string.concat(
-        //     "have honest stake ( supermajority stake ) / dishonest stake / total stake = ",
-        //     Strings.toString(honestStake), "( ", Strings.toString(supermajorityStake), " ) / ",
-        //     Strings.toString(dishonestStake), " / ", Strings.toString(honestStake + dishonestStake)
-        // );
-        // console.log(logString);
-
         return honestStake >= supermajorityStake;
     }
 
@@ -317,7 +280,7 @@ contract MCRTest is Test, IMCR {
     }
 
     // ----------------------------------------------------------------
-    // -------- Test functions ----------------------------------------
+    // -------- General tests ----------------------------------------
     // ----------------------------------------------------------------
 
     function testCannotInitializeTwice() public {
@@ -661,8 +624,8 @@ contract MCRTest is Test, IMCR {
         assert(aliceCommitment.commitment == commitment.commitment);
         assert(bobCommitment.commitment == commitment.commitment);
 
-        // Verify acceptor state
-        assert(mcr.currentAcceptorIsLive());
+        // Verify postconfirmer state
+        assert(mcr.isWithinPostconfirmerPrivilegeDuration(commitment));
         assertEq(mcr.getSuperBlockHeightAssignedEpoch(targetHeight), mcr.getAcceptingEpoch());
 
         // Attempt postconfirmation
@@ -697,8 +660,8 @@ contract MCRTest is Test, IMCR {
         assert(aliceCommitment.commitment == commitment.commitment);
         assert(bobCommitment.commitment == commitment.commitment);
 
-        // Verify acceptor state
-        assert(mcr.currentAcceptorIsLive());
+        // Verify postconfirmer state
+        assert(mcr.isWithinPostconfirmerPrivilegeDuration(commitment));
         assertEq(mcr.getSuperBlockHeightAssignedEpoch(targetHeight), mcr.getAcceptingEpoch());
 
         // Attempt postconfirmation - this should fail because there's no supermajority
@@ -741,15 +704,12 @@ contract MCRTest is Test, IMCR {
         assertEq(staking.getUnstake(address(mcr), 2, address(moveToken), alice), 1, "Alice's unstake in epoch 2 should be 1");
 
         // Warp to next epoch 
-        vm.warp(block.timestamp + epochDuration);
-        console.log("- - - - - warp to epoch 2 - - - - -");
+        vm.warp(2*epochDuration);
         assertEq(mcr.getPresentEpoch(), 2, "Present epoch should be 2");
         assertEq(mcr.getAcceptingEpoch(), 1, "Accepting epoch should be 1");
 
-        console.log("- - - - - rollover to epoch 2 - - - - -");
         vm.prank(alice);
         mcr.postconfirmSuperBlocksAndRollover();
-        console.log("- - - - - done rollover - - - - -");
         assertEq(mcr.getAcceptingEpoch(), 2, "Accepting epoch should be 2");
 
         assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), carol), 1, "Carol's stake should already be active");
@@ -761,22 +721,19 @@ contract MCRTest is Test, IMCR {
         mcr.submitSuperBlockCommitment(commitment);
 
         // perform postconfirmation
-        console.log("- - - - - postconfirm height 1 - - - - -");
         vm.prank(carol);
         mcr.postconfirmSuperBlocksAndRollover();
         assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 1, "Last postconfirmed superblock height should be 1, as supermajority was reached (2/2 > threshold)");
     }
 
-
-
     function testSetMinCommitmentAge() public {
         // Set min commitment age to a too long value
-        vm.expectRevert(MCR.MinCommitmentAgeTooLong.selector);
-        mcr.setMinCommitmentAge(epochDuration);
+        vm.expectRevert(MCR.minCommitmentAgeForPostconfirmationTooLong.selector);
+        mcr.setMinCommitmentAgeForPostconfirmation(epochDuration);
 
         // Set min commitment age to 1/10 of epochDuration
         uint256 minAge = epochDuration/10;
-        mcr.setMinCommitmentAge(minAge);
+        mcr.setMinCommitmentAgeForPostconfirmation(minAge);
         assertEq(mcr.minCommitmentAgeForPostconfirmation(), minAge, "Min commitment age should be updated to 1/10 of epochDuration");
     }
 
@@ -785,7 +742,7 @@ contract MCRTest is Test, IMCR {
         address alice = setupGenesisWithOneAttester(1);
         assertEq(mcr.getMinCommitmentAgeForPostconfirmation(), 0, "The unset min commitment age should be 0");
         uint256 minAge = 1 minutes;
-        mcr.setMinCommitmentAge(minAge);
+        mcr.setMinCommitmentAgeForPostconfirmation(minAge);
         assertEq(mcr.getMinCommitmentAgeForPostconfirmation(), minAge, "Min commitment age should be updated to 1 minutes");
         
         vm.prank(alice);
@@ -794,7 +751,7 @@ contract MCRTest is Test, IMCR {
         mcr.postconfirmSuperBlocksAndRollover();
         assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 0, "Immediate postconfirmation should fail.");
         
-        vm.warp(block.timestamp + minAge);        
+        vm.warp(block.timestamp + minAge);  // note that time starts at 1, not 0
         // Now postconfirmation should succeed
         vm.prank(alice);
         mcr.postconfirmSuperBlocksAndRollover();
@@ -803,95 +760,90 @@ contract MCRTest is Test, IMCR {
 
 
     // ----------------------------------------------------------------
-    // -------- Acceptor --------------------------------------
+    // -------- Postconfirmer tests --------------------------------------
     // ----------------------------------------------------------------
 
-    /// @notice Test that getAcceptorStartTime correctly calculates term start times
-    function testAcceptorStartL1BlockHeight() public {
+    /// @notice Test that getPostconfirmerStartTime correctly calculates term start times
+    function testPostconfirmerStartTime() public {
         // Test at block 0
-        assertEq(mcr.getAcceptorStartL1BlockHeight(block.number), 1, "Acceptor term should start at L1Block 1");
+        assertEq(block.timestamp, 1, "Current time should be 1"); // TODO why is it 1? and not 0?
+        assertEq(postconfirmerDuration, mcr.getPostconfirmerDuration(), "Postconfirmer term should be correctly set");
+        assertEq(mcr.getPostconfirmerStartTime(), 0, "Postconfirmer term should start at (1) time 0");
 
-        // Test at half an acceptor term
-        vm.roll(acceptorTerm/2);
-        assertEq(mcr.getAcceptorStartL1BlockHeight(block.number), 1, "Acceptor term should start at L1Block 1");
+        // Test at half an postconfirmer term
+        vm.warp(postconfirmerDuration-1);
+        assertEq(mcr.getPostconfirmerStartTime(), 0, "Postconfirmer term should start at (2) time 0");
 
-        // Test at an acceptor term boundary
-        vm.roll(acceptorTerm);
-        assertEq(mcr.getAcceptorStartL1BlockHeight(block.number), 1, "Acceptor term should start at L1Block 1");
+        // Test at an postconfirmer term boundary
+        vm.warp(postconfirmerDuration);
+        assertEq(mcr.getPostconfirmerStartTime(), postconfirmerDuration, "Postconfirmer term should start at (3) time postconfirmerDuration");
 
-        // Test at an acceptor term boundary
-        vm.roll(acceptorTerm+1);
-        assertEq(mcr.getAcceptorStartL1BlockHeight(block.number), acceptorTerm+1, "Acceptor term should start at L1Block acceptorTerm+1");
+        // Test at an postconfirmer term boundary
+        vm.warp(postconfirmerDuration+1);
+        assertEq(mcr.getPostconfirmerStartTime(), postconfirmerDuration, "Postconfirmer term should start at (4) time postconfirmerDuration");
 
-        // Test at 1.5 acceptor terms
-        vm.warp(3 * acceptorTerm / 2);
-        assertEq(mcr.getAcceptorStartL1BlockHeight(block.number), acceptorTerm+1, "Acceptor term should start at L1Block acceptorTerm+1");        
+        // Test at 1.5 postconfirmer terms
+        vm.warp(2 * postconfirmerDuration );
+        assertEq(mcr.getPostconfirmerStartTime(), 2 * postconfirmerDuration, "Postconfirmer term should start at (5) time 2 * postconfirmerDuration");        
     }
 
-    /// @notice Test setting acceptor term with validation
-    function testSetAcceptorTerm() public {
-        // Ensure we can retrieve the epoch duration correct
-        assertEq(epochDuration, staking.getEpochDuration(address(mcr)));
-        
-        // Set acceptor term to 256 blocks (should succeed)
-        mcr.setAcceptorTerm(256);
-        assertEq(mcr.acceptorTerm(), 256, "Term should be updated to 256");
+    /// @notice Test setting postconfirmer duration with validation
+    function testSetPostconfirmerDuration() public {
+        // Check the epoch duration is set correctly
+        assertEq(epochDuration, staking.getEpochDuration(address(mcr)));        
+        // Test valid duration (less than half epoch duration)
+        uint256 validDuration = epochDuration / 2 - 1;
+        mcr.setPostconfirmerDuration(validDuration);
+        assertEq(mcr.getPostconfirmerDuration(), validDuration, "Duration should be updated to valid value");
 
-        // Try setting acceptor term to over 256 blocks (should fail)
-        vm.expectRevert(MCR.AcceptorTermTooLong.selector);
-        mcr.setAcceptorTerm(257);
-        assertEq(mcr.acceptorTerm(), 256, "Term should remain at 256");
+        // Test duration too long compared to epoch (>= epochDuration/2)
+        uint256 invalidDuration = epochDuration / 2;
+        vm.expectRevert(MCR.PostconfirmerDurationTooLongForEpoch.selector);
+        mcr.setPostconfirmerDuration(invalidDuration);
+        assertEq(mcr.getPostconfirmerDuration(), validDuration, "Duration should remain at previous valid value");
 
-        // Check validity with respect to epoch duration
-        uint256 validTerm = epochDuration/12 seconds/4;
-        mcr.setAcceptorTerm(validTerm);
-        assertEq(mcr.acceptorTerm(), validTerm, "Term should be updated to epoch related value");
-
-        // Try setting acceptor term to epoch duration
-        uint256 invalidTerm = epochDuration/12 seconds;
-        vm.expectRevert(MCR.AcceptorTermTooLong.selector);
-        mcr.setAcceptorTerm(invalidTerm);
-        assertEq(mcr.acceptorTerm(), validTerm, "Term should remain at epoch related value");
+        // Test duration equal to epoch duration (should fail)
+        vm.expectRevert(MCR.PostconfirmerDurationTooLongForEpoch.selector);
+        mcr.setPostconfirmerDuration(epochDuration);
+        assertEq(mcr.getPostconfirmerDuration(), validDuration, "Duration should remain at previous valid value");
     }
 
-    /// @notice Test that getAcceptor correctly selects an acceptor based on block hash
-    function testGetAcceptor() public {
+    /// @notice Test that getPostconfirmer correctly selects an postconfirmer based on block hash
+    function testGetPostconfirmer() public {
         // Setup with three attesters with equal stakes
-        (address alice, , address carol) = setupGenesisWithThreeAttesters(1, 1, 1);
+        (, address bob, address carol) = setupGenesisWithThreeAttesters(1, 1, 1);
+        uint256 myPostconfirmerDuration = 13;
+        mcr.setPostconfirmerDuration(myPostconfirmerDuration);
+        assertEq(myPostconfirmerDuration,mcr.getPostconfirmerDuration(),"Postconfirmer duration not set correctly");
 
-        uint256 myAcceptorTerm = 4;
-        mcr.setAcceptorTerm(myAcceptorTerm);
-        address initialAcceptor = mcr.getAcceptor();
-        assertTrue( initialAcceptor == carol, "Acceptor should be Carol");
+        address initialPostconfirmer = mcr.getPostconfirmer();
+        assertEq(initialPostconfirmer, bob, "Postconfirmer should be bob");
 
-        vm.roll(2); // we started at block 1
-        assertEq(mcr.getAcceptor(), initialAcceptor, "Acceptor should not change within term");
-        
-        vm.roll(myAcceptorTerm); // L1blocks started at 1, not 0
-        assertEq(mcr.getAcceptor(), initialAcceptor, "Acceptor should not change within term");
+        vm.warp(myPostconfirmerDuration-1); 
+        assertEq(mcr.getPostconfirmer(), initialPostconfirmer, "Postconfirmer should not change within term");
 
-        // Move to next acceptor Term
-        vm.roll(myAcceptorTerm+1); // L1blocks started at 1, not 0
-        address newAcceptor = mcr.getAcceptor();
-        assertTrue( newAcceptor == alice, "New acceptor should be Alice");
+        // Move two postconfirmer terms (moving one resulted still in bob as postconfirmer with current randomness)
+        vm.warp(2*myPostconfirmerDuration); 
+        address newPostconfirmer = mcr.getPostconfirmer();
+        assertEq(mcr.getPostconfirmerStartTime(),2*myPostconfirmerDuration,"Postconfirmer start time should be myPostconfirmerDuration");
+        assertEq(newPostconfirmer, carol, "New postconfirmer should be Carol");
     }
 
 
     // ----------------------------------------------------------------
-    // -------- Attester rewards --------------------------------------
+    // -------- Attester reward tests --------------------------------------
     // ----------------------------------------------------------------
 
-    function testRewardPoints() public {
+    function testAttesterRewardPoints() public {
         // Setup with Alice having supermajority-enabling stake
         (address alice, address bob, address carol) = setupGenesisWithThreeAttesters(2, 1, 1);
-
-        // Record initial balances
         uint256 aliceInitialBalance = moveToken.balanceOf(alice);
         uint256 bobInitialBalance = moveToken.balanceOf(bob);
         uint256 carolInitialBalance = moveToken.balanceOf(carol);
+        mcr.setRewardPerPostconfirmationPoint(0);
 
         // Exit genesis epoch
-        vm.warp(block.timestamp + epochDuration);
+        vm.warp(epochDuration);
         vm.prank(alice);
         mcr.postconfirmSuperBlocksAndRollover();
         assertEq(mcr.getAcceptingEpoch(), 1, "Should have exited genesis");
@@ -927,7 +879,7 @@ contract MCRTest is Test, IMCR {
         mcr.submitSuperBlockCommitment(makeHonestCommitment(2));
 
         // Trigger postconfirmation, reward distribution by rolling over to next epoch
-        vm.warp(block.timestamp + epochDuration);
+        vm.warp(2*epochDuration);
         vm.prank(alice);
         mcr.postconfirmSuperBlocksAndRollover();
         assertEq(mcr.getAcceptingEpoch(), 2, "Should be in epoch 2");
@@ -940,42 +892,140 @@ contract MCRTest is Test, IMCR {
         assertEq(moveToken.balanceOf(bob), bobInitialBalance + mcr.getStakeForAcceptingEpoch(address(moveToken), bob), "Bob reward not correct.");
         assertEq(moveToken.balanceOf(carol), carolInitialBalance + mcr.getStakeForAcceptingEpoch(address(moveToken), carol), "Carol reward not correct.");
     }
- 
 
-    function testPostconfirmationRewards() public {
-        // Setup with Alice having supermajority-enabling stake
-        address alice = setupGenesisWithOneAttester(1);
-        assertEq(moveToken.balanceOf(alice), 0, "Alice should have 0 tokens");
- 
-        // Attester attests to height 1
+    /// @notice Test that postconfirmation rewards are distributed correctly when the postconfirmer is live
+    function testPostconfirmationRewardsLivePostconfirmer() public {
+        uint256 stake = 7;
+        // alice has supermajority stake
+        uint256 aliceStake = 3*stake;
+        uint256 bobStake = stake;
+        (address alice, address bob, ) = setupGenesisWithThreeAttesters(aliceStake, bobStake, 0);
+        uint256 aliceInitialBalance = moveToken.balanceOf(alice);
+        uint256 bobInitialBalance = moveToken.balanceOf(bob);
+        // set the max postconfirmer non-reactivity time to 1/4 epochDuration        
+        mcr.setPostconfirmerPrivilegeDuration(epochDuration/4);
+
         vm.prank(alice);
         mcr.submitSuperBlockCommitment(makeHonestCommitment(1));
+        // check that the first seen timestamp is set
+        assertGt(mcr.getCommitmentFirstSeenAt(makeHonestCommitment(1)), 0, "Commitment first seen at should be set");
 
-        // get out of genesis epoch
-        vm.warp(block.timestamp + epochDuration);
+        assertEq(mcr.getPostconfirmer(), bob, "Bob should be the postconfirmer but its not");
+        assertEq(mcr.isWithinPostconfirmerPrivilegeDuration(makeHonestCommitment(1)), true, "Postconfirmer should be live");
 
-        // Attester postconfirms and gets a reward
+        // postconfirmer postconfirms while postconfirmer is live
+        vm.prank(bob);
+        mcr.postconfirmSuperBlocksAndRollover();
+        assertEq(mcr.getAcceptingEpoch(), 0, "Should be in epoch 0");
+        assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 1, "Last postconfirmed superblock height should be 1");
+        assertEq(mcr.getAttesterRewardPoints(mcr.getAcceptingEpoch(), alice), 1, "Alice should have 1 attester points");
+        assertEq(mcr.getPostconfirmerRewardPoints(mcr.getAcceptingEpoch(), bob), 1, "Bob should have 1 postconfirmer points");
+        assertEq(moveToken.balanceOf(alice), aliceInitialBalance, "Alice should have not received any rewards yet");
+        assertEq(moveToken.balanceOf(bob), bobInitialBalance, "Bob should not have received any rewards yet");
+
+        // warp to next epoch
+        vm.warp(epochDuration);
         vm.prank(alice);
         mcr.postconfirmSuperBlocksAndRollover();
         assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 1);
         assertEq(mcr.getAcceptingEpoch(), 1, "Should be in epoch 1");
 
-        assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), alice), 1, "Alice should have 1 token on stake");
-        assertEq(moveToken.balanceOf(alice), 1, "Alice should have 1 token on balance");
+        // Verify rewards:
+        assertEq(moveToken.balanceOf(alice), aliceInitialBalance + aliceStake, "Alice should have received the rewards");
+        assertEq(moveToken.balanceOf(bob), bobInitialBalance + bobStake, "Bob should have received the rewards");
     }
 
+    /// @notice Test that volunteer postconfirmation rewards are not distributed to volunteer postconfirmer when postconfirmer is live
+    // TODO once the postconfirmer can get postconfirm points within the postconfirmer privilege window, whether or not the height has previously been postconfirmed, this test should be updated
+    function testVolunteerPostconfirmationRewardsLivePostconfirmer() public {
+        uint256 aliceStake = 9;
+        // alice has supermajority stake
+        (address alice, address bob, ) = setupGenesisWithThreeAttesters(aliceStake, 0, 0);
+        uint256 aliceInitialBalance = moveToken.balanceOf(alice);
+        uint256 bobInitialBalance = moveToken.balanceOf(bob);
 
+        vm.prank(alice);
+        mcr.submitSuperBlockCommitment(makeHonestCommitment(1));
 
+        assertEq(mcr.getPostconfirmer(), alice, "Alice should be the postconfirmer since it is the only staked attester.");
+        assertEq(mcr.isWithinPostconfirmerPrivilegeDuration(makeHonestCommitment(1)), true, "Postconfirmer should be live");
+
+        // volunteer postconfirmer postconfirms while postconfirmer is live
+        vm.prank(bob);
+        mcr.postconfirmSuperBlocksAndRollover();
+        assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 1);
+
+        // bob should not get any postconfirmer rewards
+        assertEq(moveToken.balanceOf(bob), bobInitialBalance, "Bob should not have received any rewards");
+        assertEq(mcr.getPostconfirmerRewardPoints(mcr.getAcceptingEpoch(), bob), 0, "Bob should have 0 postconfirmer points");
+        assertEq(mcr.getAttesterRewardPoints(mcr.getAcceptingEpoch(), alice), 1, "Alice should have 1 attester points");
+        assertEq(mcr.getPostconfirmerRewardPoints(mcr.getAcceptingEpoch(), alice), 0, "Alice should have 0 postconfirmer points");
+
+        vm.warp(epochDuration);
+        vm.prank(alice);
+        mcr.postconfirmSuperBlocksAndRollover();
+        assertEq(mcr.getAcceptingEpoch(), 1, "Should be in epoch 1");
+
+        // alice should get the postconfirmer rewards
+        assertEq(moveToken.balanceOf(bob), bobInitialBalance, "Bob should not have received any rewards");
+        assertEq(moveToken.balanceOf(alice), aliceInitialBalance + aliceStake, "Alice should have received the attester rewards");
+    }
+
+    /// @notice Test that postconfirmation rewards are distributed to volunteer postconfirmer when postconfirmer is not live
+    // TODO this test should probably be merged with the above test
+    function testVolunteerPostconfirmationRewardsNotLivePostconfirmer() public {
+        // alice has supermajority stake
+        uint256 stake =13;
+        uint256 aliceStake = 3*stake;
+        uint256 bobStake = stake;
+        (address alice, address bob, ) = setupGenesisWithThreeAttesters(aliceStake, bobStake, 0);
+        uint256 aliceInitialBalance = moveToken.balanceOf(alice);
+        uint256 bobInitialBalance = moveToken.balanceOf(bob);
+        uint256 thisPostconfirmerDuration = mcr.getPostconfirmerDuration();
+
+        // set the time windows
+        assertEq(mcr.getMinCommitmentAgeForPostconfirmation(), 0, "Min commitment age should be 0"); 
+        uint256 thisPostconfirmerPriviledgeWindow = epochDuration/100;
+        mcr.setPostconfirmerPrivilegeDuration(thisPostconfirmerPriviledgeWindow); 
+        assertEq(mcr.getPostconfirmerPrivilegeDuration(), thisPostconfirmerPriviledgeWindow, "Max postconfirmer non-reactivity time should be 1/100 epochDuration");        
+        assertGt(thisPostconfirmerDuration, thisPostconfirmerPriviledgeWindow, "Postconfirmer term should be greater than thisPostconfirmerPriviledgeWindow");
+
+        vm.prank(alice);
+        mcr.submitSuperBlockCommitment(makeHonestCommitment(1));
+
+        assertEq(mcr.getPostconfirmer(), bob, "bob should be the postconfirmer");
+        assertEq(mcr.isWithinPostconfirmerPrivilegeDuration(makeHonestCommitment(1)), true, "Postconfirmer should be live");
+
+        // warp out of postconfirmer privilege window
+        vm.warp(block.timestamp + thisPostconfirmerPriviledgeWindow + 1 ); // TODO check why + 1 is needed
+        assertEq(mcr.isWithinPostconfirmerPrivilegeDuration(makeHonestCommitment(1)), false, "Postconfirmer should not be live");
+        vm.prank(alice);
+        mcr.postconfirmSuperBlocksAndRollover();
+        assertEq(mcr.getAcceptingEpoch(), 0, "Should be in epoch 0");
+        assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 1, "Last postconfirmed superblock height should be 1");
+        assertEq(mcr.getAttesterRewardPoints(mcr.getAcceptingEpoch(), alice), 1, "Alice should have 1 attester points");
+        assertEq(mcr.getPostconfirmerRewardPoints(mcr.getAcceptingEpoch(), alice), 1, "Alice should have 1 postconfirmer points");
+
+        // warp to next epoch
+        vm.warp(epochDuration);
+        vm.prank(bob);
+        mcr.postconfirmSuperBlocksAndRollover();
+        assertEq(mcr.getAcceptingEpoch(), 1, "Should be in epoch 1");
+
+        assertEq(moveToken.balanceOf(alice), aliceInitialBalance + aliceStake + aliceStake, "Alice should have received the attester and postconfirmer rewards");
+        assertEq(moveToken.balanceOf(bob), bobInitialBalance, "Bob should have received no rewards");
+    }
+    
     // ----------------------------------------------------------------
-    // -------- Acceptor rewards --------------------------------------
+    // -------- Postconfirmer reward tests --------------------------------------
     // ----------------------------------------------------------------
 
 
-    // An acceptor that is in place for acceptorTerm time should be replaced by a new acceptor after their term ended.
+    // An postconfirmer that is in place for postconfirmerDuration time should be replaced by a new postconfirmer after their term ended.
     // TODO reward logic is not yet implemented
-    function testAcceptorRewards() public {
+    function testPostconfirmerRewards() public {
         (address alice, address bob, ) = setupGenesisWithThreeAttesters(1, 1, 0);
-        assertEq(mcr.getAcceptor(), bob, "Bob should be the acceptor");
+        assertEq(mcr.getPostconfirmer(), bob, "Bob should be the postconfirmer");
 
         // make superBlock commitments
         MCRStorage.SuperBlockCommitment memory initCommitment = makeHonestCommitment(1);
