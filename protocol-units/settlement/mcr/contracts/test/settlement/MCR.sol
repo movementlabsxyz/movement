@@ -106,8 +106,8 @@ contract MCRTest is Test, IMCR {
         mcr.setMinCommitmentAgeForPostconfirmation(0);
         assertEq(mcr.getMinCommitmentAgeForPostconfirmation(), 0, "The default min commitment age for tests is set to 0");
         // set the max postconfirmer non-reactivity time to 0 to make the tests easier
-        mcr.setPostconfirmerPrivilegeWindow(0);
-        assertEq(mcr.getMaxPostconfirmerNonReactivityTime(), 0, "The default max postconfirmer non-reactivity time for tests is set to 0");
+        mcr.setPostconfirmerPrivilegeDuration(0);
+        assertEq(mcr.getPostconfirmerPrivilegeDuration(), 0, "The default max postconfirmer non-reactivity time for tests is set to 0");
     }
 
     // Helper function to setup genesis with 1 attester and their stake
@@ -666,7 +666,7 @@ contract MCRTest is Test, IMCR {
         assert(bobCommitment.commitment == commitment.commitment);
 
         // Verify postconfirmer state
-        assert(mcr.isWithinPostconfirmerPrivilegeWindow(commitment));
+        assert(mcr.isWithinPostconfirmerPrivilegeDuration(commitment));
         assertEq(mcr.getSuperBlockHeightAssignedEpoch(targetHeight), mcr.getAcceptingEpoch());
 
         // Attempt postconfirmation
@@ -702,7 +702,7 @@ contract MCRTest is Test, IMCR {
         assert(bobCommitment.commitment == commitment.commitment);
 
         // Verify postconfirmer state
-        assert(mcr.isWithinPostconfirmerPrivilegeWindow(commitment));
+        assert(mcr.isWithinPostconfirmerPrivilegeDuration(commitment));
         assertEq(mcr.getSuperBlockHeightAssignedEpoch(targetHeight), mcr.getAcceptingEpoch());
 
         // Attempt postconfirmation - this should fail because there's no supermajority
@@ -952,8 +952,8 @@ contract MCRTest is Test, IMCR {
         uint256 aliceInitialBalance = moveToken.balanceOf(alice);
         uint256 bobInitialBalance = moveToken.balanceOf(bob);
         // set the max postconfirmer non-reactivity time to 1/4 epochDuration        
-        mcr.setPostconfirmerPrivilegeWindow(epochDuration/4);
-        console.log("postconfirmer privilege window", mcr.getMaxPostconfirmerNonReactivityTime());
+        mcr.setPostconfirmerPrivilegeDuration(epochDuration/4);
+        console.log("postconfirmer privilege window", mcr.getPostconfirmerPrivilegeDuration());
 
         vm.prank(alice);
         mcr.submitSuperBlockCommitment(makeHonestCommitment(1));
@@ -963,7 +963,7 @@ contract MCRTest is Test, IMCR {
 
         console.log("postconfirmer", mcr.getPostconfirmer());
         assertEq(mcr.getPostconfirmer(), bob, "Bob should be the postconfirmer but its not");
-        assertEq(mcr.isWithinPostconfirmerPrivilegeWindow(makeHonestCommitment(1)), true, "Postconfirmer should be live");
+        assertEq(mcr.isWithinPostconfirmerPrivilegeDuration(makeHonestCommitment(1)), true, "Postconfirmer should be live");
 
         // postconfirmer postconfirms while postconfirmer is live
         vm.prank(bob);
@@ -1003,7 +1003,7 @@ contract MCRTest is Test, IMCR {
         console.log("postconfirmer", mcr.getPostconfirmer());
 
         assertEq(mcr.getPostconfirmer(), alice, "Alice should be the postconfirmer since it is the only staked attester.");
-        assertEq(mcr.isWithinPostconfirmerPrivilegeWindow(makeHonestCommitment(1)), true, "Postconfirmer should be live");
+        assertEq(mcr.isWithinPostconfirmerPrivilegeDuration(makeHonestCommitment(1)), true, "Postconfirmer should be live");
 
         // volunteer postconfirmer postconfirms while postconfirmer is live
         vm.prank(bob);
@@ -1041,9 +1041,9 @@ contract MCRTest is Test, IMCR {
         // set the time windows
         assertEq(mcr.getMinCommitmentAgeForPostconfirmation(), 0, "Min commitment age should be 0"); 
         uint256 thisPostconfirmerPriviledgeWindow = epochDuration/100;
-        mcr.setPostconfirmerPrivilegeWindow(thisPostconfirmerPriviledgeWindow); 
-        assertEq(mcr.getMaxPostconfirmerNonReactivityTime(), thisPostconfirmerPriviledgeWindow, "Max postconfirmer non-reactivity time should be 1/100 epochDuration");        
-        console.log("getMaxPostconfirmerNonReactivityTime", mcr.getMaxPostconfirmerNonReactivityTime());
+        mcr.setPostconfirmerPrivilegeDuration(thisPostconfirmerPriviledgeWindow); 
+        assertEq(mcr.getPostconfirmerPrivilegeDuration(), thisPostconfirmerPriviledgeWindow, "Max postconfirmer non-reactivity time should be 1/100 epochDuration");        
+        console.log("getPostconfirmerPrivilegeDuration", mcr.getPostconfirmerPrivilegeDuration());
         console.log("thisPostconfirmerDuration", thisPostconfirmerDuration);
         assertGt(thisPostconfirmerDuration, thisPostconfirmerPriviledgeWindow, "Postconfirmer term should be greater than thisPostconfirmerPriviledgeWindow");
 
@@ -1051,11 +1051,11 @@ contract MCRTest is Test, IMCR {
         mcr.submitSuperBlockCommitment(makeHonestCommitment(1));
 
         assertEq(mcr.getPostconfirmer(), bob, "bob should be the postconfirmer");
-        assertEq(mcr.isWithinPostconfirmerPrivilegeWindow(makeHonestCommitment(1)), true, "Postconfirmer should be live");
+        assertEq(mcr.isWithinPostconfirmerPrivilegeDuration(makeHonestCommitment(1)), true, "Postconfirmer should be live");
 
         // warp out of postconfirmer privilege window
         vm.warp(block.timestamp + thisPostconfirmerPriviledgeWindow + 1 ); // TODO check why + 1 is needed
-        assertEq(mcr.isWithinPostconfirmerPrivilegeWindow(makeHonestCommitment(1)), false, "Postconfirmer should not be live");
+        assertEq(mcr.isWithinPostconfirmerPrivilegeDuration(makeHonestCommitment(1)), false, "Postconfirmer should not be live");
         vm.prank(alice);
         mcr.postconfirmSuperBlocksAndRollover();
         assertEq(mcr.getAcceptingEpoch(), 0, "Should be in epoch 0");

@@ -34,10 +34,7 @@ contract MCRStorage {
     uint256 public minCommitmentAgeForPostconfirmation;
 
     /// @notice Max time the postconfirmer can be non-reactive to an honest superBlock commitment
-    uint256 public maxPostconfirmerNonReactivityTime;
-
-    // the postconfirmer for the accepting epoch
-    address public currentPostconfirmer;
+    uint256 public postconfirmerPrivilegeDuration;
 
     // TODO i added these param descriptions. are these correct?
     /// Struct to store block commitment details
