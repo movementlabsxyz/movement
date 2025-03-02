@@ -112,8 +112,6 @@ contract MCRTest is Test, IMCR {
 
     // Helper function to setup genesis with 1 attester and their stake
     function setupGenesisWithOneAttester(uint256 stakeAmount) internal returns (address attester) {
-        console.log("[setupGenesisWithOneAttester] This is domain:", address(mcr));
-
         moveToken.mint(address(mcr), stakeAmount*100); // MCR needs tokens to pay rewards
         // MCR needs to approve staking contract to spend its tokens
         vm.prank(address(mcr));
@@ -134,7 +132,6 @@ contract MCRTest is Test, IMCR {
         address[] memory custodians = new address[](1);
         custodians[0] = address(moveToken);
         staking.registerDomain(epochDuration, custodians);
-        console.log("[setupGenesisWithThreeAttesters] Registered domain with epochDuration ", staking.getEpochDuration(address(mcr)));
 
         // TODO this seems odd that we need to do this here.. check for correctnes of this approach
         mcr.grantRole(mcr.DEFAULT_ADMIN_ROLE(), address(mcr));
@@ -143,7 +140,6 @@ contract MCRTest is Test, IMCR {
         // vm.warp(3*epochDuration);
 
         // End genesis ceremony
-        console.log("[setupGenesisWithThreeAttesters] Ending genesis ceremony");
         vm.prank(address(mcr));
         mcr.acceptGenesisCeremony();
 
@@ -159,7 +155,6 @@ contract MCRTest is Test, IMCR {
         uint256 bobStakeAmount, 
         uint256 carolStakeAmount
     ) internal returns (address alice, address bob, address carol) {
-        console.log("[setupGenesisWithThreeAttesters] This is domain:", address(mcr));
         uint256 totalStakeAmount = aliceStakeAmount + bobStakeAmount + carolStakeAmount;
 
         moveToken.mint(address(mcr), totalStakeAmount*100); // MCR needs tokens to pay rewards
@@ -193,22 +188,6 @@ contract MCRTest is Test, IMCR {
         staking.stake(address(mcr), moveToken, carolStakeAmount);
 
         // Verify stakes
-        string memory stakeInfo = string.concat(
-            "[setupGenesisWithThreeAttesters] A/B/C/total stake: ",
-            Strings.toString(mcr.getStakeForAcceptingEpoch(address(moveToken), alice)), "/",
-            Strings.toString(mcr.getStakeForAcceptingEpoch(address(moveToken), bob)), "/",
-            Strings.toString(mcr.getStakeForAcceptingEpoch(address(moveToken), carol)), "/",
-            Strings.toString(mcr.getTotalStakeForAcceptingEpoch())
-        );
-        string memory balanceInfo = string.concat(
-            "[setupGenesisWithThreeAttesters] A/B/C/total balance: ",
-            Strings.toString(moveToken.balanceOf(alice)), "/",
-            Strings.toString(moveToken.balanceOf(bob)), "/",
-            Strings.toString(moveToken.balanceOf(carol)), "/",
-            Strings.toString(moveToken.totalSupply())
-        );
-        console.log(stakeInfo);
-        console.log(balanceInfo);
         assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), alice), aliceStakeAmount, "Alice's stake not correct");
         assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), bob), bobStakeAmount, "Bob's stake not correct");
         assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), carol), carolStakeAmount, "Carol's stake not correct");
@@ -219,7 +198,6 @@ contract MCRTest is Test, IMCR {
         address[] memory custodians = new address[](1);
         custodians[0] = address(moveToken);
         staking.registerDomain(epochDuration, custodians);
-        console.log("[setupGenesisWithThreeAttesters] Registered domain with epochDuration ", staking.getEpochDuration(address(mcr)));
 
         // TODO this seems odd that we need to do this here.. check for correctnes of this approach
         mcr.grantRole(mcr.DEFAULT_ADMIN_ROLE(), address(mcr));
@@ -228,7 +206,6 @@ contract MCRTest is Test, IMCR {
         // vm.warp(3*epochDuration);
 
         // End genesis ceremony
-        console.log("[setupGenesisWithThreeAttesters] Ending genesis ceremony");
         vm.prank(address(mcr));
         mcr.acceptGenesisCeremony();
 
@@ -237,16 +214,6 @@ contract MCRTest is Test, IMCR {
         assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), bob), bobStakeAmount, "Bob's stake not correct");
         assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), carol), carolStakeAmount, "Carol's stake not correct");
         assertEq(mcr.getTotalStakeForAcceptingEpoch(), totalStakeAmount, "Total stake not correct");
-
-        console.log("================================================");
-        console.log("[setupGenesisWithThreeAttesters] moveToken address:", address(moveToken));
-        console.log("[setupGenesisWithThreeAttesters] staking address:", address(staking));
-        console.log("[setupGenesisWithThreeAttesters] mcr address:", address(mcr));
-        console.log("================================================");
-        console.log("[setupGenesisWithThreeAttesters] alice address:", alice);
-        console.log("[setupGenesisWithThreeAttesters] bob address:", bob);
-        console.log("[setupGenesisWithThreeAttesters] carol address:", carol);
-        console.log("================================================");
     } 
 
     /// @notice Helper function to setup a new signer with staking
@@ -294,14 +261,6 @@ contract MCRTest is Test, IMCR {
         }
         
         uint256 supermajorityStake = 2 * (honestStake + dishonestStake) / 3 + 1;
-        // create the string to print for the console log
-        // string memory logString = string.concat(
-        //     "have honest stake ( supermajority stake ) / dishonest stake / total stake = ",
-        //     Strings.toString(honestStake), "( ", Strings.toString(supermajorityStake), " ) / ",
-        //     Strings.toString(dishonestStake), " / ", Strings.toString(honestStake + dishonestStake)
-        // );
-        // console.log(logString);
-
         return honestStake >= supermajorityStake;
     }
 
@@ -746,14 +705,11 @@ contract MCRTest is Test, IMCR {
 
         // Warp to next epoch 
         vm.warp(2*epochDuration);
-        console.log("- - - - - warp to epoch 2 - - - - -");
         assertEq(mcr.getPresentEpoch(), 2, "Present epoch should be 2");
         assertEq(mcr.getAcceptingEpoch(), 1, "Accepting epoch should be 1");
 
-        console.log("- - - - - rollover to epoch 2 - - - - -");
         vm.prank(alice);
         mcr.postconfirmSuperBlocksAndRollover();
-        console.log("- - - - - done rollover - - - - -");
         assertEq(mcr.getAcceptingEpoch(), 2, "Accepting epoch should be 2");
 
         assertEq(mcr.getStakeForAcceptingEpoch(address(moveToken), carol), 1, "Carol's stake should already be active");
@@ -765,7 +721,6 @@ contract MCRTest is Test, IMCR {
         mcr.submitSuperBlockCommitment(commitment);
 
         // perform postconfirmation
-        console.log("- - - - - postconfirm height 1 - - - - -");
         vm.prank(carol);
         mcr.postconfirmSuperBlocksAndRollover();
         assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 1, "Last postconfirmed superblock height should be 1, as supermajority was reached (2/2 > threshold)");
@@ -797,7 +752,6 @@ contract MCRTest is Test, IMCR {
         assertEq(mcr.getLastPostconfirmedSuperBlockHeight(), 0, "Immediate postconfirmation should fail.");
         
         vm.warp(block.timestamp + minAge);  // note that time starts at 1, not 0
-        console.log("time now is", block.timestamp);
         // Now postconfirmation should succeed
         vm.prank(alice);
         mcr.postconfirmSuperBlocksAndRollover();
@@ -822,9 +776,6 @@ contract MCRTest is Test, IMCR {
 
         // Test at an postconfirmer term boundary
         vm.warp(postconfirmerDuration);
-        console.log("current time", block.timestamp);
-        console.log("postconfirmerDuration", postconfirmerDuration);
-        console.log("epochTime", epochDuration);
         assertEq(mcr.getPostconfirmerStartTime(), postconfirmerDuration, "Postconfirmer term should start at (3) time postconfirmerDuration");
 
         // Test at an postconfirmer term boundary
@@ -953,15 +904,12 @@ contract MCRTest is Test, IMCR {
         uint256 bobInitialBalance = moveToken.balanceOf(bob);
         // set the max postconfirmer non-reactivity time to 1/4 epochDuration        
         mcr.setPostconfirmerPrivilegeDuration(epochDuration/4);
-        console.log("postconfirmer privilege window", mcr.getPostconfirmerPrivilegeDuration());
 
         vm.prank(alice);
         mcr.submitSuperBlockCommitment(makeHonestCommitment(1));
         // check that the first seen timestamp is set
-        console.log("commitment first seen at", mcr.getCommitmentFirstSeenAt(makeHonestCommitment(1)));
         assertGt(mcr.getCommitmentFirstSeenAt(makeHonestCommitment(1)), 0, "Commitment first seen at should be set");
 
-        console.log("postconfirmer", mcr.getPostconfirmer());
         assertEq(mcr.getPostconfirmer(), bob, "Bob should be the postconfirmer but its not");
         assertEq(mcr.isWithinPostconfirmerPrivilegeDuration(makeHonestCommitment(1)), true, "Postconfirmer should be live");
 
@@ -998,9 +946,6 @@ contract MCRTest is Test, IMCR {
 
         vm.prank(alice);
         mcr.submitSuperBlockCommitment(makeHonestCommitment(1));
-
-        console.log("length of staked attesters", mcr.getStakedAttestersForAcceptingEpoch().length);
-        console.log("postconfirmer", mcr.getPostconfirmer());
 
         assertEq(mcr.getPostconfirmer(), alice, "Alice should be the postconfirmer since it is the only staked attester.");
         assertEq(mcr.isWithinPostconfirmerPrivilegeDuration(makeHonestCommitment(1)), true, "Postconfirmer should be live");
@@ -1043,8 +988,6 @@ contract MCRTest is Test, IMCR {
         uint256 thisPostconfirmerPriviledgeWindow = epochDuration/100;
         mcr.setPostconfirmerPrivilegeDuration(thisPostconfirmerPriviledgeWindow); 
         assertEq(mcr.getPostconfirmerPrivilegeDuration(), thisPostconfirmerPriviledgeWindow, "Max postconfirmer non-reactivity time should be 1/100 epochDuration");        
-        console.log("getPostconfirmerPrivilegeDuration", mcr.getPostconfirmerPrivilegeDuration());
-        console.log("thisPostconfirmerDuration", thisPostconfirmerDuration);
         assertGt(thisPostconfirmerDuration, thisPostconfirmerPriviledgeWindow, "Postconfirmer term should be greater than thisPostconfirmerPriviledgeWindow");
 
         vm.prank(alice);

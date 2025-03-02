@@ -303,11 +303,9 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     function TrySetCommitmentFirstSeenAt(uint256 height, bytes32 commitment, uint256 timestamp) internal {
         if (commitmentFirstSeenAt[height][commitment] != 0) {
             // do not set if already set
-            console.log("[TrySetCommitmentFirstSeenAt] commitment first seen at is already set");
             return;
         } else if (timestamp == 0) {
             // no need to set if timestamp is 0. This if may be redundant though.
-            console.log("[TrySetCommitmentFirstSeenAt] timestamp is 0");
             return;
         }
         commitmentFirstSeenAt[height][commitment] = timestamp;
@@ -391,15 +389,12 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         // Award points to postconfirmer
         if (!isWithinPostconfirmerPrivilegeDuration(superBlockCommitment)) { 
             // if we are outside the privilege window, for the postconfirmer reward anyone who postconfirms
-            console.log("[postconfirmSuperBlockCommitment] privilege window is over");
             postconfirmerRewardPoints[currentAcceptingEpoch][attester] += 1;
         } else {
             // if we are within the privilege window, only award points to the postconfirmer
             // TODO optimization: even if the height has been volunteer postconfirmed we need to allow that that postconfirmer gets rewards, 
             // TODO otherwise weak postconfirmers may could get played (rich volunteer postconfirmers pay the fees and poor postconfirmers never get any reward) 
             // TODO but check if this is really required game theoretically.
-            console.log("[postconfirmSuperBlockCommitment] current Postconfirmer is %s", getPostconfirmer());
-            console.log("[postconfirmSuperBlockCommitment] attester is %s", attester);
             if (getPostconfirmer() == attester) {
                 postconfirmerRewardPoints[currentAcceptingEpoch][attester] += 1;
             }
@@ -426,17 +421,12 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         uint256 acceptingEpoch = getAcceptingEpoch();
         address[] memory attesters = getStakedAttestersForAcceptingEpoch();
         
-        console.log("[rollOverEpoch] Attesters length at epoch %s is %s", acceptingEpoch, attesters.length);
         // reward
         for (uint256 i = 0; i < attesters.length; i++) {
             if (attesterRewardPoints[acceptingEpoch][attesters[i]] > 0) {
                 // TODO: make this configurable and set it on instance creation
                 uint256 reward = attesterRewardPoints[acceptingEpoch][attesters[i]] * rewardPerAttestationPoint * getAttesterStakeForAcceptingEpoch(attesters[i]);
                 // the staking contract is the custodian
-                console.log("[rollOverEpoch] Rewarding attester %s with %s", attesters[i], reward);
-                console.log("[rollOverEpoch] Staking contract is %s", address(stakingContract));
-                console.log("[rollOverEpoch] Move token address is %s", moveTokenAddress);
-                console.log("[rollOverEpoch] msg.sender is %s", msg.sender);
                 // rewards are currently paid out from the mcr domain
                 stakingContract.rewardFromDomain(attesters[i], reward, moveTokenAddress);
                 // TODO : check if we really have to keep attesterRewardPoints per epoch, or whether we could simply delete the points here for a given attester.
@@ -445,10 +435,6 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
             // Add postconfirmation rewards
             if (postconfirmerRewardPoints[acceptingEpoch][attesters[i]] > 0) {
                 uint256 reward = postconfirmerRewardPoints[acceptingEpoch][attesters[i]] * rewardPerPostconfirmationPoint * getAttesterStakeForAcceptingEpoch(attesters[i]);
-                console.log("[rollOverEpoch] Rewarding postconfirmer %s with %s", attesters[i], reward);
-                console.log("[rollOverEpoch] Staking contract is %s", address(stakingContract));
-                console.log("[rollOverEpoch] Move token address is %s", moveTokenAddress);
-                console.log("[rollOverEpoch] msg.sender is %s", msg.sender);
                 stakingContract.rewardFromDomain(attesters[i], reward, moveTokenAddress);
                 // TODO : check if we really have to keep postconfirmerRewardPoints per epoch, or whether we could simply delete the points here for a given postconfirmer.
                 // TODO also the postconfirmer list is super short. typically for a given height only the postconfirmer and at most the postconfirmer and a volunteer postconfirmer.
@@ -463,14 +449,10 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     /// @dev The postconfirmer's privilege window is the time period when only the postconfirmer will get rewarded for postconfirmation
     function isWithinPostconfirmerPrivilegeDuration(SuperBlockCommitment memory superBlockCommitment) public view returns (bool) {
         if (getCommitmentFirstSeenAt(superBlockCommitment) == 0) {
-            console.log("[isWithinPostconfirmerPrivilegeDuration] timestamp is not set for this commitment");
             return false;
         }
         // based on the first timestamp for the commitment we can determine if the postconfirmer has been live sufficiently recently
         // use getCommitmentFirstSeenAt, and the mappings
-        console.log("[isWithinPostconfirmerPrivilegeDuration] getCommitmentFirstSeenAt", getCommitmentFirstSeenAt(superBlockCommitment));
-        console.log("[isWithinPostconfirmerPrivilegeDuration] getMinCommitmentAgeForPostconfirmation", getMinCommitmentAgeForPostconfirmation());
-        console.log("[isWithinPostconfirmerPrivilegeDuration] getPostconfirmerPrivilegeDuration", getPostconfirmerPrivilegeDuration());
         if (getCommitmentFirstSeenAt(superBlockCommitment) 
             + getMinCommitmentAgeForPostconfirmation() 
             + getPostconfirmerPrivilegeDuration() 
@@ -484,7 +466,6 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     /// @dev Moreover, due to the leadingBlockTolerance, the assigned epoch for a height could be ahead of the actual epoch. 
     /// @dev solution is to move to the next epoch and count votes there
     function attemptPostconfirmOrRollover(uint256 superBlockHeight) internal returns (bool) {
-        console.log("[attemptPostconfirmOrRollover] attempting postconfirm or rollover at superblock height %s", superBlockHeight);
         uint256 superBlockEpoch = superBlockHeightAssignedEpoch[superBlockHeight];
         if (getLastPostconfirmedSuperBlockHeight() == 0) {
             console.log("[attemptPostconfirmOrRollover] genesis");
@@ -510,7 +491,6 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         while (getAcceptingEpoch() < superBlockEpoch) {
             // TODO only permit rollover after some liveness criteria for the postconfirmer, as this is related to the reward model (rollovers should be rewarded)
             rollOverEpoch();
-            console.log("[attemptPostconfirmOrRollover] rolled over epoch to %s", getAcceptingEpoch());
         }
 
         // TODO only permit postconfirmation after some liveness criteria for the postconfirmer, as this is related to the reward model (postconfirmation should be rewarded)
@@ -541,7 +521,6 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
                 _postconfirmSuperBlockCommitment(superBlockCommitment, msg.sender);
                 successfulPostconfirmation = true;
-                console.log("[attemptPostconfirmOrRollover] successful postconfirmation at height %s", superBlockHeight);
 
                 // TODO: for rewards we have to run through all the attesters, as we need to acknowledge that they get rewards. 
 
@@ -555,10 +534,8 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         // we rollover the epoch to give the next attesters a chance
         if (!successfulPostconfirmation && getPresentEpoch() > getAcceptingEpoch()) {
             rollOverEpoch();
-            console.log("[attemptPostconfirmOrRollover] rolled over to epoch", getAcceptingEpoch());
             return true; // we have to retry the postconfirmation at the next epoch again
         }
-        console.log("[attemptPostconfirmOrRollover] no successful postconfirmation");
         return false;
     }
 
