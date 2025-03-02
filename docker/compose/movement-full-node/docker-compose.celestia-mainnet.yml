@@ -26,7 +26,9 @@ services:
     container_name: celestia-light-node
     command: |
       celestia light start
-        --core.ip rpc.celestia.pops.one
+        --core.ip consensus.celestia.mainnet.movementinfra.xyz
+        --core.port 9090
+        --rpc.addr 0.0.0.0
         --p2p.network celestia
         --node.store /.movement/celestia/movement/.celestia-light
         --keyring.backend test
@@ -35,6 +37,8 @@ services:
     environment:
       - NODE_TYPE=light
       - P2P_NETWORK=celestia
+      - NODE_STORE=/.movement/celestia/movement/.celestia-light
+    user: root:root
     volumes:
       - ${DOT_MOVEMENT_PATH}/celestia:/.movement/celestia
     ports:
@@ -43,5 +47,5 @@ services:
       setup:
         condition: service_healthy
     healthcheck:
-      test: "celestia node info"
+      test: "nc -zv 0.0.0.0 26658"
     restart: on-failure:3
