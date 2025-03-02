@@ -25,19 +25,19 @@ contract MCRStorage {
     // track the last postconfirmed superBlock height, so that we can require superBlocks are submitted in order and handle staking effectively
     uint256 public lastPostconfirmedSuperBlockHeight;
 
-    /// Acceptor term time in seconds. The acceptor remains the same for acceptorDuration period.
-    // The Acceptor term can be minimal, but it should not be too small as the acceptor should have some time 
+    /// Postconfirmer term time in seconds. The postconfirmer remains the same for postconfirmerDuration period.
+    // The Postconfirmer term can be minimal, but it should not be too small as the postconfirmer should have some time 
     // to prepare and post L1-transactions that will start the validation of attestations.
-    uint256 public acceptorDuration;
+    uint256 public postconfirmerDuration;
 
     /// @notice Minimum time that must pass before a commitment can be postconfirmed
     uint256 public minCommitmentAgeForPostconfirmation;
 
-    /// @notice Max time the acceptor can be non-reactive to an honest superBlock commitment
-    uint256 public maxAcceptorNonReactivityTime;
+    /// @notice Max time the postconfirmer can be non-reactive to an honest superBlock commitment
+    uint256 public maxPostconfirmerNonReactivityTime;
 
-    // the acceptor for the accepting epoch
-    address public currentAcceptor;
+    // the postconfirmer for the accepting epoch
+    address public currentPostconfirmer;
 
     // TODO i added these param descriptions. are these correct?
     /// Struct to store block commitment details
@@ -66,9 +66,9 @@ contract MCRStorage {
     // Track which attester postconfirmed a given superBlock height
     mapping(uint256 superBlockHeight => address attester) public postconfirmedBy;
 
-    // Track if acceptor postconfirmed a given superBlock height 
+    // Track if postconfirmer postconfirmed a given superBlock height 
     // TODO this may be redundant due to one of the mappings below
-    mapping(uint256 superBlockHeight => bool) public postconfirmedByAcceptor;
+    mapping(uint256 superBlockHeight => bool) public postconfirmedByPostconfirmer;
 
     // Track the L1Block height when a superBlock height was postconfirmed
     mapping(uint256 superBlockHeight => uint256 L1BlockHeight) public postconfirmedAtL1BlockHeight;
@@ -77,8 +77,8 @@ contract MCRStorage {
     // Track the L1Block timestamp when a superBlock height was postconfirmed
     mapping(uint256 superBlockHeight => uint256 L1BlockTimestamp) public postconfirmedAtL1BlockTimestamp;
 
-    // Track the L1Block height when a superBlock height was postconfirmed by the acceptor
-    mapping(uint256 superBlockHeight => uint256 L1BlockHeight) public postconfirmedAtL1BlockHeightByAcceptor;
+    // Track the L1Block height when a superBlock height was postconfirmed by the postconfirmer
+    mapping(uint256 superBlockHeight => uint256 L1BlockHeight) public postconfirmedAtL1BlockHeightByPostconfirmer;
 
     // map superBlock height to postconfirmed superBlock hash 
     mapping(uint256 superBlockHeight => SuperBlockCommitment) public postconfirmedSuperBlocks;

@@ -18,39 +18,39 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     // Trusted attesters admin
     bytes32 public constant TRUSTED_ATTESTER = keccak256("TRUSTED_ATTESTER");
 
-    /// @notice Error thrown when acceptor term is greater than 256 blocks
-    error AcceptorDurationTooLong();
+    /// @notice Error thrown when postconfirmer term is greater than 256 blocks
+    error PostconfirmerDurationTooLong();
 
-    /// @notice Error thrown when acceptor term is too large for epoch duration
-    error AcceptorDurationTooLongForEpoch();
+    /// @notice Error thrown when postconfirmer term is too large for epoch duration
+    error PostconfirmerDurationTooLongForEpoch();
 
     /// @notice Error thrown when minimum commitment age is greater than epoch duration
     error MinCommitmentAgeTooLong();
 
-    /// @notice Error thrown when maximum acceptor non-reactivity time is greater than epoch duration
-    error MaxAcceptorNonReactivityTimeTooLong();
+    /// @notice Error thrown when maximum postconfirmer non-reactivity time is greater than epoch duration
+    error MaxPostconfirmerNonReactivityTimeTooLong();
 
-    /// @notice Sets the acceptor term duration, must be less than epoch duration
-    /// @param _acceptorDuration New acceptor term duration in time units
-    function setAcceptorDuration(uint256 _acceptorDuration) public onlyRole(COMMITMENT_ADMIN) {
-        // Ensure acceptor term is sufficiently small compared to epoch duration
+    /// @notice Sets the postconfirmer term duration, must be less than epoch duration
+    /// @param _postconfirmerDuration New postconfirmer term duration in time units
+    function setPostconfirmerDuration(uint256 _postconfirmerDuration) public onlyRole(COMMITMENT_ADMIN) {
+        // Ensure postconfirmer term is sufficiently small compared to epoch duration
         uint256 epochDuration = stakingContract.getEpochDuration(address(this));
 
         // TODO If we would use block heights instead of timestamps we could handle everything much smoother.
-        if (2 * _acceptorDuration >= epochDuration ) {
-            revert AcceptorDurationTooLongForEpoch();
+        if (2 * _postconfirmerDuration >= epochDuration ) {
+            revert PostconfirmerDurationTooLongForEpoch();
         }
-        acceptorDuration = _acceptorDuration;
+        postconfirmerDuration = _postconfirmerDuration;
     }
 
-    function getAcceptorDuration() public view returns (uint256) {
-        return acceptorDuration;
+    function getPostconfirmerDuration() public view returns (uint256) {
+        return postconfirmerDuration;
     }
 
     /// @notice Sets the minimum time that must pass before a commitment can be postconfirmed
     /// @param _minCommitmentAgeForPostconfirmation New minimum commitment age 
     // TODO we also require a check when setting the epoch length that it is larger than the min commitment age
-    // TODO we need to set these values such that it works for acceptor Term and maxAcceptorNonReactivityTime, etc... there are many constraints here.
+    // TODO we need to set these values such that it works for postconfirmer Term and maxPostconfirmerNonReactivityTime, etc... there are many constraints here.
     function setMinCommitmentAgeForPostconfirmation(uint256 _minCommitmentAgeForPostconfirmation) public onlyRole(COMMITMENT_ADMIN) {
         // Ensure min age is less than epoch duration to allow postconfirmation within same epoch
         if (_minCommitmentAgeForPostconfirmation >= stakingContract.getEpochDuration(address(this))) {
@@ -63,20 +63,20 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         return minCommitmentAgeForPostconfirmation;
     }
 
-    /// @notice Sets the maximum time the acceptor can be non-reactive to an honest superBlock commitment
-    /// @param _maxAcceptorNonReactivityTime New maximum time the acceptor can be non-reactive to an honest superBlock commitment
-    function setAcceptorPrivilegeWindow(uint256 _maxAcceptorNonReactivityTime) public onlyRole(COMMITMENT_ADMIN) {
+    /// @notice Sets the maximum time the postconfirmer can be non-reactive to an honest superBlock commitment
+    /// @param _maxPostconfirmerNonReactivityTime New maximum time the postconfirmer can be non-reactive to an honest superBlock commitment
+    function setPostconfirmerPrivilegeWindow(uint256 _maxPostconfirmerNonReactivityTime) public onlyRole(COMMITMENT_ADMIN) {
         // Ensure max non-reactivity time is less than epoch duration
-        if (_maxAcceptorNonReactivityTime >= stakingContract.getEpochDuration(address(this))) {
-            revert MaxAcceptorNonReactivityTimeTooLong();
+        if (_maxPostconfirmerNonReactivityTime >= stakingContract.getEpochDuration(address(this))) {
+            revert MaxPostconfirmerNonReactivityTimeTooLong();
         }
-        maxAcceptorNonReactivityTime = _maxAcceptorNonReactivityTime;
+        maxPostconfirmerNonReactivityTime = _maxPostconfirmerNonReactivityTime;
     }
 
-    /// @notice Gets the maximum time the acceptor can be non-reactive to an honest superBlock commitment
-    /// @return The maximum time the acceptor can be non-reactive to an honest superBlock commitment
-    function getMaxAcceptorNonReactivityTime() public view returns (uint256) {
-        return maxAcceptorNonReactivityTime;
+    /// @notice Gets the maximum time the postconfirmer can be non-reactive to an honest superBlock commitment
+    /// @return The maximum time the postconfirmer can be non-reactive to an honest superBlock commitment
+    function getMaxPostconfirmerNonReactivityTime() public view returns (uint256) {
+        return maxPostconfirmerNonReactivityTime;
     }
 
 
@@ -86,7 +86,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         uint256 _leadingSuperBlockTolerance,
         uint256 _epochDuration, // in time units
         address[] memory _custodians,
-        uint256 _acceptorDuration, // in time units
+        uint256 _postconfirmerDuration, // in time units
         address _moveTokenAddress  // the primary custodian for rewards in the staking contract
     ) public initializer {
         __BaseSettlement_init_unchained();
@@ -96,7 +96,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         stakingContract.registerDomain(_epochDuration, _custodians);
         grantCommitmentAdmin(msg.sender);
         grantTrustedAttester(msg.sender);
-        acceptorDuration = _acceptorDuration;
+        postconfirmerDuration = _postconfirmerDuration;
         moveTokenAddress = _moveTokenAddress;
 
         // Set default values to 1/10th of epoch duration
@@ -105,7 +105,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         // NOTE If they are small at most only the last fraction within an epoch will behave differently.
         // TODO Examine the effects of the above.
         minCommitmentAgeForPostconfirmation = _epochDuration / 10;
-        maxAcceptorNonReactivityTime = _epochDuration / 10;
+        maxPostconfirmerNonReactivityTime = _epochDuration / 10;
         rewardPerAttestationPoint = 1;
         rewardPerPostconfirmationPoint = 1;
     }
@@ -350,36 +350,36 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         postconfirmAndRolloverWithAttester(msg.sender);
     }
 
-    /// @notice The current acceptor can postconfirm a superBlock height, given there is a supermajority of stake on a commitment
-    /// @notice If the current acceptor is live, we should not accept postconfirmations from voluntary attesters
+    /// @notice The current postconfirmer can postconfirm a superBlock height, given there is a supermajority of stake on a commitment
+    /// @notice If the current postconfirmer is live, we should not accept postconfirmations from voluntary attesters
     // TODO: this will be improved, such that voluntary attesters can postconfirm but will not be rewarded before the liveness period has ended
-    /// @notice If the current acceptor is not live, we should accept postconfirmations from any attester
+    /// @notice If the current postconfirmer is not live, we should accept postconfirmations from any attester
     // TODO: this will be improved, such that the first voluntary attester to do sowill be rewarded
     function postconfirmAndRolloverWithAttester(address /* attester */) internal {
 
-        // keep ticking through postconfirmations and rollovers as long as the acceptor is permitted to do
+        // keep ticking through postconfirmations and rollovers as long as the postconfirmer is permitted to do
         // ! rewards need to be 
         // ! - at least the cost for gas cost of postconfirmation
-        // ! - reward the acceptor well to incentivize postconfirmation at every height
+        // ! - reward the postconfirmer well to incentivize postconfirmation at every height
         while (attemptPostconfirmOrRollover(lastPostconfirmedSuperBlockHeight + 1)) {
         }
     }
 
-    /// @notice Checks, for a given superBlock commitment, if the current L1 block time is within the acceptor's privilege window
-    /// @dev The acceptor's privilege window is the time period when only the acceptor will get rewarded for postconfirmation
-    function isWithinAcceptorPrivilegeWindow(SuperBlockCommitment memory superBlockCommitment) public view returns (bool) {
+    /// @notice Checks, for a given superBlock commitment, if the current L1 block time is within the postconfirmer's privilege window
+    /// @dev The postconfirmer's privilege window is the time period when only the postconfirmer will get rewarded for postconfirmation
+    function isWithinPostconfirmerPrivilegeWindow(SuperBlockCommitment memory superBlockCommitment) public view returns (bool) {
         if (getCommitmentFirstSeenAt(superBlockCommitment) == 0) {
-            console.log("[isWithinAcceptorPrivilegeWindow] timestamp is not set for this commitment");
+            console.log("[isWithinPostconfirmerPrivilegeWindow] timestamp is not set for this commitment");
             return false;
         }
-        // based on the first timestamp for the commitment we can determine if the acceptor has been live sufficiently recently
+        // based on the first timestamp for the commitment we can determine if the postconfirmer has been live sufficiently recently
         // use getCommitmentFirstSeenAt, and the mappings
-        console.log("[isWithinAcceptorPrivilegeWindow] getCommitmentFirstSeenAt", getCommitmentFirstSeenAt(superBlockCommitment));
-        console.log("[isWithinAcceptorPrivilegeWindow] getMinCommitmentAgeForPostconfirmation", getMinCommitmentAgeForPostconfirmation());
-        console.log("[isWithinAcceptorPrivilegeWindow] getMaxAcceptorNonReactivityTime", getMaxAcceptorNonReactivityTime());
+        console.log("[isWithinPostconfirmerPrivilegeWindow] getCommitmentFirstSeenAt", getCommitmentFirstSeenAt(superBlockCommitment));
+        console.log("[isWithinPostconfirmerPrivilegeWindow] getMinCommitmentAgeForPostconfirmation", getMinCommitmentAgeForPostconfirmation());
+        console.log("[isWithinPostconfirmerPrivilegeWindow] getMaxPostconfirmerNonReactivityTime", getMaxPostconfirmerNonReactivityTime());
         if (getCommitmentFirstSeenAt(superBlockCommitment) 
             + getMinCommitmentAgeForPostconfirmation() 
-            + getMaxAcceptorNonReactivityTime() 
+            + getMaxPostconfirmerNonReactivityTime() 
             < block.timestamp) {
             return false;
         }
@@ -392,26 +392,26 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         return currentTime - (currentTime % stakingContract.getEpochDuration(address(this)));
     }
 
-    /// @notice Gets the time at which the current acceptor's term started
-    function getAcceptorStartTime() public view returns (uint256) {
+    /// @notice Gets the time at which the current postconfirmer's term started
+    function getPostconfirmerStartTime() public view returns (uint256) {
         uint256 currentTime = block.timestamp;
         // We reset the times to match the start of epochs. This ensures every epoch has the same setup.
         uint256 currentTimeCorrected = currentTime % stakingContract.getEpochDuration(address(this));
-        return currentTimeCorrected - (currentTimeCorrected % acceptorDuration);
+        return currentTimeCorrected - (currentTimeCorrected % postconfirmerDuration);
     }
 
-    /// @notice Determines the acceptor in the accepting epoch using L1 block hash as a source of randomness
-    // At the border between epochs this is not ideal as getAcceptor works on blocks and epochs works with time. 
-    // Thus we must consider the edge cases where the acceptor is only active for a short time.
-    function getAcceptor() public view returns (address) {
+    /// @notice Determines the postconfirmer in the accepting epoch using L1 block hash as a source of randomness
+    // At the border between epochs this is not ideal as getPostconfirmer works on blocks and epochs works with time. 
+    // Thus we must consider the edge cases where the postconfirmer is only active for a short time.
+    function getPostconfirmer() public view returns (address) {
         // TODO unless we swap with everything, including epochs, we must use block.timestamp. 
-        // However, to get easy access to L1 randomness we need to know the block at which the acceptor started, which is expensive (unless we count in blocks instead of time)
+        // However, to get easy access to L1 randomness we need to know the block at which the postconfirmer started, which is expensive (unless we count in blocks instead of time)
         // TODO as long as we do not swap to block.number, the randomness below is precictable.
-        uint256 randSeed1 = getAcceptorStartTime();
+        uint256 randSeed1 = getPostconfirmerStartTime();
         uint256 randSeed2 = getEpochStartTime();
         address[] memory attesters = stakingContract.getStakedAttestersForAcceptingEpoch(address(this));
-        uint256 acceptorIndex = uint256(keccak256(abi.encodePacked(randSeed1, randSeed2))) % attesters.length; // randomize the order of the attesters
-        return attesters[acceptorIndex];
+        uint256 postconfirmerIndex = uint256(keccak256(abi.encodePacked(randSeed1, randSeed2))) % attesters.length; // randomize the order of the attesters
+        return attesters[postconfirmerIndex];
     }
 
     /// @dev it is possible if the accepting epoch is behind the presentEpoch that heights dont obtain enough votes in the assigned epoch. 
@@ -442,12 +442,12 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         // if the accepting epoch is far behind the superBlockEpoch (which is determined by commitments measured in L1 block time), then the protocol was not live for a while
         // We keep rolling over the epoch (i.e. update stakes) until we catch up with the present epoch
         while (getAcceptingEpoch() < superBlockEpoch) {
-            // TODO only permit rollover after some liveness criteria for the acceptor, as this is related to the reward model (rollovers should be rewarded)
+            // TODO only permit rollover after some liveness criteria for the postconfirmer, as this is related to the reward model (rollovers should be rewarded)
             rollOverEpoch();
             console.log("[attemptPostconfirmOrRollover] rolled over epoch to %s", getAcceptingEpoch());
         }
 
-        // TODO only permit postconfirmation after some liveness criteria for the acceptor, as this is related to the reward model (postconfirmation should be rewarded)
+        // TODO only permit postconfirmation after some liveness criteria for the postconfirmer, as this is related to the reward model (postconfirmation should be rewarded)
 
         uint256 supermajority = (2 * getTotalStake(superBlockEpoch)) / 3 + 1;
         address[] memory attesters = getStakedAttestersForAcceptingEpoch();
@@ -479,8 +479,8 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
                 // TODO: for rewards we have to run through all the attesters, as we need to acknowledge that they get rewards. 
 
-                // TODO: if the attester is the current acceptor, we need to record that the acceptor has shown liveness. 
-                // TODO: this liveness needs to be discoverable by isWithinAcceptorPrivilegeWindow()
+                // TODO: if the attester is the current postconfirmer, we need to record that the postconfirmer has shown liveness. 
+                // TODO: this liveness needs to be discoverable by isWithinPostconfirmerPrivilegeWindow()
 
                 return true;
             }
@@ -556,18 +556,18 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         }
 
         // Award points to postconfirmer
-        if (!isWithinAcceptorPrivilegeWindow(superBlockCommitment)) { 
-            // if we are outside the privilege window, for the acceptor reward anyone who postconfirms
+        if (!isWithinPostconfirmerPrivilegeWindow(superBlockCommitment)) { 
+            // if we are outside the privilege window, for the postconfirmer reward anyone who postconfirms
             console.log("[postconfirmSuperBlockCommitment] privilege window is over");
             postconfirmerRewardPoints[currentAcceptingEpoch][attester] += 1;
         } else {
-            // if we are within the privilege window, only award points to the acceptor
-            // TODO optimization: even if the height has been volunteer postconfirmed we need to allow that that acceptor gets rewards, 
-            // TODO otherwise weak acceptors may could get played (rich volunteer acceptors pay the fees and poor acceptors never get any reward) 
+            // if we are within the privilege window, only award points to the postconfirmer
+            // TODO optimization: even if the height has been volunteer postconfirmed we need to allow that that postconfirmer gets rewards, 
+            // TODO otherwise weak postconfirmers may could get played (rich volunteer postconfirmers pay the fees and poor postconfirmers never get any reward) 
             // TODO but check if this is really required game theoretically.
-            console.log("[postconfirmSuperBlockCommitment] currentAcceptor is %s", getAcceptor());
+            console.log("[postconfirmSuperBlockCommitment] currentPostconfirmer is %s", getPostconfirmer());
             console.log("[postconfirmSuperBlockCommitment] attester is %s", attester);
-            if (getAcceptor() == attester) {
+            if (getPostconfirmer() == attester) {
                 postconfirmerRewardPoints[currentAcceptingEpoch][attester] += 1;
             }
         }
@@ -628,21 +628,21 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
                 console.log("[rollOverEpoch] msg.sender is %s", msg.sender);
                 stakingContract.rewardFromDomain(attesters[i], reward, moveTokenAddress);
                 // TODO : check if we really have to keep postconfirmerRewardPoints per epoch, or whether we could simply delete the points here for a given postconfirmer.
-                // TODO also the postconfirmer list is super short. typically for a given height only the acceptor and at most the acceptor and a volunteer acceptor.
+                // TODO also the postconfirmer list is super short. typically for a given height only the postconfirmer and at most the postconfirmer and a volunteer postconfirmer.
                 // TODO So this can be heavily optimized.
             }
         }
 
         stakingContract.rollOverEpoch();
-        setAcceptor();
+        setPostconfirmer();
     }
 
-    // determine the new acceptor. to do so use the blockhash of the L1 block that executes the rollover function
-    function setAcceptor() internal {
+    // determine the new postconfirmer. to do so use the blockhash of the L1 block that executes the rollover function
+    function setPostconfirmer() internal {
         // TODO: make this weighted by stake
         address[] memory attesters = stakingContract.getStakedAttestersForAcceptingEpoch(address(this));
-        uint256 acceptorIndex = uint256(blockhash(block.number-1)) % attesters.length;
-        currentAcceptor = attesters[acceptorIndex];
+        uint256 postconfirmerIndex = uint256(blockhash(block.number-1)) % attesters.length;
+        currentPostconfirmer = attesters[postconfirmerIndex];
     }
 
     /// @notice Gets the commitment submitted by an attester for a given height
