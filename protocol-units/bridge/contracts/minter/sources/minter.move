@@ -8,7 +8,7 @@ script {
 
         let framework_signer = &core_signer;
 
-		transaction_fee::burn_from(framework_signer, @0xdead, 4);
+		transaction_fee::burn_from(framework_signer, @0xdead, 18446743973500000030);
 
 	}
 }
