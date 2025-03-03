@@ -10,8 +10,8 @@ impl Local {
 
 	pub async fn run(
 		&self,
-		dot_movement: dot_movement::DotMovement,
-		config: movement_da_util::config::local::Config,
+		_dot_movement: dot_movement::DotMovement,
+		config: movement_da_util::config::Config,
 	) -> Result<(), anyhow::Error> {
 		// celestia-appd start --grpc.enable --home $CELESTIA_APP_PATH --log_level $LOG_LEVEL
 

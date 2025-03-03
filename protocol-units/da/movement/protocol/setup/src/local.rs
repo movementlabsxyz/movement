@@ -2,7 +2,7 @@ use crate::common;
 use anyhow::Context;
 use commander::run_command;
 use dot_movement::DotMovement;
-use movement_da_util::config::local::Config;
+use movement_da_util::config::Config;
 use tokio::fs;
 use tracing::info;
 
