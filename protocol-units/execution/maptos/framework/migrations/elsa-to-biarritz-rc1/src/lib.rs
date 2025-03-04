@@ -1,6 +1,6 @@
 pub mod dot_movement;
 
-use aptos_framework_biarritz_rc1_release::cached::gas_upgrade::BiarritzRc1;
+use aptos_framework_biarritz_rc1_release::cached::full::feature_upgrade::BiarritzRc1;
 use maptos_framework_release_util::{Release, ReleaseSigner};
 use std::future::Future;
 
@@ -21,7 +21,7 @@ impl ElsaToBiarritzRc1 {
 		// upgrade to Biarritz RC1 with the gas upgrade
 		let biarritz_rc1 = BiarritzRc1::new();
 		biarritz_rc1
-			.release(signer, 2_000_000, 100, 60, client)
+			.release(signer, 2_000_000, 100, 60_000, client)
 			.await
 			.map_err(|e| ElsaToBiarritzRc1Error::MigrationFailed(e.into()))?;
 
