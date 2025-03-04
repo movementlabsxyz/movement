@@ -58,6 +58,15 @@ fn main() -> Result<(), anyhow::Error> {
 		None
 	};
 
+	// ANS processor.
+	let ans_indexer_config = build_processor_conf(
+		"ans_processor
+  ans_v1_primary_names_table_handle: temp
+  ans_v1_name_records_table_handle: temp
+  ans_v2_contract_address: 0x67bf15b3eed0fc62deea9630bbbd1d48842550655140f913699a1ca7e6f727d8",
+		&maptos_config,
+	)?;
+
 	let num_cpus = num_cpus::get();
 	let worker_threads = (num_cpus * RUNTIME_WORKER_MULTIPLIER).max(16);
 	println!(
@@ -94,6 +103,7 @@ fn main() -> Result<(), anyhow::Error> {
 					set.spawn(async move { token_indexer_config.run().await });
 					set.spawn(async move { tokenv2_indexer_config.run().await });
 				}
+				set.spawn(async move { ans_indexer_config.run().await });
 
 				while let Some(res) = set.join_next().await {
 					tracing::error!("An Error occurs during indexer execution: {res:?}");
@@ -122,14 +132,8 @@ fn build_processor_conf(
 		.map(|t| t.parse().unwrap_or(10))
 		.unwrap_or(10);
 
-	// If the starting version is not defined, don't put a default value in the conf.
-	let starting_version_entry = std::env::var("INDEXER_STARTING_VERSION")
-		.map(|t| t.parse().unwrap_or(0))
-		.map(|t| format!("starting_version: {}", t))
-		.unwrap_or(String::new());
-
 	//create config file
-	let indexer_config_content = format!(
+	let mut indexer_config_content = format!(
 		"processor_config:
   type: {}
 postgres_connection_string: {}
@@ -137,8 +141,7 @@ indexer_grpc_data_service_address: {}
 indexer_grpc_http2_ping_interval_in_secs: {}
 indexer_grpc_http2_ping_timeout_in_secs: {}
 auth_token: \"{}\"
-default_sleep_time_between_request: {}
-{}",
+default_sleep_time_between_request: {}",
 		processor_name,
 		maptos_config.indexer_processor.postgres_connection_string,
 		indexer_grpc_data_service_address,
@@ -146,8 +149,15 @@ default_sleep_time_between_request: {}
 		maptos_config.indexer.maptos_indexer_grpc_inactivity_ping_interval,
 		maptos_config.indexer_processor.indexer_processor_auth_token,
 		default_sleep_time_between_request,
-		starting_version_entry,
 	);
+
+	// If the starting version is not defined, don't put a default value in the conf.
+	if let Ok(start_version) = std::env::var("INDEXER_STARTING_VERSION") {
+		if let Ok(start_version) = start_version.parse::<u64>() {
+			indexer_config_content.push('\n');
+			indexer_config_content.push_str(&format!("starting_version: {}", start_version));
+		}
+	}
 
 	//let indexer_config_path = dot_movement.get_path().join("indexer_config.yaml");
 	let mut output_file = tempfile::NamedTempFile::new()?;
