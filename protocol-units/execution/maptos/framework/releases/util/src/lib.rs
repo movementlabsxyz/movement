@@ -383,7 +383,7 @@ pub trait Release {
 			let now_u64 = std::time::SystemTime::now()
 				.duration_since(std::time::UNIX_EPOCH)
 				.map_err(|e| ReleaseBundleError::Build(e.into()))?
-				.as_secs();
+				.as_micros() as u64;
 			let expiration_timestamp = now_u64 + expiration_timestamp_sec_offset as u64;
 			let _completed_votes = self
 				.vote(signer, max_gas_amount, gas_unit_price, expiration_timestamp, client)
@@ -412,7 +412,7 @@ fn build_release_bundles_raw_transactions(
 		let now_u64 = std::time::SystemTime::now()
 			.duration_since(std::time::UNIX_EPOCH)
 			.map_err(|e| ReleaseBundleError::Build(e.into()))?
-			.as_secs();
+			.as_micros() as u64;
 		let expiration_timestamp = now_u64 + (expiration_timestamp_sec_offset * i) as u64;
 
 		let raw_transaction = RawTransaction::new(
