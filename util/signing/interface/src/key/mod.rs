@@ -220,18 +220,18 @@ impl TryFromCanonicalString for Key {
 	/// Example canonical string: "movement/prod/full_node/mcr_settlement/signer/validator/0"
 	fn try_from_canonical_string(s: &str) -> Result<Self, String> {
 		let parts: Vec<&str> = s.split('/').collect();
-		if parts.len() != 7 {
-			return Err(format!("invalid key: {}", s));
+		if parts.len() != 8 {
+			return Err(format!("invalid key, bad number of elements {:?}: '{}'", parts, s));
 		}
 
 		Ok(Self {
-			org: Organization::try_from_canonical_string(parts[0])?,
-			environment: Environment::try_from_canonical_string(parts[1])?,
-			software_unit: SoftwareUnit::try_from_canonical_string(parts[2])?,
-			usage: Usage::try_from_canonical_string(parts[3])?,
-			allowed_roles: AllowedRoles::try_from_canonical_string(parts[4])?,
-			key_name: parts[5].to_string(),
-			app_replica: Some(parts[6].to_string()),
+			org: Organization::try_from_canonical_string(parts[1])?,
+			environment: Environment::try_from_canonical_string(parts[2])?,
+			software_unit: SoftwareUnit::try_from_canonical_string(parts[3])?,
+			usage: Usage::try_from_canonical_string(parts[4])?,
+			allowed_roles: AllowedRoles::try_from_canonical_string(parts[5])?,
+			key_name: parts[6].to_string(),
+			app_replica: Some(parts[7].to_string()),
 		})
 	}
 }

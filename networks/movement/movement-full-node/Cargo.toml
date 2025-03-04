@@ -51,6 +51,7 @@ aptos-crypto = { workspace = true }
 aptos-sdk = { workspace = true }
 k256 = { workspace = true }
 alloy-signer = { workspace = true }
+chrono = { workspace = true }
 
 [features]
 default = []

@@ -1,14 +1,15 @@
 use crate::blob::ir::{into_da_blob, CelestiaDaBlob};
-use celestia_rpc::{BlobClient, Client, HeaderClient};
-use celestia_types::{nmt::Namespace, Blob as CelestiaBlob, TxConfig};
+use celestia_rpc::{BlobClient, Client, HeaderClient, TxConfig};
+use celestia_types::{nmt::Namespace, Blob as CelestiaBlob};
 use movement_da_light_node_da::{Certificate, CertificateStream, DaError, DaOperations};
 use movement_da_util::blob::ir::blob::DaBlob;
 use movement_signer::cryptography::Curve;
 use serde::{Deserialize, Serialize};
+use std::fmt::Debug;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
-use tracing::error;
+use tracing::{debug, error};
 
 #[derive(Clone)]
 pub struct Da<C>
@@ -53,17 +54,21 @@ where
 
 impl<C> DaOperations<C> for Da<C>
 where
-	C: Curve + Send + Sync + Clone + Serialize + for<'de> Deserialize<'de> + 'static,
+	C: Curve + Send + Sync + Clone + Serialize + Debug + for<'de> Deserialize<'de> + 'static,
 {
 	fn submit_blob(
 		&self,
 		data: DaBlob<C>,
 	) -> Pin<Box<dyn Future<Output = Result<(), DaError>> + Send + '_>> {
 		Box::pin(async move {
+			debug!("submitting blob to celestia {:?}", data);
+
 			// create the blob
 			let celestia_blob = self
 				.create_new_celestia_blob(data)
 				.map_err(|e| DaError::Internal(format!("failed to create celestia blob :{e}")))?;
+
+			debug!("created celestia blob {:?}", celestia_blob);
 
 			// submit the blob to the celestia node
 			self.submit_celestia_blob(celestia_blob)
@@ -79,6 +84,7 @@ where
 		height: u64,
 	) -> Pin<Box<dyn Future<Output = Result<Vec<DaBlob<C>>, DaError>> + Send + '_>> {
 		Box::pin(async move {
+			debug!("getting blobs at height {height}");
 			let height = if height == 0 { 1 } else { height };
 
 			match self.default_client.blob_get_all(height, &[self.celestia_namespace]).await {
@@ -99,6 +105,7 @@ where
 								format!("failed to convert blob: {e}").into(),
 							)
 						})?;
+						debug!("got blob {da_blob:?}");
 						da_blobs.push(da_blob);
 					}
 
@@ -114,7 +121,7 @@ where
 		let me = self.clone();
 		Box::pin(async move {
 			let mut subscription = me.default_client.header_subscribe().await.map_err(|e| {
-				DaError::Certificate(format!("failed to subscribe to headers: {e}").into())
+				DaError::Certificate(format!("failed to subscribe to headers :{e}").into())
 			})?;
 			let stream = async_stream::try_stream! {
 

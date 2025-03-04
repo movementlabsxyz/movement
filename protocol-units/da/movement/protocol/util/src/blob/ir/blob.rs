@@ -66,7 +66,7 @@ where
 
 impl<C> DaBlob<C>
 where
-	C: Curve + Verify<C> + Digester<C>,
+	C: Curve,
 {
 	pub fn blob(&self) -> &[u8] {
 		match self {
@@ -104,13 +104,6 @@ where
 		match self {
 			DaBlob::SignedV1(inner) => inner.id.as_slice(),
 			DaBlob::DigestV1(digest) => digest.as_slice(),
-		}
-	}
-
-	pub fn verify_signature(&self) -> Result<(), anyhow::Error> {
-		match self {
-			DaBlob::SignedV1(inner) => inner.try_verify(),
-			DaBlob::DigestV1(_) => Ok(()),
 		}
 	}
 
@@ -157,6 +150,18 @@ where
 	) -> Result<BlobResponse, anyhow::Error> {
 		let blob = self.to_blob(height)?;
 		Self::blob_to_blob_sequenced_read_response(blob)
+	}
+}
+
+impl<C> DaBlob<C>
+where
+	C: Curve + Verify<C> + Digester<C>,
+{
+	pub fn verify_signature(&self) -> Result<(), anyhow::Error> {
+		match self {
+			DaBlob::SignedV1(inner) => inner.try_verify(),
+			DaBlob::DigestV1(_) => Ok(()),
+		}
 	}
 }
 
