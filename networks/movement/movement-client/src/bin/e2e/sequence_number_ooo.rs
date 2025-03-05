@@ -164,7 +164,12 @@ pub async fn test_sending_failed_transaction() -> Result<(), anyhow::Error> {
 	rest_client.submit(&transaction_2).await?;
 	rest_client.submit(&transaction_1).await?;
 
+	println!("=== Transactions Submitted ===");
+	println!("Tx#1: {:?}", transaction_1);
+	println!("Tx#2: {:?}", transaction_2);
+
 	// wait for both the complete
+	println!("=== Waiting for transactions to be executed ===");
 	rest_client.wait_for_signed_transaction(&transaction_1).await?;
 	rest_client.wait_for_signed_transaction(&transaction_2).await?;
 

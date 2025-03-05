@@ -117,7 +117,7 @@ impl TransactionPipe {
 	/// Pipes a batch of transactions from the mempool to the transaction channel.
 	/// todo: it may be wise to move the batching logic up a level to the consuming structs.
 	pub(crate) async fn tick_requests(&mut self) -> Result<(), Error> {
-		info!("tick_requests");
+		debug!("tick_requests");
 		// try to immediately get the next request
 		// if we don't do this, then the `tick_mempool_sender` process would be held up by receiving a new transaction
 
@@ -167,7 +167,7 @@ impl TransactionPipe {
 	}
 
 	pub(crate) async fn tick_mempool_sender(&mut self) -> Result<(), Error> {
-		info!("tick_mempool_sender");
+		debug!("tick_mempool_sender");
 		if self.last_mempool_send.elapsed() > MEMPOOL_INTERVAL {
 			// pop some transactions from the mempool
 			let transactions = self.core_mempool.get_batch_with_ranking_score(
@@ -177,7 +177,7 @@ impl TransactionPipe {
 				BTreeMap::new(),
 			);
 
-			info!("Sending {:?} transactions to the transaction channel", transactions.len());
+			debug!("Sending {:?} transactions to the transaction channel", transactions.len());
 
 			// send them to the transaction channel
 			for (transaction, ranking_score) in transactions {
