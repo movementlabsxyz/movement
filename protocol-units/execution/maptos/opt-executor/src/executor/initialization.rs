@@ -1,11 +1,14 @@
 use super::Executor;
 use crate::background::BackgroundTask;
 use crate::{bootstrap, Context};
-use aptos_crypto::ed25519::Ed25519PrivateKey;
+use movement_signer::cryptography::ed25519::Ed25519;
+use movement_signer::Signing;
+use movement_signer_loader::{Load, LoadedSigner};
 
 use aptos_config::config::NodeConfig;
+#[cfg(test)]
+use aptos_crypto::ed25519::Ed25519PrivateKey;
 use aptos_crypto::ed25519::Ed25519PublicKey;
-use aptos_crypto::PrivateKey;
 #[cfg(test)]
 use aptos_crypto::ValidCryptoMaterialStringExt;
 use aptos_executor::block_executor::BlockExecutor;
@@ -128,16 +131,21 @@ impl Executor {
 		})
 	}
 
-	pub fn bootstrap(maptos_config: &Config) -> Result<Self, anyhow::Error> {
-		let raw_private_key =
-			maptos_config.chain.maptos_private_key_signer_identifier.try_raw_private_key()?;
-		let private_key = Ed25519PrivateKey::try_from(raw_private_key.as_slice())?;
-		let public_key = private_key.public_key();
+	pub async fn bootstrap(maptos_config: &Config) -> Result<Self, anyhow::Error> {
+		// let raw_private_key =
+		// 	maptos_config.chain.maptos_private_key_signer_identifier.try_raw_private_key()?;
+		// let private_key = Ed25519PrivateKey::try_from(raw_private_key.as_slice())?;
+		// let public_key = private_key.public_key();
+
+		let loader: LoadedSigner<Ed25519> =
+			maptos_config.chain.maptos_private_key_signer_identifier.load().await?;
+		let public_key = Ed25519PublicKey::try_from(loader.public_key().await?.as_bytes())?;
+
 		Self::bootstrap_with_public_key(maptos_config, public_key)
 	}
 
-	pub fn try_from_config(maptos_config: Config) -> Result<Self, anyhow::Error> {
-		Self::bootstrap(&maptos_config)
+	pub async fn try_from_config(maptos_config: Config) -> Result<Self, anyhow::Error> {
+		Self::bootstrap(&maptos_config).await
 	}
 
 	#[cfg(test)]
@@ -163,7 +171,7 @@ impl Executor {
 	}
 
 	#[cfg(test)]
-	pub fn try_test_default(
+	pub async fn try_test_default(
 		private_key: Ed25519PrivateKey,
 	) -> Result<(Self, TempDir), anyhow::Error> {
 		let tempdir = tempfile::tempdir()?;
@@ -177,7 +185,7 @@ impl Executor {
 
 		// replace the db path with the temporary directory
 		maptos_config.chain.maptos_db_path.replace(tempdir.path().to_path_buf());
-		let executor = Self::try_from_config(maptos_config)?;
+		let executor = Self::try_from_config(maptos_config).await?;
 		Ok((executor, tempdir))
 	}
 

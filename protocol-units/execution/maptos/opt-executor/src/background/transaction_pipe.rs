@@ -344,9 +344,12 @@ mod tests {
 	use maptos_execution_util::config::chain::Config;
 	use tempfile::TempDir;
 
-	fn setup() -> (Context, TransactionPipe, mpsc::Receiver<(u64, SignedTransaction)>, TempDir) {
+	async fn setup() -> (Context, TransactionPipe, mpsc::Receiver<(u64, SignedTransaction)>, TempDir)
+	{
 		let (tx_sender, tx_receiver) = mpsc::channel(16);
-		let (executor, tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone()).unwrap();
+		let (executor, tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())
+			.await
+			.expect("Transaction pipe test can't create executor with private key.");
 		let (context, background) = executor.background(tx_sender).unwrap();
 		let transaction_pipe = background.into_transaction_pipe();
 		(context, transaction_pipe, tx_receiver, tempdir)
@@ -367,7 +370,7 @@ mod tests {
 	async fn test_pipe_mempool() -> Result<(), anyhow::Error> {
 		// set up
 		let maptos_config = Config::default();
-		let (context, mut transaction_pipe, mut tx_receiver, _tempdir) = setup();
+		let (context, mut transaction_pipe, mut tx_receiver, _tempdir) = setup().await;
 		let user_transaction = create_signed_transaction(1, &maptos_config);
 
 		// send transaction to mempool
@@ -395,7 +398,7 @@ mod tests {
 	async fn test_pipe_mempool_cancellation() -> Result<(), anyhow::Error> {
 		// set up
 		let maptos_config = Config::default();
-		let (context, mut transaction_pipe, _tx_receiver, _tempdir) = setup();
+		let (context, mut transaction_pipe, _tx_receiver, _tempdir) = setup().await;
 		let user_transaction = create_signed_transaction(1, &maptos_config);
 
 		// send transaction to mempool
@@ -418,7 +421,7 @@ mod tests {
 	async fn test_pipe_mempool_with_duplicate_transaction() -> Result<(), anyhow::Error> {
 		// set up
 		let maptos_config = Config::default();
-		let (context, mut transaction_pipe, mut tx_receiver, _tempdir) = setup();
+		let (context, mut transaction_pipe, mut tx_receiver, _tempdir) = setup().await;
 		let mut mempool_client_sender = context.mempool_client_sender();
 		let user_transaction = create_signed_transaction(1, &maptos_config);
 
@@ -459,7 +462,7 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_pipe_mempool_from_api() -> Result<(), anyhow::Error> {
-		let (context, mut transaction_pipe, mut tx_receiver, _tempdir) = setup();
+		let (context, mut transaction_pipe, mut tx_receiver, _tempdir) = setup().await;
 		let service = Service::new(&context);
 
 		#[allow(unreachable_code)]
@@ -486,7 +489,7 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_repeated_pipe_mempool_from_api() -> Result<(), anyhow::Error> {
-		let (context, mut transaction_pipe, mut tx_receiver, _tempdir) = setup();
+		let (context, mut transaction_pipe, mut tx_receiver, _tempdir) = setup().await;
 		let service = Service::new(&context);
 
 		#[allow(unreachable_code)]
@@ -526,7 +529,7 @@ mod tests {
 	async fn test_cannot_submit_too_new() -> Result<(), anyhow::Error> {
 		// set up
 		let maptos_config = Config::default();
-		let (_context, mut transaction_pipe, _tx_receiver, _tempdir) = setup();
+		let (_context, mut transaction_pipe, _tx_receiver, _tempdir) = setup().await;
 
 		// submit a transaction with a valid sequence number
 		let user_transaction = create_signed_transaction(0, &maptos_config);
@@ -554,7 +557,7 @@ mod tests {
 	#[tokio::test]
 	async fn test_sequence_number_too_old() -> Result<(), anyhow::Error> {
 		let (tx_sender, _tx_receiver) = mpsc::channel(16);
-		let (executor, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
+		let (executor, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone()).await?;
 		let (context, background) = executor.background(tx_sender)?;
 		let mut transaction_pipe = background.into_transaction_pipe();
 
