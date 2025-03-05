@@ -193,6 +193,12 @@ impl TransactionPipe {
 				let _ = sender.send((application_priority, transaction)).await;
 
 				// commit the transaction now that we have sent it
+				info!(
+					target: "movement_timing",
+					sender = %transaction_sender,
+					sequence_number = sequence_number,
+					"committing transaction"
+				);
 				self.core_mempool.commit_transaction(&transaction_sender, sequence_number);
 			}
 

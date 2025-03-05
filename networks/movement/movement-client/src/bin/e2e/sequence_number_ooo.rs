@@ -72,7 +72,7 @@ pub async fn create_fake_signed_transaction(
 	sequence_number: u64,
 ) -> Result<SignedTransaction, anyhow::Error> {
 	let coin_type = "0x1::aptos_coin::AptosCoin";
-	let timeout_secs = 600; // 10 minutes
+	let timeout_secs = 30; // 30 seconds
 	let max_gas_amount = 5_000;
 	let gas_unit_price = 100;
 
