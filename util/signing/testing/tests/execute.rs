@@ -15,11 +15,11 @@ use anyhow::Context;
 use movement_signer_loader::identifiers::{local::Local, SignerIdentifier};
 use tempfile::TempDir;
 
-fn setup(mut maptos_config: Config) -> Result<(Executor, TempDir), anyhow::Error> {
+async fn setup(mut maptos_config: Config) -> Result<(Executor, TempDir), anyhow::Error> {
 	let tempdir = tempfile::tempdir()?;
 	// replace the db path with the temporary directory
 	maptos_config.chain.maptos_db_path.replace(tempdir.path().to_path_buf());
-	let executor = Executor::try_from_config(maptos_config)?;
+	let executor = Executor::try_from_config(maptos_config).await?;
 	Ok((executor, tempdir))
 }
 
@@ -48,7 +48,7 @@ async fn execute_signed_transaction() -> Result<(), anyhow::Error> {
 	config.chain.maptos_private_key_signer_identifier =
 		SignerIdentifier::Local(Local { private_key_hex_bytes });
 	let signer = TestSigner::new(signing_key);
-	let (executor, _tempdir) = setup(config)?;
+	let (executor, _tempdir) = setup(config).await?;
 	let transaction = create_signed_transaction(&signer).await?;
 	let block_id = HashValue::random();
 	let block_metadata = executor

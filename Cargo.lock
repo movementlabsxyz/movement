@@ -10519,6 +10519,7 @@ dependencies = [
  "maptos-framework-release-util",
  "movement-collections",
  "movement-rest",
+ "movement-signer",
  "movement-signer-loader",
  "movement-types",
  "poem",
@@ -12019,8 +12020,11 @@ dependencies = [
 name = "movement-full-node"
 version = "0.0.2"
 dependencies = [
+ "alloy-signer",
  "anyhow",
+ "aptos-crypto",
  "aptos-framework-elsa-to-biarritz-rc1-migration",
+ "aptos-sdk",
  "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
  "chrono",
  "clap 4.5.21",
@@ -12030,6 +12034,7 @@ dependencies = [
  "godfig",
  "hex",
  "hyper 1.5.0",
+ "k256",
  "maptos-dof-execution",
  "mcr-settlement-client",
  "mcr-settlement-config",

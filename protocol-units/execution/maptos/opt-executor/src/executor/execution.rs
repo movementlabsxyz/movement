@@ -253,7 +253,7 @@ mod tests {
 	async fn test_execute_block() -> Result<(), anyhow::Error> {
 		let private_key = Ed25519PrivateKey::generate_for_testing();
 		let (tx_sender, _tx_receiver) = mpsc::channel(1);
-		let (executor, _tempdir) = Executor::try_test_default(private_key)?;
+		let (executor, _tempdir) = Executor::try_test_default(private_key).await?;
 		let (context, _transaction_pipe) = executor.background(tx_sender)?;
 		let block_id = HashValue::random();
 		let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
@@ -287,7 +287,7 @@ mod tests {
 		// Create an executor instance from the environment configuration.
 		let private_key = Ed25519PrivateKey::generate_for_testing();
 		let (tx_sender, _tx_receiver) = mpsc::channel(1);
-		let (executor, _tempdir) = Executor::try_test_default(private_key)?;
+		let (executor, _tempdir) = Executor::try_test_default(private_key).await?;
 		let (context, _transaction_pipe) = executor.background(tx_sender)?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
@@ -398,7 +398,7 @@ mod tests {
 		// Create an executor instance from the environment configuration.
 		let private_key = Ed25519PrivateKey::generate_for_testing();
 		let (tx_sender, _tx_receiver) = mpsc::channel(16);
-		let (executor, _tempdir) = Executor::try_test_default(private_key)?;
+		let (executor, _tempdir) = Executor::try_test_default(private_key).await?;
 		let (context, _transaction_pipe) = executor.background(tx_sender)?;
 		let service = Service::new(&context);
 

@@ -5,6 +5,8 @@ pub mod governed_gas_pool;
 pub mod mcr;
 pub mod ops;
 pub mod rotate_key;
+pub mod testkey;
+
 use clap::Subcommand;
 
 #[derive(Subcommand, Debug)]
@@ -24,6 +26,8 @@ pub enum Admin {
 	Framework(framework::Framework),
 	#[clap(subcommand)]
 	Config(config::Config),
+	#[clap(subcommand)]
+	TestKey(testkey::TestKey),
 }
 
 impl Admin {
@@ -36,6 +40,7 @@ impl Admin {
 			Admin::Ops(ops) => ops.execute().await,
 			Admin::Framework(framework) => framework.execute().await,
 			Admin::Config(config) => config.execute().await,
+			Admin::TestKey(key) => key.execute().await,
 		}
 	}
 }

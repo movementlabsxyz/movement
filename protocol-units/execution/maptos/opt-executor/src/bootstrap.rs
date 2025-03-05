@@ -4,7 +4,6 @@ use aptos_crypto::ed25519::Ed25519PublicKey;
 use aptos_db::AptosDB;
 use aptos_executor::db_bootstrapper;
 use aptos_gas_schedule::{AptosGasParameters, InitialGasSchedule, ToOnChainGasSchedule};
-use aptos_sdk::move_types::gas_algebra::GasQuantity;
 use aptos_storage_interface::DbReaderWriter;
 use aptos_types::{
 	chain_id::ChainId,
