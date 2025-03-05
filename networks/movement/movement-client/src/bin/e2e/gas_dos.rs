@@ -171,7 +171,7 @@ pub async fn test_sending_failed_transaction() -> Result<(), anyhow::Error> {
 	assert!(initial_balance > failed_balance);
 
 	// TEST 2: Sending a transaction with a high sequence number
-	let too_high_sequence_number = alice.sequence_number() + 32 + 2;
+	let too_high_sequence_number = alice.sequence_number() + 1000 + 2;
 	println!("Alice's sequence number: {}", alice.sequence_number());
 	println!("Too high sequence number: {}", too_high_sequence_number);
 	let last_balance = failed_balance;
@@ -180,7 +180,7 @@ pub async fn test_sending_failed_transaction() -> Result<(), anyhow::Error> {
 		&alice,
 		bob.address(),
 		100,
-		too_high_sequence_number, // too new tolerance is 32
+		too_high_sequence_number, // too new tolerance is 1000 or more:
 	)
 	.await?;
 

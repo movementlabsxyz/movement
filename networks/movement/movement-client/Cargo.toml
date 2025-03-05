@@ -47,6 +47,10 @@ path = "src/bin/e2e/transfer.rs"
 name = "movement-tests-e2e-key-rotation"
 path = "src/bin/e2e/key_rotation.rs"
 
+[[bin]]
+name = "movement-tests-sequence-number-ooo"
+path = "src/bin/e2e/sequence_number_ooo.rs"
+
 
 [dependencies]
 aptos-language-e2e-tests = { workspace = true }

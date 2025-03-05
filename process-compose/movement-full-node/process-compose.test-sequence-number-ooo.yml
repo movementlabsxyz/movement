@@ -1,0 +1,17 @@
+version: "3"
+
+environment:
+
+processes:
+
+  # Test whether the full node is resistant to Gas DOS
+  test-sequence-number-ooo:
+    command: |
+      cargo run --bin movement-tests-sequence-number-ooo
+    depends_on:
+      movement-full-node:
+        condition: process_healthy
+      movement-faucet:
+        condition: process_healthy
+    availability:
+      exit_on_end: true

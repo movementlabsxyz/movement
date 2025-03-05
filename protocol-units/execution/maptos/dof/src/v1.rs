@@ -64,10 +64,11 @@ impl DynOptFinExecutor for Executor {
 			self.config(),
 			opt_context.node_config().clone(),
 		);
-		let indexer_runtime = opt_context.run_indexer_grpc_service()?;
+		// let indexer_runtime = opt_context.run_indexer_grpc_service()?;
 		let background = async move {
 			// The indexer runtime should live as long as the Tx pipe.
-			let _indexer_runtime = indexer_runtime;
+			// todo: for some reason the indexer runtime is now causing complications
+			// let _indexer_runtime = indexer_runtime;
 			background.run().await?;
 			Ok(())
 		};
