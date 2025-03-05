@@ -4,7 +4,7 @@ use maptos_framework_release_util::mrb_release;
 mrb_release!(
 	BiarritzRc1,
 	BIARRTIZ_RC1,
-	"aa45303216be96ea30d361ab7eb2e95fb08c2dcb-biarritz-rc1.mrb"
+	"d8306f3a42e26dafd9eb1139682645fe3f9e490b-biarritz-rc1.mrb"
 );
 
 generate_gas_upgrade_module!(gas_upgrade, BiarritzRc1, {
@@ -29,13 +29,19 @@ script {
     use aptos_framework::aptos_governance;
     use aptos_framework::gas_schedule;
 	use aptos_framework::governed_gas_pool;
+	use aptos_framework::aptos_coin;
+	use aptos_framework::signer;
 
     fun main(core_resources: &signer) {
         let core_signer = aptos_governance::get_signer_testnet_only(core_resources, @0x1);
 
         let framework_signer = &core_signer;
 
+		// this will throw an error against already upgraded networks, internally you can make it idempotent
 		governed_gas_pool::initialize(framework_signer, b"aptos_framework::governed_gas_pool");
+
+		// this will burn the mint capability for the core signer
+		aptos_coin::burn_mint_capability(core_resources, signer::address_of(framework_signer));
 
 	}
 }
