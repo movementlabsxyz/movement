@@ -7,7 +7,16 @@
   vars:
     repo_url: "https://github.com/movementlabsxyz/movement"
     destination_path: "/home/{{ user }}/movement"
+    movement_sync: "follower::move-main-rec-l-sb-sync<=>{default_signer_address_whitelist,maptos,maptos-storage,movement-da-db}/**"
+    chain_id: "126"
+
+    movement_da_light_node_connection_protocol: "https"
+    movement_da_light_node_connection_hostname: "m1-da-light-node.mainnet.movementnetwork.xyz"
+    movement_da_light_node_connection_port: "443"
+
+    aws_region: "us-west-1"
     rev: "{{ movement_container_version }}"
+
 
   tasks:
 
