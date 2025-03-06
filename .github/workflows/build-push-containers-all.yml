@@ -123,6 +123,8 @@ jobs:
 ### Unchecked containers
 
   build-push-unchecked-containers:
+    if: contains(github.event.pull_request.labels.*.name, 'cicd:bridge-containers') ||  github.ref == 'refs/heads/main' || github.event.label.name == 'cicd:bridge-containers'
+
     uses: ./.github/workflows/build-push-container.yml
     name: Build Push Unchecked Containers
     secrets: inherit

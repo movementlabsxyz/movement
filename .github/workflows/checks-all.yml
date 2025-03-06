@@ -30,7 +30,7 @@ jobs:
         include:
           - os: ubuntu-22.04
             arch: x86_64
-            runs-on: buildjet-8vcpu-ubuntu-2204
+            runs-on: buildjet-16vcpu-ubuntu-2204
           - os: macos-13-latest
             arch: arm64
             runs-on: macos-13-xlarge
@@ -55,7 +55,7 @@ jobs:
         include:
           - os: ubuntu-22.04
             arch: x86_64
-            runs-on: buildjet-8vcpu-ubuntu-2204
+            runs-on: buildjet-16vcpu-ubuntu-2204
           - os: macos-13-latest
             arch: arm64
             runs-on: macos-13-xlarge
@@ -196,7 +196,7 @@ jobs:
         include:
           - os: ubuntu-22.04
             arch: x86_64
-            runs-on: buildjet-8vcpu-ubuntu-2204
+            runs-on: buildjet-16vcpu-ubuntu-2204
 
     runs-on: ${{ matrix.runs-on }}
 
@@ -252,7 +252,7 @@ jobs:
         include:
           - os: ubuntu-22.04
             arch: x86_64
-            runs-on: buildjet-8vcpu-ubuntu-2204
+            runs-on: buildjet-16vcpu-ubuntu-2204
 
     runs-on: ${{ matrix.runs-on }}
 
@@ -330,7 +330,7 @@ jobs:
         include:
           - os: ubuntu-22.04
             arch: x86_64
-            runs-on: buildjet-8vcpu-ubuntu-2204
+            runs-on: buildjet-16vcpu-ubuntu-2204
 
     runs-on: ${{ matrix.runs-on }}
 
@@ -385,7 +385,7 @@ jobs:
         include:
           - os: ubuntu-22.04
             arch: x86_64
-            runs-on: buildjet-8vcpu-ubuntu-2204
+            runs-on: buildjet-16vcpu-ubuntu-2204
 
     runs-on: ${{ matrix.runs-on }}
 
@@ -457,7 +457,7 @@ jobs:
 #        include:
 #          - os: ubuntu-22.04
 #            arch: x86_64
-#            runs-on: buildjet-8vcpu-ubuntu-2204
+#            runs-on: buildjet-16vcpu-ubuntu-2204
 #
 #    runs-on: ${{ matrix.runs-on }}
 #
