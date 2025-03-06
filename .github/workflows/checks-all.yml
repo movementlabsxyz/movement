@@ -31,9 +31,9 @@ jobs:
           - os: ubuntu-22.04
             arch: x86_64
             runs-on: buildjet-16vcpu-ubuntu-2204
-          - os: macos-13-latest
+          - os: macos-15
             arch: arm64
-            runs-on: macos-14
+            runs-on: macos-15
 
     runs-on: ${{ matrix.runs-on }}
 
@@ -56,9 +56,9 @@ jobs:
           - os: ubuntu-22.04
             arch: x86_64
             runs-on: buildjet-16vcpu-ubuntu-2204
-          - os: macos-13-latest
+          - os: macos-15
             arch: arm64
-            runs-on: macos-14
+            runs-on: macos-15
 
     runs-on: ${{ matrix.runs-on }}
 
