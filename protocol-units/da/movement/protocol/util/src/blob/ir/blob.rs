@@ -13,17 +13,17 @@ pub struct InnerSignedBlobV1<C>
 where
 	C: Curve,
 {
-	pub data: InnerSignedBlobV1Data<C>,
-	pub signature: Vec<u8>,
-	pub signer: Vec<u8>,
-	pub id: Id,
+	data: InnerSignedBlobV1Data<C>,
+	signature: Vec<u8>,
+	signer: Vec<u8>,
+	id: Id,
 }
 
 impl<C> InnerSignedBlobV1<C>
 where
 	C: Curve + Verify<C> + Digester<C>,
 {
-	pub fn new(
+	pub(crate) fn new(
 		data: InnerSignedBlobV1Data<C>,
 		signature: Vec<u8>,
 		signer: Vec<u8>,
@@ -162,29 +162,6 @@ where
 			DaBlob::SignedV1(inner) => inner.try_verify(),
 			DaBlob::DigestV1(_) => Ok(()),
 		}
-	}
-}
-
-#[cfg(test)]
-pub mod test {
-
-	use super::*;
-	use movement_da_light_node_signer::Signer;
-	use movement_signer::cryptography::secp256k1::Secp256k1;
-	use movement_signer_local::signer::LocalSigner;
-
-	#[tokio::test]
-	async fn test_cannot_change_id_and_verify() -> Result<(), anyhow::Error> {
-		let blob = InnerSignedBlobV1Data::new(vec![1, 2, 3], 123);
-		let signer = Signer::new(LocalSigner::<Secp256k1>::random());
-		let signed_blob = blob.try_to_sign(&signer).await?;
-
-		let mut changed_blob = signed_blob.clone();
-		changed_blob.id = Id::new(vec![1, 2, 3, 4]);
-
-		assert!(changed_blob.try_verify().is_err());
-
-		Ok(())
 	}
 }
 

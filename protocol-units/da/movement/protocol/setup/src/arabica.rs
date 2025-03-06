@@ -156,7 +156,6 @@ impl Arabica {
 		let max_retries = 10;
 		let retry_delay = 5;
 		let mut retry_count = 0;
-		let mut success = false;
 
 		while retry_count < max_retries {
 			let response = reqwest::Client::new()
@@ -183,7 +182,6 @@ impl Arabica {
 				let tx_hash =
 					tx_hash.as_str().context("Failed to convert the txHash field to a string.")?;
 				info!("Transaction hash: {}", tx_hash);
-				success = true;
 				break;
 			} else {
 				info!("Error: txHash field not found in the response.");

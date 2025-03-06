@@ -12,15 +12,14 @@ use aptos_types::transaction::{
 };
 
 use anyhow::Context;
-use aptos_crypto::ValidCryptoMaterialStringExt;
 use movement_signer_loader::identifiers::{local::Local, SignerIdentifier};
 use tempfile::TempDir;
 
-fn setup(mut maptos_config: Config) -> Result<(Executor, TempDir), anyhow::Error> {
+async fn setup(mut maptos_config: Config) -> Result<(Executor, TempDir), anyhow::Error> {
 	let tempdir = tempfile::tempdir()?;
 	// replace the db path with the temporary directory
 	maptos_config.chain.maptos_db_path.replace(tempdir.path().to_path_buf());
-	let executor = Executor::try_from_config(maptos_config)?;
+	let executor = Executor::try_from_config(maptos_config).await?;
 	Ok((executor, tempdir))
 }
 
@@ -45,11 +44,11 @@ async fn execute_signed_transaction() -> Result<(), anyhow::Error> {
 	let private_key = Ed25519PrivateKey::generate_for_testing();
 	let mut config = Config::default();
 	let signing_key = ed25519_dalek::SigningKey::from_bytes(&private_key.to_bytes());
-	config.chain.maptos_private_key_signer_identifier = SignerIdentifier::Local(Local {
-		private_key_hex_bytes: private_key.to_encoded_string()?.to_string(),
-	});
+	let private_key_hex_bytes = hex::encode(&private_key.to_bytes());
+	config.chain.maptos_private_key_signer_identifier =
+		SignerIdentifier::Local(Local { private_key_hex_bytes });
 	let signer = TestSigner::new(signing_key);
-	let (executor, _tempdir) = setup(config)?;
+	let (executor, _tempdir) = setup(config).await?;
 	let transaction = create_signed_transaction(&signer).await?;
 	let block_id = HashValue::random();
 	let block_metadata = executor
