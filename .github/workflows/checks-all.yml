@@ -33,7 +33,7 @@ jobs:
             runs-on: buildjet-16vcpu-ubuntu-2204
           - os: macos-13-latest
             arch: arm64
-            runs-on: macos-13-xlarge
+            runs-on: macos-14
 
     runs-on: ${{ matrix.runs-on }}
 
@@ -58,7 +58,7 @@ jobs:
             runs-on: buildjet-16vcpu-ubuntu-2204
           - os: macos-13-latest
             arch: arm64
-            runs-on: macos-13-xlarge
+            runs-on: macos-14
 
     runs-on: ${{ matrix.runs-on }}
 
