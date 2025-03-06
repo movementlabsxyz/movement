@@ -6,9 +6,6 @@ on:
       - labeled
       - opened
       - synchronize
-  push:
-    branches:
-      - '**' 
 
 jobs:
 
