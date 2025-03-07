@@ -13,27 +13,36 @@ contract MovementStakingStorage {
     // the token used for staking
     IERC20 public token;
 
+    /// @dev the duration of each epoch in seconds. 
+    /// The stakes are organized into epochs, and where epochs are measured in L1-block timestamps.
     mapping(address domain => uint256 epochDuration) public epochDurationByDomain;
-    mapping(address domain => uint256 currentEpoch) public currentEpochByDomain;
-    mapping(address domain => EnumerableSet.AddressSet attester) internal attestersByDomain;
-    mapping(address domain => EnumerableSet.AddressSet custodian) internal custodiansByDomain;
+    /// @dev the current epoch for each domain. Commitments are submitted only for the current epoch 
+    /// and validators may not submit commitments to epochs that are far in the past. 
+    /// Hence, we need to treat each epoch separately.
+    mapping(address domain => uint256 currentAcceptingEpoch) public currentAcceptingEpochByDomain;
+    // Track registered attesters for each domain
+    mapping(address domain => EnumerableSet.AddressSet attester) internal registeredAttestersByDomain;
+    mapping(address domain => EnumerableSet.AddressSet custodian) internal registeredCustodiansByDomain;
 
     // preserved records of stake by address per epoch
+    /// @dev this is a mapping of domain => epoch => custodian => attester => stake
     mapping(address domain => 
         mapping(uint256 epoch => 
             mapping(address custodian => 
-                mapping(address attester => uint256 stake)))) public epochStakesByDomain;
+                mapping(address attester => uint256 stake)))) public stakesByDomainEpochCustodianAttester;
 
     // preserved records of unstake by address per epoch
+    /// @dev this is a mapping of domain => epoch => custodian => attester => unstake
     mapping(address domain => 
         mapping(uint256 epoch => 
             mapping(address custodian =>
-                mapping(address attester => uint256 stake))))  public epochUnstakesByDomain;
+                mapping(address attester => uint256 stake))))  public unstakesByDomainEpochCustodianAttester;
 
     // track the total stake of the epoch (computed at rollover)
+    /// @dev this is a mapping of domain => epoch => custodian => stake
     mapping(address domain =>
         mapping(uint256 epoch =>
-            mapping(address attester => uint256 stake))) public epochTotalStakeByDomain;
+            mapping(address custodian => uint256 stake))) public stakesByDomainEpochCustodian;
 
     mapping(address domain => bool) public domainGenesisAccepted;
 

@@ -1,8 +1,8 @@
-use crate::{BlockCommitmentEvent, CommitmentEventStream, McrSettlementManagerOperations};
+use crate::{SuperBlockCommitmentEvent, CommitmentEventStream, McrSettlementManagerOperations};
 
 use mcr_settlement_client::McrSettlementClientOperations;
 use mcr_settlement_config::Config;
-use movement_types::block::{BlockCommitment, BlockCommitmentRejectionReason};
+use movement_types::block::{SuperBlockCommitment, SuperBlockCommitmentRejectionReason};
 
 use async_stream::stream;
 use async_trait::async_trait;
@@ -17,7 +17,7 @@ use std::time::Duration;
 
 /// Public handle for the MCR settlement manager.
 pub struct Manager {
-	sender: mpsc::Sender<BlockCommitment>,
+	sender: mpsc::Sender<SuperBlockCommitment>,
 }
 
 impl Manager {
@@ -41,7 +41,7 @@ impl Manager {
 impl McrSettlementManagerOperations for Manager {
 	async fn post_block_commitment(
 		&self,
-		block_commitment: BlockCommitment,
+		block_commitment: SuperBlockCommitment,
 	) -> Result<(), anyhow::Error> {
 		self.sender.send(block_commitment).await?;
 		Ok(())
@@ -49,7 +49,7 @@ impl McrSettlementManagerOperations for Manager {
 }
 
 fn process_commitments<C: McrSettlementClientOperations + Send + 'static>(
-	mut receiver: mpsc::Receiver<BlockCommitment>,
+	mut receiver: mpsc::Receiver<SuperBlockCommitment>,
 	client: C,
 	batch_timeout: Duration,
 ) -> CommitmentEventStream {
@@ -107,11 +107,11 @@ fn process_commitments<C: McrSettlementClientOperations + Send + 'static>(
 					let height = settled_commitment.height();
 					if let Some(commitment) = commitments_to_settle.remove(&height) {
 						let event = if commitment == settled_commitment.commitment() {
-							BlockCommitmentEvent::Accepted(settled_commitment)
+							SuperBlockCommitmentEvent::Accepted(settled_commitment)
 						} else {
-							BlockCommitmentEvent::Rejected {
+							SuperBlockCommitmentEvent::Rejected {
 								height,
-								reason: BlockCommitmentRejectionReason::InvalidCommitment,
+								reason: SuperBlockCommitmentRejectionReason::InvalidCommitment,
 							}
 						};
 						yield Ok(event);
@@ -147,7 +147,7 @@ fn process_commitments<C: McrSettlementClientOperations + Send + 'static>(
 mod tests {
 	use super::*;
 	use mcr_settlement_client::mock::McrSettlementClient;
-	use movement_types::block::{BlockCommitment, Commitment};
+	use movement_types::block::{SuperBlockCommitment, Commitment};
 
 	#[tokio::test]
 	async fn test_block_commitment_accepted() -> Result<(), anyhow::Error> {
@@ -155,14 +155,14 @@ mod tests {
 		let mut client = McrSettlementClient::new();
 		client.block_lead_tolerance = 1;
 		let (manager, mut event_stream) = Manager::new(client.clone(), &config);
-		let commitment = BlockCommitment::new(1, Default::default(), Commitment::new([1; 32]));
+		let commitment = SuperBlockCommitment::new(1, Default::default(), Commitment::new([1; 32]));
 		manager.post_block_commitment(commitment.clone()).await?;
-		let commitment2 = BlockCommitment::new(2, Default::default(), Commitment::new([2; 32]));
+		let commitment2 = SuperBlockCommitment::new(2, Default::default(), Commitment::new([2; 32]));
 		manager.post_block_commitment(commitment2).await?;
 		let item = event_stream.next().await;
 		let res = item.unwrap();
 		let event = res.unwrap();
-		assert_eq!(event, BlockCommitmentEvent::Accepted(commitment));
+		assert_eq!(event, SuperBlockCommitmentEvent::Accepted(commitment));
 		Ok(())
 	}
 
@@ -172,25 +172,25 @@ mod tests {
 		let mut client = McrSettlementClient::new();
 		client.block_lead_tolerance = 1;
 		let (manager, mut event_stream) = Manager::new(client.clone(), &config);
-		let commitment = BlockCommitment::new(1, Default::default(), Commitment::new([1; 32]));
+		let commitment = SuperBlockCommitment::new(1, Default::default(), Commitment::new([1; 32]));
 		client
-			.override_block_commitment(BlockCommitment::new(
+			.override_block_commitment(SuperBlockCommitment::new(
 				1,
 				Default::default(),
 				Commitment::new([3; 32]),
 			))
 			.await;
 		manager.post_block_commitment(commitment.clone()).await?;
-		let commitment2 = BlockCommitment::new(2, Default::default(), Commitment::new([2; 32]));
+		let commitment2 = SuperBlockCommitment::new(2, Default::default(), Commitment::new([2; 32]));
 		manager.post_block_commitment(commitment2).await?;
 		let item = event_stream.next().await;
 		let res = item.unwrap();
 		let event = res.unwrap();
 		assert_eq!(
 			event,
-			BlockCommitmentEvent::Rejected {
+			SuperBlockCommitmentEvent::Rejected {
 				height: 1,
-				reason: BlockCommitmentRejectionReason::InvalidCommitment,
+				reason: SuperBlockCommitmentRejectionReason::InvalidCommitment,
 			}
 		);
 		Ok(())
@@ -204,17 +204,17 @@ mod tests {
 		client.pause_after(2).await;
 		let (manager, mut event_stream) = Manager::new(client.clone(), &config);
 
-		let commitment1 = BlockCommitment::new(1, Default::default(), Commitment::new([1; 32]));
+		let commitment1 = SuperBlockCommitment::new(1, Default::default(), Commitment::new([1; 32]));
 		manager.post_block_commitment(commitment1.clone()).await?;
-		let commitment2 = BlockCommitment::new(2, Default::default(), Commitment::new([2; 32]));
+		let commitment2 = SuperBlockCommitment::new(2, Default::default(), Commitment::new([2; 32]));
 		manager.post_block_commitment(commitment2.clone()).await?;
-		let commitment3 = BlockCommitment::new(3, Default::default(), Commitment::new([3; 32]));
+		let commitment3 = SuperBlockCommitment::new(3, Default::default(), Commitment::new([3; 32]));
 		manager.post_block_commitment(commitment3.clone()).await?;
 
 		let event = event_stream.next().await.expect("stream has ended")?;
-		assert_eq!(event, BlockCommitmentEvent::Accepted(commitment1.clone()));
+		assert_eq!(event, SuperBlockCommitmentEvent::Accepted(commitment1.clone()));
 		let event = event_stream.next().await.expect("stream has ended")?;
-		assert_eq!(event, BlockCommitmentEvent::Accepted(commitment2.clone()));
+		assert_eq!(event, SuperBlockCommitmentEvent::Accepted(commitment2.clone()));
 
 		// The batch of first two should have been posted,
 		// the third commitment is batched in the manager.
@@ -225,13 +225,13 @@ mod tests {
 		// Unblock the client, allowing processing of commitments to resume.
 		client.resume().await;
 
-		let commitment4 = BlockCommitment::new(4, Default::default(), Commitment::new([4; 32]));
+		let commitment4 = SuperBlockCommitment::new(4, Default::default(), Commitment::new([4; 32]));
 		manager.post_block_commitment(commitment4).await?;
-		let commitment5 = BlockCommitment::new(5, Default::default(), Commitment::new([5; 32]));
+		let commitment5 = SuperBlockCommitment::new(5, Default::default(), Commitment::new([5; 32]));
 		manager.post_block_commitment(commitment5).await?;
 
 		let event = event_stream.next().await.expect("stream has ended")?;
-		assert_eq!(event, BlockCommitmentEvent::Accepted(commitment3.clone()));
+		assert_eq!(event, SuperBlockCommitmentEvent::Accepted(commitment3.clone()));
 
 		Ok(())
 	}
@@ -243,27 +243,27 @@ mod tests {
 		let client = McrSettlementClient::new();
 		let (manager, mut event_stream) = Manager::new(client.clone(), &config);
 
-		let commitment1 = BlockCommitment::new(1, Default::default(), Commitment::new([1; 32]));
+		let commitment1 = SuperBlockCommitment::new(1, Default::default(), Commitment::new([1; 32]));
 		manager.post_block_commitment(commitment1.clone()).await?;
-		let commitment2 = BlockCommitment::new(2, Default::default(), Commitment::new([2; 32]));
+		let commitment2 = SuperBlockCommitment::new(2, Default::default(), Commitment::new([2; 32]));
 		manager.post_block_commitment(commitment2.clone()).await?;
 
 		let item = time::timeout(Duration::from_secs(2), event_stream.next())
 			.await
 			.expect("no timeout");
 		let event = item.expect("stream has ended")?;
-		assert_eq!(event, BlockCommitmentEvent::Accepted(commitment1.clone()));
+		assert_eq!(event, SuperBlockCommitmentEvent::Accepted(commitment1.clone()));
 		let event = event_stream.next().await.expect("stream has ended")?;
-		assert_eq!(event, BlockCommitmentEvent::Accepted(commitment2.clone()));
+		assert_eq!(event, SuperBlockCommitmentEvent::Accepted(commitment2.clone()));
 
-		let commitment3 = BlockCommitment::new(3, Default::default(), Commitment::new([3; 32]));
+		let commitment3 = SuperBlockCommitment::new(3, Default::default(), Commitment::new([3; 32]));
 		manager.post_block_commitment(commitment3.clone()).await?;
 
 		let item = time::timeout(Duration::from_secs(2), event_stream.next())
 			.await
 			.expect("no timeout");
 		let event = item.expect("stream has ended")?;
-		assert_eq!(event, BlockCommitmentEvent::Accepted(commitment3));
+		assert_eq!(event, SuperBlockCommitmentEvent::Accepted(commitment3));
 
 		Ok(())
 	}

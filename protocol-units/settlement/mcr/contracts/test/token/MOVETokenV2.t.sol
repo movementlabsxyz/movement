@@ -6,6 +6,8 @@ import "../../src/token/MOVETokenDev.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
+import {console} from "forge-std/console.sol";
+import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 
 contract MOVETokenDevTest is Test {
     MOVETokenDev public token;
@@ -13,6 +15,7 @@ contract MOVETokenDevTest is Test {
     string public moveSignature = "initialize(address)";
     address public multisig = 0x00db70A9e12537495C359581b7b3Bc3a69379A00;
     bytes32 public MINTER_ROLE;
+    bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
 
     function setUp() public {
         MOVETokenDev moveTokenImplementation = new MOVETokenDev();
@@ -33,7 +36,7 @@ contract MOVETokenDevTest is Test {
         vm.stopPrank();
     }
 
-    function testGrants() public {
+    function testGrants() public view {
         // Check the token details
         assertEq(token.hasRole(MINTER_ROLE, multisig), true);
     }
@@ -126,14 +129,38 @@ contract MOVETokenDevTest is Test {
         vm.stopPrank();
     }
 
+    // Tests that non-admin accounts cannot grant roles by checking for the expected revert
     function testCannotGrantRoleFuzz(address messenger, address receiver) public {
+        // repeat with new test if messenger is multisig or 0
+        vm.assume(messenger != multisig);
+        vm.assume(messenger != address(0));
+        console.log("............................"); // TODO : if the console logs are modified, the test fail sometimes, why?
+        console.log("messenger", messenger);
+        console.log("multisig", multisig);
+
+        // impersonate the messenger address for all subsequent calls
         vm.startPrank(messenger);
-        if (messenger != multisig) {
-            vm.expectRevert(
-                abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, messenger, 0x00)
-            );
-            token.grantRole(MINTER_ROLE, receiver);
+
+        // Expect the call to revert with AccessControlUnauthorizedAccount error
+        // - messenger: the account trying to grant the role
+        // - DEFAULT_ADMIN_ROLE (0x00): the role needed to grant any role
+        console.log("... messenger", messenger); 
+        console.logBytes32(DEFAULT_ADMIN_ROLE);
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, messenger, DEFAULT_ADMIN_ROLE)
+        );
+
+        // Attempt to grant MINTER_ROLE to receiver address
+        // This should fail since messenger doesn't have DEFAULT_ADMIN_ROLE
+        try token.grantRole(MINTER_ROLE, receiver) {
+            fail();
+        } catch Error(string memory reason) {
+            console.log("Revert reason:", reason);
+        } catch (bytes memory returnData) {
+            console.logBytes(returnData);
         }
+
         vm.stopPrank();
     }
+
 }

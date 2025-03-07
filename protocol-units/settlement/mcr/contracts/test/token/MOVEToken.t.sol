@@ -2,6 +2,7 @@
 pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
+import "forge-std/console2.sol";
 import {MOVEToken} from "../../src/token/MOVEToken.sol";
 import {MOVETokenDev} from "../../src/token/MOVETokenDev.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
@@ -11,7 +12,7 @@ import {CompatibilityFallbackHandler} from "@safe-smart-account/contracts/handle
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {ERC1967Utils} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 
-function string2Address(bytes memory str) returns (address addr) {
+function string2Address(bytes memory str) pure returns (address addr) {
     bytes32 data = keccak256(str);
     assembly {
         mstore(0, data)
@@ -29,6 +30,7 @@ contract MOVETokenTest is Test {
     string public moveSignature = "initialize(address,address)";
     address public multisig = address(0x00db70A9e12537495C359581b7b3Bc3a69379A00);
     address public anchorage = address(0xabc);
+    bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
 
     function setUp() public {
         moveTokenImplementation = new MOVEToken();
@@ -67,27 +69,36 @@ contract MOVETokenTest is Test {
         token.initialize(multisig, anchorage);
     }
 
-    function testDecimals() public {
+    function testDecimals() public view {
         assertEq(token.decimals(), 8);
     }
 
-    function testTotalSupply() public {
+    function testTotalSupply() public view {
         assertEq(token.totalSupply(), 10000000000 * 10 ** 8);
     }
 
-    function testMultisigBalance() public {
+    function testMultisigBalance() public view {
         assertEq(token.balanceOf(anchorage), 10000000000 * 10 ** 8);
     }
 
+    /// @notice Fuzzing test to verify admin role permissions
+    /// @param other Any address to test against
     function testAdminRoleFuzz(address other) public {
-        assertEq(token.hasRole(0x00, other), false);
-        assertEq(token.hasRole(0x00, multisig), true);
-        assertEq(token.hasRole(0x00, anchorage), false);
+        // Verify multisig has admin role (primary admin)
+        assertEq(token.hasRole(DEFAULT_ADMIN_ROLE, multisig), true);
+        
+        // Verify other addresses only have admin if they are the multisig
+        assertEq(token.hasRole(DEFAULT_ADMIN_ROLE, other), other == multisig);
+        
+        // Verify custody address (anchorage) does not have admin role
+        assertEq(token.hasRole(DEFAULT_ADMIN_ROLE, anchorage), false);
 
+        // Test role granting permissions (skip multisig since it should succeed)
+        vm.assume(other != multisig);
         vm.expectRevert(
-            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, address(this), 0x00)
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, address(this), DEFAULT_ADMIN_ROLE)
         );
-        token.grantRole(0x00, other);
+        token.grantRole(DEFAULT_ADMIN_ROLE, other);
     }
 
     function testUpgradeFromTimelock() public {

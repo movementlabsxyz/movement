@@ -2,16 +2,16 @@
 pragma solidity ^0.8.13;
 
 interface IMCR {
-    event BlockAccepted(
+    event SuperBlockPostconfirmed(
         bytes32 indexed blockHash,
         bytes32 stateCommitment,
         uint256 height
     );
-    event BlockCommitmentSubmitted(
+    event SuperBlockCommitmentSubmitted(
         bytes32 indexed blockHash,
         bytes32 stateCommitment,
         uint256 attesterStake
     );
-    error UnacceptableBlockCommitment();
+    error UnacceptableSuperBlockCommitment();
     error AttesterAlreadyCommitted();
 }
