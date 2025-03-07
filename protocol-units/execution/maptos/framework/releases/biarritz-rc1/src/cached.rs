@@ -38,7 +38,7 @@ script {
         let framework_signer = &core_signer;
 
 		// this will throw an error against already upgraded networks, internally you can make it idempotent
-		// governed_gas_pool::initialize(framework_signer, b"aptos_framework::governed_gas_pool");
+		governed_gas_pool::initialize(framework_signer, b"aptos_framework::governed_gas_pool");
 
 		// this will burn the mint capability for the core signer
 		aptos_coin::burn_mint_capability(core_resources, signer::address_of(framework_signer));
