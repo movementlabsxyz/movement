@@ -10,7 +10,7 @@ ESCAPED_SOURCE_REPO="${SOURCE_REPO//\//_}"
 # Clone and configure the repository
 git clone https://x-access-token:$GITHUB_TOKEN@github.com/${TARGET_REPO} repo
 cd repo
-mkdir -p $(dirname "${GALI_FILE_PATH}")
+mkdir -p "$(dirname "${GALI_FILE_PATH}")"
 git config user.name "GitHub Action"
 git config user.email "action@github.com"
 
@@ -47,9 +47,6 @@ else
   # Push the new branch
   git push https://x-access-token:$GITHUB_TOKEN@github.com/${TARGET_REPO} "${GALI_ID}"
 fi
-
-# Push the new branch
-git push https://x-access-token:$GITHUB_TOKEN@github.com/${TARGET_REPO} "${GALI_ID}"
 
 # set link to pr
 echo "::set-output name=pr_link::$(gh pr view -w --json number --repo ${TARGET_REPO})"
