@@ -40,6 +40,10 @@ name = "movement-tests-e2e-ggp-gas-fee"
 path = "src/bin/e2e/ggp_gas_fee.rs"
 
 [[bin]]
+name = "movement-tests-e2e-mint-burn"
+path = "src/bin/e2e/mint_burn.rs"
+
+[[bin]]
 name = "movement-tests-e2e-transfer"
 path = "src/bin/e2e/transfer.rs"
 
@@ -72,6 +76,8 @@ rayon = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }
+movement-signer-loader = { workspace = true }
+movement-signer = { workspace = true }
 movement-tracing = { workspace = true }
 tracing = { workspace = true }
 url = { workspace = true }
