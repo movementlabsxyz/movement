@@ -1,11 +1,7 @@
 use aptos_framework_upgrade_gas_release::generate_gas_upgrade_module;
 use maptos_framework_release_util::mrb_release;
 
-mrb_release!(
-	BiarritzRc1,
-	BIARRTIZ_RC1,
-	"ec6191fe921bca19d86b7cb77da34eb5c3e79c09-biarritz-rc1.mrb"
-);
+mrb_release!(BiarritzRc1, BIARRTIZ_RC1, "4c91658da5329df8c55c8caca9cf47ac9d685ddd");
 
 generate_gas_upgrade_module!(gas_upgrade, BiarritzRc1, {
 	let mut gas_parameters = AptosGasParameters::initial();
