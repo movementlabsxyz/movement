@@ -8,13 +8,25 @@ on:
       - opened
       - synchronize
   push:
-    branches:
-      - '**' 
     tags:
       - '[0-9]*.[0-9]*.[0-9]*'
 
 jobs:
+
+  read-github-context-object:
+    runs-on: ubuntu-latest
+    steps:
+      # I know this is not pretty (debug information) but it's useful to have this
+    - name: Read github context
+      env: 
+        GITHUB_CONTEXT: ${{ toJson(github) }}
+      run: |
+        echo "GITHUB_SHA=${GITHUB_SHA}"
+        echo "INFO: github context object content below"
+        echo "${GITHUB_CONTEXT}"
+
   build-push-checked-containers:
+    if: contains(github.event.pull_request.labels.*.name, 'cicd:movement-containers') ||  github.ref == 'refs/heads/main' || github.event.label.name == 'cicd:movement-containers'
     uses: ./.github/workflows/build-push-container.yml
     name: Build Push Checked Containers
     secrets: inherit
@@ -36,6 +48,7 @@ jobs:
       container_name: ${{ matrix.container_name }}
 
   build-push-checked-manifest:
+    if: contains(github.event.pull_request.labels.*.name, 'cicd:movement-containers') ||  github.ref == 'refs/heads/main' || github.event.label.name == 'cicd:movement-containers'
     uses: ./.github/workflows/build-push-manifest.yml
     name: Build Push Checked Manifest
     needs: 
@@ -60,7 +73,7 @@ jobs:
 
   container-checks:
     if: contains(github.event.pull_request.labels.*.name, 'cicd:movement-containers') ||  github.ref == 'refs/heads/main' || github.event.label.name == 'cicd:movement-containers'
-    runs-on: buildjet-8vcpu-ubuntu-2204
+    runs-on: buildjet-16vcpu-ubuntu-2204
     needs: 
       - build-push-checked-manifest
     steps:
@@ -110,6 +123,8 @@ jobs:
 ### Unchecked containers
 
   build-push-unchecked-containers:
+    if: contains(github.event.pull_request.labels.*.name, 'cicd:bridge-containers') ||  github.ref == 'refs/heads/main' || github.event.label.name == 'cicd:bridge-containers'
+
     uses: ./.github/workflows/build-push-container.yml
     name: Build Push Unchecked Containers
     secrets: inherit
