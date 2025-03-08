@@ -41,7 +41,7 @@ script {
         governed_gas_pool::initialize(framework_signer, b"aptos_framework::governed_gas_pool");
 
         // this will burn the mint capability for the core signer
-        aptos_coin::destroy_mint_capability_from(core_signer, signer::address_of(framework_signer));
+        aptos_coin::destroy_mint_capability_from(&core_signer, signer::address_of(framework_signer));
     }
 }
 "#
