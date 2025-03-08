@@ -103,10 +103,6 @@ where
 		client: &aptos_sdk::rest_client::Client,
 	) -> Result<Vec<aptos_types::transaction::SignedTransaction>, ReleaseBundleError> {
 		info!("Setting feature flags");
-		let address = signer.release_account_address(client).await?;
-		//info the address
-		println!("release signer address {:?}", address);
-
 		let signed_transaction = self
 			.set_feature_flags_proposal_transaction(
 				signer,
