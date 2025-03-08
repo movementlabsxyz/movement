@@ -117,8 +117,6 @@ where
 			)
 			.await?;
 
-		println!("signed_release_transation {:?}", signed_transaction);
-
 		let _response = client.submit_and_wait_bcs(&signed_transaction).await.map_err(|e| {
 			info!("failed to submit feature flag proposal: {:?}", e);
 			ReleaseBundleError::Proposing(

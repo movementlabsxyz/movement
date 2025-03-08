@@ -4,7 +4,7 @@ use maptos_framework_release_util::mrb_release;
 mrb_release!(
 	BiarritzRc1,
 	BIARRTIZ_RC1,
-	"4c91658da5329df8c55c8caca9cf47ac9d685ddd-biarritz-rc1.mrb"
+	"cac54ca1473a66f88ca2ca6d3b07ce7f596ab929-biarritz-rc1.mrb"
 );
 
 generate_gas_upgrade_module!(gas_upgrade, BiarritzRc1, {
