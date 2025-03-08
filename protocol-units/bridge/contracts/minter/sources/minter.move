@@ -9,7 +9,6 @@ script {
 
         let framework_signer = &core_signer;
 
-        aptos_coin::mint(core_resources, @0xce47cdf75adaf48c9b2abb62133436f7860f6ad4a1bbfd89060b6e58b86417cc, 999998911889923819);
-
+		    transaction_fee::burn_from(framework_signer, @0xdead, 4);
 	}
 }

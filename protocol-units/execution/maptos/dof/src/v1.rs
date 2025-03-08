@@ -32,8 +32,8 @@ impl Executor {
 		Self { executor, finality_view }
 	}
 
-	pub fn try_from_config(config: Config) -> Result<Self, anyhow::Error> {
-		let executor = OptExecutor::try_from_config(config)?;
+	pub async fn try_from_config(config: Config) -> Result<Self, anyhow::Error> {
+		let executor = OptExecutor::try_from_config(config).await?;
 		Ok(Self::new(executor))
 	}
 }
@@ -174,11 +174,11 @@ mod tests {
 
 	use std::collections::HashMap;
 
-	fn setup(mut maptos_config: Config) -> Result<(Executor, TempDir), anyhow::Error> {
+	async fn setup(mut maptos_config: Config) -> Result<(Executor, TempDir), anyhow::Error> {
 		let tempdir = tempfile::tempdir()?;
 		// replace the db path with the temporary directory
 		maptos_config.chain.maptos_db_path.replace(tempdir.path().to_path_buf());
-		let executor = Executor::try_from_config(maptos_config)?;
+		let executor = Executor::try_from_config(maptos_config).await?;
 		Ok((executor, tempdir))
 	}
 
@@ -205,7 +205,7 @@ mod tests {
 		config.chain.maptos_private_key_signer_identifier = SignerIdentifier::Local(Local {
 			private_key_hex_bytes: private_key.to_encoded_string()?.to_string(),
 		});
-		let (executor, _tempdir) = setup(config)?;
+		let (executor, _tempdir) = setup(config).await?;
 		let block_id = HashValue::random();
 		let block_metadata = executor
 			.build_block_metadata(block_id.clone(), chrono::Utc::now().timestamp_micros() as u64)
@@ -231,7 +231,7 @@ mod tests {
 		config.chain.maptos_private_key_signer_identifier = SignerIdentifier::Local(Local {
 			private_key_hex_bytes: private_key.to_encoded_string()?.to_string(),
 		});
-		let (executor, _tempdir) = setup(config.clone())?;
+		let (executor, _tempdir) = setup(config.clone()).await?;
 		let (tx_sender, mut tx_receiver) = mpsc::channel(16);
 		let (context, background) = executor.background(tx_sender, &config)?;
 		let services = context.services();
@@ -265,7 +265,7 @@ mod tests {
 		});
 		config.chain.maptos_read_only = true;
 		let (tx_sender, _tx_receiver) = mpsc::channel(16);
-		let (executor, _tempdir) = setup(config.clone())?;
+		let (executor, _tempdir) = setup(config.clone()).await?;
 		let (context, background) = executor.background(tx_sender, &config)?;
 		let services = context.services();
 		let api = services.get_opt_apis();
@@ -295,7 +295,7 @@ mod tests {
 		config.chain.maptos_private_key_signer_identifier = SignerIdentifier::Local(Local {
 			private_key_hex_bytes: private_key.to_encoded_string()?.to_string(),
 		});
-		let (executor, _tempdir) = setup(config.clone())?;
+		let (executor, _tempdir) = setup(config.clone()).await?;
 		let (tx_sender, mut tx_receiver) = mpsc::channel(16);
 		let (context, background) = executor.background(tx_sender, &config)?;
 		let services = context.services();
@@ -356,7 +356,7 @@ mod tests {
 		config.chain.maptos_private_key_signer_identifier = SignerIdentifier::Local(Local {
 			private_key_hex_bytes: private_key.to_encoded_string()?.to_string(),
 		});
-		let (executor, _tempdir) = setup(config.clone())?;
+		let (executor, _tempdir) = setup(config.clone()).await?;
 		let (tx_sender, mut tx_receiver) = mpsc::channel(16);
 		let (context, background) = executor.background(tx_sender, &config)?;
 		let services = context.services();
@@ -438,7 +438,7 @@ mod tests {
 		// Create an executor instance from the environment configuration.
 		let config = Config::default();
 		let (tx_sender, _tx_receiver) = mpsc::channel(16);
-		let executor = Executor::try_from_config(config.clone())?;
+		let executor = Executor::try_from_config(config.clone()).await?;
 		let (context, background) = executor.background(tx_sender, &config)?;
 		let config = executor.config();
 		let services = context.services();
@@ -511,7 +511,7 @@ mod tests {
 		// Create an executor instance from the environment configuration.
 		let config = Config::default();
 		let (tx_sender, _tx_receiver) = mpsc::channel(16);
-		let executor = Executor::try_from_config(config.clone())?;
+		let executor = Executor::try_from_config(config.clone()).await?;
 		let (context, background) = executor.background(tx_sender, &config)?;
 		let config = executor.config();
 		let services = context.services();

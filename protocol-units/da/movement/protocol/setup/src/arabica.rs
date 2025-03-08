@@ -2,7 +2,7 @@ use crate::common;
 use anyhow::Context;
 use commander::run_command;
 use dot_movement::DotMovement;
-use movement_da_util::config::local::Config;
+use movement_da_util::config::Config;
 use tracing::info;
 
 #[derive(Debug, Clone)]
@@ -15,14 +15,14 @@ impl Arabica {
 
 	pub async fn get_arabica_11_address(&self) -> Result<String, anyhow::Error> {
 		// get the json from celkey
-		// cel-key list --node.type light --keyring-backend test --p2p.network arabica --output json
+		// cel-key list --node.type light --keyring.backend test --p2p.network arabica --output json
 		let json_string = run_command(
 			"cel-key",
 			&[
 				"list",
 				"--node.type",
 				"light",
-				"--keyring-backend",
+				"--keyring.backend",
 				"test",
 				"--p2p.network",
 				"arabica",
@@ -55,29 +55,24 @@ impl Arabica {
 		Ok(address.to_string())
 	}
 
-	pub async fn celestia_light_init(&self) -> Result<(), anyhow::Error> {
-		// celestia light init --p2p.network arabica
-		run_command("celestia", &["light", "init", "--p2p.network", "arabica"]).await?;
-
-		Ok(())
+	async fn celestia_light_init(
+		&self,
+		dot_movement: &DotMovement,
+		config: &Config,
+	) -> Result<(), anyhow::Error> {
+		common::celestia::celestia_light_init(dot_movement, config, "arabica").await
 	}
 
 	pub async fn get_da_block_height(&self) -> Result<u64, anyhow::Error> {
-		let response =
-			reqwest::get("https://rpc.celestia-arabica-11.com/block").await?.text().await?;
-
-		Ok(response.parse().context("Failed to parse the response to a u64.")?)
+		common::celestia::current_block_height("https://rpc.celestia-arabica-11.com").await
 	}
 
-	pub async fn get_auth_token(&self) -> Result<String, anyhow::Error> {
-		// celestia light auth admin --p2p.network arabica
-		let auth_token =
-			run_command("celestia", &["light", "auth", "admin", "--p2p.network", "arabica"])
-				.await?
-				.trim()
-				.to_string();
-
-		Ok(auth_token)
+	async fn get_auth_token(
+		&self,
+		dot_movement: &DotMovement,
+		config: &Config,
+	) -> Result<String, anyhow::Error> {
+		common::celestia::get_auth_token(dot_movement, config, "arabica").await
 	}
 
 	pub async fn setup_celestia(
@@ -90,15 +85,18 @@ impl Arabica {
 		let mut config = common::celestia::make_dirs(dot_movement.clone(), config).await?;
 
 		// celestia light init --p2p.network arabica
-		self.celestia_light_init().await?;
+		self.celestia_light_init(&dot_movement, &config).await?;
 
 		// get the arabica 11 address
 		let address = self.get_arabica_11_address().await?;
 		config.appd.celestia_validator_address.replace(address.clone());
 
 		// get the auth token
-		let auth_token = self.get_auth_token().await?;
+		let auth_token = self.get_auth_token(&dot_movement, &config).await?;
 		config.appd.celestia_auth_token.replace(auth_token.clone());
+
+		// get the initial block height
+		config.initial_height = self.get_da_block_height().await?;
 
 		// create and fund the account
 		self.create_and_fund_account(dot_movement.clone(), config.clone()).await?;
@@ -158,7 +156,6 @@ impl Arabica {
 		let max_retries = 10;
 		let retry_delay = 5;
 		let mut retry_count = 0;
-		let mut success = false;
 
 		while retry_count < max_retries {
 			let response = reqwest::Client::new()
@@ -185,7 +182,6 @@ impl Arabica {
 				let tx_hash =
 					tx_hash.as_str().context("Failed to convert the txHash field to a string.")?;
 				info!("Transaction hash: {}", tx_hash);
-				success = true;
 				break;
 			} else {
 				info!("Error: txHash field not found in the response.");

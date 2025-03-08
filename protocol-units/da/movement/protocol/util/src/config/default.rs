@@ -1,5 +1,9 @@
+use base64::prelude::*;
 use celestia_types::nmt::Namespace;
 use godfig::env_default;
+
+use std::env;
+use std::path::PathBuf;
 
 // The default hostname for the Celestia RPC
 env_default!(
@@ -66,6 +70,14 @@ env_default!(
 	26658
 );
 
+// The default Celestia Node websocket path
+env_default!(
+	default_celestia_websocket_connection_path,
+	"CELESTIA_WEBSOCKET_CONNECTION_PATH",
+	String,
+	"".to_string()
+);
+
 // The default M1 DA Light Node listen hostname
 env_default!(
 	default_movement_da_light_node_listen_hostname,
@@ -108,14 +120,20 @@ env_default!(
 
 // The default Celestia Namespace
 pub fn default_celestia_namespace() -> Namespace {
-	match std::env::var("CELESTIA_NAMESPACE") {
-		Ok(val) => match serde_json::from_str(&val) {
-			Ok(namespace) => namespace,
-			// todo: get rid of this unwrap somehow, even though it should never fail
-			Err(_) => Namespace::new_v0(b"movement").unwrap(),
-		},
+	match env::var("CELESTIA_NAMESPACE") {
+		Ok(val) => {
+			if val.starts_with("0x") {
+				let id = hex::decode(&val[2..]).expect("failed to decode hexadecimal namespace ID");
+				Namespace::new_v0(&id).expect("invalid namespace ID")
+			} else {
+				let id =
+					BASE64_STANDARD.decode(&val).expect("failed to decode base64 namespace ID");
+				Namespace::from_raw(&id).expect("invalid namespace ID")
+			}
+		}
 		// todo: get rid of this unwrap somehow, even though it should never fail
-		Err(_) => Namespace::new_v0(b"movement").unwrap(),
+		Err(env::VarError::NotPresent) => Namespace::new_v0(b"movement").unwrap(),
+		Err(e) => panic!("invalid environment value of CELESTIA_NAMESPACE: {e}"),
 	}
 }
 
@@ -157,3 +175,15 @@ env_default!(default_da_light_node_is_initial, "MOVEMENT_DA_LIGHT_NODE_IS_INITIA
 
 // Whether to use http1 for Movement Light Node Connections
 env_default!(default_movement_da_light_node_http1, "MOVEMENT_DA_LIGHT_NODE_HTTP1", bool, false);
+
+// The Celestia light node's signing keyname
+env_default!(
+	default_celestia_light_node_key_name,
+	"CELESTIA_LIGHT_KEYNAME",
+	String,
+	"movement_celestia_light".into()
+);
+
+pub fn default_celestia_light_node_store() -> Option<PathBuf> {
+	std::env::var_os("CELESTIA_LIGHT_NODE_STORE").map(Into::into)
+}

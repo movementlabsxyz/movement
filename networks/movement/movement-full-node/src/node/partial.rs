@@ -83,6 +83,7 @@ where
 impl MovementPartialNode<Executor> {
 	pub async fn try_executor_from_config(config: Config) -> Result<Executor, anyhow::Error> {
 		let executor = Executor::try_from_config(config.execution_config.maptos_config.clone())
+			.await
 			.context("Failed to create the inner executor")?;
 		Ok(executor)
 	}
@@ -142,6 +143,7 @@ impl MovementPartialNode<Executor> {
 
 		debug!("Creating the executor");
 		let executor = Executor::try_from_config(config.execution_config.maptos_config.clone())
+			.await
 			.context("Failed to create the inner executor")?;
 
 		let (settlement_manager, commitment_events) = if config.mcr.should_settle() {
@@ -163,6 +165,13 @@ impl MovementPartialNode<Executor> {
 		debug!("Creating the DA DB");
 		let da_db =
 			DaDB::open(&config.da_db.da_db_path).context("Failed to create or get DA DB")?;
+
+		// FIXME: the config value is probably misplaced
+		da_db
+			.initialize_synced_height(
+				config.celestia_da_light_node.celestia_da_light_node_config.initial_height,
+			)
+			.await?;
 
 		Ok(Self {
 			executor,
