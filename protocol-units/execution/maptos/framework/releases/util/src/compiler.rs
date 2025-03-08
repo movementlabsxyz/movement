@@ -194,7 +194,7 @@ impl Compiler {
 			with_abis: false,
 			with_source_maps: false,
 			with_error_map: false,
-			skip_fetch_latest_git_deps: true,
+			skip_fetch_latest_git_deps: false,
 			bytecode_version,
 			..BuildOptions::default()
 		};
