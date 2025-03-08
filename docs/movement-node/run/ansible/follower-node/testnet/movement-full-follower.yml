@@ -11,7 +11,7 @@
     chain_id: "250"
 
     movement_da_light_node_connection_protocol: "https"
-    movement_da_light_node_connection_hostname: "movement-celestia-da-light-node.testnet.bardock.movementlabs.xyz"
+    movement_da_light_node_connection_hostname: "m1-da-light-node.testnet.bardock.movementnetwork.xyz"
     movement_da_light_node_connection_port: "443"
 
     aws_region: "us-west-1"
