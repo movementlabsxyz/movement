@@ -841,7 +841,7 @@ dependencies = [
 
 [[package]]
 name = "aptos-account-whitelist"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "aptos-types",
@@ -1896,7 +1896,7 @@ dependencies = [
 
 [[package]]
 name = "aptos-framework-biarritz-rc1-release"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "aptos-framework",
@@ -1923,7 +1923,7 @@ dependencies = [
 
 [[package]]
 name = "aptos-framework-elsa-release"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "aptos-framework",
@@ -1947,7 +1947,7 @@ dependencies = [
 
 [[package]]
 name = "aptos-framework-elsa-to-biarritz-rc1-migration"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "aptos-framework-biarritz-rc1-release",
  "aptos-sdk",
@@ -1959,7 +1959,7 @@ dependencies = [
 
 [[package]]
 name = "aptos-framework-head-release"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "aptos-cached-packages",
@@ -1970,7 +1970,7 @@ dependencies = [
 
 [[package]]
 name = "aptos-framework-known-release"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "aptos-framework",
@@ -1984,7 +1984,7 @@ dependencies = [
 
 [[package]]
 name = "aptos-framework-release-script-release"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "aptos-framework",
@@ -2009,7 +2009,7 @@ dependencies = [
 
 [[package]]
 name = "aptos-framework-set-feature-flags-release"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "aptos-framework",
@@ -2034,7 +2034,7 @@ dependencies = [
 
 [[package]]
 name = "aptos-framework-upgrade-gas-release"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "aptos-framework",
@@ -5434,7 +5434,7 @@ dependencies = [
 
 [[package]]
 name = "bridge-config"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "alloy",
  "anyhow",
@@ -5450,7 +5450,7 @@ dependencies = [
 
 [[package]]
 name = "bridge-grpc"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "buildtime",
  "prost 0.13.3",
@@ -5461,7 +5461,7 @@ dependencies = [
 
 [[package]]
 name = "bridge-indexer-db"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "bigdecimal",
@@ -5479,7 +5479,7 @@ dependencies = [
 
 [[package]]
 name = "bridge-integration-tests"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "alloy",
  "alloy-contract",
@@ -5519,7 +5519,7 @@ dependencies = [
 
 [[package]]
 name = "bridge-service"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "alloy",
  "alloy-network",
@@ -5567,7 +5567,7 @@ dependencies = [
 
 [[package]]
 name = "bridge-setup"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "alloy",
  "alloy-primitives 0.7.7",
@@ -5593,7 +5593,7 @@ dependencies = [
 
 [[package]]
 name = "bridge-util"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "alloy",
  "anyhow",
@@ -5631,7 +5631,7 @@ dependencies = [
 
 [[package]]
 name = "buildtime"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "buildtime-helpers",
@@ -5640,7 +5640,7 @@ dependencies = [
 
 [[package]]
 name = "buildtime-helpers"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "serde_json",
@@ -5649,7 +5649,7 @@ dependencies = [
 
 [[package]]
 name = "buildtime-macros"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "buildtime-helpers",
  "quote",
@@ -6220,7 +6220,7 @@ dependencies = [
 
 [[package]]
 name = "commander"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "futures",
@@ -7330,7 +7330,7 @@ checksum = "aac81fa3e28d21450aa4d2ac065992ba96a1d7303efbce51a95f4fd175b67562"
 
 [[package]]
 name = "dot-movement"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "movement-types",
@@ -7902,7 +7902,7 @@ dependencies = [
 
 [[package]]
 name = "flocks"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "futures",
@@ -8301,7 +8301,7 @@ dependencies = [
 
 [[package]]
 name = "godfig"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -8846,7 +8846,7 @@ checksum = "62adaabb884c94955b19907d60019f4e145d091c75345379e70d1ee696f7854f"
 
 [[package]]
 name = "howzit"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "aptos-cached-packages",
@@ -8867,7 +8867,7 @@ dependencies = [
 
 [[package]]
 name = "hsm-demo"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9925,7 +9925,7 @@ dependencies = [
 
 [[package]]
 name = "latest-aptos-framework-migration"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "aptos-account-whitelist",
@@ -10375,7 +10375,7 @@ checksum = "3e2e65a1a2e43cfcb47a895c4c8b10d1f4a61097f9f254f183aee60cad9c651d"
 
 [[package]]
 name = "maptos-dof-execution"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "aptos-api",
@@ -10403,7 +10403,7 @@ dependencies = [
 
 [[package]]
 name = "maptos-execution-util"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "aptos-account-whitelist",
@@ -10426,7 +10426,7 @@ dependencies = [
 
 [[package]]
 name = "maptos-fin-view"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "aptos-api",
@@ -10447,7 +10447,7 @@ dependencies = [
 
 [[package]]
 name = "maptos-framework-release-util"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "aptos-cached-packages",
@@ -10466,7 +10466,7 @@ dependencies = [
 
 [[package]]
 name = "maptos-opt-executor"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "aptos-account-whitelist",
@@ -10559,7 +10559,7 @@ checksum = "0e7465ac9959cc2b1404e8e2367b43684a6d13790fe23056cc8c6c5a6b7bcb94"
 
 [[package]]
 name = "mcr-settlement-client"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "alloy",
  "alloy-contract",
@@ -10593,7 +10593,7 @@ dependencies = [
 
 [[package]]
 name = "mcr-settlement-config"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "alloy",
  "anyhow",
@@ -10605,7 +10605,7 @@ dependencies = [
 
 [[package]]
 name = "mcr-settlement-manager"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -10621,7 +10621,7 @@ dependencies = [
 
 [[package]]
 name = "mcr-settlement-runner"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "alloy-primitives 0.7.7",
  "anyhow",
@@ -10641,7 +10641,7 @@ dependencies = [
 
 [[package]]
 name = "mcr-settlement-setup"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "alloy",
  "alloy-network",
@@ -10692,7 +10692,7 @@ dependencies = [
 
 [[package]]
 name = "mempool-util"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "movement-types",
@@ -10701,7 +10701,7 @@ dependencies = [
 
 [[package]]
 name = "memseq"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "dot-movement",
@@ -10721,7 +10721,7 @@ dependencies = [
 
 [[package]]
 name = "memseq-util"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "dot-movement",
@@ -11378,7 +11378,7 @@ dependencies = [
 
 [[package]]
 name = "move-rocks"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
@@ -11634,7 +11634,7 @@ dependencies = [
 
 [[package]]
 name = "movement-algs"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "itertools 0.13.0",
@@ -11644,7 +11644,7 @@ dependencies = [
 
 [[package]]
 name = "movement-celestia-da-light-node"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -11687,7 +11687,7 @@ dependencies = [
 
 [[package]]
 name = "movement-celestia-da-light-node-runners"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "commander",
@@ -11708,7 +11708,7 @@ dependencies = [
 
 [[package]]
 name = "movement-client"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -11750,7 +11750,7 @@ dependencies = [
 
 [[package]]
 name = "movement-collections"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "uuid",
@@ -11758,7 +11758,7 @@ dependencies = [
 
 [[package]]
 name = "movement-config"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "aptos-sdk",
@@ -11786,7 +11786,7 @@ dependencies = [
 
 [[package]]
 name = "movement-da-light-node-celestia"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -11804,7 +11804,7 @@ dependencies = [
 
 [[package]]
 name = "movement-da-light-node-client"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "bytes 1.8.0",
@@ -11819,7 +11819,7 @@ dependencies = [
 
 [[package]]
 name = "movement-da-light-node-da"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -11836,7 +11836,7 @@ dependencies = [
 
 [[package]]
 name = "movement-da-light-node-digest-store"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -11853,7 +11853,7 @@ dependencies = [
 
 [[package]]
 name = "movement-da-light-node-prevalidator"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "aptos-types",
@@ -11879,7 +11879,7 @@ dependencies = [
 
 [[package]]
 name = "movement-da-light-node-proto"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "buildtime",
  "prost 0.13.3",
@@ -11889,7 +11889,7 @@ dependencies = [
 
 [[package]]
 name = "movement-da-light-node-setup"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-recursion",
@@ -11913,14 +11913,14 @@ dependencies = [
 
 [[package]]
 name = "movement-da-light-node-signer"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "movement-signer",
 ]
 
 [[package]]
 name = "movement-da-light-node-tests"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "ecdsa 0.16.9",
@@ -11934,7 +11934,7 @@ dependencies = [
 
 [[package]]
 name = "movement-da-light-node-verifier"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -11960,7 +11960,7 @@ dependencies = [
 
 [[package]]
 name = "movement-da-util"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "alloy",
  "anyhow",
@@ -12018,7 +12018,7 @@ dependencies = [
 
 [[package]]
 name = "movement-full-node"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "alloy-signer",
  "anyhow",
@@ -12064,7 +12064,7 @@ dependencies = [
 
 [[package]]
 name = "movement-full-node-setup"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "aptos-sdk",
@@ -12095,7 +12095,7 @@ dependencies = [
 
 [[package]]
 name = "movement-indexer-service"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap 4.5.21",
@@ -12117,7 +12117,7 @@ dependencies = [
 
 [[package]]
 name = "movement-rest"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "aptos-api",
@@ -12129,7 +12129,7 @@ dependencies = [
 
 [[package]]
 name = "movement-signer"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -12143,7 +12143,7 @@ dependencies = [
 
 [[package]]
 name = "movement-signer-aws-kms"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "alloy-signer",
  "anyhow",
@@ -12161,7 +12161,7 @@ dependencies = [
 
 [[package]]
 name = "movement-signer-hashicorp-vault"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -12176,7 +12176,7 @@ dependencies = [
 
 [[package]]
 name = "movement-signer-loader"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -12192,7 +12192,7 @@ dependencies = [
 
 [[package]]
 name = "movement-signer-local"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -12209,7 +12209,7 @@ dependencies = [
 
 [[package]]
 name = "movement-signer-test"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "alloy",
  "alloy-consensus",
@@ -12241,7 +12241,7 @@ dependencies = [
 
 [[package]]
 name = "movement-signing-aptos"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -12267,7 +12267,7 @@ dependencies = [
 
 [[package]]
 name = "movement-signing-eth"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "alloy-consensus",
  "alloy-network",
@@ -12282,7 +12282,7 @@ dependencies = [
 
 [[package]]
 name = "movement-tracing"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "tracing-appender",
  "tracing-subscriber 0.3.18",
@@ -12290,7 +12290,7 @@ dependencies = [
 
 [[package]]
 name = "movement-types"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "aptos-types",
@@ -12305,7 +12305,7 @@ dependencies = [
 
 [[package]]
 name = "movement-util"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "aptos-sdk",
@@ -12920,7 +12920,7 @@ dependencies = [
 
 [[package]]
 name = "parent-aptos-framework-migration"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "aptos-account-whitelist",
@@ -15602,7 +15602,7 @@ checksum = "a3f0bf26fd526d2a95683cd0f87bf103b8539e2ca1ef48ce002d67aad59aa0b4"
 
 [[package]]
 name = "sequencing-util"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "movement-types",
@@ -16523,7 +16523,7 @@ dependencies = [
 
 [[package]]
 name = "syncador"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -16551,7 +16551,7 @@ dependencies = [
 
 [[package]]
 name = "syncup"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -18261,7 +18261,7 @@ dependencies = [
 
 [[package]]
 name = "whitelist"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "prost 0.13.3",
  "thiserror 1.0.69",
