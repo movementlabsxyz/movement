@@ -164,29 +164,51 @@ pub async fn test_sending_failed_transaction() -> Result<(), anyhow::Error> {
 	rest_client.submit(&transaction_2).await?;
 	rest_client.submit(&transaction_1).await?;
 
-	println!("=== Transactions Submitted ===");
+	tracing::info!("=== Transactions Submitted ===");
 	println!("Tx#1: {:?}", transaction_1);
 	println!("Tx#2: {:?}", transaction_2);
 
 	// wait for both the complete
-	println!("=== Waiting for transactions to be executed ===");
-	rest_client.wait_for_signed_transaction(&transaction_1).await?;
-	rest_client.wait_for_signed_transaction(&transaction_2).await?;
+	tracing::info!("=== Waiting for transactions to be executed ===");
+	let res_tx2 = rest_client.wait_for_signed_transaction(&transaction_2).await?;
+	let res_tx1 = rest_client.wait_for_signed_transaction(&transaction_1).await?;
 
 	// validate the effect of the transactions, the balance should be less than the initial balance
 	let balance = coin_client
 		.get_account_balance(&alice.address())
 		.await
 		.context("Failed to get Alice's account balance")?;
-	println!("\n=== After Tx#1 and Tx#2 ===");
+	tracing::info!("\n=== After Tx#1 and Tx#2 ===");
 	println!("Alice: {:?}", balance);
 	assert!(initial_balance > balance);
+
+	let balance = coin_client
+		.get_account_balance(&bob.address())
+		.await
+		.context("Failed to get Alice's account balance")?;
+	println!("Bob: {:?}", balance);
+	println!("res_tx1: {:?}", res_tx1);
+	println!("res_tx2: {:?}", res_tx2);
+
+	let alice = rest_client.get_account(alice.address()).await?.into_inner();
+	let bob = rest_client.get_account(bob.address()).await?.into_inner();
+
+	println!("Alice seq: {:?}", alice.sequence_number);
+	println!("Bob seq: {:?}", bob.sequence_number);
 
 	Ok(())
 }
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
+	use tracing_subscriber::EnvFilter;
+
+	tracing_subscriber::fmt()
+		.with_env_filter(
+			EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
+		)
+		.init();
+
 	test_sending_failed_transaction().await?;
 	Ok(())
 }

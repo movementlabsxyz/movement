@@ -1,7 +1,7 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/a7abebc31a8f60011277437e000eebcc01702b9f";
-    rust-overlay.url = "github:oxalica/rust-overlay/75b2271c5c087d830684cd5462d4410219acc367";
+    nixpkgs.url = "github:NixOS/nixpkgs/8dedccea6cea1e65bf74fc6c7f35e0aadf832a14";
+    rust-overlay.url = "github:oxalica/rust-overlay/db12d0c6ef002f16998723b5dd619fa7b8997086";
     flake-utils.url = "github:numtide/flake-utils";
     foundry.url = "github:shazow/foundry.nix/f533e2c70e520adb695c9917be21d514c15b1c4d"; 
     crane.url = "github:ipetkov/crane";
