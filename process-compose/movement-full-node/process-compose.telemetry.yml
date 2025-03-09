@@ -1,0 +1,33 @@
+version: "3"
+
+environment:
+
+processes:
+  prometheus:
+    is_daemon: true
+    command: |
+      docker run -d --rm --name movement-prometheus \
+        -p 9090:9090 \
+        -v ${PWD}/docker/compose/movement-full-node/prometheus.yml:/etc/prometheus/prometheus.yml \
+        prom/prometheus:v2.49.1
+    shutdown:
+      command: |
+        docker stop movement-prometheus
+    readiness_probe:
+      initial_delay_seconds: 3
+      exec:
+        command: wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1
+
+  movement-full-node:
+    depends_on:
+      prometheus:
+        condition: process_started
+    environment:
+      - MOVEMENT_METRICS_ADDR=0.0.0.0:9464
+
+  movement-celestia-da-light-node:
+    depends_on:
+      prometheus:
+        condition: process_started
+    environment:
+      - MOVEMENT_METRICS_ADDR=0.0.0.0:9465 
