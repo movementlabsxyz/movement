@@ -34,14 +34,14 @@ Restart=on-failure
 WantedBy=multi-user.target
 ```
 
-An Ansible script to deploy the above systemd service is available [here](./movement-full-follower.yml). An example usage with an ec2 inventory is below. You may also benefit from watching our tutorial [VIDEO](https://www.loom.com/share/59e6a31a08ef4260bdc9b082a3980f52).
+An Ansible script to deploy the above systemd service is available for [testnet](./testnet/movement-full-follower.yml) and  [mainnet](./mainnet/movement-full-follower.yml). An example usage with an ec2 inventory is below. You may also benefit from watching our tutorial [VIDEO](https://www.loom.com/share/59e6a31a08ef4260bdc9b082a3980f52).
 
 ```shell
 ansible-playbook --inventory <your-inventory> \
     --user ubuntu  \
     --extra-vars "movement_container_version=${CONTAINER_REV}" \
     --extra-vars "user=ubuntu" \
-    docs/movement-node/run/ansible/follower-node/movement-full-follower.yml \
+    docs/movement-node/run/ansible/follower-node/testnet/movement-full-follower.yml \
     --private-key your-private-key.pem
 ```
 
