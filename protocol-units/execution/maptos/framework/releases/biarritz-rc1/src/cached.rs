@@ -4,7 +4,7 @@ use maptos_framework_release_util::mrb_release;
 mrb_release!(
 	BiarritzRc1,
 	BIARRTIZ_RC1,
-	"aa45303216be96ea30d361ab7eb2e95fb08c2dcb-biarritz-rc1.mrb"
+	"27397b5835e6a466c06c884a395653c9ff13d1fe-biarritz-rc1.mrb"
 );
 
 generate_gas_upgrade_module!(gas_upgrade, BiarritzRc1, {
@@ -28,16 +28,21 @@ pub mod script {
 script {
     use aptos_framework::aptos_governance;
     use aptos_framework::gas_schedule;
-	use aptos_framework::governed_gas_pool;
+    use aptos_framework::governed_gas_pool;
+    use aptos_framework::aptos_coin;
+    use aptos_framework::signer;
 
     fun main(core_resources: &signer) {
-        let core_signer = aptos_governance::get_signer_testnet_only(core_resources, @0x1);
+        let core_signer = aptos_governance::get_signer_testnet_only(core_resources, @0000000000000000000000000000000000000000000000000000000000000001);
 
-        let framework_signer = &core_signer;
+        let core_address: address = signer::address_of(core_resources);
 
-		governed_gas_pool::initialize(framework_signer, b"aptos_framework::governed_gas_pool");
+        // this initialize function is idempotent, already initialized GGP will not error.
+        governed_gas_pool::initialize(&core_signer, b"aptos_framework::governed_gas_pool");
 
-	}
+        // this will burn the mint capability for the core_resource signer
+        aptos_coin::destroy_mint_capability_from(&core_signer, core_address);
+    }
 }
 "#
 		.to_string()
