@@ -4,6 +4,7 @@ script {
 
     fun main(core_resources: &signer) {
 
+<<<<<<< HEAD
         let core_signer = aptos_governance::get_signer_testnet_only(core_resources, @0x1);
 
         let framework_signer = &core_signer;
@@ -12,3 +13,11 @@ script {
 
 	}
 }
+=======
+      let core_signer = aptos_governance::get_signer_testnet_only(core_resources, @0x1);
+
+      let framework_signer = &core_signer;
+		  transaction_fee::burn_from(framework_signer, @0xdead, 4);
+	}
+}
+>>>>>>> main
