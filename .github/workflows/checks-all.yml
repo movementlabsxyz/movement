@@ -84,7 +84,11 @@ jobs:
             -p movement-signer-test
 
   movement-full-node-local:
-    if: github.event.label.name == 'cicd:movement-full-node' ||  github.ref == 'refs/heads/main'
+    if: >
+      github.event.label.name == 'cicd:movement-full-node'
+      || github.ref == 'refs/heads/main'
+      || startsWith(github.ref, 'refs/tags/')
+
     strategy:
       matrix:
         include:
@@ -111,7 +115,10 @@ jobs:
         nix develop --command bash  -c "just movement-full-node native build.setup.eth-local.celestia-local.test -t=false"  
 
   movement-full-node-malicious:
-    if: github.event.label.name == 'cicd:movement-full-node-malicious' ||  github.ref == 'refs/heads/main'
+    if: >
+      github.event.label.name == 'cicd:movement-full-node-malicious'
+      || github.ref == 'refs/heads/main'
+      || startsWith(github.ref, 'refs/tags/')
 
     strategy:
       matrix:
@@ -138,7 +145,10 @@ jobs:
         nix develop --command bash  -c "just movement-full-node native build.setup.eth-local.celestia-local.gas-dos -t=false"
 
   movement-multi-node-local:
-    if: github.event.label.name == 'cicd:movement-multi-node-local' ||  github.ref == 'refs/heads/main'
+    if: >
+      github.event.label.name == 'cicd:movement-multi-node-local'
+      || github.ref == 'refs/heads/main'
+      || startsWith(github.ref, 'refs/tags/')
     strategy:
       matrix:
         include:
@@ -166,7 +176,10 @@ jobs:
         nix develop --command bash  -c "just movement-full-node native build.setup.eth-local.celestia-local.test-followers -t=false"
 
   movement-indexer-local:
-    if: github.event.label.name == 'cicd:movement-full-node' ||  github.ref == 'refs/heads/main'
+    if: >
+      github.event.label.name == 'cicd:movement-full-node'
+      || github.ref == 'refs/heads/main'
+      || startsWith(github.ref, 'refs/tags/')
     strategy:
       matrix:
         include:
@@ -221,7 +234,10 @@ jobs:
 
   # Elsa to Biarritz RC1
   movement-elsa-to-biarritz-rc1-bring-up:
-    if: github.event.label.name == 'cicd:movement-elsa-to-biarritz-rc1' ||  github.ref == 'refs/heads/main'
+    if: >
+      github.event.label.name == 'cicd:movement-elsa-to-biarritz-rc1'
+      || github.ref == 'refs/heads/main'
+      || startsWith(github.ref, 'refs/tags/')
 
     strategy:
       matrix:
@@ -274,7 +290,11 @@ jobs:
       run: cd protocol-units/bridge/contracts && forge test --fork-url https://ethereum-sepolia-rpc.publicnode.com -vv  
 
   governed-gas-pool:
-    if: github.event.label.name == 'cicd:governed-gas-pool' ||  github.ref == 'refs/heads/main'
+    if: >
+      github.event.label.name == 'cicd:governed-gas-pool'
+      || github.ref == 'refs/heads/main'
+      || startsWith(github.ref, 'refs/tags/')
+
     strategy:
       matrix:
         include:
@@ -300,7 +320,10 @@ jobs:
         nix develop --command bash  -c "just movement-full-node native build.setup.eth-local.celestia-local.test-ggp-gas-fee -t=false"
 
   core-resource-signer:
-    if: github.event.label.name == 'cicd:core-resource-signer' ||  github.ref == 'refs/heads/main'
+    if: >
+      github.event.label.name == 'cicd:core-resource-signer'
+      || github.ref == 'refs/heads/main'
+      || startsWith(github.ref, 'refs/tags/')
     strategy:
       matrix:
         include:
@@ -326,7 +349,10 @@ jobs:
         nix develop --command bash  -c "just movement-full-node native build.setup.eth-local.celestia-local.test-ggp-gas-fee -t=false"
 
   mcr:
-    if: github.event.label.name == 'cicd:mcr' ||  github.ref == 'refs/heads/main'
+    if: >
+      github.event.label.name == 'cicd:mcr'
+      || github.ref == 'refs/heads/main'
+      || startsWith(github.ref, 'refs/tags/')
     strategy:
       matrix:
         include:
@@ -348,7 +374,10 @@ jobs:
 
   ## any use of Move CLI requires ubuntu-24.04 and to not run on buildjet
   move-modules-test:
-    if: github.event.label.name == 'cicd:bridge' ||  github.ref == 'refs/heads/main'
+    if: >
+      github.event.label.name == 'cicd:bridge'
+      || github.ref == 'refs/heads/main'
+      || startsWith(github.ref, 'refs/tags/')
     strategy:
       matrix:
         include:
@@ -381,7 +410,10 @@ jobs:
         "
   
   solidity-bridge-tests:
-    if: github.event.label.name == 'cicd:bridge' ||  github.ref == 'refs/heads/main'
+    if: >
+      github.event.label.name == 'cicd:bridge'
+      || github.ref == 'refs/heads/main'
+      || startsWith(github.ref, 'refs/tags/')
     strategy:
       matrix:
         include:
@@ -407,7 +439,12 @@ jobs:
 
 # any use of Move CLI requires ubuntu-24.04 and to not run on buildjet
   bridge-client-integration:
-    if: github.event.label.name == 'cicd:bridge' ||  github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/trusted-relayer'
+    if: >
+      github.event.label.name == 'cicd:bridge'
+      || github.ref == 'refs/heads/main'
+      || github.ref == 'refs/heads/feature/trusted-relayer'
+      || startsWith(github.ref, 'refs/tags/')
+  
     strategy:
       matrix:
         include:
