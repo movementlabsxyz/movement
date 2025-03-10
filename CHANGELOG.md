@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.1.1](https://github.com/movementlabsxyz/movement/compare/458bf73817a0e53432492845817e8bf51710be75..0.1.1) - 2025-03-10
+#### Miscellaneous Chores
+- update aptos core rev (#1095) - ([458bf73](https://github.com/movementlabsxyz/movement/commit/458bf73817a0e53432492845817e8bf51710be75)) - Richard Melkonian
+
+- - -
+
 ## [0.1.0](https://github.com/movementlabsxyz/movement/compare/8bd5218892a8e493a25309ef2e012463bc3c3543..0.1.0) - 2025-03-09
 #### Bug Fixes
 - **(docker)** celestia-light-node fixes (#1078) - ([9dbb761](https://github.com/movementlabsxyz/movement/commit/9dbb76125a4d4759ab4da19db83ef19ceb69cd90)) - Mikhail Zabaluev
