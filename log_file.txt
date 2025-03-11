@@ -1,0 +1,43 @@
+[2m2025-03-11T17:59:29.940533Z[0m [32m INFO[0m [2mmovement_tests_e2e_basic_alice_bob[0m[2m:[0m Scenario:3
+=== Initial Balances ===
+Alice: 100000000
+Bob: 0
+[2m2025-03-11T17:59:32.024275Z[0m [32m INFO[0m [2mmovement_tests_e2e_basic_alice_bob[0m[2m:[0m Scenario:8
+=== Initial Balances ===
+Alice: 100000000
+Bob: 0
+[2m2025-03-11T17:59:38.570670Z[0m [32m INFO[0m [2mmovement_tests_e2e_basic_alice_bob[0m[2m:[0m Scenario:2
+=== Initial Balances ===
+Alice: 100000000
+Bob: 0
+[2m2025-03-11T17:59:45.619781Z[0m [32m INFO[0m [2mmovement_tests_e2e_basic_alice_bob[0m[2m:[0m Scenario:6
+=== Initial Balances ===
+Alice: 100000000
+Bob: 0
+[2m2025-03-11T17:59:57.196453Z[0m [32m INFO[0m [2mmovement_tests_e2e_basic_alice_bob[0m[2m:[0m Scenario:5
+=== Initial Balances ===
+Alice: 100000000
+Bob: 0
+[2m2025-03-11T18:00:13.804560Z[0m [32m INFO[0m [2mmovement_tests_e2e_basic_alice_bob[0m[2m:[0m Scenario:9
+=== Initial Balances ===
+Alice: 100000000
+Bob: 0
+[2m2025-03-11T18:00:31.920643Z[0m [32m INFO[0m [2mmovement_tests_e2e_basic_alice_bob[0m[2m:[0m Scenario:7
+=== Initial Balances ===
+Alice: 100000000
+Bob: 0
+[2m2025-03-11T18:00:45.567858Z[0m [33m WARN[0m [2mmovement_client::load_soak_testing[0m[2m:[0m [3mlog[0m[2m=[0m"Scenario:3 execution failed because: Failed when waiting for the transfer transaction"
+[2m2025-03-11T18:00:46.119239Z[0m [33m WARN[0m [2mmovement_client::load_soak_testing[0m[2m:[0m [3mlog[0m[2m=[0m"Scenario:8 execution failed because: Failed when waiting for the transfer transaction"
+[2m2025-03-11T18:00:49.008310Z[0m [33m WARN[0m [2mmovement_client::load_soak_testing[0m[2m:[0m [3mlog[0m[2m=[0m"Scenario:2 execution failed because: Failed when waiting for the transfer transaction"
+[2m2025-03-11T18:00:49.538183Z[0m [32m INFO[0m [2mmovement_tests_e2e_basic_alice_bob[0m[2m:[0m Scenario:10
+=== Initial Balances ===
+Alice: 100000000
+Bob: 0
+[2m2025-03-11T18:00:57.071854Z[0m [33m WARN[0m [2mmovement_client::load_soak_testing[0m[2m:[0m [3mlog[0m[2m=[0m"Scenario:1 execution failed because: FaucetClientError { inner: Inner { kind: Unknown, source: Some(Unknown(Ledger on endpoint (http://0.0.0.0:30731/v1/) is more than 60s behind current time, timing out waiting for the transaction. Warning, transaction (b6c3dae9) might still succeed.)) } }"
+[2m2025-03-11T18:00:57.071922Z[0m [33m WARN[0m [2mmovement_client::load_soak_testing[0m[2m:[0m [3mlog[0m[2m=[0m"Scenario:4 execution failed because: FaucetClientError { inner: Inner { kind: Unknown, source: Some(Unknown(Ledger on endpoint (http://0.0.0.0:30731/v1/) is more than 60s behind current time, timing out waiting for the transaction. Warning, transaction (08128981) might still succeed.)) } }"
+[2m2025-03-11T18:00:57.170584Z[0m [33m WARN[0m [2mmovement_client::load_soak_testing[0m[2m:[0m [3mlog[0m[2m=[0m"Scenario:6 execution failed because: Failed when waiting for the transfer transaction"
+[2m2025-03-11T18:01:10.190769Z[0m [33m WARN[0m [2mmovement_client::load_soak_testing[0m[2m:[0m [3mlog[0m[2m=[0m"Scenario:5 execution failed because: Failed when waiting for the transfer transaction"
+[2m2025-03-11T18:01:25.449491Z[0m [33m WARN[0m [2mmovement_client::load_soak_testing[0m[2m:[0m [3mlog[0m[2m=[0m"Scenario:9 execution failed because: Failed when waiting for the transfer transaction"
+[2m2025-03-11T18:01:42.791303Z[0m [33m WARN[0m [2mmovement_client::load_soak_testing[0m[2m:[0m [3mlog[0m[2m=[0m"Scenario:7 execution failed because: Failed when waiting for the transfer transaction"
+[2m2025-03-11T18:02:00.431153Z[0m [33m WARN[0m [2mmovement_client::load_soak_testing[0m[2m:[0m [3mlog[0m[2m=[0m"Scenario:10 execution failed because: Failed when waiting for the transfer transaction"
+[2m2025-03-11T18:02:00.431360Z[0m [33m WARN[0m [2mmovement_client::load_soak_testing[0m[2m:[0m Client exec: No scenario executes correctly, average exec time is 0

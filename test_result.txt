@@ -1,0 +1,58 @@
+{"timestamp":"2025-03-11T17:59:00.691429Z","level":"INFO","fields":{"msg":"1 Before alice fund"},"target":"exec"}
+{"timestamp":"2025-03-11T17:59:00.692614Z","level":"INFO","fields":{"msg":"2 Before alice fund"},"target":"exec"}
+{"timestamp":"2025-03-11T17:59:00.693040Z","level":"INFO","fields":{"msg":"3 Before alice fund"},"target":"exec"}
+{"timestamp":"2025-03-11T17:59:00.693448Z","level":"INFO","fields":{"msg":"4 Before alice fund"},"target":"exec"}
+{"timestamp":"2025-03-11T17:59:00.693861Z","level":"INFO","fields":{"msg":"5 Before alice fund"},"target":"exec"}
+{"timestamp":"2025-03-11T17:59:00.694271Z","level":"INFO","fields":{"msg":"6 Before alice fund"},"target":"exec"}
+{"timestamp":"2025-03-11T17:59:00.694662Z","level":"INFO","fields":{"msg":"7 Before alice fund"},"target":"exec"}
+{"timestamp":"2025-03-11T17:59:00.695069Z","level":"INFO","fields":{"msg":"8 Before alice fund"},"target":"exec"}
+{"timestamp":"2025-03-11T17:59:00.695483Z","level":"INFO","fields":{"msg":"9 Before alice fund"},"target":"exec"}
+{"timestamp":"2025-03-11T17:59:00.695906Z","level":"INFO","fields":{"msg":"10 Before alice fund"},"target":"exec"}
+{"timestamp":"2025-03-11T17:59:08.371017Z","level":"INFO","fields":{"msg":"3 Before Bod create_account"},"target":"exec"}
+{"timestamp":"2025-03-11T17:59:11.925807Z","level":"INFO","fields":{"msg":"8 Before Bod create_account"},"target":"exec"}
+{"timestamp":"2025-03-11T17:59:12.715519Z","level":"INFO","fields":{"msg":"2 Before Bod create_account"},"target":"exec"}
+{"timestamp":"2025-03-11T17:59:16.314031Z","level":"INFO","fields":{"msg":"6 Before Bod create_account"},"target":"exec"}
+{"timestamp":"2025-03-11T17:59:17.357274Z","level":"INFO","fields":{"msg":"5 Before Bod create_account"},"target":"exec"}
+{"timestamp":"2025-03-11T17:59:20.708879Z","level":"INFO","fields":{"msg":"9 Before Bod create_account"},"target":"exec"}
+{"timestamp":"2025-03-11T17:59:20.709675Z","level":"INFO","fields":{"msg":"7 Before Bod create_account"},"target":"exec"}
+{"timestamp":"2025-03-11T17:59:21.440090Z","level":"INFO","fields":{"msg":"10 Before Bod create_account"},"target":"exec"}
+{"timestamp":"2025-03-11T17:59:26.039549Z","level":"INFO","fields":{"msg":"1 Before Bod create_account"},"target":"exec"}
+{"timestamp":"2025-03-11T17:59:26.532663Z","level":"INFO","fields":{"msg":"4 Before Bod create_account"},"target":"exec"}
+{"timestamp":"2025-03-11T17:59:29.931699Z","level":"INFO","fields":{"msg":"3 After Bod create_account"},"target":"exec"}
+{"timestamp":"2025-03-11T17:59:29.940557Z","level":"INFO","fields":{"message":"Scenario:3\n=== Initial Balances ===\nAlice: 100000000\nBob: 0"},"target":"movement_tests_e2e_basic_alice_bob"}
+{"timestamp":"2025-03-11T17:59:32.015809Z","level":"INFO","fields":{"msg":"8 After Bod create_account"},"target":"exec"}
+{"timestamp":"2025-03-11T17:59:32.024292Z","level":"INFO","fields":{"message":"Scenario:8\n=== Initial Balances ===\nAlice: 100000000\nBob: 0"},"target":"movement_tests_e2e_basic_alice_bob"}
+{"timestamp":"2025-03-11T17:59:38.561845Z","level":"INFO","fields":{"msg":"2 After Bod create_account"},"target":"exec"}
+{"timestamp":"2025-03-11T17:59:38.570689Z","level":"INFO","fields":{"message":"Scenario:2\n=== Initial Balances ===\nAlice: 100000000\nBob: 0"},"target":"movement_tests_e2e_basic_alice_bob"}
+{"timestamp":"2025-03-11T17:59:45.611410Z","level":"INFO","fields":{"msg":"6 After Bod create_account"},"target":"exec"}
+{"timestamp":"2025-03-11T17:59:45.619798Z","level":"INFO","fields":{"message":"Scenario:6\n=== Initial Balances ===\nAlice: 100000000\nBob: 0"},"target":"movement_tests_e2e_basic_alice_bob"}
+{"timestamp":"2025-03-11T17:59:57.187864Z","level":"INFO","fields":{"msg":"5 After Bod create_account"},"target":"exec"}
+{"timestamp":"2025-03-11T17:59:57.196474Z","level":"INFO","fields":{"message":"Scenario:5\n=== Initial Balances ===\nAlice: 100000000\nBob: 0"},"target":"movement_tests_e2e_basic_alice_bob"}
+{"timestamp":"2025-03-11T18:00:13.795907Z","level":"INFO","fields":{"msg":"9 After Bod create_account"},"target":"exec"}
+{"timestamp":"2025-03-11T18:00:13.804576Z","level":"INFO","fields":{"message":"Scenario:9\n=== Initial Balances ===\nAlice: 100000000\nBob: 0"},"target":"movement_tests_e2e_basic_alice_bob"}
+{"timestamp":"2025-03-11T18:00:31.912551Z","level":"INFO","fields":{"msg":"7 After Bod create_account"},"target":"exec"}
+{"timestamp":"2025-03-11T18:00:31.920665Z","level":"INFO","fields":{"message":"Scenario:7\n=== Initial Balances ===\nAlice: 100000000\nBob: 0"},"target":"movement_tests_e2e_basic_alice_bob"}
+{"timestamp":"2025-03-11T18:00:45.567796Z","level":"INFO","fields":{"log":"Scenario:3 execution failed because: Failed when waiting for the transfer transaction"},"target":"exec"}
+{"timestamp":"2025-03-11T18:00:45.567918Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":3,\"elapse_millli\":104881,\"result\":\"Fail\"}"},"target":"exec"}
+{"timestamp":"2025-03-11T18:00:46.119182Z","level":"INFO","fields":{"log":"Scenario:8 execution failed because: Failed when waiting for the transfer transaction"},"target":"exec"}
+{"timestamp":"2025-03-11T18:00:46.119264Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":8,\"elapse_millli\":105433,\"result\":\"Fail\"}"},"target":"exec"}
+{"timestamp":"2025-03-11T18:00:49.008258Z","level":"INFO","fields":{"log":"Scenario:2 execution failed because: Failed when waiting for the transfer transaction"},"target":"exec"}
+{"timestamp":"2025-03-11T18:00:49.008333Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":2,\"elapse_millli\":108322,\"result\":\"Fail\"}"},"target":"exec"}
+{"timestamp":"2025-03-11T18:00:49.529620Z","level":"INFO","fields":{"msg":"10 After Bod create_account"},"target":"exec"}
+{"timestamp":"2025-03-11T18:00:49.538201Z","level":"INFO","fields":{"message":"Scenario:10\n=== Initial Balances ===\nAlice: 100000000\nBob: 0"},"target":"movement_tests_e2e_basic_alice_bob"}
+{"timestamp":"2025-03-11T18:00:57.071798Z","level":"INFO","fields":{"log":"Scenario:1 execution failed because: FaucetClientError { inner: Inner { kind: Unknown, source: Some(Unknown(Ledger on endpoint (http://0.0.0.0:30731/v1/) is more than 60s behind current time, timing out waiting for the transaction. Warning, transaction (b6c3dae9) might still succeed.)) } }"},"target":"exec"}
+{"timestamp":"2025-03-11T18:00:57.071881Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":1,\"elapse_millli\":116385,\"result\":\"Fail\"}"},"target":"exec"}
+{"timestamp":"2025-03-11T18:00:57.071900Z","level":"INFO","fields":{"log":"Scenario:4 execution failed because: FaucetClientError { inner: Inner { kind: Unknown, source: Some(Unknown(Ledger on endpoint (http://0.0.0.0:30731/v1/) is more than 60s behind current time, timing out waiting for the transaction. Warning, transaction (08128981) might still succeed.)) } }"},"target":"exec"}
+{"timestamp":"2025-03-11T18:00:57.071938Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":4,\"elapse_millli\":116386,\"result\":\"Fail\"}"},"target":"exec"}
+{"timestamp":"2025-03-11T18:00:57.170230Z","level":"INFO","fields":{"log":"Scenario:6 execution failed because: Failed when waiting for the transfer transaction"},"target":"exec"}
+{"timestamp":"2025-03-11T18:00:57.170608Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":6,\"elapse_millli\":116484,\"result\":\"Fail\"}"},"target":"exec"}
+{"timestamp":"2025-03-11T18:01:10.190324Z","level":"INFO","fields":{"log":"Scenario:5 execution failed because: Failed when waiting for the transfer transaction"},"target":"exec"}
+{"timestamp":"2025-03-11T18:01:10.191108Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":5,\"elapse_millli\":129504,\"result\":\"Fail\"}"},"target":"exec"}
+{"timestamp":"2025-03-11T18:01:25.449431Z","level":"INFO","fields":{"log":"Scenario:9 execution failed because: Failed when waiting for the transfer transaction"},"target":"exec"}
+{"timestamp":"2025-03-11T18:01:25.449519Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":9,\"elapse_millli\":144763,\"result\":\"Fail\"}"},"target":"exec"}
+{"timestamp":"2025-03-11T18:01:42.791243Z","level":"INFO","fields":{"log":"Scenario:7 execution failed because: Failed when waiting for the transfer transaction"},"target":"exec"}
+{"timestamp":"2025-03-11T18:01:42.791328Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":7,\"elapse_millli\":162105,\"result\":\"Fail\"}"},"target":"exec"}
+{"timestamp":"2025-03-11T18:02:00.430796Z","level":"INFO","fields":{"log":"Scenario:10 execution failed because: Failed when waiting for the transfer transaction"},"target":"exec"}
+{"timestamp":"2025-03-11T18:02:00.431305Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":10,\"elapse_millli\":179745,\"result\":\"Fail\"}"},"target":"exec"}
+{"timestamp":"2025-03-11T18:02:00.431373Z","level":"INFO","fields":{"metrics_client_execution":"{\"average_execution_time_milli\":0}"},"target":"exec"}
+{"timestamp":"2025-03-11T18:02:00.431451Z","level":"INFO","fields":{"metrics_average_exec_time":"0"},"target":"exec"}
