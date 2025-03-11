@@ -220,46 +220,64 @@ where
 		block_timestamp: u64,
 	) -> anyhow::Result<BlockCommitment> {
 		let block_id = block.id();
-		let block_hash = HashValue::from_slice(block.id())?;
+		let block_hash = HashValue::from_slice(block_id)?;
 
-		// get the transactions
-		let mut block_transactions = Vec::new();
-		let block_metadata = self.executor.build_block_metadata(
-			HashValue::sha3_256_of(block_id.as_bytes().as_slice()),
-			block_timestamp,
-		)?;
-		let block_metadata_transaction =
-			SignatureVerifiedTransaction::Valid(Transaction::BlockMetadata(block_metadata));
-		block_transactions.push(block_metadata_transaction);
+		let span = info_span!(
+			target: "movement_timing",
+			"execute_block",
+			%block_id,
+		);
 
-		for transaction in block.transactions() {
-			let signed_transaction: SignedTransaction = bcs::from_bytes(transaction.data())?;
+		async move {
+			// get the transactions
+			let mut block_transactions = Vec::new();
+			let block_metadata = self.executor.build_block_metadata(
+				HashValue::sha3_256_of(block_id.as_bytes().as_slice()),
+				block_timestamp,
+			)?;
+			let block_metadata_transaction =
+				SignatureVerifiedTransaction::Valid(Transaction::BlockMetadata(block_metadata));
+			block_transactions.push(block_metadata_transaction);
 
-			// check if the transaction has already been executed to prevent replays
-			if self
-				.executor
-				.has_executed_transaction_opt(signed_transaction.committed_hash())?
-			{
-				continue;
+			for transaction in block.transactions() {
+				let signed_transaction: SignedTransaction = bcs::from_bytes(transaction.data())?;
+
+				// check if the transaction has already been executed to prevent replays
+				if self
+					.executor
+					.has_executed_transaction_opt(signed_transaction.committed_hash())?
+				{
+					continue;
+				}
+
+				info!(
+					target: "movement_timing",
+					tx_hash = %signed_transaction.committed_hash(),
+					sender = %signed_transaction.sender(),
+					sequence_number = signed_transaction.sequence_number(),
+					"execute_transaction",
+				);
+
+				let signature_verified_transaction = SignatureVerifiedTransaction::Valid(
+					Transaction::UserTransaction(signed_transaction),
+				);
+				block_transactions.push(signature_verified_transaction);
 			}
 
-			let signature_verified_transaction = SignatureVerifiedTransaction::Valid(
-				Transaction::UserTransaction(signed_transaction),
-			);
-			block_transactions.push(signature_verified_transaction);
+			// form the executable transactions vec
+			let block = ExecutableTransactions::Unsharded(block_transactions);
+
+			// form the executable block and execute it
+			let executable_block = ExecutableBlock::new(block_hash, block);
+			let block_id = executable_block.block_id;
+			let commitment = self.executor.execute_block_opt(executable_block).await?;
+
+			info!("Executed block: {}", block_id);
+
+			Ok(commitment)
 		}
-
-		// form the executable transactions vec
-		let block = ExecutableTransactions::Unsharded(block_transactions);
-
-		// form the executable block and execute it
-		let executable_block = ExecutableBlock::new(block_hash, block);
-		let block_id = executable_block.block_id;
-		let commitment = self.executor.execute_block_opt(executable_block).await?;
-
-		info!("Executed block: {}", block_id);
-
-		Ok(commitment)
+		.instrument(span)
+		.await
 	}
 
 	async fn process_commitment_event(
