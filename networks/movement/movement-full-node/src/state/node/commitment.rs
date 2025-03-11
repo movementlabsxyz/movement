@@ -3,6 +3,8 @@ use crate::node::partial::MovementPartialNode;
 use anyhow::Context;
 use clap::Parser;
 use maptos_dof_execution::DynOptFinExecutor;
+use maptos_opt_executor::executor::TxExecutionResult;
+use maptos_opt_executor::executor::EXECUTOR_CHANNEL_SIZE;
 use tracing::info;
 
 #[derive(Debug, Parser, Clone)]
@@ -21,9 +23,15 @@ impl Commitment {
 		info!("Forcing commitment");
 		let config = self.movement_args.config().await?;
 		info!("Loaded config {:?}", config);
-		let executor = MovementPartialNode::try_executor_from_config(config)
-			.await
-			.context("Failed to create the executor")?;
+
+		//No Tx are processed so no need to manage the receiver.
+		let (mempool_tx_exec_result_sender, _mempool_commit_tx_receiver) =
+			futures::channel::mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+
+		let executor =
+			MovementPartialNode::try_executor_from_config(config, mempool_tx_exec_result_sender)
+				.await
+				.context("Failed to create the executor")?;
 
 		let height = match self.height {
 			Some(height) => height,

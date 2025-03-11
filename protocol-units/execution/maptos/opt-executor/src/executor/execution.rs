@@ -1,6 +1,8 @@
 use super::Executor;
+use crate::executor::TxExecutionResult;
 use aptos_crypto::HashValue;
-use aptos_executor_types::BlockExecutorTrait;
+use aptos_executor_types::{BlockExecutorTrait, StateComputeResult};
+use aptos_sdk::types::account_address::AccountAddress;
 use aptos_types::{
 	aggregate_signature::AggregateSignature,
 	block_executor::{
@@ -13,18 +15,20 @@ use aptos_types::{
 	transaction::{Transaction, Version},
 	validator_verifier::{ValidatorConsensusInfo, ValidatorVerifier},
 };
+use futures::SinkExt;
 use movement_types::block::{BlockCommitment, Commitment, Id};
 use tracing::info;
 
 impl Executor {
 	pub async fn execute_block(
-		&self,
+		&mut self,
 		block: ExecutableBlock,
 	) -> Result<BlockCommitment, anyhow::Error> {
-		let (block_metadata, block) = {
+		let (block_metadata, block, senders_and_sequence_numbers) = {
 			// get the block metadata transaction
 			let metadata_access_block = block.transactions.clone();
 			let metadata_access_transactions = metadata_access_block.into_txns();
+
 			let first_signed = metadata_access_transactions
 				.first()
 				.ok_or(anyhow::anyhow!("Block must contain a block metadata transaction"))?;
@@ -36,20 +40,37 @@ impl Executor {
 				}
 			};
 
+			// senders and sequence numbers
+			let senders_and_sequence_numbers = metadata_access_transactions
+				.iter()
+				.map(|transaction| {
+					// let info = transaction.info.hash();
+					// tracing::info!("tx_info hash:{info}");
+					match transaction.clone().into_inner() {
+						Transaction::UserTransaction(transaction) => (
+							transaction.committed_hash(),
+							transaction.sender(),
+							transaction.sequence_number(),
+						),
+						_ => (HashValue::zero(), AccountAddress::ZERO, 0u64),
+					}
+				})
+				.collect::<Vec<(HashValue, AccountAddress, u64)>>();
+
 			// reconstruct the block
 			let block = ExecutableBlock::new(
 				block.block_id.clone(),
 				ExecutableTransactions::Unsharded(metadata_access_transactions),
 			);
 
-			(block_metadata, block)
+			(block_metadata, block, senders_and_sequence_numbers)
 		};
 
 		let block_id = block.block_id.clone();
 		let parent_block_id = self.block_executor.committed_block_id();
 
 		let block_executor_clone = self.block_executor.clone();
-		let state_compute = tokio::task::spawn_blocking(move || {
+		let state_compute: StateComputeResult = tokio::task::spawn_blocking(move || {
 			block_executor_clone.execute_block(
 				block,
 				parent_block_id,
@@ -57,6 +78,9 @@ impl Executor {
 			)
 		})
 		.await??;
+
+		let tx_execution_results =
+			TxExecutionResult::merge_result(senders_and_sequence_numbers, &state_compute);
 
 		info!("Block execution compute the following state: {:?}", state_compute);
 
@@ -77,6 +101,11 @@ impl Executor {
 			block_executor_clone.commit_blocks(vec![block_id], ledger_info_with_sigs)
 		})
 		.await??;
+
+		// commit mempool transactions in batches of size 16
+		for chunk in tx_execution_results.chunks(16) {
+			self.mempool_tx_exec_result_sender.send(chunk.to_vec()).await?;
+		}
 
 		let proof = self.db().reader.get_state_proof(version)?;
 
@@ -205,6 +234,8 @@ impl Executor {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use crate::executor::TxExecutionResult;
+	use crate::executor::EXECUTOR_CHANNEL_SIZE;
 	use crate::Service;
 	use aptos_api::accept_type::AcceptType;
 	use aptos_crypto::ValidCryptoMaterialStringExt;
@@ -253,8 +284,14 @@ mod tests {
 	async fn test_execute_block() -> Result<(), anyhow::Error> {
 		let private_key = Ed25519PrivateKey::generate_for_testing();
 		let (tx_sender, _tx_receiver) = mpsc::channel(1);
-		let (executor, _tempdir) = Executor::try_test_default(private_key).await?;
-		let (context, _transaction_pipe) = executor.background(tx_sender)?;
+
+		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
+			futures::channel::mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+
+		let (mut executor, _tempdir) =
+			Executor::try_test_default(private_key, mempool_tx_exec_result_sender).await?;
+		let (context, _transaction_pipe) =
+			executor.background(tx_sender, mempool_commit_tx_receiver)?;
 		let block_id = HashValue::random();
 		let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
 			block_id,
@@ -287,8 +324,14 @@ mod tests {
 		// Create an executor instance from the environment configuration.
 		let private_key = Ed25519PrivateKey::generate_for_testing();
 		let (tx_sender, _tx_receiver) = mpsc::channel(1);
-		let (executor, _tempdir) = Executor::try_test_default(private_key).await?;
-		let (context, _transaction_pipe) = executor.background(tx_sender)?;
+
+		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
+			futures::channel::mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+
+		let (mut executor, _tempdir) =
+			Executor::try_test_default(private_key, mempool_tx_exec_result_sender).await?;
+		let (context, _transaction_pipe) =
+			executor.background(tx_sender, mempool_commit_tx_receiver)?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
 		// get the raw private key
@@ -398,8 +441,13 @@ mod tests {
 		// Create an executor instance from the environment configuration.
 		let private_key = Ed25519PrivateKey::generate_for_testing();
 		let (tx_sender, _tx_receiver) = mpsc::channel(16);
-		let (executor, _tempdir) = Executor::try_test_default(private_key).await?;
-		let (context, _transaction_pipe) = executor.background(tx_sender)?;
+
+		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
+			futures::channel::mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+		let (mut executor, _tempdir) =
+			Executor::try_test_default(private_key, mempool_tx_exec_result_sender).await?;
+		let (context, _transaction_pipe) =
+			executor.background(tx_sender, mempool_commit_tx_receiver)?;
 		let service = Service::new(&context);
 
 		// Initialize a root account using a predefined keypair and the test root address.

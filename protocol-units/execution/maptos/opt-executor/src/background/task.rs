@@ -1,11 +1,10 @@
 use super::{Error, NullMempool, TransactionPipe};
-
-use maptos_execution_util::config::mempool::Config as MempoolConfig;
-
+use crate::executor::TxExecutionResult;
 use aptos_config::config::NodeConfig;
 use aptos_mempool::MempoolClientRequest;
 use aptos_storage_interface::DbReader;
 use aptos_types::transaction::SignedTransaction;
+use maptos_execution_util::config::mempool::Config as MempoolConfig;
 
 use aptos_account_whitelist::config::Config as WhitelistConfig;
 use futures::channel::mpsc as futures_mpsc;
@@ -28,6 +27,7 @@ enum BackgroundInner {
 impl BackgroundTask {
 	/// Constructs the full background tasks for transaction processing.
 	pub(crate) fn transaction_pipe(
+		mempool_commit_tx_receiver: futures_mpsc::Receiver<Vec<TxExecutionResult>>, // Sender, seq number)
 		mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
 		transaction_sender: mpsc::Sender<(u64, SignedTransaction)>,
 		db_reader: Arc<dyn DbReader>,
@@ -39,6 +39,7 @@ impl BackgroundTask {
 	) -> Result<Self, anyhow::Error> {
 		Ok(Self {
 			inner: BackgroundInner::Full(TransactionPipe::new(
+				mempool_commit_tx_receiver,
 				mempool_client_receiver,
 				transaction_sender,
 				db_reader,

@@ -23,6 +23,7 @@ static SUZUKA_CONFIG: Lazy<movement_config::Config> = Lazy::new(|| {
 	config
 });
 
+// :!:>section_1c
 static NODE_URL: Lazy<Url> = Lazy::new(|| {
 	let node_connection_address = SUZUKA_CONFIG
 		.execution_config
@@ -61,6 +62,7 @@ static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
 
 	Url::from_str(faucet_listen_url.as_str()).unwrap()
 });
+// <:!:section_1c
 
 pub async fn create_fake_signed_transaction(
 	chain_id: u8,
@@ -70,7 +72,7 @@ pub async fn create_fake_signed_transaction(
 	sequence_number: u64,
 ) -> Result<SignedTransaction, anyhow::Error> {
 	let coin_type = "0x1::aptos_coin::AptosCoin";
-	let timeout_secs = 600; // 10 minutes
+	let timeout_secs = 30; // 30 seconds
 	let max_gas_amount = 5_000;
 	let gas_unit_price = 100;
 
@@ -137,133 +139,76 @@ pub async fn test_sending_failed_transaction() -> Result<(), anyhow::Error> {
 		.context("Failed to get Alice's account balance")?;
 	println!("Alice: {:?}", initial_balance);
 
-	// TEST 1: Sending a transaction trying to transfer more coins than Alice has (including gas fees)
-	let transaction = create_fake_signed_transaction(
+	// Send in ooo sequence numbers
+	// create transaction 1
+	let transaction_1 = create_fake_signed_transaction(
 		chain_id,
 		&alice,
 		bob.address(),
-		100_000_000,
+		100,
 		alice.sequence_number(),
 	)
 	.await?;
 
-	let _transaction_will_fail = rest_client
-		.submit(&transaction)
-		.await
-		.context("Failed when waiting for the transaction")?
-		.into_inner();
-	match rest_client.wait_for_signed_transaction(&transaction).await {
-		Ok(_) => panic!("Transaction should have failed"),
-		Err(e) => {
-			println!("Transaction failed as expected: {:?}", e);
-		}
-	}
-
-	// assert gas fee charged
-	let failed_balance = coin_client
-		.get_account_balance(&alice.address())
-		.await
-		.context("Failed to get Alice's account balance")?;
-	println!("\n=== After Failed Tx#1 ===");
-	println!("Alice: {:?}", failed_balance);
-	assert!(initial_balance > failed_balance);
-
-	// TEST 2: Sending a transaction with a high sequence number
-	let too_high_sequence_number = alice.sequence_number() + 32 + 2;
-	println!("Alice's sequence number: {}", alice.sequence_number());
-	println!("Too high sequence number: {}", too_high_sequence_number);
-	let last_balance = failed_balance;
-	let transaction = create_fake_signed_transaction(
+	// create transaction 2
+	let transaction_2 = create_fake_signed_transaction(
 		chain_id,
 		&alice,
 		bob.address(),
 		100,
-		too_high_sequence_number, // too new tolerance is 32
+		alice.sequence_number() + 1,
 	)
 	.await?;
 
-	match rest_client.submit(&transaction).await {
-		Ok(_) => panic!("Transaction should have failed with high sequence number"),
-		Err(e) => match e {
-			movement_client::rest_client::error::RestError::Api(aptos_error) => {
-				println!("Transaction failed as expected: {:?}", aptos_error);
-				assert_eq!(aptos_error.error.error_code as u32, 402); // 402 is used for too old and too new
-			}
-			_ => panic!("Unexpected error: {:?}", e),
-		},
-	}
+	// submit 2 then 1
+	rest_client.submit(&transaction_2).await?;
+	rest_client.submit(&transaction_1).await?;
 
-	// assert that no gas fee charged because the transaction never entered the mempool
-	let failed_balance = coin_client
+	tracing::info!("=== Transactions Submitted ===");
+	println!("Tx#1: {:?}", transaction_1);
+	println!("Tx#2: {:?}", transaction_2);
+
+	// wait for both the complete
+	tracing::info!("=== Waiting for transactions to be executed ===");
+	let res_tx2 = rest_client.wait_for_signed_transaction(&transaction_2).await?;
+	let res_tx1 = rest_client.wait_for_signed_transaction(&transaction_1).await?;
+
+	// validate the effect of the transactions, the balance should be less than the initial balance
+	let balance = coin_client
 		.get_account_balance(&alice.address())
 		.await
 		.context("Failed to get Alice's account balance")?;
-	println!("\n=== After Failed Tx#2 ===");
-	println!("Alice: {:?}", failed_balance);
-	assert!(last_balance == failed_balance);
+	tracing::info!("\n=== After Tx#1 and Tx#2 ===");
+	println!("Alice: {:?}", balance);
+	assert!(initial_balance > balance);
 
-	// TEST 3: Sending a transaction with a sequence number that won't be accepted by the VM, but would be accepted by the mempool (sequence number cannot be reused)
-	let attack_sequence_number = alice.sequence_number() + 5;
-	let transaction = create_fake_signed_transaction(
-		chain_id,
-		&alice,
-		bob.address(),
-		100,
-		attack_sequence_number,
-	)
-	.await?;
-
-	// transaction should fail in the vm not on the submission
-	let _transaction_will_fail = rest_client
-		.submit(&transaction)
-		.await
-		.context("Failed when waiting for the transaction")?
-		.into_inner();
-	match rest_client.wait_for_signed_transaction(&transaction).await {
-		Ok(_) => panic!("Transaction should have failed"),
-		Err(e) => {
-			println!("Transaction failed as expected: {:?}", e);
-		}
-	}
-
-	// assert gas fee not charged
-	let failed_balance = coin_client
-		.get_account_balance(&alice.address())
+	let balance = coin_client
+		.get_account_balance(&bob.address())
 		.await
 		.context("Failed to get Alice's account balance")?;
-	println!("\n=== After Failed Tx#3 ===");
-	println!("Alice: {:?}", failed_balance);
-	assert!(last_balance == failed_balance);
+	println!("Bob: {:?}", balance);
+	println!("res_tx1: {:?}", res_tx1);
+	println!("res_tx2: {:?}", res_tx2);
 
-	// transaction using the same sequence number should fail to submit
-	let transaction = create_fake_signed_transaction(
-		chain_id,
-		&alice,
-		bob.address(),
-		100,
-		attack_sequence_number,
-	)
-	.await?;
+	let alice = rest_client.get_account(alice.address()).await?.into_inner();
+	let bob = rest_client.get_account(bob.address()).await?.into_inner();
 
-	match rest_client.submit(&transaction).await {
-		Ok(res) => panic!(
-			"Transaction should have failed with high sequence number. Instead got: {:?}",
-			res
-		),
-		Err(e) => match e {
-			movement_client::rest_client::error::RestError::Api(aptos_error) => {
-				println!("Transaction failed as expected: {:?}", aptos_error);
-				assert_eq!(aptos_error.error.error_code as u32, 402); // 402 is used for too old and too new
-			}
-			_ => panic!("Unexpected error: {:?}", e),
-		},
-	}
+	println!("Alice seq: {:?}", alice.sequence_number);
+	println!("Bob seq: {:?}", bob.sequence_number);
 
 	Ok(())
 }
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
+	use tracing_subscriber::EnvFilter;
+
+	tracing_subscriber::fmt()
+		.with_env_filter(
+			EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
+		)
+		.init();
+
 	test_sending_failed_transaction().await?;
 	Ok(())
 }

@@ -6,19 +6,108 @@ pub mod initialization;
 use aptos_config::config::NodeConfig;
 use aptos_crypto::HashValue;
 use aptos_executor::block_executor::BlockExecutor;
+use aptos_executor_types::StateComputeResult;
+use aptos_sdk::types::account_address::AccountAddress;
 use aptos_storage_interface::{DbReader, DbReaderWriter};
+use aptos_types::transaction::TransactionStatus;
 use aptos_types::validator_signer::ValidatorSigner;
 use aptos_vm::AptosVM;
-
-use tracing::info;
-
 use maptos_execution_util::config::Config;
 use movement_collections::garbage::counted::GcCounter;
+use std::cmp::Ordering;
+use std::hash::Hash;
+use std::hash::Hasher;
 use std::sync::{Arc, RwLock};
+use tracing::info;
+
+#[derive(Debug, Clone)]
+pub struct TxExecutionResult {
+	pub hash: HashValue,
+	pub sender: AccountAddress,
+	pub seq_number: u64,
+	pub status: TransactionStatus,
+}
+
+impl TxExecutionResult {
+	pub fn new(
+		hash: HashValue,
+		sender: AccountAddress,
+		seq_number: u64,
+		status: TransactionStatus,
+	) -> Self {
+		TxExecutionResult { hash, sender, seq_number, status }
+	}
+
+	pub fn merge_result(
+		user_txns: Vec<(HashValue, AccountAddress, u64)>,
+		result: &StateComputeResult,
+	) -> Vec<TxExecutionResult> {
+		let compute_status = result.compute_status_for_input_txns();
+
+		// the length of compute_status is user_txns.len() + num_vtxns + 1 due to having blockmetadata
+		// Change => into a > because the user_txns doesn't contains the first block meta data Tx.
+		if user_txns.len() > compute_status.len() {
+			// reconfiguration suffix blocks don't have any transactions
+			// otherwise, this is an error
+			if !compute_status.is_empty() {
+				tracing::error!(
+                        "Expected compute_status length and actual compute_status length mismatch! user_txns len: {}, compute_status len: {}, has_reconfiguration: {}",
+                        user_txns.len(),
+                        compute_status.len(),
+                        result.has_reconfiguration(),
+                    );
+			}
+			vec![]
+		} else {
+			let user_txn_status = &compute_status[compute_status.len() - user_txns.len()..];
+			user_txns
+				.into_iter()
+				.zip(user_txn_status)
+				.map(|((tx_hash, sender, seq_num), status)| {
+					TxExecutionResult::new(tx_hash, sender, seq_num, status.clone())
+				})
+				.collect()
+		}
+	}
+}
+
+impl PartialEq for TxExecutionResult {
+	fn eq(&self, other: &Self) -> bool {
+		self.hash == other.hash
+	}
+}
+
+impl Eq for TxExecutionResult {}
+
+impl Ord for TxExecutionResult {
+	fn cmp(&self, other: &Self) -> Ordering {
+		self.hash.cmp(&other.hash)
+	}
+}
+
+impl PartialOrd for TxExecutionResult {
+	fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+		Some(self.hash.cmp(&other.hash))
+	}
+}
+
+impl Hash for TxExecutionResult {
+	fn hash<H: Hasher>(&self, state: &mut H) {
+		// Tx exec result are uniq per their hash.
+		// Tx are executed only one time.
+		self.hash.hash(state);
+	}
+}
+
+// Executor channel size.
+// Allow 2^16 transactions before appling backpressure given theoretical maximum TPS of 170k.
+pub const EXECUTOR_CHANNEL_SIZE: usize = 2_usize.pow(16);
 
 /// The `Executor` is responsible for executing blocks and managing the state of the execution
 /// against the `AptosVM`.
 pub struct Executor {
+	/// Send commited Tx
+	pub mempool_tx_exec_result_sender: futures::channel::mpsc::Sender<Vec<TxExecutionResult>>, // Sender, seq number)
 	/// The executing type.
 	pub block_executor: Arc<BlockExecutor<AptosVM>>,
 	/// The signer of the executor's transactions.
