@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.1.2](https://github.com/movementlabsxyz/movement/compare/4908c91905d3732f8907d0bcf653e8d639f7491f..0.1.2) - 2025-03-11
+#### Bug Fixes
+- build on tag (#1097) - ([4908c91](https://github.com/movementlabsxyz/movement/commit/4908c91905d3732f8907d0bcf653e8d639f7491f)) - radupopa369
+
+- - -
+
 ## [0.1.1](https://github.com/movementlabsxyz/movement/compare/458bf73817a0e53432492845817e8bf51710be75..0.1.1) - 2025-03-10
 #### Miscellaneous Chores
 - update aptos core rev (#1095) - ([458bf73](https://github.com/movementlabsxyz/movement/commit/458bf73817a0e53432492845817e8bf51710be75)) - Richard Melkonian
