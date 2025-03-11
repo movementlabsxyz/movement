@@ -28,6 +28,7 @@ use tracing::{debug, info, info_span, warn, Instrument};
 
 const GC_INTERVAL: Duration = Duration::from_secs(30);
 const TOO_NEW_TOLERANCE: u64 = 32;
+const TOO_OLD_TOLERANCE: u64 = 8;
 
 pub struct TransactionPipe {
 	// The receiver for the mempool client.
@@ -187,9 +188,11 @@ impl TransactionPipe {
 		let min_used_sequence_number =
 			if used_sequence_number > 0 { used_sequence_number + 1 } else { 0 };
 
-		let min_sequence_number = (min_used_sequence_number).max(committed_sequence_number);
+		let pre_min_sequence_number = (min_used_sequence_number).max(committed_sequence_number);
+		// saturating sub the too old tolerance to avoid underflow
+		let min_sequence_number = pre_min_sequence_number.saturating_sub(TOO_OLD_TOLERANCE);
 
-		let max_sequence_number = committed_sequence_number + TOO_NEW_TOLERANCE;
+		let max_sequence_number = committed_sequence_number.saturating_add(TOO_NEW_TOLERANCE);
 
 		info!(
 			"min_sequence_number: {:?} max_sequence_number: {:?} transaction_sequence_number {:?}",
