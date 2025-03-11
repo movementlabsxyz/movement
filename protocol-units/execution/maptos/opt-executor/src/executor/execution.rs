@@ -1,7 +1,7 @@
 use super::Executor;
 use crate::executor::TxExecutionResult;
 use aptos_crypto::HashValue;
-use aptos_executor_types::BlockExecutorTrait;
+use aptos_executor_types::{BlockExecutorTrait, StateComputeResult};
 use aptos_sdk::types::account_address::AccountAddress;
 use aptos_types::{
 	aggregate_signature::AggregateSignature,
@@ -70,7 +70,7 @@ impl Executor {
 		let parent_block_id = self.block_executor.committed_block_id();
 
 		let block_executor_clone = self.block_executor.clone();
-		let state_compute = tokio::task::spawn_blocking(move || {
+		let state_compute: StateComputeResult = tokio::task::spawn_blocking(move || {
 			block_executor_clone.execute_block(
 				block,
 				parent_block_id,
