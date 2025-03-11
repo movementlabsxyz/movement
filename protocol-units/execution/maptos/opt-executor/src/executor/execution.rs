@@ -17,7 +17,6 @@ use aptos_types::{
 };
 use futures::SinkExt;
 use movement_types::block::{BlockCommitment, Commitment, Id};
-use std::collections::HashMap;
 use tracing::info;
 
 impl Executor {
@@ -29,10 +28,7 @@ impl Executor {
 			// get the block metadata transaction
 			let metadata_access_block = block.transactions.clone();
 			let metadata_access_transactions = metadata_access_block.into_txns();
-			tracing::info!(
-				"execute metadata_access_transactions:{:?}",
-				metadata_access_transactions
-			);
+
 			let first_signed = metadata_access_transactions
 				.first()
 				.ok_or(anyhow::anyhow!("Block must contain a block metadata transaction"))?;
@@ -53,12 +49,13 @@ impl Executor {
 					match transaction.clone().into_inner() {
 						Transaction::UserTransaction(transaction) => (
 							transaction.committed_hash(),
-							(transaction.sender(), transaction.sequence_number()),
+							transaction.sender(),
+							transaction.sequence_number(),
 						),
-						_ => (HashValue::zero(), (AccountAddress::ZERO, 0u64)),
+						_ => (HashValue::zero(), AccountAddress::ZERO, 0u64),
 					}
 				})
-				.collect::<HashMap<HashValue, (AccountAddress, u64)>>();
+				.collect::<Vec<(HashValue, AccountAddress, u64)>>();
 
 			// reconstruct the block
 			let block = ExecutableBlock::new(
@@ -83,7 +80,7 @@ impl Executor {
 		.await??;
 
 		let tx_execution_results =
-			TxExecutionResult::merge_result(&senders_and_sequence_numbers, &state_compute);
+			TxExecutionResult::merge_result(senders_and_sequence_numbers, &state_compute);
 
 		info!("Block execution compute the following state: {:?}", state_compute);
 

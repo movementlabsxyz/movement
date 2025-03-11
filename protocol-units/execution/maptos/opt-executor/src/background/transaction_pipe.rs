@@ -119,25 +119,21 @@ impl TransactionPipe {
 
 	/// Pipes a batch of transactions from the executor to commit then in the Aptos mempool.
 	pub(crate) async fn tick_commit_tx(&mut self) -> Result<(), Error> {
-		debug!("tick_commit_tx");
 		match self.mempool_commit_tx_receiver.try_next() {
 			Ok(Some(batch)) => {
-				tracing::info!("ICI tick_commit_tx received a batch {batch:?}",);
 				for tx_result in batch {
-					match tx_result.status {
-						Some(TransactionStatus::Discard(discard_status)) => {
-							self.core_mempool.reject_transaction(
-								&tx_result.sender,
-								tx_result.seq_number,
-								&tx_result.hash,
-								&discard_status,
-							)
-						}
-						Some(_) => (), // success do nothing.
-						None => tracing::warn!(
-							"Got an executed Tx without a result status: tx_hash:{}",
-							tx_result.hash
-						),
+					if let TransactionStatus::Discard(discard_status) = tx_result.status {
+						tracing::info!(
+							"Transaction pipe, mempool rejecting Tx:{} with status:{:?}",
+							tx_result.hash,
+							discard_status
+						);
+						self.core_mempool.reject_transaction(
+							&tx_result.sender,
+							tx_result.seq_number,
+							&tx_result.hash,
+							&discard_status,
+						)
 					}
 				}
 			}
@@ -183,9 +179,6 @@ impl TransactionPipe {
 				}
 				MempoolClientRequest::GetTransactionByHash(hash, sender) => {
 					let mempool_result = self.core_mempool.get_by_hash(hash);
-					tracing::info!(
-							"ICI tick_requests GetTransactionByHash hash:{hash:?} sender:{sender:?} mempool_result:{mempool_result:?}"
-						);
 					sender.send(mempool_result).unwrap_or_else(|_| {
 						debug!("GetTransactionByHash request canceled");
 					});
@@ -346,6 +339,10 @@ impl TransactionPipe {
 mod tests {
 
 	use crate::executor::EXECUTOR_CHANNEL_SIZE;
+	use aptos_sdk::types::vm_status::DiscardedVMStatus;
+	use aptos_storage_interface::state_view::LatestDbStateCheckpointView;
+	use aptos_vm_validator::vm_validator;
+	use futures::SinkExt;
 	use std::collections::BTreeSet;
 
 	use super::*;
@@ -364,17 +361,18 @@ mod tests {
 	};
 	use aptos_vm_genesis::GENESIS_KEYPAIR;
 	use futures::channel::oneshot;
-	use futures::SinkExt;
 	use maptos_execution_util::config::chain::Config;
 	use tempfile::TempDir;
 
-	fn setup() -> (Context, TransactionPipe, mpsc::Receiver<(u64, SignedTransaction)>, TempDir) {
+	async fn setup() -> (Context, TransactionPipe, mpsc::Receiver<(u64, SignedTransaction)>, TempDir)
+	{
 		let (tx_sender, tx_receiver) = mpsc::channel(16);
 		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
 			futures_mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
 
 		let (executor, tempdir) =
 			Executor::try_test_default(GENESIS_KEYPAIR.0.clone(), mempool_tx_exec_result_sender)
+				.await
 				.unwrap();
 		let (context, background) =
 			executor.background(tx_sender, mempool_commit_tx_receiver).unwrap();
@@ -397,7 +395,7 @@ mod tests {
 	async fn test_pipe_mempool() -> Result<(), anyhow::Error> {
 		// set up
 		let maptos_config = Config::default();
-		let (context, mut transaction_pipe, mut tx_receiver, _tempdir) = setup();
+		let (context, mut transaction_pipe, mut tx_receiver, _tempdir) = setup().await;
 		let user_transaction = create_signed_transaction(1, &maptos_config);
 
 		// send transaction to mempool
@@ -425,7 +423,7 @@ mod tests {
 	async fn test_pipe_mempool_cancellation() -> Result<(), anyhow::Error> {
 		// set up
 		let maptos_config = Config::default();
-		let (context, mut transaction_pipe, _tx_receiver, _tempdir) = setup();
+		let (context, mut transaction_pipe, _tx_receiver, _tempdir) = setup().await;
 		let user_transaction = create_signed_transaction(1, &maptos_config);
 
 		// send transaction to mempool
@@ -448,7 +446,7 @@ mod tests {
 	async fn test_pipe_mempool_with_duplicate_transaction() -> Result<(), anyhow::Error> {
 		// set up
 		let maptos_config = Config::default();
-		let (context, mut transaction_pipe, mut tx_receiver, _tempdir) = setup();
+		let (context, mut transaction_pipe, mut tx_receiver, _tempdir) = setup().await;
 		let mut mempool_client_sender = context.mempool_client_sender();
 		let user_transaction = create_signed_transaction(1, &maptos_config);
 
@@ -489,7 +487,7 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_pipe_mempool_from_api() -> Result<(), anyhow::Error> {
-		let (context, mut transaction_pipe, mut tx_receiver, _tempdir) = setup();
+		let (context, mut transaction_pipe, mut tx_receiver, _tempdir) = setup().await;
 		let service = Service::new(&context);
 
 		#[allow(unreachable_code)]
@@ -516,7 +514,7 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_repeated_pipe_mempool_from_api() -> Result<(), anyhow::Error> {
-		let (context, mut transaction_pipe, mut tx_receiver, _tempdir) = setup();
+		let (context, mut transaction_pipe, mut tx_receiver, _tempdir) = setup().await;
 		let service = Service::new(&context);
 
 		#[allow(unreachable_code)]
@@ -556,7 +554,7 @@ mod tests {
 	async fn test_cannot_submit_too_new() -> Result<(), anyhow::Error> {
 		// set up
 		let maptos_config = Config::default();
-		let (_context, mut transaction_pipe, _tx_receiver, _tempdir) = setup();
+		let (_context, mut transaction_pipe, _tx_receiver, _tempdir) = setup().await;
 
 		// submit a transaction with a valid sequence number
 		let user_transaction = create_signed_transaction(0, &maptos_config);
@@ -593,7 +591,8 @@ mod tests {
 			futures_mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
 
 		let (mut executor, _tempdir) =
-			Executor::try_test_default(GENESIS_KEYPAIR.0.clone(), mempool_tx_exec_result_sender)?;
+			Executor::try_test_default(GENESIS_KEYPAIR.0.clone(), mempool_tx_exec_result_sender)
+				.await?;
 		let (context, background) = executor.background(tx_sender, mempool_commit_tx_receiver)?;
 		let mut transaction_pipe = background.into_transaction_pipe();
 

@@ -15,7 +15,6 @@ use aptos_vm::AptosVM;
 use maptos_execution_util::config::Config;
 use movement_collections::garbage::counted::GcCounter;
 use std::cmp::Ordering;
-use std::collections::HashMap;
 use std::hash::Hash;
 use std::hash::Hasher;
 use std::sync::{Arc, RwLock};
@@ -26,7 +25,7 @@ pub struct TxExecutionResult {
 	pub hash: HashValue,
 	pub sender: AccountAddress,
 	pub seq_number: u64,
-	pub status: Option<TransactionStatus>,
+	pub status: TransactionStatus,
 }
 
 impl TxExecutionResult {
@@ -34,39 +33,41 @@ impl TxExecutionResult {
 		hash: HashValue,
 		sender: AccountAddress,
 		seq_number: u64,
-		status: Option<TransactionStatus>,
+		status: TransactionStatus,
 	) -> Self {
 		TxExecutionResult { hash, sender, seq_number, status }
 	}
 
 	pub fn merge_result(
-		tx_set: &HashMap<HashValue, (AccountAddress, u64)>,
+		user_txns: Vec<(HashValue, AccountAddress, u64)>,
 		result: &StateComputeResult,
 	) -> Vec<TxExecutionResult> {
-		tracing::info!("ICI merge result tx_set:{tx_set:?} ");
-		tracing::info!("ICI merge result result:{result:?} ");
-		result
-			.transaction_info_hashes()
-			.iter()
-			.enumerate()
-			.map(|(index, tx_hash)| {
-				tx_set
-					.get(&tx_hash)
-					.cloned()
-					.and_then(|(sender, seq_num)| {
-						result.compute_status_for_input_txns().get(index).map(|status| {
-							TxExecutionResult::new(*tx_hash, sender, seq_num, Some(status.clone()))
-						})
-					})
-					.unwrap_or(TxExecutionResult::new(*tx_hash, AccountAddress::ZERO, 0u64, None))
-			})
-			.collect()
-	}
-}
+		let compute_status = result.compute_status_for_input_txns();
 
-impl From<(HashValue, AccountAddress, u64)> for TxExecutionResult {
-	fn from(value: (HashValue, AccountAddress, u64)) -> Self {
-		TxExecutionResult { hash: value.0, sender: value.1, seq_number: value.2, status: None }
+		// the length of compute_status is user_txns.len() + num_vtxns + 1 due to having blockmetadata
+		// Change => into a > because the user_txns doesn't contains the first block meta data Tx.
+		if user_txns.len() > compute_status.len() {
+			// reconfiguration suffix blocks don't have any transactions
+			// otherwise, this is an error
+			if !compute_status.is_empty() {
+				tracing::error!(
+                        "Expected compute_status length and actual compute_status length mismatch! user_txns len: {}, compute_status len: {}, has_reconfiguration: {}",
+                        user_txns.len(),
+                        compute_status.len(),
+                        result.has_reconfiguration(),
+                    );
+			}
+			vec![]
+		} else {
+			let user_txn_status = &compute_status[compute_status.len() - user_txns.len()..];
+			user_txns
+				.into_iter()
+				.zip(user_txn_status)
+				.map(|((tx_hash, sender, seq_num), status)| {
+					TxExecutionResult::new(tx_hash, sender, seq_num, status.clone())
+				})
+				.collect()
+		}
 	}
 }
 
