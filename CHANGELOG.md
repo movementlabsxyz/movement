@@ -2,6 +2,15 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.2.0](https://github.com/movementlabsxyz/movement/compare/4d86f21c69e1feac44a6e2897eeb68573b5929b5..0.2.0) - 2025-03-11
+#### Features
+- timing instrumentation for executed blocks and transactions (#1103) - ([579d353](https://github.com/movementlabsxyz/movement/commit/579d3538fb3e60e33008f5d1c801d43ada072a18)) - Mikhail Zabaluev
+#### Miscellaneous Chores
+- reverted aptos core in cargo lock - ([fa34787](https://github.com/movementlabsxyz/movement/commit/fa34787284b4766b690fd4d0c0b5e48f311eb031)) - Nicholas McMillen
+- revert aptose core version bump - ([4d86f21](https://github.com/movementlabsxyz/movement/commit/4d86f21c69e1feac44a6e2897eeb68573b5929b5)) - Nicholas McMillen
+
+- - -
+
 ## [0.1.2](https://github.com/movementlabsxyz/movement/compare/4908c91905d3732f8907d0bcf653e8d639f7491f..0.1.2) - 2025-03-11
 #### Bug Fixes
 - build on tag (#1097) - ([4908c91](https://github.com/movementlabsxyz/movement/commit/4908c91905d3732f8907d0bcf653e8d639f7491f)) - radupopa369
