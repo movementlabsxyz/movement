@@ -1,27 +1,24 @@
 //! Task processing incoming transactions for the opt API.
 
 use super::Error;
-
-use maptos_execution_util::config::mempool::Config as MempoolConfig;
-
+use crate::executor::TxExecutionResult;
+use crate::gc_account_sequence_number::UsedSequenceNumberPool;
+use aptos_account_whitelist::config::Config as WhitelistConfig;
 use aptos_config::config::NodeConfig;
 use aptos_mempool::core_mempool::CoreMempool;
 use aptos_mempool::SubmissionStatus;
 use aptos_mempool::{core_mempool::TimelineState, MempoolClientRequest};
-use aptos_storage_interface::{state_view::LatestDbStateCheckpointView as _, DbReader};
+use aptos_storage_interface::DbReader;
 use aptos_types::account_address::AccountAddress;
 use aptos_types::mempool_status::{MempoolStatus, MempoolStatusCode};
 use aptos_types::transaction::SignedTransaction;
-use aptos_types::vm_status::DiscardedVMStatus;
-use aptos_vm_validator::vm_validator::{self, TransactionValidation, VMValidator};
-use std::collections::HashSet;
-
-use crate::gc_account_sequence_number::UsedSequenceNumberPool;
-use aptos_account_whitelist::config::Config as WhitelistConfig;
+use aptos_types::transaction::TransactionStatus;
+use aptos_vm_validator::vm_validator::{TransactionValidation, VMValidator};
 use futures::channel::mpsc as futures_mpsc;
-use futures::StreamExt;
+use maptos_execution_util::config::mempool::Config as MempoolConfig;
 use movement_collections::garbage::counted::GcCounter;
 use std::collections::BTreeMap;
+use std::collections::HashSet;
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
@@ -32,6 +29,8 @@ const MEMPOOL_INTERVAL: Duration = Duration::from_millis(240); // this is based 
 const TOO_NEW_TOLERANCE: u64 = 32;
 
 pub struct TransactionPipe {
+	// The receiver for Tx execution to commit in the mempool.
+	mempool_commit_tx_receiver: futures_mpsc::Receiver<Vec<TxExecutionResult>>,
 	// The receiver for the mempool client.
 	mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
 	// Sender for the channel with accepted transactions.
@@ -61,6 +60,7 @@ enum SequenceNumberValidity {
 
 impl TransactionPipe {
 	pub(crate) fn new(
+		mempool_commit_tx_receiver: futures_mpsc::Receiver<Vec<TxExecutionResult>>, // Sender, seq number)
 		mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
 		transaction_sender: mpsc::Sender<(u64, SignedTransaction)>,
 		db_reader: Arc<dyn DbReader>,
@@ -74,6 +74,7 @@ impl TransactionPipe {
 		info!("Whitelisted accounts: {:?}", whitelisted_accounts);
 
 		Ok(TransactionPipe {
+			mempool_commit_tx_receiver,
 			mempool_client_receiver,
 			transaction_sender,
 			db_reader,
@@ -104,20 +105,51 @@ impl TransactionPipe {
 	pub async fn run(mut self) -> Result<(), Error> {
 		loop {
 			self.tick().await?;
+			let _ = tokio::time::sleep(tokio::time::Duration::from_millis(100));
 		}
 	}
 
 	pub async fn tick(&mut self) -> Result<(), Error> {
 		self.tick_requests().await?;
 		self.tick_mempool_sender().await?;
+		self.tick_commit_tx().await?;
 		self.tick_gc();
+		Ok(())
+	}
+
+	/// Pipes a batch of transactions from the executor to commit then in the Aptos mempool.
+	pub(crate) async fn tick_commit_tx(&mut self) -> Result<(), Error> {
+		debug!("tick_commit_tx");
+		match self.mempool_commit_tx_receiver.try_next() {
+			Ok(Some(batch)) => {
+				tracing::info!("ICI tick_commit_tx received a batch {batch:?}",);
+				for tx_result in batch {
+					match tx_result.status {
+						Some(TransactionStatus::Discard(discard_status)) => {
+							self.core_mempool.reject_transaction(
+								&tx_result.sender,
+								tx_result.seq_number,
+								&tx_result.hash,
+								&discard_status,
+							)
+						}
+						Some(_) => (), // success do nothing.
+						None => tracing::warn!(
+							"Got an executed Tx without a result status: tx_hash:{}",
+							tx_result.hash
+						),
+					}
+				}
+			}
+			Ok(None) => return Err(Error::InputClosed),
+			Err(_) => (),
+		}
 		Ok(())
 	}
 
 	/// Pipes a batch of transactions from the mempool to the transaction channel.
 	/// todo: it may be wise to move the batching logic up a level to the consuming structs.
 	pub(crate) async fn tick_requests(&mut self) -> Result<(), Error> {
-		debug!("tick_requests");
 		// try to immediately get the next request
 		// if we don't do this, then the `tick_mempool_sender` process would be held up by receiving a new transaction
 
@@ -132,11 +164,8 @@ impl TransactionPipe {
 
 		// this also causes the core_mempool API to flag the receiver as gone
 		// let next = self.mempool_client_receiver.try_next().map_err(|_| Error::InputClosed)?;
-
-		let next = self.mempool_client_receiver.next().await;
-
-		if let Some(request) = next {
-			match request {
+		match self.mempool_client_receiver.try_next() {
+			Ok(Some(request)) => match request {
 				MempoolClientRequest::SubmitTransaction(transaction, callback) => {
 					let span = info_span!(
 						target: "movement_timing",
@@ -154,20 +183,22 @@ impl TransactionPipe {
 				}
 				MempoolClientRequest::GetTransactionByHash(hash, sender) => {
 					let mempool_result = self.core_mempool.get_by_hash(hash);
+					tracing::info!(
+							"ICI tick_requests GetTransactionByHash hash:{hash:?} sender:{sender:?} mempool_result:{mempool_result:?}"
+						);
 					sender.send(mempool_result).unwrap_or_else(|_| {
 						debug!("GetTransactionByHash request canceled");
 					});
 				}
-			}
-		} else {
-			return Err(Error::InputClosed);
+			},
+			Ok(None) => return Err(Error::InputClosed),
+			Err(_) => (),
 		}
 
 		Ok(())
 	}
 
 	pub(crate) async fn tick_mempool_sender(&mut self) -> Result<(), Error> {
-		debug!("tick_mempool_sender");
 		if self.last_mempool_send.elapsed() > MEMPOOL_INTERVAL {
 			// pop some transactions from the mempool
 			let transactions = self.core_mempool.get_batch_with_ranking_score(
@@ -295,7 +326,6 @@ impl TransactionPipe {
 			MempoolStatusCode::Accepted => {
 				let now = chrono::Utc::now().timestamp_millis() as u64;
 				debug!("Transaction accepted: {:?}", transaction);
-				let sender = transaction.sender();
 				// increment transactions in flight
 				{
 					let mut transactions_in_flight = self.transactions_in_flight.write().unwrap();
@@ -315,6 +345,7 @@ impl TransactionPipe {
 #[cfg(test)]
 mod tests {
 
+	use crate::executor::EXECUTOR_CHANNEL_SIZE;
 	use std::collections::BTreeSet;
 
 	use super::*;
@@ -339,8 +370,14 @@ mod tests {
 
 	fn setup() -> (Context, TransactionPipe, mpsc::Receiver<(u64, SignedTransaction)>, TempDir) {
 		let (tx_sender, tx_receiver) = mpsc::channel(16);
-		let (executor, tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone()).unwrap();
-		let (context, background) = executor.background(tx_sender).unwrap();
+		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
+			futures_mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+
+		let (executor, tempdir) =
+			Executor::try_test_default(GENESIS_KEYPAIR.0.clone(), mempool_tx_exec_result_sender)
+				.unwrap();
+		let (context, background) =
+			executor.background(tx_sender, mempool_commit_tx_receiver).unwrap();
 		let transaction_pipe = background.into_transaction_pipe();
 		(context, transaction_pipe, tx_receiver, tempdir)
 	}
@@ -551,8 +588,13 @@ mod tests {
 	#[tokio::test]
 	async fn test_sequence_number_too_old() -> Result<(), anyhow::Error> {
 		let (tx_sender, _tx_receiver) = mpsc::channel(16);
-		let (executor, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
-		let (context, background) = executor.background(tx_sender)?;
+
+		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
+			futures_mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+
+		let (mut executor, _tempdir) =
+			Executor::try_test_default(GENESIS_KEYPAIR.0.clone(), mempool_tx_exec_result_sender)?;
+		let (context, background) = executor.background(tx_sender, mempool_commit_tx_receiver)?;
 		let mut transaction_pipe = background.into_transaction_pipe();
 
 		#[allow(unreachable_code)]

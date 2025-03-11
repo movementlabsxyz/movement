@@ -1,6 +1,7 @@
 mod services;
 pub mod v1;
 
+use maptos_opt_executor::executor::TxExecutionResult;
 use services::Services;
 
 pub use aptos_crypto::hash::HashValue;
@@ -27,6 +28,7 @@ pub trait DynOptFinExecutor {
 	fn background(
 		&self,
 		transaction_sender: Sender<(u64, SignedTransaction)>,
+		mempool_commit_tx_receiver: futures::channel::mpsc::Receiver<Vec<TxExecutionResult>>,
 		config: &Config,
 	) -> Result<
 		(Self::Context, impl Future<Output = Result<(), anyhow::Error>> + Send + 'static),
@@ -41,7 +43,7 @@ pub trait DynOptFinExecutor {
 
 	/// Executes a block optimistically
 	async fn execute_block_opt(
-		&self,
+		&mut self,
 		block: ExecutableBlock,
 	) -> Result<BlockCommitment, anyhow::Error>;
 

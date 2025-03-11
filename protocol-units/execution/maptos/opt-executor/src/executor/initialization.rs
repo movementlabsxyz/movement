@@ -1,5 +1,7 @@
 use super::Executor;
 use crate::background::BackgroundTask;
+use crate::executor::TxExecutionResult;
+use crate::executor::EXECUTOR_CHANNEL_SIZE;
 use crate::{bootstrap, Context};
 use movement_signer::cryptography::ed25519::Ed25519;
 use movement_signer::Signing;
@@ -29,14 +31,11 @@ use tempfile::TempDir;
 use std::net::ToSocketAddrs;
 use std::sync::{Arc, RwLock};
 
-// Executor channel size.
-// Allow 2^16 transactions before appling backpressure given theoretical maximum TPS of 170k.
-const EXECUTOR_CHANNEL_SIZE: usize = 2_usize.pow(16);
-
 impl Executor {
 	pub fn bootstrap_with_public_key(
 		maptos_config: &Config,
 		public_key: Ed25519PublicKey,
+		mempool_tx_exec_result_sender: futures::channel::mpsc::Sender<Vec<TxExecutionResult>>,
 	) -> Result<Self, anyhow::Error> {
 		// get dot movement
 		// todo: this is a slight anti-pattern, but it's fine for now
@@ -119,7 +118,9 @@ impl Executor {
 			&public_key,
 			&known_release,
 		)?;
+
 		Ok(Self {
+			mempool_tx_exec_result_sender,
 			block_executor: Arc::new(BlockExecutor::new(db.clone())),
 			signer,
 			transactions_in_flight: Arc::new(RwLock::new(GcCounter::new(
@@ -131,7 +132,10 @@ impl Executor {
 		})
 	}
 
-	pub async fn bootstrap(maptos_config: &Config) -> Result<Self, anyhow::Error> {
+	pub async fn bootstrap(
+		maptos_config: &Config,
+		mempool_tx_exec_result_sender: futures::channel::mpsc::Sender<Vec<TxExecutionResult>>,
+	) -> Result<Self, anyhow::Error> {
 		// let raw_private_key =
 		// 	maptos_config.chain.maptos_private_key_signer_identifier.try_raw_private_key()?;
 		// let private_key = Ed25519PrivateKey::try_from(raw_private_key.as_slice())?;
@@ -141,38 +145,48 @@ impl Executor {
 			maptos_config.chain.maptos_private_key_signer_identifier.load().await?;
 		let public_key = Ed25519PublicKey::try_from(loader.public_key().await?.as_bytes())?;
 
-		Self::bootstrap_with_public_key(maptos_config, public_key)
+		Self::bootstrap_with_public_key(maptos_config, public_key, mempool_tx_exec_result_sender)
 	}
 
-	pub async fn try_from_config(maptos_config: Config) -> Result<Self, anyhow::Error> {
-		Self::bootstrap(&maptos_config).await
+	pub async fn try_from_config(
+		maptos_config: Config,
+		mempool_tx_exec_result_sender: futures::channel::mpsc::Sender<Vec<TxExecutionResult>>,
+	) -> Result<Self, anyhow::Error> {
+		Self::bootstrap(&maptos_config, mempool_tx_exec_result_sender).await
 	}
 
 	#[cfg(test)]
 	pub fn try_test_default_with_public_key_bytes(
 		public_key_bytes: &[u8],
+		mempool_tx_exec_result_sender: futures::channel::mpsc::Sender<Vec<TxExecutionResult>>,
 	) -> Result<(Self, TempDir), anyhow::Error> {
 		use aptos_crypto::ValidCryptoMaterialStringExt;
 
 		let public_key =
 			Ed25519PublicKey::from_encoded_string(hex::encode(public_key_bytes).as_str())?;
-		Self::try_test_default_with_public_key(public_key)
+		Self::try_test_default_with_public_key(public_key, mempool_tx_exec_result_sender)
 	}
 
 	pub fn try_test_default_with_public_key(
 		public_key: Ed25519PublicKey,
+		mempool_tx_exec_result_sender: futures::channel::mpsc::Sender<Vec<TxExecutionResult>>,
 	) -> Result<(Self, TempDir), anyhow::Error> {
 		let tempdir = tempfile::tempdir()?;
 
 		let mut maptos_config = Config::default();
 		maptos_config.chain.maptos_db_path.replace(tempdir.path().to_path_buf());
-		let executor = Self::bootstrap_with_public_key(&maptos_config, public_key)?;
+		let executor = Self::bootstrap_with_public_key(
+			&maptos_config,
+			public_key,
+			mempool_tx_exec_result_sender,
+		)?;
 		Ok((executor, tempdir))
 	}
 
 	#[cfg(test)]
 	pub async fn try_test_default(
 		private_key: Ed25519PrivateKey,
+		mempool_tx_exec_result_sender: futures::channel::mpsc::Sender<Vec<TxExecutionResult>>,
 	) -> Result<(Self, TempDir), anyhow::Error> {
 		let tempdir = tempfile::tempdir()?;
 
@@ -185,7 +199,7 @@ impl Executor {
 
 		// replace the db path with the temporary directory
 		maptos_config.chain.maptos_db_path.replace(tempdir.path().to_path_buf());
-		let executor = Self::try_from_config(maptos_config).await?;
+		let executor = Self::try_from_config(maptos_config, mempool_tx_exec_result_sender).await?;
 		Ok((executor, tempdir))
 	}
 
@@ -197,6 +211,7 @@ impl Executor {
 	pub fn background(
 		&self,
 		transaction_sender: mpsc::Sender<(u64, SignedTransaction)>,
+		mempool_commit_tx_receiver: futures_mpsc::Receiver<Vec<TxExecutionResult>>,
 	) -> anyhow::Result<(Context, BackgroundTask)> {
 		let node_config = self.node_config.clone();
 		let maptos_config = self.config.clone();
@@ -209,6 +224,7 @@ impl Executor {
 			BackgroundTask::read_only(mempool_client_receiver)
 		} else {
 			BackgroundTask::transaction_pipe(
+				mempool_commit_tx_receiver,
 				mempool_client_receiver,
 				transaction_sender,
 				self.db().reader.clone(),

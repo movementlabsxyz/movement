@@ -6,19 +6,107 @@ pub mod initialization;
 use aptos_config::config::NodeConfig;
 use aptos_crypto::HashValue;
 use aptos_executor::block_executor::BlockExecutor;
+use aptos_executor_types::StateComputeResult;
+use aptos_sdk::types::account_address::AccountAddress;
 use aptos_storage_interface::{DbReader, DbReaderWriter};
+use aptos_types::transaction::TransactionStatus;
 use aptos_types::validator_signer::ValidatorSigner;
 use aptos_vm::AptosVM;
-
-use tracing::info;
-
 use maptos_execution_util::config::Config;
 use movement_collections::garbage::counted::GcCounter;
+use std::cmp::Ordering;
+use std::collections::HashMap;
+use std::hash::Hash;
+use std::hash::Hasher;
 use std::sync::{Arc, RwLock};
+use tracing::info;
+
+#[derive(Debug, Clone)]
+pub struct TxExecutionResult {
+	pub hash: HashValue,
+	pub sender: AccountAddress,
+	pub seq_number: u64,
+	pub status: Option<TransactionStatus>,
+}
+
+impl TxExecutionResult {
+	pub fn new(
+		hash: HashValue,
+		sender: AccountAddress,
+		seq_number: u64,
+		status: Option<TransactionStatus>,
+	) -> Self {
+		TxExecutionResult { hash, sender, seq_number, status }
+	}
+
+	pub fn merge_result(
+		tx_set: &HashMap<HashValue, (AccountAddress, u64)>,
+		result: &StateComputeResult,
+	) -> Vec<TxExecutionResult> {
+		tracing::info!("ICI merge result tx_set:{tx_set:?} ");
+		tracing::info!("ICI merge result result:{result:?} ");
+		result
+			.transaction_info_hashes()
+			.iter()
+			.enumerate()
+			.map(|(index, tx_hash)| {
+				tx_set
+					.get(&tx_hash)
+					.cloned()
+					.and_then(|(sender, seq_num)| {
+						result.compute_status_for_input_txns().get(index).map(|status| {
+							TxExecutionResult::new(*tx_hash, sender, seq_num, Some(status.clone()))
+						})
+					})
+					.unwrap_or(TxExecutionResult::new(*tx_hash, AccountAddress::ZERO, 0u64, None))
+			})
+			.collect()
+	}
+}
+
+impl From<(HashValue, AccountAddress, u64)> for TxExecutionResult {
+	fn from(value: (HashValue, AccountAddress, u64)) -> Self {
+		TxExecutionResult { hash: value.0, sender: value.1, seq_number: value.2, status: None }
+	}
+}
+
+impl PartialEq for TxExecutionResult {
+	fn eq(&self, other: &Self) -> bool {
+		self.hash == other.hash
+	}
+}
+
+impl Eq for TxExecutionResult {}
+
+impl Ord for TxExecutionResult {
+	fn cmp(&self, other: &Self) -> Ordering {
+		self.hash.cmp(&other.hash)
+	}
+}
+
+impl PartialOrd for TxExecutionResult {
+	fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+		Some(self.hash.cmp(&other.hash))
+	}
+}
+
+impl Hash for TxExecutionResult {
+	fn hash<H: Hasher>(&self, state: &mut H) {
+		// Tx exec result are uniq per their hash.
+		// Tx are executed only one time.
+		self.hash.hash(state);
+	}
+}
+
+// Executor channel size.
+// Allow 2^16 transactions before appling backpressure given theoretical maximum TPS of 170k.
+pub const EXECUTOR_CHANNEL_SIZE: usize = 2_usize.pow(16);
 
 /// The `Executor` is responsible for executing blocks and managing the state of the execution
 /// against the `AptosVM`.
 pub struct Executor {
+	/// Send commited Tx
+	pub mempool_tx_exec_result_sender: futures::channel::mpsc::Sender<Vec<TxExecutionResult>>, // Sender, seq number)
 	/// The executing type.
 	pub block_executor: Arc<BlockExecutor<AptosVM>>,
 	/// The signer of the executor's transactions.

@@ -52,6 +52,7 @@ aptos-sdk = { workspace = true }
 k256 = { workspace = true }
 alloy-signer = { workspace = true }
 chrono = { workspace = true }
+maptos-opt-executor = { workspace = true }
 
 [features]
 default = []
