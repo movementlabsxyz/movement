@@ -4,6 +4,9 @@ use movement_types::{
 	block::{self, Block},
 	transaction::{self, Transaction},
 };
+use std::time::{SystemTime, UNIX_EPOCH};
+
+use tracing::info;
 
 use std::cmp::Ordering;
 use std::future::Future;
@@ -97,6 +100,13 @@ pub trait MempoolTransactionOperations {
 		&self,
 		transaction: Transaction,
 	) -> impl Future<Output = Result<(), anyhow::Error>> {
+		let now = SystemTime::now();
+		let timestamp = now.duration_since(UNIX_EPOCH).expect("Time went backwards").as_secs();
+		info!(
+			target: "tx_validation",
+		  timestamp_now = %timestamp,
+			"committing transaction"
+		);
 		async move {
 			if self.has_transaction(transaction.id()).await? {
 				return Ok(());

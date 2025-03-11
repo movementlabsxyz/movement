@@ -356,6 +356,12 @@ mod tests {
 	}
 
 	fn create_signed_transaction(sequence_number: u64, chain_config: &Config) -> SignedTransaction {
+		info!(
+			target: "movement_timing",
+			time= %transaction_sender,
+			sequence_number = sequence_number,
+			"signing tx",
+		);
 		let address = account_config::aptos_test_root_address();
 		transaction_test_helpers::get_test_txn_with_chain_id(
 			address,

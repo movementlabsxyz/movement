@@ -10697,6 +10697,7 @@ dependencies = [
  "anyhow",
  "movement-types",
  "serde",
+ "tracing",
 ]
 
 [[package]]

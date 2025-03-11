@@ -45,7 +45,7 @@ impl Executor {
 			(block_metadata, block)
 		};
 
-		let block_id = block.block_id.clone();
+		let block_id: HashValue = block.block_id.clone();
 		let parent_block_id = self.block_executor.committed_block_id();
 
 		let block_executor_clone = self.block_executor.clone();
