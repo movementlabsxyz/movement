@@ -15,7 +15,7 @@ name = "demo_scenario"
 path = "src/bin/e2e/demo_scenario.rs"
 
 [[bin]]
-name = "movement-tests-e2e-basic-alice-bob"
+name = "movement-tests-e2e-basic-alice-bob.rs"
 path = "bin/e2e/basic_alice_bob.rs"
 
 [[bin]]
