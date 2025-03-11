@@ -5,6 +5,7 @@ use aptos_sdk::{
 	types::LocalAccount,
 };
 use movement_client::load_soak_testing::{execute_test, init_test, ExecutionConfig, Scenario};
+use once_cell::sync::Lazy;
 use std::str::FromStr;
 use std::sync::Arc;
 use url::Url;
@@ -38,25 +39,57 @@ impl BasicScenario {
 	}
 }
 
+static SUZUKA_CONFIG: Lazy<movement_config::Config> = Lazy::new(|| {
+	let dot_movement = dot_movement::DotMovement::try_from_env().unwrap();
+	let config = dot_movement.try_get_config_from_json::<movement_config::Config>().unwrap();
+	config
+});
+
+static NODE_URL: Lazy<Url> = Lazy::new(|| {
+	let node_connection_address = SUZUKA_CONFIG
+		.execution_config
+		.maptos_config
+		.client
+		.maptos_rest_connection_hostname
+		.clone();
+	let node_connection_port = SUZUKA_CONFIG
+		.execution_config
+		.maptos_config
+		.client
+		.maptos_rest_connection_port
+		.clone();
+
+	let node_connection_url =
+		format!("http://{}:{}", node_connection_address, node_connection_port);
+
+	Url::from_str(node_connection_url.as_str()).unwrap()
+});
+
+static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
+	let faucet_listen_address = SUZUKA_CONFIG
+		.execution_config
+		.maptos_config
+		.client
+		.maptos_faucet_rest_connection_hostname
+		.clone();
+	let faucet_listen_port = SUZUKA_CONFIG
+		.execution_config
+		.maptos_config
+		.client
+		.maptos_faucet_rest_connection_port
+		.clone();
+
+	let faucet_listen_url = format!("http://{}:{}", faucet_listen_address, faucet_listen_port);
+
+	Url::from_str(faucet_listen_url.as_str()).unwrap()
+});
+
 #[async_trait::async_trait]
 impl Scenario for BasicScenario {
 	async fn run(self: Box<Self>) -> Result<()> {
-		let movement_config = maptos_execution_util::config::Config::try_from_env()
-			.context("Failed to create the movement_config")?;
-		let node_url = Url::from_str(
-			format!("http://{}", movement_config.aptos_config.aptos_rest_listen_url.as_str())
-				.as_str(),
-		)?;
-
-		let faucet_url = Url::from_str(
-			format!("http://{}", movement_config.aptos_config.aptos_faucet_listen_url.as_str())
-				.as_str(),
-		)?;
-
-		let rest_client = Client::new(node_url.clone());
-		let faucet_client = FaucetClient::new(faucet_url.clone(), node_url.clone()); // <:!:section_1a
-
-		let coin_client = CoinClient::new(&rest_client); // <:!:section_1b
+		let rest_client = Client::new(NODE_URL.clone());
+		let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
+		let coin_client = CoinClient::new(&rest_client);
 
 		// Create two accounts locally, Alice and Bob.
 		let mut alice = LocalAccount::generate(&mut rand::rngs::OsRng);

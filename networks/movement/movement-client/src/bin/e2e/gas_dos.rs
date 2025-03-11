@@ -23,7 +23,6 @@ static SUZUKA_CONFIG: Lazy<movement_config::Config> = Lazy::new(|| {
 	config
 });
 
-// :!:>section_1c
 static NODE_URL: Lazy<Url> = Lazy::new(|| {
 	let node_connection_address = SUZUKA_CONFIG
 		.execution_config
@@ -62,7 +61,6 @@ static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
 
 	Url::from_str(faucet_listen_url.as_str()).unwrap()
 });
-// <:!:section_1c
 
 pub async fn create_fake_signed_transaction(
 	chain_id: u8,

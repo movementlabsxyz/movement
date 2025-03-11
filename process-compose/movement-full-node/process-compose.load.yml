@@ -4,7 +4,7 @@ environment:
 
 processes:
 
-  movement-tests-loadtests:
+  movement-tests-load-tests:
     command: |
       LOADTEST_NUMBER_SCENARIO=1 LOADTEST_NUMBER_SCENARIO_PER_CLIENT=1 cargo run --bin movement-tests-e2e-basic-alice-bob
     depends_on:
