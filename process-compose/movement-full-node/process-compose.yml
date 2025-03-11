@@ -43,7 +43,7 @@ processes:
     
   movement-full-node:
     command: |
-      RUST_BACKTRACE=1 movement-full-node run
+      RUST_BACKTRACE=1 movement-full-node run &> full-node-logs.txt
     depends_on:
       movement-celestia-da-light-node:
         condition: process_healthy

@@ -1,7 +1,7 @@
 use super::Executor;
 use crate::executor::TxExecutionResult;
 use aptos_crypto::HashValue;
-use aptos_executor_types::BlockExecutorTrait;
+use aptos_executor_types::{BlockExecutorTrait, StateComputeResult};
 use aptos_sdk::types::account_address::AccountAddress;
 use aptos_types::{
 	aggregate_signature::AggregateSignature,
@@ -18,7 +18,7 @@ use aptos_types::{
 use futures::SinkExt;
 use movement_types::block::{BlockCommitment, Commitment, Id};
 use std::collections::HashMap;
-use tracing::info;
+use tracing::{debug, info};
 
 impl Executor {
 	pub async fn execute_block(
@@ -47,16 +47,12 @@ impl Executor {
 			// senders and sequence numbers
 			let senders_and_sequence_numbers = metadata_access_transactions
 				.iter()
-				.map(|transaction| {
-					// let info = transaction.info.hash();
-					// tracing::info!("tx_info hash:{info}");
-					match transaction.clone().into_inner() {
-						Transaction::UserTransaction(transaction) => (
-							transaction.committed_hash(),
-							(transaction.sender(), transaction.sequence_number()),
-						),
-						_ => (HashValue::zero(), (AccountAddress::ZERO, 0u64)),
-					}
+				.map(|transaction| match transaction.clone().into_inner() {
+					Transaction::UserTransaction(transaction) => (
+						transaction.committed_hash(),
+						(transaction.sender(), transaction.sequence_number()),
+					),
+					_ => (HashValue::zero(), (AccountAddress::ZERO, 0u64)),
 				})
 				.collect::<HashMap<HashValue, (AccountAddress, u64)>>();
 
@@ -73,7 +69,7 @@ impl Executor {
 		let parent_block_id = self.block_executor.committed_block_id();
 
 		let block_executor_clone = self.block_executor.clone();
-		let state_compute = tokio::task::spawn_blocking(move || {
+		let state_compute: StateComputeResult = tokio::task::spawn_blocking(move || {
 			block_executor_clone.execute_block(
 				block,
 				parent_block_id,
@@ -81,6 +77,10 @@ impl Executor {
 			)
 		})
 		.await??;
+
+		debug!("state_compute{:?}", state_compute);
+
+		//@TODO get Tx Hash no TxInfo Hash
 
 		let tx_execution_results =
 			TxExecutionResult::merge_result(&senders_and_sequence_numbers, &state_compute);
