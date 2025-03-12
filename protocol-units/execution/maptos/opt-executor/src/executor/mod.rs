@@ -44,6 +44,7 @@ impl TxExecutionResult {
 	) -> Vec<TxExecutionResult> {
 		let compute_status = result.compute_status_for_input_txns();
 
+		// This code has been copied form Aptos core, file state_compute.rs, function schedule_compute()
 		// the length of compute_status is user_txns.len() + num_vtxns + 1 due to having blockmetadata
 		// Change => into a > because the user_txns doesn't contains the first block meta data Tx.
 		if user_txns.len() > compute_status.len() {
@@ -63,6 +64,8 @@ impl TxExecutionResult {
 			user_txns
 				.into_iter()
 				.zip(user_txn_status)
+				//remove all non user tx.
+				.filter(|((tx_hash, _, _), _)| tx_hash != &HashValue::zero())
 				.map(|((tx_hash, sender, seq_num), status)| {
 					TxExecutionResult::new(tx_hash, sender, seq_num, status.clone())
 				})

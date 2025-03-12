@@ -34,6 +34,7 @@ rand = "0.8"
 sha3 = "0.10.8"
 tempfile = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
+futures = { workspace = true }
 
 alloy.workspace = true
 alloy-signer-aws = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }

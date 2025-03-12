@@ -70,6 +70,8 @@ mod tests {
 	use aptos_types::block_metadata::BlockMetadata;
 	use aptos_types::transaction::signature_verified_transaction::SignatureVerifiedTransaction;
 	use aptos_types::transaction::Transaction;
+	use maptos_opt_executor::executor::TxExecutionResult;
+	use maptos_opt_executor::executor::EXECUTOR_CHANNEL_SIZE;
 	use maptos_opt_executor::Executor;
 	use rand::prelude::*;
 	use tokio::sync::mpsc;
@@ -79,8 +81,14 @@ mod tests {
 		// Create an Executor and a FinalityView instance from the environment configuration.
 		let config = Config::default();
 		let (tx_sender, _tx_receiver) = mpsc::channel(16);
-		let executor = Executor::try_from_config(config).await?;
-		let (context, _transaction_pipe) = executor.background(tx_sender)?;
+
+		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
+			futures::channel::mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+
+		let mut executor = Executor::try_from_config(config, mempool_tx_exec_result_sender).await?;
+		let (context, _transaction_pipe) =
+			executor.background(tx_sender, mempool_commit_tx_receiver)?;
+
 		let finality_view = FinalityView::new(context.db_reader());
 		let service = finality_view.service(
 			context.mempool_client_sender(),

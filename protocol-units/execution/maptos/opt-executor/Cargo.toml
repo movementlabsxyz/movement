@@ -79,6 +79,10 @@ movement-signer-loader = { workspace = true }
 movement-signer = { workspace = true }
 
 [dev-dependencies]
+dotenv = { workspace = true }
+movement-signing-aptos = { workspace = true }
+movement-signer = { workspace = true }
+movement-signer-hashicorp-vault = { workspace = true }
 dirs = { workspace = true }
 tracing-test = { workspace = true }
 async-trait = { workspace = true }

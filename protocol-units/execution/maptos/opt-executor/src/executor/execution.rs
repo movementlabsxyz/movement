@@ -17,7 +17,7 @@ use aptos_types::{
 };
 use futures::SinkExt;
 use movement_types::block::{BlockCommitment, Commitment, Id};
-use tracing::info;
+use tracing::{debug, info};
 
 impl Executor {
 	pub async fn execute_block(
@@ -43,17 +43,13 @@ impl Executor {
 			// senders and sequence numbers
 			let senders_and_sequence_numbers = metadata_access_transactions
 				.iter()
-				.map(|transaction| {
-					// let info = transaction.info.hash();
-					// tracing::info!("tx_info hash:{info}");
-					match transaction.clone().into_inner() {
-						Transaction::UserTransaction(transaction) => (
-							transaction.committed_hash(),
-							transaction.sender(),
-							transaction.sequence_number(),
-						),
-						_ => (HashValue::zero(), AccountAddress::ZERO, 0u64),
-					}
+				.map(|transaction| match transaction.clone().into_inner() {
+					Transaction::UserTransaction(transaction) => (
+						transaction.committed_hash(),
+						transaction.sender(),
+						transaction.sequence_number(),
+					),
+					_ => (HashValue::zero(), AccountAddress::ZERO, 0u64),
 				})
 				.collect::<Vec<(HashValue, AccountAddress, u64)>>();
 
@@ -82,6 +78,7 @@ impl Executor {
 		let tx_execution_results =
 			TxExecutionResult::merge_result(senders_and_sequence_numbers, &state_compute);
 
+		debug!("Block tx execution: {:?}", tx_execution_results);
 		info!("Block execution compute the following state: {:?}", state_compute);
 
 		let version = state_compute.version();
