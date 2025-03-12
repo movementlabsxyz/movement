@@ -88,6 +88,7 @@ mod tests {
 		let mut executor = Executor::try_from_config(config, mempool_tx_exec_result_sender).await?;
 		let (context, _transaction_pipe) =
 			executor.background(tx_sender, mempool_commit_tx_receiver)?;
+
 		let finality_view = FinalityView::new(context.db_reader());
 		let service = finality_view.service(
 			context.mempool_client_sender(),

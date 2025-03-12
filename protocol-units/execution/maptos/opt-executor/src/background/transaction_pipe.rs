@@ -29,8 +29,6 @@ use tracing::{debug, info, info_span, warn, Instrument};
 const GC_INTERVAL: Duration = Duration::from_secs(30);
 const MEMPOOL_INTERVAL: Duration = Duration::from_millis(240); // this is based on slot times and global TCP RTT, essentially we expect to collect all transactions sent in the same slot in around 240ms
 
-//const TOO_NEW_TOLERANCE: u64 = 32;
-
 pub struct TransactionPipe {
 	// The receiver for Tx execution to commit in the mempool.
 	mempool_commit_tx_receiver: futures_mpsc::Receiver<Vec<TxExecutionResult>>,
@@ -139,10 +137,10 @@ impl TransactionPipe {
 						)
 					} else {
 						tracing::info!(
-							"END TX PROCESS {} Commit tx account:{} seq_number:{}",
-							tx_result.hash,
-							tx_result.sender,
-							tx_result.seq_number
+							tx_hash = %tx_result.hash,
+							sender = %tx_result.sender,
+							sequence_number = %tx_result.seq_number,
+							"mempool rejected transaction",
 						);
 					}
 				}
@@ -319,11 +317,10 @@ impl TransactionPipe {
 			.latest_state_checkpoint_view()
 			.expect("Failed to get latest state checkpoint view.");
 		let db_seq_num = get_account_sequence_number(&state_view, transaction.sender())?;
-		tracing::info!(
-			"Tx sender {} db seq number:{} tx seq num:{}",
-			transaction.sender(),
-			db_seq_num,
-			transaction.sequence_number()
+		info!(
+			tx_sender = %transaction.sender(),
+			db_seq_num = %db_seq_num,
+			tx_seq_num = %transaction.sequence_number(),
 		);
 		let tx_hash = transaction.committed_hash();
 		let status = self.core_mempool.add_txn(
@@ -337,7 +334,7 @@ impl TransactionPipe {
 		match status.code {
 			MempoolStatusCode::Accepted => {
 				let now = chrono::Utc::now().timestamp_millis() as u64;
-				debug!("Transaction:{} accepted", tx_hash);
+				debug!(%tx_hash, "transaction accepted");
 				// increment transactions in flight
 				{
 					let mut transactions_in_flight = self.transactions_in_flight.write().unwrap();

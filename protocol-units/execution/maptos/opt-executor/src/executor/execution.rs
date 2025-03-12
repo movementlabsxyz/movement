@@ -17,7 +17,7 @@ use aptos_types::{
 };
 use futures::SinkExt;
 use movement_types::block::{BlockCommitment, Commitment, Id};
-use tracing::info;
+use tracing::{debug, info};
 
 impl Executor {
 	pub async fn execute_block(
@@ -78,7 +78,7 @@ impl Executor {
 		let tx_execution_results =
 			TxExecutionResult::merge_result(senders_and_sequence_numbers, &state_compute);
 
-		info!("Block tx execution: {:?}", tx_execution_results);
+		debug!("Block tx execution: {:?}", tx_execution_results);
 		info!("Block execution compute the following state: {:?}", state_compute);
 
 		let version = state_compute.version();
