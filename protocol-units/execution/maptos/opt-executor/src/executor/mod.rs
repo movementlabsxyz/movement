@@ -64,6 +64,8 @@ impl TxExecutionResult {
 			user_txns
 				.into_iter()
 				.zip(user_txn_status)
+				//remove all non user tx.
+				.filter(|((tx_hash, _, _), _)| tx_hash != &HashValue::zero())
 				.map(|((tx_hash, sender, seq_num), status)| {
 					TxExecutionResult::new(tx_hash, sender, seq_num, status.clone())
 				})
