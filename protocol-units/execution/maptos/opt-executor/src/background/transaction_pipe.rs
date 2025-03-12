@@ -139,10 +139,10 @@ impl TransactionPipe {
 						)
 					} else {
 						tracing::info!(
-							"END TX PROCESS {} Commit tx account:{} seq_number:{}",
-							tx_result.hash,
-							tx_result.sender,
-							tx_result.seq_number
+							tx_hash = %tx_result_hash,
+							sender = %tx_result.sender,
+							sequence_number = %tx_result.seq_number,
+							"mempool rejected transaction",
 						);
 					}
 				}
