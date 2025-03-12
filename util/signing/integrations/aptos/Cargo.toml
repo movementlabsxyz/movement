@@ -22,10 +22,10 @@ serde = { workspace = true }
 anyhow = { workspace = true }
 tracing = { workspace = true }
 ed25519-dalek = { workspace = true }
+maptos-opt-executor = { workspace = true }
 
 [dev-dependencies]
 futures = { workspace = true }
-maptos-opt-executor = { workspace = true }
 tokio = { workspace = true }
 movement-signer-hashicorp-vault = { workspace = true }
 anyhow = { workspace = true }
