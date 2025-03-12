@@ -12202,6 +12202,7 @@ dependencies = [
  "chrono",
  "dotenv",
  "ed25519-dalek 2.1.1",
+ "futures",
  "maptos-framework-release-util",
  "maptos-opt-executor",
  "movement",

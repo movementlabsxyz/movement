@@ -6,6 +6,8 @@ use aptos_crypto::CryptoMaterialError;
 use aptos_types::transaction::{
 	authenticator::AuthenticationKey, RawTransaction, SignedTransaction,
 };
+use maptos_opt_executor::executor::TxExecutionResult;
+use maptos_opt_executor::executor::EXECUTOR_CHANNEL_SIZE;
 use movement_signer::{cryptography::ed25519::Ed25519, SignerError, Signing};
 use std::future::Future;
 

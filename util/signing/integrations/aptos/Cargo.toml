@@ -19,17 +19,18 @@ aptos-sdk = { workspace = true }
 movement = { workspace = true }
 bcs = { workspace = true }
 serde = { workspace = true }
-anyhow = { workspace =  true}
+anyhow = { workspace = true }
 tracing = { workspace = true }
 ed25519-dalek = { workspace = true }
 
 [dev-dependencies]
+futures = { workspace = true }
 maptos-opt-executor = { workspace = true }
 tokio = { workspace = true }
 movement-signer-hashicorp-vault = { workspace = true }
 anyhow = { workspace = true }
 chrono = { workspace = true }
-dotenv = { workspace = true }  
+dotenv = { workspace = true }
 rand = { workspace = true }
 aptos-sdk = { workspace = true }
 aptos-storage-interface = { workspace = true }
