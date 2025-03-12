@@ -66,13 +66,13 @@ impl Task {
 			{
 				Ok(transaction) => match transaction {
 					Some((application_priority, transaction)) => {
-						info!(
+						tracing::debug!(
 							target : "movement_timing",
 							batch_id = %batch_id,
 							tx_hash = %transaction.committed_hash(),
 							sender = %transaction.sender(),
 							sequence_number = transaction.sequence_number(),
-							"received transaction",
+							"Tx ingress received transaction",
 						);
 						let serialized_aptos_transaction = bcs::to_bytes(&transaction)?;
 						let movement_transaction = movement_types::transaction::Transaction::new(
