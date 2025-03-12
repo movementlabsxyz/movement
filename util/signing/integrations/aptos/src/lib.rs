@@ -132,8 +132,14 @@ pub mod test {
 		let signed_transaction = TransactionSigner::sign_transaction(&hsm, raw_transaction).await?;
 
 		let (tx_sender, _tx_receiver) = mpsc::channel(1);
-		let (executor, _tempdir) = Executor::try_test_default_with_public_key(public_key)?;
-		let (_context, _transaction_pipe) = executor.background(tx_sender)?;
+
+		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
+			futures::channel::mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+
+		let (executor, _tempdir) =
+			Executor::try_test_default_with_public_key(public_key, mempool_tx_exec_result_sender)?;
+		let (_context, _transaction_pipe) =
+			executor.background(tx_sender, mempool_commit_tx_receiver)?;
 		let block_id = HashValue::random();
 		let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
 			block_id,
@@ -166,8 +172,13 @@ pub mod test {
 		let account_address = aptos_test_root_address();
 
 		let (tx_sender, _tx_receiver) = mpsc::channel(1);
-		let (executor, _tempdir) = Executor::try_test_default_with_public_key(public_key)?;
-		let (context, _transaction_pipe) = executor.background(tx_sender)?;
+
+		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
+			futures::channel::mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+		let (executor, _tempdir) =
+			Executor::try_test_default_with_public_key(public_key, mempool_tx_exec_result_sender)?;
+		let (context, _transaction_pipe) =
+			executor.background(tx_sender, mempool_commit_tx_receiver)?;
 
 		// Seed for random number generator, used here to generate predictable results in a test environment.
 		let seed = [3u8; 32];

@@ -1,6 +1,8 @@
 use maptos_dof_execution::{v1::Executor, DynOptFinExecutor};
 use maptos_dof_execution::{ExecutableBlock, ExecutableTransactions, SignatureVerifiedTransaction};
 use maptos_execution_util::config::Config;
+use maptos_opt_executor::executor::TxExecutionResult;
+use maptos_opt_executor::executor::EXECUTOR_CHANNEL_SIZE;
 use movement_signer_test::ed25519::TestSigner;
 use movement_signing_aptos::TransactionSigner;
 
@@ -19,7 +21,10 @@ async fn setup(mut maptos_config: Config) -> Result<(Executor, TempDir), anyhow:
 	let tempdir = tempfile::tempdir()?;
 	// replace the db path with the temporary directory
 	maptos_config.chain.maptos_db_path.replace(tempdir.path().to_path_buf());
-	let executor = Executor::try_from_config(maptos_config).await?;
+	// No mempool don't use the receiver.
+	let (mempool_tx_exec_result_sender, _mempool_commit_tx_receiver) =
+		futures::channel::mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+	let executor = Executor::try_from_config(maptos_config, mempool_tx_exec_result_sender).await?;
 	Ok((executor, tempdir))
 }
 
@@ -48,7 +53,7 @@ async fn execute_signed_transaction() -> Result<(), anyhow::Error> {
 	config.chain.maptos_private_key_signer_identifier =
 		SignerIdentifier::Local(Local { private_key_hex_bytes });
 	let signer = TestSigner::new(signing_key);
-	let (executor, _tempdir) = setup(config).await?;
+	let (mut executor, _tempdir) = setup(config).await?;
 	let transaction = create_signed_transaction(&signer).await?;
 	let block_id = HashValue::random();
 	let block_metadata = executor
