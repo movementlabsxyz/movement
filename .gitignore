@@ -30,5 +30,3 @@ venv
 *.env
 .debug
 .out
-log_file.txt
-full-node-logs.txt
