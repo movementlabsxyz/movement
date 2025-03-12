@@ -6,7 +6,7 @@ use movement_da_light_node_proto::{BatchWriteRequest, BlobWrite};
 use movement_da_util::config::Config as LightNodeConfig;
 
 use tokio::sync::mpsc;
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 
 use prost::Message;
 use std::ops::ControlFlow;
@@ -66,7 +66,7 @@ impl Task {
 			{
 				Ok(transaction) => match transaction {
 					Some((application_priority, transaction)) => {
-						tracing::debug!(
+						debug!(
 							target : "movement_timing",
 							batch_id = %batch_id,
 							tx_hash = %transaction.committed_hash(),
