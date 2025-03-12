@@ -137,7 +137,7 @@ impl TransactionPipe {
 						)
 					} else {
 						tracing::info!(
-							tx_hash = %tx_result_hash,
+							tx_hash = %tx_result.hash,
 							sender = %tx_result.sender,
 							sequence_number = %tx_result.seq_number,
 							"mempool rejected transaction",
