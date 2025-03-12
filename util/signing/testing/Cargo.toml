@@ -23,7 +23,6 @@ movement-signer-loader = { workspace = true }
 movement-signer-local = { workspace = true }
 movement-signer-aws-kms = { workspace = true }
 movement-signing-eth = { workspace = true }
-maptos-opt-executor = { workspace = true }
 aptos-crypto = { workspace = true }
 aptos-types = { workspace = true }
 anyhow = { workspace = true }

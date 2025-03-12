@@ -147,6 +147,7 @@ movement-signer-local = { path = "util/signing/providers/local" }
 movement-signer-loader = { path = "util/signing/util/loader" }
 movement-signing-aptos = { path = "util/signing/integrations/aptos" }
 movement-signing-eth = { path = "util/signing/integrations/eth" }
+movement-signer-test = { path = "util/signing/testing" }
 
 ## vault
 vaultrs = { version = "0.7.3" }
