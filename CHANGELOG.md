@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.3.0](https://github.com/movementlabsxyz/movement/compare/a156114149ef6e7329fed7cd22d1420d3df2be94..0.3.0) - 2025-03-12
+#### Features
+- partial fix seq-num (#1100) - ([a156114](https://github.com/movementlabsxyz/movement/commit/a156114149ef6e7329fed7cd22d1420d3df2be94)) - Richard Melkonian
+
+- - -
+
 ## [0.2.0](https://github.com/movementlabsxyz/movement/compare/4d86f21c69e1feac44a6e2897eeb68573b5929b5..0.2.0) - 2025-03-11
 #### Features
 - timing instrumentation for executed blocks and transactions (#1103) - ([579d353](https://github.com/movementlabsxyz/movement/commit/579d3538fb3e60e33008f5d1c801d43ada072a18)) - Mikhail Zabaluev
