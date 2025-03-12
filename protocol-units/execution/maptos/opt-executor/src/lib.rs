@@ -12,7 +12,7 @@ pub use executor::Executor;
 pub use service::Service;
 
 #[cfg(test)]
-pub mod test {
+mod tests {
 
 	use crate::executor::{TxExecutionResult, EXECUTOR_CHANNEL_SIZE};
 	use crate::Executor;
