@@ -337,7 +337,7 @@ impl TransactionPipe {
 		match status.code {
 			MempoolStatusCode::Accepted => {
 				let now = chrono::Utc::now().timestamp_millis() as u64;
-				debug!("Transaction:{} accepted", tx_hash);
+				debug!(%tx_hash, "transaction accepted");
 				// increment transactions in flight
 				{
 					let mut transactions_in_flight = self.transactions_in_flight.write().unwrap();
