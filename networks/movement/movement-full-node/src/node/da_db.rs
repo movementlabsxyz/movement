@@ -46,8 +46,9 @@ impl DaDB {
 		Ok(())
 	}
 
-	pub async fn has_executed_block(&self, id: Vec<u8>) -> Result<bool, anyhow::Error> {
+	pub async fn has_executed_block(&self, id: &[u8]) -> Result<bool, anyhow::Error> {
 		let da_db = self.inner.clone();
+		let id = id.to_vec();
 		let id = tokio::task::spawn_blocking(move || {
 			let cf = da_db
 				.cf_handle(EXECUTED_BLOCKS)

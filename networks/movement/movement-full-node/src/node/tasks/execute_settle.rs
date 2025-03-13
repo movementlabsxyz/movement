@@ -68,7 +68,7 @@ where
 	S: McrSettlementManagerOperations,
 {
 	pub async fn run(mut self) -> anyhow::Result<()> {
-		let synced_height = self.da_db.get_synced_height().await?;
+		let mut synced_height = self.da_db.get_synced_height().await?;
 		info!("DA synced height: {:?}", synced_height);
 		let mut blocks_from_da = self
 			.da_light_node_client
@@ -83,8 +83,10 @@ where
 			select! {
 				Some(res) = blocks_from_da.next() => {
 					let response = res.context("failed to get next block from DA")?;
-					debug!("Received block from DA");
-					self.process_block_from_da(response).await?;
+					debug!("Received response from DA");
+					if let Some(height) = self.process_block_from_da(response).await? {
+						synced_height = height;
+					}
 				}
 				Some(res) = self.commitment_events.next() => {
 					let event = res.context("failed to get commitment event")?;
@@ -97,10 +99,12 @@ where
 		Ok(())
 	}
 
+	// Processes a single response message from the DA received blob stream
+	// and returns the DA blob height if a new blob was received.
 	async fn process_block_from_da(
 		&mut self,
 		response: StreamReadFromHeightResponse,
-	) -> anyhow::Result<()> {
+	) -> anyhow::Result<Option<u64>> {
 		// get the block
 		let (block_bytes, block_timestamp, block_id, da_height) = match response
 			.blob
@@ -119,22 +123,22 @@ where
 			blob_response::BlobType::Heartbeat(_) => {
 				tracing::info!("Receive DA heartbeat");
 				// Do nothing.
-				return Ok(());
+				return Ok(None);
 			}
 			_ => anyhow::bail!("Invalid blob type"),
 		};
 
 		info!(
-			block_id = %hex::encode(block_id.clone()),
+			block_id = %hex::encode(&block_id),
 			da_height = da_height,
 			time = block_timestamp,
 			"Processing block from DA"
 		);
 
 		// check if the block has already been executed
-		if self.da_db.has_executed_block(block_id.clone()).await? {
+		if self.da_db.has_executed_block(&block_id).await? {
 			info!("Block already executed: {:#?}. It will be skipped", block_id);
-			return Ok(());
+			return Ok(None);
 		}
 
 		// the da height must be greater than 1
@@ -180,10 +184,10 @@ where
 				}
 			}
 		} else {
-			info!(block_id = ?block_id, "Skipping settlement");
+			debug!(?block_id, "Skipping settlement");
 		}
 
-		Ok(())
+		Ok(Some(da_height))
 	}
 }
 
