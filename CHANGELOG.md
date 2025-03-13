@@ -2,6 +2,15 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.3.1](https://github.com/movementlabsxyz/movement/compare/616d714d116e8361583eead2170fe0e7d0f8735c..0.3.1) - 2025-03-13
+#### Bug Fixes
+- correct add tx to mempool logic (#1106) - ([c56dd90](https://github.com/movementlabsxyz/movement/commit/c56dd9078622e800fe160514613cc1b596e35132)) - Philippe Delrieu
+- deduplicate execute_block tracing spans (#1104) - ([ccdfeed](https://github.com/movementlabsxyz/movement/commit/ccdfeedb92fb425057669b7291c4eb86fc0e5d18)) - Mikhail Zabaluev
+#### Miscellaneous Chores
+- remove unused jupyter notebook (#1105) - ([616d714](https://github.com/movementlabsxyz/movement/commit/616d714d116e8361583eead2170fe0e7d0f8735c)) - Richard Melkonian
+
+- - -
+
 ## [0.3.0](https://github.com/movementlabsxyz/movement/compare/a156114149ef6e7329fed7cd22d1420d3df2be94..0.3.0) - 2025-03-12
 #### Features
 - partial fix seq-num (#1100) - ([a156114](https://github.com/movementlabsxyz/movement/commit/a156114149ef6e7329fed7cd22d1420d3df2be94)) - Richard Melkonian
