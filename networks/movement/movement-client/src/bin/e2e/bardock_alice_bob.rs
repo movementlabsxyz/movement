@@ -14,16 +14,17 @@ use tokio::time::sleep;
 use url::Url;
 
 fn main() {
-	// Define the Test config. Use the default parameters.
 	let mut config = ExecutionConfig::default();
+
+	// Set some params for the load test, drive some requests
 	config.kind = TestKind::Soak {
-		min_scenarios: 100,
-		max_scenarios: 100,
+		min_scenarios: 20,
+		max_scenarios: 20,
 		duration: std::time::Duration::from_secs(300), // 5 minutes
 		number_cycle: 1,
 	};
 
-	config.number_scenario_per_client = 50; // 50 Client Requests
+	config.number_scenario_per_client = 20; // 20Client Requests
 
 	// Init the Test before execution
 	if let Err(err) = init_test(&config) {
@@ -84,8 +85,8 @@ static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
 #[async_trait::async_trait]
 impl Scenario for BasicScenario {
 	async fn run(self: Box<Self>) -> Result<()> {
-		// Sleep for 5 seconds before each Scenario run to not get Rate Limited
-		sleep(Duration::from_secs(5)).await;
+		// Sleep for 7 seconds before each Scenario run to not get Rate Limited
+		sleep(Duration::from_secs(7)).await;
 
 		let rest_client = Client::new(NODE_URL.clone());
 		let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
