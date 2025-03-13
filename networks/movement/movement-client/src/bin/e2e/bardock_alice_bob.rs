@@ -20,7 +20,7 @@ fn main() {
 	config.kind = TestKind::Soak {
 		min_scenarios: 20,
 		max_scenarios: 20,
-		duration: std::time::Duration::from_secs(300), // 5 minutes
+		duration: std::time::Duration::from_secs(600), // 10 minutes
 		number_cycle: 1,
 	};
 
@@ -86,7 +86,7 @@ static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
 impl Scenario for BasicScenario {
 	async fn run(self: Box<Self>) -> Result<()> {
 		// Sleep for 7 seconds before each Scenario run to not get Rate Limited
-		sleep(Duration::from_secs(7)).await;
+		sleep(Duration::from_secs(5)).await;
 
 		let rest_client = Client::new(NODE_URL.clone());
 		let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
