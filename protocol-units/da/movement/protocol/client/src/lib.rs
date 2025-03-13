@@ -1,6 +1,9 @@
 pub mod http1;
 pub mod http2;
 
+use anyhow::Context;
+use tokio::time::sleep;
+
 /// An enum wrapping MovementDaLightNodeClients over complex types.
 ///
 /// The usage of hype by tonic and related libraries makes it very difficult to maintain generic types for the clients. This enum simplifies client construction and usage.
@@ -15,18 +18,10 @@ pub enum MovementDaLightNodeClient {
 impl MovementDaLightNodeClient {
 	/// Creates an http1 connection to the light node service.
 	pub fn try_http1(connection_string: &str) -> Result<Self, anyhow::Error> {
-		for _ in 0..5 {
-			match http1::Http1::try_new(connection_string) {
-				Ok(result) => return Ok(Self::Http1(result)),
-				Err(err) => {
-					tracing::warn!("DA Http1 connection failed: {}. Retrying in 5s...", err);
-					std::thread::sleep(std::time::Duration::from_secs(5));
-				}
-			}
-		}
-		return Err(
-			anyhow::anyhow!("Error DA Http1 connection failed more than 5 time aborting.",),
-		);
+		// There is no immediate connection with HTTP 1.1, no need to retry.
+		let client =
+			http1::Http1::try_new(connection_string).context("DA HTTP/1 connection failed")?;
+		Ok(Self::Http1(client))
 	}
 
 	/// Creates an http2 connection to the light node service.
@@ -35,14 +30,12 @@ impl MovementDaLightNodeClient {
 			match http2::Http2::connect(connection_string).await {
 				Ok(result) => return Ok(Self::Http2(result)),
 				Err(err) => {
-					tracing::warn!("DA Http2 connection failed: {}. Retrying in 5s...", err);
-					std::thread::sleep(std::time::Duration::from_secs(5));
+					tracing::warn!("DA HTTP/2 connection failed: {}. Retrying in 5s...", err);
+					sleep(std::time::Duration::from_secs(5)).await;
 				}
 			}
 		}
-		return Err(
-			anyhow::anyhow!("Error DA Http2 connection failed more than 5 time aborting.",),
-		);
+		return Err(anyhow::anyhow!("DA HTTP/2 connection failed more than 5 times, aborting.",));
 	}
 
 	/// Stream reads from a given height.

@@ -13,15 +13,15 @@ rust-version = { workspace = true }
 
 [dependencies]
 movement-da-light-node-proto = { workspace = true, features = ["client"] }
-tonic = { workspace = true, features = ["tls", "tls-webpki-roots"]}
+tokio = { workspace = true }
+tonic = { workspace = true, features = ["tls", "tls-webpki-roots"] }
 tonic-web = { workspace = true }
 hyper-util = { workspace = true }
 tower = { workspace = true }
 http-body-util = { workspace = true }
-bytes = { workspace = true } 
+bytes = { workspace = true }
 anyhow = { workspace = true }
 tracing = { workspace = true }
-
 
 [lints]
 workspace = true

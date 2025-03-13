@@ -11767,6 +11767,7 @@ dependencies = [
  "http-body-util",
  "hyper-util",
  "movement-da-light-node-proto",
+ "tokio",
  "tonic 0.12.3",
  "tonic-web",
  "tower 0.5.1",
