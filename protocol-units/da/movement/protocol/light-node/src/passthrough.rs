@@ -198,7 +198,7 @@ where
 		&self,
 		_request: tonic::Request<StreamReadLatestRequest>,
 	) -> std::result::Result<tonic::Response<Self::StreamReadLatestStream>, tonic::Status> {
-		unimplemented!()
+		Err(tonic::Status::unimplemented(""))
 	}
 	/// Server streaming response type for the StreamWriteCelestiaBlob method.
 	type StreamWriteBlobStream = std::pin::Pin<
@@ -209,21 +209,21 @@ where
 		&self,
 		_request: tonic::Request<tonic::Streaming<StreamWriteBlobRequest>>,
 	) -> std::result::Result<tonic::Response<Self::StreamWriteBlobStream>, tonic::Status> {
-		unimplemented!()
+		Err(tonic::Status::unimplemented(""))
 	}
 	/// Read blobs at a specified height.
 	async fn read_at_height(
 		&self,
 		_request: tonic::Request<ReadAtHeightRequest>,
 	) -> std::result::Result<tonic::Response<ReadAtHeightResponse>, tonic::Status> {
-		unimplemented!()
+		Err(tonic::Status::unimplemented(""))
 	}
 	/// Batch read and write operations for efficiency.
 	async fn batch_read(
 		&self,
 		_request: tonic::Request<BatchReadRequest>,
 	) -> std::result::Result<tonic::Response<BatchReadResponse>, tonic::Status> {
-		unimplemented!()
+		Err(tonic::Status::unimplemented(""))
 	}
 
 	/// Batch write blobs.

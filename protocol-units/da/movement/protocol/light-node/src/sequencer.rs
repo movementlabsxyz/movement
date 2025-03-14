@@ -365,8 +365,9 @@ where
 		&self,
 		_request: tonic::Request<tonic::Streaming<grpc::StreamWriteBlobRequest>>,
 	) -> std::result::Result<tonic::Response<Self::StreamWriteBlobStream>, tonic::Status> {
-		unimplemented!("stream_write_blob")
+		Err(tonic::Status::unimplemented(""))
 	}
+
 	/// Read blobs at a specified height.
 	async fn read_at_height(
 		&self,
