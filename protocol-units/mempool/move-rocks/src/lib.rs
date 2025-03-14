@@ -267,6 +267,9 @@ impl MempoolTransactionOperations for RocksdbMempool {
 			match iter.next() {
 				None => return Ok(None), // No transactions to pop
 				Some(res) => {
+					// Drop the database reader early
+					drop(iter);
+
 					let (key, value) = res?;
 					let transaction: MempoolTransaction = bcs::from_bytes(&value)?;
 
