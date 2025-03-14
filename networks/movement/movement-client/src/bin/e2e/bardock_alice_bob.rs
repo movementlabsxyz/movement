@@ -114,20 +114,6 @@ impl Scenario for BasicScenario {
 		tracing::info!("{} After Bod create_account", self.id);
 		self.log_exec_info(&format!("{} After Bod create_account", self.id));
 
-		// Print initial balances.
-		// tracing::info!(
-		// 	"Scenario:{}\n=== Initial Balances ===\nAlice: {:?}\nBob: {:?}",
-		// 	self.id,
-		// 	coin_client
-		// 		.get_account_balance(&alice.address())
-		// 		.await
-		// 		.context("Failed to get Alice's account balance")?,
-		// 	coin_client
-		// 		.get_account_balance(&bob.address())
-		// 		.await
-		// 		.context("Failed to get Bob's account balance")?
-		// );
-
 		// Have Alice send Bob some coins.
 		let txn_hash = coin_client
 			.transfer(&mut alice, bob.address(), 1_000, None)
@@ -159,6 +145,7 @@ impl Scenario for BasicScenario {
 			.transfer(&mut alice, bob.address(), 1_000, None)
 			.await
 			.context("Failed to submit transaction to transfer coins")?;
+		tracing::info!("Alice Transfer To Bob tx_hash: {:?}", txn_hash);
 		rest_client
 			.wait_for_transaction(&txn_hash)
 			.await
@@ -183,7 +170,8 @@ impl Scenario for BasicScenario {
 			.transfer(&mut alice, bob.address(), 1_000, None)
 			.await
 			.context("Failed to submit transaction to transfer coins")?; // <:!:section_5
-															 // :!:>section_6
+		tracing::info!("Alice Transfer To Bob tx_hash: {:?}", txn_hash);
+		// :!:>section_6
 		rest_client
 			.wait_for_transaction(&txn_hash)
 			.await
