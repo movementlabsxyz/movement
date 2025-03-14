@@ -255,6 +255,8 @@ where
 		}
 	}
 
+	// FIXME: this does not work correctly, see details in move-rocks
+	#[allow(dead_code)]
 	async fn run_gc(&self) -> Result<(), anyhow::Error> {
 		loop {
 			self.memseq.gc().await?;
@@ -268,7 +270,7 @@ where
 			match futures::try_join!(
 				self.run_block_builder(sender.clone()),
 				self.run_block_publisher(&mut receiver),
-				self.run_gc(),
+				// self.run_gc(),
 			) {
 				Ok(_) => {
 					info!("block proposer completed");
