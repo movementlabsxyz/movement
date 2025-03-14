@@ -145,7 +145,7 @@ where
 		// this has an internal timeout based on its building time
 		// so in the worst case scenario we will roughly double the internal timeout
 		let uid = LOGGING_UID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-		debug!(target: "movement_timing", uid = %uid, "waiting_for_next_block",);
+		info!(target: "movement_timing", uid = %uid, "waiting_for_next_block",);
 		let block = memseq.wait_for_next_block().await?;
 		match block {
 			Some(block) => {
