@@ -103,6 +103,7 @@ impl<T: MempoolTransactionOperations> Sequencer for Memseq<T> {
 
 	/// Waits for the next block to be built, either when the block size is reached or the building time expires.
 	async fn wait_for_next_block(&self) -> Result<Option<Block>, anyhow::Error> {
+		info!(target: "movement_timing",  "CALLED wait_for_next_block");
 		let mut transactions = Vec::with_capacity(self.block_size as usize);
 
 		let now = Instant::now();
@@ -111,6 +112,8 @@ impl<T: MempoolTransactionOperations> Sequencer for Memseq<T> {
 		loop {
 			let current_block_size = transactions.len() as u32;
 			if current_block_size >= self.block_size {
+				info!("block is above the size limit");
+				info!(target: "movement_timing",  "BREAK out of wait_for_next_block");
 				break;
 			}
 
@@ -119,6 +122,8 @@ impl<T: MempoolTransactionOperations> Sequencer for Memseq<T> {
 			transactions.append(&mut transactions_to_add);
 
 			if let Err(_) = tokio::time::timeout_at(build_deadline, self.changed.notified()).await {
+				info!(target: "movement_timing",  "block building deadline elapsed");
+				info!(target: "movement_timing",  "BREAK out of wait_for_next_block");
 				break;
 			}
 		}
