@@ -1,3 +1,4 @@
+use futures::future::join_all;
 use movement_da_light_node_da::DaOperations;
 use movement_da_light_node_prevalidator::{aptos::whitelist::Validator, PrevalidatorOperations};
 use movement_signer::cryptography::secp256k1::Secp256k1;
@@ -163,13 +164,29 @@ where
 	}
 
 	/// Submits blocks to the pass through.
+	///
+	/// Note: if you change the block submission architecture to an eventually consistent submission pattern, you will want to revert this to a sequential submission.
+	/// Currently, all of the blobs can just be sent through because we are relying on Celestia for order.
 	async fn submit_blocks(&self, blocks: Vec<Block>) -> Result<(), anyhow::Error> {
-		for block in blocks {
+		let futures = blocks.into_iter().map(|block| async {
 			let data: InnerSignedBlobV1Data<C> = block.try_into()?;
 			let blob = data.try_to_sign(&self.pass_through.signer).await?;
 			self.pass_through.da.submit_blob(blob.into()).await?;
-		}
+			Ok::<(), anyhow::Error>(())
+		});
 
+		join_all(futures).await.into_iter().collect::<Result<(), _>>()?;
+		Ok(())
+	}
+
+	/// Collapses the back-pressured blocks into a single block and submits it.
+	///
+	/// todo: mark not pub once this is actually used
+	pub async fn submit_collapsed_blocks(&self, blocks: Vec<Block>) -> Result<(), anyhow::Error> {
+		let block = Block::collapse(blocks);
+		let data: InnerSignedBlobV1Data<C> = block.try_into()?;
+		let blob = data.try_to_sign(&self.pass_through.signer).await?;
+		self.pass_through.da.submit_blob(blob.into()).await?;
 		Ok(())
 	}
 

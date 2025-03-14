@@ -539,3 +539,5 @@ pub mod test {
 		}
 	}
 }
+
+pub mod degradation_tests {}
