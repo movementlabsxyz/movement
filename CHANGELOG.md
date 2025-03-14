@@ -2,6 +2,23 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.3.2](https://github.com/movementlabsxyz/movement/compare/19d6bad30f58c7647c05c95e763229d05c3c9713..0.3.2) - 2025-03-14
+#### Bug Fixes
+- quick fixes for DA sequencer (#1110) - ([19d6bad](https://github.com/movementlabsxyz/movement/commit/19d6bad30f58c7647c05c95e763229d05c3c9713)) - Mikhail Zabaluev
+#### Miscellaneous Chores
+- instrument info logs in hungry loop (#1109) - ([59aa25a](https://github.com/movementlabsxyz/movement/commit/59aa25a43ec6b02273c04944537b6d0b03d1a4f4)) - Richard Melkonian
+
+- - -
+
+## [0.3.1](https://github.com/movementlabsxyz/movement/compare/616d714d116e8361583eead2170fe0e7d0f8735c..0.3.1) - 2025-03-13
+#### Bug Fixes
+- correct add tx to mempool logic (#1106) - ([c56dd90](https://github.com/movementlabsxyz/movement/commit/c56dd9078622e800fe160514613cc1b596e35132)) - Philippe Delrieu
+- deduplicate execute_block tracing spans (#1104) - ([ccdfeed](https://github.com/movementlabsxyz/movement/commit/ccdfeedb92fb425057669b7291c4eb86fc0e5d18)) - Mikhail Zabaluev
+#### Miscellaneous Chores
+- remove unused jupyter notebook (#1105) - ([616d714](https://github.com/movementlabsxyz/movement/commit/616d714d116e8361583eead2170fe0e7d0f8735c)) - Richard Melkonian
+
+- - -
+
 ## [0.3.0](https://github.com/movementlabsxyz/movement/compare/a156114149ef6e7329fed7cd22d1420d3df2be94..0.3.0) - 2025-03-12
 #### Features
 - partial fix seq-num (#1100) - ([a156114](https://github.com/movementlabsxyz/movement/commit/a156114149ef6e7329fed7cd22d1420d3df2be94)) - Richard Melkonian
