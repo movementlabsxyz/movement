@@ -140,16 +140,17 @@ where
 	V: VerifierOperations<DaBlob<C>, DaBlob<C>>,
 {
 	async fn tick_build_blocks(&self, sender: Sender<Block>) -> Result<(), anyhow::Error> {
+		info!(target: "movement_timing", "tick_build_blocks");
 		let memseq = self.memseq.clone();
 
 		// this has an internal timeout based on its building time
 		// so in the worst case scenario we will roughly double the internal timeout
 		let uid = LOGGING_UID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-		debug!(target: "movement_timing", uid = %uid, "waiting_for_next_block",);
+		info!(target: "movement_timing", tick = &uid, "CALLED tick_build_blocks tick");
 		let block = memseq.wait_for_next_block().await?;
 		match block {
 			Some(block) => {
-				info!(target: "movement_timing", block_id = %block.id(), uid = %uid, transaction_count = block.transactions().len(), "received_block");
+				info!(target: "movement_timing", block_id = %block.id(), uid = %uid, transaction_count = block.transactions().len(), "tick_build_blocks: received_block");
 				sender.send(block).await?;
 				Ok(())
 			}
@@ -265,6 +266,7 @@ where
 		let (sender, mut receiver) = tokio::sync::mpsc::channel(2 ^ 10);
 
 		loop {
+			info!(target: "movement_timing", "START: run_block_propoer iteration");
 			match futures::try_join!(
 				self.run_block_builder(sender.clone()),
 				self.run_block_publisher(&mut receiver),
