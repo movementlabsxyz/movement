@@ -106,6 +106,23 @@ impl Block {
 	pub fn add_transaction(&mut self, transaction: Transaction) {
 		self.transactions.insert(transaction);
 	}
+
+	pub fn collapse(blocks: Vec<Block>) -> Block {
+		let mut transactions = BTreeSet::new();
+		let parent = if let Some(first_block) = blocks.first() {
+			first_block.parent
+		} else {
+			Id::genesis_block()
+		};
+
+		for block in blocks {
+			for transaction in block.transactions {
+				transactions.insert(transaction);
+			}
+		}
+
+		Block::new(BlockMetadata::BlockMetadata, parent, transactions)
+	}
 }
 
 #[derive(
