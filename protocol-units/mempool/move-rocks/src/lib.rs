@@ -347,7 +347,7 @@ impl MempoolTransactionOperations for RocksdbMempool {
 			let mut transaction_count = 0;
 			let mut batch = WriteBatch::default();
 
-			if let Some(res) = iter.next() {
+			while let Some(res) = iter.next() {
 				let (key, value) = res?;
 				let transaction: MempoolTransaction = bcs::from_bytes(&value)?;
 
