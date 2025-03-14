@@ -1,0 +1,47 @@
+{"timestamp":"2025-03-14T02:01:56.684002Z","level":"INFO","fields":{"msg":"1 Before alice fund"},"target":"exec"}
+{"timestamp":"2025-03-14T02:01:56.685295Z","level":"INFO","fields":{"msg":"2 Before alice fund"},"target":"exec"}
+{"timestamp":"2025-03-14T02:01:56.685814Z","level":"INFO","fields":{"msg":"3 Before alice fund"},"target":"exec"}
+{"timestamp":"2025-03-14T02:01:56.686314Z","level":"INFO","fields":{"msg":"4 Before alice fund"},"target":"exec"}
+{"timestamp":"2025-03-14T02:01:56.686803Z","level":"INFO","fields":{"msg":"5 Before alice fund"},"target":"exec"}
+{"timestamp":"2025-03-14T02:01:56.687286Z","level":"INFO","fields":{"msg":"6 Before alice fund"},"target":"exec"}
+{"timestamp":"2025-03-14T02:01:56.687777Z","level":"INFO","fields":{"msg":"7 Before alice fund"},"target":"exec"}
+{"timestamp":"2025-03-14T02:01:56.688280Z","level":"INFO","fields":{"msg":"8 Before alice fund"},"target":"exec"}
+{"timestamp":"2025-03-14T02:01:56.688765Z","level":"INFO","fields":{"msg":"9 Before alice fund"},"target":"exec"}
+{"timestamp":"2025-03-14T02:01:56.689252Z","level":"INFO","fields":{"msg":"10 Before alice fund"},"target":"exec"}
+{"timestamp":"2025-03-14T02:02:06.863075Z","level":"INFO","fields":{"msg":"9 Before Bod create_account"},"target":"exec"}
+{"timestamp":"2025-03-14T02:02:07.587109Z","level":"INFO","fields":{"msg":"1 Before Bod create_account"},"target":"exec"}
+{"timestamp":"2025-03-14T02:02:39.825761Z","level":"INFO","fields":{"msg":"9 After Bod create_account"},"target":"exec"}
+{"timestamp":"2025-03-14T02:02:39.837919Z","level":"INFO","fields":{"message":"Scenario:9\n=== Initial Balances ===\nAlice: 100000000\nBob: 0"},"target":"movement_tests_e2e_basic_alice_bob"}
+{"timestamp":"2025-03-14T02:02:40.555955Z","level":"INFO","fields":{"msg":"4 Before Bod create_account"},"target":"exec"}
+{"timestamp":"2025-03-14T02:02:41.282721Z","level":"INFO","fields":{"msg":"10 Before Bod create_account"},"target":"exec"}
+{"timestamp":"2025-03-14T02:02:41.998522Z","level":"INFO","fields":{"msg":"5 Before Bod create_account"},"target":"exec"}
+{"timestamp":"2025-03-14T02:02:42.714858Z","level":"INFO","fields":{"msg":"3 Before Bod create_account"},"target":"exec"}
+{"timestamp":"2025-03-14T02:02:43.431321Z","level":"INFO","fields":{"msg":"6 Before Bod create_account"},"target":"exec"}
+{"timestamp":"2025-03-14T02:02:44.148297Z","level":"INFO","fields":{"msg":"2 Before Bod create_account"},"target":"exec"}
+{"timestamp":"2025-03-14T02:02:44.865008Z","level":"INFO","fields":{"msg":"7 Before Bod create_account"},"target":"exec"}
+{"timestamp":"2025-03-14T02:02:45.756899Z","level":"INFO","fields":{"msg":"8 Before Bod create_account"},"target":"exec"}
+{"timestamp":"2025-03-14T02:03:04.808935Z","level":"INFO","fields":{"message":"Scenario:9\n=== Intermediate Balances ===\nAlice: 99998300\nBob: 1000"},"target":"movement_tests_e2e_basic_alice_bob"}
+{"timestamp":"2025-03-14T02:03:04.808967Z","level":"INFO","fields":{"msg":"Scenario:9 ended"},"target":"exec"}
+{"timestamp":"2025-03-14T02:03:05.908968Z","level":"INFO","fields":{"log":"Scenario:1 execution failed because: FaucetClientError { inner: Inner { kind: Unknown, source: Some(Unknown(Transaction expired. It is guaranteed it will not be committed on chain.)) } }"},"target":"exec"}
+{"timestamp":"2025-03-14T02:03:05.909126Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":1,\"elapse_millli\":69230,\"result\":\"Fail\"}"},"target":"exec"}
+{"timestamp":"2025-03-14T02:03:34.294998Z","level":"INFO","fields":{"message":"Scenario:9\n=== Intermediate Balances ===\n Alice: 99996600\n Bob: 2000"},"target":"movement_tests_e2e_basic_alice_bob"}
+{"timestamp":"2025-03-14T02:03:47.013309Z","level":"INFO","fields":{"log":"Scenario:8 execution failed because: FaucetClientError { inner: Inner { kind: Unknown, source: Some(Unknown(Transaction expired. It is guaranteed it will not be committed on chain.)) } }"},"target":"exec"}
+{"timestamp":"2025-03-14T02:03:47.013412Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":8,\"elapse_millli\":110335,\"result\":\"Fail\"}"},"target":"exec"}
+{"timestamp":"2025-03-14T02:03:47.082294Z","level":"INFO","fields":{"log":"Scenario:5 execution failed because: FaucetClientError { inner: Inner { kind: Unknown, source: Some(Unknown(Transaction expired. It is guaranteed it will not be committed on chain.)) } }"},"target":"exec"}
+{"timestamp":"2025-03-14T02:03:47.082406Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":5,\"elapse_millli\":110404,\"result\":\"Fail\"}"},"target":"exec"}
+{"timestamp":"2025-03-14T02:03:47.199745Z","level":"INFO","fields":{"log":"Scenario:3 execution failed because: FaucetClientError { inner: Inner { kind: Unknown, source: Some(Unknown(Transaction expired. It is guaranteed it will not be committed on chain.)) } }"},"target":"exec"}
+{"timestamp":"2025-03-14T02:03:47.199846Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":3,\"elapse_millli\":110522,\"result\":\"Fail\"}"},"target":"exec"}
+{"timestamp":"2025-03-14T02:03:47.257020Z","level":"INFO","fields":{"log":"Scenario:6 execution failed because: FaucetClientError { inner: Inner { kind: Unknown, source: Some(Unknown(Transaction expired. It is guaranteed it will not be committed on chain.)) } }"},"target":"exec"}
+{"timestamp":"2025-03-14T02:03:47.257090Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":6,\"elapse_millli\":110579,\"result\":\"Fail\"}"},"target":"exec"}
+{"timestamp":"2025-03-14T02:03:47.352999Z","level":"INFO","fields":{"log":"Scenario:10 execution failed because: FaucetClientError { inner: Inner { kind: Unknown, source: Some(Unknown(Transaction expired. It is guaranteed it will not be committed on chain.)) } }"},"target":"exec"}
+{"timestamp":"2025-03-14T02:03:47.353076Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":10,\"elapse_millli\":110675,\"result\":\"Fail\"}"},"target":"exec"}
+{"timestamp":"2025-03-14T02:03:47.430203Z","level":"INFO","fields":{"log":"Scenario:7 execution failed because: FaucetClientError { inner: Inner { kind: Unknown, source: Some(Unknown(Transaction expired. It is guaranteed it will not be committed on chain.)) } }"},"target":"exec"}
+{"timestamp":"2025-03-14T02:03:47.430303Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":7,\"elapse_millli\":110752,\"result\":\"Fail\"}"},"target":"exec"}
+{"timestamp":"2025-03-14T02:03:47.990839Z","level":"INFO","fields":{"message":"Scenario:9\n=== Final Balances ===\n Alice: 99994900\n Bob: 3000"},"target":"movement_tests_e2e_basic_alice_bob"}
+{"timestamp":"2025-03-14T02:03:47.991153Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":9,\"elapse_millli\":111313,\"result\":\"Ok\"}"},"target":"exec"}
+{"timestamp":"2025-03-14T02:03:48.704140Z","level":"INFO","fields":{"log":"Scenario:2 execution failed because: FaucetClientError { inner: Inner { kind: Unknown, source: Some(Unknown(Transaction expired. It is guaranteed it will not be committed on chain.)) } }"},"target":"exec"}
+{"timestamp":"2025-03-14T02:03:48.704238Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":2,\"elapse_millli\":112026,\"result\":\"Fail\"}"},"target":"exec"}
+{"timestamp":"2025-03-14T02:04:19.708795Z","level":"INFO","fields":{"log":"Scenario:4 execution failed because: FaucetClientError { inner: Inner { kind: Unknown, source: Some(Unknown(Ledger on endpoint (http://0.0.0.0:30731/v1/) is more than 60s behind current time, timing out waiting for the transaction. Warning, transaction (42f45e81) might still succeed.)) } }"},"target":"exec"}
+{"timestamp":"2025-03-14T02:04:19.708906Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":4,\"elapse_millli\":143031,\"result\":\"Fail\"}"},"target":"exec"}
+{"timestamp":"2025-03-14T02:04:19.708952Z","level":"INFO","fields":{"metrics_client_execution":"{\"average_execution_time_milli\":111313}"},"target":"exec"}
+{"timestamp":"2025-03-14T02:04:19.709053Z","level":"INFO","fields":{"metrics_average_exec_time":"111313"},"target":"exec"}
