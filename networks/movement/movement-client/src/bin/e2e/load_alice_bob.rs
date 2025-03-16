@@ -89,10 +89,12 @@ static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
 #[async_trait::async_trait]
 impl Scenario for BasicScenario {
 	async fn prepare(&mut self) -> Result<(), anyhow::Error> {
+		let rest_client = Client::new(NODE_URL.clone());
 		let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
+		let coin_client = CoinClient::new(&rest_client); // Print initial balances.
 
 		// Create two accounts locally, Alice and Bob.
-		let alice = LocalAccount::generate(&mut rand::rngs::OsRng);
+		let mut alice = LocalAccount::generate(&mut rand::rngs::OsRng);
 		let bob = LocalAccount::generate(&mut rand::rngs::OsRng); // <:!:section_2
 
 		// Print account addresses.
@@ -107,43 +109,30 @@ impl Scenario for BasicScenario {
 		faucet_client.fund(alice.address(), 100_000_000_000).await?;
 		faucet_client.create_account(bob.address()).await?;
 
-		self.alice = Some(alice);
-		self.bob = Some(bob);
-		tracing::info!("Scenario:{} prepare account created and founded", self.id,);
-		Ok(())
-	}
-
-	async fn run(mut self: Box<Self>) -> Result<()> {
-		let rest_client = Client::new(NODE_URL.clone());
-		let coin_client = CoinClient::new(&rest_client); // Print initial balances.
-
-		let alice = self.alice.as_mut().unwrap();
-		let bob = self.bob.as_mut().unwrap();
-
-		tracing::info!(
-			"Scenario:{}\n=== Initial Balances ===\nAlice: {:?}\nBob: {:?}",
-			self.id,
-			coin_client
-				.get_account_balance(&alice.address())
-				.await
-				.context("Failed to get Alice's account balance")?,
-			coin_client
-				.get_account_balance(&bob.address())
-				.await
-				.context("Failed to get Bob's account balance")?
-		);
-
 		// Have Alice send Bob some coins.
 		let txn_hash = coin_client
-			.transfer(alice, bob.address(), 1_000_000, None)
+			.transfer(&mut alice, bob.address(), 1_000_000, None)
 			.await
 			.context("Failed to submit transaction to transfer coins")?;
 		rest_client
 			.wait_for_transaction(&txn_hash)
 			.await
 			.context("Failed when waiting for the transfer transaction")?;
+		tracing::info!("Scenario:{} prepare done. account created and founded", self.id,);
 
-		for _ in 0..5 {
+		self.alice = Some(alice);
+		self.bob = Some(bob);
+		Ok(())
+	}
+
+	async fn run(&mut self) -> Result<()> {
+		let rest_client = Client::new(NODE_URL.clone());
+		let coin_client = CoinClient::new(&rest_client); // Print initial balances.
+
+		let alice = self.alice.as_mut().unwrap();
+		let bob = self.bob.as_mut().unwrap();
+
+		for _ in 0..2 {
 			// Have Bod send Alice some coins.
 			let txn_hash = coin_client
 				.transfer(bob, alice.address(), 10, None)

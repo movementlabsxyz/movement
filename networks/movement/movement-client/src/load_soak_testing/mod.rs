@@ -266,8 +266,9 @@ impl TestClient {
 			}
 		}
 
-		scenarios.into_iter().for_each(|(id, scenario)| {
-			set.spawn(futures::future::join(futures::future::ready(id), scenario.run()));
+		scenarios.into_iter().for_each(|(id, mut scenario)| {
+			let exec = async move { scenario.run().await };
+			set.spawn(futures::future::join(futures::future::ready(id), exec));
 		});
 		while let Some(res) = set.join_next().await {
 			let elapse = start_time.elapsed().as_millis();
@@ -299,18 +300,29 @@ impl TestClient {
 		duration: std::time::Duration,
 	) -> Vec<ScenarioExecMetric> {
 		let initial_start_time = std::time::Instant::now();
+		let mut scenario_results = vec![];
+
+		let mut scenarios = vec![];
+		for id in scenario_chunk {
+			let mut scenario = create_scenario(id);
+			match scenario.prepare().await {
+				Ok(()) => scenarios.push((id, scenario)),
+				Err(err) => {
+					tracing::warn!("Error during scenario prepare: {err}");
+					scenario_results.push(ScenarioExecMetric::new(0, 0, ScenarioExecResult::Fail));
+				}
+			}
+		}
 
 		let mut set = tokio::task::JoinSet::new();
 		//start min scenario
-		scenario_chunk.into_iter().for_each(|id| {
-			let create_scenario = create_scenario.clone();
+		scenarios.into_iter().for_each(|(id, scenario)| {
 			set.spawn(futures::future::join(
 				futures::future::ready(id),
-				run_scenarion_in_loop(id, create_scenario, duration.clone()),
+				run_scenarion_in_loop(id, scenario, duration.clone()),
 			));
 		});
 
-		let mut scenario_results = vec![];
 		while let Some(res) = set.join_next().await {
 			let metrics = match res {
 				Ok((id, Ok(elapse))) => ScenarioExecMetric::new(id, elapse, ScenarioExecResult::Ok),
@@ -338,7 +350,7 @@ impl TestClient {
 
 async fn run_scenarion_in_loop(
 	id: usize,
-	create_scanario: Arc<scenario::CreateScenarioFn>,
+	mut scenario: Box<dyn Scenario>,
 	duration: Duration,
 ) -> Result<u128, anyhow::Error> {
 	let start_time = std::time::Instant::now();
@@ -351,11 +363,6 @@ async fn run_scenarion_in_loop(
 
 		tracing::info!("{id} start new test");
 		let exec_start_time = std::time::Instant::now();
-		let mut scenario = create_scanario(id);
-		if let Err(err) = scenario.prepare().await {
-			tracing::warn!("Error during scenario prepare: {err}");
-			break;
-		}
 
 		scenario.run().await?;
 		let exec_elapse = exec_start_time.elapsed().as_millis();

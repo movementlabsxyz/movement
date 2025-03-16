@@ -45,7 +45,7 @@ impl ScenarioDemo {
 
 #[async_trait::async_trait]
 impl Scenario for ScenarioDemo {
-	async fn run(self: Box<Self>) -> Result<()> {
+	async fn run(&mut self) -> Result<()> {
 		// Trace in the log file and stdout.
 		tracing::info!("Scenarios:{} start", self.id);
 		let _ = tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
