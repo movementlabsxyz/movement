@@ -12,8 +12,12 @@ use super::EXEC_LOG_FILTER;
 ///
 ///  Return the execution result. If the scenario fails, return an error.
 #[async_trait::async_trait]
-pub trait Scenario {
+pub trait Scenario: Send {
 	async fn run(self: Box<Self>) -> Result<(), anyhow::Error>;
+
+	async fn prepare(&mut self) -> Result<(), anyhow::Error> {
+		Ok(())
+	}
 
 	fn log_exec_info(&self, msg: &str) {
 		tracing::info!(target:EXEC_LOG_FILTER, msg);
