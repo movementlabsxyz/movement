@@ -23,6 +23,10 @@ name = "movement-tests-e2e-soak-alice-bob"
 path = "src/bin/e2e/soak_alice_bob.rs"
 
 [[bin]]
+name = "bardock-tests-load-soak-basic"
+path = "src/bin/e2e/bardock_alice_bob.rs"
+
+[[bin]]
 name = "movement-tests-e2e-simple-interaction"
 path = "src/bin/e2e/simple_interaction.rs"
 

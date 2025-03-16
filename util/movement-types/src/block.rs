@@ -224,3 +224,30 @@ pub enum BlockCommitmentEvent {
 	Accepted(BlockCommitment),
 	Rejected { height: u64, reason: BlockCommitmentRejectionReason },
 }
+
+pub mod test {
+
+	#[test]
+	fn test_collapse_blocks() {
+		// check transactions are deduplicated
+		let block1 = super::Block::test();
+		let block2 = super::Block::test();
+
+		let collapsed_block = super::Block::collapse(vec![block1.clone(), block2]);
+
+		// assert transactions equals test transactions
+		let test = super::Block::test();
+		assert_eq!(collapsed_block.transactions().count(), 1);
+		assert_eq!(collapsed_block.transactions().next(), test.transactions().next());
+
+		// check transactions are preserved
+		// construct a different block
+		let mut diff_block1 = super::Block::test();
+		let new_transaction = super::Transaction::new(vec![4, 5, 6], 0, 0);
+		diff_block1.add_transaction(new_transaction.clone());
+		let collapsed = super::Block::collapse(vec![block1, diff_block1]);
+		assert_eq!(collapsed.transactions().count(), 2);
+		assert_eq!(collapsed.transactions().next(), Some(&new_transaction));
+		assert_eq!(collapsed.transactions().nth(1), test.transactions().next());
+	}
+}

@@ -2,6 +2,15 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.3.3](https://github.com/movementlabsxyz/movement/compare/1cec33a2df0510c6e789998d7e0dd2d5ee49893b..0.3.3) - 2025-03-14
+#### Bug Fixes
+- **(da-light-node)** graceful return on unimlemented (#1112) - ([0d2e7d1](https://github.com/movementlabsxyz/movement/commit/0d2e7d185551be8df62e300ed32ff0ddfd0fa273)) - Mikhail Zabaluev
+- Memseq Degradation (#1111) - ([1cec33a](https://github.com/movementlabsxyz/movement/commit/1cec33a2df0510c6e789998d7e0dd2d5ee49893b)) - Liam Monninger
+#### Tests
+- load-soak-basic bardock (#1108) - ([1265444](https://github.com/movementlabsxyz/movement/commit/126544476332e18abbdecd0eb131d9d515e78a92)) - Richard Melkonian
+
+- - -
+
 ## [0.3.2](https://github.com/movementlabsxyz/movement/compare/19d6bad30f58c7647c05c95e763229d05c3c9713..0.3.2) - 2025-03-14
 #### Bug Fixes
 - quick fixes for DA sequencer (#1110) - ([19d6bad](https://github.com/movementlabsxyz/movement/commit/19d6bad30f58c7647c05c95e763229d05c3c9713)) - Mikhail Zabaluev
