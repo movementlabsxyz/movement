@@ -173,6 +173,17 @@ where
 		Ok(())
 	}
 
+	/// Collapses the back-pressured blocks into a single block and submits it.
+	///
+	/// todo: mark not pub once this is actually used
+	pub async fn submit_collapsed_blocks(&self, blocks: Vec<Block>) -> Result<(), anyhow::Error> {
+		let block = Block::collapse(blocks);
+		let data: InnerSignedBlobV1Data<C> = block.try_into()?;
+		let blob = data.try_to_sign(&self.pass_through.signer).await?;
+		self.pass_through.da.submit_blob(blob.into()).await?;
+		Ok(())
+	}
+
 	/// Reads blobs from the receiver until the building time is exceeded
 	async fn read_blocks(
 		&self,

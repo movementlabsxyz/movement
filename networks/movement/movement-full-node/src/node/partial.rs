@@ -63,8 +63,7 @@ where
 		let transaction_ingress_task = tasks::transaction_ingress::Task::new(
 			transaction_receiver,
 			self.light_node_client,
-			// FIXME: why are the struct member names so tautological?
-			self.config.celestia_da_light_node.celestia_da_light_node_config,
+			self.config.execution_config.maptos_config,
 		);
 
 		let (
