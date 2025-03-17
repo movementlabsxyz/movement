@@ -133,7 +133,7 @@ impl Scenario for BasicScenario {
 		let bob = self.bob.as_mut().unwrap();
 
 		for _ in 0..2 {
-			// Have Bod send Alice some coins.
+			// Have Bob send Alice some coins.
 			let txn_hash = coin_client
 				.transfer(bob, alice.address(), 10, None)
 				.await
