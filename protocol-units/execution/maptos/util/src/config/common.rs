@@ -201,6 +201,8 @@ env_default!(
 	HashValue::sha3_256_of(b"maptos").to_hex()
 );
 
+env_default!(default_batch_production_time, "MAPTOS_BATCH_PRODUCTION_TIME_MS", u64, 2000);
+
 env_default!(default_max_transactions_in_flight, "MAPTOS_MAX_TRANSACTIONS_IN_FLIGHT", u64);
 
 env_default!(default_sequence_number_ttl_ms, "MAPTOS_SEQUENCE_NUMBER_TTL_MS", u64, 1000 * 60 * 3);
