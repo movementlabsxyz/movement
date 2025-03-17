@@ -16,6 +16,7 @@ maptos-dof-execution = { workspace = true }
 prost = { workspace = true }
 movement-da-light-node-proto = { workspace = true, features = ["client"] }
 movement-da-util = { workspace = true }
+maptos-execution-util = { workspace = true }
 mcr-settlement-client = { workspace = true, features = ["eth"] }
 mcr-settlement-manager = { workspace = true }
 serde_json = { workspace = true }

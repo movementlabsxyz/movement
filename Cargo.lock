@@ -11992,6 +11992,7 @@ dependencies = [
  "hyper 1.5.0",
  "k256",
  "maptos-dof-execution",
+ "maptos-execution-util",
  "maptos-opt-executor",
  "mcr-settlement-client",
  "mcr-settlement-config",

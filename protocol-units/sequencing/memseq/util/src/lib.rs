@@ -23,7 +23,7 @@ pub struct Config {
 	pub memseq_max_block_size: u32,
 }
 
-env_default!(default_memseq_build_time, "MEMSEQ_BUILD_TIME", u64, 1000);
+env_default!(default_memseq_build_time, "MEMSEQ_BUILD_TIME", u64, 500);
 
 env_default!(default_memseq_max_block_size, "MEMSEQ_MAX_BLOCK_SIZE", u32, 2048);
 
