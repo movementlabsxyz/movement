@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.3.4](https://github.com/movementlabsxyz/movement/compare/999574fd3726c0931601bd6908741ab9bf00ad98..0.3.4) - 2025-03-17
+#### Bug Fixes
+- change batch creation loop timing paramter. (#1118) - ([999574f](https://github.com/movementlabsxyz/movement/commit/999574fd3726c0931601bd6908741ab9bf00ad98)) - Philippe Delrieu
+#### Miscellaneous Chores
+- remove #1110 from main  (#1119) - ([71d81d5](https://github.com/movementlabsxyz/movement/commit/71d81d5a3e449fb7be61c309a21004d748849a7e)) - Richard Melkonian
+
+- - -
+
 ## [0.3.3](https://github.com/movementlabsxyz/movement/compare/1cec33a2df0510c6e789998d7e0dd2d5ee49893b..0.3.3) - 2025-03-14
 #### Bug Fixes
 - **(da-light-node)** graceful return on unimlemented (#1112) - ([0d2e7d1](https://github.com/movementlabsxyz/movement/commit/0d2e7d185551be8df62e300ed32ff0ddfd0fa273)) - Mikhail Zabaluev
