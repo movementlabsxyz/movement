@@ -91,7 +91,7 @@ impl Scenario for BasicScenario {
 	async fn prepare(&mut self) -> Result<(), anyhow::Error> {
 		let rest_client = Client::new(NODE_URL.clone());
 		let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
-		let coin_client = CoinClient::new(&rest_client); // Print initial balances.
+		let coin_client = CoinClient::new(&rest_client);
 
 		// Create two accounts locally, Alice and Bob.
 		let mut alice = LocalAccount::generate(&mut rand::rngs::OsRng);
