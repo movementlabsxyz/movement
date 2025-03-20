@@ -224,7 +224,7 @@ pub async fn basic_coin_transfers(
 				faucet_client
 					.create_account(bob.address())
 					.await
-					.context("Failed to fund Bob's account")?;
+					.context("Failed to create Bob's account")?;
 
 				Ok(())
 			}
