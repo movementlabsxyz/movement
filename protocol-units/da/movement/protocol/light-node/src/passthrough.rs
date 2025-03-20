@@ -1,5 +1,8 @@
 use std::fmt::{self, Debug, Formatter};
 use std::sync::Arc;
+
+use anyhow::Context;
+use serde::{Deserialize, Serialize};
 use tokio_stream::{Stream, StreamExt};
 use tracing::info;
 
@@ -21,7 +24,6 @@ use movement_da_util::LoadSigner;
 use movement_signer::cryptography::secp256k1::Secp256k1;
 use movement_signer::{cryptography::Curve, Digester, Signing, Verify};
 use movement_signer_loader::LoadedSigner;
-use serde::{Deserialize, Serialize};
 
 #[derive(Clone)]
 pub struct LightNode<O, C, Da, V>
@@ -151,8 +153,8 @@ where
 					block_opt = blob_stream.next() => {
 						match block_opt {
 							Some(Ok((height, da_blob))) => {
-								match verifier.verify(da_blob, height.as_u64()).await.map_err(|e| tonic::Status::internal(e.to_string())).and_then(|verifed_blob| {
-									verifed_blob.into_inner().to_blob_passed_through_read_response(height.as_u64()).map_err(|e| tonic::Status::internal(e.to_string()))
+								match verifier.verify(da_blob, height.as_u64()).await.context("failed to verify").and_then(|verifed_blob| {
+									verifed_blob.into_inner().to_blob_passed_through_read_response(height.as_u64())
 								}) {
 									Ok(blob) => blob,
 									Err(err) => {
