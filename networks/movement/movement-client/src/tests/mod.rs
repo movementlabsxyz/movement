@@ -292,7 +292,7 @@ struct ComplexAliceScenario;
 
 #[async_trait::async_trait]
 impl Scenario for ComplexAliceScenario {
-	async fn run(self: Box<Self>) -> Result<(), anyhow::Error> {
+	async fn run(&mut self) -> Result<(), anyhow::Error> {
 		test_complex_alice_internal().await
 	}
 }
@@ -572,7 +572,7 @@ struct HeyPartnersScenario;
 
 #[async_trait::async_trait]
 impl Scenario for HeyPartnersScenario {
-	async fn run(self: Box<Self>) -> Result<(), anyhow::Error> {
+	async fn run(&mut self) -> Result<(), anyhow::Error> {
 		test_hey_partners_internal().await
 	}
 }

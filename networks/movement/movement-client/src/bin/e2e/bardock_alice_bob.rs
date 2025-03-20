@@ -84,7 +84,7 @@ static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
 
 #[async_trait::async_trait]
 impl Scenario for BasicScenario {
-	async fn run(self: Box<Self>) -> Result<()> {
+	async fn run(&mut self) -> Result<()> {
 		// Sleep for 7 seconds before each Scenario run to not get Rate Limited
 		sleep(Duration::from_secs(5)).await;
 
