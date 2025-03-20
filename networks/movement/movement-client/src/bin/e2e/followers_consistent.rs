@@ -211,7 +211,7 @@ pub async fn basic_coin_transfers(
 	})
 	.await?;
 
-	// Use a random node to fund Bob.
+	// Use a random node to create Bob's account.
 	let bob_clone = bob.clone();
 	pick_one(
 		lead_dot_movement,
