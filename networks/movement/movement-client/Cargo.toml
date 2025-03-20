@@ -15,8 +15,12 @@ name = "demo_scenario"
 path = "src/bin/e2e/demo_scenario.rs"
 
 [[bin]]
-name = "movement-tests-e2e-basic-alice-bob"
-path = "src/bin/e2e/basic_alice_bob.rs"
+name = "movement-tests-e2e-load-alice-bob"
+path = "src/bin/e2e/load_alice_bob.rs"
+
+[[bin]]
+name = "movement-tests-e2e-soak-alice-bob"
+path = "src/bin/e2e/soak_alice_bob.rs"
 
 [[bin]]
 name = "bardock-tests-load-soak-basic"
