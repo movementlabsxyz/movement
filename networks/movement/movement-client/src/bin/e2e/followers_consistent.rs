@@ -60,15 +60,15 @@ pub fn follower_index_to_dot_movement(
 	follower_index: u8,
 	dot_movement: &DotMovement,
 ) -> Result<DotMovement, anyhow::Error> {
-	// index 0 is default .moevement path
+	// Index 0 is the default .movement path (leader)
 	if follower_index == 0 {
 		return Ok(dot_movement.clone());
 	}
 
-	// otherwise, modify the path to include the follower index
+	// Otherwise, modify the path to include the follower index.
 	let mut follower_dot_movement = dot_movement.clone();
 	let path = follower_dot_movement.get_path().to_path_buf();
-	// append -follower-{n} to the last component of the path
+	// Append -follower-{n} to the last component of the path.
 	let new_path_str = format!("{}-follower-{}", path.display(), follower_index);
 	let new_path = std::path::PathBuf::from(new_path_str);
 	info!("Follower path: {:?}", new_path);
@@ -100,7 +100,7 @@ use std::future::Future;
 
 /// Checks whether results from calling different nodes match.
 /// Relies on the DOT_MOVEMENT config in each directory.
-/// Takes an async closure to which the an appropriate rest client and faucet client are passed.
+/// Takes an async closure to which the appropriate rest client and faucet client are passed.
 pub async fn check_matching<T, F, Fut>(
 	lead_dot_movement: &DotMovement,
 	follower_count: u8,
@@ -113,30 +113,44 @@ where
 {
 	let mut last_result: Option<T> = None;
 	for i in 0..=follower_count {
-		// get all of the info
+		// Get all of the info.
 		let (follower_dot_movement, config, rest_client, faucet_client) =
 			get_follower_config(i, lead_dot_movement)?;
 
-		// call the closure
+		// Call the closure.
 		let result = closure(follower_dot_movement, config, rest_client, faucet_client).await?;
 
 		info!("Result from follower {}: {:?}", i, result);
 
-		// compare the result to the last result
+		// Compare the result to the last result.
 		if let Some(last_result) = last_result {
 			if result != last_result {
 				return Err(anyhow::anyhow!("Results do not match"));
 			}
 		}
 
-		// update the last result
+		// Update the last result.
 		last_result = Some(result);
 	}
 
 	Ok(())
 }
 
-/// Picks one of the nodes to run the closure against at random
+/// Picks the leader to run the closure against.
+pub async fn pick_leader<T, F, Fut>(
+	lead_dot_movement: &DotMovement,
+	mut closure: F,
+) -> Result<T, anyhow::Error>
+where
+	F: FnMut(DotMovement, movement_config::Config, Client, FaucetClient) -> Fut,
+	Fut: Future<Output = Result<T, anyhow::Error>>,
+{
+	let (leader_dot_movement, config, rest_client, faucet_client) =
+		get_follower_config(0, lead_dot_movement)?;
+	closure(leader_dot_movement, config, rest_client, faucet_client).await
+}
+
+/// Picks one of the nodes to run the closure against at random.
 pub async fn pick_one<T, F, Fut>(
 	lead_dot_movement: &DotMovement,
 	follower_count: u8,
@@ -180,46 +194,37 @@ pub async fn basic_coin_transfers(
 	info!("Alice: {}", alice.read().await.address().to_hex_literal());
 	info!("Bob: {}", bob.read().await.address().to_hex_literal());
 
-	// Create the accounts on chain, but only fund Alice. Pick one node to do this against for each.
-	// Alice
+	// Create the accounts on chain, but only fund Alice. Use the leader for funding.
 	let alice_clone = alice.clone();
-	pick_one(
-		lead_dot_movement,
-		follower_count,
-		move |_dot_movement, _config, _res_client, faucet_client| {
-			// Clone `alice` to move it into the async block safely
-			let alice = alice_clone.clone();
+	pick_leader(lead_dot_movement, move |_dot_movement, _config, _rest_client, faucet_client| {
+		let alice = alice_clone.clone();
+		async move {
+			let alice = alice.write().await;
 
-			async move {
-				let alice = alice.write().await;
+			faucet_client
+				.fund(alice.address(), 100_000_000)
+				.await
+				.context("Failed to fund Alice's account")?;
 
-				faucet_client
-					.fund(alice.address(), 100_000_000)
-					.await
-					.context("Failed to fund Alice's account")?;
-
-				Ok(())
-			}
-		},
-	)
+			Ok(())
+		}
+	})
 	.await?;
 
-	// Bob
+	// Use a random node to create Bob's account.
 	let bob_clone = bob.clone();
 	pick_one(
 		lead_dot_movement,
 		follower_count,
-		move |_dot_movement, _config, _res_client, faucet_client| {
-			// Clone `bob` to move it into the async block safely
+		move |_dot_movement, _config, _rest_client, faucet_client| {
 			let bob = bob_clone.clone();
-
 			async move {
 				let bob = bob.write().await;
 
 				faucet_client
 					.create_account(bob.address())
 					.await
-					.context("Failed to fund Bob's account")?;
+					.context("Failed to create Bob's account")?;
 
 				Ok(())
 			}
@@ -227,7 +232,7 @@ pub async fn basic_coin_transfers(
 	)
 	.await?;
 
-	// check all the coin balances are equal
+	// Check all the coin balances are equal.
 	let alice_clone = alice.clone();
 	let bob_clone = bob.clone();
 	check_matching(
@@ -257,7 +262,7 @@ pub async fn basic_coin_transfers(
 		lead_dot_movement,
 		follower_count,
 		move |_dot_movement, _config, rest_client, _faucet_client| async move {
-			// get the latest ledger version
+			// Get the latest ledger version.
 			let latest_ledger_version = rest_client.get_ledger_information().await?.inner().version;
 
 			let block_by_version =
@@ -268,34 +273,30 @@ pub async fn basic_coin_transfers(
 	)
 	.await?;
 
-	// Have Alice send Bob some coins.
+	// Have Alice send Bob some coins using the leader.
 	let alice_clone = alice.clone();
 	let bob_clone = bob.clone();
-	pick_one(
-		lead_dot_movement,
-		follower_count,
-		move |_dot_movement, _config, rest_client, _faucet_client| {
-			let alice = alice_clone.clone();
-			let bob = bob_clone.clone();
-			async move {
-				let mut alice = alice.write().await;
-				let coin_client = CoinClient::new(&rest_client);
-				let txn_hash = coin_client
-					.transfer(&mut *alice, bob.read().await.address(), 1_000, None)
-					.await
-					.context("Failed to submit transaction to transfer coins")?;
-				rest_client
-					.wait_for_transaction(&txn_hash)
-					.await
-					.context("Failed when waiting for the transfer transaction")?;
+	pick_leader(lead_dot_movement, move |_dot_movement, _config, rest_client, _faucet_client| {
+		let alice = alice_clone.clone();
+		let bob = bob_clone.clone();
+		async move {
+			let mut alice = alice.write().await;
+			let coin_client = CoinClient::new(&rest_client);
+			let txn_hash = coin_client
+				.transfer(&mut *alice, bob.read().await.address(), 1_000, None)
+				.await
+				.context("Failed to submit transaction to transfer coins")?;
+			rest_client
+				.wait_for_transaction(&txn_hash)
+				.await
+				.context("Failed when waiting for the transfer transaction")?;
 
-				Ok(())
-			}
-		},
-	)
+			Ok(())
+		}
+	})
 	.await?;
 
-	// check all the coin balances are equal
+	// Check all the coin balances are equal.
 	let alice_clone = alice.clone();
 	let bob_clone = bob.clone();
 	check_matching(
@@ -321,7 +322,7 @@ pub async fn basic_coin_transfers(
 	)
 	.await?;
 
-	// Have Alice send Bob some coins.
+	// Have Alice send Bob some more coins using a random node.
 	let alice_clone = alice.clone();
 	let bob_clone = bob.clone();
 	pick_one(
@@ -348,7 +349,7 @@ pub async fn basic_coin_transfers(
 	)
 	.await?;
 
-	// check all the coin balances are equal
+	// Check all the coin balances are equal.
 	check_matching(
 		lead_dot_movement,
 		follower_count,
@@ -372,12 +373,12 @@ pub async fn basic_coin_transfers(
 	)
 	.await?;
 
-	// check that all the block hashes are equal
+	// Check that all the block hashes are equal.
 	check_matching(
 		lead_dot_movement,
 		follower_count,
 		move |_dot_movement, _config, rest_client, _faucet_client| async move {
-			// get the latest ledger version
+			// Get the latest ledger version.
 			let latest_ledger_version = rest_client.get_ledger_information().await?.inner().version;
 
 			let block_by_version =
@@ -398,16 +399,16 @@ async fn main() -> Result<(), anyhow::Error> {
 	};
 	let _guard = movement_tracing::init_tracing_subscriber(tracing_config);
 
-	// get the lead dot movement from the environment
+	// Get the lead dot movement from the environment.
 	let dot_movement = DotMovement::try_from_env()?;
 
-	// get the follower count from the first argument
+	// Get the follower count from the first argument.
 	let follower_count = std::env::args()
 		.nth(1)
 		.ok_or_else(|| anyhow::anyhow!("Expected follower count as first argument"))?;
 	let follower_count = u8::from_str(follower_count.as_str())?;
 
-	// run basic coin transfers
+	// Run basic coin transfers.
 	basic_coin_transfers(&dot_movement, follower_count).await?;
 
 	Ok(())

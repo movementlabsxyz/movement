@@ -111,6 +111,8 @@ processes:
         command: curl http://0.0.0.0:32731
 
   test-followers-consistent:
+    environment:
+      - "MOVEMENT_SYNC=leader::follower-test-$MOVEMENT_SHARED_RANDOM_1<=>{default_signer_address_whitelist,maptos,maptos-storage,movement-da-db}/**"
     command: |
       # run the test
       cargo run --bin movement-tests-e2e-followers-consistent -- 2
