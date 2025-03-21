@@ -54,11 +54,6 @@ pub struct TransactionPipe {
 	whitelisted_accounts: Option<HashSet<AccountAddress>>,
 }
 
-enum SequenceNumberValidity {
-	Valid(u64),
-	Invalid(SubmissionStatus),
-}
-
 impl TransactionPipe {
 	pub(crate) fn new(
 		mempool_commit_tx_receiver: futures_mpsc::Receiver<Vec<TxExecutionResult>>, // Sender, seq number)
