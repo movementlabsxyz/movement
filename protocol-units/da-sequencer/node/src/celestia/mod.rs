@@ -1,5 +1,5 @@
 use crate::block::BlockHeight;
-use crate::block::SequencerBlock;
+use crate::block::SequencerBlockDigest;
 use crate::celestia::blob::Blob;
 use crate::error::DaSequencerError;
 use std::sync::mpsc::Sender;
@@ -35,7 +35,10 @@ impl CelestiaClient {
 	/// send the given block to Celestia.
 	/// The block is not immediatly sent but aggergated in a blob
 	/// Until the client can send it to celestia.
-	pub fn send_block(&self, block: &SequencerBlock) -> std::result::Result<(), DaSequencerError> {
+	pub async fn send_block(
+		&self,
+		block: &SequencerBlockDigest,
+	) -> std::result::Result<(), DaSequencerError> {
 		todo!()
 	}
 
