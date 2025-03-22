@@ -6765,6 +6765,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "da-sequencer-node"
+version = "0.3.4"
+dependencies = [
+ "movement-da-sequencer-node",
+]
+
+[[package]]
 name = "darling"
 version = "0.14.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11913,6 +11920,29 @@ dependencies = [
  "tonic 0.12.3",
  "tracing",
 ]
+
+[[package]]
+name = "movement-da-sequencer-client"
+version = "0.3.4"
+
+[[package]]
+name = "movement-da-sequencer-config"
+version = "0.3.4"
+
+[[package]]
+name = "movement-da-sequencer-node"
+version = "0.3.4"
+dependencies = [
+ "aptos-crypto",
+ "movement-da-sequencer-config",
+ "movement-types",
+ "thiserror 1.0.69",
+ "url",
+]
+
+[[package]]
+name = "movement-da-sequencer-setup"
+version = "0.3.4"
 
 [[package]]
 name = "movement-da-util"
