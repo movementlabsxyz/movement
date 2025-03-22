@@ -32,3 +32,9 @@ pub struct SequencerBlock {
 	height: BlockHeight,
 	block: Block,
 }
+
+impl SequencerBlock {
+	pub fn get_block_digest(&self) -> SequencerBlockDigest {
+		SequencerBlockDigest(self.block.id().to_vec())
+	}
+}
