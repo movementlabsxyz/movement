@@ -613,6 +613,32 @@
           },
           {
             "table": {
+              "name": "current_ans_primary_name_v2",
+              "schema": "public"
+            },
+            "select_permissions": [
+              {
+                "role": "readonly",
+                "permission": {
+                  "columns": [
+                    "registered_address",
+                    "token_standard",
+                    "domain",
+                    "subdomain",
+                    "token_name",
+                    "is_deleted",
+                    "last_transaction_version",
+                    "inserted_at"
+                  ],
+                  "filter": {},
+                  "limit": 100
+                },
+                "comment": ""
+              }
+            ]            
+          },
+          {
+            "table": {
               "name": "current_aptos_names",
               "schema": "public"
             },
@@ -640,18 +666,15 @@
                 "permission": {
                   "columns": [
                     "domain",
-                    "domain_expiration_timestamp",
-                    "domain_with_suffix",
-                    "expiration_timestamp",
-                    "is_active",
-                    "is_primary",
-                    "last_transaction_version",
-                    "owner_address",
-                    "registered_address",
                     "subdomain",
-                    "subdomain_expiration_policy",
                     "token_name",
-                    "token_standard"
+                    "token_standard",
+                    "registered_address",
+                    "expiration_timestamp",
+                    "last_transaction_version",
+                    "is_primary",
+                    "domain_with_suffix",
+                    "is_active"
                   ],
                   "filter": {},
                   "limit": 100,
