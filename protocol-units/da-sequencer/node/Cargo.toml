@@ -18,4 +18,4 @@ url = { workspace = true }
 movement-da-sequencer-config = { workspace = true }
 
 [lints]
-workspace = true
+#workspace = true
