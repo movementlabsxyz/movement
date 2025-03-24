@@ -11933,9 +11933,12 @@ version = "0.3.4"
 name = "movement-da-sequencer-node"
 version = "0.3.4"
 dependencies = [
+ "anyhow",
  "aptos-crypto",
  "movement-da-sequencer-config",
  "movement-types",
+ "rocksdb",
+ "tempfile",
  "thiserror 1.0.69",
  "url",
 ]

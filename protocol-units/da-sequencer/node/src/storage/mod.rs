@@ -5,10 +5,45 @@ use crate::block::SequencerBlock;
 use crate::block::SequencerBlockDigest;
 use crate::celestia::CelestiaHeight;
 use crate::error::DaSequencerError;
+use anyhow::Error;
+use rocksdb::{ColumnFamilyDescriptor, Options, DB};
+use std::fmt;
+use std::sync::Arc;
 
-pub struct Storage {}
+pub mod cf {
+	pub const PENDING_TRANSACTIONS: &str = "pending_transactions";
+	pub const BLOCKS: &str = "blocks";
+}
+
+pub struct Storage {
+	db: Arc<DB>,
+}
+
+impl fmt::Debug for Storage {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		// You can't print the actual DB content, but you can indicate it's present
+		f.debug_struct("Storage")
+			.field("db", &"RocksDB<Arc>") // or just a placeholder
+			.finish()
+	}
+}
 
 impl Storage {
+	pub fn try_new(path: &str) -> Result<Self, DaSequencerError> {
+		let mut options = Options::default();
+
+		options.create_if_missing(true);
+		options.create_missing_column_families(true);
+
+		let pending_transactions_cf =
+			ColumnFamilyDescriptor::new(cf::PENDING_TRANSACTIONS, Options::default());
+		let blocks_cf = ColumnFamilyDescriptor::new(cf::BLOCKS, Options::default());
+
+		let db = DB::open_cf_descriptors(&options, path, [pending_transactions_cf, blocks_cf])
+			.map_err(|e| DaSequencerError::Generic(e.to_string()))?;
+
+		Ok(Storage { db: Arc::new(db) })
+	}
 	/// Save all batch's Tx in the pending Tx table. The batch's Tx has been verified and validated.
 	pub fn write_batch(
 		&self,
@@ -70,5 +105,48 @@ impl Storage {
 		celestia_heigh: CelestiaHeight,
 	) -> std::result::Result<(), DaSequencerError> {
 		todo!()
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use tempfile::TempDir;
+
+	#[test]
+	fn test_try_new_creates_storage_successfully() {
+		// Create a temporary directory for the RocksDB instance
+		let temp_dir = TempDir::new().expect("failed to create temp dir");
+		let path = temp_dir.path().to_str().unwrap();
+
+		// Attempt to create the Storage
+		let storage = Storage::try_new(path);
+
+		// Assert it's Ok and the inner DB is accessible
+		assert!(storage.is_ok(), "Expected Ok(Storage), got Err: {:?}", storage);
+
+		// Optionally, you can check if the DB handle is usable
+		// let db = storage.unwrap().db;
+		// assert!(db.cf_handle(crate::cf::PENDING_TRANSACTIONS).is_some());
+		// assert!(db.cf_handle(crate::cf::BLOCKS).is_some());
+	}
+
+	#[test]
+	fn test_try_new_invalid_path_should_fail() {
+		// Try to open a DB at an invalid path
+		// Using an empty string usually results in an error
+		let result = Storage::try_new("");
+
+		assert!(result.is_err());
+		match result {
+			Err(DaSequencerError::Generic(msg)) => {
+				assert!(
+					msg.contains("Invalid argument") || msg.contains("No such file"),
+					"Unexpected error message: {}",
+					msg
+				);
+			}
+			_ => panic!("Expected Generic error variant"),
+		}
 	}
 }
