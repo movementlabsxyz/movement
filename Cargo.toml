@@ -281,7 +281,7 @@ async-recursion = "1.1.1"
 auto_impl = "1.2.0"
 base64 = { version = "0.22.1" }
 blake3 = { version = "1.4.0", features = ["traits-preview"] }
-bincode = "2.0.1"
+bincode = "1.0.0" ## Version 2 (latest) requires a later version of rust
 bytes = { version = "1.2.1", default-features = false }
 chrono = "0.4.37"
 clap = { version = "4.4.10", features = ["derive"] }

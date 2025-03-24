@@ -51,17 +51,16 @@ impl Storage {
 		let cf = self
 			.db
 			.cf_handle(cf::BLOCKS)
-			.ok_or_else(|| DaSequencerError::Generic("Missing column family: blocks".into()));
+			.ok_or_else(|| DaSequencerError::Generic("Missing column family: blocks".into()))?;
 
 		let key: [u8; 8] = height.0.to_be_bytes();
 
-		match self.db.get_cf(cf, key)? {
+		match self.db.get_cf(&cf, key).map_err(|e| DaSequencerError::Generic(e.to_string()))? {
 			Some(bytes) => {
-				let (block, _) = bincode::decode_from_slice::<SequencerBlock, _>(
-					&bytes,
-					bincode::config::standard(),
-				)
-				.map_err(|e| DaSequencerError::Generic(format!("Deserialization error: {}", e)))?;
+				let block: SequencerBlock = bincode::deserialize(&bytes).map_err(|e| {
+					DaSequencerError::Generic(format!("Deserialization error: {}", e))
+				})?;
+				Ok(Some(block))
 			}
 			None => Ok(None),
 		}
@@ -159,5 +158,39 @@ mod tests {
 			}
 			_ => panic!("Expected Generic error variant"),
 		}
+	}
+
+	#[test]
+	fn test_get_block_at_height_returns_correct_block() {
+		use movement_types::block::Block;
+		use serde::{Deserialize, Serialize};
+
+		// Setup: create a temporary DB
+		let temp_dir = TempDir::new().expect("failed to create temp dir");
+		let path = temp_dir.path().to_str().unwrap();
+		let storage = Storage::try_new(path).expect("failed to create storage");
+
+		// Create dummy block data
+		let block_height = BlockHeight(42);
+		let dummy_block = Block::default();
+		let sequencer_block = SequencerBlock { height: block_height, block: dummy_block.clone() };
+
+		// Serialize the block
+		let encoded_block = bincode::encode_to_vec(&sequencer_block, bincode::config::standard())
+			.expect("failed to encode SequencerBlock");
+
+		// Insert into RocksDB manually
+		let cf = storage.db.cf_handle(cf::BLOCKS).expect("missing 'blocks' column family");
+
+		let key = block_height.0.to_be_bytes();
+		storage.db.put_cf(cf, key, encoded_block).expect("failed to write to DB");
+
+		// test the method
+		let result = storage.get_block_at_height(block_height).expect("get_block_at_height failed");
+
+		assert!(result.is_some(), "Expected Some(block), got None");
+		let fetched_block = result.unwrap();
+		assert_eq!(fetched_block.height, sequencer_block.height);
+		assert_eq!(fetched_block.block, sequencer_block.block);
 	}
 }

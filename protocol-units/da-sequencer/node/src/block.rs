@@ -26,8 +26,8 @@ pub struct BlockHeight(pub u64);
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct SequencerBlock {
-	height: BlockHeight,
-	block: Block,
+	pub height: BlockHeight,
+	pub block: Block,
 }
 
 impl SequencerBlock {
