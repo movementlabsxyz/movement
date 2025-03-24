@@ -21,9 +21,9 @@ pub struct Storage {
 
 impl fmt::Debug for Storage {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		// You can't print the actual DB content, but you can indicate it's present
+		// can't print the actual DB content, but indicate it's present for now ..
 		f.debug_struct("Storage")
-			.field("db", &"RocksDB<Arc>") // or just a placeholder
+			.field("db", &"RocksDB<Arc>") //
 			.finish()
 	}
 }
@@ -124,11 +124,6 @@ mod tests {
 
 		// Assert it's Ok and the inner DB is accessible
 		assert!(storage.is_ok(), "Expected Ok(Storage), got Err: {:?}", storage);
-
-		// Optionally, you can check if the DB handle is usable
-		// let db = storage.unwrap().db;
-		// assert!(db.cf_handle(crate::cf::PENDING_TRANSACTIONS).is_some());
-		// assert!(db.cf_handle(crate::cf::BLOCKS).is_some());
 	}
 
 	#[test]
