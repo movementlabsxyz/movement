@@ -1,11 +1,11 @@
 use movement_types::block::Block;
 
-#[derive(Debug, Clone)]
-pub struct SequencerBlockDigest(Vec<u8>);
+#[derive(Clone, Copy, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct SequencerBlockDigest(pub [u8; 32]);
 
 /// The id for an Ir Blob
 impl SequencerBlockDigest {
-	pub fn new(id: Vec<u8>) -> Self {
+	pub fn new(id: [u8; 32]) -> Self {
 		SequencerBlockDigest(id)
 	}
 
@@ -13,18 +13,12 @@ impl SequencerBlockDigest {
 		self.0.as_slice()
 	}
 
-	pub fn into_vec(self) -> Vec<u8> {
-		self.0
+	pub fn into_vec(&self) -> Vec<u8> {
+		self.0.to_vec()
 	}
 }
 
-impl From<Vec<u8>> for SequencerBlockDigest {
-	fn from(id: Vec<u8>) -> Self {
-		SequencerBlockDigest(id)
-	}
-}
-
-#[derive(Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Clone, Copy, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct BlockHeight(pub u64);
 
 #[derive(Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -35,6 +29,6 @@ pub struct SequencerBlock {
 
 impl SequencerBlock {
 	pub fn get_block_digest(&self) -> SequencerBlockDigest {
-		SequencerBlockDigest(self.block.id().to_vec())
+		SequencerBlockDigest(*self.block.id().as_bytes())
 	}
 }

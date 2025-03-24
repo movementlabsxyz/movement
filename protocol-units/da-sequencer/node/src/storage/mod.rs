@@ -2,6 +2,7 @@ use crate::batch::DaBatch;
 use crate::batch::FullnodeTx;
 use crate::block::BlockHeight;
 use crate::block::SequencerBlock;
+use crate::block::SequencerBlockDigest;
 use crate::celestia::CelestiaHeight;
 use crate::error::DaSequencerError;
 
@@ -16,10 +17,18 @@ impl Storage {
 		todo!();
 	}
 
-	/// Return, if exists, the Block at the given height
+	/// Return, if exists, the Block at the given height.
 	pub fn get_block_at_height(
 		&self,
 		height: BlockHeight,
+	) -> std::result::Result<Option<SequencerBlock>, DaSequencerError> {
+		todo!();
+	}
+
+	/// Return, if exists, the Block with specified sequencer id.
+	pub fn get_block_with_digest(
+		&self,
+		id: SequencerBlockDigest,
 	) -> std::result::Result<Option<SequencerBlock>, DaSequencerError> {
 		todo!();
 	}
@@ -31,11 +40,13 @@ impl Storage {
 	/// All pending Tx added to the block are removed from the pending Tx table.
 	/// Save the block for this height
 	/// Return the block.
-	pub fn get_next_block(&self) -> std::result::Result<Option<SequencerBlock>, DaSequencerError> {
+	pub fn produce_next_block(
+		&self,
+	) -> std::result::Result<Option<SequencerBlock>, DaSequencerError> {
 		todo!();
 	}
 
-	/// Return, if exists, the Celestia height for given block height
+	/// Return, if exists, the Celestia height for given block height.
 	pub fn get_celestia_height_for_block(
 		&self,
 		heigh: BlockHeight,
@@ -52,7 +63,7 @@ impl Storage {
 		todo!();
 	}
 
-	/// Set the Celestia height for a given block height
+	/// Set the Celestia height for a given block height.
 	pub fn set_block_celestia_height(
 		&self,
 		block_heigh: BlockHeight,
