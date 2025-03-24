@@ -1,4 +1,5 @@
 use movement_types::block::Block;
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct SequencerBlockDigest(pub [u8; 32]);
@@ -18,10 +19,12 @@ impl SequencerBlockDigest {
 	}
 }
 
-#[derive(Clone, Copy, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(
+	Serialize, Deserialize, Clone, Copy, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord,
+)]
 pub struct BlockHeight(pub u64);
 
-#[derive(Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct SequencerBlock {
 	height: BlockHeight,
 	block: Block,

@@ -11,11 +11,13 @@ rust-version.workspace = true
 
 [dependencies]
 anyhow = { workspace = true }
+bincode = { workspace = true }
 movement-types = { workspace = true }
 aptos-crypto = { workspace = true }
 thiserror = { workspace = true }
 url = { workspace = true }
 rocksdb = { workspace = true }
+serde = { workspace = true }
 
 movement-da-sequencer-config = { workspace = true }
 

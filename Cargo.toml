@@ -48,7 +48,11 @@ members = [
   "util/signing/testing",
   "demo/hsm",
   "protocol-units/execution/maptos/framework/releases/*",
-  "protocol-units/execution/maptos/framework/migrations/*", "protocol-units/da-sequencer/config", "protocol-units/da-sequencer/setup", "protocol-units/da-sequencer/client", "protocol-units/da-sequencer/node",
+  "protocol-units/execution/maptos/framework/migrations/*",
+  "protocol-units/da-sequencer/config",
+  "protocol-units/da-sequencer/setup",
+  "protocol-units/da-sequencer/client",
+  "protocol-units/da-sequencer/node",
   "protocol-units/da-sequencer/*",
 
 ]
@@ -277,6 +281,7 @@ async-recursion = "1.1.1"
 auto_impl = "1.2.0"
 base64 = { version = "0.22.1" }
 blake3 = { version = "1.4.0", features = ["traits-preview"] }
+bincode = "2.0.1"
 bytes = { version = "1.2.1", default-features = false }
 chrono = "0.4.37"
 clap = { version = "4.4.10", features = ["derive"] }

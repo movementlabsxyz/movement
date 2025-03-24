@@ -5,7 +5,7 @@ use crate::block::SequencerBlock;
 use crate::block::SequencerBlockDigest;
 use crate::celestia::CelestiaHeight;
 use crate::error::DaSequencerError;
-use anyhow::Error;
+use bincode;
 use rocksdb::{ColumnFamilyDescriptor, Options, DB};
 use std::fmt;
 use std::sync::Arc;
@@ -17,15 +17,6 @@ pub mod cf {
 
 pub struct Storage {
 	db: Arc<DB>,
-}
-
-impl fmt::Debug for Storage {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		// can't print the actual DB content, but indicate it's present for now ..
-		f.debug_struct("Storage")
-			.field("db", &"RocksDB<Arc>") //
-			.finish()
-	}
 }
 
 impl Storage {
@@ -57,7 +48,23 @@ impl Storage {
 		&self,
 		height: BlockHeight,
 	) -> std::result::Result<Option<SequencerBlock>, DaSequencerError> {
-		todo!();
+		let cf = self
+			.db
+			.cf_handle(cf::BLOCKS)
+			.ok_or_else(|| DaSequencerError::Generic("Missing column family: blocks".into()));
+
+		let key: [u8; 8] = height.0.to_be_bytes();
+
+		match self.db.get_cf(cf, key)? {
+			Some(bytes) => {
+				let (block, _) = bincode::decode_from_slice::<SequencerBlock, _>(
+					&bytes,
+					bincode::config::standard(),
+				)
+				.map_err(|e| DaSequencerError::Generic(format!("Deserialization error: {}", e)))?;
+			}
+			None => Ok(None),
+		}
 	}
 
 	/// Return, if exists, the Block with specified sequencer id.
@@ -105,6 +112,15 @@ impl Storage {
 		celestia_heigh: CelestiaHeight,
 	) -> std::result::Result<(), DaSequencerError> {
 		todo!()
+	}
+}
+
+impl fmt::Debug for Storage {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		// can't print the actual DB content, but indicate it's present for now ..
+		f.debug_struct("Storage")
+			.field("db", &"RocksDB<Arc>") //
+			.finish()
 	}
 }
 
