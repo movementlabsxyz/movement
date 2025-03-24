@@ -2671,7 +2671,7 @@ dependencies = [
 [[package]]
 name = "aptos-moving-average"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=47cc7bd06ec40dbd60db640cad800a4448899a22#47cc7bd06ec40dbd60db640cad800a4448899a22"
+source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=77a36245400250e7d8a854360194288d078681bc#77a36245400250e7d8a854360194288d078681bc"
 dependencies = [
  "chrono",
 ]
@@ -2679,7 +2679,7 @@ dependencies = [
 [[package]]
 name = "aptos-moving-average"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=77a36245400250e7d8a854360194288d078681bc#77a36245400250e7d8a854360194288d078681bc"
+source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=ceaff42dfb4d1e5c84ee45e7568bb071de4b07f2#ceaff42dfb4d1e5c84ee45e7568bb071de4b07f2"
 dependencies = [
  "chrono",
 ]
@@ -12070,11 +12070,11 @@ dependencies = [
  "maptos-execution-util",
  "num_cpus",
  "poem",
- "processor 1.0.0 (git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=47cc7bd06ec40dbd60db640cad800a4448899a22)",
+ "processor 1.0.0 (git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=ceaff42dfb4d1e5c84ee45e7568bb071de4b07f2)",
  "reqwest 0.12.9",
  "serde_json",
  "serde_yaml 0.9.34+deprecated",
- "server-framework 1.0.0 (git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=47cc7bd06ec40dbd60db640cad800a4448899a22)",
+ "server-framework 1.0.0 (git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=ceaff42dfb4d1e5c84ee45e7568bb071de4b07f2)",
  "tempfile",
  "tokio",
  "tracing",
@@ -13851,65 +13851,6 @@ dependencies = [
 [[package]]
 name = "processor"
 version = "1.0.0"
-source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=47cc7bd06ec40dbd60db640cad800a4448899a22#47cc7bd06ec40dbd60db640cad800a4448899a22"
-dependencies = [
- "ahash 0.8.11",
- "allocative",
- "allocative_derive",
- "anyhow",
- "aptos-moving-average 0.1.0 (git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=47cc7bd06ec40dbd60db640cad800a4448899a22)",
- "aptos-protos 1.3.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=338f9a1bcc06f62ce4a4994f1642b9a61b631ee0)",
- "async-trait",
- "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
- "bigdecimal",
- "bitflags 2.6.0",
- "canonical_json",
- "chrono",
- "clap 4.5.21",
- "diesel",
- "diesel-async",
- "diesel_migrations",
- "enum_dispatch",
- "field_count",
- "futures",
- "futures-util",
- "google-cloud-googleapis 0.10.0",
- "google-cloud-pubsub",
- "google-cloud-storage",
- "hex",
- "hyper 0.14.31",
- "itertools 0.12.1",
- "jemallocator",
- "kanal",
- "lazy_static",
- "native-tls",
- "num",
- "num_cpus",
- "once_cell",
- "parquet",
- "parquet_derive",
- "postgres-native-tls",
- "prometheus",
- "prost 0.12.6",
- "regex",
- "serde",
- "serde_json",
- "server-framework 1.0.0 (git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=47cc7bd06ec40dbd60db640cad800a4448899a22)",
- "sha2 0.9.9",
- "sha3 0.9.1",
- "strum 0.26.3",
- "tiny-keccak",
- "tokio",
- "tokio-postgres",
- "tonic 0.11.0",
- "tracing",
- "unescape",
- "url",
-]
-
-[[package]]
-name = "processor"
-version = "1.0.0"
 source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=77a36245400250e7d8a854360194288d078681bc#77a36245400250e7d8a854360194288d078681bc"
 dependencies = [
  "ahash 0.8.11",
@@ -13954,6 +13895,65 @@ dependencies = [
  "serde",
  "serde_json",
  "server-framework 1.0.0 (git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=77a36245400250e7d8a854360194288d078681bc)",
+ "sha2 0.9.9",
+ "sha3 0.9.1",
+ "strum 0.26.3",
+ "tiny-keccak",
+ "tokio",
+ "tokio-postgres",
+ "tonic 0.11.0",
+ "tracing",
+ "unescape",
+ "url",
+]
+
+[[package]]
+name = "processor"
+version = "1.0.0"
+source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=ceaff42dfb4d1e5c84ee45e7568bb071de4b07f2#ceaff42dfb4d1e5c84ee45e7568bb071de4b07f2"
+dependencies = [
+ "ahash 0.8.11",
+ "allocative",
+ "allocative_derive",
+ "anyhow",
+ "aptos-moving-average 0.1.0 (git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=ceaff42dfb4d1e5c84ee45e7568bb071de4b07f2)",
+ "aptos-protos 1.3.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=338f9a1bcc06f62ce4a4994f1642b9a61b631ee0)",
+ "async-trait",
+ "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
+ "bigdecimal",
+ "bitflags 2.6.0",
+ "canonical_json",
+ "chrono",
+ "clap 4.5.21",
+ "diesel",
+ "diesel-async",
+ "diesel_migrations",
+ "enum_dispatch",
+ "field_count",
+ "futures",
+ "futures-util",
+ "google-cloud-googleapis 0.10.0",
+ "google-cloud-pubsub",
+ "google-cloud-storage",
+ "hex",
+ "hyper 0.14.31",
+ "itertools 0.12.1",
+ "jemallocator",
+ "kanal",
+ "lazy_static",
+ "native-tls",
+ "num",
+ "num_cpus",
+ "once_cell",
+ "parquet",
+ "parquet_derive",
+ "postgres-native-tls",
+ "prometheus",
+ "prost 0.12.6",
+ "regex",
+ "serde",
+ "serde_json",
+ "server-framework 1.0.0 (git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=ceaff42dfb4d1e5c84ee45e7568bb071de4b07f2)",
  "sha2 0.9.9",
  "sha3 0.9.1",
  "strum 0.26.3",
@@ -15776,7 +15776,7 @@ dependencies = [
 [[package]]
 name = "server-framework"
 version = "1.0.0"
-source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=47cc7bd06ec40dbd60db640cad800a4448899a22#47cc7bd06ec40dbd60db640cad800a4448899a22"
+source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=77a36245400250e7d8a854360194288d078681bc#77a36245400250e7d8a854360194288d078681bc"
 dependencies = [
  "anyhow",
  "aptos-system-utils 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=338f9a1bcc06f62ce4a4994f1642b9a61b631ee0)",
@@ -15797,7 +15797,7 @@ dependencies = [
 [[package]]
 name = "server-framework"
 version = "1.0.0"
-source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=77a36245400250e7d8a854360194288d078681bc#77a36245400250e7d8a854360194288d078681bc"
+source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=ceaff42dfb4d1e5c84ee45e7568bb071de4b07f2#ceaff42dfb4d1e5c84ee45e7568bb071de4b07f2"
 dependencies = [
  "anyhow",
  "aptos-system-utils 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=338f9a1bcc06f62ce4a4994f1642b9a61b631ee0)",
