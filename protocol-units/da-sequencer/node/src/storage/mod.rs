@@ -1,14 +1,12 @@
-use crate::batch::DaBatch;
-use crate::batch::FullnodeTx;
-use crate::block::BlockHeight;
-use crate::block::SequencerBlock;
-use crate::block::SequencerBlockDigest;
-use crate::celestia::CelestiaHeight;
-use crate::error::DaSequencerError;
+use crate::{
+	batch::{DaBatch, FullnodeTx},
+	block::{BlockHeight, SequencerBlock, SequencerBlockDigest},
+	celestia::CelestiaHeight,
+	error::DaSequencerError,
+};
 use bincode;
 use rocksdb::{ColumnFamilyDescriptor, Options, DB};
-use std::fmt;
-use std::sync::Arc;
+use std::{fmt, sync::Arc};
 
 pub mod cf {
 	pub const PENDING_TRANSACTIONS: &str = "pending_transactions";
