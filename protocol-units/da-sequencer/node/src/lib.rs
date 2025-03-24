@@ -13,4 +13,5 @@ mod storage;
 pub fn run(config: DaSequencerConfig) -> std::result::Result<(), DaSequencerError> {
 	let path = "./";
 	let store = Storage::try_new(path)?;
+	Ok(())
 }
