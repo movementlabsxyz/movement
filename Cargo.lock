@@ -12007,6 +12007,7 @@ dependencies = [
  "movement-tracing",
  "movement-types",
  "prost 0.13.3",
+ "rand 0.7.3",
  "rocksdb",
  "serde_json",
  "sha2 0.10.8",
