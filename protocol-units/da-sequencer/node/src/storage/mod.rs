@@ -337,4 +337,25 @@ mod tests {
 			.expect("digest not found");
 		assert_eq!(stored_height_bytes, key);
 	}
+
+	#[test]
+	fn test_get_block_with_digest_returns_none_for_unknown_digest() {
+		use crate::block::SequencerBlockDigest;
+		use tempfile::tempdir;
+
+		// Setup: create a temporary DB
+		let temp_dir = tempdir().expect("failed to create temp dir");
+		let path = temp_dir.path().to_str().unwrap();
+		let storage = Storage::try_new(path).expect("failed to create storage");
+
+		// Create a fake digest (not written to DB)
+		let fake_digest = SequencerBlockDigest([0u8; 32]);
+
+		// Call the method
+		let result = storage.get_block_with_digest(fake_digest);
+
+		// Should be Ok(None)
+		assert!(result.is_ok(), "Expected Ok, got Err: {:?}", result);
+		assert!(result.unwrap().is_none(), "Expected None for unknown digest, got Some");
+	}
 }
