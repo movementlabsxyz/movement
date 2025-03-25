@@ -1,5 +1,7 @@
 use crate::error::DaSequencerError;
 use aptos_crypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
+use aptos_crypto::hash::CryptoHash;
+use serde::{ser::SerializeMap, Serialize};
 
 #[derive(Debug)]
 pub struct RawData {
@@ -19,7 +21,7 @@ pub struct DaBatch<T> {
 #[cfg(test)]
 impl<T> DaBatch<T>
 where
-	T: serde::Serialize + aptos_crypto::hash::CryptoHash,
+	T: Serialize + CryptoHash,
 {
 	/// Creates a test-only `DaBatch` with a real signature over the given data.
 	/// Only usable in tests.

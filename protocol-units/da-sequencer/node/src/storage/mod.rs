@@ -177,10 +177,8 @@ mod tests {
 
 	#[test]
 	fn test_write_batch_persists_transaction() {
-		use crate::batch::{DaBatch, FullNodeTx};
-		use movement_types::transaction::{Id, Transaction};
-		use rand::Rng;
-		use serde::{Deserialize, Serialize};
+		use crate::batch::DaBatch;
+		use movement_types::transaction::Transaction;
 		use tempfile::tempdir;
 
 		// Create a temporary DB
@@ -189,13 +187,12 @@ mod tests {
 		let storage = Storage::try_new(path).expect("failed to create storage");
 
 		// Create a dummy transaction
-		let tx_id_bytes: [u8; 32] = rand::thread_rng().gen(); // random 32-byte ID
-		let tx_id = Id(tx_id_bytes);
 		let tx = Transaction::test_only_new(
 			b"test data".to_vec(),
 			1,   // application_priority
 			123, // sequence_number
 		);
+		let tx_id = tx.id; // capture the ID before tx is moved
 
 		let batch = DaBatch::test_only_new(tx);
 
@@ -207,14 +204,19 @@ mod tests {
 			.db
 			.cf_handle(cf::PENDING_TRANSACTIONS)
 			.expect("missing pending_transactions CF");
-		let key = tx.id.0;
-		let stored_bytes = storage.db.get_cf(cf, key).expect("read failed").expect("no data found");
+
+		let key = tx_id.0;
+		let stored_bytes =
+			storage.db.get_cf(&cf, key).expect("read failed").expect("no data found");
 
 		// Deserialize and assert
 		let stored_tx: Transaction =
 			bincode::deserialize(&stored_bytes).expect("failed to deserialize stored transaction");
 
-		assert_eq!(stored_tx, tx);
+		assert_eq!(stored_tx.id, tx_id);
+		assert_eq!(stored_tx.sequence_number(), 123);
+		assert_eq!(stored_tx.application_priority(), 1);
+		assert_eq!(stored_tx.data(), b"test data");
 	}
 
 	#[test]
