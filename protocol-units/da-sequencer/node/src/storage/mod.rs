@@ -92,21 +92,30 @@ impl Storage {
 		&self,
 		id: SequencerBlockDigest,
 	) -> std::result::Result<Option<SequencerBlock>, DaSequencerError> {
+		// Step 1: Get the height from the digest → height mapping
 		let cf = self.db.cf_handle(cf::BLOCKS_BY_DIGEST).ok_or_else(|| {
 			DaSequencerError::Generic("Missing column family: blocks_by_digest".into())
 		})?;
 
 		let key = id.0;
 
-		match self.db.get_cf(&cf, key).map_err(|e| DaSequencerError::Generic(e.to_string()))? {
-			Some(bytes) => {
-				let block: SequencerBlock = bincode::deserialize(&bytes).map_err(|e| {
-					DaSequencerError::Generic(format!("Deserialization error: {}", e))
-				})?;
-				Ok(Some(block))
-			}
-			None => Ok(None),
+		let height_bytes =
+			match self.db.get_cf(&cf, key).map_err(|e| DaSequencerError::Generic(e.to_string()))? {
+				Some(bytes) => bytes,
+				None => return Ok(None),
+			};
+
+		if height_bytes.len() != 8 {
+			return Err(DaSequencerError::Generic(
+				"Invalid height length in digest mapping".into(),
+			));
 		}
+
+		let mut arr = [0u8; 8];
+		arr.copy_from_slice(&height_bytes);
+		let height = BlockHeight(u64::from_be_bytes(arr));
+
+		self.get_block_at_height(height)
 	}
 
 	/// Produce next block with pending Tx.
@@ -276,7 +285,7 @@ mod tests {
 
 	#[test]
 	fn test_get_block_with_digest_returns_correct_block() {
-		use crate::block::{BlockHeight, SequencerBlock, SequencerBlockDigest};
+		use crate::block::{BlockHeight, SequencerBlock};
 		use bincode;
 		use movement_types::block::Block;
 		use tempfile::tempdir;
@@ -320,5 +329,12 @@ mod tests {
 		let fetched_block = result.unwrap();
 		assert_eq!(fetched_block.height, sequencer_block.height);
 		assert_eq!(fetched_block.block, sequencer_block.block);
+
+		let stored_height_bytes = storage
+			.db
+			.get_cf(&cf_digests, digest.0)
+			.expect("failed to read digest mapping")
+			.expect("digest not found");
+		assert_eq!(stored_height_bytes, key);
 	}
 }
