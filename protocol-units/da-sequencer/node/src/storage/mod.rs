@@ -11,6 +11,7 @@ use std::{fmt, result::Result, sync::Arc};
 pub mod cf {
 	pub const PENDING_TRANSACTIONS: &str = "pending_transactions";
 	pub const BLOCKS: &str = "blocks";
+	pub const BLOCKS_BY_DIGEST: &str = "blocks_by_digest";
 }
 
 pub struct Storage {
@@ -27,9 +28,15 @@ impl Storage {
 		let pending_transactions_cf =
 			ColumnFamilyDescriptor::new(cf::PENDING_TRANSACTIONS, Options::default());
 		let blocks_cf = ColumnFamilyDescriptor::new(cf::BLOCKS, Options::default());
+		let blocks_by_digest_cf =
+			ColumnFamilyDescriptor::new(cf::BLOCKS_BY_DIGEST, Options::default());
 
-		let db = DB::open_cf_descriptors(&options, path, [pending_transactions_cf, blocks_cf])
-			.map_err(|e| DaSequencerError::Generic(e.to_string()))?;
+		let db = DB::open_cf_descriptors(
+			&options,
+			path,
+			[pending_transactions_cf, blocks_cf, blocks_by_digest_cf],
+		)
+		.map_err(|e| DaSequencerError::Generic(e.to_string()))?;
 
 		Ok(Storage { db: Arc::new(db) })
 	}
@@ -85,7 +92,21 @@ impl Storage {
 		&self,
 		id: SequencerBlockDigest,
 	) -> std::result::Result<Option<SequencerBlock>, DaSequencerError> {
-		todo!();
+		let cf = self.db.cf_handle(cf::BLOCKS_BY_DIGEST).ok_or_else(|| {
+			DaSequencerError::Generic("Missing column family: blocks_by_digest".into())
+		})?;
+
+		let key = id.0;
+
+		match self.db.get_cf(&cf, key).map_err(|e| DaSequencerError::Generic(e.to_string()))? {
+			Some(bytes) => {
+				let block: SequencerBlock = bincode::deserialize(&bytes).map_err(|e| {
+					DaSequencerError::Generic(format!("Deserialization error: {}", e))
+				})?;
+				Ok(Some(block))
+			}
+			None => Ok(None),
+		}
 	}
 
 	/// Produce next block with pending Tx.
@@ -140,7 +161,6 @@ impl fmt::Debug for Storage {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use aptos_crypto::ed25519::Ed25519PublicKey;
 	use tempfile::TempDir;
 
 	#[test]
@@ -192,8 +212,7 @@ mod tests {
 			1,   // application_priority
 			123, // sequence_number
 		);
-		let tx_id = tx.id; // capture the ID before tx is moved
-
+		let tx_id = tx.id;
 		let batch = DaBatch::test_only_new(tx);
 
 		// Call write_batch
@@ -250,6 +269,54 @@ mod tests {
 		let result = storage.get_block_at_height(block_height).expect("get_block_at_height failed");
 
 		assert!(result.is_some(), "expected Some(block), got None");
+		let fetched_block = result.unwrap();
+		assert_eq!(fetched_block.height, sequencer_block.height);
+		assert_eq!(fetched_block.block, sequencer_block.block);
+	}
+
+	#[test]
+	fn test_get_block_with_digest_returns_correct_block() {
+		use crate::block::{BlockHeight, SequencerBlock, SequencerBlockDigest};
+		use bincode;
+		use movement_types::block::Block;
+		use tempfile::tempdir;
+
+		// Setup: create a temporary DB
+		let temp_dir = tempdir().expect("failed to create temp dir");
+		let path = temp_dir.path().to_str().unwrap();
+		let storage = Storage::try_new(path).expect("failed to create storage");
+
+		// Create dummy block data
+		let block_height = BlockHeight(99);
+		let dummy_block = Block::default();
+		let sequencer_block = SequencerBlock { height: block_height, block: dummy_block.clone() };
+		let digest = sequencer_block.get_block_digest();
+
+		// Serialize the block
+		let encoded_block =
+			bincode::serialize(&sequencer_block).expect("failed to serialize SequencerBlock");
+
+		// Insert block into BLOCKS CF
+		let cf_blocks = storage.db.cf_handle(cf::BLOCKS).expect("missing 'blocks' column family");
+		let key = block_height.0.to_be_bytes();
+		storage
+			.db
+			.put_cf(&cf_blocks, key, encoded_block)
+			.expect("failed to write to BLOCKS CF");
+
+		// Insert digest -> height mapping
+		let cf_digests =
+			storage.db.cf_handle(cf::BLOCKS_BY_DIGEST).expect("missing 'block_digests' CF");
+		storage
+			.db
+			.put_cf(&cf_digests, digest.0, key)
+			.expect("failed to write digest mapping");
+
+		// Call the method
+		let result = storage.get_block_with_digest(digest).expect("get_block_with_digest failed");
+
+		// Verify the block is retrieved correctly
+		assert!(result.is_some(), "Expected Some(block), got None");
 		let fetched_block = result.unwrap();
 		assert_eq!(fetched_block.height, sequencer_block.height);
 		assert_eq!(fetched_block.block, sequencer_block.block);
