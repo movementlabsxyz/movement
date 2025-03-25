@@ -17,10 +17,25 @@ pub struct DaBatch<T> {
 }
 
 #[cfg(test)]
-impl<T> DaBatch<T> {
-	/// Test-only constructor to build a batch with dummy signature and signer.
+impl<T> DaBatch<T>
+where
+	T: serde::Serialize + aptos_crypto::hash::CryptoHash,
+{
+	/// Creates a test-only `DaBatch` with a real signature over the given data.
+	/// Only usable in tests.
 	pub fn test_only_new(data: T) -> Self {
-		Self { data, signature: Ed25519Signature::default(), signer: Ed25519PublicKey::default() }
+		use aptos_crypto::ed25519::Ed25519PrivateKey;
+		use aptos_crypto::{PrivateKey, SigningKey, Uniform};
+		use rand::rngs::OsRng;
+
+		let mut rng = OsRng;
+		let private_key = Ed25519PrivateKey::generate(&mut rng);
+		let public_key = private_key.public_key();
+
+		// Sign the real data
+		let signature = private_key.sign(&data).expect("Failed to sign test data");
+
+		Self { data, signature, signer: public_key }
 	}
 }
 

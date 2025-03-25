@@ -197,7 +197,7 @@ mod tests {
 			123, // sequence_number
 		);
 
-		let batch = DaBatch::test_only_new(tx.clone());
+		let batch = DaBatch::test_only_new(tx);
 
 		// Call write_batch
 		storage.write_batch(batch).expect("write_batch failed");

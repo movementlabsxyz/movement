@@ -24,10 +24,8 @@ movement-da-sequencer-config = { workspace = true }
 [dev-dependencies]
 tempfile = { workspace = true }
 rand = { workspace = true }
-
-[dev-dependencies.movement-types]
-path = "../movement-types"
-features = ["testing"]
+movement-types = { workspace = true, features = ["testing"] }
+rand_core = { workspace = true, features = ["os_rng"] }
 
 [lints]
 #workspace = true

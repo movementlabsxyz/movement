@@ -1,3 +1,5 @@
+use aptos_crypto::hash::define_hasher;
+use aptos_crypto_derive::{BCSCryptoHash, CryptoHasher};
 use core::fmt;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
@@ -109,12 +111,16 @@ impl PartialOrd for Transaction {
 
 #[cfg(any(test, feature = "testing"))]
 impl Transaction {
-	/// Creates a Transaction for testing with full control over all fields.
 	pub fn test_only_new(data: Vec<u8>, application_priority: u64, sequence_number: u64) -> Self {
-		let mut hasher = blake3::Hasher::new();
-		hasher.update(&data);
-		hasher.update(&sequence_number.to_le_bytes());
-		let id = Id(hasher.finalize().into());
+		use aptos_crypto::hash::TestOnlyHash;
+
+		let temp = Transaction {
+			data: data.clone(),
+			application_priority,
+			sequence_number,
+			id: Id([0; 32]), // temp placeholder
+		};
+		let id = Id(temp.test_only_hash().to_vec().try_into().unwrap());
 		Self { data, application_priority, sequence_number, id }
 	}
 }

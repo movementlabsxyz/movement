@@ -16,6 +16,8 @@ default = []
 testing = []
 
 [dependencies]
+aptos-crypto = { workspace = true }
+aptos-crypto-derive = { workspace = true }
 aptos-types = { workspace = true }
 bcs = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
