@@ -177,7 +177,7 @@ mod tests {
 
 	#[test]
 	fn test_write_batch_persists_transaction() {
-		use crate::batch::{DaBatch, FullnodeTx};
+		use crate::batch::{DaBatch, FullNodeTx};
 		use movement_types::transaction::{Id, Transaction};
 		use rand::Rng;
 		use serde::{Deserialize, Serialize};
@@ -191,19 +191,13 @@ mod tests {
 		// Create a dummy transaction
 		let tx_id_bytes: [u8; 32] = rand::thread_rng().gen(); // random 32-byte ID
 		let tx_id = Id(tx_id_bytes);
-		let tx = Transaction {
-			id: tx_id,
-			data: b"test data".to_vec(),
-			application_priority: 1,
-			sequence_number: 123,
-		};
+		let tx = Transaction::test_only_new(
+			b"test data".to_vec(),
+			1,   // application_priority
+			123, // sequence_number
+		);
 
-		// Wrap it in a batch
-		let batch = DaBatch {
-			data: tx.clone(),
-			signature: Ed25519Signature::default(), // or mock appropriately
-			signer: Ed25519PublicKey::default(),    // or mock appropriately
-		};
+		let batch = DaBatch::test_only_new(tx.clone());
 
 		// Call write_batch
 		storage.write_batch(batch).expect("write_batch failed");

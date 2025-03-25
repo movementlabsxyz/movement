@@ -42,10 +42,10 @@ impl fmt::Display for Id {
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash)]
 pub struct Transaction {
-	pub data: Vec<u8>,
+	data: Vec<u8>,
 	// Application priority is stored low to high, i.e., 0 is the highest priority.
-	pub application_priority: u64,
-	pub sequence_number: u64,
+	application_priority: u64,
+	sequence_number: u64,
 	pub id: Id,
 }
 
@@ -104,6 +104,18 @@ impl Ord for Transaction {
 impl PartialOrd for Transaction {
 	fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
 		Some(self.cmp(other))
+	}
+}
+
+#[cfg(any(test, feature = "testing"))]
+impl Transaction {
+	/// Creates a Transaction for testing with full control over all fields.
+	pub fn test_only_new(data: Vec<u8>, application_priority: u64, sequence_number: u64) -> Self {
+		let mut hasher = blake3::Hasher::new();
+		hasher.update(&data);
+		hasher.update(&sequence_number.to_le_bytes());
+		let id = Id(hasher.finalize().into());
+		Self { data, application_priority, sequence_number, id }
 	}
 }
 

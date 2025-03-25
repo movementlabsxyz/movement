@@ -16,6 +16,14 @@ pub struct DaBatch<T> {
 	signer: Ed25519PublicKey,
 }
 
+#[cfg(test)]
+impl<T> DaBatch<T> {
+	/// Test-only constructor to build a batch with dummy signature and signer.
+	pub fn test_only_new(data: T) -> Self {
+		Self { data, signature: Ed25519Signature::default(), signer: Ed25519PublicKey::default() }
+	}
+}
+
 /// Batch write blobs.
 fn validate_batch(
 	new_batch: DaBatch<RawData>,

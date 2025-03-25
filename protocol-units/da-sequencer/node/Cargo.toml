@@ -25,5 +25,9 @@ movement-da-sequencer-config = { workspace = true }
 tempfile = { workspace = true }
 rand = { workspace = true }
 
+[dev-dependencies.movement-types]
+path = "../movement-types"
+features = ["testing"]
+
 [lints]
 #workspace = true
