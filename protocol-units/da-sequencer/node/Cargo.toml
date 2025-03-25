@@ -23,6 +23,7 @@ movement-da-sequencer-config = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
+rand = { workspace = true }
 
 [lints]
 #workspace = true

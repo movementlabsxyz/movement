@@ -11938,6 +11938,7 @@ dependencies = [
  "bincode",
  "movement-da-sequencer-config",
  "movement-types",
+ "rand 0.7.3",
  "rocksdb",
  "serde",
  "tempfile",

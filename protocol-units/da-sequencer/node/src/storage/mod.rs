@@ -1,12 +1,12 @@
 use crate::{
-	batch::{DaBatch, FullnodeTx},
+	batch::{DaBatch, FullNodeTx},
 	block::{BlockHeight, SequencerBlock, SequencerBlockDigest},
 	celestia::CelestiaHeight,
 	error::DaSequencerError,
 };
 use bincode;
-use rocksdb::{ColumnFamilyDescriptor, Options, DB};
-use std::{fmt, sync::Arc};
+use rocksdb::{ColumnFamilyDescriptor, Options, WriteBatch, DB};
+use std::{fmt, result::Result, sync::Arc};
 
 pub mod cf {
 	pub const PENDING_TRANSACTIONS: &str = "pending_transactions";
@@ -33,12 +33,28 @@ impl Storage {
 
 		Ok(Storage { db: Arc::new(db) })
 	}
+
 	/// Save all batch's Tx in the pending Tx table. The batch's Tx has been verified and validated.
 	pub fn write_batch(
 		&self,
-		batch: DaBatch<FullnodeTx>,
+		batch: DaBatch<FullNodeTx>,
 	) -> std::result::Result<(), DaSequencerError> {
-		todo!();
+		let cf = self.db.cf_handle(cf::PENDING_TRANSACTIONS).ok_or_else(|| {
+			DaSequencerError::Generic("Missing column family: pending_transactions".into())
+		})?;
+		let tx = batch.data;
+		let key = tx.id.0;
+		let value = bincode::serialize(&tx)
+			.map_err(|e| DaSequencerError::Generic(format!("Serialization error: {}", e)))?;
+
+		let mut write_batch = WriteBatch::default();
+		write_batch.put_cf(&cf, key, value);
+
+		self.db
+			.write(write_batch)
+			.map_err(|e| DaSequencerError::Generic(format!("DB write error: {}", e)))?;
+
+		Ok(())
 	}
 
 	/// Return, if exists, the Block at the given height.
@@ -124,6 +140,7 @@ impl fmt::Debug for Storage {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use aptos_crypto::ed25519::Ed25519PublicKey;
 	use tempfile::TempDir;
 
 	#[test]
@@ -156,6 +173,54 @@ mod tests {
 			}
 			_ => panic!("Expected Generic error variant"),
 		}
+	}
+
+	#[test]
+	fn test_write_batch_persists_transaction() {
+		use crate::batch::{DaBatch, FullnodeTx};
+		use movement_types::transaction::{Id, Transaction};
+		use rand::Rng;
+		use serde::{Deserialize, Serialize};
+		use tempfile::tempdir;
+
+		// Create a temporary DB
+		let temp_dir = tempdir().expect("failed to create temp dir");
+		let path = temp_dir.path().to_str().unwrap();
+		let storage = Storage::try_new(path).expect("failed to create storage");
+
+		// Create a dummy transaction
+		let tx_id_bytes: [u8; 32] = rand::thread_rng().gen(); // random 32-byte ID
+		let tx_id = Id(tx_id_bytes);
+		let tx = Transaction {
+			id: tx_id,
+			data: b"test data".to_vec(),
+			application_priority: 1,
+			sequence_number: 123,
+		};
+
+		// Wrap it in a batch
+		let batch = DaBatch {
+			data: tx.clone(),
+			signature: Ed25519Signature::default(), // or mock appropriately
+			signer: Ed25519PublicKey::default(),    // or mock appropriately
+		};
+
+		// Call write_batch
+		storage.write_batch(batch).expect("write_batch failed");
+
+		// Read back manually from RocksDB
+		let cf = storage
+			.db
+			.cf_handle(cf::PENDING_TRANSACTIONS)
+			.expect("missing pending_transactions CF");
+		let key = tx.id.0;
+		let stored_bytes = storage.db.get_cf(cf, key).expect("read failed").expect("no data found");
+
+		// Deserialize and assert
+		let stored_tx: Transaction =
+			bincode::deserialize(&stored_bytes).expect("failed to deserialize stored transaction");
+
+		assert_eq!(stored_tx, tx);
 	}
 
 	#[test]

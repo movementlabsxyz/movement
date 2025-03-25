@@ -6,12 +6,12 @@ pub struct RawData {
 	pub bytes: Vec<u8>,
 }
 
-#[derive(Debug)]
-pub struct FullnodeTx {}
+///We want to distinguish here between FullNode transactions and DA Transactions
+pub type FullNodeTx = movement_types::transaction::Transaction;
 
 #[derive(Debug)]
-pub struct DaBatch<Data> {
-	data: Data,
+pub struct DaBatch<T> {
+	pub data: T,
 	signature: Ed25519Signature,
 	signer: Ed25519PublicKey,
 }
@@ -19,6 +19,6 @@ pub struct DaBatch<Data> {
 /// Batch write blobs.
 fn validate_batch(
 	new_batch: DaBatch<RawData>,
-) -> std::result::Result<DaBatch<FullnodeTx>, DaSequencerError> {
+) -> std::result::Result<DaBatch<FullNodeTx>, DaSequencerError> {
 	todo!()
 }
