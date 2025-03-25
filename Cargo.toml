@@ -98,6 +98,7 @@ maptos-execution-util = { path = "protocol-units/execution/maptos/util" }
 ## movement da sequencer
 movement-da-sequencer-config = { path = "protocol-units/da-sequencer/config" }
 movement-da-sequencer-node = { path = "protocol-units/da-sequencer/node" }
+movement-da-sequencer-proto = { path = "protocol-units/da-sequencer/proto" }
 
 # framework releases
 maptos-framework-release-util = { path = "protocol-units/execution/maptos/framework/releases/util" }
