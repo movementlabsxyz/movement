@@ -77,6 +77,9 @@ aptos-sdk = { workspace = true }
 tempfile = { workspace = true }
 movement-signer-loader = { workspace = true }
 movement-signer = { workspace = true }
+movement-da-light-node-client = { workspace = true }
+movement-da-light-node-proto = { workspace = true }
+prost = { workspace = true }
 
 [dev-dependencies]
 dotenv = { workspace = true }

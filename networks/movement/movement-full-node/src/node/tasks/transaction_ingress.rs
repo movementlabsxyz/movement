@@ -1,4 +1,4 @@
-//! Task to process incoming transactions and write to DA
+//! Task to process a single batch of transactions and write to DA
 
 use maptos_dof_execution::SignedTransaction;
 use maptos_execution_util::config::Config as MaptosConfig;
@@ -9,121 +9,111 @@ use tokio::sync::mpsc;
 use tracing::{debug, info, warn};
 
 use prost::Message;
-use std::ops::ControlFlow;
-use std::sync::atomic::AtomicU64;
-use std::time::{Duration, Instant};
+use std::sync::atomic::{AtomicU64, Ordering};
 
 const LOGGING_UID: AtomicU64 = AtomicU64::new(0);
 
 pub struct Task {
-	transaction_receiver: mpsc::Receiver<(u64, SignedTransaction)>,
-	da_light_node_client: MovementDaLightNodeClient,
-	maptos_config: MaptosConfig,
+        transaction_receiver: mpsc::Receiver<Vec<(u64, SignedTransaction)>>,
+        da_light_node_client: MovementDaLightNodeClient,
+        #[allow(dead_code)]
+        maptos_config: MaptosConfig,
 }
 
 impl Task {
-	pub(crate) fn new(
-		transaction_receiver: mpsc::Receiver<(u64, SignedTransaction)>,
-		da_light_node_client: MovementDaLightNodeClient,
-		maptos_config: MaptosConfig,
-	) -> Self {
-		Task { transaction_receiver, da_light_node_client, maptos_config }
-	}
+        pub(crate) fn new(
+                transaction_receiver: mpsc::Receiver<Vec<(u64, SignedTransaction)>>,
+                da_light_node_client: MovementDaLightNodeClient,
+                maptos_config: MaptosConfig,
+        ) -> Self {
+                Task {
+                        transaction_receiver,
+                        da_light_node_client,
+                        maptos_config,
+                }
+        }
 
-	pub async fn run(mut self) -> anyhow::Result<()> {
-		while let ControlFlow::Continue(()) = self.spawn_write_next_transaction_batch().await? {}
-		Ok(())
-	}
+        pub async fn run(mut self) -> anyhow::Result<()> {
+                if let Some(batch) = self.transaction_receiver.recv().await {
+                        self.process_batch(batch).await?;
+                }
+                Ok(())
+        }
 
-	/// Constructs a batch of transactions then spawns the write request to the DA in the background.
-	async fn spawn_write_next_transaction_batch(
-		&mut self,
-	) -> Result<ControlFlow<(), ()>, anyhow::Error> {
-		use ControlFlow::{Break, Continue};
+        async fn process_batch(
+                &mut self,
+                batch: Vec<(u64, SignedTransaction)>,
+        ) -> anyhow::Result<()> {
+                let batch_id = LOGGING_UID.fetch_add(1, Ordering::SeqCst);
 
-		// limit the total time batching transactions
-		let start = Instant::now();
-		let half_building_time = self.maptos_config.load_shedding.batch_production_time;
+                let blobs = batch
+                        .into_iter()
+                        .map(|(priority, transaction)| {
+                                debug!(
+                                        target: "movement_timing",
+                                        batch_id = %batch_id,
+                                        tx_hash = %transaction.committed_hash(),
+                                        sender = %transaction.sender(),
+                                        sequence_number = transaction.sequence_number(),
+                                        "Tx ingress received transaction",
+                                );
+                                let serialized = bcs::to_bytes(&transaction)?;
+                                let movement_transaction = movement_types::transaction::Transaction::new(
+                                        serialized,
+                                        priority,
+                                        transaction.sequence_number(),
+                                );
+                                let encoded = serde_json::to_vec(&movement_transaction)?;
+                                Ok(BlobWrite { data: encoded })
+                        })
+                        .collect::<Result<Vec<_>, anyhow::Error>>()?;
 
-		let mut transactions = Vec::new();
+                let batch_write = BatchWriteRequest { blobs };
+                let mut buf = Vec::new();
+                batch_write.encode_raw(&mut buf);
+                info!(
+                        "built_batch_write batch_id={} size={}",
+                        batch_id,
+                        buf.len()
+                );
 
-		let batch_id = LOGGING_UID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-		loop {
-			let remaining = match half_building_time.checked_sub(start.elapsed().as_millis() as u64)
-			{
-				Some(remaining) => remaining,
-				None => {
-					// we have exceeded the half building time
-					break;
-				}
-			};
+                let batch_write_clone = batch_write.clone();
+                let mut da_client = self.da_light_node_client.clone();
 
-			match tokio::time::timeout(
-				Duration::from_millis(remaining),
-				self.transaction_receiver.recv(),
-			)
-			.await
-			{
-				Ok(transaction) => match transaction {
-					Some((application_priority, transaction)) => {
-						debug!(
-							target : "movement_timing",
-							batch_id = %batch_id,
-							tx_hash = %transaction.committed_hash(),
-							sender = %transaction.sender(),
-							sequence_number = transaction.sequence_number(),
-							"Tx ingress received transaction",
-						);
-						let serialized_aptos_transaction = bcs::to_bytes(&transaction)?;
-						let movement_transaction = movement_types::transaction::Transaction::new(
-							serialized_aptos_transaction,
-							application_priority,
-							transaction.sequence_number(),
-						);
-						let serialized_transaction = serde_json::to_vec(&movement_transaction)?;
-						transactions.push(BlobWrite { data: serialized_transaction });
-					}
-					None => {
-						// The transaction stream is closed, terminate the task.
-						return Ok(Break(()));
-					}
-				},
-				Err(_) => {
-					break;
-				}
-			}
-		}
+                tokio::spawn(async move {
+                        let mut attempts = 0;
+                        loop {
+                                match da_client.batch_write(batch_write_clone.clone()).await {
+                                        Ok(_) => {
+                                                info!(
+                                                        target: "movement_timing",
+                                                        batch_id = %batch_id,
+                                                        "batch_write_success"
+                                                );
+                                                break;
+                                        }
+                                        Err(e) => {
+                                                attempts += 1;
+                                                warn!(
+                                                        "batch_write failed batch_id={} attempt={} error={:?}",
+                                                        batch_id, attempts, e
+                                                );
+                                                if attempts >= 3 {
+                                                        warn!(
+                                                                "giving up on batch_id={}",
+                                                                batch_id
+                                                        );
+                                                        break;
+                                                }
+                                                tokio::time::sleep(
+                                                        std::time::Duration::from_secs(2),
+                                                )
+                                                .await;
+                                        }
+                                }
+                        }
+                });
 
-		if transactions.len() > 0 {
-			info!(
-				target: "movement_timing",
-				batch_id = %batch_id,
-				transaction_count = transactions.len(),
-				"built_batch_write"
-			);
-			let batch_write = BatchWriteRequest { blobs: transactions };
-			let mut buf = Vec::new();
-			batch_write.encode_raw(&mut buf);
-			info!("batch_write size: {}", buf.len());
-			// spawn the actual batch write request in the background
-			let mut da_light_node_client = self.da_light_node_client.clone();
-			tokio::spawn(async move {
-				match da_light_node_client.batch_write(batch_write.clone()).await {
-					Ok(_) => {
-						info!(
-							target: "movement_timing",
-							batch_id = %batch_id,
-							"batch_write_success"
-						);
-						return;
-					}
-					Err(e) => {
-						warn!("failed to write batch to DA: {:?} {:?}", e, batch_id);
-					}
-				}
-			});
-		}
-
-		Ok(Continue(()))
-	}
+                Ok(())
+        }
 }

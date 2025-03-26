@@ -210,7 +210,7 @@ impl Executor {
 	/// task needs to be running.
 	pub fn background(
 		&self,
-		transaction_sender: mpsc::Sender<(u64, SignedTransaction)>,
+		transaction_sender: mpsc::Sender<Vec<(u64, SignedTransaction)>>,
 		mempool_commit_tx_receiver: futures_mpsc::Receiver<Vec<TxExecutionResult>>,
 	) -> anyhow::Result<(Context, BackgroundTask)> {
 		let node_config = self.node_config.clone();

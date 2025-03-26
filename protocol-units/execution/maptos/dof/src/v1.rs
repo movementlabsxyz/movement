@@ -57,7 +57,7 @@ impl DynOptFinExecutor for Executor {
 
 	fn background(
 		&self,
-		transaction_sender: Sender<(u64, SignedTransaction)>,
+		transaction_sender: Sender<Vec<(u64, SignedTransaction)>>,
 		mempool_commit_tx_receiver: futures::channel::mpsc::Receiver<Vec<TxExecutionResult>>,
 		_config: &Config,
 	) -> Result<
@@ -272,7 +272,8 @@ mod tests {
 
 		services_handle.abort();
 		background_handle.abort();
-		let (_application_priority, received_transaction) = tx_receiver.recv().await.unwrap();
+		let batch = tx_receiver.recv().await.unwrap();
+		let (_application_priority, received_transaction) = batch.into_iter().next().unwrap();
 		assert_eq!(received_transaction, comparison_user_transaction);
 
 		Ok(())
@@ -344,7 +345,8 @@ mod tests {
 		let request = SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
 		api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
 
-		let (_application_priority, received_transaction) = tx_receiver.recv().await.unwrap();
+		let batch = tx_receiver.recv().await.unwrap();
+		let (_application_priority, received_transaction) = batch.into_iter().next().unwrap();		
 		assert_eq!(received_transaction, comparison_user_transaction);
 
 		// Now execute the block
@@ -420,7 +422,8 @@ mod tests {
 				SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
 			api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
 
-			let (_application_priority, received_transaction) = tx_receiver.recv().await.unwrap();
+			let batch = tx_receiver.recv().await.unwrap();
+			let (_application_priority, received_transaction) = batch.into_iter().next().unwrap();			
 			assert_eq!(received_transaction, comparison_user_transaction);
 
 			// Now execute the block

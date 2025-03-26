@@ -25,7 +25,12 @@ use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
 use tracing::{debug, info, info_span, warn, Instrument};
+use movement_da_light_node_client::MovementDaLightNodeClient;
+use movement_da_light_node_proto::{BatchWriteRequest, BlobWrite};
+use prost::Message;
+use std::sync::atomic::{AtomicU64, Ordering};
 
+const LOGGING_UID: AtomicU64 = AtomicU64::new(0);
 const GC_INTERVAL: Duration = Duration::from_secs(30);
 const MEMPOOL_INTERVAL: Duration = Duration::from_millis(240); // this is based on slot times and global TCP RTT, essentially we expect to collect all transactions sent in the same slot in around 240ms
 
@@ -35,7 +40,7 @@ pub struct TransactionPipe {
 	// The receiver for the mempool client.
 	mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
 	// Sender for the channel with accepted transactions.
-	transaction_sender: mpsc::Sender<(u64, SignedTransaction)>,
+	transaction_sender: mpsc::Sender<Vec<(u64, SignedTransaction)>>,
 	// Access to the ledger DB. TODO: reuse an instance of VMValidator
 	db_reader: Arc<dyn DbReader>,
 	// State of the Aptos mempool
@@ -63,7 +68,7 @@ impl TransactionPipe {
 	pub(crate) fn new(
 		mempool_commit_tx_receiver: futures_mpsc::Receiver<Vec<TxExecutionResult>>, // Sender, seq number)
 		mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
-		transaction_sender: mpsc::Sender<(u64, SignedTransaction)>,
+		transaction_sender: mpsc::Sender<Vec<(u64, SignedTransaction)>>,
 		db_reader: Arc<dyn DbReader>,
 		node_config: &NodeConfig,
 		mempool_config: &MempoolConfig,
@@ -199,46 +204,108 @@ impl TransactionPipe {
 		Ok(())
 	}
 
+	/// Extracts a batch of transactions from the mempool and sends it to the DA.
 	pub(crate) async fn tick_mempool_sender(&mut self) -> Result<(), Error> {
 		if self.last_mempool_send.elapsed() > MEMPOOL_INTERVAL {
-			// pop some transactions from the mempool
 			let transactions = self.core_mempool.get_batch_with_ranking_score(
-				1024 * 8,           // todo: move out to config
-				1024 * 1024 * 1024, // todo: move out to config
-				true,               // allows the mempool to return batch before one is full
+				1024 * 8,           // todo: move to config
+				1024 * 1024 * 1024, // todo: move to config
+				true,               // allow partial batches
 				BTreeMap::new(),
 			);
-			debug!("Sending {:?} transactions to the transaction channel", transactions.len());
 
-			// send them to the transaction channel
-			for (transaction, ranking_score) in transactions {
-				// clone the channel sender
-				let sender = self.transaction_sender.clone();
+			debug!("Sending {} transactions to the transaction channel", transactions.len());
 
-				// grab the sender and sequence number
-				let transaction_sender = transaction.sender();
-				let sequence_number = transaction.sequence_number();
+			let batch_id = LOGGING_UID.fetch_add(1, Ordering::SeqCst);
 
-				// application priority for movement is the inverse of the ranking score
-				let application_priority = u64::MAX - ranking_score;
-				let _ = sender.send((application_priority, transaction)).await;
+			let batch: Vec<(u64, SignedTransaction)> = transactions
+				.into_iter()
+				.map(|(transaction, ranking_score)| {
+					let priority = u64::MAX - ranking_score;
+					let sender = transaction.sender();
+					let seq = transaction.sequence_number();
 
-				// commit the transaction now that we have sent it
-				debug!(
-					target: "movement_timing",
-					sender = %transaction_sender,
-					sequence_number = sequence_number,
-					"Tx sent to Tx ingress"
-				);
-				self.core_mempool.commit_transaction(&transaction_sender, sequence_number);
+					debug!(
+						target: "movement_timing",
+						sender = %sender,
+						sequence_number = seq,
+						"Tx sent to Tx ingress"
+					);
+
+					self.core_mempool.commit_transaction(&sender, seq);
+					(priority, transaction)
+				})
+				.collect();
+
+			if !batch.is_empty() {
+				// Send to transaction channel if needed
+				let _ = self.transaction_sender.send(batch.clone()).await;
+
+				// Convert to BlobWrite for DA
+				let blobs = batch
+					.into_iter()
+					.map(|(priority, transaction)| {
+						debug!(
+							target: "movement_timing",
+							batch_id = %batch_id,
+							tx_hash = %transaction.committed_hash(),
+							sender = %transaction.sender(),
+							sequence_number = transaction.sequence_number(),
+							"Tx ingress received transaction",
+						);
+						let serialized = bcs::to_bytes(&transaction)?;
+						let movement_transaction = movement_types::transaction::Transaction::new(
+							serialized,
+							priority,
+							transaction.sequence_number(),
+						);
+						let encoded = serde_json::to_vec(&movement_transaction)?;
+						Ok(BlobWrite { data: encoded })
+					})
+					.collect::<Result<Vec<_>, anyhow::Error>>()?;
+
+				let batch_write = BatchWriteRequest { blobs };
+				let mut buf = Vec::new();
+				batch_write.encode_raw(&mut buf);
+				info!("built_batch_write batch_id={} size={}", batch_id, buf.len());
+
+				let connection_string = std::env::var("DA_HTTP1_URL")
+					.unwrap_or_else(|_| "http://127.0.0.1:8080".to_string());
+
+				tokio::spawn(async move {
+					let Ok(mut da_client) = MovementDaLightNodeClient::try_http1(&connection_string) else {
+						warn!("failed to create DA client for batch_id={}", batch_id);
+						return;
+					};
+
+					let batch_write_clone = batch_write.clone();
+					let mut attempts = 0;
+					loop {
+						match da_client.batch_write(batch_write_clone.clone()).await {
+							Ok(_) => {
+								info!(target: "movement_timing", batch_id = %batch_id, "batch_write_success");
+								break;
+							}
+							Err(e) => {
+								attempts += 1;
+								warn!("batch_write failed batch_id={} attempt={} error={:?}", batch_id, attempts, e);
+								if attempts >= 3 {
+									warn!("giving up on batch_id={}", batch_id);
+									break;
+								}
+								tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+							}
+						}
+					}
+				});
+
+				self.last_mempool_send = Instant::now();
 			}
-
-			// update the last send
-			self.last_mempool_send = Instant::now();
 		}
 
 		Ok(())
 	}
+
 
 	pub(crate) fn tick_gc(&mut self) {
 		if self.last_gc.elapsed() >= GC_INTERVAL {
@@ -380,9 +447,9 @@ mod tests {
 	use maptos_execution_util::config::chain::Config;
 	use tempfile::TempDir;
 
-	async fn setup() -> (Context, TransactionPipe, mpsc::Receiver<(u64, SignedTransaction)>, TempDir)
-	{
-		let (tx_sender, tx_receiver) = mpsc::channel(16);
+	async fn setup(
+	) -> (Context, TransactionPipe, mpsc::Receiver<Vec<(u64, SignedTransaction)>>, TempDir) {
+		let (tx_sender, tx_receiver) = mpsc::channel::<Vec<(u64, SignedTransaction)>>(16);
 		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
 			futures_mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
 
@@ -429,8 +496,9 @@ mod tests {
 		assert_eq!(status.code, MempoolStatusCode::Accepted);
 
 		// receive the transaction
-		let received_transaction = tx_receiver.recv().await.unwrap();
-		assert_eq!(received_transaction.1, user_transaction);
+		let received_batch = tx_receiver.recv().await.unwrap();
+		let (_, tx) = received_batch.into_iter().next().expect("empty batch");
+		assert_eq!(tx, user_transaction);
 
 		Ok(())
 	}
@@ -480,9 +548,9 @@ mod tests {
 		assert_eq!(status.code, MempoolStatusCode::Accepted);
 
 		// receive the transaction
-		let received_transaction =
-			tx_receiver.recv().await.ok_or(anyhow::anyhow!("No transaction received"))?;
-		assert_eq!(received_transaction.1, user_transaction);
+		let received_batch = tx_receiver.recv().await.unwrap();
+		let (_, tx) = received_batch.into_iter().next().expect("empty batch");
+		assert_eq!(tx, user_transaction);
 
 		// send the same transaction again
 		let (req_sender, callback) = oneshot::channel();
@@ -520,8 +588,9 @@ mod tests {
 		let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
 		let request = SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
 		api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
-		let received_transaction = tx_receiver.recv().await.unwrap();
-		assert_eq!(received_transaction.1, comparison_user_transaction);
+		let received_batch = tx_receiver.recv().await.unwrap();
+		let (_, tx) = received_batch.into_iter().next().expect("empty batch");
+		assert_eq!(tx, comparison_user_transaction);
 
 		mempool_handle.abort();
 
@@ -553,8 +622,9 @@ mod tests {
 				SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
 			api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
 
-			let received_transaction = tx_receiver.recv().await.unwrap();
-			let bcs_received_transaction = bcs::to_bytes(&received_transaction.1)?;
+			let received_batch = tx_receiver.recv().await.unwrap();
+			let (_, tx) = received_batch.into_iter().next().expect("empty batch");
+			let bcs_received_transaction = bcs::to_bytes(&tx)?;
 			comparison_user_transactions.insert(bcs_received_transaction.clone());
 		}
 
@@ -601,7 +671,7 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_sequence_number_too_old() -> Result<(), anyhow::Error> {
-		let (tx_sender, _tx_receiver) = mpsc::channel(16);
+		let (tx_sender, tx_receiver) = mpsc::channel::<Vec<(u64, SignedTransaction)>>(16);
 
 		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
 			futures_mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);

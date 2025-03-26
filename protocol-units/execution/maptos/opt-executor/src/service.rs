@@ -149,7 +149,8 @@ mod tests {
 		assert_eq!(status.code, MempoolStatusCode::Accepted);
 
 		// receive the transaction
-		let (_priority, received_transaction) = tx_receiver.recv().await.unwrap();
+		let batch = tx_receiver.recv().await.unwrap();
+		let (_priority, received_transaction) = batch.into_iter().next().expect("expected at least one transaction");
 		assert_eq!(received_transaction, user_transaction);
 
 		handle.abort();
