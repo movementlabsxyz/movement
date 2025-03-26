@@ -60,3 +60,34 @@ impl SequencerBlock {
 		}
 	}
 }
+
+#[cfg(test)]
+mod tests {
+	#[test]
+	fn test_sequencer_block_rejects_block_larger_than_max_size() {
+		use crate::block::{BlockHeight, SequencerBlock};
+		use movement_types::{block::Block, transaction::Transaction};
+		use std::collections::BTreeSet;
+
+		// Fill enough transactions with large data to exceed MAX_SEQUENCER_BLOCK_SIZE (1MB)
+		let mut transactions = BTreeSet::new();
+		let mut total_size = 0;
+
+		while total_size < super::MAX_SEQUENCER_BLOCK_SIZE as usize + 100_000 {
+			let data = vec![0u8; 100_000]; // 100 KB each
+			let tx = Transaction::test_only_new(data, 0, total_size as u64);
+			total_size += 100_000;
+			transactions.insert(tx);
+		}
+
+		let block = Block::new(Default::default(), Default::default(), transactions);
+
+		let result = SequencerBlock::try_new(BlockHeight(0), block);
+
+		assert!(
+			matches!(&result, Err(crate::DaSequencerError::Generic(msg)) if msg.contains("exceeds max size")),
+			"Expected error for oversized block, got: {:?}",
+			result
+		)
+	}
+}
