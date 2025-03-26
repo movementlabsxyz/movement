@@ -13,9 +13,15 @@ pub type FullNodeTx = movement_types::transaction::Transaction;
 
 #[derive(Debug)]
 pub struct DaBatch<T> {
-	pub data: T,
+	data: T,
 	signature: Ed25519Signature,
 	signer: Ed25519PublicKey,
+}
+
+impl<T> DaBatch<T> {
+	pub fn data(&self) -> &T {
+		&self.data
+	}
 }
 
 #[cfg(test)]

@@ -52,9 +52,9 @@ impl Storage {
 		let cf = self.db.cf_handle(cf::PENDING_TRANSACTIONS).ok_or_else(|| {
 			DaSequencerError::Generic("Missing column family: pending_transactions".into())
 		})?;
-		let tx = batch.data;
+		let tx = batch.data();
 		let key = tx.id.0;
-		let value = bincode::serialize(&tx)
+		let value = bincode::serialize(tx)
 			.map_err(|e| DaSequencerError::Generic(format!("Serialization error: {}", e)))?;
 
 		let mut write_batch = WriteBatch::default();
