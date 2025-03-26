@@ -1,37 +1,44 @@
 //! Task processing incoming transactions for the opt API.
-
 use super::Error;
 use crate::executor::TxExecutionResult;
 use crate::gc_account_sequence_number::UsedSequenceNumberPool;
+
+use std::collections::{BTreeMap, HashSet};
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Arc, RwLock};
+use std::time::{Duration, Instant};
+
 use aptos_account_whitelist::config::Config as WhitelistConfig;
 use aptos_config::config::NodeConfig;
-use aptos_mempool::core_mempool::CoreMempool;
-use aptos_mempool::SubmissionStatus;
-use aptos_mempool::{core_mempool::TimelineState, MempoolClientRequest};
-use aptos_storage_interface::state_view::LatestDbStateCheckpointView;
-use aptos_storage_interface::DbReader;
-use aptos_types::account_address::AccountAddress;
-use aptos_types::mempool_status::{MempoolStatus, MempoolStatusCode};
-use aptos_types::transaction::SignedTransaction;
-use aptos_types::transaction::TransactionStatus;
-use aptos_vm_validator::vm_validator::get_account_sequence_number;
-use aptos_vm_validator::vm_validator::{TransactionValidation, VMValidator};
+use aptos_mempool::{
+    core_mempool::{CoreMempool, TimelineState},
+    MempoolClientRequest, SubmissionStatus,
+};
+use aptos_storage_interface::{
+    state_view::LatestDbStateCheckpointView,
+    DbReader,
+};
+use aptos_types::{
+    account_address::AccountAddress,
+    mempool_status::{MempoolStatus, MempoolStatusCode},
+    transaction::{SignedTransaction, TransactionStatus},
+};
+use aptos_vm_validator::vm_validator::{
+    get_account_sequence_number,
+    TransactionValidation, VMValidator,
+};
+
+use dot_movement;
 use futures::channel::mpsc as futures_mpsc;
 use maptos_execution_util::config::mempool::Config as MempoolConfig;
 use movement_collections::garbage::counted::GcCounter;
-use std::collections::BTreeMap;
-use std::collections::HashSet;
-use std::sync::{Arc, RwLock};
-use std::time::{Duration, Instant};
-use tokio::sync::mpsc;
-use tracing::{debug, info, info_span, warn, Instrument};
+use movement_config;
 use movement_da_light_node_client::MovementDaLightNodeClient;
 use movement_da_light_node_proto::{BatchWriteRequest, BlobWrite};
-use prost::Message;
-use std::sync::atomic::{AtomicU64, Ordering};
-use dot_movement;
-use movement_config;
 use once_cell::sync::Lazy;
+use prost::Message;
+use tokio::sync::mpsc;
+use tracing::{debug, info, info_span, warn, Instrument};
 
 const LOGGING_UID: AtomicU64 = AtomicU64::new(0);
 const GC_INTERVAL: Duration = Duration::from_secs(30);
@@ -66,6 +73,8 @@ pub struct TransactionPipe {
 	used_sequence_number_pool: UsedSequenceNumberPool,
 	/// The accounts whitelisted for ingress
 	whitelisted_accounts: Option<HashSet<AccountAddress>>,
+	/// Join handles for DA write tasks to track and await each batch write result
+	da_join_handles: Vec<tokio::task::JoinHandle<anyhow::Result<()>>>,
 }
 
 enum SequenceNumberValidity {
@@ -103,6 +112,7 @@ impl TransactionPipe {
 				mempool_config.gc_slot_duration_ms,
 			),
 			whitelisted_accounts,
+			da_join_handles: vec![],
 		})
 	}
 
@@ -294,33 +304,33 @@ impl TransactionPipe {
 						.movement_da_light_node_connection_port()
 				);
 
-				tokio::spawn(async move {
+				let handle = tokio::spawn(async move {
 					let Ok(mut da_client) = MovementDaLightNodeClient::try_http1(&connection_string) else {
 						warn!("failed to create DA client for batch_id={}", batch_id);
-						return;
+						return Err(anyhow::anyhow!("DA client init failed"));
 					};
-
+				
 					let batch_write_clone = batch_write.clone();
 					let mut attempts = 0;
 					loop {
 						match da_client.batch_write(batch_write_clone.clone()).await {
 							Ok(_) => {
 								info!(target: "movement_timing", batch_id = %batch_id, "batch_write_success");
-								break;
+								return Ok(());
 							}
 							Err(e) => {
 								attempts += 1;
 								warn!("batch_write failed batch_id={} attempt={} error={:?}", batch_id, attempts, e);
 								if attempts >= 3 {
 									warn!("giving up on batch_id={}", batch_id);
-									break;
+									return Err(e.into());
 								}
 								tokio::time::sleep(std::time::Duration::from_secs(2)).await;
 							}
 						}
 					}
 				});
-
+				self.da_join_handles.push(handle);
 				self.last_mempool_send = Instant::now();
 			}
 		}
