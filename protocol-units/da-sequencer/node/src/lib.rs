@@ -5,6 +5,7 @@ mod batch;
 mod block;
 mod celestia;
 mod error;
+mod server;
 mod storage;
 
 /// Run Da sequencing loop.

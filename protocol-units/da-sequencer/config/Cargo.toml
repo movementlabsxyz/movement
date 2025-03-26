@@ -10,6 +10,10 @@ publish.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+serde_json = { workspace = true }
+serde = { workspace = true }
+serde_derive = { workspace = true }
+godfig = { workspace = true }
 
 [lints]
 workspace = true

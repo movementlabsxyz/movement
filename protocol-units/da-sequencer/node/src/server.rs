@@ -1,34 +1,67 @@
+use movement_da_sequencer_proto::da_sequencer_node_service_server::{
+	DaSequencerNodeService, DaSequencerNodeServiceServer,
+};
+use movement_da_sequencer_proto::BatchWriteRequest;
+use movement_da_sequencer_proto::BatchWriteResponse;
+use movement_da_sequencer_proto::ReadAtHeightRequest;
+use movement_da_sequencer_proto::ReadAtHeightResponse;
+use movement_da_sequencer_proto::StreamReadFromHeightRequest;
+use movement_da_sequencer_proto::StreamReadFromHeightResponse;
+use std::net::SocketAddr;
+use tokio_stream::Stream;
+use tonic::transport::Server;
+
 /// Runs the server
-async fn run_server(&self) -> Result<(), anyhow::Error> {
+pub async fn run_server(address: SocketAddr) -> Result<(), anyhow::Error> {
 	let reflection = tonic_reflection::server::Builder::configure()
-		.register_encoded_file_descriptor_set(movement_da_light_node_proto::FILE_DESCRIPTOR_SET)
+		.register_encoded_file_descriptor_set(movement_da_sequencer_proto::FILE_DESCRIPTOR_SET)
 		.build_v1()?;
 
-	let address = self.try_service_address()?;
-	info!("Server listening on: {}", address);
+	tracing::info!("Server listening on: {}", address);
 	Server::builder()
 		.max_frame_size(1024 * 1024 * 16 - 1)
 		.accept_http1(true)
-		.add_service(LightNodeServiceServer::new(self.clone()))
+		.add_service(DaSequencerNodeServiceServer::new(DaSequencerNode {}))
 		.add_service(reflection)
-		.serve(address.parse()?)
+		.serve(address)
 		.await?;
 
 	Ok(())
 }
 
-/// Runs the server and the background tasks.
-async fn run(self) -> Result<(), anyhow::Error> {
-	let background_handle = self.run_background_tasks();
+pub struct DaSequencerNode {}
 
-	let background_tasks = async move {
-		background_handle.await?;
-		Ok::<_, anyhow::Error>(())
-	};
-	let server = self.run_server();
+#[tonic::async_trait]
+impl DaSequencerNodeService for DaSequencerNode {
+	/// Server streaming response type for the StreamReadFromHeight method.
+	type StreamReadFromHeightStream = std::pin::Pin<
+		Box<
+			dyn Stream<Item = Result<StreamReadFromHeightResponse, tonic::Status>> + Send + 'static,
+		>,
+	>;
 
-	info!("Running server and background tasks.");
-	tokio::try_join!(server, background_tasks)?;
+	/// Stream blobs from a specified height or from the latest height.
+	async fn stream_read_from_height(
+		&self,
+		request: tonic::Request<StreamReadFromHeightRequest>,
+	) -> std::result::Result<tonic::Response<Self::StreamReadFromHeightStream>, tonic::Status> {
+		tracing::info!("Stream read from height request: {:?}", request);
+		todo!();
+	}
 
-	Ok(())
+	/// Batch write blobs.
+	async fn batch_write(
+		&self,
+		request: tonic::Request<BatchWriteRequest>,
+	) -> std::result::Result<tonic::Response<BatchWriteResponse>, tonic::Status> {
+		todo!();
+	}
+
+	/// Read blobs at a specified height.
+	async fn read_at_height(
+		&self,
+		_request: tonic::Request<ReadAtHeightRequest>,
+	) -> std::result::Result<tonic::Response<ReadAtHeightResponse>, tonic::Status> {
+		Err(tonic::Status::unimplemented(""))
+	}
 }

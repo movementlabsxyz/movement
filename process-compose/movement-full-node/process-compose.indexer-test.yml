@@ -6,7 +6,7 @@ processes:
 
   indexer-test:
     environment:
-      - "POSTGRES_DB_HOST=${POSTGRES_HOST_IP}"
+      - "POSTGRES_DB_URL=postgres://postgres:password@${POSTGRES_HOST_IP}:5432/postgres"
     command: |
       cargo run -p movement-indexer-service --bin load_metadata
       ./scripts/services/indexer/test_indexer
