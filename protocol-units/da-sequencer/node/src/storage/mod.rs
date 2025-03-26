@@ -432,4 +432,53 @@ mod tests {
 		assert!(result.is_ok(), "Expected Ok, got Err: {:?}", result);
 		assert!(result.unwrap().is_none(), "Expected None for unknown digest, got Some");
 	}
+
+	#[test]
+	fn test_produce_next_block_generates_block_and_clears_pending_tx() {
+		use crate::batch::DaBatch;
+		use movement_types::transaction::Transaction;
+		use tempfile::tempdir;
+
+		// Setup temporary RocksDB
+		let temp_dir = tempdir().expect("failed to create temp dir");
+		let path = temp_dir.path().to_str().unwrap();
+		let storage = Storage::try_new(path).expect("failed to create storage");
+
+		// Create and write a batch with one test transaction
+		let tx = Transaction::test_only_new(b"test data".to_vec(), 0, 1);
+		let tx_id = tx.id;
+		let batch = DaBatch::test_only_new(tx.clone());
+		storage.write_batch(batch).expect("failed to write batch");
+
+		// Call produce_next_block
+		let maybe_block = storage.produce_next_block().expect("produce_next_block failed");
+
+		// Assert a block was produced
+		assert!(maybe_block.is_some(), "Expected Some(block), got None");
+		let block = maybe_block.unwrap();
+		let transactions: Vec<_> = block.block.transactions().cloned().collect();
+		assert_eq!(transactions.len(), 1, "Expected 1 transaction in block");
+		assert_eq!(transactions[0], tx, "Transaction in block does not match original");
+
+		// Assert the transaction was removed from pending
+		let cf_pending = storage
+			.db
+			.cf_handle(cf::PENDING_TRANSACTIONS)
+			.expect("missing 'pending_transactions' CF");
+		let maybe_tx = storage.db.get_cf(&cf_pending, tx_id.0).expect("failed to read pending tx");
+		assert!(maybe_tx.is_none(), "Pending transaction was not cleared");
+
+		// Assert the block is persisted at the correct height
+		let cf_blocks = storage.db.cf_handle(cf::BLOCKS).expect("missing 'blocks' CF");
+		let height_key = block.height.0.to_be_bytes();
+		let stored_bytes = storage
+			.db
+			.get_cf(&cf_blocks, height_key)
+			.expect("failed to read stored block")
+			.expect("block not found");
+
+		let stored_block: SequencerBlock =
+			bincode::deserialize(&stored_bytes).expect("failed to deserialize stored block");
+		assert_eq!(stored_block, block, "Stored block does not match produced block");
+	}
 }
