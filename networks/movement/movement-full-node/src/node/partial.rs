@@ -60,26 +60,17 @@ where
 			self.config.execution_extension.clone(),
 			self.config.mcr.clone(),
 		);
-		let transaction_ingress_task = tasks::transaction_ingress::Task::new(
-			transaction_receiver,
-			self.light_node_client,
-			self.config.execution_config.maptos_config,
-		);
-
 		let (
 			execution_and_settlement_result,
-			transaction_ingress_result,
 			background_task_result,
 			services_result,
 		) = try_join!(
 			tokio::spawn(async move { exec_settle_task.run().await }),
-			tokio::spawn(async move { transaction_ingress_task.run().await }),
 			tokio::spawn(exec_background),
 			tokio::spawn(services.run()),
 			// tokio::spawn(async move { movement_rest.run_service().await }),
 		)?;
 		execution_and_settlement_result
-			.and(transaction_ingress_result)
 			.and(background_task_result)
 			.and(services_result)
 	}
