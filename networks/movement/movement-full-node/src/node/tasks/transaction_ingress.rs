@@ -6,7 +6,7 @@ use movement_da_light_node_client::MovementDaLightNodeClient;
 use movement_da_light_node_proto::{BatchWriteRequest, BlobWrite};
 
 use tokio::sync::mpsc;
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
 
 use prost::Message;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -79,40 +79,6 @@ impl Task {
 
                 let batch_write_clone = batch_write.clone();
                 let mut da_client = self.da_light_node_client.clone();
-
-                tokio::spawn(async move {
-                        let mut attempts = 0;
-                        loop {
-                                match da_client.batch_write(batch_write_clone.clone()).await {
-                                        Ok(_) => {
-                                                info!(
-                                                        target: "movement_timing",
-                                                        batch_id = %batch_id,
-                                                        "batch_write_success"
-                                                );
-                                                break;
-                                        }
-                                        Err(e) => {
-                                                attempts += 1;
-                                                warn!(
-                                                        "batch_write failed batch_id={} attempt={} error={:?}",
-                                                        batch_id, attempts, e
-                                                );
-                                                if attempts >= 3 {
-                                                        warn!(
-                                                                "giving up on batch_id={}",
-                                                                batch_id
-                                                        );
-                                                        break;
-                                                }
-                                                tokio::time::sleep(
-                                                        std::time::Duration::from_secs(2),
-                                                )
-                                                .await;
-                                        }
-                                }
-                        }
-                });
 
                 Ok(())
         }

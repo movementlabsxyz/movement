@@ -29,10 +29,19 @@ use movement_da_light_node_client::MovementDaLightNodeClient;
 use movement_da_light_node_proto::{BatchWriteRequest, BlobWrite};
 use prost::Message;
 use std::sync::atomic::{AtomicU64, Ordering};
+use dot_movement;
+use movement_config;
+use once_cell::sync::Lazy;
 
 const LOGGING_UID: AtomicU64 = AtomicU64::new(0);
 const GC_INTERVAL: Duration = Duration::from_secs(30);
 const MEMPOOL_INTERVAL: Duration = Duration::from_millis(240); // this is based on slot times and global TCP RTT, essentially we expect to collect all transactions sent in the same slot in around 240ms
+
+static MOVEMENT_CONFIG: Lazy<movement_config::Config> = Lazy::new(|| {
+	let dot_movement = dot_movement::DotMovement::try_from_env().unwrap();
+	let config = dot_movement.try_get_config_from_json::<movement_config::Config>().unwrap();
+	config
+});
 
 pub struct TransactionPipe {
 	// The receiver for Tx execution to commit in the mempool.
@@ -269,8 +278,21 @@ impl TransactionPipe {
 				batch_write.encode_raw(&mut buf);
 				info!("built_batch_write batch_id={} size={}", batch_id, buf.len());
 
-				let connection_string = std::env::var("DA_HTTP1_URL")
-					.unwrap_or_else(|_| "http://127.0.0.1:8080".to_string());
+				let connection_string = format!(
+					"{}://{}:{}",
+					MOVEMENT_CONFIG
+						.celestia_da_light_node
+						.celestia_da_light_node_config
+						.movement_da_light_node_connection_protocol(),
+					MOVEMENT_CONFIG
+						.celestia_da_light_node
+						.celestia_da_light_node_config
+						.movement_da_light_node_connection_hostname(),
+					MOVEMENT_CONFIG
+						.celestia_da_light_node
+						.celestia_da_light_node_config
+						.movement_da_light_node_connection_port()
+				);
 
 				tokio::spawn(async move {
 					let Ok(mut da_client) = MovementDaLightNodeClient::try_http1(&connection_string) else {
