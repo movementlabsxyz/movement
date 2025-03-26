@@ -1,0 +1,24 @@
+[package]
+name = "movement-da-sequencer-client"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+movement-da-sequencer-proto = { workspace = true, features = ["client"] }
+tonic = { workspace = true, features = ["tls", "tls-webpki-roots"]}
+tonic-web = { workspace = true }
+hyper-util = { workspace = true }
+tower = { workspace = true }
+http-body-util = { workspace = true }
+bytes = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+
+[lints]
+workspace = true

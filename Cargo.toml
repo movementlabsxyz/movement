@@ -40,7 +40,9 @@ members = [
   "util/signing/testing",
   "demo/hsm",
   "protocol-units/execution/maptos/framework/releases/*",
-  "protocol-units/execution/maptos/framework/migrations/*",
+  "protocol-units/execution/maptos/framework/migrations/*", "protocol-units/da-sequencer/config", "protocol-units/da-sequencer/setup", "protocol-units/da-sequencer/client", "protocol-units/da-sequencer/node",
+  "protocol-units/da-sequencer/*",
+
 ]
 
 [workspace.package]
@@ -76,6 +78,11 @@ maptos-dof-execution = { path = "protocol-units/execution/maptos/dof" }
 maptos-opt-executor = { path = "protocol-units/execution/maptos/opt-executor" }
 maptos-fin-view = { path = "protocol-units/execution/maptos/fin-view" }
 maptos-execution-util = { path = "protocol-units/execution/maptos/util" }
+
+## movement da sequencer
+movement-da-sequencer-config = { path = "protocol-units/da-sequencer/config" }
+movement-da-sequencer-node = { path = "protocol-units/da-sequencer/node" }
+movement-da-sequencer-proto = { path = "protocol-units/da-sequencer/proto" }
 
 # framework releases
 maptos-framework-release-util = { path = "protocol-units/execution/maptos/framework/releases/util" }
