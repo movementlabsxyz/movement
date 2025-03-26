@@ -8,7 +8,7 @@ use bincode;
 use movement_types::block::{Block, BlockMetadata, Id};
 use movement_types::transaction::Transaction;
 use rocksdb::{ColumnFamilyDescriptor, Options, WriteBatch, DB};
-use std::{collections::BTreeSet, fmt, result::Result, sync::Arc};
+use std::{collections::BTreeSet, result::Result, sync::Arc};
 
 pub mod cf {
 	pub const PENDING_TRANSACTIONS: &str = "pending_transactions";
@@ -16,6 +16,7 @@ pub mod cf {
 	pub const BLOCKS_BY_DIGEST: &str = "blocks_by_digest";
 }
 
+#[derive(Debug)]
 pub struct Storage {
 	db: Arc<DB>,
 }
@@ -229,15 +230,6 @@ impl Storage {
 		celestia_heigh: CelestiaHeight,
 	) -> std::result::Result<(), DaSequencerError> {
 		todo!()
-	}
-}
-
-impl fmt::Debug for Storage {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		// can't print the actual DB content, but indicate it's present for now ..
-		f.debug_struct("Storage")
-			.field("db", &"RocksDB<Arc>") //
-			.finish()
 	}
 }
 
