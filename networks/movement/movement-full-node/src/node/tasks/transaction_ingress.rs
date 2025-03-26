@@ -76,11 +76,26 @@ impl Task {
 	
 		let mut da_client = self.da_light_node_client.clone();
 		tokio::spawn(async move {
-			if let Err(e) = da_client.batch_write(batch_write).await {
-				warn!("batch_write failed batch_id={} error={:?}", batch_id, e);
-				// This is where retry logic or panic can be hooked in later
-			} else {
-				info!(target: "movement_timing", batch_id = %batch_id, "batch_write_success");
+			let mut attempts = 0;
+			loop {
+				match da_client.batch_write(batch_write_clone.clone()).await {
+					Ok(_) => {
+						info!(target: "movement_timing", batch_id = %batch_id, "batch_write_success");
+						break;
+					}
+					Err(e) => {
+						attempts += 1;
+						warn!("batch_write attempt {} failed for batch_id={} error={:?}", attempts, batch_id, e);
+						if attempts >= 3 {
+							error!(
+								"batch_write permanently failed for batch_id={} after {} attempts; rejecting submission",
+								batch_id, attempts
+							);
+							break;
+						}
+						sleep(Duration::from_secs(1)).await;
+					}
+				}
 			}
 		});
 	
