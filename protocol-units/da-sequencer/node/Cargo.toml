@@ -20,6 +20,8 @@ thiserror = { workspace = true }
 url = { workspace = true }
 anyhow = { workspace = true }
 tracing = { workspace = true }
+chrono = { workspace = true }
+aptos-sdk = { workspace = true }
 
 movement-da-sequencer-config = { workspace = true }
 movement-types = { workspace = true }
