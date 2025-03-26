@@ -5,8 +5,10 @@ use crate::{
 	error::DaSequencerError,
 };
 use bincode;
+use movement_types::block::{Block, BlockMetadata, Id};
+use movement_types::transaction::Transaction;
 use rocksdb::{ColumnFamilyDescriptor, Options, WriteBatch, DB};
-use std::{fmt, result::Result, sync::Arc};
+use std::{collections::BTreeSet, fmt, result::Result, sync::Arc};
 
 pub mod cf {
 	pub const PENDING_TRANSACTIONS: &str = "pending_transactions";
@@ -128,7 +130,79 @@ impl Storage {
 	pub fn produce_next_block(
 		&self,
 	) -> std::result::Result<Option<SequencerBlock>, DaSequencerError> {
-		todo!();
+		// Step 1: Determine the next block height
+		let next_height = self.determine_next_block_height()?;
+
+		// Step 2: Fetch all pending transactions
+		let cf_pending = self.db.cf_handle(cf::PENDING_TRANSACTIONS).ok_or_else(|| {
+			DaSequencerError::Generic("Missing column family: pending_transactions".into())
+		})?;
+
+		let mut txs = Vec::new();
+		let iter = self.db.iterator_cf(&cf_pending, rocksdb::IteratorMode::Start);
+		let mut batch = WriteBatch::default();
+
+		for item in iter {
+			let (key, value) = item.map_err(|e| DaSequencerError::Generic(e.to_string()))?;
+
+			let tx: FullNodeTx = bincode::deserialize(&value).map_err(|e| {
+				DaSequencerError::Generic(format!("Tx deserialization failed: {}", e))
+			})?;
+
+			txs.push(tx);
+			batch.delete_cf(&cf_pending, &key); // remove included txs from pending
+		}
+
+		// No transactions to include
+		if txs.is_empty() {
+			return Ok(None);
+		}
+
+		let tx_set: BTreeSet<Transaction> = txs.into_iter().collect();
+
+		// Construct and validate the block
+		// Check that Id:default() generates a unique id every time.
+		let block = Block::new(BlockMetadata::default(), Id::default(), tx_set);
+
+		let sequencer_block = SequencerBlock::try_new(next_height, block)?; // validates size internally
+
+		//Save the block
+		let cf_blocks = self
+			.db
+			.cf_handle(cf::BLOCKS)
+			.ok_or_else(|| DaSequencerError::Generic("Missing column family: blocks".into()))?;
+
+		let encoded = bincode::serialize(&sequencer_block)
+			.map_err(|e| DaSequencerError::Generic(format!("Block serialization failed: {}", e)))?;
+
+		let height_key = next_height.0.to_be_bytes();
+		batch.put_cf(&cf_blocks, height_key, encoded);
+
+		self.db.write(batch).map_err(|e| DaSequencerError::Generic(e.to_string()))?;
+
+		Ok(Some(sequencer_block))
+	}
+
+	pub fn determine_next_block_height(&self) -> Result<BlockHeight, DaSequencerError> {
+		let cf = self
+			.db
+			.cf_handle(cf::BLOCKS)
+			.ok_or_else(|| DaSequencerError::Generic("Missing column family: blocks".into()))?;
+
+		let mut iter = self.db.iterator_cf(&cf, rocksdb::IteratorMode::End); // iterate from the end
+		if let Some(Ok((key, _value))) = iter.next() {
+			if key.len() != 8 {
+				return Err(DaSequencerError::Generic("Invalid block height key length".into()));
+			}
+
+			let mut arr = [0u8; 8];
+			arr.copy_from_slice(&key);
+			let last_height = u64::from_be_bytes(arr);
+			Ok(BlockHeight(last_height + 1))
+		} else {
+			// No blocks yet — start from height 0
+			Ok(BlockHeight(0))
+		}
 	}
 
 	/// Return, if exists, the Celestia height for given block height.
