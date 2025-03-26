@@ -3,9 +3,6 @@
 resolver = "2"
 
 members = [
-
-  "protocol-units/bridge/config",
-  "protocol-units/bridge/setup",
   "protocol-units/execution/maptos/dof",
   "protocol-units/execution/maptos/opt-executor",
   "protocol-units/execution/maptos/fin-view",
@@ -35,11 +32,6 @@ members = [
   "util/collections",
   "util/whitelist",
   "networks/movement/*",
-  "protocol-units/bridge/service",
-  "protocol-units/bridge/grpc",
-  "protocol-units/bridge/integration-tests",
-  #"protocol-units/bridge/indexer-db",
-  "protocol-units/bridge/util",
   "benches/*",
   "util/signing/interface",
   "util/signing/integrations/aptos",
@@ -65,14 +57,6 @@ rust-version = "1.75"
 
 [workspace.dependencies]
 # internal
-## bridge
-bridge-util = { path = "protocol-units/bridge/util" }
-bridge-config = { path = "protocol-units/bridge/config" }
-bridge-service = { path = "protocol-units/bridge/service" }
-bridge-setup = { path = "protocol-units/bridge/setup" }
-bridge-integration-tests = { path = "protocol-units/bridge/integration-tests" }
-bridge-grpc = { path = "protocol-units/bridge/grpc" }
-bridge-indexer-db = { path = "protocol-units/bridge/indexer-db" }
 ## buildtime
 buildtime = { path = "util/buildtime" }
 buildtime-helpers = { path = "util/buildtime/buildtime-helpers" }
@@ -212,8 +196,8 @@ move-package = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1
 movement = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d1cdbbd7fabb80dcb95ba5e23213faa072fab67" }
 
 # Indexer
-processor = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors", rev = "77a36245400250e7d8a854360194288d078681bc" }
-server-framework = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors", rev = "77a36245400250e7d8a854360194288d078681bc" }
+processor = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors", rev = "ceaff42dfb4d1e5c84ee45e7568bb071de4b07f2" }
+server-framework = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors", rev = "ceaff42dfb4d1e5c84ee45e7568bb071de4b07f2" }
 
 bcs = { git = "https://github.com/movementlabsxyz/bcs.git", rev = "bc16d2d39cabafaabd76173dd1b04b2aa170cf0c" }
 
