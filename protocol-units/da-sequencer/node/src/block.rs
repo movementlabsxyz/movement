@@ -47,8 +47,9 @@ impl SequencerBlock {
 	}
 
 	pub fn validate_size(&self) -> Result<(), DaSequencerError> {
-		let size = bincode::serialized_size(self)
+		let bytes = bcs::to_bytes(self)
 			.map_err(|e| DaSequencerError::Generic(format!("Serialization failed: {}", e)))?;
+		let size = bytes.len() as u64;
 
 		if size > MAX_SEQUENCER_BLOCK_SIZE {
 			Err(DaSequencerError::Generic(format!(
