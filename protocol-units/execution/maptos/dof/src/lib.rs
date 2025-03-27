@@ -27,7 +27,6 @@ pub trait DynOptFinExecutor {
 	/// Initialize the background task responsible for transaction processing.
 	fn background(
 		&self,
-		transaction_sender: Sender<Vec<(u64, SignedTransaction)>>,
 		mempool_commit_tx_receiver: futures::channel::mpsc::Receiver<Vec<TxExecutionResult>>,
 		config: &Config,
 	) -> Result<

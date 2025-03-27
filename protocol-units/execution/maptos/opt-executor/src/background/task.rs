@@ -29,7 +29,6 @@ impl BackgroundTask {
 	pub(crate) fn transaction_pipe(
 		mempool_commit_tx_receiver: futures_mpsc::Receiver<Vec<TxExecutionResult>>, // Sender, seq number)
 		mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
-		transaction_sender: mpsc::Sender<Vec<(u64, SignedTransaction)>>,
 		db_reader: Arc<dyn DbReader>,
 		node_config: &NodeConfig,
 		mempool_config: &MempoolConfig,
@@ -41,7 +40,6 @@ impl BackgroundTask {
 			inner: BackgroundInner::Full(TransactionPipe::new(
 				mempool_commit_tx_receiver,
 				mempool_client_receiver,
-				transaction_sender,
 				db_reader,
 				node_config,
 				mempool_config,

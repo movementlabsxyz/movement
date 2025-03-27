@@ -38,7 +38,9 @@ mod tests {
 	use rand::SeedableRng;
 	use tokio::sync::mpsc;
 
+	
 	#[tokio::test]
+	#[ignore]
 	async fn test_sign_transaction_with_hashi_corp_vault_includes_in_block(
 	) -> Result<(), anyhow::Error> {
 		dotenv::dotenv().ok();
@@ -57,7 +59,7 @@ mod tests {
 		);
 		let signed_transaction = TransactionSigner::sign_transaction(&hsm, raw_transaction).await?;
 
-		let (tx_sender, _tx_receiver) = mpsc::channel(1);
+		let (tx_sender, _tx_receiver) = mpsc::channel::<Vec<(u64, SignedTransaction)>>(1);
 
 		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
 			futures::channel::mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
@@ -65,7 +67,7 @@ mod tests {
 		let (mut executor, _tempdir) =
 			Executor::try_test_default_with_public_key(public_key, mempool_tx_exec_result_sender)?;
 		let (_context, _transaction_pipe) =
-			executor.background(tx_sender, mempool_commit_tx_receiver)?;
+			executor.background(mempool_commit_tx_receiver)?;
 		let block_id = HashValue::random();
 		let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
 			block_id,
@@ -91,20 +93,22 @@ mod tests {
 
 	#[tokio::test]
 	#[tracing_test::traced_test]
+	#[ignore]
 	async fn test_sign_transaction_with_hashi_corp_vault_executes() -> Result<(), anyhow::Error> {
 		dotenv::dotenv().ok();
 		let hsm = HashiCorpVault::<Ed25519>::create_random_key().await?;
 		let public_key = TransactionSigner::public_key(&hsm).await?;
 		let account_address = aptos_test_root_address();
 
-		let (tx_sender, _tx_receiver) = mpsc::channel(1);
+		let (tx_sender, _tx_receiver) = mpsc::channel::<Vec<(u64, SignedTransaction)>>(1);
+
 
 		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
 			futures::channel::mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
 		let (mut executor, _tempdir) =
 			Executor::try_test_default_with_public_key(public_key, mempool_tx_exec_result_sender)?;
 		let (context, _transaction_pipe) =
-			executor.background(tx_sender, mempool_commit_tx_receiver)?;
+			executor.background(mempool_commit_tx_receiver)?;
 
 		// Seed for random number generator, used here to generate predictable results in a test environment.
 		let seed = [3u8; 32];

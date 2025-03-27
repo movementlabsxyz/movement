@@ -10,7 +10,6 @@ use movement_da_light_node_client::MovementDaLightNodeClient;
 use movement_rest::MovementRest;
 
 use anyhow::Context;
-use tokio::sync::mpsc;
 use tokio::try_join;
 use tracing::debug;
 
@@ -42,9 +41,7 @@ where
 		self,
 		mempool_commit_tx_receiver: futures::channel::mpsc::Receiver<Vec<TxExecutionResult>>,
 	) -> Result<(), anyhow::Error> {
-		let (transaction_sender, transaction_receiver) = mpsc::channel(16);
 		let (context, exec_background) = self.executor.background(
-			transaction_sender,
 			mempool_commit_tx_receiver,
 			&self.config.execution_config.maptos_config,
 		)?;
