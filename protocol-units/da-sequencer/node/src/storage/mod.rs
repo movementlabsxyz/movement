@@ -21,6 +21,45 @@ pub struct Storage {
 	db: Arc<DB>,
 }
 
+pub trait DaSequencerStorage {
+	/// Save all batch's Tx in the pending Tx table. The batch's Tx has been verified and validated.
+	fn write_batch(&self, batch: DaBatch<FullNodeTx>) -> std::result::Result<(), DaSequencerError>;
+
+	/// Return, if exists, the Block at the given height.
+	fn get_block_at_height(
+		&self,
+		height: BlockHeight,
+	) -> std::result::Result<Option<SequencerBlock>, DaSequencerError>;
+
+	/// Return, if exists, the Block with specified sequencer id.
+	fn get_block_with_digest(
+		&self,
+		id: SequencerBlockDigest,
+	) -> std::result::Result<Option<SequencerBlock>, DaSequencerError>;
+
+	/// Produce next block with pending Tx.
+	/// Generate the new height.
+	/// Aggregate all pending Tx until the block is filled.
+	/// A block is filled if no more Tx are pending or it's size is more than the max size.
+	/// All pending Tx added to the block are removed from the pending Tx table.
+	/// Save the block for this height
+	/// Return the block.
+	fn produce_next_block(&self) -> std::result::Result<Option<SequencerBlock>, DaSequencerError>;
+
+	/// Return, if exists, the Celestia height for given block height.
+	fn get_celestia_height_for_block(
+		&self,
+		heigh: BlockHeight,
+	) -> std::result::Result<Option<CelestiaHeight>, DaSequencerError>;
+
+	/// Set the Celestia height for a given block height.
+	fn set_block_celestia_height(
+		&self,
+		block_heigh: BlockHeight,
+		celestia_heigh: CelestiaHeight,
+	) -> std::result::Result<(), DaSequencerError>;
+}
+
 impl Storage {
 	pub fn try_new(path: &str) -> Result<Self, DaSequencerError> {
 		let mut options = Options::default();
@@ -44,7 +83,33 @@ impl Storage {
 		Ok(Storage { db: Arc::new(db) })
 	}
 
-	pub fn write_batch(&self, batch: DaBatch<FullNodeTx>) -> Result<(), DaSequencerError> {
+	fn determine_next_block_height(&self) -> Result<BlockHeight, DaSequencerError> {
+		let cf = self.db.cf_handle(cf::BLOCKS).ok_or_else(|| {
+			DaSequencerError::StorageAccess("Missing column family: blocks".into())
+		})?;
+
+		let mut iter = self.db.iterator_cf(&cf, rocksdb::IteratorMode::End);
+		if let Some(Ok((key, _value))) = iter.next() {
+			if key.len() != 8 {
+				return Err(DaSequencerError::Generic("Invalid block height key length".into()));
+			}
+
+			let mut arr = [0u8; 8];
+			arr.copy_from_slice(&key);
+			let last_height = u64::from_be_bytes(arr);
+			Ok(BlockHeight(last_height + 1))
+		} else {
+			Ok(BlockHeight(0))
+		}
+	}
+
+	fn notify_block_celestia_sent(&self, heigh: BlockHeight) -> Result<(), DaSequencerError> {
+		todo!();
+	}
+}
+
+impl DaSequencerStorage for Storage {
+	fn write_batch(&self, batch: DaBatch<FullNodeTx>) -> Result<(), DaSequencerError> {
 		let cf = self.db.cf_handle(cf::PENDING_TRANSACTIONS).ok_or_else(|| {
 			DaSequencerError::Generic("Missing column family: pending_transactions".into())
 		})?;
@@ -63,7 +128,7 @@ impl Storage {
 		Ok(())
 	}
 
-	pub fn get_block_at_height(
+	fn get_block_at_height(
 		&self,
 		height: BlockHeight,
 	) -> Result<Option<SequencerBlock>, DaSequencerError> {
@@ -87,7 +152,7 @@ impl Storage {
 		}
 	}
 
-	pub fn get_block_with_digest(
+	fn get_block_with_digest(
 		&self,
 		id: SequencerBlockDigest,
 	) -> Result<Option<SequencerBlock>, DaSequencerError> {
@@ -116,7 +181,7 @@ impl Storage {
 		self.get_block_at_height(height)
 	}
 
-	pub fn produce_next_block(&self) -> Result<Option<SequencerBlock>, DaSequencerError> {
+	fn produce_next_block(&self) -> Result<Option<SequencerBlock>, DaSequencerError> {
 		let next_height = self.determine_next_block_height()?;
 
 		let cf_pending = self.db.cf_handle(cf::PENDING_TRANSACTIONS).ok_or_else(|| {
@@ -164,38 +229,14 @@ impl Storage {
 		Ok(Some(sequencer_block))
 	}
 
-	pub fn determine_next_block_height(&self) -> Result<BlockHeight, DaSequencerError> {
-		let cf = self.db.cf_handle(cf::BLOCKS).ok_or_else(|| {
-			DaSequencerError::StorageAccess("Missing column family: blocks".into())
-		})?;
-
-		let mut iter = self.db.iterator_cf(&cf, rocksdb::IteratorMode::End);
-		if let Some(Ok((key, _value))) = iter.next() {
-			if key.len() != 8 {
-				return Err(DaSequencerError::Generic("Invalid block height key length".into()));
-			}
-
-			let mut arr = [0u8; 8];
-			arr.copy_from_slice(&key);
-			let last_height = u64::from_be_bytes(arr);
-			Ok(BlockHeight(last_height + 1))
-		} else {
-			Ok(BlockHeight(0))
-		}
-	}
-
-	pub fn get_celestia_height_for_block(
+	fn get_celestia_height_for_block(
 		&self,
 		heigh: BlockHeight,
 	) -> Result<Option<CelestiaHeight>, DaSequencerError> {
 		todo!();
 	}
 
-	pub fn notify_block_celestia_sent(&self, heigh: BlockHeight) -> Result<(), DaSequencerError> {
-		todo!();
-	}
-
-	pub fn set_block_celestia_height(
+	fn set_block_celestia_height(
 		&self,
 		block_heigh: BlockHeight,
 		celestia_heigh: CelestiaHeight,
