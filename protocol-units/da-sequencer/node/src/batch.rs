@@ -32,7 +32,7 @@ pub fn validate_batch(
 	todo!()
 }
 
-pub fn serialize_node_batch(
+pub fn serialize_full_node_batch(
 	signer: Ed25519PublicKey,
 	signature: Ed25519Signature,
 	mut data: Vec<u8>,
@@ -44,7 +44,7 @@ pub fn serialize_node_batch(
 	serialized
 }
 
-pub fn deserialize_node_batch(
+pub fn deserialize_full_node_batch(
 	data: Vec<u8>,
 ) -> std::result::Result<(Ed25519PublicKey, Ed25519Signature, Vec<u8>), DaSequencerError> {
 	let (pubkey_deserialized, rest) = data.split_at(32);
