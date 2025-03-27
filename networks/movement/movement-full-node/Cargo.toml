@@ -54,6 +54,8 @@ k256 = { workspace = true }
 alloy-signer = { workspace = true }
 chrono = { workspace = true }
 maptos-opt-executor = { workspace = true }
+rand = { workspace = true }
+
 
 [features]
 default = []
