@@ -1,3 +1,7 @@
+use ed25519_dalek::{SigningKey, VerifyingKey, Signature};
+use ed25519_dalek::Signer;
+use rand::rngs::OsRng;
+use rand::RngCore;
 use movement_da_sequencer_proto::da_sequencer_node_service_client::DaSequencerNodeServiceClient;
 use std::time::Duration;
 use tonic::transport::{Channel, ClientTlsConfig};
@@ -70,4 +74,21 @@ impl DaSequencerClient {
 
 		Ok(client)
 	}
+}
+
+pub fn generate_keypair() -> (SigningKey, VerifyingKey) {
+        // Generate 32 random bytes for the secret key
+        let mut bytes = [0u8; 32];
+        OsRng.fill_bytes(&mut bytes);
+
+        // Create a SecretKey, then a SigningKey
+	let secret = SigningKey::generate(&mut OsRng);
+        let signing_key = SigningKey::generate(&mut OsRng);
+        let verifying_key = signing_key.verifying_key();
+
+        (signing_key, verifying_key)
+}
+
+pub fn sign_batch(batch_data: &[u8], signing_key: &SigningKey) -> Signature {
+        signing_key.sign(batch_data)
 }
