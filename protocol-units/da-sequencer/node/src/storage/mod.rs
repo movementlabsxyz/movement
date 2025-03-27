@@ -107,7 +107,7 @@ impl Storage {
 		};
 
 		if height_bytes.len() != 8 {
-			return Err(DaSequencerError::Generic(
+			return Err(DaSequencerError::StorageFormat(
 				"Invalid height length in digest mapping".into(),
 			));
 		}
