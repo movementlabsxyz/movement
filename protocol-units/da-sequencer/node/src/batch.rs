@@ -1,7 +1,10 @@
 use crate::error::DaSequencerError;
 use aptos_crypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
 use aptos_crypto::hash::CryptoHash;
-use serde::{ser::SerializeMap, Serialize};
+use aptos_crypto_derive::{BCSCryptoHash, CryptoHasher};
+use movement_types::transaction::Transaction;
+use serde::{ser::SerializeMap, Deserialize, Serialize};
+use std::ops::Deref;
 
 #[derive(Debug)]
 pub struct RawData {
@@ -9,7 +12,22 @@ pub struct RawData {
 }
 
 ///We want to distinguish here between FullNode transactions and DA Transactions
-pub type FullNodeTx = movement_types::transaction::Transaction;
+#[derive(CryptoHasher, BCSCryptoHash, Deserialize, Serialize)]
+pub struct FullNodeTxs(Vec<Transaction>);
+
+impl FullNodeTxs {
+	pub fn new(txs: Vec<Transaction>) -> Self {
+		FullNodeTxs(txs)
+	}
+}
+
+impl Deref for FullNodeTxs {
+	type Target = Vec<Transaction>;
+
+	fn deref(&self) -> &Self::Target {
+		&self.0
+	}
+}
 
 #[derive(Debug)]
 pub struct DaBatch<T> {
@@ -50,6 +68,6 @@ where
 /// Batch write blobs.
 fn validate_batch(
 	new_batch: DaBatch<RawData>,
-) -> std::result::Result<DaBatch<FullNodeTx>, DaSequencerError> {
+) -> std::result::Result<DaBatch<FullNodeTxs>, DaSequencerError> {
 	todo!()
 }

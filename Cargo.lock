@@ -11553,6 +11553,7 @@ version = "0.3.4"
 dependencies = [
  "anyhow",
  "aptos-crypto",
+ "aptos-crypto-derive",
  "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
  "movement-da-sequencer-config",
  "movement-da-sequencer-proto",

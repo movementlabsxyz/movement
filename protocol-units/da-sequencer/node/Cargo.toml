@@ -10,6 +10,7 @@ publish.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+aptos-crypto-derive = { workspace = true }
 anyhow = { workspace = true }
 bcs = { workspace = true }
 aptos-crypto = { workspace = true }
