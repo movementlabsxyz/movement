@@ -106,17 +106,11 @@ impl Storage {
 			None => return Ok(None),
 		};
 
-		if height_bytes.len() != 8 {
-			return Err(DaSequencerError::StorageFormat(
-				"Invalid height length in digest mapping".into(),
-			));
-		}
-
-		let mut arr = [0u8; 8];
-		arr.copy_from_slice(&height_bytes);
 		let height =
 			BlockHeight(height_bytes.try_into().map(u64::from_be_bytes).map_err(|_| {
-				DaSequencerError::StorageFormat("Invalid height byte length".into())
+				DaSequencerError::StorageFormat(
+					"Invalid height byte length in digest mapping".into(),
+				)
 			})?);
 
 		self.get_block_at_height(height)
