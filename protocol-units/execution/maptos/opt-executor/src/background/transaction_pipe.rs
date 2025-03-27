@@ -73,8 +73,6 @@ pub struct TransactionPipe {
 	used_sequence_number_pool: UsedSequenceNumberPool,
 	/// The accounts whitelisted for ingress
 	whitelisted_accounts: Option<HashSet<AccountAddress>>,
-	/// Join handles for DA write tasks to track and await each batch write result
-	da_join_handles: Vec<tokio::task::JoinHandle<anyhow::Result<()>>>,
 }
 
 enum SequenceNumberValidity {
@@ -112,7 +110,6 @@ impl TransactionPipe {
 				mempool_config.gc_slot_duration_ms,
 			),
 			whitelisted_accounts,
-			da_join_handles: vec![],
 		})
 	}
 
@@ -330,7 +327,6 @@ impl TransactionPipe {
 						}
 					}
 				});
-				self.da_join_handles.push(handle);
 				self.last_mempool_send = Instant::now();
 			}
 		}
