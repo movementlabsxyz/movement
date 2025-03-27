@@ -52,10 +52,7 @@ impl SequencerBlock {
 		let size = bytes.len() as u64;
 
 		if size > MAX_SEQUENCER_BLOCK_SIZE {
-			Err(DaSequencerError::Generic(format!(
-				"SequencerBlock exceeds max size: {} > {} bytes",
-				size, MAX_SEQUENCER_BLOCK_SIZE
-			)))
+			Err(DaSequencerError::SizeExceedsMax(MAX_SEQUENCER_BLOCK_SIZE as usize))
 		} else {
 			Ok(())
 		}

@@ -58,7 +58,7 @@ impl Storage {
 
 		self.db
 			.write(write_batch)
-			.map_err(|e| DaSequencerError::Generic(format!("DB write error: {}", e)))?;
+			.map_err(|e| DaSequencerError::RocksDbError(e.to_string()))?;
 
 		Ok(())
 	}
@@ -67,18 +67,20 @@ impl Storage {
 		&self,
 		height: BlockHeight,
 	) -> Result<Option<SequencerBlock>, DaSequencerError> {
-		let cf = self
-			.db
-			.cf_handle(cf::BLOCKS)
-			.ok_or_else(|| DaSequencerError::Generic("Missing column family: blocks".into()))?;
+		let cf = self.db.cf_handle(cf::BLOCKS).ok_or_else(|| {
+			DaSequencerError::StorageAccess("Missing column family: blocks".into())
+		})?;
 
 		let key: [u8; 8] = height.0.to_be_bytes();
 
-		match self.db.get_cf(&cf, key).map_err(|e| DaSequencerError::Generic(e.to_string()))? {
+		match self
+			.db
+			.get_cf(&cf, key)
+			.map_err(|e| DaSequencerError::RocksDbError(e.to_string()))?
+		{
 			Some(bytes) => {
-				let block: SequencerBlock = bcs::from_bytes(&bytes).map_err(|e| {
-					DaSequencerError::Generic(format!("Deserialization error: {}", e))
-				})?;
+				let block: SequencerBlock = bcs::from_bytes(&bytes)
+					.map_err(|e| DaSequencerError::Deserialization(e.to_string()))?;
 				Ok(Some(block))
 			}
 			None => Ok(None),
@@ -90,16 +92,19 @@ impl Storage {
 		id: SequencerBlockDigest,
 	) -> Result<Option<SequencerBlock>, DaSequencerError> {
 		let cf = self.db.cf_handle(cf::BLOCKS_BY_DIGEST).ok_or_else(|| {
-			DaSequencerError::Generic("Missing column family: blocks_by_digest".into())
+			DaSequencerError::StorageAccess("Missing column family: blocks_by_digest".into())
 		})?;
 
 		let key = id.0;
 
-		let height_bytes =
-			match self.db.get_cf(&cf, key).map_err(|e| DaSequencerError::Generic(e.to_string()))? {
-				Some(bytes) => bytes,
-				None => return Ok(None),
-			};
+		let height_bytes = match self
+			.db
+			.get_cf(&cf, key)
+			.map_err(|e| DaSequencerError::RocksDbError(e.to_string()))?
+		{
+			Some(bytes) => bytes,
+			None => return Ok(None),
+		};
 
 		if height_bytes.len() != 8 {
 			return Err(DaSequencerError::Generic(
@@ -118,7 +123,7 @@ impl Storage {
 		let next_height = self.determine_next_block_height()?;
 
 		let cf_pending = self.db.cf_handle(cf::PENDING_TRANSACTIONS).ok_or_else(|| {
-			DaSequencerError::Generic("Missing column family: pending_transactions".into())
+			DaSequencerError::StorageAccess("Missing column family: pending_transactions".into())
 		})?;
 
 		let mut txs = Vec::new();
@@ -128,9 +133,8 @@ impl Storage {
 		for item in iter {
 			let (key, value) = item.map_err(|e| DaSequencerError::Generic(e.to_string()))?;
 
-			let tx: FullNodeTx = bcs::from_bytes(&value).map_err(|e| {
-				DaSequencerError::Generic(format!("Tx deserialization failed: {}", e))
-			})?;
+			let tx: FullNodeTx = bcs::from_bytes(&value)
+				.map_err(|e| DaSequencerError::Deserialization(e.to_string()))?;
 
 			txs.push(tx);
 			batch.delete_cf(&cf_pending, &key);
@@ -146,27 +150,27 @@ impl Storage {
 
 		let sequencer_block = SequencerBlock::try_new(next_height, block)?;
 
-		let cf_blocks = self
-			.db
-			.cf_handle(cf::BLOCKS)
-			.ok_or_else(|| DaSequencerError::Generic("Missing column family: blocks".into()))?;
+		let cf_blocks = self.db.cf_handle(cf::BLOCKS).ok_or_else(|| {
+			DaSequencerError::StorageAccess("Missing column family: blocks".into())
+		})?;
 
 		let encoded = bcs::to_bytes(&sequencer_block)
-			.map_err(|e| DaSequencerError::Generic(format!("Block serialization failed: {}", e)))?;
+			.map_err(|e| DaSequencerError::Deserialization(e.to_string()))?;
 
 		let height_key = next_height.0.to_be_bytes();
 		batch.put_cf(&cf_blocks, height_key, encoded);
 
-		self.db.write(batch).map_err(|e| DaSequencerError::Generic(e.to_string()))?;
+		self.db
+			.write(batch)
+			.map_err(|e| DaSequencerError::RocksDbError(e.to_string()))?;
 
 		Ok(Some(sequencer_block))
 	}
 
 	pub fn determine_next_block_height(&self) -> Result<BlockHeight, DaSequencerError> {
-		let cf = self
-			.db
-			.cf_handle(cf::BLOCKS)
-			.ok_or_else(|| DaSequencerError::Generic("Missing column family: blocks".into()))?;
+		let cf = self.db.cf_handle(cf::BLOCKS).ok_or_else(|| {
+			DaSequencerError::StorageAccess("Missing column family: blocks".into())
+		})?;
 
 		let mut iter = self.db.iterator_cf(&cf, rocksdb::IteratorMode::End);
 		if let Some(Ok((key, _value))) = iter.next() {

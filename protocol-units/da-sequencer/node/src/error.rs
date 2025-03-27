@@ -3,6 +3,12 @@
 pub enum DaSequencerError {
 	#[error("Error during storage access: {0}")]
 	StorageAccess(String),
+	#[error("Size Exceeds max: {0}")]
+	SizeExceedsMax(usize),
+	#[error("RocksDB operation failed: {0}")]
+	RocksDbError(String),
+	#[error("Deserialization error: {0}")]
+	Deserialization(String),
 	#[error("Generic error: {0}")]
 	Generic(String),
 }
