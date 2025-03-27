@@ -1,20 +1,20 @@
 # global
-*   @andygolay 0xmovses @mzabaluev @musitdev
+*   @andygolay @0xmovses @mzabaluev @musitdev
 
 # maptos-executor
 protocol-units/execution/* @0xmovses @musitdev @mzabaluev
 
 # da
-protocol-units/da/* @andygolay @mzabaluev
+protocol-units/da/* @andygolay @mzabaluev @musitdev @0xmovses
 
 # mempool
-protocol-units/mempool/* @andygolay @mzabaluev
+protocol-units/mempool/* @andygolay @mzabaluev @musitdev @0xmovses
 
 # sequencing
-protocol-units/sequencing/* @andygolay @mzabaluev
+protocol-units/sequencing/* @andygolay @mzabaluev @musitdev @0xmovses
 
 # movement-rest
-protocol-units/movement-rest/* @0xmovses @mzabaluev
+protocol-units/movement-rest/* @0xmovses @mzabaluev 
 
 # mcr client
 protocol-units/settlement/mcr/client/* @musitdev @mzabaluev @andygolay
@@ -26,31 +26,32 @@ protocol-units/settlement/mcr/manager/* @musitdev @mzabaluev @andygolay
 protocol-units/settlement/mcr/contracts/* @andygolay @0xPrimata 
 
 # networks
-networks/* @andygolay @mzabaluev @musitdev
+networks/* @andygolay @mzabaluev @musitdev @0xmovses
 
 # docker
 docker/* @andygolay @radupopa369
 
 # process-compose
-process-compose/* @andygolay @radupopa369 @musitdev
+process-compose/* @andygolay @radupopa369 @musitdev @0xmovses
 
 # docs
-docs/* @andygolay
+docs/* @andygolay @mzabaluev @musitdev @0xmovses
 
 # nix
-nix/* @andygolay @musitdev 
+nix/* @andygolay @musitdev  @0xmovses
 
 # github actions
-.github/workflows/* @andygolay  @0xmovses @mzabaluev
+.github/workflows/* @andygolay  @0xmovses @mzabaluev @musitdev 
 
 # buildtime 
-util/buildtime/* @andygolay
+util/buildtime/* @andygolay @0xmovses @mzabaluev @musitdev 
 
 # flocks 
-util/flocks/* @andygolay @mzabaluev
+util/flocks/* @andygolay @mzabaluev @0xmovses @mzabaluev 
 
 # commander 
-util/commander/* @andygolay @musitdev
+util/commander/* @andygolay @musitdev @0xmovses @mzabaluev 
 
 # godfig
-util/godfig/* @andygolay @mzabaluev
+util/godfig/* @andygolay @mzabaluev @musitdev @0xmovses 
+
