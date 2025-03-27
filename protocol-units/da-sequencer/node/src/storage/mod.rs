@@ -182,51 +182,7 @@ impl DaSequencerStorage for Storage {
 	}
 
 	fn produce_next_block(&self) -> Result<Option<SequencerBlock>, DaSequencerError> {
-		let next_height = self.determine_next_block_height()?;
-
-		let cf_pending = self.db.cf_handle(cf::PENDING_TRANSACTIONS).ok_or_else(|| {
-			DaSequencerError::StorageAccess("Missing column family: pending_transactions".into())
-		})?;
-
-		let mut txs = Vec::new();
-		let iter = self.db.iterator_cf(&cf_pending, rocksdb::IteratorMode::Start);
-		let mut batch = WriteBatch::default();
-
-		for item in iter {
-			let (key, value) = item.map_err(|e| DaSequencerError::Generic(e.to_string()))?;
-
-			let tx: FullNodeTx = bcs::from_bytes(&value)
-				.map_err(|e| DaSequencerError::Deserialization(e.to_string()))?;
-
-			txs.push(tx);
-			batch.delete_cf(&cf_pending, &key);
-		}
-
-		if txs.is_empty() {
-			return Ok(None);
-		}
-
-		let tx_set: BTreeSet<Transaction> = txs.into_iter().collect();
-
-		let block = Block::new(BlockMetadata::default(), Id::default(), tx_set);
-
-		let sequencer_block = SequencerBlock::try_new(next_height, block)?;
-
-		let cf_blocks = self.db.cf_handle(cf::BLOCKS).ok_or_else(|| {
-			DaSequencerError::StorageAccess("Missing column family: blocks".into())
-		})?;
-
-		let encoded = bcs::to_bytes(&sequencer_block)
-			.map_err(|e| DaSequencerError::Deserialization(e.to_string()))?;
-
-		let height_key = next_height.0.to_be_bytes();
-		batch.put_cf(&cf_blocks, height_key, encoded);
-
-		self.db
-			.write(batch)
-			.map_err(|e| DaSequencerError::RocksDbError(e.to_string()))?;
-
-		Ok(Some(sequencer_block))
+		todo!()
 	}
 
 	fn get_celestia_height_for_block(
