@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::DaSequencerError;
 
+// TODO: use a sensible value for the max sequencer block size
 const MAX_SEQUENCER_BLOCK_SIZE: u64 = 1_000_000; // 1 MB
 
 #[derive(Clone, Copy, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -63,7 +64,9 @@ impl SequencerBlock {
 mod tests {
 	#[test]
 	fn test_sequencer_block_rejects_block_larger_than_max_size() {
+		use super::MAX_SEQUENCER_BLOCK_SIZE;
 		use crate::block::{BlockHeight, SequencerBlock};
+		use crate::DaSequencerError;
 		use movement_types::{block::Block, transaction::Transaction};
 		use std::collections::BTreeSet;
 
@@ -71,7 +74,7 @@ mod tests {
 		let mut transactions = BTreeSet::new();
 		let mut total_size = 0;
 
-		while total_size < super::MAX_SEQUENCER_BLOCK_SIZE as usize + 100_000 {
+		while total_size < MAX_SEQUENCER_BLOCK_SIZE as usize + 100_000 {
 			let data = vec![0u8; 100_000]; // 100 KB each
 			let tx = Transaction::test_only_new(data, 0, total_size as u64);
 			total_size += 100_000;
@@ -83,7 +86,7 @@ mod tests {
 		let result = SequencerBlock::try_new(BlockHeight(0), block);
 
 		assert!(
-			matches!(&result, Err(crate::DaSequencerError::Generic(msg)) if msg.contains("exceeds max size")),
+			matches!(&result, Err(DaSequencerError::SizeExceedsMax(size)) if *size == MAX_SEQUENCER_BLOCK_SIZE as usize),
 			"Expected error for oversized block, got: {:?}",
 			result
 		)
