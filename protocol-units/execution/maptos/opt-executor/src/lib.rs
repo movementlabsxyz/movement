@@ -30,7 +30,7 @@ mod tests {
 		transaction::signature_verified_transaction::{
 			into_signature_verified_block, SignatureVerifiedTransaction,
 		},
-		transaction::{RawTransaction, Script, Transaction, TransactionPayload},
+		transaction::{RawTransaction, Script, SignedTransaction, Transaction, TransactionPayload},
 	};
 	use movement_signer::cryptography::ed25519::Ed25519;
 	use movement_signer_hashicorp_vault::hsm::HashiCorpVault;
