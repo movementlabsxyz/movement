@@ -11,8 +11,8 @@ pub struct RawData {
 pub struct FullnodeTx {}
 
 #[derive(Debug)]
-pub struct DaBatch<Data> {
-	pub data: Data,
+pub struct DaBatch<D> {
+	pub data: D,
 	pub signature: Ed25519Signature,
 	pub signer: Ed25519PublicKey,
 	pub timestamp: u64,
