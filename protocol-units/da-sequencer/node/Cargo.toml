@@ -12,19 +12,20 @@ rust-version.workspace = true
 [dependencies]
 aptos-crypto = { workspace = true }
 bcs = { workspace = true }
+hex = { workspace = true }
 ed25519-dalek = { workspace = true }
+prost = { workspace = true }
+rand = { workspace = true }
+serde = { workspace = true }
 tokio = { workspace = true }
 tokio-stream = { workspace = true }
 tonic = { workspace = true }
 tonic-reflection = { workspace = true }
-prost = { workspace = true }
-rand = { workspace = true }
-serde = { workspace = true }
-
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
 thiserror = { workspace = true }
 url = { workspace = true }
 anyhow = { workspace = true }
-tracing = { workspace = true }
 
 movement-da-sequencer-client = { workspace = true }
 movement-da-sequencer-config = { workspace = true }

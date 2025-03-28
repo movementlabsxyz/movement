@@ -54,6 +54,7 @@ impl DaSequencerClient {
 		let response = self.client.batch_write(request).await?;
 		Ok(response.into_inner())
 	}
+	
 	/// Connects to a da sequencer node service using the given connection string.
 	async fn connect(
 		connection_string: &str,

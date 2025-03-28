@@ -333,7 +333,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-test = "0.2.5"
 trie-db = "0.28.0"
 url = "2.2.2"
-ed25519-dalek = { version = "2.1.1", features = ["rand_core"] }
+ed25519-dalek = { version = "2.1", features = ["rand_core"] }
 ed25519 = "2.2.3"
 ring-compat = "0.8.0"
 zstd-sys = "2.0.9"
@@ -370,7 +370,7 @@ aws-sdk-s3 = "1.42.0"
 movement-client = { path = "networks/movement/movement-client" }
 simple_asn1 = "0.6.3"
 dotenv = "0.15.0"
-rand_core = "0.9.0"
+rand_core = { version = "0.9.0", features = ["std", "os_rng"] }
 
 [workspace.lints.rust]
 dead_code = "deny"        ## Alloy Dependencies

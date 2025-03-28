@@ -14,6 +14,10 @@ serde_json = { workspace = true }
 serde = { workspace = true }
 serde_derive = { workspace = true }
 godfig = { workspace = true }
+ed25519-dalek = { workspace = true }
+rand = { workspace = true }
+tracing = { workspace = true }
+hex = { workspace = true }
 
 [lints]
 workspace = true

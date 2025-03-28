@@ -2,7 +2,10 @@ use crate::error::DaSequencerError;
 use ed25519_dalek::{Signature, VerifyingKey, Verifier};
 use serde::{Serialize, Deserialize};
 use bcs;
+use hex;
 use movement_da_sequencer_client::{generate_keypair, sign_batch};
+use movement_da_sequencer_config::DaSequencerConfig;
+use tracing_subscriber;
 
 #[derive(Debug)]
 pub struct RawData {
@@ -30,7 +33,7 @@ pub fn validate_batch(
 
         let txs: Vec<FullnodeTx> = bcs::from_bytes(&new_batch.data.bytes)
                 .map_err(|_| DaSequencerError::DeserializationFailure)?;
-
+	
         Ok(DaBatch {
                 data: txs,
                 signature: new_batch.signature,
@@ -50,12 +53,29 @@ pub fn verify_batch_signature(
 
 #[cfg(test)]
 mod tests {
+
+        static INIT: std::sync::Once = std::sync::Once::new();
+
+        fn init_tracing() {
+            INIT.call_once(|| {
+                tracing_subscriber::fmt()
+                    .with_max_level(tracing::Level::INFO)
+                    .with_test_writer()
+                    .init();
+            });
+        }
+
         use super::*;
 
         #[test]
         fn test_sign_and_validate_batch() {
-                // Generate a test keypair
-                let (signing_key, verifying_key) = generate_keypair();
+
+                init_tracing();
+
+                // Get the signing key from the config default
+                let config = DaSequencerConfig::default();
+                let signing_key = config.signing_key;
+                let verifying_key = signing_key.verifying_key();
 
                 // Create a sample list of transactions
                 let txs = vec![
@@ -90,4 +110,5 @@ mod tests {
                 );
         }
 }
+
 
