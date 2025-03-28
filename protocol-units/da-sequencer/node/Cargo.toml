@@ -30,6 +30,7 @@ tonic-reflection = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 url = { workspace = true }
+futures = { workspace = true }
 
 movement-da-sequencer-client = { workspace = true }
 movement-da-sequencer-config = { workspace = true }
