@@ -102,7 +102,7 @@ impl Storage {
 			let last_height = u64::from_be_bytes(arr);
 			Ok(BlockHeight(last_height + 1))
 		} else {
-			Ok(BlockHeight(0))
+			Ok(BlockHeight(1))
 		}
 	}
 
