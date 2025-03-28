@@ -1,4 +1,4 @@
-use ed25519_dalek::{SigningKey};
+use ed25519_dalek::SigningKey;
 use godfig::env_default;
 use rand::rngs::OsRng;
 use rand::RngCore;
