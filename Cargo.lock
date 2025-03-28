@@ -11354,6 +11354,7 @@ dependencies = [
  "movement-da-util",
  "movement-signer",
  "serde",
+ "tokio",
  "tonic 0.12.3",
  "tracing",
  "zstd 0.13.2",
