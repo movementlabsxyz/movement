@@ -69,15 +69,15 @@ mod tests {
 			FullnodeTx { id: 2, data: "world".to_string() },
 		];
 
-		// Serialize transactions into bytes
-		let tx_bytes = bcs::to_bytes(&txs).expect("Serialization failed");
+		// Serialize transaction batch into bytes
+		let batch_bytes = bcs::to_bytes(&txs).expect("Serialization failed");
 
 		// Sign the batch
-		let signature = sign_batch(&tx_bytes, &signing_key);
+		let signature = sign_batch(&batch_bytes, &signing_key);
 
 		// Construct a raw DaBatch with just the bytes
 		let raw_batch =
-			DaBatch { data: RawData { bytes: tx_bytes.clone() }, signature, signer: verifying_key };
+			DaBatch { data: RawData { bytes: batch_bytes.clone() }, signature, signer: verifying_key };
 
 		// Validate the batch
 		let validated = validate_batch(raw_batch).expect("Batch should validate");
