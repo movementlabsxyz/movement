@@ -11555,6 +11555,7 @@ dependencies = [
  "aptos-crypto",
  "aptos-sdk",
  "chrono",
+ "futures",
  "movement-da-sequencer-config",
  "movement-da-sequencer-proto",
  "movement-types",

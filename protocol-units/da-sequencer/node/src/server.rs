@@ -41,7 +41,7 @@ pub async fn run_server(
 #[derive(Debug)]
 pub enum GrpcRequests {
 	StartBlockStream { callback: oneshot::Sender<(BlockHeight, mpsc::Receiver<SequencerBlock>)> },
-	GetBlockHeight { block_height: BlockHeight, callback: oneshot::Sender<SequencerBlock> },
+	GetBlockHeight { block_height: BlockHeight, callback: oneshot::Sender<Option<SequencerBlock>> },
 	WriteBatch(DaBatch<FullnodeTx>),
 }
 
@@ -73,7 +73,7 @@ impl DaSequencerNodeService for DaSequencerNode {
 		request: tonic::Request<BatchWriteRequest>,
 	) -> std::result::Result<tonic::Response<BatchWriteResponse>, tonic::Status> {
 		let batch_data = request.into_inner().data;
-		let batch = match crate::batch::deserialize_node_batch(batch_data).and_then(
+		let batch = match crate::batch::deserialize_full_node_batch(batch_data).and_then(
 			|(public_key, signature, bytes)| {
 				validate_batch(DaBatch::<RawData>::now(public_key, signature, bytes))
 			},

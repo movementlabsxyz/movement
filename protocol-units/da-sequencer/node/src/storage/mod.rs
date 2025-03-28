@@ -6,7 +6,7 @@ use crate::block::SequencerBlockDigest;
 use crate::celestia::CelestiaHeight;
 use crate::error::DaSequencerError;
 
-pub trait DaSequencerStorage {
+pub trait DaSequencerStorage: Clone {
 	/// Save all batch's Tx in the pending Tx table. The batch's Tx has been verified and validated.
 	fn write_batch(&self, batch: DaBatch<FullnodeTx>) -> std::result::Result<(), DaSequencerError>;
 
@@ -29,7 +29,7 @@ pub trait DaSequencerStorage {
 	/// All pending Tx added to the block are removed from the pending Tx table.
 	/// Save the block for this height
 	/// Return the block.
-	fn produce_next_block(&self) -> std::result::Result<Option<SequencerBlock>, DaSequencerError>;
+	fn produce_next_block(&self) -> Result<Option<SequencerBlock>, DaSequencerError>;
 
 	/// Return, if exists, the Celestia height for given block height.
 	fn get_celestia_height_for_block(
