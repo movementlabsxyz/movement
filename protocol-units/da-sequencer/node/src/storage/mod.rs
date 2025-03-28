@@ -117,7 +117,7 @@ impl DaSequencerStorage for Storage {
 			DaSequencerError::StorageAccess("Missing column family: pending_transactions".into())
 		})?;
 
-		let txs = batch.data();
+		let txs = batch.data.0;
 
 		let mut write_batch = WriteBatch::default();
 
@@ -195,7 +195,7 @@ impl DaSequencerStorage for Storage {
 
 	fn get_celestia_height_for_block(
 		&self,
-		heigh: BlockHeight,
+		height: BlockHeight,
 	) -> Result<Option<CelestiaHeight>, DaSequencerError> {
 		todo!();
 	}

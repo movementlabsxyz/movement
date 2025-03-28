@@ -1,20 +1,20 @@
-use crate::error::DaSequencerError;
-use aptos_crypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
-use aptos_crypto::hash::CryptoHash;
+use aptos_sdk::crypto::hash::CryptoHash;
 use aptos_crypto_derive::{BCSCryptoHash, CryptoHasher};
-use core::convert::TryFrom;
+use crate::error::DaSequencerError;
+use bcs;
+use ed25519_dalek::{Signature, Signer, Verifier, VerifyingKey};
 use movement_types::transaction::Transaction;
-use serde::{ser::SerializeMap, Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use std::ops::Deref;
+use movement_da_sequencer_config::DaSequencerConfig;
 
 #[derive(Debug)]
 pub struct RawData {
 	pub data: Vec<u8>,
 }
 
-///We want to distinguish here between FullNode transactions and DA Transactions
-#[derive(Debug, CryptoHasher, BCSCryptoHash, Deserialize, Serialize)]
-pub struct FullNodeTxs(Vec<Transaction>);
+#[derive(Deserialize, CryptoHasher, BCSCryptoHash, Serialize, PartialEq, Debug)]
+pub struct FullNodeTxs(pub Vec<Transaction>);
 
 impl FullNodeTxs {
 	pub fn new(txs: Vec<Transaction>) -> Self {
@@ -33,21 +33,15 @@ impl Deref for FullNodeTxs {
 #[derive(Debug)]
 pub struct DaBatch<D> {
 	pub data: D,
-	pub signature: Ed25519Signature,
-	pub signer: Ed25519PublicKey,
+	pub signature: Signature,
+	pub signer: VerifyingKey,
 	pub timestamp: u64,
 }
 
 impl DaBatch<RawData> {
-	pub fn now(signer: Ed25519PublicKey, signature: Ed25519Signature, data: Vec<u8>) -> Self {
+	pub fn now(signer: VerifyingKey, signature: Signature, data: Vec<u8>) -> Self {
 		let timestamp = chrono::Utc::now().timestamp_micros() as u64;
 		DaBatch { data: RawData { data }, signature, signer, timestamp }
-	}
-}
-
-impl<T> DaBatch<T> {
-	pub fn data(&self) -> &T {
-		&self.data
 	}
 }
 
@@ -58,33 +52,34 @@ where
 {
 	/// Creates a test-only `DaBatch` with a real signature over the given data.
 	/// Only usable in tests.
-	pub fn test_only_new(data: D) -> Self {
-		use aptos_crypto::ed25519::Ed25519PrivateKey;
-		use aptos_crypto::{PrivateKey, SigningKey, Uniform};
-		use rand::rngs::OsRng;
-
-		let mut rng = OsRng;
-		let private_key = Ed25519PrivateKey::generate(&mut rng);
-		let public_key = private_key.public_key();
-
-		// Sign the real data
-		let signature = private_key.sign(&data).expect("Failed to sign test data");
-		let timestamp = chrono::Utc::now().timestamp_micros() as u64;
-
-		Self { data, signature, signer: public_key, timestamp }
-	}
-}
-
-/// Batch write blobs.
-pub fn validate_batch(
-	new_batch: DaBatch<RawData>,
-) -> std::result::Result<DaBatch<FullNodeTxs>, DaSequencerError> {
-	todo!()
+        pub fn test_only_new(data: D) -> Self
+        where
+                D: Serialize,
+        {
+                use rand::rngs::OsRng;
+        
+                let mut rng = OsRng;
+                let config = DaSequencerConfig::default();
+                let private_key = config.signing_key;
+                let public_key = private_key.verifying_key();
+        
+                let serialized = bcs::to_bytes(&data).unwrap(); // only fails if serialization is broken
+        
+                let signature = private_key.sign(&serialized);
+                let timestamp = chrono::Utc::now().timestamp_micros() as u64;
+        
+                Self {
+                        data,
+                        signature,
+                        signer: public_key,
+                        timestamp,
+                }
+        }
 }
 
 pub fn serialize_full_node_batch(
-	signer: Ed25519PublicKey,
-	signature: Ed25519Signature,
+	signer: VerifyingKey,
+	signature: Signature,
 	mut data: Vec<u8>,
 ) -> Vec<u8> {
 	let mut serialized: Vec<u8> = Vec::with_capacity(64 + 32 + data.len());
@@ -96,7 +91,7 @@ pub fn serialize_full_node_batch(
 
 pub fn deserialize_full_node_batch(
 	data: Vec<u8>,
-) -> std::result::Result<(Ed25519PublicKey, Ed25519Signature, Vec<u8>), DaSequencerError> {
+) -> std::result::Result<(VerifyingKey, Signature, Vec<u8>), DaSequencerError> {
 	let (pubkey_deserialized, rest) = data.split_at(32);
 	let (sign_deserialized, vec_deserialized) = rest.split_at(64);
 
@@ -104,9 +99,92 @@ pub fn deserialize_full_node_batch(
 	let pub_key_bytes: [u8; 32] = pubkey_deserialized.try_into()?;
 	let signature_bytes: [u8; 64] = sign_deserialized.try_into()?;
 
-	let public_key = Ed25519PublicKey::try_from(pub_key_bytes.as_slice())?;
-	let signature = Ed25519Signature::try_from(signature_bytes.as_slice())?;
+	let public_key = VerifyingKey::try_from(pub_key_bytes.as_slice())
+                .map_err(|_| DaSequencerError::DeserializationFailure)?;
+        let signature = Signature::try_from(signature_bytes.as_slice())
+                .map_err(|_| DaSequencerError::DeserializationFailure)?;
 
 	let data: Vec<u8> = vec_deserialized.to_vec();
 	Ok((public_key, signature, data))
+}
+
+pub fn validate_batch(
+        new_batch: DaBatch<RawData>,
+) -> Result<DaBatch<FullNodeTxs>, DaSequencerError> {
+        verify_batch_signature(&new_batch.data.data, &new_batch.signature, &new_batch.signer)?;
+
+        let txs: FullNodeTxs = bcs::from_bytes(&new_batch.data.data)
+                .map_err(|_| DaSequencerError::DeserializationFailure)?;
+
+        Ok(DaBatch {
+                data: txs,
+                signature: new_batch.signature,
+                signer: new_batch.signer,
+                timestamp: new_batch.timestamp,
+        })
+}
+
+pub fn verify_batch_signature(
+        batch_data: &[u8],
+        signature: &Signature,
+        public_key: &VerifyingKey,
+) -> Result<(), DaSequencerError> {
+        public_key
+                .verify(batch_data, signature)
+                .map_err(|_| DaSequencerError::InvalidSignature)
+}
+
+#[cfg(test)]
+mod tests {
+        use super::*;
+        use movement_da_sequencer_client::sign_batch;
+        use movement_da_sequencer_config::DaSequencerConfig;
+        use tracing_subscriber;
+
+        #[test]
+        fn test_sign_and_validate_batch() {
+                let _ = tracing_subscriber::fmt()
+                        .with_max_level(tracing::Level::INFO)
+                        .with_test_writer()
+                        .try_init();
+        
+                let config = DaSequencerConfig::default();
+                let signing_key = config.signing_key;
+                let verifying_key = signing_key.verifying_key();
+        
+                // Create transactions and batch
+                let txs = FullNodeTxs(vec![
+                        Transaction::new(b"hello".to_vec(), 0, 1),
+                        Transaction::new(b"world".to_vec(), 0, 2),
+                ]);
+        
+                let batch_bytes = bcs::to_bytes(&txs).expect("Serialization failed");
+                let signature = sign_batch(&batch_bytes, &signing_key);
+        
+                // Serialize full node batch into raw bytes
+                let serialized = serialize_full_node_batch(
+                        verifying_key,
+                        signature.clone(),
+                        batch_bytes.clone(),
+                );
+        
+                // Deserialize it back
+                let (deserialized_key, deserialized_sig, deserialized_data) =
+                        deserialize_full_node_batch(serialized).expect("Deserialization failed");
+        
+                // Recreate the raw batch from deserialized data
+                let raw_batch = DaBatch {
+                        data: RawData { data: deserialized_data },
+                        signature: deserialized_sig,
+                        signer: deserialized_key,
+                        timestamp: chrono::Utc::now().timestamp_micros() as u64,
+                };
+        
+                // Validate the batch
+                let validated = validate_batch(raw_batch).expect("Batch should validate");
+        
+                // Check it worked
+                assert_eq!(validated.data.0.len(), 2);
+                assert_eq!(validated.data.0, txs.0);
+        }
 }

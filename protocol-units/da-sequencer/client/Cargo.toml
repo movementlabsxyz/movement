@@ -10,6 +10,7 @@ publish.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+ed25519-dalek = { workspace = true }
 movement-da-sequencer-proto = { workspace = true, features = ["client"] }
 tonic = { workspace = true, features = ["tls", "tls-webpki-roots"]}
 tonic-web = { workspace = true }

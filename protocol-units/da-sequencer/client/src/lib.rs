@@ -1,3 +1,5 @@
+use ed25519_dalek::{SigningKey, Signature};
+use ed25519_dalek::Signer;
 use movement_da_sequencer_proto::da_sequencer_node_service_client::DaSequencerNodeServiceClient;
 use std::time::Duration;
 use tonic::transport::{Channel, ClientTlsConfig};
@@ -50,6 +52,7 @@ impl DaSequencerClient {
 		let response = self.client.batch_write(request).await?;
 		Ok(response.into_inner())
 	}
+	
 	/// Connects to a da sequencer node service using the given connection string.
 	async fn connect(
 		connection_string: &str,
@@ -70,4 +73,8 @@ impl DaSequencerClient {
 
 		Ok(client)
 	}
+}
+
+pub fn sign_batch(batch_data: &[u8], signing_key: &SigningKey) -> Signature {
+        signing_key.sign(batch_data)
 }

@@ -17,4 +17,10 @@ pub enum DaSequencerError {
 	BatchSerializationError(#[from] std::array::TryFromSliceError),
 	#[error("Key or signature are badly formated: {0}")]
 	BadKeyOrSign(#[from] aptos_sdk::crypto::CryptoMaterialError),
+        #[error("Failed to serialize FullnodeTx batch")]
+        SerializationFailure,
+        #[error("Failed to deserialize FullnodeTx batch")]
+        DeserializationFailure,
+        #[error("Signature was invalid")]
+        InvalidSignature,
 }
