@@ -13,4 +13,8 @@ pub enum DaSequencerError {
 	Deserialization(String),
 	#[error("Invalid path error: {0}")]
 	InvalidPath(String),
+	#[error("Error during storage access: {0}")]
+	BatchSerializationError(#[from] std::array::TryFromSliceError),
+	#[error("Key or signature are badly formated: {0}")]
+	BadKeyOrSign(#[from] aptos_sdk::crypto::CryptoMaterialError),
 }

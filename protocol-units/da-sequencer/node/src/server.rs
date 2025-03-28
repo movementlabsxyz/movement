@@ -1,18 +1,21 @@
-use movement_da_sequencer_proto::da_sequencer_node_service_server::{
-	DaSequencerNodeService, DaSequencerNodeServiceServer,
+use crate::batch::FullNodeTxs;
+use crate::batch::{validate_batch, DaBatch, RawData};
+use crate::block::{BlockHeight, SequencerBlock};
+use movement_da_sequencer_proto::{
+	da_sequencer_node_service_server::{DaSequencerNodeService, DaSequencerNodeServiceServer},
+	BatchWriteRequest, BatchWriteResponse, ReadAtHeightRequest, ReadAtHeightResponse,
+	StreamReadFromHeightRequest, StreamReadFromHeightResponse,
 };
-use movement_da_sequencer_proto::BatchWriteRequest;
-use movement_da_sequencer_proto::BatchWriteResponse;
-use movement_da_sequencer_proto::ReadAtHeightRequest;
-use movement_da_sequencer_proto::ReadAtHeightResponse;
-use movement_da_sequencer_proto::StreamReadFromHeightRequest;
-use movement_da_sequencer_proto::StreamReadFromHeightResponse;
 use std::net::SocketAddr;
+use tokio::sync::{mpsc, oneshot};
 use tokio_stream::Stream;
 use tonic::transport::Server;
 
 /// Runs the server
-pub async fn run_server(address: SocketAddr) -> Result<(), anyhow::Error> {
+pub async fn run_server(
+	address: SocketAddr,
+	request_tx: mpsc::Sender<GrpcRequests>,
+) -> Result<(), anyhow::Error> {
 	let reflection = tonic_reflection::server::Builder::configure()
 		.register_encoded_file_descriptor_set(movement_da_sequencer_proto::FILE_DESCRIPTOR_SET)
 		.build_v1()?;
@@ -21,7 +24,7 @@ pub async fn run_server(address: SocketAddr) -> Result<(), anyhow::Error> {
 	Server::builder()
 		.max_frame_size(1024 * 1024 * 16 - 1)
 		.accept_http1(true)
-		.add_service(DaSequencerNodeServiceServer::new(DaSequencerNode {}))
+		.add_service(DaSequencerNodeServiceServer::new(DaSequencerNode { request_tx }))
 		.add_service(reflection)
 		.serve(address)
 		.await?;
@@ -29,7 +32,16 @@ pub async fn run_server(address: SocketAddr) -> Result<(), anyhow::Error> {
 	Ok(())
 }
 
-pub struct DaSequencerNode {}
+#[derive(Debug)]
+pub enum GrpcRequests {
+	StartBlockStream { callback: oneshot::Sender<(BlockHeight, mpsc::Receiver<SequencerBlock>)> },
+	GetBlockHeight { block_height: BlockHeight, callback: oneshot::Sender<SequencerBlock> },
+	WriteBatch(DaBatch<FullNodeTxs>),
+}
+
+pub struct DaSequencerNode {
+	request_tx: mpsc::Sender<GrpcRequests>,
+}
 
 #[tonic::async_trait]
 impl DaSequencerNodeService for DaSequencerNode {
@@ -54,7 +66,25 @@ impl DaSequencerNodeService for DaSequencerNode {
 		&self,
 		request: tonic::Request<BatchWriteRequest>,
 	) -> std::result::Result<tonic::Response<BatchWriteResponse>, tonic::Status> {
-		todo!();
+		let batch_data = request.into_inner().data;
+		let batch = match crate::batch::deserialize_full_node_batch(batch_data).and_then(
+			|(public_key, signature, bytes)| {
+				validate_batch(DaBatch::<RawData>::now(public_key, signature, bytes))
+			},
+		) {
+			Ok(batch) => batch,
+			Err(err) => {
+				tracing::warn!("Invalid batch send, verification / validation failed:{err}");
+				return Ok(tonic::Response::new(BatchWriteResponse { answer: false }));
+			}
+		};
+		if let Err(err) = self.request_tx.send(GrpcRequests::WriteBatch(batch)).await {
+			tracing::error!(
+				"Internal grpc request channel closed, no more batch will be processed:{err}"
+			);
+			return Ok(tonic::Response::new(BatchWriteResponse { answer: false }));
+		}
+		Ok(tonic::Response::new(BatchWriteResponse { answer: true }))
 	}
 
 	/// Read blobs at a specified height.
@@ -65,3 +95,5 @@ impl DaSequencerNodeService for DaSequencerNode {
 		Err(tonic::Status::unimplemented(""))
 	}
 }
+
+pub struct GrpcBatchData {}
