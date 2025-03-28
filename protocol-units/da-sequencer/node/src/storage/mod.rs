@@ -79,7 +79,7 @@ impl Storage {
 			path,
 			[pending_transactions_cf, blocks_cf, blocks_by_digest_cf],
 		)
-		.map_err(|e| DaSequencerError::Generic(e.to_string()))?;
+		.map_err(|e| DaSequencerError::StorageAccess(e.to_string()))?;
 
 		Ok(Storage { db: Arc::new(db) })
 	}
@@ -92,7 +92,9 @@ impl Storage {
 		let mut iter = self.db.iterator_cf(&cf, rocksdb::IteratorMode::End);
 		if let Some(Ok((key, _value))) = iter.next() {
 			if key.len() != 8 {
-				return Err(DaSequencerError::Generic("Invalid block height key length".into()));
+				return Err(DaSequencerError::StorageFormat(
+					"Invalid block height key length".into(),
+				));
 			}
 
 			let mut arr = [0u8; 8];
@@ -120,7 +122,7 @@ impl DaSequencerStorage for Storage {
 		let mut write_batch = WriteBatch::default();
 
 		for tx in txs.iter() {
-			let key = tx.id.0;
+			let key = tx.id();
 			let value =
 				bcs::to_bytes(tx).map_err(|e| DaSequencerError::Deserialization(e.to_string()))?;
 
@@ -228,7 +230,7 @@ mod tests {
 		let result = Storage::try_new("");
 		assert!(result.is_err());
 		match result {
-			Err(DaSequencerError::Generic(msg)) => {
+			Err(DaSequencerError::InvalidPath(msg)) => {
 				assert!(
 					msg.contains("Invalid argument") || msg.contains("No such file"),
 					"Unexpected error message: {}",
@@ -250,7 +252,7 @@ mod tests {
 		let storage = Storage::try_new(path).expect("failed to create storage");
 
 		let tx = Transaction::test_only_new(b"test data".to_vec(), 1, 123);
-		let tx_id = tx.id;
+		let tx_id = tx.id();
 
 		let txs = FullNodeTxs::new(vec![tx]);
 		let batch = DaBatch::test_only_new(txs);
@@ -262,14 +264,14 @@ mod tests {
 			.cf_handle(cf::PENDING_TRANSACTIONS)
 			.expect("missing pending_transactions CF");
 
-		let key = tx_id.0;
+		let key = tx_id.clone();
 		let stored_bytes =
 			storage.db.get_cf(&cf, key).expect("read failed").expect("no data found");
 
 		let stored_tx: Transaction =
 			bcs::from_bytes(&stored_bytes).expect("failed to deserialize stored transaction");
 
-		assert_eq!(stored_tx.id, tx_id);
+		assert_eq!(stored_tx.id(), tx_id);
 		assert_eq!(stored_tx.sequence_number(), 123);
 		assert_eq!(stored_tx.application_priority(), 1);
 		assert_eq!(stored_tx.data(), b"test data");
@@ -379,7 +381,7 @@ mod tests {
 		let storage = Storage::try_new(path).expect("failed to create storage");
 
 		let tx = Transaction::test_only_new(b"test data".to_vec(), 0, 1);
-		let tx_id = tx.id;
+		let tx_id = tx.id();
 
 		let txs = FullNodeTxs::new(vec![tx]);
 		let batch = DaBatch::test_only_new(txs);
@@ -396,7 +398,7 @@ mod tests {
 			.db
 			.cf_handle(cf::PENDING_TRANSACTIONS)
 			.expect("missing 'pending_transactions' CF");
-		let maybe_tx = storage.db.get_cf(&cf_pending, tx_id.0).expect("failed to read pending tx");
+		let maybe_tx = storage.db.get_cf(&cf_pending, tx_id).expect("failed to read pending tx");
 		assert!(maybe_tx.is_none(), "Pending transaction was not cleared");
 
 		let cf_blocks = storage.db.cf_handle(cf::BLOCKS).expect("missing 'blocks' CF");

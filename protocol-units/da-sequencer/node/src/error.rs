@@ -11,6 +11,6 @@ pub enum DaSequencerError {
 	RocksDbError(String),
 	#[error("Deserialization error: {0}")]
 	Deserialization(String),
-	#[error("Generic error: {0}")]
-	Generic(String),
+	#[error("Invalid path error: {0}")]
+	InvalidPath(String),
 }

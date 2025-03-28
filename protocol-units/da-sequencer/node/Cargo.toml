@@ -10,20 +10,20 @@ publish.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-aptos-crypto-derive = { workspace = true }
 anyhow = { workspace = true }
-bcs = { workspace = true }
 aptos-crypto = { workspace = true }
-thiserror = { workspace = true }
-url = { workspace = true }
+aptos-crypto-derive = { workspace = true }
+bcs = { workspace = true }
+prost = { workspace = true }
 rocksdb = { workspace = true }
 serde = { workspace = true }
+thiserror = { workspace = true }
 tokio = { workspace = true }
 tokio-stream = { workspace = true }
 tonic = { workspace = true }
 tonic-reflection = { workspace = true }
-prost = { workspace = true }
 tracing = { workspace = true }
+url = { workspace = true }
 
 movement-da-sequencer-config = { workspace = true }
 movement-types = { workspace = true }

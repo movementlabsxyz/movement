@@ -6,7 +6,7 @@ use std::cmp::Ordering;
 #[derive(
 	Serialize, Deserialize, Clone, Copy, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord,
 )]
-pub struct Id(pub [u8; 32]);
+pub struct Id([u8; 32]);
 
 impl Id {
 	pub fn new(data: [u8; 32]) -> Self {
@@ -49,7 +49,7 @@ pub struct Transaction {
 	// Application priority is stored low to high, i.e., 0 is the highest priority.
 	application_priority: u64,
 	sequence_number: u64,
-	pub id: Id,
+	id: Id,
 }
 
 impl Transaction {
