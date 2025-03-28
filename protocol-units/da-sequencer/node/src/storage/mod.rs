@@ -88,7 +88,7 @@ impl Storage {
 	/// Return, if exists, the Celestia height for given block height.
 	pub fn get_celestia_height_for_block(
 		&self,
-		heigh: BlockHeight,
+		height: BlockHeight,
 	) -> std::result::Result<Option<CelestiaHeight>, DaSequencerError> {
 		todo!();
 	}

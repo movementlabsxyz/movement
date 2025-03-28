@@ -10,8 +10,6 @@ publish.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-aptos-crypto = { workspace = true }
-aptos-crypto-derive = { workspace = true }
 bcs = { workspace = true }
 hex = { workspace = true }
 ed25519-dalek = { workspace = true }
@@ -27,6 +25,8 @@ tracing-subscriber = { workspace = true }
 thiserror = { workspace = true }
 url = { workspace = true }
 anyhow = { workspace = true }
+chrono = { workspace = true }
+aptos-sdk = { workspace = true }
 
 movement-da-sequencer-client = { workspace = true }
 movement-da-sequencer-config = { workspace = true }

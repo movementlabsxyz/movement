@@ -11,8 +11,6 @@ rust-version.workspace = true
 
 [dependencies]
 ed25519-dalek = { workspace = true }
-rand = { version = "0.8", features = ["std"] }
-bcs = { workspace = true }
 movement-da-sequencer-proto = { workspace = true, features = ["client"] }
 tonic = { workspace = true, features = ["tls", "tls-webpki-roots"]}
 tonic-web = { workspace = true }
@@ -22,8 +20,6 @@ http-body-util = { workspace = true }
 bytes = { workspace = true }
 anyhow = { workspace = true }
 tracing = { workspace = true }
-aptos-crypto = { workspace = true }
-serde = { workspace = true }
 
 [lints]
 workspace = true
