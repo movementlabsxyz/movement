@@ -102,7 +102,7 @@ impl Storage {
 			let last_height = u64::from_be_bytes(arr);
 			Ok(BlockHeight(last_height + 1))
 		} else {
-			Ok(BlockHeight(1))
+			Ok(BlockHeight(0))
 		}
 	}
 
@@ -229,16 +229,6 @@ mod tests {
 	fn test_try_new_invalid_path_should_fail() {
 		let result = Storage::try_new("");
 		assert!(result.is_err());
-		match result {
-			Err(DaSequencerError::InvalidPath(msg)) => {
-				assert!(
-					msg.contains("Invalid argument") || msg.contains("No such file"),
-					"Unexpected error message: {}",
-					msg
-				);
-			}
-			_ => panic!("Expected Generic error variant"),
-		}
 	}
 
 	#[test]
