@@ -4,8 +4,17 @@ use serde::{Deserialize, Serialize};
 use std::collections::btree_set;
 use std::collections::BTreeSet;
 use std::fmt;
+use std::result::Result;
+
+const MAX_TRANSACTIONS: usize = 1000;
 
 pub type Transactions<'a> = btree_set::Iter<'a, Transaction>;
+
+#[derive(Debug, thiserror::Error)]
+pub enum BlockError {
+	#[error("Error Block Full")]
+	BlockFull,
+}
 
 #[derive(
 	Serialize, Deserialize, Clone, Copy, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord,
@@ -103,8 +112,12 @@ impl Block {
 		)
 	}
 
-	pub fn add_transaction(&mut self, transaction: Transaction) {
+	pub fn add_transaction(&mut self, transaction: Transaction) -> Result<(), BlockError> {
+		if self.transactions.len() >= MAX_TRANSACTIONS {
+			return Err(BlockError::BlockFull);
+		}
 		self.transactions.insert(transaction);
+		Ok(())
 	}
 
 	pub fn collapse(blocks: Vec<Block>) -> Block {
