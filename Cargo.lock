@@ -11553,6 +11553,8 @@ version = "0.3.4"
 dependencies = [
  "anyhow",
  "aptos-crypto",
+ "aptos-sdk",
+ "chrono",
  "movement-da-sequencer-config",
  "movement-da-sequencer-proto",
  "movement-types",
