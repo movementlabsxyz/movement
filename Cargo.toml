@@ -40,7 +40,11 @@ members = [
   "util/signing/testing",
   "demo/hsm",
   "protocol-units/execution/maptos/framework/releases/*",
-  "protocol-units/execution/maptos/framework/migrations/*", "protocol-units/da-sequencer/config", "protocol-units/da-sequencer/setup", "protocol-units/da-sequencer/client", "protocol-units/da-sequencer/node",
+  "protocol-units/execution/maptos/framework/migrations/*",
+  "protocol-units/da-sequencer/config",
+  "protocol-units/da-sequencer/setup",
+  "protocol-units/da-sequencer/client",
+  "protocol-units/da-sequencer/node",
   "protocol-units/da-sequencer/*",
 
 ]

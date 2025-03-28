@@ -1,19 +1,13 @@
 use crate::batch::FullNodeTxs;
 use crate::batch::{validate_batch, DaBatch, RawData};
-use crate::block::BlockHeight;
-use crate::block::SequencerBlock;
-use movement_da_sequencer_proto::da_sequencer_node_service_server::{
-	DaSequencerNodeService, DaSequencerNodeServiceServer,
+use crate::block::{BlockHeight, SequencerBlock};
+use movement_da_sequencer_proto::{
+	da_sequencer_node_service_server::{DaSequencerNodeService, DaSequencerNodeServiceServer},
+	BatchWriteRequest, BatchWriteResponse, ReadAtHeightRequest, ReadAtHeightResponse,
+	StreamReadFromHeightRequest, StreamReadFromHeightResponse,
 };
-use movement_da_sequencer_proto::BatchWriteRequest;
-use movement_da_sequencer_proto::BatchWriteResponse;
-use movement_da_sequencer_proto::ReadAtHeightRequest;
-use movement_da_sequencer_proto::ReadAtHeightResponse;
-use movement_da_sequencer_proto::StreamReadFromHeightRequest;
-use movement_da_sequencer_proto::StreamReadFromHeightResponse;
 use std::net::SocketAddr;
-use tokio::sync::mpsc;
-use tokio::sync::oneshot;
+use tokio::sync::{mpsc, oneshot};
 use tokio_stream::Stream;
 use tonic::transport::Server;
 

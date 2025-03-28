@@ -1,16 +1,34 @@
+use aptos_sdk::crypto::hash::CryptoHash;
+use aptos_crypto_derive::{BCSCryptoHash, CryptoHasher};
 use crate::error::DaSequencerError;
 use bcs;
-use ed25519_dalek::{Signature, Verifier, VerifyingKey};
+use ed25519_dalek::{Signature, Signer, Verifier, VerifyingKey};
 use movement_types::transaction::Transaction;
 use serde::{Deserialize, Serialize};
+use std::ops::Deref;
+use movement_da_sequencer_config::DaSequencerConfig;
 
 #[derive(Debug)]
 pub struct RawData {
 	pub data: Vec<u8>,
 }
 
-#[derive(Deserialize, Serialize, PartialEq, Debug)]
+#[derive(Deserialize, CryptoHasher, BCSCryptoHash, Serialize, PartialEq, Debug)]
 pub struct FullNodeTxs(pub Vec<Transaction>);
+
+impl FullNodeTxs {
+	pub fn new(txs: Vec<Transaction>) -> Self {
+		FullNodeTxs(txs)
+	}
+}
+
+impl Deref for FullNodeTxs {
+	type Target = Vec<Transaction>;
+
+	fn deref(&self) -> &Self::Target {
+		&self.0
+	}
+}
 
 #[derive(Debug)]
 pub struct DaBatch<D> {
@@ -25,6 +43,38 @@ impl DaBatch<RawData> {
 		let timestamp = chrono::Utc::now().timestamp_micros() as u64;
 		DaBatch { data: RawData { data }, signature, signer, timestamp }
 	}
+}
+
+#[cfg(test)]
+impl<D> DaBatch<D>
+where
+	D: Serialize + CryptoHash,
+{
+	/// Creates a test-only `DaBatch` with a real signature over the given data.
+	/// Only usable in tests.
+        pub fn test_only_new(data: D) -> Self
+        where
+                D: Serialize,
+        {
+                use rand::rngs::OsRng;
+        
+                let mut rng = OsRng;
+                let config = DaSequencerConfig::default();
+                let private_key = config.signing_key;
+                let public_key = private_key.verifying_key();
+        
+                let serialized = bcs::to_bytes(&data).unwrap(); // only fails if serialization is broken
+        
+                let signature = private_key.sign(&serialized);
+                let timestamp = chrono::Utc::now().timestamp_micros() as u64;
+        
+                Self {
+                        data,
+                        signature,
+                        signer: public_key,
+                        timestamp,
+                }
+        }
 }
 
 pub fn serialize_full_node_batch(

@@ -1,5 +1,6 @@
 use crate::error::DaSequencerError;
 use crate::server::GrpcRequests;
+use crate::storage::Storage;
 use movement_da_sequencer_config::DaSequencerConfig;
 use tokio::sync::mpsc;
 
