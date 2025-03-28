@@ -80,14 +80,13 @@ mod tests {
 	async fn test_set_finalized_block_height_get_api() -> Result<(), anyhow::Error> {
 		// Create an Executor and a FinalityView instance from the environment configuration.
 		let config = Config::default();
-		let (tx_sender, _tx_receiver) = mpsc::channel(16);
 
 		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
 			futures::channel::mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
 
 		let mut executor = Executor::try_from_config(config, mempool_tx_exec_result_sender).await?;
 		let (context, _transaction_pipe) =
-			executor.background(tx_sender, mempool_commit_tx_receiver)?;
+			executor.background(mempool_commit_tx_receiver)?;
 
 		let finality_view = FinalityView::new(context.db_reader());
 		let service = finality_view.service(

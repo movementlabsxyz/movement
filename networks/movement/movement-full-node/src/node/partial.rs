@@ -10,7 +10,6 @@ use movement_da_light_node_client::MovementDaLightNodeClient;
 use movement_rest::MovementRest;
 
 use anyhow::Context;
-use tokio::sync::mpsc;
 use tokio::try_join;
 use tracing::debug;
 
@@ -42,9 +41,7 @@ where
 		self,
 		mempool_commit_tx_receiver: futures::channel::mpsc::Receiver<Vec<TxExecutionResult>>,
 	) -> Result<(), anyhow::Error> {
-		let (transaction_sender, transaction_receiver) = mpsc::channel(16);
 		let (context, exec_background) = self.executor.background(
-			transaction_sender,
 			mempool_commit_tx_receiver,
 			&self.config.execution_config.maptos_config,
 		)?;
@@ -60,26 +57,17 @@ where
 			self.config.execution_extension.clone(),
 			self.config.mcr.clone(),
 		);
-		let transaction_ingress_task = tasks::transaction_ingress::Task::new(
-			transaction_receiver,
-			self.light_node_client,
-			self.config.execution_config.maptos_config,
-		);
-
 		let (
 			execution_and_settlement_result,
-			transaction_ingress_result,
 			background_task_result,
 			services_result,
 		) = try_join!(
 			tokio::spawn(async move { exec_settle_task.run().await }),
-			tokio::spawn(async move { transaction_ingress_task.run().await }),
 			tokio::spawn(exec_background),
 			tokio::spawn(services.run()),
 			// tokio::spawn(async move { movement_rest.run_service().await }),
 		)?;
 		execution_and_settlement_result
-			.and(transaction_ingress_result)
 			.and(background_task_result)
 			.and(services_result)
 	}

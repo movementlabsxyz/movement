@@ -1,0 +1,54 @@
+syntax = "proto3";
+package movementlabs.protocol_units.da.da_sequencer.v1_0_0;
+
+
+service DaSequencerNodeService {
+  rpc StreamReadFromHeight (StreamReadFromHeightRequest) returns (stream StreamReadFromHeightResponse);
+
+  // Read blobs at a specified height.
+  rpc ReadAtHeight (ReadAtHeightRequest) returns (ReadAtHeightResponse);
+
+  // Write a bacth. Return true if it's accepted.
+  rpc BatchWrite (BatchWriteRequest) returns (BatchWriteResponse);
+
+}
+
+// Request and response messages
+message Blockv1 {
+    bytes blobckid = 1;
+    bytes data = 2;
+    uint64 height = 3;
+}
+
+message BlobResponse {
+    oneof blob_type {
+      bool heartbeat = 1;
+      Blockv1 blockv1 = 2;
+    }
+}
+
+// StreamReadAtHeight
+message StreamReadFromHeightRequest {
+    uint64 height = 1;
+}
+
+message StreamReadFromHeightResponse {
+    BlobResponse response = 1;
+}
+
+// ReadAtHeight
+message ReadAtHeightRequest {
+    uint64 height = 1;
+}
+
+message ReadAtHeightResponse {
+    BlobResponse response = 1;
+}
+
+message BatchWriteRequest {
+    bytes data = 1;
+}
+
+message BatchWriteResponse {
+    bool answer = 1;
+}

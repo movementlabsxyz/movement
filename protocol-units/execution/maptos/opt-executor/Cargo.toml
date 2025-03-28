@@ -75,8 +75,13 @@ aptos-framework-known-release = { workspace = true }
 aptos-gas-schedule = { workspace = true }
 aptos-sdk = { workspace = true }
 tempfile = { workspace = true }
+movement-config = { workspace = true }
 movement-signer-loader = { workspace = true }
 movement-signer = { workspace = true }
+movement-da-light-node-client = { workspace = true }
+movement-da-light-node-proto = { workspace = true }
+prost = { workspace = true }
+once_cell = { workspace = true }
 
 [dev-dependencies]
 dotenv = { workspace = true }
