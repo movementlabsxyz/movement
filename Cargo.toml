@@ -167,6 +167,7 @@ aptos-consensus-types = { git = "https://github.com/movementlabsxyz/aptos-core",
 aptos-crypto = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d1cdbbd7fabb80dcb95ba5e23213faa072fab67", features = [
   "cloneable-private-keys",
 ] }
+aptos-crypto-derive = { git = "https://github.com/movementlabsxyz/aptos-core.git", rev = "1d1cdbbd7fabb80dcb95ba5e23213faa072fab67" }
 aptos-db = { git = "https://github.com/movementlabsxyz/aptos-core.git", rev = "1d1cdbbd7fabb80dcb95ba5e23213faa072fab67" }
 aptos-executor = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d1cdbbd7fabb80dcb95ba5e23213faa072fab67" }
 aptos-executor-test-helpers = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d1cdbbd7fabb80dcb95ba5e23213faa072fab67" }

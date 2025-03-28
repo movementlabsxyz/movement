@@ -11,6 +11,7 @@ rust-version.workspace = true
 
 [dependencies]
 aptos-crypto = { workspace = true }
+aptos-crypto-derive = { workspace = true }
 bcs = { workspace = true }
 hex = { workspace = true }
 ed25519-dalek = { workspace = true }

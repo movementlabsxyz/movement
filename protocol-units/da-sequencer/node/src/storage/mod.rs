@@ -1,5 +1,5 @@
 use crate::batch::DaBatch;
-use crate::batch::FullnodeTx;
+use crate::batch::FullNodeTxs;
 use crate::block::BlockHeight;
 use crate::block::SequencerBlock;
 use crate::block::SequencerBlockDigest;
@@ -8,7 +8,7 @@ use crate::error::DaSequencerError;
 
 pub trait DaSequencerStorage {
 	/// Save all batch's Tx in the pending Tx table. The batch's Tx has been verified and validated.
-	fn write_batch(&self, batch: DaBatch<FullnodeTx>) -> std::result::Result<(), DaSequencerError>;
+	fn write_batch(&self, batch: DaBatch<FullNodeTxs>) -> std::result::Result<(), DaSequencerError>;
 
 	/// Return, if exists, the Block at the given height.
 	fn get_block_at_height(
@@ -51,7 +51,7 @@ impl Storage {
 	/// Save all batch's Tx in the pending Tx table. The batch's Tx has been verified and validated.
 	pub fn write_batch(
 		&self,
-		batch: DaBatch<FullnodeTx>,
+		batch: DaBatch<FullNodeTxs>,
 	) -> std::result::Result<(), DaSequencerError> {
 		todo!();
 	}
