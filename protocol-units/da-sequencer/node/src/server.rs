@@ -1,19 +1,13 @@
-use crate::batch::FullnodeTx;
+use crate::batch::FullNodeTxs;
 use crate::batch::{validate_batch, DaBatch, RawData};
-use crate::block::BlockHeight;
-use crate::block::SequencerBlock;
-use movement_da_sequencer_proto::da_sequencer_node_service_server::{
-	DaSequencerNodeService, DaSequencerNodeServiceServer,
+use crate::block::{BlockHeight, SequencerBlock};
+use movement_da_sequencer_proto::{
+	da_sequencer_node_service_server::{DaSequencerNodeService, DaSequencerNodeServiceServer},
+	BatchWriteRequest, BatchWriteResponse, ReadAtHeightRequest, ReadAtHeightResponse,
+	StreamReadFromHeightRequest, StreamReadFromHeightResponse,
 };
-use movement_da_sequencer_proto::BatchWriteRequest;
-use movement_da_sequencer_proto::BatchWriteResponse;
-use movement_da_sequencer_proto::ReadAtHeightRequest;
-use movement_da_sequencer_proto::ReadAtHeightResponse;
-use movement_da_sequencer_proto::StreamReadFromHeightRequest;
-use movement_da_sequencer_proto::StreamReadFromHeightResponse;
 use std::net::SocketAddr;
-use tokio::sync::mpsc;
-use tokio::sync::oneshot;
+use tokio::sync::{mpsc, oneshot};
 use tokio_stream::Stream;
 use tonic::transport::Server;
 
@@ -42,7 +36,7 @@ pub async fn run_server(
 pub enum GrpcRequests {
 	StartBlockStream { callback: oneshot::Sender<(BlockHeight, mpsc::Receiver<SequencerBlock>)> },
 	GetBlockHeight { block_height: BlockHeight, callback: oneshot::Sender<SequencerBlock> },
-	WriteBatch(DaBatch<FullnodeTx>),
+	WriteBatch(DaBatch<FullNodeTxs>),
 }
 
 pub struct DaSequencerNode {
@@ -73,7 +67,7 @@ impl DaSequencerNodeService for DaSequencerNode {
 		request: tonic::Request<BatchWriteRequest>,
 	) -> std::result::Result<tonic::Response<BatchWriteResponse>, tonic::Status> {
 		let batch_data = request.into_inner().data;
-		let batch = match crate::batch::deserialize_node_batch(batch_data).and_then(
+		let batch = match crate::batch::deserialize_full_node_batch(batch_data).and_then(
 			|(public_key, signature, bytes)| {
 				validate_batch(DaBatch::<RawData>::now(public_key, signature, bytes))
 			},

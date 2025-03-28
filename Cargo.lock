@@ -11558,12 +11558,18 @@ version = "0.3.4"
 dependencies = [
  "anyhow",
  "aptos-crypto",
+ "aptos-crypto-derive",
  "aptos-sdk",
+ "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
  "chrono",
  "movement-da-sequencer-config",
  "movement-da-sequencer-proto",
  "movement-types",
  "prost 0.13.3",
+ "rand 0.7.3",
+ "rocksdb",
+ "serde",
+ "tempfile",
  "thiserror 1.0.69",
  "tokio",
  "tokio-stream",
@@ -11926,6 +11932,8 @@ name = "movement-types"
 version = "0.3.4"
 dependencies = [
  "anyhow",
+ "aptos-crypto",
+ "aptos-crypto-derive",
  "aptos-types",
  "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
  "blake3",
@@ -11933,6 +11941,7 @@ dependencies = [
  "serde",
  "serde_with",
  "sha2 0.10.8",
+ "thiserror 1.0.69",
  "tokio",
 ]
 
