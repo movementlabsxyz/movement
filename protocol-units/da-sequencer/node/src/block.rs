@@ -31,4 +31,8 @@ impl SequencerBlock {
 	pub fn get_block_digest(&self) -> SequencerBlockDigest {
 		SequencerBlockDigest(*self.block.id().as_bytes())
 	}
+
+	pub fn get_height(&self) -> BlockHeight {
+		self.height
+	}
 }
