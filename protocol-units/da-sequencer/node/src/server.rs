@@ -35,7 +35,7 @@ pub async fn run_server(
 #[derive(Debug)]
 pub enum GrpcRequests {
 	StartBlockStream { callback: oneshot::Sender<(BlockHeight, mpsc::Receiver<SequencerBlock>)> },
-	GetBlockHeight { block_height: BlockHeight, callback: oneshot::Sender<SequencerBlock> },
+	GetBlockHeight { block_height: BlockHeight, callback: oneshot::Sender<Option<SequencerBlock>> },
 	WriteBatch(DaBatch<FullNodeTxs>),
 }
 
