@@ -1,56 +1,57 @@
 # global
-*   @l-monninger @andyjsbell @0xmovses @mzabaluev @musitdev
+*   @andygolay @0xmovses @mzabaluev @musitdev
 
 # maptos-executor
-protocol-units/execution/* @l-monninger @0xmovses @musitdev @mzabaluev
+protocol-units/execution/* @0xmovses @musitdev @mzabaluev
 
 # da
-protocol-units/da/* @l-monninger @mzabaluev
+protocol-units/da/* @andygolay @mzabaluev @musitdev @0xmovses
 
 # mempool
-protocol-units/mempool/* @l-monninger @mzabaluev
+protocol-units/mempool/* @andygolay @mzabaluev @musitdev @0xmovses
 
 # sequencing
-protocol-units/sequencing/* @l-monninger @mzabaluev
+protocol-units/sequencing/* @andygolay @mzabaluev @musitdev @0xmovses
 
 # movement-rest
-protocol-units/movement-rest/* @0xmovses @mzabaluev
+protocol-units/movement-rest/* @0xmovses @mzabaluev 
 
 # mcr client
-protocol-units/settlement/mcr/client/* @musitdev @mzabaluev @l-monninger
+protocol-units/settlement/mcr/client/* @musitdev @mzabaluev @andygolay
 
 # mcr manager
-protocol-units/settlement/mcr/manager/* @musitdev @mzabaluev @l-monninger
+protocol-units/settlement/mcr/manager/* @musitdev @mzabaluev @andygolay
 
 # mcr contracts
-protocol-units/settlement/mcr/contracts/* @l-monninger @0xPrimata @andyjsbell
+protocol-units/settlement/mcr/contracts/* @andygolay @0xPrimata 
 
 # networks
-networks/* @l-monninger @mzabaluev @musitdev
+networks/* @andygolay @mzabaluev @musitdev @0xmovses
 
 # docker
-docker/* @l-monninger @radupopa369
+docker/* @andygolay @radupopa369
 
 # process-compose
-process-compose/* @l-monninger @radupopa369 @musitdev
+process-compose/* @andygolay @radupopa369 @musitdev @0xmovses
 
 # docs
-docs/* @l-monninger
+docs/* @andygolay @mzabaluev @musitdev @0xmovses
 
 # nix
-nix/* @l-monninger @musitdev @andyjsbell
+nix/* @andygolay @musitdev  @0xmovses
 
 # github actions
-.github/workflows/* @l-monninger @andyjsbell @0xmovses @mzabaluev
+.github/workflows/* @andygolay  @0xmovses @mzabaluev @musitdev 
 
 # buildtime 
-util/buildtime/* @l-monninger
+util/buildtime/* @andygolay @0xmovses @mzabaluev @musitdev 
 
 # flocks 
-util/flocks/* @l-monninger @mzabaluev
+util/flocks/* @andygolay @mzabaluev @0xmovses @mzabaluev 
 
 # commander 
-util/commander/* @l-monninger @musitdev
+util/commander/* @andygolay @musitdev @0xmovses @mzabaluev 
 
 # godfig
-util/godfig/* @l-monninger @mzabaluev
+util/godfig/* @andygolay @mzabaluev @musitdev @0xmovses 
+
