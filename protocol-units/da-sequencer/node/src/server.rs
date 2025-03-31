@@ -16,11 +16,12 @@ pub async fn run_server(
 	address: SocketAddr,
 	request_tx: mpsc::Sender<GrpcRequests>,
 ) -> Result<(), anyhow::Error> {
+	tracing::info!("Server listening on: {}", address);
 	let reflection = tonic_reflection::server::Builder::configure()
 		.register_encoded_file_descriptor_set(movement_da_sequencer_proto::FILE_DESCRIPTOR_SET)
 		.build_v1()?;
 
-	tracing::info!("Server listening on: {}", address);
+	tracing::info!("Server start on: {}", address);
 	Server::builder()
 		.max_frame_size(1024 * 1024 * 16 - 1)
 		.accept_http1(true)

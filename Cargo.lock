@@ -11559,6 +11559,7 @@ dependencies = [
 name = "movement-da-sequencer-config"
 version = "0.3.4"
 dependencies = [
+ "dot-movement",
  "ed25519-dalek 2.1.1",
  "godfig",
  "hex",
@@ -11579,8 +11580,10 @@ dependencies = [
  "aptos-sdk",
  "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
  "chrono",
+ "dot-movement",
  "ed25519-dalek 2.1.1",
  "futures",
+ "godfig",
  "hex",
  "movement-da-sequencer-client",
  "movement-da-sequencer-config",

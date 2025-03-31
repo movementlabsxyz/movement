@@ -7,7 +7,7 @@ use std::pin::Pin;
 use std::sync::mpsc::Sender;
 use url::Url;
 
-mod blob;
+pub mod blob;
 
 /// Functions to implement to save block digest in an external DA like Celestia
 pub trait DaSequencerExternDaClient: Clone {

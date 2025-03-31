@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use tracing::info;
 
+pub const DASEQUENCER_CONF_FOLDER: &str = "da-sequencer";
+
 fn default_signing_key() -> SigningKey {
         let mut bytes = [0u8; 32];
         OsRng.fill_bytes(&mut bytes);
@@ -20,6 +22,13 @@ fn default_signing_key() -> SigningKey {
 
         signing_key
 }
+
+pub fn get_config_path(dot_movement: &dot_movement::DotMovement) -> std::path::PathBuf {
+        let mut pathbuff = std::path::PathBuf::from(dot_movement.get_path());
+        pathbuff.push(DASEQUENCER_CONF_FOLDER);
+        pathbuff
+}
+
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct DaSequencerConfig {

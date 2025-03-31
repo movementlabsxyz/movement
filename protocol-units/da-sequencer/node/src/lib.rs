@@ -13,8 +13,10 @@ pub mod batch;
 mod block;
 mod celestia;
 pub mod error;
-mod server;
+pub mod server;
 mod storage;
+#[cfg(test)]
+mod tests;
 
 /// Run Da sequencing loop.
 /// This function only return in case of error that indicate a crash of the node.
