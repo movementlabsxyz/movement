@@ -1,9 +1,10 @@
 use godfig::{backend::config_file::ConfigFile, Godfig};
 use movement_da_sequencer_config::DaSequencerConfig;
+use std::error::Error;
 use tokio::sync::mpsc;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<(), Box<dyn Error>> {
 	use tracing_subscriber::EnvFilter;
 
 	tracing_subscriber::fmt()
@@ -28,7 +29,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 	let (request_tx, request_rx) = mpsc::channel(100);
 	// Start gprc server
-	let grpc_address = dasequencer_config.movement_da_sequencer_listen_address;
+	let grpc_address = da_sequencer_config.movement_da_sequencer_listen_address;
 	let grpc_jh = tokio::spawn(async move {
 		movement_da_sequencer_node::server::run_server(grpc_address, request_tx).await
 	});

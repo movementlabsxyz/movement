@@ -10,7 +10,6 @@ use crate::DaSequencerStorage;
 use crate::SequencerBlock;
 use std::cell::RefCell;
 use std::future::Future;
-use std::pin::Pin;
 
 #[derive(Debug, Clone)]
 pub struct StorageMock {

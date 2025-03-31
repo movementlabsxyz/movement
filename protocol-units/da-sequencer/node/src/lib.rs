@@ -20,17 +20,19 @@ mod tests;
 
 /// Run Da sequencing loop.
 /// This function only return in case of error that indicate a crash of the node.
-pub async fn run<DA, S>(
+pub async fn run<D, S>(
 	config: DaSequencerConfig,
 	mut request_rx: mpsc::Receiver<GrpcRequests>,
 	storage: S,
-	celestia: DA,
+	celestia: D,
 ) -> Result<(), DaSequencerError>
 where
-	DA: DaSequencerExternDaClient + Send + 'static,
+	D: DaSequencerExternDaClient + Send + 'static,
 	S: DaSequencerStorage + Send + 'static,
 {
-	let mut produce_block_interval = tokio::time::interval(tokio::time::Duration::from_millis(500)); //todo put interval value in the config.
+	let mut produce_block_interval = tokio::time::interval(tokio::time::Duration::from_millis(
+		config.movement_da_sequencer_block_production_interval_millisec,
+	)); //todo put interval value in the config.
 	let mut spawn_result_futures = FuturesUnordered::new();
 	let mut produce_block_jh = None;
 
@@ -111,7 +113,7 @@ where
 	}
 }
 
-// manage the optional future for block production.
+/// manage the optional future for block production.
 async fn conditional_block_producing(
 	fut: Option<&mut JoinHandle<Result<Option<SequencerBlock>, DaSequencerError>>>,
 ) -> Option<SequencerBlock> {

@@ -3,7 +3,6 @@ use crate::block::SequencerBlockDigest;
 use crate::celestia::blob::Blob;
 use crate::error::DaSequencerError;
 use std::future::Future;
-use std::pin::Pin;
 use std::sync::mpsc::Sender;
 use url::Url;
 
@@ -17,7 +16,7 @@ pub trait DaSequencerExternDaClient: Clone {
 	fn send_block(
 		&self,
 		block: &SequencerBlockDigest,
-	) -> impl Future<Output = std::result::Result<(), DaSequencerError>> + Send;
+	) -> impl Future<Output = Result<(), DaSequencerError>> + Send;
 
 	/// Get the blob from celestia at the given height.
 	fn get_blob_at_height(
@@ -67,10 +66,7 @@ impl CelestiaClient {
 	/// send the given block to Celestia.
 	/// The block is not immediatly sent but aggergated in a blob
 	/// Until the client can send it to celestia.
-	pub async fn send_block(
-		&self,
-		block: &SequencerBlockDigest,
-	) -> std::result::Result<(), DaSequencerError> {
+	pub async fn send_block(&self, block: &SequencerBlockDigest) -> Result<(), DaSequencerError> {
 		todo!()
 	}
 
@@ -91,7 +87,7 @@ impl CelestiaClient {
 		current_block_height: BlockHeight,
 		last_sent_block_height: BlockHeight,
 		last_notified_celestia_height: CelestiaHeight,
-	) -> std::result::Result<(), DaSequencerError> {
+	) -> Result<(), DaSequencerError> {
 		todo!()
 	}
 }
