@@ -85,8 +85,11 @@ impl DaSequencerExternDaClient for CelestiaMock {
 		futures::future::ready(Ok(()))
 	}
 
-	fn get_blob_at_height(&self) -> Pin<Box<dyn Future<Output = Blob> + Send>> {
-		todo!();
+	fn get_blob_at_height(
+		&self,
+	) -> impl Future<Output = Result<Option<Blob>, DaSequencerError>> + Send {
+		//TODO return dummy error for now.
+		futures::future::ready(Err(DaSequencerError::DeserializationFailure))
 	}
 
 	fn bootstrap(

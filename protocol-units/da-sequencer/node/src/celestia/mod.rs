@@ -20,7 +20,9 @@ pub trait DaSequencerExternDaClient: Clone {
 	) -> impl Future<Output = std::result::Result<(), DaSequencerError>> + Send;
 
 	/// Get the blob from celestia at the given height.
-	fn get_blob_at_height(&self) -> Pin<Box<dyn Future<Output = Blob> + Send>>;
+	fn get_blob_at_height(
+		&self,
+	) -> impl Future<Output = Result<Option<Blob>, DaSequencerError>> + Send;
 
 	/// Bootstrap the Celestia client to recovert from missing block.
 	/// In case of crash for example, block sent to Celestia can be behind the block created by the network.
@@ -73,7 +75,7 @@ impl CelestiaClient {
 	}
 
 	/// Get the blob from celestia at the given height.
-	pub async fn get_blob_at_height(&self) -> Blob {
+	pub async fn get_blob_at_height(&self) -> Result<Option<Blob>, DaSequencerError> {
 		todo!()
 	}
 
