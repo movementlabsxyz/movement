@@ -1,5 +1,5 @@
 use crate::{
-	batch::{DaBatch, FullNodeTx},
+	batch::{DaBatch, FullNodeTxs},
 	block::{BlockHeight, SequencerBlock, SequencerBlockDigest},
 	celestia::CelestiaHeight,
 	error::DaSequencerError,
@@ -23,7 +23,8 @@ pub struct Storage {
 
 pub trait DaSequencerStorage {
 	/// Save all batch's Tx in the pending Tx table. The batch's Tx has been verified and validated.
-	fn write_batch(&self, batch: DaBatch<FullNodeTx>) -> std::result::Result<(), DaSequencerError>;
+	fn write_batch(&self, batch: DaBatch<FullNodeTxs>)
+		-> std::result::Result<(), DaSequencerError>;
 
 	/// Return, if exists, the Block at the given height.
 	fn get_block_at_height(
@@ -78,7 +79,7 @@ impl Storage {
 			path,
 			[pending_transactions_cf, blocks_cf, blocks_by_digest_cf],
 		)
-		.map_err(|e| DaSequencerError::Generic(e.to_string()))?;
+		.map_err(|e| DaSequencerError::StorageAccess(e.to_string()))?;
 
 		Ok(Storage { db: Arc::new(db) })
 	}
@@ -91,7 +92,9 @@ impl Storage {
 		let mut iter = self.db.iterator_cf(&cf, rocksdb::IteratorMode::End);
 		if let Some(Ok((key, _value))) = iter.next() {
 			if key.len() != 8 {
-				return Err(DaSequencerError::Generic("Invalid block height key length".into()));
+				return Err(DaSequencerError::StorageFormat(
+					"Invalid block height key length".into(),
+				));
 			}
 
 			let mut arr = [0u8; 8];
@@ -99,7 +102,7 @@ impl Storage {
 			let last_height = u64::from_be_bytes(arr);
 			Ok(BlockHeight(last_height + 1))
 		} else {
-			Ok(BlockHeight(0))
+			Ok(BlockHeight(1))
 		}
 	}
 
@@ -109,18 +112,22 @@ impl Storage {
 }
 
 impl DaSequencerStorage for Storage {
-	fn write_batch(&self, batch: DaBatch<FullNodeTx>) -> Result<(), DaSequencerError> {
+	fn write_batch(&self, batch: DaBatch<FullNodeTxs>) -> Result<(), DaSequencerError> {
 		let cf = self.db.cf_handle(cf::PENDING_TRANSACTIONS).ok_or_else(|| {
-			DaSequencerError::Generic("Missing column family: pending_transactions".into())
+			DaSequencerError::StorageAccess("Missing column family: pending_transactions".into())
 		})?;
-		let tx = batch.data();
-		let key = tx.id.0;
-		let value = bcs::to_bytes(tx)
-			.map_err(|e| DaSequencerError::Generic(format!("Serialization error: {}", e)))?;
+
+		let txs = batch.data();
 
 		let mut write_batch = WriteBatch::default();
-		write_batch.put_cf(&cf, key, value);
 
+		for tx in txs.iter() {
+			let key = tx.id();
+			let value =
+				bcs::to_bytes(tx).map_err(|e| DaSequencerError::Deserialization(e.to_string()))?;
+
+			write_batch.put_cf(&cf, key, value);
+		}
 		self.db
 			.write(write_batch)
 			.map_err(|e| DaSequencerError::RocksDbError(e.to_string()))?;
@@ -182,56 +189,12 @@ impl DaSequencerStorage for Storage {
 	}
 
 	fn produce_next_block(&self) -> Result<Option<SequencerBlock>, DaSequencerError> {
-		let next_height = self.determine_next_block_height()?;
-
-		let cf_pending = self.db.cf_handle(cf::PENDING_TRANSACTIONS).ok_or_else(|| {
-			DaSequencerError::StorageAccess("Missing column family: pending_transactions".into())
-		})?;
-
-		let mut txs = Vec::new();
-		let iter = self.db.iterator_cf(&cf_pending, rocksdb::IteratorMode::Start);
-		let mut batch = WriteBatch::default();
-
-		for item in iter {
-			let (key, value) = item.map_err(|e| DaSequencerError::Generic(e.to_string()))?;
-
-			let tx: FullNodeTx = bcs::from_bytes(&value)
-				.map_err(|e| DaSequencerError::Deserialization(e.to_string()))?;
-
-			txs.push(tx);
-			batch.delete_cf(&cf_pending, &key);
-		}
-
-		if txs.is_empty() {
-			return Ok(None);
-		}
-
-		let tx_set: BTreeSet<Transaction> = txs.into_iter().collect();
-
-		let block = Block::new(BlockMetadata::default(), Id::default(), tx_set);
-
-		let sequencer_block = SequencerBlock::try_new(next_height, block)?;
-
-		let cf_blocks = self.db.cf_handle(cf::BLOCKS).ok_or_else(|| {
-			DaSequencerError::StorageAccess("Missing column family: blocks".into())
-		})?;
-
-		let encoded = bcs::to_bytes(&sequencer_block)
-			.map_err(|e| DaSequencerError::Deserialization(e.to_string()))?;
-
-		let height_key = next_height.0.to_be_bytes();
-		batch.put_cf(&cf_blocks, height_key, encoded);
-
-		self.db
-			.write(batch)
-			.map_err(|e| DaSequencerError::RocksDbError(e.to_string()))?;
-
-		Ok(Some(sequencer_block))
+		todo!()
 	}
 
 	fn get_celestia_height_for_block(
 		&self,
-		heigh: BlockHeight,
+		height: BlockHeight,
 	) -> Result<Option<CelestiaHeight>, DaSequencerError> {
 		todo!();
 	}
@@ -247,6 +210,8 @@ impl DaSequencerStorage for Storage {
 
 #[cfg(test)]
 mod tests {
+	use crate::batch::FullNodeTxs;
+
 	use super::*;
 	use bcs;
 	use tempfile::TempDir;
@@ -263,16 +228,6 @@ mod tests {
 	fn test_try_new_invalid_path_should_fail() {
 		let result = Storage::try_new("");
 		assert!(result.is_err());
-		match result {
-			Err(DaSequencerError::Generic(msg)) => {
-				assert!(
-					msg.contains("Invalid argument") || msg.contains("No such file"),
-					"Unexpected error message: {}",
-					msg
-				);
-			}
-			_ => panic!("Expected Generic error variant"),
-		}
 	}
 
 	#[test]
@@ -286,8 +241,10 @@ mod tests {
 		let storage = Storage::try_new(path).expect("failed to create storage");
 
 		let tx = Transaction::test_only_new(b"test data".to_vec(), 1, 123);
-		let tx_id = tx.id;
-		let batch = DaBatch::test_only_new(tx);
+		let tx_id = tx.id();
+
+		let txs = FullNodeTxs::new(vec![tx]);
+		let batch = DaBatch::test_only_new(txs);
 
 		storage.write_batch(batch).expect("write_batch failed");
 
@@ -296,14 +253,14 @@ mod tests {
 			.cf_handle(cf::PENDING_TRANSACTIONS)
 			.expect("missing pending_transactions CF");
 
-		let key = tx_id.0;
+		let key = tx_id.clone();
 		let stored_bytes =
 			storage.db.get_cf(&cf, key).expect("read failed").expect("no data found");
 
 		let stored_tx: Transaction =
 			bcs::from_bytes(&stored_bytes).expect("failed to deserialize stored transaction");
 
-		assert_eq!(stored_tx.id, tx_id);
+		assert_eq!(stored_tx.id(), tx_id);
 		assert_eq!(stored_tx.sequence_number(), 123);
 		assert_eq!(stored_tx.application_priority(), 1);
 		assert_eq!(stored_tx.data(), b"test data");
@@ -412,23 +369,25 @@ mod tests {
 		let storage = Storage::try_new(path).expect("failed to create storage");
 
 		let tx = Transaction::test_only_new(b"test data".to_vec(), 0, 1);
-		let tx_id = tx.id;
-		let batch = DaBatch::test_only_new(tx.clone());
-		storage.write_batch(batch).expect("failed to write batch");
+		let tx_assert = tx.clone();
+		let tx_id = tx.id();
 
+		let txs = FullNodeTxs::new(vec![tx]);
+		let batch = DaBatch::test_only_new(txs);
+		storage.write_batch(batch).expect("failed to write batch");
 		let maybe_block = storage.produce_next_block().expect("produce_next_block failed");
 
 		assert!(maybe_block.is_some(), "Expected Some(block), got None");
 		let block = maybe_block.unwrap();
 		let transactions: Vec<_> = block.block.transactions().cloned().collect();
 		assert_eq!(transactions.len(), 1, "Expected 1 transaction in block");
-		assert_eq!(transactions[0], tx, "Transaction in block does not match original");
+		assert_eq!(transactions[0], tx_assert, "Transaction in block does not match original");
 
 		let cf_pending = storage
 			.db
 			.cf_handle(cf::PENDING_TRANSACTIONS)
 			.expect("missing 'pending_transactions' CF");
-		let maybe_tx = storage.db.get_cf(&cf_pending, tx_id.0).expect("failed to read pending tx");
+		let maybe_tx = storage.db.get_cf(&cf_pending, tx_id).expect("failed to read pending tx");
 		assert!(maybe_tx.is_none(), "Pending transaction was not cleared");
 
 		let cf_blocks = storage.db.cf_handle(cf::BLOCKS).expect("missing 'blocks' CF");

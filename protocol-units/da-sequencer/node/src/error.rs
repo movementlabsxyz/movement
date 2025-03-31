@@ -11,6 +11,16 @@ pub enum DaSequencerError {
 	RocksDbError(String),
 	#[error("Deserialization error: {0}")]
 	Deserialization(String),
-	#[error("Generic error: {0}")]
-	Generic(String),
+	#[error("Invalid path error: {0}")]
+	InvalidPath(String),
+	#[error("Error during storage access: {0}")]
+	BatchSerializationError(#[from] std::array::TryFromSliceError),
+	#[error("Key or signature are badly formated: {0}")]
+	BadKeyOrSign(#[from] aptos_sdk::crypto::CryptoMaterialError),
+	#[error("Failed to serialize FullnodeTx batch")]
+	SerializationFailure,
+	#[error("Failed to deserialize FullnodeTx batch")]
+	DeserializationFailure,
+	#[error("Signature was invalid")]
+	InvalidSignature,
 }

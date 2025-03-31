@@ -84,6 +84,7 @@ maptos-fin-view = { path = "protocol-units/execution/maptos/fin-view" }
 maptos-execution-util = { path = "protocol-units/execution/maptos/util" }
 
 ## movement da sequencer
+movement-da-sequencer-client = { path = "protocol-units/da-sequencer/client" }
 movement-da-sequencer-config = { path = "protocol-units/da-sequencer/config" }
 movement-da-sequencer-node = { path = "protocol-units/da-sequencer/node" }
 movement-da-sequencer-proto = { path = "protocol-units/da-sequencer/proto" }
@@ -338,11 +339,11 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-test = "0.2.5"
 trie-db = "0.28.0"
 url = "2.2.2"
-ed25519-dalek = "2.1"
+ed25519-dalek = { version = "2.1", features = ["rand_core"] }
 ed25519 = "2.2.3"
 ring-compat = "0.8.0"
 zstd-sys = "2.0.9"
-zstd = "0.13"
+zstd = "0.13" 
 inotify = "0.10.2"
 rustix = "0.38.34"
 paste = "1.0.15"
@@ -375,7 +376,7 @@ aws-sdk-s3 = "1.42.0"
 movement-client = { path = "networks/movement/movement-client" }
 simple_asn1 = "0.6.3"
 dotenv = "0.15.0"
-rand_core = "0.9.0"
+rand_core = { version = "0.9.0", features = ["std", "os_rng"] }
 
 [workspace.lints.rust]
 dead_code = "deny"        ## Alloy Dependencies
