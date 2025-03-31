@@ -39,7 +39,7 @@ pub trait ExternalDa {
 	) -> impl Future<Output = Result<(), DaSequencerError>> + Send;
 }
 
-#[derive(Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Clone, Copy, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct CelestiaHeight(u64);
 
 impl<T: Into<u64>> Add<T> for CelestiaHeight {
@@ -138,8 +138,8 @@ impl<C: CelestiaClient + Sync> ExternalDa for CelestiaExternalDa<C> {
 		let digest = self
 			.get_blobs_at_height(last_finalized_celestia_height)
 			.await?
-			.and_then(|b| b.last())
-			.and_then(|b| b.0.last())
+			.and_then(|mut blobs| blobs.pop())
+			.and_then(|mut digest| digest.0.pop())
 			.ok_or(DaSequencerError::ExternalDaBootstrap(format!(
 				"Celestia returned no blobs or an empty last blob at height {}",
 				last_finalized_celestia_height.0
