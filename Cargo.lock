@@ -7844,6 +7844,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "getrandom"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "73fea8450eea4bac3940448fb7ae50d91f034f941199fcd9d909a5a07aa455f0"
+dependencies = [
+ "cfg-if",
+ "libc",
+ "r-efi",
+ "wasi 0.14.2+wasi-0.2.4",
+]
+
+[[package]]
 name = "ghash"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10080,14 +10092,19 @@ dependencies = [
  "maptos-execution-util",
  "maptos-framework-release-util",
  "movement-collections",
+ "movement-config",
+ "movement-da-light-node-client",
+ "movement-da-light-node-proto",
  "movement-rest",
  "movement-signer",
  "movement-signer-hashicorp-vault",
  "movement-signer-loader",
  "movement-signing-aptos",
  "movement-types",
+ "once_cell",
  "poem",
  "poem-openapi",
+ "prost 0.13.3",
  "rand 0.7.3",
  "schemars",
  "serde",
@@ -11528,6 +11545,7 @@ version = "0.3.4"
 dependencies = [
  "anyhow",
  "bytes 1.8.0",
+ "ed25519-dalek 2.1.1",
  "http-body-util",
  "hyper-util",
  "movement-da-sequencer-proto",
@@ -11541,10 +11559,14 @@ dependencies = [
 name = "movement-da-sequencer-config"
 version = "0.3.4"
 dependencies = [
+ "ed25519-dalek 2.1.1",
  "godfig",
+ "hex",
+ "rand 0.7.3",
  "serde",
  "serde_derive",
  "serde_json",
+ "tracing",
 ]
 
 [[package]]
@@ -11553,16 +11575,28 @@ version = "0.3.4"
 dependencies = [
  "anyhow",
  "aptos-crypto",
+ "aptos-crypto-derive",
+ "aptos-sdk",
+ "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
+ "chrono",
+ "ed25519-dalek 2.1.1",
+ "hex",
+ "movement-da-sequencer-client",
  "movement-da-sequencer-config",
  "movement-da-sequencer-proto",
  "movement-types",
  "prost 0.13.3",
+ "rand 0.7.3",
+ "rocksdb",
+ "serde",
+ "tempfile",
  "thiserror 1.0.69",
  "tokio",
  "tokio-stream",
  "tonic 0.12.3",
  "tonic-reflection 0.12.3",
  "tracing",
+ "tracing-subscriber 0.3.18",
  "url",
 ]
 
@@ -11919,6 +11953,8 @@ name = "movement-types"
 version = "0.3.4"
 dependencies = [
  "anyhow",
+ "aptos-crypto",
+ "aptos-crypto-derive",
  "aptos-types",
  "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
  "blake3",
@@ -11926,6 +11962,7 @@ dependencies = [
  "serde",
  "serde_with",
  "sha2 0.10.8",
+ "thiserror 1.0.69",
  "tokio",
 ]
 
@@ -13996,6 +14033,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "r-efi"
+version = "5.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "74765f6d916ee2faa39bc8e68e4f3ed8949b48cccdac59983d287a7cb71ce9c5"
+
+[[package]]
 name = "r2d2"
 version = "0.8.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -14087,6 +14130,7 @@ version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b08f3c9802962f7e1b25113931d94f43ed9725bebc59db9d0c3e9a23b67e15ff"
 dependencies = [
+ "getrandom 0.3.2",
  "zerocopy 0.8.14",
 ]
 
@@ -17648,6 +17692,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9c8d87e72b64a3b4db28d11ce29237c246188f4f51057d65a7eab63b7987e423"
 
 [[package]]
+name = "wasi"
+version = "0.14.2+wasi-0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9683f9a5a998d873c0d21fcbe3c083009670149a8fab228644b8bd36b2c48cb3"
+dependencies = [
+ "wit-bindgen-rt",
+]
+
+[[package]]
 name = "wasite"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -18140,6 +18193,15 @@ checksum = "524e57b2c537c0f9b1e69f1965311ec12182b4122e45035b1508cd24d2adadb1"
 dependencies = [
  "cfg-if",
  "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "wit-bindgen-rt"
+version = "0.39.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6f42320e61fe2cfd34354ecb597f86f413484a798ba44a8ca1165c58d42da6c1"
+dependencies = [
+ "bitflags 2.6.0",
 ]
 
 [[package]]

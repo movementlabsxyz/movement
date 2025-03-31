@@ -11,7 +11,13 @@ rust-version = { workspace = true }
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+default = []
+testing = []
+
 [dependencies]
+aptos-crypto = { workspace = true }
+aptos-crypto-derive = { workspace = true }
 aptos-types = { workspace = true }
 bcs = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
@@ -20,6 +26,7 @@ anyhow = { workspace = true }
 sha2 = { workspace = true }
 rand = { workspace = true }
 blake3 = { workspace = true }
+thiserror = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true }

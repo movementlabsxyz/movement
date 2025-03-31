@@ -149,7 +149,7 @@ impl<C: CelestiaClient + Sync> ExternalDa for CelestiaExternalDa<C> {
 		let mut block = self.request_block(BlockAt::Digest(digest.clone())).await?;
 
 		// Step 3: Request and send all missing blocks
-		for height in (block.get_height().0 + 1)..=current_block_height.0 {
+		for height in (block.height.0 + 1)..=current_block_height.0 {
 			block = self.request_block(BlockAt::Height(BlockHeight(height))).await?;
 			self.send_block(block.get_block_digest()).await?;
 		}
