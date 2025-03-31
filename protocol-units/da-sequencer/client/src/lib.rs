@@ -1,5 +1,5 @@
-use ed25519_dalek::{SigningKey, Signature};
 use ed25519_dalek::Signer;
+use ed25519_dalek::{Signature, SigningKey};
 use movement_da_sequencer_proto::da_sequencer_node_service_client::DaSequencerNodeServiceClient;
 use std::time::Duration;
 use tonic::transport::{Channel, ClientTlsConfig};
@@ -14,7 +14,7 @@ pub struct DaSequencerClient {
 
 impl DaSequencerClient {
 	/// Creates an http2 connection to the Da Sequencer node service.
-	pub async fn try_connect(&self, connection_string: &str) -> Result<Self, anyhow::Error> {
+	pub async fn try_connect(connection_string: &str) -> Result<Self, anyhow::Error> {
 		for _ in 0..5 {
 			match DaSequencerClient::connect(connection_string).await {
 				Ok(client) => return Ok(DaSequencerClient { client }),
@@ -52,11 +52,12 @@ impl DaSequencerClient {
 		let response = self.client.batch_write(request).await?;
 		Ok(response.into_inner())
 	}
-	
+
 	/// Connects to a da sequencer node service using the given connection string.
 	async fn connect(
 		connection_string: &str,
 	) -> Result<DaSequencerNodeServiceClient<tonic::transport::Channel>, anyhow::Error> {
+		tracing::info!("Grpc client connect using :{connection_string}");
 		let endpoint = Channel::from_shared(connection_string.to_string())?;
 
 		// Dynamically configure TLS based on the scheme (http or https)
@@ -76,5 +77,5 @@ impl DaSequencerClient {
 }
 
 pub fn sign_batch(batch_data: &[u8], signing_key: &SigningKey) -> Signature {
-        signing_key.sign(batch_data)
+	signing_key.sign(batch_data)
 }
