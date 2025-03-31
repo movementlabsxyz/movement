@@ -1,10 +1,10 @@
 use crate::batch::serialize_full_node_batch;
-use crate::batch::FullNodeTxs;
+use crate::batch::{FullNodeTxs, serialize_full_node_batch};
 use crate::run;
 use crate::server::run_server;
 use crate::tests::mock::CelestiaMock;
-use crate::tests::mock::StorageMock;
-use movement_da_sequencer_client::sign_batch;
+use crate::tests::mock::{StorageMock, CelestiaMock};
+use movement_da_sequencer_client::{sign_batch, DaSequencerClient};
 use movement_da_sequencer_client::DaSequencerClient;
 use movement_da_sequencer_config::DaSequencerConfig;
 use movement_da_sequencer_proto::BatchWriteRequest;
@@ -50,10 +50,10 @@ async fn test_write_batch_gprc_main_loop() {
 	let connection_string = format!("http://127.0.0.1:{}", grpc_address.port());
 	let mut client = DaSequencerClient::try_connect(&connection_string)
 		.await
-		.expect("Grpc CLient connection failed.");
+		.expect("gRPC client connection failed.");
 
 	let request = BatchWriteRequest { data: serialized };
-	let res = client.batch_write(request).await.expect("Fail to send the batch.");
+	let res = client.batch_write(request).await.expect("Failed to send the batch.");
 	tracing::info!("{res:?}",);
 	assert!(res.answer);
 

@@ -21,7 +21,7 @@ pub async fn run_server(
 		.register_encoded_file_descriptor_set(movement_da_sequencer_proto::FILE_DESCRIPTOR_SET)
 		.build_v1()?;
 
-	tracing::info!("Server start on: {}", address);
+	tracing::info!("Server started on: {}", address);
 	Server::builder()
 		.max_frame_size(1024 * 1024 * 16 - 1)
 		.accept_http1(true)

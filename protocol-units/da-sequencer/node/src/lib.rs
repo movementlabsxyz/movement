@@ -25,7 +25,7 @@ pub async fn run<DA, S>(
 	mut request_rx: mpsc::Receiver<GrpcRequests>,
 	storage: S,
 	celestia: DA,
-) -> std::result::Result<(), DaSequencerError>
+) -> Result<(), DaSequencerError>
 where
 	DA: DaSequencerExternDaClient + Send + 'static,
 	S: DaSequencerStorage + Send + 'static,

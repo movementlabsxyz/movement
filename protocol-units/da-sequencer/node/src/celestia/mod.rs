@@ -36,7 +36,7 @@ pub trait DaSequencerExternDaClient: Clone {
 		current_block_height: BlockHeight,
 		last_sent_block_height: BlockHeight,
 		last_notified_celestia_height: CelestiaHeight,
-	) -> impl Future<Output = std::result::Result<(), DaSequencerError>> + Send;
+	) -> impl Future<Output = Result<(), DaSequencerError>> + Send;
 }
 
 #[derive(Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]

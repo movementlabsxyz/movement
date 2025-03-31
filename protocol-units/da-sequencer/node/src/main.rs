@@ -24,7 +24,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 	// Get a matching godfig object
 	let godfig: Godfig<DaSequencerConfig, ConfigFile> =
 		Godfig::new(ConfigFile::new(config_file), vec![]);
-	let dasequencer_config: DaSequencerConfig = godfig.try_wait_for_ready().await?;
+	let da_sequencer_config: DaSequencerConfig = godfig.try_wait_for_ready().await?;
 
 	let (request_tx, request_rx) = mpsc::channel(100);
 	// Start gprc server

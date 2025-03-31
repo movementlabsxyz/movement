@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use tracing::info;
 
-pub const DASEQUENCER_CONF_FOLDER: &str = "da-sequencer";
+pub const DA_SEQUENCER_DIR: &str = "da-sequencer";
 
 fn default_signing_key() -> SigningKey {
         let mut bytes = [0u8; 32];
