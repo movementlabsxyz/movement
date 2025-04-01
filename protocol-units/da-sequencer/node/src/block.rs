@@ -4,12 +4,11 @@ use serde::{Deserialize, Serialize};
 use crate::error::DaSequencerError;
 
 // TODO: use a sensible value for the max sequencer block size
-const MAX_SEQUENCER_BLOCK_SIZE: u64 = 1_000_000; // 1 MB
+pub const MAX_SEQUENCER_BLOCK_SIZE: u64 = 1_000_000; // 1 MB
 
 #[derive(Clone, Copy, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct SequencerBlockDigest(pub [u8; 32]);
 
-/// The id for an Ir Blob
 impl SequencerBlockDigest {
 	pub fn new(id: [u8; 32]) -> Self {
 		SequencerBlockDigest(id)
@@ -28,6 +27,18 @@ impl SequencerBlockDigest {
 	Serialize, Deserialize, Clone, Copy, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord,
 )]
 pub struct BlockHeight(pub u64);
+
+impl From<u64> for BlockHeight {
+	fn from(value: u64) -> Self {
+		BlockHeight(value)
+	}
+}
+
+impl From<BlockHeight> for u64 {
+	fn from(v: BlockHeight) -> Self {
+		v.0
+	}
+}
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct SequencerBlock {
