@@ -7,10 +7,10 @@ use std::ops::Add;
 use std::time::Duration;
 use tokio::sync::{mpsc, oneshot};
 
-mod blob;
+pub mod blob;
 
 /// Functions to implement to save block digest in an external DA like Celestia
-pub trait ExternalDa {
+pub trait DaSequencerExternalDa: Clone {
 	/// send the given block to Celestia.
 	/// The block is not immediately sent but aggregated in a blob
 	/// Until the client can send it to celestia.
@@ -77,12 +77,13 @@ pub trait CelestiaClient {
 
 const DELAY_SECONDS_BEFORE_BOOTSTRAPPING: Duration = Duration::from_secs(12);
 
-pub struct CelestiaExternalDa<C: CelestiaClient> {
+#[derive(Clone)]
+pub struct CelestiaExternalDa<C: CelestiaClient + Clone> {
 	notifier: mpsc::Sender<ExternalDaNotification>,
 	celestia_client: C,
 }
 
-impl<C: CelestiaClient> CelestiaExternalDa<C> {
+impl<C: CelestiaClient + Sync + Clone> CelestiaExternalDa<C> {
 	/// Create the Celestia client and all async process to manage celestia access.
 	pub async fn new(celestia_client: C, notifier: mpsc::Sender<ExternalDaNotification>) -> Self {
 		CelestiaExternalDa { notifier, celestia_client }
@@ -103,7 +104,7 @@ impl<C: CelestiaClient> CelestiaExternalDa<C> {
 	}
 }
 
-impl<C: CelestiaClient + Sync> ExternalDa for CelestiaExternalDa<C> {
+impl<C: CelestiaClient + Sync + Clone> DaSequencerExternalDa for CelestiaExternalDa<C> {
 	/// Send the given block to Celestia.
 	/// The block is not immediately sent but aggregated in a blob
 	/// until the client can send it to celestia.
