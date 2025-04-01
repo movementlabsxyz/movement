@@ -8,9 +8,7 @@ processes:
     command: |
       mkdir -p ${PWD}/tmp/prometheus
       cp ${PWD}/docker/compose/movement-full-node/prometheus.yml ${PWD}/tmp/prometheus/prometheus.yml
-      sed -i.bak 's/movement-full-node:9464/localhost:9464/g' ${PWD}/tmp/prometheus/prometheus.yml
-      sed -i.bak 's/movement-celestia-da-light-node:9464/localhost:9465/g' ${PWD}/tmp/prometheus/prometheus.yml
-      sed -i.bak 's/otel-collector:8889/localhost:8889/g' ${PWD}/tmp/prometheus/prometheus.yml
+      sed -i.bak 's/movement-full-node:9464/127.0.0.1:9464/g' ${PWD}/tmp/prometheus/prometheus.yml
       prometheus --config.file=${PWD}/tmp/prometheus/prometheus.yml --storage.tsdb.path=${PWD}/tmp/prometheus/data --web.listen-address=0.0.0.0:9091 --web.enable-lifecycle
     shutdown:
       command: |
@@ -18,18 +16,11 @@ processes:
     readiness_probe:
       initial_delay_seconds: 3
       exec:
-        command: curl -s http://localhost:9091/-/healthy || exit 1
+        command: curl -s http://127.0.0.1:9091/-/healthy || exit 1
 
   movement-full-node:
     depends_on:
       prometheus:
         condition: process_started
     environment:
-      - MOVEMENT_METRICS_ADDR=0.0.0.0:9464
-
-  movement-celestia-da-light-node:
-    depends_on:
-      prometheus:
-        condition: process_started
-    environment:
-      - MOVEMENT_METRICS_ADDR=0.0.0.0:9465 
+      - MOVEMENT_METRICS_ADDR=127.0.0.1:9464

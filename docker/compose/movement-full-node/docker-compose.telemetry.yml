@@ -3,10 +3,10 @@ services:
     image: prom/prometheus:v2.49.1
     container_name: movement-prometheus
     command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
     ports:
       - "9090:9090"
     volumes:
@@ -34,7 +34,7 @@ services:
 
   movement-full-node:
     environment:
-      - MOVEMENT_METRICS_ADDR=0.0.0.0:9464
+      - MOVEMENT_METRICS_ADDR=127.0.0.1:9464
       - MOVEMENT_OTLP=http://otel-collector:4317
     ports:
       - "9464:9464"
@@ -46,7 +46,7 @@ services:
 
   movement-celestia-da-light-node:
     environment:
-      - MOVEMENT_METRICS_ADDR=0.0.0.0:9464
+      - MOVEMENT_METRICS_ADDR=127.0.0.1:9464
       - MOVEMENT_OTLP=http://otel-collector:4317
     ports:
       - "9465:9464"
@@ -63,10 +63,10 @@ services:
     volumes:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
     ports:
-      - "4317:4317"   # OTLP gRPC
-      - "4318:4318"   # OTLP HTTP
-      - "8888:8888"   # Prometheus metrics exposed by the collector
-      - "8889:8889"   # Prometheus exporter metrics
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
+      - "8888:8888" # Prometheus metrics exposed by the collector
+      - "8889:8889" # Prometheus exporter metrics
       - "13133:13133" # Health check extension
     healthcheck:
       test: wget --no-verbose --tries=1 --spider http://localhost:13133 || exit 1
@@ -75,4 +75,4 @@ services:
       retries: 3
 
 volumes:
-  prometheus_data: 
+  prometheus_data:
