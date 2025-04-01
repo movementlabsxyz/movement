@@ -18,6 +18,47 @@ pub mod cf {
 	pub const BLOCKS_BY_DIGEST: &str = "blocks_by_digest";
 }
 
+/// Used to construct the composite key: [timestamp: u64][index: u32][tx_id: [32]u8].
+/// Using the composite key will naturally sort keys in lexical order in Rocksdb
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct TxCompositeKey {
+	timestamp: u64,
+	index_in_batch: u32,
+	tx_id: [u8; 32],
+}
+
+impl TxCompositeKey {
+	/// Creates a composite key for a transaction in a batch.
+	/// The key encodes the batch timestamp, transaction index, and ID,
+	/// preserving correct ordering for RocksDB iteration.
+	pub fn from_batch(index: usize, tx: &Transaction, timestamp: u64) -> Self {
+		Self { timestamp, index_in_batch: index as u32, tx_id: tx.id().as_bytes().clone() }
+	}
+	/// Encode the composite key into a byte Vec.
+	fn encode(&self) -> Vec<u8> {
+		let mut key = Vec::with_capacity(44);
+		key.extend_from_slice(&self.timestamp.to_be_bytes()); // 8 bytes
+		key.extend_from_slice(&self.index_in_batch.to_be_bytes()); // 4 bytes
+		key.extend_from_slice(&self.tx_id); // 32 bytes
+		key
+	}
+
+	/// Decode a composite key from a byte slice.
+	fn decode(bytes: &[u8]) -> Result<Self, DaSequencerError> {
+		if bytes.len() != 44 {
+			return Err(DaSequencerError::StorageFormat("Invalid composite key length".into()));
+		}
+
+		let timestamp = u64::from_be_bytes(bytes[0..8].try_into().unwrap());
+		let index_in_batch = u32::from_be_bytes(bytes[8..12].try_into().unwrap());
+		let tx_id = bytes[12..44].try_into().map_err(|_| {
+			DaSequencerError::StorageFormat("Failed to extract tx_id from key".into())
+		})?;
+
+		Ok(TxCompositeKey { timestamp, index_in_batch, tx_id })
+	}
+}
+
 #[derive(Debug, Clone)]
 pub struct Storage {
 	db: Arc<DB>,
@@ -40,13 +81,12 @@ pub trait DaSequencerStorage: Clone {
 		id: SequencerBlockDigest,
 	) -> std::result::Result<Option<SequencerBlock>, DaSequencerError>;
 
-	/// Produce next block with pending Tx.
-	/// Generate the new height.
-	/// Aggregate all pending Tx until the block is filled.
-	/// A block is filled if no more Tx are pending or it's size is more than the max size.
-	/// All pending Tx added to the block are removed from the pending Tx table.
-	/// Save the block for this height
-	/// Return the block.
+	/// Produces the next sequencer block from pending transactions.
+	///
+	/// - Computes the next block height.
+	/// - Aggregates pending transactions in batch-timestamp order until the block is full or size limit is reached.
+	/// - Removes included transactions from the pending pool.
+	/// - Persists the new block and returns it.
 	fn produce_next_block(&self) -> Result<Option<SequencerBlock>, DaSequencerError>;
 
 	/// Return, if exists, the Celestia height for given block height.
@@ -120,19 +160,12 @@ impl DaSequencerStorage for Storage {
 		})?;
 
 		let txs = batch.data();
-
 		let mut write_batch = WriteBatch::default();
 
 		for (i, tx) in txs.iter().enumerate() {
-			// Construct composite key: [timestamp: u64][index: u32][tx_id: [32]u8]
-			let mut key = Vec::with_capacity(8 + 4 + 32);
-			key.extend_from_slice(&batch.timestamp.to_be_bytes()); // 8 bytes
-			key.extend_from_slice(&(i as u32).to_be_bytes()); // 4 bytes
-			key.extend_from_slice(tx.id().as_bytes()); // 32 bytes ([u8; 32])
-
+			let key = TxCompositeKey::from_batch(i, tx, batch.timestamp).encode();
 			let value =
 				bcs::to_bytes(tx).map_err(|e| DaSequencerError::Deserialization(e.to_string()))?;
-
 			write_batch.put_cf(&cf, key, value);
 		}
 
