@@ -231,56 +231,46 @@ impl DaSequencerStorage for Storage {
 
 	fn produce_next_block(&self) -> Result<Option<SequencerBlock>, DaSequencerError> {
 		let cf_pending = self.db.cf_handle(cf::PENDING_TRANSACTIONS).ok_or_else(|| {
-			DaSequencerError::StorageAccess("Missing colomn family: pending transactions".into())
+			DaSequencerError::StorageAccess("Missing column family: pending_transactions".into())
 		})?;
 
-		// Collect and deserialize all pending transactions
-		let mut transactions: Vec<Transaction> = Vec::new();
-
 		let iter = self.db.iterator_cf(&cf_pending, rocksdb::IteratorMode::Start);
-		for item in iter {
-			let (_key, value) = item.map_err(|e| DaSequencerError::RocksDbError(e.to_string()))?;
-			let tx: Transaction = bcs::from_bytes(&value)
-				.map_err(|e| DaSequencerError::Deserialization(e.to_string()))?;
-			transactions.push(tx);
-		}
-
-		if transactions.is_empty() {
-			return Ok(None);
-		}
-
-		// Sort transactions using their Ord implementation
-		transactions.sort();
 
 		let mut selected_txs = Vec::new();
-		let mut block_size: u64 = 0;
+		let mut keys_to_delete = Vec::new();
+		let mut total_size: u64 = 0;
 
-		for tx in &transactions {
-			let tx_size = bcs::to_bytes(tx)
-				.map_err(|e| DaSequencerError::Deserialization(e.to_string()))?
-				.len() as u64; // The size of the tx is the len of the bytes Vec<u8>
+		for item in iter {
+			let (key, value) = item.map_err(|e| DaSequencerError::RocksDbError(e.to_string()))?;
+			let tx_size = value.len() as u64;
 
-			if block_size + tx_size > MAX_SEQUENCER_BLOCK_SIZE {
+			if total_size + tx_size > MAX_SEQUENCER_BLOCK_SIZE {
 				break;
 			}
 
-			block_size += tx_size;
-			selected_txs.push(tx.clone());
+			let tx: Transaction = bcs::from_bytes(&value)
+				.map_err(|e| DaSequencerError::Deserialization(e.to_string()))?;
+
+			total_size += tx_size;
+			selected_txs.push(tx);
+			keys_to_delete.push(key);
 		}
 
-		// Notes that this method will never return less that 1
-		let height: u64 = self.determine_next_block_height()?.into();
+		if selected_txs.is_empty() {
+			return Ok(None);
+		}
 
-		let parent_height = BlockHeight(height - 1);
+		let height = self.determine_next_block_height()?;
+		let parent_height = BlockHeight(height.0 - 1);
+
 		let parent_digest = self
 			.get_block_at_height(parent_height)?
 			.ok_or_else(|| DaSequencerError::StorageFormat("Missing parent block".into()))?
 			.get_block_digest();
 
-		// Build the block
-		let tx_set: BTreeSet<_> = selected_txs.clone().into_iter().collect();
+		let tx_set: BTreeSet<_> = selected_txs.into_iter().collect();
 		let block = Block::new(BlockMetadata::default(), Id::new(parent_digest.0), tx_set);
-		let sequencer_block = SequencerBlock::try_new(self.determine_next_block_height()?, block)?;
+		let sequencer_block = SequencerBlock::try_new(height, block)?;
 
 		let block_bytes = bcs::to_bytes(&sequencer_block)
 			.map_err(|e| DaSequencerError::Deserialization(e.to_string()))?;
@@ -293,14 +283,13 @@ impl DaSequencerStorage for Storage {
 		})?;
 
 		let mut write_batch = WriteBatch::default();
-		let height_key = height.to_be_bytes();
+		let height_key = height.0.to_be_bytes();
 
 		write_batch.put_cf(&cf_blocks, height_key, &block_bytes);
 		write_batch.put_cf(&cf_digests, sequencer_block.get_block_digest().0, &height_key);
 
-		// Remove the selected transactions from pending
-		for tx in &selected_txs {
-			write_batch.delete_cf(&cf_pending, tx.id());
+		for key in keys_to_delete {
+			write_batch.delete_cf(&cf_pending, key);
 		}
 
 		self.db
