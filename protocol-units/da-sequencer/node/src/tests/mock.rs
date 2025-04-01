@@ -2,7 +2,7 @@ use crate::{
 	batch::{DaBatch, FullNodeTxs},
 	block::{BlockHeight, SequencerBlockDigest},
 	celestia::{blob::Blob, CelestiaHeight},
-	DaSequencerError, DaSequencerExternDaClient, DaSequencerStorage, SequencerBlock,
+	DaSequencerError, DaSequencerExternalDa, DaSequencerStorage, SequencerBlock,
 };
 use std::{cell::RefCell, future::Future};
 
@@ -71,17 +71,18 @@ impl CelestiaMock {
 	}
 }
 
-impl DaSequencerExternDaClient for CelestiaMock {
+impl DaSequencerExternalDa for CelestiaMock {
 	fn send_block(
 		&self,
-		block: &SequencerBlockDigest,
-	) -> impl Future<Output = std::result::Result<(), DaSequencerError>> + Send {
+		block: SequencerBlockDigest,
+	) -> impl Future<Output = Result<(), DaSequencerError>> + Send {
 		futures::future::ready(Ok(()))
 	}
 
-	fn get_blob_at_height(
+	fn get_blobs_at_height(
 		&self,
-	) -> impl Future<Output = Result<Option<Blob>, DaSequencerError>> + Send {
+		height: CelestiaHeight,
+	) -> impl Future<Output = Result<Option<Vec<Blob>>, DaSequencerError>> + Send {
 		//TODO return dummy error for now.
 		futures::future::ready(Err(DaSequencerError::DeserializationFailure))
 	}
@@ -89,9 +90,7 @@ impl DaSequencerExternDaClient for CelestiaMock {
 	fn bootstrap(
 		&self,
 		current_block_height: BlockHeight,
-		last_sent_block_height: BlockHeight,
-		last_notified_celestia_height: CelestiaHeight,
-	) -> impl Future<Output = std::result::Result<(), DaSequencerError>> + Send {
+	) -> impl Future<Output = Result<(), DaSequencerError>> + Send {
 		futures::future::ready(Ok(()))
 	}
 }
