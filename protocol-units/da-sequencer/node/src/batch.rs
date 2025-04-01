@@ -136,84 +136,99 @@ mod tests {
 			Self { data, signature, signer: public_key, timestamp }
 		}
 	}
-
-	#[test]
-	#[serial]
-	fn test_sign_and_validate_batch_passes_with_whitelisted_signer() {
-		let _ = tracing_subscriber::fmt()
-			.with_max_level(tracing::Level::INFO)
-			.with_test_writer()
-			.try_init();
-
-		let config = DaSequencerConfig::default();
-		let signing_key = config.signing_key;
-		let verifying_key = signing_key.verifying_key();
-
-		// Add signer to the whitelist
-		let _ = INSTANCE.set(Whitelist::from_keys(vec![verifying_key]));
-
-		let txs = FullNodeTxs(vec![
-			Transaction::new(b"hello".to_vec(), 0, 1),
-			Transaction::new(b"world".to_vec(), 0, 2),
-		]);
-
-		let batch_bytes = bcs::to_bytes(&txs).expect("Serialization failed");
-		let signature = sign_batch(&batch_bytes, &signing_key);
-
-		let serialized =
-			serialize_full_node_batch(verifying_key, signature.clone(), batch_bytes.clone());
-
-		let (deserialized_key, deserialized_sig, deserialized_data) =
-			deserialize_full_node_batch(serialized).expect("Deserialization failed");
-
-		let raw_batch = DaBatch {
-			data: RawData { data: deserialized_data },
-			signature: deserialized_sig,
-			signer: deserialized_key,
-			timestamp: chrono::Utc::now().timestamp_micros() as u64,
-		};
-
-		let validated = validate_batch(raw_batch).expect("Batch should validate");
-		assert_eq!(validated.data.0, txs.0);
-	}
-
-	#[test]
-	#[serial]
-	fn test_sign_and_validate_batch_fails_with_non_whitelisted_signer() {
-		let _ = tracing_subscriber::fmt()
-			.with_max_level(tracing::Level::INFO)
-			.with_test_writer()
-			.try_init();
-
-		// 👇 ADD THIS to avoid panic
-		let _ = INSTANCE.set(Whitelist::from_keys(vec![]));
-
-		let config = DaSequencerConfig::default();
-		let signing_key = config.signing_key;
-		let verifying_key = signing_key.verifying_key();
-
-		let txs = FullNodeTxs(vec![
-			Transaction::new(b"hello".to_vec(), 0, 1),
-			Transaction::new(b"world".to_vec(), 0, 2),
-		]);
-
-		let batch_bytes = bcs::to_bytes(&txs).expect("Serialization failed");
-		let signature = sign_batch(&batch_bytes, &signing_key);
-
-		let serialized =
-			serialize_full_node_batch(verifying_key, signature.clone(), batch_bytes.clone());
-
-		let (deserialized_key, deserialized_sig, deserialized_data) =
-			deserialize_full_node_batch(serialized).expect("Deserialization failed");
-
-		let raw_batch = DaBatch {
-			data: RawData { data: deserialized_data },
-			signature: deserialized_sig,
-			signer: deserialized_key,
-			timestamp: chrono::Utc::now().timestamp_micros() as u64,
-		};
-
-		let result = validate_batch(raw_batch);
-		assert!(matches!(result, Err(DaSequencerError::InvalidSigner)));
-	}
+        #[serial]
+        #[tokio::test]
+        async fn test_sign_and_validate_batch_passes_with_whitelisted_signer() {
+                // Set up tracing for debug output
+                let _ = tracing_subscriber::fmt()
+                        .with_max_level(tracing::Level::INFO)
+                        .with_test_writer()
+                        .try_init();
+        
+                // Create signing and verifying keys
+                let config = DaSequencerConfig::default();
+                let signing_key = config.signing_key;
+                let verifying_key = signing_key.verifying_key();
+        
+                // Acquire write access and set the whitelist for this test
+                {
+                        let mut whitelist = crate::whitelist::INSTANCE.lock().unwrap();
+                        whitelist.set_keys(vec![verifying_key]);
+                }
+        
+                // Construct a fake batch of transactions
+                let txs = FullNodeTxs(vec![
+                        Transaction::new(b"hello".to_vec(), 0, 1),
+                        Transaction::new(b"world".to_vec(), 0, 2),
+                ]);
+        
+                // Sign the batch
+                let batch_bytes = bcs::to_bytes(&txs).expect("Serialization failed");
+                let signature = sign_batch(&batch_bytes, &signing_key);
+                let serialized =
+                        serialize_full_node_batch(verifying_key, signature.clone(), batch_bytes.clone());
+        
+                // Deserialize to simulate incoming request
+                let (deserialized_key, deserialized_sig, deserialized_data) =
+                        deserialize_full_node_batch(serialized).expect("Deserialization failed");
+        
+                let raw_batch = DaBatch {
+                        data: RawData { data: deserialized_data },
+                        signature: deserialized_sig,
+                        signer: deserialized_key,
+                        timestamp: chrono::Utc::now().timestamp_micros() as u64,
+                };
+        
+                // Should validate successfully
+                let validated = validate_batch(raw_batch).expect("Batch should validate");
+                assert_eq!(validated.data.0, txs.0);
+        }
+        
+        #[serial]   
+        #[tokio::test]
+        async fn test_sign_and_validate_batch_fails_with_non_whitelisted_signer() {
+                // Set up logging for test output (can be seen with `--nocapture`)
+                let _ = tracing_subscriber::fmt()
+                        .with_max_level(tracing::Level::INFO)
+                        .with_test_writer()
+                        .try_init();
+        
+                // Clear the whitelist to simulate a non-whitelisted environment
+                crate::whitelist::INSTANCE.lock().unwrap().clear();
+        
+                // Generate a config and get the signing/verifying keys
+                let config = DaSequencerConfig::default();
+                let signing_key = config.signing_key;
+                let verifying_key = signing_key.verifying_key();
+        
+                // Create a batch of transactions
+                let txs = FullNodeTxs(vec![
+                        Transaction::new(b"hello".to_vec(), 0, 1),
+                        Transaction::new(b"world".to_vec(), 0, 2),
+                ]);
+        
+                // Serialize and sign the batch
+                let batch_bytes = bcs::to_bytes(&txs).expect("Serialization failed");
+                let signature = sign_batch(&batch_bytes, &signing_key);
+        
+                // Serialize the full batch
+                let serialized =
+                        serialize_full_node_batch(verifying_key, signature.clone(), batch_bytes.clone());
+        
+                // Deserialize it back into parts
+                let (deserialized_key, deserialized_sig, deserialized_data) =
+                        deserialize_full_node_batch(serialized).expect("Deserialization failed");
+        
+                // Create the raw batch struct
+                let raw_batch = DaBatch {
+                        data: RawData { data: deserialized_data },
+                        signature: deserialized_sig,
+                        signer: deserialized_key,
+                        timestamp: chrono::Utc::now().timestamp_micros() as u64,
+                };
+        
+                // Validate the batch — should fail because signer is NOT whitelisted
+                let result = validate_batch(raw_batch);
+                assert!(matches!(result, Err(DaSequencerError::InvalidSigner)));
+        }                
 }

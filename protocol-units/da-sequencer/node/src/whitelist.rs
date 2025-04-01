@@ -2,28 +2,27 @@ use std::{
         collections::HashSet,
         fs,
         path::PathBuf,
-        sync::{Arc, RwLock},
+        sync::{Arc, Mutex, RwLock},
         thread,
         time::Duration,
 };
 
 use ed25519_dalek::VerifyingKey;
 use hex::FromHex;
-use once_cell::sync::OnceCell;
+use once_cell::sync::Lazy;
 
 #[derive(Clone)]
 pub struct Whitelist {
         inner: Arc<RwLock<HashSet<VerifyingKey>>>,
 }
 
-#[cfg(not(test))]
-pub static INSTANCE: OnceCell<Whitelist> = OnceCell::new();
-
-#[cfg(test)]
-pub static INSTANCE: OnceCell<Whitelist> = OnceCell::new();
+pub static INSTANCE: Lazy<Mutex<Whitelist>> = Lazy::new(|| {
+        Mutex::new(Whitelist {
+                inner: Arc::new(RwLock::new(HashSet::new())),
+        })
+});
 
 impl Whitelist {
-        /// Loads public keys from a file. Each line must be a hex-encoded 32-byte public key.
         fn load(path: &PathBuf) -> std::io::Result<HashSet<VerifyingKey>> {
                 let content = fs::read_to_string(path)?;
                 let mut set = HashSet::new();
@@ -48,7 +47,6 @@ impl Whitelist {
                 Ok(set)
         }
 
-        /// Starts a background thread to reload the whitelist from disk every 60 seconds.
         fn start_reload_thread(inner: Arc<RwLock<HashSet<VerifyingKey>>>, path: PathBuf) {
                 thread::spawn(move || loop {
                         thread::sleep(Duration::from_secs(60));
@@ -67,33 +65,43 @@ impl Whitelist {
                 });
         }
 
-        /// Initializes the global whitelist from the given file path.
-        /// This must be called once at application startup.
         pub fn init_global(path: PathBuf) {
                 let set = Self::load(&path).unwrap_or_default();
                 let inner = Arc::new(RwLock::new(set));
                 Self::start_reload_thread(inner.clone(), path);
 
-                INSTANCE.set(Self { inner }).unwrap_or_else(|_| {
-                        eprintln!("[whitelist] Global whitelist already initialized");
-                });
+                let mut instance = INSTANCE.lock().unwrap();
+                *instance = Self { inner };
         }
 
-        /// Returns a reference to the global whitelist instance.
-        /// Panics if `init_global` has not been called.
-        pub fn get() -> &'static Whitelist {
-                INSTANCE.get().expect("Whitelist not initialized")
-        }
-
-        /// Returns true if the given public key is in the whitelist.
         pub fn contains(&self, key: &VerifyingKey) -> bool {
                 self.inner.read().unwrap().contains(key)
         }
 
-        /// Creates a Whitelist from a list of keys, for use in tests.
+        /// Returns a locked reference to the global whitelist.
+        pub fn get<'a>() -> std::sync::MutexGuard<'a, Whitelist> {
+                INSTANCE.lock().unwrap()
+        }
+
         #[cfg(test)]
         pub fn from_keys(keys: Vec<VerifyingKey>) -> Self {
                 let set = keys.into_iter().collect::<HashSet<_>>();
                 Self { inner: Arc::new(RwLock::new(set)) }
+        }
+
+        #[cfg(test)]
+        pub fn set_keys(&mut self, keys: Vec<VerifyingKey>) {
+                let new_set: HashSet<_> = keys.into_iter().collect();
+                *self.inner.write().unwrap() = new_set;
+        }
+
+        #[cfg(test)]
+        pub fn clear(&mut self) {
+                self.inner.write().unwrap().clear();
+        }
+
+        #[cfg(test)]
+        pub fn insert(&mut self, key: VerifyingKey) {
+                self.inner.write().unwrap().insert(key);
         }
 }

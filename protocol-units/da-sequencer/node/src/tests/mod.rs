@@ -2,67 +2,76 @@ use crate::batch::{serialize_full_node_batch, FullNodeTxs};
 use crate::run;
 use crate::server::run_server;
 use crate::tests::mock::{CelestiaMock, StorageMock};
+use crate::whitelist::Whitelist;
 use ed25519_dalek::Signature;
 use movement_da_sequencer_client::{sign_batch, DaSequencerClient};
 use movement_da_sequencer_config::DaSequencerConfig;
 use movement_da_sequencer_proto::BatchWriteRequest;
 use movement_types::transaction::Transaction;
+use serial_test::serial;
 use tokio::sync::mpsc;
 
 pub mod mock;
 
+#[serial]
 #[tokio::test]
 async fn test_write_batch_gprc_main_loop_happy_path() {
-	let (request_tx, request_rx) = mpsc::channel(100);
+        // Create gRPC channel for test requests
+        let (request_tx, request_rx) = mpsc::channel(100);
 
-	let config = DaSequencerConfig::default();
-	let signing_key = config.signing_key.clone();
-	let verifying_key = signing_key.verifying_key();
+        // Create config and signer
+        let config = DaSequencerConfig::default();
+        let signing_key = config.signing_key.clone();
+        let verifying_key = signing_key.verifying_key();
 
-	// Start gprc server
-	let grpc_address = config.movement_da_sequencer_listen_address;
-	let grpc_jh = tokio::spawn(async move { run_server(grpc_address, request_tx).await });
+        // Add signer to whitelist before server starts
+        {
+                let mut whitelist = crate::whitelist::INSTANCE.lock().unwrap();
+                whitelist.set_keys(vec![verifying_key]);
+        }
 
-	//start main loop
-	let storage_mock = StorageMock::new();
-	let celestia_mock = CelestiaMock::new();
-	let loop_jh = tokio::spawn(run(config, request_rx, storage_mock, celestia_mock));
+        // Start gRPC server in background
+        let grpc_address = config.movement_da_sequencer_listen_address;
+        let _grpc_jh = tokio::spawn(async move {
+                run_server(grpc_address, request_tx).await
+        });
 
-	//need to wait the server is started before connecting
-	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
+        // Start main loop (batch handler)
+        let storage_mock = StorageMock::new();
+        let celestia_mock = CelestiaMock::new();
+        let _loop_jh = tokio::spawn(run(config.clone(), request_rx, storage_mock, celestia_mock));
 
-	let tx = Transaction::test_only_new(b"test data".to_vec(), 1, 123);
+        // Wait a moment to ensure server is up
+        tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
 
-	let txs = FullNodeTxs::new(vec![tx]);
+        // Create and sign a test batch
+        let tx = Transaction::test_only_new(b"test data".to_vec(), 1, 123);
+        let txs = FullNodeTxs::new(vec![tx]);
+        let batch_bytes = bcs::to_bytes(&txs).expect("Serialization failed");
+        let signature = sign_batch(&batch_bytes, &signing_key);
+        let serialized = serialize_full_node_batch(verifying_key, signature, batch_bytes);
 
-	//sign batch
-	let batch_bytes = bcs::to_bytes(&txs).expect("Serialization failed");
-	let signature = sign_batch(&batch_bytes, &signing_key);
+        // Connect gRPC client and send the batch
+        let connection_string = format!("http://127.0.0.1:{}", grpc_address.port());
+        let mut client = DaSequencerClient::try_connect(&connection_string)
+                .await
+                .expect("gRPC client connection failed");
 
-	// Serialize full node batch into raw bytes
-	let serialized =
-		serialize_full_node_batch(verifying_key, signature.clone(), batch_bytes.clone());
+        let request = BatchWriteRequest { data: serialized };
+        let res = client.batch_write(request).await.expect("Batch send failed");
 
-	//send the bacth using the grpc client
-	let connection_string = format!("http://127.0.0.1:{}", grpc_address.port());
-	let mut client = DaSequencerClient::try_connect(&connection_string)
-		.await
-		.expect("gRPC client connection failed.");
+        // Log response and assert success
+        tracing::info!("{res:?}");
+        assert!(res.answer);
 
-	let request = BatchWriteRequest { data: serialized };
-	let res = client.batch_write(request).await.expect("Failed to send the batch.");
-	tracing::info!("{res:?}",);
-	assert!(res.answer);
-
-	//TODO verify the block produced contains the batch.
-	// Wait the implementation of the stream of block.
-
-	//wait at least one block production
-	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+        // Wait for block production (no verification yet)
+        // TODO: verify the block produced contains the batch
+        //       wait for stream/block implementation to land
+        tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
 }
 
 #[tokio::test]
-async fn test_write_batch_gprc_main_loop_happy_path_unhappy_path() {
+async fn test_write_batch_gprc_main_loop_unhappy_path() {
 	let (request_tx, request_rx) = mpsc::channel(100);
 
 	let config = DaSequencerConfig::default();
