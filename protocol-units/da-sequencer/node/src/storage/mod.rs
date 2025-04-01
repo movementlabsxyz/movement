@@ -276,7 +276,7 @@ impl DaSequencerStorage for Storage {
 		let block = Block::new(BlockMetadata::default(), parent_id, tx_set);
 		let sequencer_block = SequencerBlock::try_new(height, block)?;
 
-		// ✅ Save the block and clean up pending txs
+		// Save the block and clean up pending txs
 		self.save_block(&sequencer_block, Some(keys_to_delete))?;
 
 		Ok(Some(sequencer_block))
@@ -621,7 +621,6 @@ mod tests {
 	}
 
 	#[test]
-	#[ignore]
 	fn test_produce_next_block_generates_block_and_clears_pending_tx() {
 		use crate::batch::DaBatch;
 		use movement_types::transaction::Transaction;
@@ -664,5 +663,50 @@ mod tests {
 		let stored_block: SequencerBlock =
 			bcs::from_bytes(&stored_bytes).expect("failed to deserialize stored block");
 		assert_eq!(stored_block, block, "Stored block does not match produced block");
+	}
+
+	#[test]
+	fn test_produce_block_fits_all_tx_and_clears_pending() {
+		use crate::batch::DaBatch;
+		use movement_types::transaction::Transaction;
+		use tempfile::tempdir;
+
+		let temp_dir = tempdir().expect("failed to create temp dir");
+		let path = temp_dir.path().to_str().unwrap();
+		let storage = Storage::try_new(path).expect("failed to create storage");
+
+		// Write 10 transactions
+		let txs: Vec<_> = (0..10)
+			.map(|i| Transaction::test_only_new(format!("data-{i}").into_bytes(), 1, i))
+			.collect();
+		let batch = DaBatch::test_only_new(FullNodeTxs::new(txs.clone()));
+		storage.write_batch(batch).expect("failed to write batch");
+
+		// Produce the block
+		let block = storage
+			.produce_next_block()
+			.expect("produce_next_block failed")
+			.expect("expected Some(block)");
+
+		assert_eq!(block.height.0, 1, "Expected height to be 1");
+
+		// Check no pending tx remain
+		let cf = storage.db.cf_handle(cf::PENDING_TRANSACTIONS).expect("missing pending CF");
+		let mut iter = storage.db.iterator_cf(&cf, rocksdb::IteratorMode::Start);
+		assert!(iter.next().is_none(), "Expected no pending txs");
+
+		// Check block contains all txs
+		let block_tx_ids: BTreeSet<_> = block.block.transactions().map(|tx| tx.id()).collect();
+		let original_tx_ids: BTreeSet<_> = txs.into_iter().map(|tx| tx.id()).collect();
+		assert_eq!(block_tx_ids, original_tx_ids);
+
+		// Height 1 exists
+		let retrieved = storage.get_block_at_height(BlockHeight(1)).unwrap();
+		assert!(retrieved.is_some());
+		assert_eq!(retrieved.unwrap(), block);
+
+		// Heights 0 and 2 do not exist
+		assert!(storage.get_block_at_height(BlockHeight(0)).unwrap().is_none());
+		assert!(storage.get_block_at_height(BlockHeight(2)).unwrap().is_none());
 	}
 }
