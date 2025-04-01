@@ -5,11 +5,6 @@ use std::collections::btree_set;
 use std::collections::BTreeSet;
 use std::fmt;
 use std::result::Result;
-<<<<<<< HEAD
-
-const MAX_TRANSACTIONS: usize = 1000;
-=======
->>>>>>> feature/da-sequencer-node
 
 pub type Transactions<'a> = btree_set::Iter<'a, Transaction>;
 
@@ -116,12 +111,6 @@ impl Block {
 	}
 
 	pub fn add_transaction(&mut self, transaction: Transaction) -> Result<(), BlockError> {
-<<<<<<< HEAD
-		if self.transactions.len() >= MAX_TRANSACTIONS {
-			return Err(BlockError::BlockFull);
-		}
-=======
->>>>>>> feature/da-sequencer-node
 		self.transactions.insert(transaction);
 		Ok(())
 	}

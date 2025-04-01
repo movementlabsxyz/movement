@@ -1,20 +1,17 @@
 use crate::error::DaSequencerError;
 use aptos_crypto_derive::{BCSCryptoHash, CryptoHasher};
-use aptos_sdk::crypto::hash::CryptoHash;
 use bcs;
-use ed25519_dalek::SigningKey;
 use ed25519_dalek::{Signature, Verifier, VerifyingKey};
-use movement_da_sequencer_config::DaSequencerConfig;
 use movement_types::transaction::Transaction;
 use serde::{Deserialize, Serialize};
 use std::ops::Deref;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RawData {
 	pub data: Vec<u8>,
 }
 
-#[derive(Deserialize, CryptoHasher, BCSCryptoHash, Serialize, PartialEq, Debug)]
+#[derive(Deserialize, CryptoHasher, BCSCryptoHash, Serialize, PartialEq, Debug, Clone)]
 pub struct FullNodeTxs(pub Vec<Transaction>);
 
 impl FullNodeTxs {
@@ -37,9 +34,9 @@ impl<T> DaBatch<T> {
 	}
 }
 
-#[derive(Debug)]
-pub struct DaBatch<D> {
-	pub data: D,
+#[derive(Debug, Clone)]
+pub struct DaBatch<T> {
+	pub data: T,
 	pub signature: Signature,
 	pub signer: VerifyingKey,
 	pub timestamp: u64,
@@ -112,9 +109,38 @@ pub fn verify_batch_signature(
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use aptos_crypto::hash::CryptoHash;
+	use ed25519_dalek::Signer;
+
 	use movement_da_sequencer_client::sign_batch;
 	use movement_da_sequencer_config::DaSequencerConfig;
 	use tracing_subscriber;
+
+	impl<D> DaBatch<D>
+	where
+		D: Serialize + CryptoHash,
+	{
+		/// Creates a test-only `DaBatch` with a real signature over the given data.
+		/// Only usable in tests.
+		pub fn test_only_new(data: D) -> Self
+		where
+			D: Serialize,
+		{
+			use rand::rngs::OsRng;
+
+			let rng = OsRng;
+			let config = DaSequencerConfig::default();
+			let private_key = config.signing_key;
+			let public_key = private_key.verifying_key();
+
+			let serialized = bcs::to_bytes(&data).unwrap(); // only fails if serialization is broken
+
+			let signature = private_key.sign(&serialized);
+			let timestamp = chrono::Utc::now().timestamp_micros() as u64;
+
+			Self { data, signature, signer: public_key, timestamp }
+		}
+	}
 
 	#[test]
 	fn test_sign_and_validate_batch() {
@@ -152,10 +178,11 @@ mod tests {
 			timestamp: chrono::Utc::now().timestamp_micros() as u64,
 		};
 
+		// Validate the batch
 		let validated = validate_batch(raw_batch).expect("Batch should validate");
 
-		assert_eq!(validated.data().len(), 2);
-		assert_eq!(validated.data().0, txs.0);
+		// Check it worked
+		assert_eq!(validated.data.0.len(), 2);
+		assert_eq!(validated.data.0, txs.0);
 	}
 }
-
