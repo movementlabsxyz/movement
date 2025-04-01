@@ -2,25 +2,21 @@ use std::{
 	collections::HashSet,
 	fs,
 	path::PathBuf,
-	sync::{Arc, Mutex, RwLock},
+	sync::{Arc, RwLock},
 	thread,
 	time::Duration,
 };
 
 use ed25519_dalek::VerifyingKey;
 use hex::FromHex;
-use once_cell::sync::Lazy;
 
 #[derive(Clone)]
 pub struct Whitelist {
 	inner: Arc<RwLock<HashSet<VerifyingKey>>>,
 }
 
-pub static INSTANCE: Lazy<Mutex<Whitelist>> =
-	Lazy::new(|| Mutex::new(Whitelist { inner: Arc::new(RwLock::new(HashSet::new())) }));
-
 impl Whitelist {
-	fn load(path: &PathBuf) -> std::io::Result<HashSet<VerifyingKey>> {
+	pub fn load(path: &PathBuf) -> std::io::Result<HashSet<VerifyingKey>> {
 		let content = fs::read_to_string(path)?;
 		let mut set = HashSet::new();
 
@@ -42,7 +38,7 @@ impl Whitelist {
 		Ok(set)
 	}
 
-	fn start_reload_thread(inner: Arc<RwLock<HashSet<VerifyingKey>>>, path: PathBuf) {
+	pub fn start_reload_thread(inner: Arc<RwLock<HashSet<VerifyingKey>>>, path: PathBuf) {
 		thread::spawn(move || loop {
 			thread::sleep(Duration::from_secs(60));
 			match Self::load(&path) {
@@ -50,32 +46,26 @@ impl Whitelist {
 					if let Ok(mut guard) = inner.write() {
 						*guard = updated;
 					} else {
-						tracing::warn!("[whitelist] Failed to acquire write lock");
+						eprintln!("[whitelist] Failed to acquire write lock");
 					}
 				}
 				Err(err) => {
-					tracing::warn!("[whitelist] Reload failed: {}", err);
+					eprintln!("[whitelist] Reload failed: {}", err);
 				}
 			}
 		});
 	}
 
-	pub fn init_global(path: PathBuf) {
+	pub fn new(path: PathBuf) -> Arc<RwLock<Self>> {
 		let set = Self::load(&path).unwrap_or_default();
 		let inner = Arc::new(RwLock::new(set));
-		Self::start_reload_thread(inner.clone(), path);
-
-		let mut instance = INSTANCE.lock().unwrap();
-		*instance = Self { inner };
+		let arc_inner = inner.clone();
+		Self::start_reload_thread(arc_inner, path);
+		Arc::new(RwLock::new(Self { inner }))
 	}
 
 	pub fn contains(&self, key: &VerifyingKey) -> bool {
 		self.inner.read().unwrap().contains(key)
-	}
-
-	/// Returns a locked reference to the global whitelist.
-	pub fn get<'a>() -> std::sync::MutexGuard<'a, Whitelist> {
-		INSTANCE.lock().unwrap()
 	}
 
 	#[cfg(test)]
@@ -98,5 +88,12 @@ impl Whitelist {
 	#[cfg(test)]
 	pub fn insert(&mut self, key: VerifyingKey) {
 		self.inner.write().unwrap().insert(key);
+	}
+
+	pub fn from_file_and_spawn_reload_thread(path: PathBuf) -> std::io::Result<Self> {
+		let set = Self::load(&path)?;
+		let inner = Arc::new(RwLock::new(set));
+		Self::start_reload_thread(inner.clone(), path);
+		Ok(Self { inner })
 	}
 }

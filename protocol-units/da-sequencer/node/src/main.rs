@@ -1,8 +1,12 @@
 use godfig::{backend::config_file::ConfigFile, Godfig};
+use movement_da_sequencer_config::DaSequencerConfig;
+use movement_da_sequencer_node::server::run_server;
+use movement_da_sequencer_node::whitelist::Whitelist;
 use std::error::Error;
 use std::path::PathBuf;
+use std::sync::Arc;
 use tokio::sync::mpsc;
-use movement_da_sequencer_config::DaSequencerConfig;
+use tokio::sync::RwLock;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -31,14 +35,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
 	// Initialize whitelist
 	let mut whitelist_path = dot_movement.get_path().to_path_buf();
 	whitelist_path.push("default_signer_address_whitelist");
-	movement_da_sequencer_node::whitelist::Whitelist::init_global(whitelist_path);
+	let whitelist = Whitelist::from_file_and_spawn_reload_thread(whitelist_path)?;
+	let whitelist = Arc::new(RwLock::new(whitelist));
 
 	let (request_tx, request_rx) = mpsc::channel(100);
 	// Start gprc server
 	let grpc_address = da_sequencer_config.movement_da_sequencer_listen_address;
-	let grpc_jh = tokio::spawn(async move {
-		movement_da_sequencer_node::server::run_server(grpc_address, request_tx).await
-	});
+	let grpc_jh =
+		tokio::spawn(async move { run_server(grpc_address, request_tx, whitelist.clone()).await });
 
 	//Start the main loop
 	todo!();

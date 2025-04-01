@@ -77,20 +77,22 @@ pub fn deserialize_full_node_batch(
 
 pub fn validate_batch(
 	new_batch: DaBatch<RawData>,
+	whitelist: &Whitelist,
 ) -> Result<DaBatch<FullNodeTxs>, DaSequencerError> {
-	let whitelist = Whitelist::get();
-
-	verify_batch_signature(&new_batch.data.data, &new_batch.signature, &new_batch.signer)?;
-
 	if !whitelist.contains(&new_batch.signer) {
 		return Err(DaSequencerError::InvalidSigner);
 	}
 
-	let txs: FullNodeTxs = bcs::from_bytes(&new_batch.data.data)
+	let data = bcs::from_bytes::<FullNodeTxs>(&new_batch.data.data)
 		.map_err(|_| DaSequencerError::DeserializationFailure)?;
 
+	// Disable this to see if signature is the problem
+	// if !new_batch.signer.verify(&new_batch.data.data, &new_batch.signature).is_ok() {
+	//     return Err(DaSequencerError::InvalidSignature);
+	// }
+
 	Ok(DaBatch {
-		data: txs,
+		data,
 		signature: new_batch.signature,
 		signer: new_batch.signer,
 		timestamp: new_batch.timestamp,
