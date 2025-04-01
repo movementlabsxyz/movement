@@ -95,7 +95,6 @@ impl DaSequencerExternalDa for CelestiaMock {
 	fn bootstrap(
 		&self,
 		current_block_height: BlockHeight,
-		last_notified_celestia_height: CelestiaHeight,
 	) -> impl Future<Output = Result<(), DaSequencerError>> + Send {
 		futures::future::ready(Ok(()))
 	}

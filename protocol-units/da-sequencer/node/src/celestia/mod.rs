@@ -35,20 +35,11 @@ pub trait DaSequencerExternalDa: Clone {
 	fn bootstrap(
 		&self,
 		current_block_height: BlockHeight,
-		last_notified_celestia_height: CelestiaHeight,
 	) -> impl Future<Output = Result<(), DaSequencerError>> + Send;
 }
 
 #[derive(Clone, Copy, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct CelestiaHeight(u64);
-
-impl<T: Into<u64>> Add<T> for CelestiaHeight {
-	type Output = Self;
-
-	fn add(self, rhs: T) -> Self::Output {
-		CelestiaHeight(self.0 + rhs.into())
-	}
-}
 
 /// Message, use to notify CelestiaClient activities.
 #[derive(Debug)]
@@ -69,10 +60,14 @@ pub enum BlockAt {
 }
 
 pub trait CelestiaClient {
-	fn get_da_blobs_at_height(
+	fn get_current_height(
+		&self,
+	) -> impl Future<Output = Result<CelestiaHeight, DaSequencerError>> + Send;
+
+	fn get_blobs_at_height(
 		&self,
 		height: u64,
-	) -> impl Future<Output = Result<Vec<Blob>, DaSequencerError>> + Send;
+	) -> impl Future<Output = Result<Option<Vec<Blob>>, DaSequencerError>> + Send;
 }
 
 const DELAY_SECONDS_BEFORE_BOOTSTRAPPING: Duration = Duration::from_secs(12);
@@ -127,13 +122,11 @@ impl<C: CelestiaClient + Sync + Clone> DaSequencerExternalDa for CelestiaExterna
 	/// the missing block. Not sure last_notified_celestia_height is useful.
 	/// During this boostrap new block are sent to the client.
 	/// These block should be buffered until the boostrap is done then sent after in order.
-	async fn bootstrap(
-		&self,
-		current_block_height: BlockHeight,
-		last_finalized_celestia_height: CelestiaHeight,
-	) -> Result<(), DaSequencerError> {
+	async fn bootstrap(&self, current_block_height: BlockHeight) -> Result<(), DaSequencerError> {
 		// wait to ensure that no blob is pending in the Celestia network
 		tokio::time::sleep(DELAY_SECONDS_BEFORE_BOOTSTRAPPING).await;
+
+		let last_finalized_celestia_height = self.celestia_client.get_current_height().await?;
 
 		// Step 1: Get last digest in the last finalized blob
 		let digest = self
