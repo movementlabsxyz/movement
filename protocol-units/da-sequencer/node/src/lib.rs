@@ -13,8 +13,10 @@ pub mod batch;
 mod block;
 mod celestia;
 pub mod error;
+pub mod main;
 pub mod server;
 mod storage;
+pub mod whitelist;
 #[cfg(test)]
 mod tests;
 

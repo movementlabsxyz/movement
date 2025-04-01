@@ -23,4 +23,6 @@ pub enum DaSequencerError {
 	DeserializationFailure,
 	#[error("Signature was invalid")]
 	InvalidSignature,
+        #[error("Non-whitelisted signer")]
+	InvalidSigner,
 }
