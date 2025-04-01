@@ -315,6 +315,51 @@ impl DaSequencerStorage for Storage {
 	}
 }
 
+impl Storage {
+	/// Saves the given block to storage by height and digest.
+	/// Optionally deletes pending transaction keys from the DB.
+	pub fn save_block(
+		&self,
+		block: &SequencerBlock,
+		delete_keys: Option<Vec<Vec<u8>>>,
+	) -> Result<(), DaSequencerError> {
+		let block_bytes =
+			bcs::to_bytes(block).map_err(|e| DaSequencerError::Deserialization(e.to_string()))?;
+
+		let cf_blocks = self.db.cf_handle(cf::BLOCKS).ok_or_else(|| {
+			DaSequencerError::StorageAccess("Missing column family: blocks".into())
+		})?;
+
+		let cf_digests = self.db.cf_handle(cf::BLOCKS_BY_DIGEST).ok_or_else(|| {
+			DaSequencerError::StorageAccess("Missing column family: blocks_by_digest".into())
+		})?;
+
+		let mut write_batch = WriteBatch::default();
+		let height_key = block.height.0.to_be_bytes();
+
+		write_batch.put_cf(&cf_blocks, height_key, &block_bytes);
+		write_batch.put_cf(&cf_digests, block.get_block_digest().0, &height_key);
+
+		if let Some(keys) = delete_keys {
+			let cf_pending = self.db.cf_handle(cf::PENDING_TRANSACTIONS).ok_or_else(|| {
+				DaSequencerError::StorageAccess(
+					"Missing column family: pending_transactions".into(),
+				)
+			})?;
+
+			for key in keys {
+				write_batch.delete_cf(&cf_pending, key);
+			}
+		}
+
+		self.db
+			.write(write_batch)
+			.map_err(|e| DaSequencerError::RocksDbError(e.to_string()))?;
+
+		Ok(())
+	}
+}
+
 #[cfg(test)]
 mod tests {
 	use crate::batch::FullNodeTxs;
@@ -442,6 +487,62 @@ mod tests {
 		assert_eq!(ordered_ids[0], tx1.id(), "tx1 (older batch, index 0) should come first");
 		assert_eq!(ordered_ids[1], tx2.id(), "tx2 (older batch, index 1) should be second");
 		assert_eq!(ordered_ids[2], tx3.id(), "tx3 (newer batch) should be last");
+	}
+
+	#[test]
+	fn save_block_should_persist_block_and_remove_pending_transactions() {
+		use crate::batch::DaBatch;
+		use crate::block::SequencerBlock;
+		use movement_types::{block::Block, transaction::Transaction};
+		use tempfile::tempdir;
+
+		let temp_dir = tempdir().expect("failed to create temp dir");
+		let path = temp_dir.path().to_str().unwrap();
+		let storage = Storage::try_new(path).expect("failed to create storage");
+
+		// Create a transaction and write it as pending
+		let tx = Transaction::test_only_new(b"save test".to_vec(), 0, 1);
+		let tx_id = tx.id();
+		let batch = DaBatch::test_only_new(FullNodeTxs::new(vec![tx.clone()]));
+		let composite_key = {
+			let mut key = Vec::with_capacity(44);
+			key.extend_from_slice(&batch.timestamp.to_be_bytes());
+			key.extend_from_slice(&(0u32).to_be_bytes()); // index = 0
+			key.extend_from_slice(tx_id.as_bytes());
+			key
+		};
+
+		storage.write_batch(batch).expect("failed to write batch");
+
+		// Construct a dummy block to save
+		let height = BlockHeight(1);
+		let block = Block::new(BlockMetadata::default(), Id::default(), [tx.clone()].into());
+		let sequencer_block = SequencerBlock::try_new(height, block).expect("valid block");
+
+		// Save the block and remove the pending tx
+		storage
+			.save_block(&sequencer_block, Some(vec![composite_key.clone()]))
+			.expect("save_block failed");
+
+		// Check the block exists at the correct height
+		let fetched = storage.get_block_at_height(height).expect("get_block_at_height failed");
+		assert!(fetched.is_some(), "Expected saved block to exist");
+		assert_eq!(fetched.unwrap(), sequencer_block);
+
+		// Check it can be fetched by digest
+		let digest = sequencer_block.get_block_digest();
+		let fetched_by_digest =
+			storage.get_block_with_digest(digest).expect("get by digest failed");
+		assert!(fetched_by_digest.is_some(), "Expected block by digest");
+		assert_eq!(fetched_by_digest.unwrap(), sequencer_block);
+
+		// Check that the pending transaction has been removed
+		let cf_pending = storage
+			.db
+			.cf_handle(cf::PENDING_TRANSACTIONS)
+			.expect("missing 'pending_transactions' CF");
+		let maybe_tx = storage.db.get_cf(&cf_pending, composite_key).expect("read failed");
+		assert!(maybe_tx.is_none(), "Expected pending transaction to be removed");
 	}
 
 	#[test]
