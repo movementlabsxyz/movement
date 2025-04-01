@@ -406,6 +406,56 @@ mod tests {
 	}
 
 	#[test]
+	fn test_write_batch_naturally_orders_lexicographically_with_composite_key() {
+		use crate::batch::DaBatch;
+		use movement_types::transaction::Transaction;
+		use tempfile::tempdir;
+
+		let temp_dir = tempdir().expect("failed to create temp dir");
+		let path = temp_dir.path().to_str().unwrap();
+		let storage = Storage::try_new(path).expect("failed to create storage");
+
+		// Create transactions
+		let tx1 = Transaction::test_only_new(b"tx1".to_vec(), 1, 1);
+		let tx2 = Transaction::test_only_new(b"tx2".to_vec(), 1, 2);
+		let tx3 = Transaction::test_only_new(b"tx3".to_vec(), 1, 3);
+
+		// Create the OLDER batch first
+		let older_batch = DaBatch::test_only_new(FullNodeTxs::new(vec![tx1.clone(), tx2.clone()]));
+		std::thread::sleep(std::time::Duration::from_millis(1)); // ensure newer timestamp
+		let newer_batch = DaBatch::test_only_new(FullNodeTxs::new(vec![tx3.clone()]));
+
+		// Write batches to DB
+		storage.write_batch(older_batch).expect("write_batch (older) failed");
+		storage.write_batch(newer_batch).expect("write_batch (newer) failed");
+
+		let cf = storage
+			.db
+			.cf_handle(cf::PENDING_TRANSACTIONS)
+			.expect("missing pending_transactions CF");
+
+		let iter = storage.db.iterator_cf(&cf, rocksdb::IteratorMode::Start);
+
+		let mut ordered_ids = Vec::new();
+
+		for item in iter {
+			let (key, value) = item.expect("iterator error");
+
+			assert_eq!(key.len(), 44, "Composite key length should be 44 bytes");
+
+			let tx: Transaction =
+				bcs::from_bytes(&value).expect("failed to deserialize transaction");
+			ordered_ids.push(tx.id());
+		}
+
+		assert_eq!(ordered_ids.len(), 3, "Expected 3 transactions in DB");
+
+		assert_eq!(ordered_ids[0], tx1.id(), "tx1 (older batch, index 0) should come first");
+		assert_eq!(ordered_ids[1], tx2.id(), "tx2 (older batch, index 1) should be second");
+		assert_eq!(ordered_ids[2], tx3.id(), "tx3 (newer batch) should be last");
+	}
+
+	#[test]
 	fn test_get_block_at_height_returns_correct_block() {
 		use crate::block::{BlockHeight, SequencerBlock};
 		use movement_types::block::Block;
