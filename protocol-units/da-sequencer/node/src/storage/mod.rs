@@ -253,7 +253,7 @@ impl DaSequencerStorage for Storage {
 
 			total_size += tx_size;
 			selected_txs.push(tx);
-			keys_to_delete.push(key);
+			keys_to_delete.push(key.into_vec());
 		}
 
 		if selected_txs.is_empty() {
@@ -261,40 +261,23 @@ impl DaSequencerStorage for Storage {
 		}
 
 		let height = self.determine_next_block_height()?;
-		let parent_height = BlockHeight(height.0 - 1);
 
-		let parent_digest = self
-			.get_block_at_height(parent_height)?
-			.ok_or_else(|| DaSequencerError::StorageFormat("Missing parent block".into()))?
-			.get_block_digest();
+		let parent_id = match height.0 {
+			0 | 1 => Id::genesis_block(),
+			_ => {
+				let parent_block = self.get_block_at_height(height.parent())?.ok_or_else(|| {
+					DaSequencerError::StorageFormat("Missing parent block".into())
+				})?;
+				Id::new(parent_block.get_block_digest().0)
+			}
+		};
 
 		let tx_set: BTreeSet<_> = selected_txs.into_iter().collect();
-		let block = Block::new(BlockMetadata::default(), Id::new(parent_digest.0), tx_set);
+		let block = Block::new(BlockMetadata::default(), parent_id, tx_set);
 		let sequencer_block = SequencerBlock::try_new(height, block)?;
 
-		let block_bytes = bcs::to_bytes(&sequencer_block)
-			.map_err(|e| DaSequencerError::Deserialization(e.to_string()))?;
-
-		let cf_blocks = self.db.cf_handle(cf::BLOCKS).ok_or_else(|| {
-			DaSequencerError::StorageAccess("Missing column family: blocks".into())
-		})?;
-		let cf_digests = self.db.cf_handle(cf::BLOCKS_BY_DIGEST).ok_or_else(|| {
-			DaSequencerError::StorageAccess("Missing column family: blocks_by_digest".into())
-		})?;
-
-		let mut write_batch = WriteBatch::default();
-		let height_key = height.0.to_be_bytes();
-
-		write_batch.put_cf(&cf_blocks, height_key, &block_bytes);
-		write_batch.put_cf(&cf_digests, sequencer_block.get_block_digest().0, &height_key);
-
-		for key in keys_to_delete {
-			write_batch.delete_cf(&cf_pending, key);
-		}
-
-		self.db
-			.write(write_batch)
-			.map_err(|e| DaSequencerError::RocksDbError(e.to_string()))?;
+		// ✅ Save the block and clean up pending txs
+		self.save_block(&sequencer_block, Some(keys_to_delete))?;
 
 		Ok(Some(sequencer_block))
 	}

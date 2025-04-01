@@ -28,6 +28,14 @@ impl SequencerBlockDigest {
 )]
 pub struct BlockHeight(pub u64);
 
+impl BlockHeight {
+	/// Returns the parent block height.
+	/// If this is the genesis block (height 0), returns 0.
+	pub fn parent(&self) -> BlockHeight {
+		BlockHeight(self.0.saturating_sub(1))
+	}
+}
+
 impl From<u64> for BlockHeight {
 	fn from(value: u64) -> Self {
 		BlockHeight(value)
