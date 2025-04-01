@@ -49,7 +49,7 @@ pub struct Transaction {
 	// Application priority is stored low to high, i.e., 0 is the highest priority.
 	application_priority: u64,
 	sequence_number: u64,
-	pub id: Id,
+	id: Id,
 }
 
 impl Transaction {

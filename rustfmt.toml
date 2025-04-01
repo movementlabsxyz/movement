@@ -6,6 +6,8 @@ use_small_heuristics = "Max"
 
 # Imports
 reorder_imports = true
+group_imports = "StdExternalCrate"
+imports_granularity = "Module"
 
 # Consistency
 newline_style = "Unix"
