@@ -9,10 +9,6 @@ homepage.workspace = true
 publish.workspace = true
 rust-version.workspace = true
 
-[lib]
-name = "movement_da_sequencer_node"
-path = "src/lib.rs"
-
 [dependencies]
 aptos-crypto = { workspace = true }
 aptos-crypto-derive = { workspace = true }
@@ -38,7 +34,6 @@ url = { workspace = true }
 futures = { workspace = true }
 dot-movement = { workspace = true }
 godfig = { workspace = true }
-serial_test = "2"
 
 movement-da-sequencer-client = { workspace = true }
 movement-da-sequencer-config = { workspace = true }
@@ -50,7 +45,7 @@ tempfile = { workspace = true }
 rand = { workspace = true }
 rand_core = { workspace = true }
 movement-types = { workspace = true, features = ["testing"] }
-
+serial_test = "2"
 
 [lints]
 #workspace = true
