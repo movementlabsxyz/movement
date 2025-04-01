@@ -138,7 +138,10 @@ async fn test_write_batch_grpc_main_loop_happy_path() {
 	assert!(response.answer);
 
 	grpc_task.abort();
+	let _ = grpc_task.await;
+
 	main_loop.abort();
+	let _ = main_loop.await;
 }
 
 #[tokio::test]
