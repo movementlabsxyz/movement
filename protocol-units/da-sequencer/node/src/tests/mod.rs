@@ -18,8 +18,8 @@ use tracing_subscriber;
 
 pub mod mock;
 
-fn make_test_whitelist(keys: Vec<ed25519_dalek::VerifyingKey>) -> Arc<RwLock<Whitelist>> {
-	Arc::new(RwLock::new(Whitelist::from_keys(keys)))
+fn make_test_whitelist(keys: Vec<ed25519_dalek::VerifyingKey>) -> Whitelist {
+	Whitelist::from_keys(keys)
 }
 
 #[serial]
@@ -149,7 +149,7 @@ async fn test_write_batch_grpc_main_loop_unhappy_path() {
 	let signing_key = config.signing_key.clone();
 	let verifying_key = signing_key.verifying_key();
 
-	let whitelist = make_test_whitelist(vec![]); // empty whitelist
+	let whitelist = make_test_whitelist(vec![]);
 	let whitelist_clone = whitelist.clone();
 
 	let grpc_address = config.movement_da_sequencer_listen_address;

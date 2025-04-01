@@ -18,9 +18,10 @@ use tonic::transport::Server;
 pub async fn run_server(
 	address: SocketAddr,
 	request_tx: mpsc::Sender<GrpcRequests>,
-	whitelist: Arc<RwLock<Whitelist>>,
+	whitelist: Whitelist,
 ) -> Result<(), anyhow::Error> {
 	tracing::info!("Server listening on: {}", address);
+	let whitelist = Arc::new(RwLock::new(whitelist));
 	let reflection = tonic_reflection::server::Builder::configure()
 		.register_encoded_file_descriptor_set(movement_da_sequencer_proto::FILE_DESCRIPTOR_SET)
 		.build_v1()?;
@@ -87,16 +88,19 @@ impl DaSequencerNodeService for DaSequencerNode {
 		let whitelist = self.whitelist.read().await;
 
 		// Validate the batch
-		let raw_batch = DaBatch::<RawData>::now(public_key, signature, bytes);
-		let validated = match validate_batch(raw_batch, &whitelist) {
-			Ok(validated) => validated,
-			Err(err) => {
-				tracing::warn!("Invalid batch send: validation failed: {err}");
-				return Ok(tonic::Response::new(BatchWriteResponse { answer: false }));
+		let validated = {
+			let whitelist = self.whitelist.read().await;
+			let raw_batch = DaBatch::<RawData>::now(public_key, signature, bytes);
+			match validate_batch(raw_batch, &whitelist) {
+				Ok(validated) => validated,
+				Err(err) => {
+					tracing::warn!("Invalid batch send: validation failed: {err}");
+					return Ok(tonic::Response::new(BatchWriteResponse { answer: false }));
+				}
 			}
 		};
 
-		// Send it to the internal channel
+		// Send it to the internal channel (lock has been dropped by now)
 		if let Err(err) = self.request_tx.send(GrpcRequests::WriteBatch(validated)).await {
 			tracing::error!(
 				"Internal grpc request channel closed, no more batch will be processed: {err}"
