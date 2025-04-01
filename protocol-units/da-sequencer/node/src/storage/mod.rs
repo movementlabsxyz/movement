@@ -239,7 +239,7 @@ impl DaSequencerStorage for Storage {
 			.get_block_digest();
 
 		// Build the block
-		let tx_set: BTreeSet<_> = selected_txs.into_iter().collect();
+		let tx_set: BTreeSet<_> = selected_txs.clone().into_iter().collect();
 		let block = Block::new(BlockMetadata::default(), Id::new(parent_digest.0), tx_set);
 		let sequencer_block = SequencerBlock::try_new(self.determine_next_block_height()?, block)?;
 
@@ -254,7 +254,7 @@ impl DaSequencerStorage for Storage {
 		})?;
 
 		let mut write_batch = WriteBatch::default();
-		let height_key = height.0.to_be_bytes();
+		let height_key = height.to_be_bytes();
 
 		write_batch.put_cf(&cf_blocks, height_key, &block_bytes);
 		write_batch.put_cf(&cf_digests, sequencer_block.get_block_digest().0, &height_key);
