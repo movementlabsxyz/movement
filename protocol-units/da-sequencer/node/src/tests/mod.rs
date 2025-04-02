@@ -8,6 +8,7 @@ use ed25519_dalek::Signature;
 use futures::StreamExt;
 use movement_da_sequencer_client::DaSequencerClient;
 use movement_da_sequencer_config::DaSequencerConfig;
+use movement_da_sequencer_proto::blob_response::BlobType;
 use movement_da_sequencer_proto::BatchWriteRequest;
 use movement_da_sequencer_proto::StreamReadFromHeightRequest;
 use movement_types::transaction::Transaction;
@@ -140,9 +141,16 @@ async fn test_write_batch_gprc_main_loop_happy_path_unhappy_path() {
 
 #[tokio::test]
 async fn test_produc_block_and_stream() {
+	// let _ = tracing_subscriber::fmt()
+	// 	.with_max_level(tracing::Level::INFO)
+	// 	.with_test_writer()
+	// 	.try_init();
+
 	let (request_tx, request_rx) = mpsc::channel(100);
 
-	let config = DaSequencerConfig::default();
+	let mut config = DaSequencerConfig::default();
+	//update config to generate faster heartbeat.
+	config.movement_da_sequencer_stream_heartbeat_interval_sec = 1;
 	let signing_key = config.signing_key.clone();
 	let verifying_key = signing_key.verifying_key();
 
@@ -178,7 +186,10 @@ async fn test_produc_block_and_stream() {
 	if let Ok(Some(Ok(block))) =
 		tokio::time::timeout(std::time::Duration::from_secs(1), block_stream.next()).await
 	{
-		panic!("Error get a genesis block at height 0 {block:?}");
+		match block.response.unwrap().blob_type {
+			Some(BlobType::Heartbeat(_)) => (),
+			_ => panic!("Error get a genesis block at height 0 "),
+		}
 	}
 
 	mock_write_new_batch(&mut client, &signing_key, verifying_key).await;
@@ -213,7 +224,16 @@ async fn test_produc_block_and_stream() {
 	mock_wait_and_get_next_block(&mut block_stream2, 4).await;
 
 	//wait at least one block production
-	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+
+	//detect the heartbeat
+	match tokio::time::timeout(std::time::Duration::from_secs(1), block_stream.next()).await {
+		Ok(Some(Ok(block))) => match block.response.unwrap().blob_type {
+			Some(BlobType::Heartbeat(_)) => (),
+			_ => panic!("Not a heartbeat."),
+		},
+		_ => panic!("No hearbeat produced"),
+	};
 
 	grpc_jh.abort();
 	loop_jh.abort();

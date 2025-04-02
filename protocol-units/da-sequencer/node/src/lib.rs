@@ -33,6 +33,9 @@ where
 	let mut produce_block_interval = tokio::time::interval(tokio::time::Duration::from_millis(
 		config.movement_da_sequencer_block_production_interval_millisec,
 	));
+	let mut da_stream_heartbeat_interval = tokio::time::interval(tokio::time::Duration::from_secs(
+		config.movement_da_sequencer_stream_heartbeat_interval_sec,
+	));
 	let mut spawn_result_futures = FuturesUnordered::new();
 	let mut produce_block_jh = None;
 	let mut connectec_grpc_sender = vec![];
@@ -106,12 +109,8 @@ where
 				let block_digest = block.get_block_digest();
 				// Send the block to all registered follower
 				// For now send in the main loop because there's a very few follower (<100).
-				tracing::info!("New bloc produced, send to fullnode:{} height:{}",connectec_grpc_sender.len(), block.height.0);
-				for sender in &connectec_grpc_sender {
-					if let Err(err) = sender.send(block.clone()) {
-						tracing::error!("Failed to send block to grpc client :{err}");
-					}
-				}
+				tracing::info!("New bloc produced, send to fullnodes :{} height:{}",connectec_grpc_sender.len(), block.height.0);
+				stream_block_to_sender(&mut connectec_grpc_sender, Some(block)).await;
 
 				//send the block to Celestia.
 				let celestia_send_jh = tokio::spawn({
@@ -120,7 +119,14 @@ where
 				});
 				spawn_result_futures.push(celestia_send_jh);
 			}
+			// Every hearbeat tick produce a new heartbeat.
+			_ = da_stream_heartbeat_interval.tick() => {
+				tracing::info!("Produce a new heartbeat, send to fullnodes :{}",connectec_grpc_sender.len());
+				stream_block_to_sender(&mut connectec_grpc_sender, None).await;
 
+			}
+
+			// Manage futures result.
 			Some(Ok(res)) = spawn_result_futures.next() =>  {
 				// just log for now, add more logic later.
 				if let Err(err) = res {
@@ -129,6 +135,22 @@ where
 			}
 		}
 	}
+}
+
+async fn stream_block_to_sender(
+	senders: &mut Vec<mpsc::UnboundedSender<Option<SequencerBlock>>>,
+	data: Option<SequencerBlock>,
+) {
+	let mut new_sender = vec![];
+	for sender in senders.drain(..) {
+		// Remove the sender in error because it means the client was disconnected.
+		if let Err(err) = sender.send(data.clone()) {
+			tracing::warn!("Failed to send block to grpc client. Client disconnected. remove connection :{err}");
+		} else {
+			new_sender.push(sender);
+		}
+	}
+	*senders = new_sender;
 }
 
 /// manage the optional future for block production.

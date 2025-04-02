@@ -41,7 +41,7 @@ pub async fn run_server(
 
 #[derive(Debug)]
 pub enum GrpcRequests {
-	StartBlockStream(mpsc::UnboundedSender<SequencerBlock>, oneshot::Sender<BlockHeight>),
+	StartBlockStream(mpsc::UnboundedSender<Option<SequencerBlock>>, oneshot::Sender<BlockHeight>),
 	GetBlockHeight(BlockHeight, oneshot::Sender<Option<SequencerBlock>>),
 	WriteBatch(DaBatch<FullNodeTxs>),
 }
@@ -126,7 +126,7 @@ impl DaSequencerNodeService for DaSequencerNode {
 
 				} else {
 					//send block in produced channel
-					let new_block = match produced_rx.recv().await {
+					let received_content = match produced_rx.recv().await {
 						Some(b) => b,
 						None => {
 							tracing::warn!("Stream block produced block channel closed.");
@@ -134,22 +134,35 @@ impl DaSequencerNodeService for DaSequencerNode {
 						}
 
 					};
-					if current_block_height + 1 < new_block.height.0 {
-						// we miss a block request it + the one we get.
-						current_produced_height = new_block.height;
-						continue;
-					}
-					current_block_height = new_block.height.0;
 
-					let blockv1 = match new_block.try_into() {
-						Ok(b) => b,
-						Err(err) => {
-							tracing::warn!("Stream block block serialization failed :{err}");
-							return;
-
+					match received_content {
+						None => {
+							// send heartbeat.
+							BlobResponse { blob_type: Some(BlobType::Heartbeat(true)) }
 						}
-					};
-					BlobResponse { blob_type: Some(BlobType::Blockv1(blockv1)) }
+
+						Some(new_block) => {
+							// send new produced block.
+							if current_block_height + 1 < new_block.height.0 {
+								// we miss a block request it + the one we get.
+								current_produced_height = new_block.height;
+								continue;
+							}
+							current_block_height = new_block.height.0;
+
+							let blockv1 = match new_block.try_into() {
+								Ok(b) => b,
+								Err(err) => {
+									tracing::warn!("Stream block block serialization failed :{err}");
+									return;
+
+								}
+							};
+							BlobResponse { blob_type: Some(BlobType::Blockv1(blockv1)) }
+						}
+					}
+
+
 
 				};
 				let response = StreamReadFromHeightResponse {

@@ -49,18 +49,22 @@ pub async fn mock_wait_and_get_next_block(
 	expected_height: u64,
 ) {
 	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
-	match tokio::time::timeout(std::time::Duration::from_secs(1), block_stream.next()).await {
-		Ok(Some(Ok(block))) => match block.response.unwrap().blob_type {
-			Some(BlobType::Blockv1(blockv1)) => {
-				assert_eq!(
-					blockv1.height, expected_height,
-					"stream block height 1, not the right height"
-				)
-			}
-			_ => panic!("Block not streamed at height 1"),
-		},
-		_ => panic!("Block not streamed, height 1"),
-	};
+	loop {
+		match tokio::time::timeout(std::time::Duration::from_secs(1), block_stream.next()).await {
+			Ok(Some(Ok(block))) => match block.response.unwrap().blob_type {
+				Some(BlobType::Blockv1(blockv1)) => {
+					assert_eq!(
+						blockv1.height, expected_height,
+						"stream block height 1, not the right height"
+					);
+					break;
+				}
+				Some(BlobType::Heartbeat(_)) => (),
+				None => panic!("Block stream broken at height {expected_height}"),
+			},
+			_ => panic!("No block produced at height {expected_height}"),
+		};
+	}
 }
 
 #[derive(Debug, Clone)]

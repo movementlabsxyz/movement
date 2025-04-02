@@ -38,6 +38,9 @@ pub struct DaSequencerConfig {
         #[serde(default = "default_movement_da_sequencer_block_production_interval_millisec")]
         pub movement_da_sequencer_block_production_interval_millisec: u64,
 
+        #[serde(default = "default_movement_da_sequencer_stream_heartbeat_interval_sec")]
+        pub movement_da_sequencer_stream_heartbeat_interval_sec: u64,
+
 
         #[serde(skip_deserializing, skip_serializing, default = "default_signing_key")]
         pub signing_key: SigningKey,
@@ -58,12 +61,19 @@ env_default!(
         u64,
         500
 );
+env_default!(
+        default_movement_da_sequencer_stream_heartbeat_interval_sec,
+        "MOVEMENT_DA_STREAM_HEARTBEAT_INTERVAL_MILLISEC",
+        u64,
+        10
+);
 
 impl Default for DaSequencerConfig {
         fn default() -> Self {
                 Self {
                         movement_da_sequencer_listen_address: default_movement_da_sequencer_listen_address(),
                         movement_da_sequencer_block_production_interval_millisec: default_movement_da_sequencer_block_production_interval_millisec(),
+                        movement_da_sequencer_stream_heartbeat_interval_sec: default_movement_da_sequencer_stream_heartbeat_interval_sec(),
                         signing_key: default_signing_key(),
                 }
         }
