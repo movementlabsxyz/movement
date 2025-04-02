@@ -75,11 +75,13 @@ pub trait BlockProvider {
 		&self,
 		block_height: BlockHeight,
 	) -> impl Future<Output = Result<(), DaSequencerError>> + Send;
+
 	fn notify_block_commited(
 		&self,
 		block_height: BlockHeight,
 		celestia_height: CelestiaHeight,
 	) -> impl Future<Output = Result<(), DaSequencerError>> + Send;
+
 	fn request_block(
 		&self,
 		at: BlockAt,
@@ -139,8 +141,17 @@ pub struct CelestiaExternalDa<B: BlockProvider + Sync + Clone, C: CelestiaClient
 
 impl<B: BlockProvider + Sync + Clone, C: CelestiaClient + Sync + Clone> CelestiaExternalDa<B, C> {
 	/// Create the Celestia client and all async process to manage celestia access.
-	pub async fn new(celestia_client: C, block_provider: B) -> Self {
+	pub fn new(block_provider: B, celestia_client: C) -> Self {
 		CelestiaExternalDa { block_provider, celestia_client }
+	}
+}
+
+impl<C: CelestiaClient + Sync + Clone> CelestiaExternalDa<ChannelBlockProvider, C> {
+	pub fn with_notifier(
+		notifier: mpsc::Sender<ExternalDaNotification>,
+		celestia_client: C,
+	) -> Self {
+		Self::new(ChannelBlockProvider::new(notifier), celestia_client)
 	}
 }
 
@@ -151,7 +162,7 @@ impl<B: BlockProvider + Sync + Clone, C: CelestiaClient + Sync + Clone> DaSequen
 	/// The block is not immediately sent but aggregated in a blob
 	/// until the client can send it to celestia.
 	async fn send_block(&self, _block: SequencerBlockDigest) -> Result<(), DaSequencerError> {
-		todo!();
+		todo!()
 	}
 
 	/// Get the blob from celestia at the given height.
