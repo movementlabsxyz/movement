@@ -138,7 +138,7 @@ async fn test_write_batch_gprc_main_loop_happy_path_unhappy_path() {
 }
 
 #[tokio::test]
-async fn test_produc_block_and_stream() {
+async fn test_produce_block_and_stream() {
 	// let _ = tracing_subscriber::fmt()
 	// 	.with_max_level(tracing::Level::INFO)
 	// 	.with_test_writer()

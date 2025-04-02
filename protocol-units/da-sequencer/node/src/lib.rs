@@ -38,7 +38,7 @@ where
 	));
 	let mut spawn_result_futures = FuturesUnordered::new();
 	let mut produce_block_jh = None;
-	let mut connectec_grpc_sender = vec![];
+	let mut connected_grpc_sender = vec![];
 
 	loop {
 		tokio::select! {
@@ -46,7 +46,7 @@ where
 			Some(grpc_request) = request_rx.recv() => {
 				match grpc_request {
 					GrpcRequests::StartBlockStream(produced_tx, curent_height_callback) => {
-						connectec_grpc_sender.push(produced_tx);
+						connected_grpc_sender.push(produced_tx);
 
 						// Send back the current height.
 						let _ = tokio::task::spawn_blocking({
@@ -108,8 +108,8 @@ where
 			Some(block) = conditional_block_producing(&mut produce_block_jh), if produce_block_jh.is_some() => {
 				let block_digest = block.get_block_digest();
 				// Send the block to all registered follower
-				// For now send in the main loop because there's a very few follower (<100).
-				tracing::info!("New bloc produced, send to fullnodes :{} height:{}",connectec_grpc_sender.len(), block.height.0);
+				// For now send to the main loop because there are very few followers (<100).
+				tracing::info!("New block produced, send to fullnodes :{} height:{}",connectec_grpc_sender.len(), block.height.0);
 				stream_block_to_sender(&mut connectec_grpc_sender, Some(block)).await;
 
 				//send the block to Celestia.
@@ -119,9 +119,9 @@ where
 				});
 				spawn_result_futures.push(celestia_send_jh);
 			}
-			// Every hearbeat tick produce a new heartbeat.
+			// Every tick will produce a heartbeat.
 			_ = da_stream_heartbeat_interval.tick() => {
-				tracing::info!("Produce a new heartbeat, send to fullnodes :{}",connectec_grpc_sender.len());
+				tracing::info!("Produced a heartbeat, sent to fullnodes :{}",connectec_grpc_sender.len());
 				stream_block_to_sender(&mut connectec_grpc_sender, None).await;
 
 			}
