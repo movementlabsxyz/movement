@@ -28,9 +28,15 @@ impl Deref for FullNodeTxs {
 	}
 }
 
+impl<T> DaBatch<T> {
+	pub fn data(&self) -> &T {
+		&self.data
+	}
+}
+
 #[derive(Debug, Clone)]
-pub struct DaBatch<D> {
-	pub data: D,
+pub struct DaBatch<T> {
+	pub data: T,
 	pub signature: Signature,
 	pub signer: VerifyingKey,
 	pub timestamp: u64,

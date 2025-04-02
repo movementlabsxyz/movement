@@ -1,5 +1,5 @@
 use crate::block::SequencerBlock;
-use crate::celestia::DaSequencerExternDaClient;
+use crate::celestia::DaSequencerExternalDa;
 use crate::error::DaSequencerError;
 use crate::server::GrpcRequests;
 use crate::storage::DaSequencerStorage;
@@ -27,7 +27,7 @@ pub async fn run<D, S>(
 	celestia: D,
 ) -> Result<(), DaSequencerError>
 where
-	D: DaSequencerExternDaClient + Send + 'static,
+	D: DaSequencerExternalDa + Send + 'static,
 	S: DaSequencerStorage + Send + 'static,
 {
 	let mut produce_block_interval = tokio::time::interval(tokio::time::Duration::from_millis(
@@ -115,7 +115,7 @@ where
 				//send the block to Celestia.
 				let celestia_send_jh = tokio::spawn({
 					let celestia = celestia.clone();
-					async move {celestia.send_block(&block_digest).await}
+					async move {celestia.send_block(block_digest).await}
 				});
 				spawn_result_futures.push(celestia_send_jh);
 			}

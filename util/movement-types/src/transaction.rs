@@ -6,7 +6,7 @@ use std::cmp::Ordering;
 #[derive(
 	Serialize, Deserialize, Clone, Copy, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord,
 )]
-pub struct Id([u8; 32]);
+pub struct Id(pub [u8; 32]);
 
 impl Id {
 	pub fn new(data: [u8; 32]) -> Self {

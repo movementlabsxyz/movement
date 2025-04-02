@@ -24,5 +24,7 @@ venv
 *.jot.*
 *.jot
 *.env
+*.envrc.local
 .debug
 .out
+.direnv
