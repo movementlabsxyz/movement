@@ -34,7 +34,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
 	// Initialize whitelist
 	let mut whitelist_path = dot_movement.get_path().to_path_buf();
-	whitelist_path.push("default_signer_address_whitelist");
+	whitelist_path.push(&da_sequencer_config.whitelist_relative_path);
 	let whitelist = Whitelist::from_file_and_spawn_reload_thread(whitelist_path)?;
 
 	let (request_tx, request_rx) = mpsc::channel(100);
