@@ -57,11 +57,23 @@ pub struct SequencerBlock {
 impl SequencerBlock {
 	/// Try to construct a SequencerBlock, but fail if it exceeds the max encoded size.
 	pub fn try_new(height: BlockHeight, block: Block) -> Result<Self, DaSequencerError> {
-		SequencerBlock { height, block }
+		Ok(SequencerBlock { height, block })
 	}
 
 	pub fn get_block_digest(&self) -> SequencerBlockDigest {
 		SequencerBlockDigest(*self.block.id().as_bytes())
+	}
+
+	pub fn validate_size(&self) -> Result<(), DaSequencerError> {
+		let bytes =
+			bcs::to_bytes(self).map_err(|e| DaSequencerError::Deserialization(e.to_string()))?;
+		let size = bytes.len() as u64;
+
+		if size > MAX_SEQUENCER_BLOCK_SIZE {
+			Err(DaSequencerError::SizeExceedsMax(MAX_SEQUENCER_BLOCK_SIZE as usize))
+		} else {
+			Ok(())
+		}
 	}
 }
 
