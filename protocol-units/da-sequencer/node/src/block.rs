@@ -4,12 +4,11 @@ use serde::{Deserialize, Serialize};
 use crate::error::DaSequencerError;
 
 // TODO: use a sensible value for the max sequencer block size
-const MAX_SEQUENCER_BLOCK_SIZE: u64 = 1_000_000; // 1 MB
+pub const MAX_SEQUENCER_BLOCK_SIZE: u64 = 1_000_000; // 1 MB
 
 #[derive(Clone, Copy, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct SequencerBlockDigest(pub [u8; 32]);
 
-/// The id for an Ir Blob
 impl SequencerBlockDigest {
 	pub fn new(id: [u8; 32]) -> Self {
 		SequencerBlockDigest(id)
@@ -29,6 +28,26 @@ impl SequencerBlockDigest {
 )]
 pub struct BlockHeight(pub u64);
 
+impl BlockHeight {
+	/// Returns the parent block height.
+	/// If this is the genesis block (height 0), returns 0.
+	pub fn parent(&self) -> BlockHeight {
+		BlockHeight(self.0.saturating_sub(1))
+	}
+}
+
+impl From<u64> for BlockHeight {
+	fn from(value: u64) -> Self {
+		BlockHeight(value)
+	}
+}
+
+impl From<BlockHeight> for u64 {
+	fn from(v: BlockHeight) -> Self {
+		v.0
+	}
+}
+
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct SequencerBlock {
 	pub height: BlockHeight,
@@ -38,7 +57,7 @@ pub struct SequencerBlock {
 impl SequencerBlock {
 	/// Try to construct a SequencerBlock, but fail if it exceeds the max encoded size.
 	pub fn try_new(height: BlockHeight, block: Block) -> Result<Self, DaSequencerError> {
-		todo!()
+		Ok(SequencerBlock { height, block })
 	}
 
 	pub fn get_block_digest(&self) -> SequencerBlockDigest {
@@ -62,8 +81,6 @@ impl SequencerBlock {
 mod tests {
 
 	#[test]
-	#[ignore]
-	//TODO: will be dealt with PR #1159
 	fn test_sequencer_block_rejects_block_larger_than_max_size() {
 		use super::MAX_SEQUENCER_BLOCK_SIZE;
 		use crate::block::{BlockHeight, SequencerBlock};

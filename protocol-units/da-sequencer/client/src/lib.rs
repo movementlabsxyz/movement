@@ -4,9 +4,10 @@ use movement_da_sequencer_proto::da_sequencer_node_service_client::DaSequencerNo
 use std::time::Duration;
 use tonic::transport::{Channel, ClientTlsConfig};
 
-/// An enum wrapping MovementDaLightNodeClients over complex types.
+/// A wrapping MovementDaLightNodeClients over complex types.
 ///
-/// The usage of hype by tonic and related libraries makes it very difficult to maintain generic types for the clients. This enum simplifies client construction and usage.
+/// The usage of hype by tonic and related libraries makes it very difficult to maintain generic types for the clients.
+/// This simplifies client construction and usage.
 #[derive(Debug, Clone)]
 pub struct DaSequencerClient {
 	client: DaSequencerNodeServiceClient<tonic::transport::Channel>,
