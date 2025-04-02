@@ -115,7 +115,7 @@ impl DaSequencerNodeService for DaSequencerNode {
 
 					let blockv1 = match block.as_ref().map(|block| block.try_into()) {
 						None => continue,
-						Some(Ok(b)) => b,
+						Some(Ok(block)) => block,
 						Some(Err(err)) => {
 							tracing::warn!(error = %err, "Streamed block serialization failed.");
 							return;
