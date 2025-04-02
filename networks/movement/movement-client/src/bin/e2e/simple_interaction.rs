@@ -1,11 +1,11 @@
 use anyhow::Context;
-use once_cell::sync::Lazy;
-use std::str::FromStr;
 use movement_client::{
 	coin_client::CoinClient,
 	rest_client::{Client, FaucetClient},
 	types::LocalAccount,
 };
+use once_cell::sync::Lazy;
+use std::str::FromStr;
 use url::Url;
 
 static SUZUKA_CONFIG: Lazy<movement_config::Config> = Lazy::new(|| {

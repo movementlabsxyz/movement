@@ -21,22 +21,22 @@ pub struct AwsKms {
 }
 
 impl AwsKms {
-        pub async fn run(&self) -> Result<(), anyhow::Error> {
-                let key = Key::try_from_canonical_string(self.canonical_key.as_str())
-                        .map_err(|e| anyhow::anyhow!(e))?;
-                let builder = Builder::<Secp256k1>::new().create_key(self.create_key);
-                let hsm = Signer::new(builder.build(key).await?);
+	pub async fn run(&self) -> Result<(), anyhow::Error> {
+		let key = Key::try_from_canonical_string(self.canonical_key.as_str())
+			.map_err(|e| anyhow::anyhow!(e))?;
+		let builder = Builder::<Secp256k1>::new().create_key(self.create_key);
+		let hsm = Signer::new(builder.build(key).await?);
 
-                let server_hsm = Arc::new(Mutex::new(hsm));
-                let app_state = Arc::new(AppState::new());
+		let server_hsm = Arc::new(Mutex::new(hsm));
+		let app_state = Arc::new(AppState::new());
 
-                let app = create_server(server_hsm, app_state);
+		let app = create_server(server_hsm, app_state);
 
-                let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
-                println!("Server listening on {}", addr);
+		let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
+		println!("Server listening on {}", addr);
 
-                Server::bind(&addr).serve(app.into_make_service()).await?;
+		Server::bind(&addr).serve(app.into_make_service()).await?;
 
-                Ok(())
-        }
+		Ok(())
+	}
 }

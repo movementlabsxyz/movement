@@ -11,21 +11,17 @@ use std::time::{Duration, Instant};
 use aptos_account_whitelist::config::Config as WhitelistConfig;
 use aptos_config::config::NodeConfig;
 use aptos_mempool::{
-    core_mempool::{CoreMempool, TimelineState},
-    MempoolClientRequest, SubmissionStatus,
+	core_mempool::{CoreMempool, TimelineState},
+	MempoolClientRequest, SubmissionStatus,
 };
-use aptos_storage_interface::{
-    state_view::LatestDbStateCheckpointView,
-    DbReader,
-};
+use aptos_storage_interface::{state_view::LatestDbStateCheckpointView, DbReader};
 use aptos_types::{
-    account_address::AccountAddress,
-    mempool_status::{MempoolStatus, MempoolStatusCode},
-    transaction::{SignedTransaction, TransactionStatus},
+	account_address::AccountAddress,
+	mempool_status::{MempoolStatus, MempoolStatusCode},
+	transaction::{SignedTransaction, TransactionStatus},
 };
 use aptos_vm_validator::vm_validator::{
-    get_account_sequence_number,
-    TransactionValidation, VMValidator,
+	get_account_sequence_number, TransactionValidation, VMValidator,
 };
 
 use dot_movement;
@@ -295,11 +291,13 @@ impl TransactionPipe {
 				);
 
 				let handle = tokio::spawn(async move {
-					let Ok(mut da_client) = MovementDaLightNodeClient::try_http1(&connection_string) else {
+					let Ok(mut da_client) =
+						MovementDaLightNodeClient::try_http1(&connection_string)
+					else {
 						warn!("failed to create DA client for batch_id={}", batch_id);
 						return Err(anyhow::anyhow!("DA client init failed"));
 					};
-				
+
 					let batch_write_clone = batch_write.clone();
 					let mut attempts = 0;
 					loop {
@@ -310,7 +308,10 @@ impl TransactionPipe {
 							}
 							Err(e) => {
 								attempts += 1;
-								warn!("batch_write failed batch_id={} attempt={} error={:?}", batch_id, attempts, e);
+								warn!(
+									"batch_write failed batch_id={} attempt={} error={:?}",
+									batch_id, attempts, e
+								);
 								if attempts >= 3 {
 									warn!("giving up on batch_id={}", batch_id);
 									return Err(e.into());
@@ -326,7 +327,6 @@ impl TransactionPipe {
 
 		Ok(())
 	}
-
 
 	pub(crate) fn tick_gc(&mut self) {
 		if self.last_gc.elapsed() >= GC_INTERVAL {
@@ -468,8 +468,7 @@ mod tests {
 	use maptos_execution_util::config::chain::Config;
 	use tempfile::TempDir;
 
-	async fn setup(
-	) -> (Context, TransactionPipe, TempDir) {
+	async fn setup() -> (Context, TransactionPipe, TempDir) {
 		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
 			futures_mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
 
@@ -477,8 +476,7 @@ mod tests {
 			Executor::try_test_default(GENESIS_KEYPAIR.0.clone(), mempool_tx_exec_result_sender)
 				.await
 				.unwrap();
-		let (context, background) =
-			executor.background(mempool_commit_tx_receiver).unwrap();
+		let (context, background) = executor.background(mempool_commit_tx_receiver).unwrap();
 		let transaction_pipe = background.into_transaction_pipe();
 		(context, transaction_pipe, tempdir)
 	}
