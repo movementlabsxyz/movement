@@ -16,7 +16,7 @@ use std::net::SocketAddr;
 use tokio::sync::mpsc;
 
 #[tokio::test]
-async fn test_write_batch_gprc_main_loop_happy_path() {
+async fn test_write_batch_gprc_main_loop_submit_one_batch() {
 	let (request_tx, request_rx) = mpsc::channel(100);
 
 	let config = DaSequencerConfig::default();
@@ -66,7 +66,7 @@ async fn test_write_batch_gprc_main_loop_happy_path() {
 }
 
 #[tokio::test]
-async fn test_write_batch_gprc_main_loop_happy_path_unhappy_path() {
+async fn test_write_batch_gprc_main_loop_failed_validate_batch() {
 	let (request_tx, request_rx) = mpsc::channel(100);
 
 	let config = DaSequencerConfig::default();
