@@ -88,6 +88,7 @@ pub trait BlockProvider {
 	) -> impl Future<Output = Result<SequencerBlock, DaSequencerError>> + Send;
 }
 
+#[derive(Clone)]
 pub struct ChannelBlockProvider {
 	notifier: mpsc::Sender<ExternalDaNotification>,
 }
