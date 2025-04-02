@@ -57,6 +57,8 @@ pub trait DaSequencerStorage: Clone {
 		block_heigh: BlockHeight,
 		celestia_heigh: CelestiaHeight,
 	) -> std::result::Result<(), DaSequencerError>;
+
+	fn get_current_block_height(&self) -> BlockHeight;
 }
 
 impl Storage {
@@ -204,6 +206,10 @@ impl DaSequencerStorage for Storage {
 		celestia_heigh: CelestiaHeight,
 	) -> Result<(), DaSequencerError> {
 		todo!()
+	}
+
+	fn get_current_block_height(&self) -> BlockHeight {
+		todo!();
 	}
 }
 

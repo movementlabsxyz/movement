@@ -29,6 +29,18 @@ impl SequencerBlockDigest {
 )]
 pub struct BlockHeight(pub u64);
 
+impl From<u64> for BlockHeight {
+	fn from(height: u64) -> Self {
+		BlockHeight(height)
+	}
+}
+
+impl From<BlockHeight> for u64 {
+	fn from(height: BlockHeight) -> Self {
+		height.0
+	}
+}
+
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct SequencerBlock {
 	pub height: BlockHeight,
@@ -38,7 +50,9 @@ pub struct SequencerBlock {
 impl SequencerBlock {
 	/// Try to construct a SequencerBlock, but fail if it exceeds the max encoded size.
 	pub fn try_new(height: BlockHeight, block: Block) -> Result<Self, DaSequencerError> {
-		todo!()
+		let sb = SequencerBlock { height, block };
+		sb.validate_size()?;
+		Ok(sb)
 	}
 
 	pub fn get_block_digest(&self) -> SequencerBlockDigest {
@@ -46,8 +60,7 @@ impl SequencerBlock {
 	}
 
 	pub fn validate_size(&self) -> Result<(), DaSequencerError> {
-		let bytes =
-			bcs::to_bytes(self).map_err(|e| DaSequencerError::Deserialization(e.to_string()))?;
+		let bytes = self.serialize_to_bytes()?;
 		let size = bytes.len() as u64;
 
 		if size > MAX_SEQUENCER_BLOCK_SIZE {
@@ -55,6 +68,14 @@ impl SequencerBlock {
 		} else {
 			Ok(())
 		}
+	}
+
+	pub fn serialize_to_bytes(&self) -> Result<Vec<u8>, DaSequencerError> {
+		bcs::to_bytes(self).map_err(|e| DaSequencerError::Deserialization(e.to_string()))
+	}
+
+	pub fn deserialize_from_bytes(bytes: &[u8]) -> Result<Self, DaSequencerError> {
+		bcs::from_bytes(bytes).map_err(|e| DaSequencerError::Deserialization(e.to_string()))
 	}
 }
 

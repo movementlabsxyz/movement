@@ -1,8 +1,14 @@
 use crate::batch::FullNodeTxs;
 use crate::batch::{validate_batch, DaBatch, RawData};
 use crate::block::{BlockHeight, SequencerBlock};
+use crate::DaSequencerError;
+use movement_da_sequencer_proto::da_sequencer_node_service_server::{
+	DaSequencerNodeService, DaSequencerNodeServiceServer,
+};
+use movement_da_sequencer_proto::Blockv1;
+use movement_da_sequencer_proto::{blob_response::BlobType, BlobResponse};
+
 use movement_da_sequencer_proto::{
-	da_sequencer_node_service_server::{DaSequencerNodeService, DaSequencerNodeServiceServer},
 	BatchWriteRequest, BatchWriteResponse, ReadAtHeightRequest, ReadAtHeightResponse,
 	StreamReadFromHeightRequest, StreamReadFromHeightResponse,
 };
@@ -35,8 +41,8 @@ pub async fn run_server(
 
 #[derive(Debug)]
 pub enum GrpcRequests {
-	StartBlockStream { callback: oneshot::Sender<(BlockHeight, mpsc::Receiver<SequencerBlock>)> },
-	GetBlockHeight { block_height: BlockHeight, callback: oneshot::Sender<Option<SequencerBlock>> },
+	StartBlockStream(mpsc::UnboundedSender<SequencerBlock>, oneshot::Sender<BlockHeight>),
+	GetBlockHeight(BlockHeight, oneshot::Sender<Option<SequencerBlock>>),
 	WriteBatch(DaBatch<FullNodeTxs>),
 }
 
@@ -59,7 +65,103 @@ impl DaSequencerNodeService for DaSequencerNode {
 		request: tonic::Request<StreamReadFromHeightRequest>,
 	) -> std::result::Result<tonic::Response<Self::StreamReadFromHeightStream>, tonic::Status> {
 		tracing::info!("Stream read from height request: {:?}", request);
-		todo!();
+
+		// Register the new produced block channel to get lastest block.
+		// Use  unbounded_channel to avoid to fill the channel during the fetching of old block.
+		let (produced_tx, mut produced_rx) = mpsc::unbounded_channel();
+		let (curent_height_tx, curent_height_rx) = oneshot::channel();
+		if let Err(err) = self
+			.request_tx
+			.send(GrpcRequests::StartBlockStream(produced_tx, curent_height_tx))
+			.await
+		{
+			tracing::warn!("Internal grpc request channel closed, can't stream blocks:{err}");
+			return Err(tonic::Status::internal("Internal error. Retry later"));
+		}
+
+		let mut current_produced_height = match curent_height_rx.await {
+			Ok(h) => h,
+			Err(err) => {
+				tracing::warn!("Get start stream block oneshot channel closed: {err}");
+				return Err(tonic::Status::internal("Internal error. Retry later"));
+			}
+		};
+		let mut current_block_height = request.into_inner().height;
+		//Genesis block can't be retrieved.
+		if current_block_height == 0 {
+			current_block_height = 1;
+		}
+		let request_tx = self.request_tx.clone();
+		let output = async_stream::try_stream! {
+			loop {
+				let response_content = if current_block_height <= current_produced_height.0 {
+					//get all block until the current produced height
+					let (get_height_tx, get_height_rx) = oneshot::channel();
+					if let Err(err) = request_tx.send(GrpcRequests::GetBlockHeight(
+						current_block_height.into(),
+						get_height_tx,
+					)).await {
+						tracing::warn!("Stream block get block at height oneshot channel closed, can't stream blocks:{err}");
+						return;
+					}
+					let block = match get_height_rx.await {
+						Ok(b) => b,
+						Err(err) => {
+							tracing::warn!("Stream block, stream block oneshot channel closed: {err}");
+							return;
+						}
+					};
+					current_block_height +=1;
+
+					let blockv1 = match block.as_ref().map(|block| block.try_into()) {
+						None => continue,
+						Some(Ok(b)) => b,
+						Some(Err(err)) => {
+							tracing::warn!("Stream block block serialization failed :{err}");
+							return;
+
+						}
+					};
+					BlobResponse { blob_type: Some(BlobType::Blockv1(blockv1)) }
+
+				} else {
+					//send block in produced channel
+					let new_block = match produced_rx.recv().await {
+						Some(b) => b,
+						None => {
+							tracing::warn!("Stream block produced block channel closed.");
+							return;
+						}
+
+					};
+					if current_block_height + 1 < new_block.height.0 {
+						// we miss a block request it + the one we get.
+						current_produced_height = new_block.height;
+						continue;
+					}
+					current_block_height = new_block.height.0;
+
+					let blockv1 = match new_block.try_into() {
+						Ok(b) => b,
+						Err(err) => {
+							tracing::warn!("Stream block block serialization failed :{err}");
+							return;
+
+						}
+					};
+					BlobResponse { blob_type: Some(BlobType::Blockv1(blockv1)) }
+
+				};
+				let response = StreamReadFromHeightResponse {
+					response: Some(response_content)
+				};
+
+				yield response;
+
+			}
+		};
+
+		Ok(tonic::Response::new(Box::pin(output) as Self::StreamReadFromHeightStream))
 	}
 
 	/// Batch write blobs.
@@ -98,3 +200,23 @@ impl DaSequencerNodeService for DaSequencerNode {
 }
 
 pub struct GrpcBatchData {}
+
+impl TryFrom<SequencerBlock> for Blockv1 {
+	type Error = DaSequencerError;
+
+	fn try_from(block: SequencerBlock) -> Result<Self, Self::Error> {
+		Blockv1::try_from(&block)
+	}
+}
+
+impl TryFrom<&SequencerBlock> for Blockv1 {
+	type Error = DaSequencerError;
+
+	fn try_from(block: &SequencerBlock) -> Result<Self, Self::Error> {
+		Ok(Blockv1 {
+			blobckid: block.get_block_digest().into_vec(),
+			height: block.height.into(),
+			data: crate::block::SequencerBlock::serialize_to_bytes(&block)?,
+		})
+	}
+}

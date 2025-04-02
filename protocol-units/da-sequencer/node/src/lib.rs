@@ -32,24 +32,35 @@ where
 {
 	let mut produce_block_interval = tokio::time::interval(tokio::time::Duration::from_millis(
 		config.movement_da_sequencer_block_production_interval_millisec,
-	)); //todo put interval value in the config.
+	));
 	let mut spawn_result_futures = FuturesUnordered::new();
 	let mut produce_block_jh = None;
+	let mut connectec_grpc_sender = vec![];
 
 	loop {
 		tokio::select! {
 			// Manage grpc request.
 			Some(grpc_request) = request_rx.recv() => {
 				match grpc_request {
-					GrpcRequests::StartBlockStream { callback } => todo!(),
-					GrpcRequests::GetBlockHeight { block_height, callback } => {
+					GrpcRequests::StartBlockStream(produced_tx, curent_height_callback) => {
+						connectec_grpc_sender.push(produced_tx);
+
+						// Send back the current height.
+						let _ = tokio::task::spawn_blocking({
+							let storage = storage.clone();
+							move || {
+								let current_height = storage.get_current_block_height();
+								let _ = curent_height_callback.send(current_height);
+						}}).await;
+					},
+					GrpcRequests::GetBlockHeight(block_height, callback) => {
 						let get_block_jh = tokio::task::spawn_blocking({
 							let storage = storage.clone();
 							move || {storage.get_block_at_height(block_height)}
 						});
 						tokio::spawn(async move {
 							let result = get_block_jh.await;
-							//manage result
+							// Manage result.
 							let to_send = match result {
 								Err(err) => {
 									tracing::error!("spawn_blocking task failed: {err}");
@@ -91,9 +102,16 @@ where
 			}
 
 			//propagate the new block.
-			Some(block) = conditional_block_producing(produce_block_jh.as_mut()) => {
+			Some(block) = conditional_block_producing(&mut produce_block_jh), if produce_block_jh.is_some() => {
 				let block_digest = block.get_block_digest();
 				// Send the block to all registered follower
+				// For now send in the main loop because there's a very few follower (<100).
+				tracing::info!("New bloc produced, send to fullnode:{} height:{}",connectec_grpc_sender.len(), block.height.0);
+				for sender in &connectec_grpc_sender {
+					if let Err(err) = sender.send(block.clone()) {
+						tracing::error!("Failed to send block to grpc client :{err}");
+					}
+				}
 
 				//send the block to Celestia.
 				let celestia_send_jh = tokio::spawn({
@@ -115,11 +133,13 @@ where
 
 /// manage the optional future for block production.
 async fn conditional_block_producing(
-	fut: Option<&mut JoinHandle<Result<Option<SequencerBlock>, DaSequencerError>>>,
+	opt_fut: &mut Option<JoinHandle<Result<Option<SequencerBlock>, DaSequencerError>>>,
 ) -> Option<SequencerBlock> {
-	match fut {
+	match opt_fut {
 		Some(fut) => {
 			let res = fut.await;
+			// produce_block_jh has been awaited to set to none to avoid pulling after completion.
+			*opt_fut = None;
 			match res {
 				Ok(Ok(Some(res))) => Some(res),
 				Ok(Ok(None)) => None,
