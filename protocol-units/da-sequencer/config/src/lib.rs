@@ -32,14 +32,14 @@ pub fn get_config_path(dot_movement: &dot_movement::DotMovement) -> std::path::P
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct DaSequencerConfig {
-        #[serde(default = "default_movement_da_sequencer_listen_address")]
-        pub movement_da_sequencer_listen_address: SocketAddr,
+        #[serde(default = "default_grpc_listen_address")]
+        pub grpc_listen_address: SocketAddr,
 
-        #[serde(default = "default_movement_da_sequencer_block_production_interval_millisec")]
-        pub movement_da_sequencer_block_production_interval_millisec: u64,
+        #[serde(default = "default_block_production_interval_millisec")]
+        pub block_production_interval_millisec: u64,
 
-        #[serde(default = "default_movement_da_sequencer_stream_heartbeat_interval_sec")]
-        pub movement_da_sequencer_stream_heartbeat_interval_sec: u64,
+        #[serde(default = "default_stream_heartbeat_interval_sec")]
+        pub stream_heartbeat_interval_sec: u64,
 
 
         #[serde(skip_deserializing, skip_serializing, default = "default_signing_key")]
@@ -47,8 +47,8 @@ pub struct DaSequencerConfig {
 }
 
 env_default!(
-        default_movement_da_sequencer_listen_address,
-        "MOVEMENT_DA_SEQUENCER_LISTEN_ADDRESS",
+        default_grpc_listen_address,
+        "MOVEMENT_DA_SEQUENCER_GRPC_LISTEN_ADDRESS",
         SocketAddr,
         "0.0.0.0:30730"
                 .parse::<SocketAddr>()
@@ -56,13 +56,13 @@ env_default!(
 );
 
 env_default!(
-        default_movement_da_sequencer_block_production_interval_millisec,
+        default_block_production_interval_millisec,
         "MOVEMENT_DA_BLOCK_PRODUCTION_INTERVAL_MILLISEC",
         u64,
         500
 );
 env_default!(
-        default_movement_da_sequencer_stream_heartbeat_interval_sec,
+        default_stream_heartbeat_interval_sec,
         "MOVEMENT_DA_STREAM_HEARTBEAT_INTERVAL_MILLISEC",
         u64,
         10
@@ -71,9 +71,9 @@ env_default!(
 impl Default for DaSequencerConfig {
         fn default() -> Self {
                 Self {
-                        movement_da_sequencer_listen_address: default_movement_da_sequencer_listen_address(),
-                        movement_da_sequencer_block_production_interval_millisec: default_movement_da_sequencer_block_production_interval_millisec(),
-                        movement_da_sequencer_stream_heartbeat_interval_sec: default_movement_da_sequencer_stream_heartbeat_interval_sec(),
+                        grpc_listen_address: default_grpc_listen_address(),
+                        block_production_interval_millisec: default_block_production_interval_millisec(),
+                        stream_heartbeat_interval_sec: default_stream_heartbeat_interval_sec(),
                         signing_key: default_signing_key(),
                 }
         }

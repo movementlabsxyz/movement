@@ -29,7 +29,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
 	let (request_tx, request_rx) = mpsc::channel(100);
 	// Start gprc server
-	let grpc_address = da_sequencer_config.movement_da_sequencer_listen_address;
+	let grpc_address = da_sequencer_config.grpc_listen_address;
 	let grpc_jh = tokio::spawn(async move {
 		movement_da_sequencer_node::server::run_server(grpc_address, request_tx).await
 	});

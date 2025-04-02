@@ -139,16 +139,11 @@ async fn test_write_batch_gprc_main_loop_happy_path_unhappy_path() {
 
 #[tokio::test]
 async fn test_produce_block_and_stream() {
-	// let _ = tracing_subscriber::fmt()
-	// 	.with_max_level(tracing::Level::INFO)
-	// 	.with_test_writer()
-	// 	.try_init();
-
 	let (request_tx, request_rx) = mpsc::channel(100);
 
 	let mut config = DaSequencerConfig::default();
 	//update config to generate faster heartbeat.
-	config.movement_da_sequencer_stream_heartbeat_interval_sec = 1;
+	config.stream_heartbeat_interval_sec = 1;
 	let signing_key = config.signing_key.clone();
 	let verifying_key = signing_key.verifying_key();
 

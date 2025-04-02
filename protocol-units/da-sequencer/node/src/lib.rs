@@ -31,10 +31,10 @@ where
 	S: DaSequencerStorage + Send + 'static,
 {
 	let mut produce_block_interval = tokio::time::interval(tokio::time::Duration::from_millis(
-		config.movement_da_sequencer_block_production_interval_millisec,
+		config.block_production_interval_millisec,
 	));
 	let mut da_stream_heartbeat_interval = tokio::time::interval(tokio::time::Duration::from_secs(
-		config.movement_da_sequencer_stream_heartbeat_interval_sec,
+		config.stream_heartbeat_interval_sec,
 	));
 	let mut spawn_result_futures = FuturesUnordered::new();
 	let mut produce_block_jh = None;
@@ -66,11 +66,11 @@ where
 							// Manage result.
 							let to_send = match result {
 								Err(err) => {
-									tracing::error!("spawn_blocking task failed: {err}");
+									tracing::error!(error = %err, "spawn_blocking task failed.");
 									None
 								}
 								Ok(Err(err)) => {
-									tracing::error!("Storage get_block_at_height return an error: {err}");
+									tracing::error!(error = %err, "Storage get_block_at_height return an error.");
 									None
 
 								}
@@ -109,8 +109,8 @@ where
 				let block_digest = block.get_block_digest();
 				// Send the block to all registered follower
 				// For now send to the main loop because there are very few followers (<100).
-				tracing::info!("New block produced, send to fullnodes :{} height:{}",connectec_grpc_sender.len(), block.height.0);
-				stream_block_to_sender(&mut connectec_grpc_sender, Some(block)).await;
+				tracing::info!(sender_len = %connected_grpc_sender.len(), block_height= %block.height.0, "New block produced, send to fullnodes.");
+				stream_block_to_sender(&mut connected_grpc_sender, Some(block)).await;
 
 				//send the block to Celestia.
 				let celestia_send_jh = tokio::spawn({
@@ -121,8 +121,8 @@ where
 			}
 			// Every tick will produce a heartbeat.
 			_ = da_stream_heartbeat_interval.tick() => {
-				tracing::info!("Produced a heartbeat, sent to fullnodes :{}",connectec_grpc_sender.len());
-				stream_block_to_sender(&mut connectec_grpc_sender, None).await;
+				tracing::info!(sender_len = %connected_grpc_sender.len(), "Produced a heartbeat, sent to fullnodes");
+				stream_block_to_sender(&mut connected_grpc_sender, None).await;
 
 			}
 
@@ -130,7 +130,7 @@ where
 			Some(Ok(res)) = spawn_result_futures.next() =>  {
 				// just log for now, add more logic later.
 				if let Err(err) = res {
-					tracing::error!("Error during future execution:{err}");
+					tracing::error!(error = %err, "Error during future execution.");
 				}
 			}
 		}

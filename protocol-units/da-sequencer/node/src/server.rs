@@ -64,7 +64,7 @@ impl DaSequencerNodeService for DaSequencerNode {
 		&self,
 		request: tonic::Request<StreamReadFromHeightRequest>,
 	) -> std::result::Result<tonic::Response<Self::StreamReadFromHeightStream>, tonic::Status> {
-		tracing::info!("Stream read from height request: {:?}", request);
+		tracing::info!(request = ?request, "Stream read from height request");
 
 		// Register the new produced block channel to get lastest block.
 		// Use `unbounded_channel` to avoid filling the channel during the fetching of an old block.
@@ -72,14 +72,14 @@ impl DaSequencerNodeService for DaSequencerNode {
 		let (current_height_tx, current_height_rx) = oneshot::channel();
 		if let Err(err) = self
 			.request_tx
-			.send(GrpcRequests::StartBlockStream(produced_tx, curent_height_tx))
+			.send(GrpcRequests::StartBlockStream(produced_tx, current_height_tx))
 			.await
 		{
-			tracing::warn!("Internal grpc request channel closed, can't stream blocks:{err}");
+			tracing::warn!(error = %err, "Internal grpc request channel closed, can't stream blocks");
 			return Err(tonic::Status::internal("Internal error. Retry later"));
 		}
 
-		let mut current_height = match curent_height_rx.await {
+		let mut current_produced_height = match current_height_rx.await {
 			Ok(h) => h,
 			Err(err) => {
 				tracing::warn!("start stream channel closed: {err}");
@@ -101,13 +101,13 @@ impl DaSequencerNodeService for DaSequencerNode {
 						current_block_height.into(),
 						get_height_tx,
 					)).await {
-tracing::warn!("Oneshot channel closed while streaming block at height. Error: {err}");
+						tracing::warn!(error = %err, "Request channel closed while requesting GetBlockHeight.");
 						return;
 					}
 					let block = match get_height_rx.await {
 						Ok(b) => b,
 						Err(err) => {
-							tracing::warn!("Stream block, stream block oneshot channel closed: {err}");
+							tracing::warn!(error = %err, "Stream block: oneshot channel closed");
 							return;
 						}
 					};
@@ -117,7 +117,7 @@ tracing::warn!("Oneshot channel closed while streaming block at height. Error: {
 						None => continue,
 						Some(Ok(b)) => b,
 						Some(Err(err)) => {
-							tracing::warn!("Stream block serialization failed :{err}");
+							tracing::warn!(error = %err, "Streamed block serialization failed.");
 							return;
 
 						}
@@ -129,7 +129,7 @@ tracing::warn!("Oneshot channel closed while streaming block at height. Error: {
 					let received_content = match produced_rx.recv().await {
 						Some(block) => block,
 						None => {
-							tracing::warn!("Stream block produced block channel closed.");
+							tracing::warn!("Stream block: produced block channel closed.");
 							return;
 						}
 
@@ -153,7 +153,7 @@ tracing::warn!("Oneshot channel closed while streaming block at height. Error: {
 							let blockv1 = match new_block.try_into() {
 								Ok(b) => b,
 								Err(err) => {
-									tracing::warn!("Stream block: block serialization failed :{err}");
+									tracing::warn!(error = %err, "Stream block: block serialization failed.");
 									return;
 
 								}
@@ -190,14 +190,12 @@ tracing::warn!("Oneshot channel closed while streaming block at height. Error: {
 		) {
 			Ok(batch) => batch,
 			Err(err) => {
-				tracing::warn!("Invalid batch send, verification / validation failed:{err}");
+				tracing::warn!(error = %err, "Invalid batch send, verification / validation failed.");
 				return Ok(tonic::Response::new(BatchWriteResponse { answer: false }));
 			}
 		};
 		if let Err(err) = self.request_tx.send(GrpcRequests::WriteBatch(batch)).await {
-			tracing::error!(
-				"Internal grpc request channel closed, no more batch will be processed:{err}"
-			);
+			tracing::error!(error = %err, "Internal grpc request channel closed, no more batch will be processed.");
 			return Ok(tonic::Response::new(BatchWriteResponse { answer: false }));
 		}
 		Ok(tonic::Response::new(BatchWriteResponse { answer: true }))
@@ -229,7 +227,7 @@ impl TryFrom<&SequencerBlock> for Blockv1 {
 		Ok(Blockv1 {
 			blobckid: block.get_block_digest().into_vec(),
 			height: block.height.into(),
-			data: crate::block::SequencerBlock::serialize_to_bytes(&block)?,
+			data: block.try_into()?,
 		})
 	}
 }
