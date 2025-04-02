@@ -70,28 +70,58 @@ pub trait CelestiaClient {
 	) -> impl Future<Output = Result<Option<Vec<Blob>>, DaSequencerError>> + Send;
 }
 
-const DELAY_SECONDS_BEFORE_BOOTSTRAPPING: Duration = Duration::from_secs(12);
-
-#[derive(Clone)]
-pub struct CelestiaExternalDa<C: CelestiaClient + Clone> {
-	notifier: mpsc::Sender<ExternalDaNotification>,
-	celestia_client: C,
+pub trait BlockProvider {
+	fn notify_block_sent(
+		&self,
+		block_height: BlockHeight,
+	) -> impl Future<Output = Result<(), DaSequencerError>> + Send;
+	fn notify_block_commited(
+		&self,
+		block_height: BlockHeight,
+		celestia_height: CelestiaHeight,
+	) -> impl Future<Output = Result<(), DaSequencerError>> + Send;
+	fn request_block(
+		&self,
+		at: BlockAt,
+	) -> impl Future<Output = Result<SequencerBlock, DaSequencerError>> + Send;
 }
 
-impl<C: CelestiaClient + Sync + Clone> CelestiaExternalDa<C> {
-	/// Create the Celestia client and all async process to manage celestia access.
-	pub async fn new(celestia_client: C, notifier: mpsc::Sender<ExternalDaNotification>) -> Self {
-		CelestiaExternalDa { notifier, celestia_client }
+pub struct ChannelBlockProvider {
+	notifier: mpsc::Sender<ExternalDaNotification>,
+}
+
+impl ChannelBlockProvider {
+	pub fn new(notifier: mpsc::Sender<ExternalDaNotification>) -> Self {
+		Self { notifier }
+	}
+
+	async fn notify(&self, notification: ExternalDaNotification) -> Result<(), DaSequencerError> {
+		self.notifier.send(notification).await.map_err(|e| {
+			DaSequencerError::ChannelError(format!("Broken notifier channel: {}", e))
+		})?;
+		Ok(())
+	}
+}
+
+impl BlockProvider for ChannelBlockProvider {
+	async fn notify_block_sent(&self, block_height: BlockHeight) -> Result<(), DaSequencerError> {
+		self.notify(ExternalDaNotification::BlockSent(block_height)).await
+	}
+
+	async fn notify_block_commited(
+		&self,
+		block_height: BlockHeight,
+		celestia_height: CelestiaHeight,
+	) -> Result<(), DaSequencerError> {
+		self.notify(ExternalDaNotification::BlockCommited(block_height, celestia_height))
+			.await
 	}
 
 	async fn request_block(&self, at: BlockAt) -> Result<SequencerBlock, DaSequencerError> {
 		let (tx, rx) = oneshot::channel();
-		let request = ExternalDaNotification::RequestBlock { at, callback: tx };
-		self.notifier.send(request).await.map_err(|e| {
-			DaSequencerError::BlockRetrieval(format!("Broken notifier channel: {}", e))
-		})?;
+		self.notify(ExternalDaNotification::RequestBlock { at, callback: tx }).await?;
 		let block = rx.await.map_err(|e| {
-			DaSequencerError::BlockRetrieval(format!("Broken notifier channel: {}", e))
+			DaSequencerError::ChannelError(format!("Broken notifier channel: {}", e))
 		})?;
 		let block = block
 			.ok_or(DaSequencerError::BlockRetrieval(format!("Block at {:?} not found", at)))?;
@@ -99,12 +129,29 @@ impl<C: CelestiaClient + Sync + Clone> CelestiaExternalDa<C> {
 	}
 }
 
-impl<C: CelestiaClient + Sync + Clone> DaSequencerExternalDa for CelestiaExternalDa<C> {
+const DELAY_SECONDS_BEFORE_BOOTSTRAPPING: Duration = Duration::from_secs(12);
+
+#[derive(Clone)]
+pub struct CelestiaExternalDa<B: BlockProvider + Sync + Clone, C: CelestiaClient + Sync + Clone> {
+	block_provider: B,
+	celestia_client: C,
+}
+
+impl<B: BlockProvider + Sync + Clone, C: CelestiaClient + Sync + Clone> CelestiaExternalDa<B, C> {
+	/// Create the Celestia client and all async process to manage celestia access.
+	pub async fn new(celestia_client: C, block_provider: B) -> Self {
+		CelestiaExternalDa { block_provider, celestia_client }
+	}
+}
+
+impl<B: BlockProvider + Sync + Clone, C: CelestiaClient + Sync + Clone> DaSequencerExternalDa
+	for CelestiaExternalDa<B, C>
+{
 	/// Send the given block to Celestia.
 	/// The block is not immediately sent but aggregated in a blob
 	/// until the client can send it to celestia.
 	async fn send_block(&self, _block: SequencerBlockDigest) -> Result<(), DaSequencerError> {
-		todo!()
+		todo!();
 	}
 
 	/// Get the blob from celestia at the given height.
@@ -140,11 +187,11 @@ impl<C: CelestiaClient + Sync + Clone> DaSequencerExternalDa for CelestiaExterna
 			)))?;
 
 		// Step 2: Get the Block for digest
-		let mut block = self.request_block(BlockAt::Digest(digest.clone())).await?;
+		let mut block = self.block_provider.request_block(BlockAt::Digest(digest.clone())).await?;
 
 		// Step 3: Request and send all missing blocks
 		for height in (block.height.0 + 1)..=current_block_height.0 {
-			block = self.request_block(BlockAt::Height(BlockHeight(height))).await?;
+			block = self.block_provider.request_block(BlockAt::Height(BlockHeight(height))).await?;
 			self.send_block(block.get_block_digest()).await?;
 		}
 
