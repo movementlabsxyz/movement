@@ -24,7 +24,6 @@ tracing = { workspace = true }
 [dev-dependencies]
 tokio = { version = "1.38", features = ["macros", "rt-multi-thread"] }
 tokio-stream = "0.1"
-tonic = { version = "0.11", features = ["transport"] }
 
 [lints]
 #workspace = true

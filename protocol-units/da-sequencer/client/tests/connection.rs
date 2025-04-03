@@ -127,11 +127,23 @@ async fn test_reopen_block_stream_at_correct_height() {
 	let (addr, shutdown_tx) = start_mock_server_with_control().await;
 	let url = format!("http://{}", addr);
 
-	let mut client = DaSequencerClient::try_connect(&url).await.expect("Failed to connect");
+	// Connect and open stream
+	let mut client1 = DaSequencerClient::try_connect(&url)
+		.await
+		.expect("Failed to connect with client1");
 
 	let request = StreamReadFromHeightRequest { height: 0 };
-	let stream_result = client.stream_read_from_height(request).await;
-	assert!(stream_result.is_ok());
+	let stream_result1 = client1.stream_read_from_height(request).await;
+	assert!(stream_result1.is_ok());
+
+	// Simulate reconnection
+	let mut client2 = DaSequencerClient::try_connect(&url)
+		.await
+		.expect("Failed to reconnect with client2");
+
+	let stream_result2 =
+		client2.stream_read_from_height(StreamReadFromHeightRequest { height: 0 }).await;
+	assert!(stream_result2.is_ok(), "Failed to reopen block stream");
 
 	let _ = shutdown_tx.send(());
 }
