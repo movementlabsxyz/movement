@@ -8,7 +8,6 @@ use movement_da_sequencer_proto::{
 	ReadAtHeightResponse, StreamReadFromHeightRequest, StreamReadFromHeightResponse,
 };
 use std::net::SocketAddr;
-use std::pin::Pin;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
