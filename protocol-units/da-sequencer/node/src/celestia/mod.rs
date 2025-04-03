@@ -1,3 +1,9 @@
+pub mod blob;
+mod client;
+mod submit;
+
+pub use client::CelestiaClient;
+
 use crate::block::SequencerBlockDigest;
 use crate::block::{BlockHeight, SequencerBlock};
 use crate::celestia::blob::CelestiaBlobData;
@@ -6,10 +12,6 @@ use tokio::sync::{mpsc, oneshot};
 
 use std::future::Future;
 use std::time::Duration;
-
-pub mod blob;
-mod client;
-mod submit;
 
 /// Functions to implement to save block digest in an external DA like Celestia
 pub trait DaSequencerExternalDa: Clone {
@@ -43,11 +45,15 @@ pub trait DaSequencerExternalDa: Clone {
 #[derive(Clone, Copy, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct CelestiaHeight(u64);
 
+impl CelestiaHeight {
+	pub fn new(raw: u64) -> Self {
+		CelestiaHeight(raw)
+	}
+}
+
 /// Message, use to notify CelestiaClient activities.
 #[derive(Debug)]
 pub enum ExternalDaNotification {
-	/// Notify that the block at specified height has been sent to the Celestia network.
-	BlockSent(BlockHeight),
 	/// Notify that the block at specified height has been commited on celestia network
 	BlockCommitted(BlockHeight, CelestiaHeight),
 	/// Ask to send the block at specified height to the Celestia client.
