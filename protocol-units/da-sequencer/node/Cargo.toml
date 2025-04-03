@@ -25,6 +25,7 @@ serde = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
 tokio-stream = { workspace = true }
+async-stream = { workspace = true }
 tonic = { workspace = true }
 tonic-reflection = { workspace = true }
 tracing = { workspace = true }

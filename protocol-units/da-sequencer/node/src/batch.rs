@@ -144,11 +144,6 @@ mod tests {
 
 	#[test]
 	fn test_sign_and_validate_batch() {
-		let _ = tracing_subscriber::fmt()
-			.with_max_level(tracing::Level::INFO)
-			.with_test_writer()
-			.try_init();
-
 		let config = DaSequencerConfig::default();
 		let signing_key = config.signing_key;
 		let verifying_key = signing_key.verifying_key();
