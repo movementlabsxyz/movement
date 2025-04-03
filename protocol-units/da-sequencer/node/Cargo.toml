@@ -10,22 +10,23 @@ publish.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+anyhow = { workspace = true }
 aptos-crypto = { workspace = true }
 aptos-crypto-derive = { workspace = true }
 hex = { workspace = true }
 ed25519-dalek = { workspace = true }
 once_cell = { workspace = true }
 prost = { workspace = true }
-rand = { workspace = true }
-serde = { workspace = true }
-anyhow = { workspace = true }
 aptos-sdk = { workspace = true }
 bcs = { workspace = true }
 chrono = { workspace = true }
+rand = { workspace = true }
 rocksdb = { workspace = true }
+serde = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
 tokio-stream = { workspace = true }
+async-stream = { workspace = true }
 tonic = { workspace = true }
 tonic-reflection = { workspace = true }
 tracing = { workspace = true }

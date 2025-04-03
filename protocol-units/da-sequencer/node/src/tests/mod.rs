@@ -105,10 +105,8 @@ async fn test_write_batch_grpc_main_loop_happy_path() {
 	let grpc_address = listener.local_addr().unwrap();
 	drop(listener);
 
-	let config = DaSequencerConfig {
-		movement_da_sequencer_listen_address: grpc_address,
-		..DaSequencerConfig::default()
-	};
+	let config =
+		DaSequencerConfig { grpc_listen_address: grpc_address, ..DaSequencerConfig::default() };
 
 	let signing_key = config.signing_key.clone();
 	let verifying_key = signing_key.verifying_key();
@@ -155,7 +153,7 @@ async fn test_write_batch_grpc_main_loop_unhappy_path() {
 	let whitelist = make_test_whitelist(vec![]);
 	let whitelist_clone = whitelist.clone();
 
-	let grpc_address = config.movement_da_sequencer_listen_address;
+	let grpc_address = config.grpc_listen_address;
 	let _grpc_jh =
 		tokio::spawn(async move { run_server(grpc_address, request_tx, whitelist_clone).await });
 

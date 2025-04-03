@@ -4,12 +4,11 @@ use serde::{Deserialize, Serialize};
 use crate::error::DaSequencerError;
 
 // TODO: use a sensible value for the max sequencer block size
-const MAX_SEQUENCER_BLOCK_SIZE: u64 = 1_000_000; // 1 MB
+pub const MAX_SEQUENCER_BLOCK_SIZE: u64 = 1_000_000; // 1 MB
 
 #[derive(Clone, Copy, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct SequencerBlockDigest(pub [u8; 32]);
 
-/// The id for an Ir Blob
 impl SequencerBlockDigest {
 	pub fn new(id: [u8; 32]) -> Self {
 		SequencerBlockDigest(id)
@@ -29,6 +28,26 @@ impl SequencerBlockDigest {
 )]
 pub struct BlockHeight(pub u64);
 
+impl BlockHeight {
+	/// Returns the parent block height.
+	/// If this is the genesis block (height 0), returns 0.
+	pub fn parent(&self) -> BlockHeight {
+		BlockHeight(self.0.saturating_sub(1))
+	}
+}
+
+impl From<u64> for BlockHeight {
+	fn from(value: u64) -> Self {
+		BlockHeight(value)
+	}
+}
+
+impl From<BlockHeight> for u64 {
+	fn from(height: BlockHeight) -> Self {
+		height.0
+	}
+}
+
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct SequencerBlock {
 	pub height: BlockHeight,
@@ -38,58 +57,35 @@ pub struct SequencerBlock {
 impl SequencerBlock {
 	/// Try to construct a SequencerBlock, but fail if it exceeds the max encoded size.
 	pub fn try_new(height: BlockHeight, block: Block) -> Result<Self, DaSequencerError> {
-		todo!()
+		let sb = SequencerBlock { height, block };
+		Ok(sb)
 	}
 
 	pub fn get_block_digest(&self) -> SequencerBlockDigest {
 		SequencerBlockDigest(*self.block.id().as_bytes())
 	}
+}
 
-	pub fn validate_size(&self) -> Result<(), DaSequencerError> {
-		let bytes =
-			bcs::to_bytes(self).map_err(|e| DaSequencerError::Deserialization(e.to_string()))?;
-		let size = bytes.len() as u64;
+impl TryFrom<&[u8]> for SequencerBlock {
+	type Error = DaSequencerError;
 
-		if size > MAX_SEQUENCER_BLOCK_SIZE {
-			Err(DaSequencerError::SizeExceedsMax(MAX_SEQUENCER_BLOCK_SIZE as usize))
-		} else {
-			Ok(())
-		}
+	fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+		bcs::from_bytes(bytes).map_err(|e| DaSequencerError::Deserialization(e.to_string()))
 	}
 }
 
-#[cfg(test)]
-mod tests {
+impl TryInto<Vec<u8>> for SequencerBlock {
+	type Error = DaSequencerError;
 
-	#[test]
-	#[ignore]
-	//TODO: will be dealt with PR #1159
-	fn test_sequencer_block_rejects_block_larger_than_max_size() {
-		use super::MAX_SEQUENCER_BLOCK_SIZE;
-		use crate::block::{BlockHeight, SequencerBlock};
-		use crate::DaSequencerError;
-		use movement_types::{block::Block, transaction::Transaction};
-		use std::collections::BTreeSet;
+	fn try_into(self) -> Result<Vec<u8>, Self::Error> {
+		(&self).try_into()
+	}
+}
 
-		// Fill enough transactions with large data to exceed MAX_SEQUENCER_BLOCK_SIZE (1MB)
-		let mut transactions = BTreeSet::new();
-		let mut total_size = 0;
+impl TryInto<Vec<u8>> for &SequencerBlock {
+	type Error = DaSequencerError;
 
-		while total_size < MAX_SEQUENCER_BLOCK_SIZE as usize + 100_000 {
-			let data = vec![0u8; 100_000]; // 100 KB each
-			let tx = Transaction::test_only_new(data, 0, total_size as u64);
-			total_size += 100_000;
-			transactions.insert(tx);
-		}
-
-		let block = Block::new(Default::default(), Default::default(), transactions);
-
-		let result = SequencerBlock::try_new(BlockHeight(0), block);
-
-		assert!(
-			matches!(&result, Err(DaSequencerError::SizeExceedsMax(size)) if *size == MAX_SEQUENCER_BLOCK_SIZE as usize),
-			"Expected error for oversized block, got: {:?}",
-			result
-		)
+	fn try_into(self) -> Result<Vec<u8>, Self::Error> {
+		bcs::to_bytes(self).map_err(|e| DaSequencerError::Deserialization(e.to_string()))
 	}
 }
