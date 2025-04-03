@@ -10,6 +10,7 @@ use movement_types::{
 	transaction::Transaction,
 };
 use rocksdb::{ColumnFamilyDescriptor, Options, WriteBatch, DB};
+use std::ops::Deref;
 use std::{collections::BTreeSet, result::Result, sync::Arc};
 
 pub mod cf {
@@ -101,6 +102,8 @@ pub trait DaSequencerStorage: Clone {
 		block_heigh: BlockHeight,
 		celestia_heigh: CelestiaHeight,
 	) -> std::result::Result<(), DaSequencerError>;
+
+	fn get_current_block_height(&self) -> BlockHeight;
 }
 
 impl Storage {
@@ -192,8 +195,7 @@ impl DaSequencerStorage for Storage {
 			.map_err(|e| DaSequencerError::RocksDbError(e.to_string()))?
 		{
 			Some(bytes) => {
-				let block: SequencerBlock = bcs::from_bytes(&bytes)
-					.map_err(|e| DaSequencerError::Deserialization(e.to_string()))?;
+				let block = SequencerBlock::try_from(&bytes[..])?;
 				Ok(Some(block))
 			}
 			None => Ok(None),
@@ -296,6 +298,10 @@ impl DaSequencerStorage for Storage {
 	) -> Result<(), DaSequencerError> {
 		todo!()
 	}
+
+	fn get_current_block_height(&self) -> BlockHeight {
+		todo!();
+	}
 }
 
 impl Storage {
@@ -306,8 +312,7 @@ impl Storage {
 		block: &SequencerBlock,
 		delete_keys: Option<Vec<Vec<u8>>>,
 	) -> Result<(), DaSequencerError> {
-		let block_bytes =
-			bcs::to_bytes(block).map_err(|e| DaSequencerError::Deserialization(e.to_string()))?;
+		let block_bytes: Vec<u8> = block.try_into()?;
 
 		let cf_blocks = self.db.cf_handle(cf::BLOCKS).ok_or_else(|| {
 			DaSequencerError::StorageAccess("Missing column family: blocks".into())

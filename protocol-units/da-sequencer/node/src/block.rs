@@ -43,8 +43,8 @@ impl From<u64> for BlockHeight {
 }
 
 impl From<BlockHeight> for u64 {
-	fn from(v: BlockHeight) -> Self {
-		v.0
+	fn from(height: BlockHeight) -> Self {
+		height.0
 	}
 }
 
@@ -57,10 +57,35 @@ pub struct SequencerBlock {
 impl SequencerBlock {
 	/// Try to construct a SequencerBlock, but fail if it exceeds the max encoded size.
 	pub fn try_new(height: BlockHeight, block: Block) -> Result<Self, DaSequencerError> {
-		Ok(SequencerBlock { height, block })
+		let sb = SequencerBlock { height, block };
+		Ok(sb)
 	}
 
 	pub fn get_block_digest(&self) -> SequencerBlockDigest {
 		SequencerBlockDigest(*self.block.id().as_bytes())
+	}
+}
+
+impl TryFrom<&[u8]> for SequencerBlock {
+	type Error = DaSequencerError;
+
+	fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+		bcs::from_bytes(bytes).map_err(|e| DaSequencerError::Deserialization(e.to_string()))
+	}
+}
+
+impl TryInto<Vec<u8>> for SequencerBlock {
+	type Error = DaSequencerError;
+
+	fn try_into(self) -> Result<Vec<u8>, Self::Error> {
+		(&self).try_into()
+	}
+}
+
+impl TryInto<Vec<u8>> for &SequencerBlock {
+	type Error = DaSequencerError;
+
+	fn try_into(self) -> Result<Vec<u8>, Self::Error> {
+		bcs::to_bytes(self).map_err(|e| DaSequencerError::Deserialization(e.to_string()))
 	}
 }
