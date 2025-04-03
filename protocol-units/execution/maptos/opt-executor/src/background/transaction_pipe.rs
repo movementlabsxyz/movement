@@ -2,6 +2,7 @@
 use super::Error;
 use crate::executor::TxExecutionResult;
 use crate::gc_account_sequence_number::UsedSequenceNumberPool;
+use futures::StreamExt;
 
 use std::collections::{BTreeMap, HashSet};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -11,21 +12,17 @@ use std::time::{Duration, Instant};
 use aptos_account_whitelist::config::Config as WhitelistConfig;
 use aptos_config::config::NodeConfig;
 use aptos_mempool::{
-    core_mempool::{CoreMempool, TimelineState},
-    MempoolClientRequest, SubmissionStatus,
+	core_mempool::{CoreMempool, TimelineState},
+	MempoolClientRequest, SubmissionStatus,
 };
-use aptos_storage_interface::{
-    state_view::LatestDbStateCheckpointView,
-    DbReader,
-};
+use aptos_storage_interface::{state_view::LatestDbStateCheckpointView, DbReader};
 use aptos_types::{
-    account_address::AccountAddress,
-    mempool_status::{MempoolStatus, MempoolStatusCode},
-    transaction::{SignedTransaction, TransactionStatus},
+	account_address::AccountAddress,
+	mempool_status::{MempoolStatus, MempoolStatusCode},
+	transaction::{SignedTransaction, TransactionStatus},
 };
 use aptos_vm_validator::vm_validator::{
-    get_account_sequence_number,
-    TransactionValidation, VMValidator,
+	get_account_sequence_number, TransactionValidation, VMValidator,
 };
 
 use dot_movement;
@@ -37,7 +34,7 @@ use movement_da_light_node_client::MovementDaLightNodeClient;
 use movement_da_light_node_proto::{BatchWriteRequest, BlobWrite};
 use once_cell::sync::Lazy;
 use prost::Message;
-use tokio::sync::mpsc;
+//use tokio::sync::mpsc;
 use tracing::{debug, info, info_span, warn, Instrument};
 
 const LOGGING_UID: AtomicU64 = AtomicU64::new(0);
@@ -121,96 +118,80 @@ impl TransactionPipe {
 	}
 
 	pub async fn run(mut self) -> Result<(), Error> {
+		let mut build_batch_interval = tokio::time::interval(MEMPOOL_INTERVAL);
+		let mut mempool_gc_interval = tokio::time::interval(tokio::time::Duration::from_secs(10));
 		loop {
-			self.tick().await?;
-			let _ = tokio::time::sleep(tokio::time::Duration::from_millis(100));
+			tokio::select! {
+				Some(request) = self.mempool_client_receiver.next() => {
+					self.tick_requests(request).await?;
+				}
+				Some(batches) = self.mempool_commit_tx_receiver.next() => {
+					self.tick_commit_tx(batches).await?;
+				}
+				_ = build_batch_interval.tick() => {
+					self.tick_mempool_sender().await?;
+				}
+				_ = mempool_gc_interval.tick() => {
+					self.tick_gc();
+				}
+			}
 		}
 	}
 
-	pub async fn tick(&mut self) -> Result<(), Error> {
-		self.tick_requests().await?;
-		self.tick_mempool_sender().await?;
-		self.tick_commit_tx().await?;
-		self.tick_gc();
-		Ok(())
-	}
-
 	/// Pipes a batch of transactions from the executor to commit then in the Aptos mempool.
-	pub(crate) async fn tick_commit_tx(&mut self) -> Result<(), Error> {
-		match self.mempool_commit_tx_receiver.try_next() {
-			Ok(Some(batch)) => {
-				for tx_result in batch {
-					if let TransactionStatus::Discard(discard_status) = tx_result.status {
-						tracing::info!(
-							"Transaction pipe, mempool rejecting Tx:{} with status:{:?}",
-							tx_result.hash,
-							discard_status
-						);
-						self.core_mempool.reject_transaction(
-							&tx_result.sender,
-							tx_result.seq_number,
-							&tx_result.hash,
-							&discard_status,
-						)
-					} else {
-						tracing::info!(
-							tx_hash = %tx_result.hash,
-							sender = %tx_result.sender,
-							sequence_number = %tx_result.seq_number,
-							"mempool rejected transaction",
-						);
-					}
-				}
+	pub(crate) async fn tick_commit_tx(
+		&mut self,
+		batches: Vec<TxExecutionResult>,
+	) -> Result<(), Error> {
+		for tx_result in batches {
+			if let TransactionStatus::Discard(discard_status) = tx_result.status {
+				tracing::info!(
+					"Transaction pipe, mempool rejecting Tx:{} with status:{:?}",
+					tx_result.hash,
+					discard_status
+				);
+				self.core_mempool.reject_transaction(
+					&tx_result.sender,
+					tx_result.seq_number,
+					&tx_result.hash,
+					&discard_status,
+				)
+			} else {
+				tracing::info!(
+					tx_hash = %tx_result.hash,
+					sender = %tx_result.sender,
+					sequence_number = %tx_result.seq_number,
+					"mempool rejected transaction",
+				);
 			}
-			Ok(None) => return Err(Error::InputClosed),
-			Err(_) => (),
 		}
 		Ok(())
 	}
 
 	/// Pipes a batch of transactions from the mempool to the transaction channel.
-	/// todo: it may be wise to move the batching logic up a level to the consuming structs.
-	pub(crate) async fn tick_requests(&mut self) -> Result<(), Error> {
-		// try to immediately get the next request
-		// if we don't do this, then the `tick_mempool_sender` process would be held up by receiving a new transaction
+	pub async fn tick_requests(&mut self, request: MempoolClientRequest) -> Result<(), Error> {
+		match request {
+			MempoolClientRequest::SubmitTransaction(transaction, callback) => {
+				let span = info_span!(
+					target: "movement_timing",
+					"submit_transaction",
+					tx_hash = %transaction.committed_hash(),
+					sender = %transaction.sender(),
+					sequence_number = transaction.sequence_number(),
+				);
+				let status =
+					self.add_transaction_to_aptos_mempool(transaction).instrument(span).await?;
 
-		// todo: for some reason this causes the core_mempool API to flag the receiver as gone. This workaround needs to be reinvestigated.
-		// we use select to make this timeout after 1ms
-		/*let timeout = tokio::time::sleep(Duration::from_millis(1));
-
-		let next = tokio::select! {
-			next = self.mempool_client_receiver.next() => next, // If received, process it
-			_ = timeout => None, // If timeout, return None
-		};*/
-
-		// this also causes the core_mempool API to flag the receiver as gone
-		// let next = self.mempool_client_receiver.try_next().map_err(|_| Error::InputClosed)?;
-		match self.mempool_client_receiver.try_next() {
-			Ok(Some(request)) => match request {
-				MempoolClientRequest::SubmitTransaction(transaction, callback) => {
-					let span = info_span!(
-						target: "movement_timing",
-						"submit_transaction",
-						tx_hash = %transaction.committed_hash(),
-						sender = %transaction.sender(),
-						sequence_number = transaction.sequence_number(),
-					);
-					let status =
-						self.add_transaction_to_aptos_mempool(transaction).instrument(span).await?;
-
-					callback.send(Ok(status)).unwrap_or_else(|_| {
-						debug!("SubmitTransaction request canceled");
-					});
-				}
-				MempoolClientRequest::GetTransactionByHash(hash, sender) => {
-					let mempool_result = self.core_mempool.get_by_hash(hash);
-					sender.send(mempool_result).unwrap_or_else(|_| {
-						debug!("GetTransactionByHash request canceled");
-					});
-				}
-			},
-			Ok(None) => return Err(Error::InputClosed),
-			Err(_) => (),
+				callback.send(Ok(status)).unwrap_or_else(|_| {
+					debug!("SubmitTransaction request canceled");
+				});
+			}
+			MempoolClientRequest::GetTransactionByHash(hash, sender) => {
+				let mempool_result = self.core_mempool.get_by_hash(hash);
+				sender.send(mempool_result).unwrap_or_else(|_| {
+					debug!("GetTransactionByHash request canceled");
+				});
+			}
 		}
 
 		Ok(())
@@ -295,11 +276,13 @@ impl TransactionPipe {
 				);
 
 				let handle = tokio::spawn(async move {
-					let Ok(mut da_client) = MovementDaLightNodeClient::try_http1(&connection_string) else {
+					let Ok(mut da_client) =
+						MovementDaLightNodeClient::try_http1(&connection_string)
+					else {
 						warn!("failed to create DA client for batch_id={}", batch_id);
 						return Err(anyhow::anyhow!("DA client init failed"));
 					};
-				
+
 					let batch_write_clone = batch_write.clone();
 					let mut attempts = 0;
 					loop {
@@ -310,7 +293,10 @@ impl TransactionPipe {
 							}
 							Err(e) => {
 								attempts += 1;
-								warn!("batch_write failed batch_id={} attempt={} error={:?}", batch_id, attempts, e);
+								warn!(
+									"batch_write failed batch_id={} attempt={} error={:?}",
+									batch_id, attempts, e
+								);
 								if attempts >= 3 {
 									warn!("giving up on batch_id={}", batch_id);
 									return Err(e.into());
@@ -326,7 +312,6 @@ impl TransactionPipe {
 
 		Ok(())
 	}
-
 
 	pub(crate) fn tick_gc(&mut self) {
 		if self.last_gc.elapsed() >= GC_INTERVAL {
@@ -468,17 +453,15 @@ mod tests {
 	use maptos_execution_util::config::chain::Config;
 	use tempfile::TempDir;
 
-	async fn setup(
-	) -> (Context, TransactionPipe, TempDir) {
+	async fn setup() -> (Context, TransactionPipe, TempDir) {
 		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
-			futures_mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+			mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
 
 		let (executor, tempdir) =
 			Executor::try_test_default(GENESIS_KEYPAIR.0.clone(), mempool_tx_exec_result_sender)
 				.await
 				.unwrap();
-		let (context, background) =
-			executor.background(mempool_commit_tx_receiver).unwrap();
+		let (context, background) = executor.background(mempool_commit_tx_receiver).unwrap();
 		let transaction_pipe = background.into_transaction_pipe();
 		(context, transaction_pipe, tempdir)
 	}
