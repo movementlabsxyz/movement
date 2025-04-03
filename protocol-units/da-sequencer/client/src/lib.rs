@@ -13,6 +13,10 @@ use std::time::Duration;
 use tonic::transport::{Channel, ClientTlsConfig};
 use tonic::{Status, Streaming};
 
+/// A wrapping MovementDaLightNodeClients over complex types.
+///
+/// The usage of hype by tonic and related libraries makes it very difficult to maintain generic types for the clients.
+/// This simplifies client construction and usage.
 #[derive(Debug, Clone)]
 pub struct DaSequencerClient {
 	client: DaSequencerNodeServiceClient<Channel>,
@@ -21,6 +25,7 @@ pub struct DaSequencerClient {
 }
 
 impl DaSequencerClient {
+	/// Creates an http2 connection to the Da Sequencer node service.
 	pub async fn try_connect(connection_string: &str) -> Result<Self> {
 		for _ in 0..5 {
 			match Self::connect(connection_string).await {
@@ -44,6 +49,7 @@ impl DaSequencerClient {
 		Err(anyhow::anyhow!("Connection failed more than 5 times"))
 	}
 
+	/// Opens a raw tonic connection to the DA service.
 	async fn connect(connection_string: &str) -> Result<DaSequencerNodeServiceClient<Channel>> {
 		tracing::info!("Grpc client connect using: {}", connection_string);
 		let endpoint = Channel::from_shared(connection_string.to_string())?;
@@ -60,6 +66,7 @@ impl DaSequencerClient {
 		Ok(DaSequencerNodeServiceClient::new(channel))
 	}
 
+	/// Reconnects the internal gRPC client.
 	async fn reconnect(&mut self) -> Result<()> {
 		tracing::info!("Reconnecting to {}", self.connection_string);
 		let client = Self::connect(&self.connection_string).await?;
@@ -67,6 +74,7 @@ impl DaSequencerClient {
 		Ok(())
 	}
 
+	/// Streams blocks starting from a height, with reconnect and resume.
 	pub async fn stream_read_from_height(
 		&mut self,
 		start_request: StreamReadFromHeightRequest,
@@ -113,6 +121,7 @@ impl DaSequencerClient {
 		}
 	}
 
+	/// Wraps a stream to track and store the last received height.
 	fn wrap_stream_with_height_tracking(
 		stream: Streaming<StreamReadFromHeightResponse>,
 		last_received_height: Arc<Mutex<Option<u64>>>,
@@ -140,6 +149,7 @@ impl DaSequencerClient {
 		Box::pin(wrapped)
 	}
 
+	/// Sends a batch write request with reconnect on failure.
 	pub async fn batch_write(
 		&mut self,
 		request: BatchWriteRequest,
