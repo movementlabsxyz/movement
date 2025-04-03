@@ -188,28 +188,31 @@ impl<B: BlockProvider + Sync + Clone, C: CelestiaClient + Sync + Clone> DaSequen
 		tokio::time::sleep(DELAY_SECONDS_BEFORE_BOOTSTRAPPING).await;
 
 		let last_finalized_celestia_height = self.celestia_client.get_current_height().await?;
+		let height_from = if last_finalized_celestia_height.0 == 0 {
+			// Step 1: No blobs have been sent to Celestia yet
+			1
+		} else {
+			// Step 1: Get last digest in the last finalized blob
+			let digest = self
+				.get_blobs_at_height(last_finalized_celestia_height)
+				.await?
+				.and_then(|mut blobs| blobs.pop())
+				.and_then(|mut digest| digest.0.pop())
+				.ok_or(DaSequencerError::ExternalDaBootstrap(format!(
+					"Celestia returned no blobs or an empty last blob at height {}",
+					last_finalized_celestia_height.0
+				)))?;
 
-		if last_finalized_celestia_height.0 == 0 {
-			return Ok(());
-		}
-
-		// Step 1: Get last digest in the last finalized blob
-		let digest = self
-			.get_blobs_at_height(last_finalized_celestia_height)
-			.await?
-			.and_then(|mut blobs| blobs.pop())
-			.and_then(|mut digest| digest.0.pop())
-			.ok_or(DaSequencerError::ExternalDaBootstrap(format!(
-				"Celestia returned no blobs or an empty last blob at height {}",
-				last_finalized_celestia_height.0
-			)))?;
-
-		// Step 2: Get the Block for digest
-		let mut block = self.block_provider.request_block(BlockAt::Digest(digest.clone())).await?;
+			// Step 2: Get the Block for digest
+			let mut block =
+				self.block_provider.request_block(BlockAt::Digest(digest.clone())).await?;
+			block.height.0 + 1
+		};
 
 		// Step 3: Request and send all missing blocks
-		for height in (block.height.0 + 1)..=current_block_height.0 {
-			block = self.block_provider.request_block(BlockAt::Height(BlockHeight(height))).await?;
+		for height in height_from..=current_block_height.0 {
+			let block =
+				self.block_provider.request_block(BlockAt::Height(BlockHeight(height))).await?;
 			self.send_block(block.get_block_digest()).await?;
 		}
 
@@ -482,6 +485,34 @@ mod tests {
 				BlockProviderCalls::RequestBlock(BlockAt::Digest(
 					digests.get(digests.len() - 2).cloned().unwrap()
 				)),
+				BlockProviderCalls::RequestBlock(BlockAt::Height(BlockHeight(3)))
+			]
+		);
+	}
+
+	#[tokio::test]
+	async fn test_celestia_external_da_bootstrap_from_genesis() {
+		let blocks = test_blocks(3);
+		let digests = into_digests(blocks.as_slice());
+		let celestia = CelestiaMock::new(vec![]);
+		let block_provider = BlockProviderMock::new(blocks);
+		let current_height = block_provider.get_height().await;
+		let da = CelestiaExternalDa::new(block_provider.clone(), celestia.clone());
+		assert!(da.bootstrap(current_height).await.is_ok());
+		assert_eq!(
+			celestia.into_calls().await,
+			vec![
+				CelestiaClientCalls::GetCurrentHeight,
+				CelestiaClientCalls::SendBlob(Blob(vec![digests.get(0).cloned().unwrap()])),
+				CelestiaClientCalls::SendBlob(Blob(vec![digests.get(1).cloned().unwrap()])),
+				CelestiaClientCalls::SendBlob(Blob(vec![digests.get(2).cloned().unwrap()])),
+			]
+		);
+		assert_eq!(
+			block_provider.into_calls().await,
+			vec![
+				BlockProviderCalls::RequestBlock(BlockAt::Height(BlockHeight(1))),
+				BlockProviderCalls::RequestBlock(BlockAt::Height(BlockHeight(2))),
 				BlockProviderCalls::RequestBlock(BlockAt::Height(BlockHeight(3)))
 			]
 		);
