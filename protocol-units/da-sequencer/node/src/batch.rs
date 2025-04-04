@@ -89,7 +89,7 @@ pub fn validate_batch(
 		return Err(DaSequencerError::InvalidSignature);
 	}
 	if !whitelist.contains(&new_batch.signer) {
-		return Err(DaSequencerError::InvalidSigner);
+		return Err(DaSequencerError::UnauthorizedSigner);
 	}
 
 	let data = bcs::from_bytes::<FullNodeTxs>(&new_batch.data.data)

@@ -1,6 +1,7 @@
 use std::{
 	collections::HashSet,
 	fs,
+	io::{Error, ErrorKind, Result},
 	path::PathBuf,
 	sync::{Arc, RwLock},
 	thread,
@@ -15,8 +16,11 @@ pub struct Whitelist {
 	pub(crate) inner: Arc<RwLock<HashSet<VerifyingKey>>>,
 }
 
+/// The whitelist file
+pub type WhitelistFile = Arc<RwLock<HashSet<VerifyingKey>>>;
+
 impl Whitelist {
-	fn load(path: &PathBuf) -> std::io::Result<HashSet<VerifyingKey>> {
+	fn load(path: &PathBuf) -> Result<HashSet<VerifyingKey>> {
 		let content = fs::read_to_string(path)?;
 		let mut set = HashSet::new();
 
@@ -27,10 +31,10 @@ impl Whitelist {
 			}
 
 			let key_bytes = <[u8; 32]>::from_hex(trimmed)
-				.map_err(|_| std::io::Error::new(std::io::ErrorKind::InvalidData, "Invalid hex"))?;
+				.map_err(|_| Error::new(ErrorKind::InvalidData, "Invalid hex"))?;
 
 			let verifying_key = VerifyingKey::from_bytes(&key_bytes)
-				.map_err(|_| std::io::Error::new(std::io::ErrorKind::InvalidData, "Invalid key"))?;
+				.map_err(|_| Error::new(ErrorKind::InvalidData, "Invalid key"))?;
 
 			set.insert(verifying_key);
 		}
@@ -38,7 +42,7 @@ impl Whitelist {
 		Ok(set)
 	}
 
-	fn start_reload_thread(inner: Arc<RwLock<HashSet<VerifyingKey>>>, path: PathBuf) {
+	fn start_reload_thread(inner: WhitelistFile, path: PathBuf) {
 		thread::spawn(move || loop {
 			thread::sleep(Duration::from_secs(60));
 			match Self::load(&path) {
@@ -68,7 +72,7 @@ impl Whitelist {
 		self.inner.read().unwrap().contains(key)
 	}
 
-	pub fn from_file_and_spawn_reload_thread(path: PathBuf) -> std::io::Result<Self> {
+	pub fn from_file_and_spawn_reload_thread(path: PathBuf) -> Result<Self> {
 		let set = Self::load(&path)?;
 		let inner = Arc::new(RwLock::new(set));
 		Self::start_reload_thread(inner.clone(), path);

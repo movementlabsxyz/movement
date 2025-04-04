@@ -190,31 +190,36 @@ impl DaSequencerNodeService for DaSequencerNode {
 
 		// Try to deserialize the batch
 		let (public_key, signature, bytes) =
-			match crate::batch::deserialize_full_node_batch(batch_data) {
-				Ok(res) => res,
-				Err(err) => {
+			match crate::batch::deserialize_full_node_batch(batch_data).map_or_else(
+				|err| {
 					tracing::warn!("Invalid batch send: deserialization failed: {err}");
-					return Ok(tonic::Response::new(BatchWriteResponse { answer: false }));
-				}
+					None
+				},
+				|res| Some(res),
+			) {
+				Some(res) => res,
+				None => return Ok(tonic::Response::new(BatchWriteResponse { answer: false })),
 			};
 
 		// Validate the batch
 		let validated = {
 			let whitelist = self.whitelist.read().await;
 			let raw_batch = DaBatch::<RawData>::now(public_key, signature, bytes);
-			match validate_batch(raw_batch, &whitelist) {
-				Ok(validated) => validated,
-				Err(err) => {
+			match validate_batch(raw_batch, &whitelist).map_or_else(
+				|err| {
 					tracing::warn!("Invalid batch send: validation failed: {err}");
-					return Ok(tonic::Response::new(BatchWriteResponse { answer: false }));
-				}
+					None
+				},
+				|validated| Some(validated),
+			) {
+				Some(validated) => validated,
+				None => return Ok(tonic::Response::new(BatchWriteResponse { answer: false })),
 			}
 		};
 
-		// Send it to the internal channel (lock has been dropped by now)
 		if let Err(err) = self.request_tx.send(GrpcRequests::WriteBatch(validated)).await {
 			tracing::error!(
-				"Internal grpc request channel closed, no more batch will be processed: {err}"
+				"Internal grpc request channel closed, no more batches will be processed: {err}"
 			);
 			return Ok(tonic::Response::new(BatchWriteResponse { answer: false }));
 		}

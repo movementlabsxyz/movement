@@ -1,20 +1,24 @@
-use crate::batch::*;
-use crate::run;
-use crate::server::{run_server, GrpcRequests};
-use crate::tests::mock::{CelestiaMock, StorageMock};
-use crate::tests::whitelist::make_test_whitelist;
-use crate::whitelist::Whitelist;
+use crate::{
+	batch::*,
+	run,
+	server::{run_server, GrpcRequests},
+	tests::{
+		mock::{CelestiaMock, StorageMock},
+		whitelist::make_test_whitelist,
+	},
+	whitelist::Whitelist,
+};
 use ed25519_dalek::Signature;
 use movement_da_sequencer_client::{sign_batch, DaSequencerClient};
 use movement_da_sequencer_config::DaSequencerConfig;
 use movement_da_sequencer_proto::BatchWriteRequest;
 use movement_types::transaction::Transaction;
 use serial_test::serial;
-use std::net::TcpListener;
-use std::sync::Arc;
-use tokio::sync::mpsc;
-use tokio::sync::RwLock;
-use tokio::time::Duration;
+use std::{net::TcpListener, sync::Arc};
+use tokio::{
+	sync::{mpsc, RwLock},
+	time::Duration,
+};
 use tracing_subscriber;
 
 pub mod mock;

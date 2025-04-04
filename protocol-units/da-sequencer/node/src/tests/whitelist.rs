@@ -80,11 +80,17 @@ async fn test_sign_and_validate_batch_fails_with_non_whitelisted_signer() {
 		.with_test_writer()
 		.try_init();
 
-	let whitelist = make_test_whitelist(vec![]); // empty whitelist
+	// Create a key that *will* be whitelisted (but not used to sign)
+	let config_whitelisted = DaSequencerConfig::default();
+	let whitelisted_key = config_whitelisted.signing_key.verifying_key();
 
-	let config = DaSequencerConfig::default();
-	let signing_key = config.signing_key;
+	// Create a *different* key that will actually be used to sign
+	let config_signer = DaSequencerConfig::default();
+	let signing_key = config_signer.signing_key;
 	let verifying_key = signing_key.verifying_key();
+
+	// Whitelist only the whitelisted_key, not the actual signer
+	let whitelist = make_test_whitelist(vec![whitelisted_key]);
 
 	let txs = FullNodeTxs(vec![
 		Transaction::new(b"hello".to_vec(), 0, 1),
@@ -107,5 +113,5 @@ async fn test_sign_and_validate_batch_fails_with_non_whitelisted_signer() {
 	};
 
 	let result = validate_batch(raw_batch, &whitelist);
-	assert!(matches!(result, Err(crate::error::DaSequencerError::InvalidSigner)));
+	assert!(matches!(result, Err(crate::error::DaSequencerError::UnauthorizedSigner)));
 }

@@ -24,7 +24,7 @@ pub enum DaSequencerError {
 	#[error("Signature was invalid")]
 	InvalidSignature,
 	#[error("Non-whitelisted signer")]
-	InvalidSigner,
+	UnauthorizedSigner,
 	#[error("Error during bootstrapping the external DA: {0}")]
 	ExternalDaBootstrap(String),
 	#[error("Error during requesting a block: {0}")]
