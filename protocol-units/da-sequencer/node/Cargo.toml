@@ -13,12 +13,13 @@ rust-version.workspace = true
 anyhow = { workspace = true }
 aptos-crypto = { workspace = true }
 aptos-crypto-derive = { workspace = true }
+hex = { workspace = true }
+ed25519-dalek = { workspace = true }
+once_cell = { workspace = true }
+prost = { workspace = true }
 aptos-sdk = { workspace = true }
 bcs = { workspace = true }
 chrono = { workspace = true }
-ed25519-dalek = { workspace = true }
-hex = { workspace = true }
-prost = { workspace = true }
 rand = { workspace = true }
 rocksdb = { workspace = true }
 serde = { workspace = true }
@@ -43,7 +44,9 @@ movement-types = { workspace = true }
 [dev-dependencies]
 tempfile = { workspace = true }
 rand = { workspace = true }
+rand_core = { workspace = true }
 movement-types = { workspace = true, features = ["testing"] }
+serial_test = "2"
 
 [lints]
 #workspace = true

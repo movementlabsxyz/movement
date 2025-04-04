@@ -8,6 +8,10 @@ use tracing::info;
 
 pub const DA_SEQUENCER_DIR: &str = "da-sequencer";
 
+fn default_whitelist_relative_path() -> String {
+	"da-sequencer/whitelist".to_string()
+}
+
 fn default_signing_key() -> SigningKey {
 	let mut bytes = [0u8; 32];
 	OsRng.fill_bytes(&mut bytes);
@@ -36,6 +40,9 @@ pub struct DaSequencerConfig {
 
 	#[serde(default = "default_stream_heartbeat_interval_sec")]
 	pub stream_heartbeat_interval_sec: u64,
+
+	#[serde(default = "default_whitelist_relative_path")]
+	pub whitelist_relative_path: String,
 
 	#[serde(skip_deserializing, skip_serializing, default = "default_signing_key")]
 	pub signing_key: SigningKey,
@@ -69,6 +76,7 @@ impl Default for DaSequencerConfig {
 			grpc_listen_address: default_grpc_listen_address(),
 			block_production_interval_millisec: default_block_production_interval_millisec(),
 			stream_heartbeat_interval_sec: default_stream_heartbeat_interval_sec(),
+			whitelist_relative_path: default_whitelist_relative_path(),
 			signing_key: default_signing_key(),
 		}
 	}

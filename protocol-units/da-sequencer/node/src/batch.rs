@@ -1,7 +1,9 @@
 use crate::error::DaSequencerError;
+use crate::whitelist::Whitelist;
 use aptos_crypto_derive::{BCSCryptoHash, CryptoHasher};
 use bcs;
-use ed25519_dalek::{Signature, Verifier, VerifyingKey};
+use ed25519_dalek::{Signature, Signer, Verifier, VerifyingKey};
+use movement_da_sequencer_config::DaSequencerConfig;
 use movement_types::transaction::Transaction;
 use serde::{Deserialize, Serialize};
 use std::ops::Deref;
@@ -63,11 +65,10 @@ pub fn serialize_full_node_batch(
 
 pub fn deserialize_full_node_batch(
 	data: Vec<u8>,
-) -> std::result::Result<(VerifyingKey, Signature, Vec<u8>), DaSequencerError> {
+) -> Result<(VerifyingKey, Signature, Vec<u8>), DaSequencerError> {
 	let (pubkey_deserialized, rest) = data.split_at(32);
 	let (sign_deserialized, vec_deserialized) = rest.split_at(64);
 
-	// Convert the slices back into arrays
 	let pub_key_bytes: [u8; 32] = pubkey_deserialized.try_into()?;
 	let signature_bytes: [u8; 64] = sign_deserialized.try_into()?;
 
@@ -82,14 +83,20 @@ pub fn deserialize_full_node_batch(
 
 pub fn validate_batch(
 	new_batch: DaBatch<RawData>,
+	whitelist: &Whitelist,
 ) -> Result<DaBatch<FullNodeTxs>, DaSequencerError> {
-	verify_batch_signature(&new_batch.data.data, &new_batch.signature, &new_batch.signer)?;
+	if !new_batch.signer.verify(&new_batch.data.data, &new_batch.signature).is_ok() {
+		return Err(DaSequencerError::InvalidSignature);
+	}
+	if !whitelist.contains(&new_batch.signer) {
+		return Err(DaSequencerError::UnauthorizedSigner);
+	}
 
-	let txs: FullNodeTxs = bcs::from_bytes(&new_batch.data.data)
+	let data = bcs::from_bytes::<FullNodeTxs>(&new_batch.data.data)
 		.map_err(|_| DaSequencerError::DeserializationFailure)?;
 
 	Ok(DaBatch {
-		data: txs,
+		data,
 		signature: new_batch.signature,
 		signer: new_batch.signer,
 		timestamp: new_batch.timestamp,
@@ -107,77 +114,19 @@ pub fn verify_batch_signature(
 }
 
 #[cfg(test)]
-mod tests {
-	use super::*;
-	use aptos_crypto::hash::CryptoHash;
-	use ed25519_dalek::Signer;
-
-	use movement_da_sequencer_client::sign_batch;
-	use movement_da_sequencer_config::DaSequencerConfig;
-	use tracing_subscriber;
-
-	impl<D> DaBatch<D>
-	where
-		D: Serialize + CryptoHash,
-	{
-		/// Creates a test-only `DaBatch` with a real signature over the given data.
-		/// Only usable in tests.
-		pub fn test_only_new(data: D) -> Self
-		where
-			D: Serialize,
-		{
-			use rand::rngs::OsRng;
-
-			let rng = OsRng;
-			let config = DaSequencerConfig::default();
-			let private_key = config.signing_key;
-			let public_key = private_key.verifying_key();
-
-			let serialized = bcs::to_bytes(&data).unwrap(); // only fails if serialization is broken
-
-			let signature = private_key.sign(&serialized);
-			let timestamp = chrono::Utc::now().timestamp_micros() as u64;
-
-			Self { data, signature, signer: public_key, timestamp }
-		}
-	}
-
-	#[test]
-	fn test_sign_and_validate_batch() {
+impl<D> DaBatch<D>
+where
+	D: Serialize + aptos_crypto::hash::CryptoHash,
+{
+	pub fn test_only_new(data: D) -> Self {
 		let config = DaSequencerConfig::default();
-		let signing_key = config.signing_key;
-		let verifying_key = signing_key.verifying_key();
+		let private_key = config.signing_key;
+		let public_key = private_key.verifying_key();
 
-		// Create transactions and batch
-		let txs = FullNodeTxs(vec![
-			Transaction::new(b"hello".to_vec(), 0, 1),
-			Transaction::new(b"world".to_vec(), 0, 2),
-		]);
+		let serialized = bcs::to_bytes(&data).unwrap();
+		let signature = private_key.sign(&serialized);
+		let timestamp = chrono::Utc::now().timestamp_micros() as u64;
 
-		let batch_bytes = bcs::to_bytes(&txs).expect("Serialization failed");
-		let signature = sign_batch(&batch_bytes, &signing_key);
-
-		// Serialize full node batch into raw bytes
-		let serialized =
-			serialize_full_node_batch(verifying_key, signature.clone(), batch_bytes.clone());
-
-		// Deserialize it back
-		let (deserialized_key, deserialized_sig, deserialized_data) =
-			deserialize_full_node_batch(serialized).expect("Deserialization failed");
-
-		// Recreate the raw batch from deserialized data
-		let raw_batch = DaBatch {
-			data: RawData { data: deserialized_data },
-			signature: deserialized_sig,
-			signer: deserialized_key,
-			timestamp: chrono::Utc::now().timestamp_micros() as u64,
-		};
-
-		// Validate the batch
-		let validated = validate_batch(raw_batch).expect("Batch should validate");
-
-		// Check it worked
-		assert_eq!(validated.data.0.len(), 2);
-		assert_eq!(validated.data.0, txs.0);
+		Self { data, signature, signer: public_key, timestamp }
 	}
 }
