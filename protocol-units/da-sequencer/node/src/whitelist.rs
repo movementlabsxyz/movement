@@ -12,11 +12,11 @@ use hex::FromHex;
 
 #[derive(Clone)]
 pub struct Whitelist {
-	inner: Arc<RwLock<HashSet<VerifyingKey>>>,
+	pub(crate) inner: Arc<RwLock<HashSet<VerifyingKey>>>,
 }
 
 impl Whitelist {
-	pub fn load(path: &PathBuf) -> std::io::Result<HashSet<VerifyingKey>> {
+	fn load(path: &PathBuf) -> std::io::Result<HashSet<VerifyingKey>> {
 		let content = fs::read_to_string(path)?;
 		let mut set = HashSet::new();
 
@@ -38,7 +38,7 @@ impl Whitelist {
 		Ok(set)
 	}
 
-	pub fn start_reload_thread(inner: Arc<RwLock<HashSet<VerifyingKey>>>, path: PathBuf) {
+	fn start_reload_thread(inner: Arc<RwLock<HashSet<VerifyingKey>>>, path: PathBuf) {
 		thread::spawn(move || loop {
 			thread::sleep(Duration::from_secs(60));
 			match Self::load(&path) {
@@ -66,28 +66,6 @@ impl Whitelist {
 
 	pub fn contains(&self, key: &VerifyingKey) -> bool {
 		self.inner.read().unwrap().contains(key)
-	}
-
-	#[cfg(test)]
-	pub fn from_keys(keys: Vec<VerifyingKey>) -> Self {
-		let set = keys.into_iter().collect::<HashSet<_>>();
-		Self { inner: Arc::new(RwLock::new(set)) }
-	}
-
-	#[cfg(test)]
-	pub fn set_keys(&mut self, keys: Vec<VerifyingKey>) {
-		let new_set: HashSet<_> = keys.into_iter().collect();
-		*self.inner.write().unwrap() = new_set;
-	}
-
-	#[cfg(test)]
-	pub fn clear(&mut self) {
-		self.inner.write().unwrap().clear();
-	}
-
-	#[cfg(test)]
-	pub fn insert(&mut self, key: VerifyingKey) {
-		self.inner.write().unwrap().insert(key);
 	}
 
 	pub fn from_file_and_spawn_reload_thread(path: PathBuf) -> std::io::Result<Self> {

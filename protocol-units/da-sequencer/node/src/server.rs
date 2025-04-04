@@ -198,9 +198,6 @@ impl DaSequencerNodeService for DaSequencerNode {
 				}
 			};
 
-		// Read whitelist asynchronously
-		let whitelist = self.whitelist.read().await;
-
 		// Validate the batch
 		let validated = {
 			let whitelist = self.whitelist.read().await;
