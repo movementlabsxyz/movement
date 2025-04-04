@@ -285,8 +285,7 @@ mod tests {
 
 		let (mut executor, _tempdir) =
 			Executor::try_test_default(private_key, mempool_tx_exec_result_sender).await?;
-		let (context, _transaction_pipe) =
-			executor.background(mempool_commit_tx_receiver)?;
+		let (context, _transaction_pipe) = executor.background(mempool_commit_tx_receiver)?;
 		let block_id = HashValue::random();
 		let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
 			block_id,
@@ -324,8 +323,7 @@ mod tests {
 
 		let (mut executor, _tempdir) =
 			Executor::try_test_default(private_key, mempool_tx_exec_result_sender).await?;
-		let (context, _transaction_pipe) =
-			executor.background(mempool_commit_tx_receiver)?;
+		let (context, _transaction_pipe) = executor.background(mempool_commit_tx_receiver)?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
 		// get the raw private key
@@ -439,8 +437,7 @@ mod tests {
 			futures::channel::mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
 		let (mut executor, _tempdir) =
 			Executor::try_test_default(private_key, mempool_tx_exec_result_sender).await?;
-		let (context, _transaction_pipe) =
-			executor.background(mempool_commit_tx_receiver)?;
+		let (context, _transaction_pipe) = executor.background(mempool_commit_tx_receiver)?;
 		let service = Service::new(&context);
 
 		// Initialize a root account using a predefined keypair and the test root address.

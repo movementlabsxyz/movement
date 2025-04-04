@@ -38,7 +38,6 @@ mod tests {
 	use rand::SeedableRng;
 	use tokio::sync::mpsc;
 
-	
 	#[tokio::test]
 	#[ignore]
 	async fn test_sign_transaction_with_hashi_corp_vault_includes_in_block(
@@ -66,8 +65,7 @@ mod tests {
 
 		let (mut executor, _tempdir) =
 			Executor::try_test_default_with_public_key(public_key, mempool_tx_exec_result_sender)?;
-		let (_context, _transaction_pipe) =
-			executor.background(mempool_commit_tx_receiver)?;
+		let (_context, _transaction_pipe) = executor.background(mempool_commit_tx_receiver)?;
 		let block_id = HashValue::random();
 		let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
 			block_id,
@@ -102,13 +100,11 @@ mod tests {
 
 		let (tx_sender, _tx_receiver) = mpsc::channel::<Vec<(u64, SignedTransaction)>>(1);
 
-
 		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
 			futures::channel::mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
 		let (mut executor, _tempdir) =
 			Executor::try_test_default_with_public_key(public_key, mempool_tx_exec_result_sender)?;
-		let (context, _transaction_pipe) =
-			executor.background(mempool_commit_tx_receiver)?;
+		let (context, _transaction_pipe) = executor.background(mempool_commit_tx_receiver)?;
 
 		// Seed for random number generator, used here to generate predictable results in a test environment.
 		let seed = [3u8; 32];
