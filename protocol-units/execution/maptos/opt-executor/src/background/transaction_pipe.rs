@@ -244,6 +244,8 @@ impl TransactionPipe {
 				.collect::<Result<Vec<_>, _>>()?;
 
 			if !batch.is_empty() {
+				//sign batch
+
 				// Convert to BlobWrite for DA
 				let blobs = batch
 					.into_iter()
