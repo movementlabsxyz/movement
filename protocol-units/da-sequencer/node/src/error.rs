@@ -23,11 +23,8 @@ pub enum DaSequencerError {
 	DeserializationFailure,
 	#[error("Signature was invalid")]
 	InvalidSignature,
-<<<<<<< HEAD
 	#[error("Non-whitelisted signer")]
 	InvalidSigner,
-=======
->>>>>>> origin/feature/da-sequencer-node
 	#[error("Error during bootstrapping the external DA: {0}")]
 	ExternalDaBootstrap(String),
 	#[error("Error during requesting a block: {0}")]
