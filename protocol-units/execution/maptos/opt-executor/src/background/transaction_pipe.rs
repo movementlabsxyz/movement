@@ -30,11 +30,11 @@ use futures::channel::mpsc as futures_mpsc;
 use maptos_execution_util::config::mempool::Config as MempoolConfig;
 use movement_collections::garbage::counted::GcCounter;
 use movement_config;
-use movement_da_light_node_client::MovementDaLightNodeClient;
-use movement_da_light_node_proto::{BatchWriteRequest, BlobWrite};
+use movement_da_sequencer_proto::BatchWriteRequest;
 use once_cell::sync::Lazy;
-use prost::Message;
 //use tokio::sync::mpsc;
+use movement_da_sequencer_client::DaSequencerClient;
+use movement_types::transaction::Transaction;
 use tracing::{debug, info, info_span, warn, Instrument};
 
 const LOGGING_UID: AtomicU64 = AtomicU64::new(0);
@@ -68,6 +68,8 @@ pub struct TransactionPipe {
 	used_sequence_number_pool: UsedSequenceNumberPool,
 	/// The accounts whitelisted for ingress
 	whitelisted_accounts: Option<HashSet<AccountAddress>>,
+	/// Da client that connect to the da-sequencer.
+	da_client: DaSequencerClient,
 }
 
 enum SequenceNumberValidity {
@@ -85,6 +87,7 @@ impl TransactionPipe {
 		whitelist_config: &WhitelistConfig,
 		transactions_in_flight: Arc<RwLock<GcCounter>>,
 		transactions_in_flight_limit: Option<u64>,
+		da_client: DaSequencerClient,
 	) -> Result<Self, anyhow::Error> {
 		let whitelisted_accounts = whitelist_config.whitelisted_accounts()?;
 		info!("Whitelisted accounts: {:?}", whitelisted_accounts);
@@ -103,6 +106,7 @@ impl TransactionPipe {
 				mempool_config.gc_slot_duration_ms,
 			),
 			whitelisted_accounts,
+			da_client,
 		})
 	}
 
@@ -211,7 +215,7 @@ impl TransactionPipe {
 
 			let batch_id = LOGGING_UID.fetch_add(1, Ordering::SeqCst);
 
-			let batch: Vec<(u64, SignedTransaction)> = transactions
+			let batch: Vec<Transaction> = transactions
 				.into_iter()
 				.map(|(transaction, ranking_score)| {
 					let priority = u64::MAX - ranking_score;
@@ -226,9 +230,18 @@ impl TransactionPipe {
 					);
 
 					self.core_mempool.commit_transaction(&sender, seq);
-					(priority, transaction)
+					debug!(
+						target: "movement_timing",
+						batch_id = %batch_id,
+						tx_hash = %transaction.committed_hash(),
+						sender = %transaction.sender(),
+						sequence_number = transaction.sequence_number(),
+						"Tx build batch add transaction",
+					);
+					let serialized = bcs::to_bytes(&transaction)?;
+					Ok(Transaction::new(serialized, priority, transaction.sequence_number()))
 				})
-				.collect();
+				.collect::<Result<Vec<_>, _>>()?;
 
 			if !batch.is_empty() {
 				// Convert to BlobWrite for DA
@@ -241,7 +254,7 @@ impl TransactionPipe {
 							tx_hash = %transaction.committed_hash(),
 							sender = %transaction.sender(),
 							sequence_number = transaction.sequence_number(),
-							"Tx ingress received transaction",
+							"Tx build batch add transaction",
 						);
 						let serialized = bcs::to_bytes(&transaction)?;
 						let movement_transaction = movement_types::transaction::Transaction::new(
@@ -254,58 +267,23 @@ impl TransactionPipe {
 					})
 					.collect::<Result<Vec<_>, anyhow::Error>>()?;
 
-				let batch_write = BatchWriteRequest { blobs };
-				let mut buf = Vec::new();
-				batch_write.encode_raw(&mut buf);
-				info!("built_batch_write batch_id={} size={}", batch_id, buf.len());
-
-				let connection_string = format!(
-					"{}://{}:{}",
-					MOVEMENT_CONFIG
-						.celestia_da_light_node
-						.celestia_da_light_node_config
-						.movement_da_light_node_connection_protocol(),
-					MOVEMENT_CONFIG
-						.celestia_da_light_node
-						.celestia_da_light_node_config
-						.movement_da_light_node_connection_hostname(),
-					MOVEMENT_CONFIG
-						.celestia_da_light_node
-						.celestia_da_light_node_config
-						.movement_da_light_node_connection_port()
-				);
-
-				let handle = tokio::spawn(async move {
-					let Ok(mut da_client) =
-						MovementDaLightNodeClient::try_http1(&connection_string)
-					else {
-						warn!("failed to create DA client for batch_id={}", batch_id);
-						return Err(anyhow::anyhow!("DA client init failed"));
-					};
-
-					let batch_write_clone = batch_write.clone();
-					let mut attempts = 0;
-					loop {
-						match da_client.batch_write(batch_write_clone.clone()).await {
-							Ok(_) => {
-								info!(target: "movement_timing", batch_id = %batch_id, "batch_write_success");
-								return Ok(());
-							}
-							Err(e) => {
-								attempts += 1;
-								warn!(
-									"batch_write failed batch_id={} attempt={} error={:?}",
-									batch_id, attempts, e
-								);
-								if attempts >= 3 {
-									warn!("giving up on batch_id={}", batch_id);
-									return Err(e.into());
-								}
-								tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-							}
-						}
-					}
-				});
+				// let connection_string = format!(
+				// 	"{}://{}:{}",
+				// 	MOVEMENT_CONFIG
+				// 		.celestia_da_light_node
+				// 		.celestia_da_light_node_config
+				// 		.movement_da_light_node_connection_protocol(),
+				// 	MOVEMENT_CONFIG
+				// 		.celestia_da_light_node
+				// 		.celestia_da_light_node_config
+				// 		.movement_da_light_node_connection_hostname(),
+				// 	MOVEMENT_CONFIG
+				// 		.celestia_da_light_node
+				// 		.celestia_da_light_node_config
+				// 		.movement_da_light_node_connection_port()
+				// );
+				//send the batch in a separate task to avoid to slow the loop.
+				let handle = tokio::spawn(self.da_client.batch_write(BatchWriteRequest { blobs }));
 				self.last_mempool_send = Instant::now();
 			}
 		}

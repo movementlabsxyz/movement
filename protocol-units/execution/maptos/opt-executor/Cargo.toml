@@ -79,7 +79,8 @@ movement-config = { workspace = true }
 movement-signer-loader = { workspace = true }
 movement-signer = { workspace = true }
 movement-da-light-node-client = { workspace = true }
-movement-da-light-node-proto = { workspace = true }
+movement-da-sequencer-proto = { workspace = true }
+movement-da-sequencer-client = { workspace = true }
 prost = { workspace = true }
 once_cell = { workspace = true }
 

@@ -1,6 +1,7 @@
 pub mod chain;
 pub mod client;
 pub mod common;
+pub mod da_sequencer;
 pub mod faucet;
 pub mod fin;
 pub mod indexer;
@@ -47,6 +48,10 @@ pub struct Config {
 	/// Access control
 	#[serde(default)]
 	pub access_control: aptos_account_whitelist::config::Config,
+
+	// Da Sequencer client
+	#[serde(default)]
+	pub da_client: da_sequencer::Config,
 }
 
 impl Default for Config {

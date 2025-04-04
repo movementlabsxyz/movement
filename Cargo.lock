@@ -9995,6 +9995,8 @@ dependencies = [
  "tempfile",
  "tokio",
  "toml 0.8.19",
+ "tracing",
+ "url",
 ]
 
 [[package]]
@@ -10094,7 +10096,8 @@ dependencies = [
  "movement-collections",
  "movement-config",
  "movement-da-light-node-client",
- "movement-da-light-node-proto",
+ "movement-da-sequencer-client",
+ "movement-da-sequencer-proto",
  "movement-rest",
  "movement-signer",
  "movement-signer-hashicorp-vault",
