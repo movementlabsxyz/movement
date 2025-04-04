@@ -41,9 +41,12 @@ pub struct DaSequencerConfig {
 	#[serde(default = "default_stream_heartbeat_interval_sec")]
 	pub stream_heartbeat_interval_sec: u64,
 
+<<<<<<< HEAD
 	#[serde(default = "default_whitelist_relative_path")]
 	pub whitelist_relative_path: String,
 
+=======
+>>>>>>> origin/feature/da-sequencer-node
 	#[serde(skip_deserializing, skip_serializing, default = "default_signing_key")]
 	pub signing_key: SigningKey,
 }
@@ -76,7 +79,10 @@ impl Default for DaSequencerConfig {
 			grpc_listen_address: default_grpc_listen_address(),
 			block_production_interval_millisec: default_block_production_interval_millisec(),
 			stream_heartbeat_interval_sec: default_stream_heartbeat_interval_sec(),
+<<<<<<< HEAD
 			whitelist_relative_path: default_whitelist_relative_path(),
+=======
+>>>>>>> origin/feature/da-sequencer-node
 			signing_key: default_signing_key(),
 		}
 	}
