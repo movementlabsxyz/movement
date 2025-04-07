@@ -6,7 +6,7 @@ use movement_da_sequencer_proto::da_sequencer_node_service_server::{
 	DaSequencerNodeService, DaSequencerNodeServiceServer,
 };
 use movement_da_sequencer_proto::Blockv1;
-use movement_da_sequencer_proto::{blob_response::BlobType, BlobResponse};
+use movement_da_sequencer_proto::{block_response::BlockType, BlockResponse};
 
 use movement_da_sequencer_proto::{
 	BatchWriteRequest, BatchWriteResponse, ReadAtHeightRequest, ReadAtHeightResponse,
@@ -59,7 +59,7 @@ impl DaSequencerNodeService for DaSequencerNode {
 		>,
 	>;
 
-	/// Stream blobs from a specified height or from the latest height.
+	/// Stream blocks from a specified height or from the latest height.
 	async fn stream_read_from_height(
 		&self,
 		request: tonic::Request<StreamReadFromHeightRequest>,
@@ -122,7 +122,7 @@ impl DaSequencerNodeService for DaSequencerNode {
 
 						}
 					};
-					BlobResponse { blob_type: Some(BlobType::Blockv1(blockv1)) }
+					BlockResponse { block_type: Some(BlockType::Blockv1(blockv1)) }
 
 				} else {
 					//send block in produced channel
@@ -138,7 +138,7 @@ impl DaSequencerNodeService for DaSequencerNode {
 					match received_content {
 						None => {
 							// send heartbeat.
-							BlobResponse { blob_type: Some(BlobType::Heartbeat(true)) }
+							BlockResponse { block_type: Some(BlockType::Heartbeat(true)) }
 						}
 
 						Some(new_block) => {
@@ -158,7 +158,7 @@ impl DaSequencerNodeService for DaSequencerNode {
 
 								}
 							};
-							BlobResponse { blob_type: Some(BlobType::Blockv1(blockv1)) }
+							BlockResponse { block_type: Some(BlockType::Blockv1(blockv1)) }
 						}
 					}
 
@@ -177,17 +177,16 @@ impl DaSequencerNodeService for DaSequencerNode {
 		Ok(tonic::Response::new(Box::pin(output) as Self::StreamReadFromHeightStream))
 	}
 
-	/// Batch write blobs.
 	async fn batch_write(
 		&self,
 		request: tonic::Request<BatchWriteRequest>,
 	) -> std::result::Result<tonic::Response<BatchWriteResponse>, tonic::Status> {
 		let batch_data = request.into_inner().data;
-		let batch = match crate::batch::deserialize_full_node_batch(batch_data).and_then(
-			|(public_key, signature, bytes)| {
+		let batch = match movement_da_sequencer_client::deserialize_full_node_batch(batch_data)
+			.map_err(|_| DaSequencerError::DeserializationFailure)
+			.and_then(|(public_key, signature, bytes)| {
 				validate_batch(DaBatch::<RawData>::now(public_key, signature, bytes))
-			},
-		) {
+			}) {
 			Ok(batch) => batch,
 			Err(err) => {
 				tracing::warn!(error = %err, "Invalid batch send, verification / validation failed.");
@@ -201,7 +200,7 @@ impl DaSequencerNodeService for DaSequencerNode {
 		Ok(tonic::Response::new(BatchWriteResponse { answer: true }))
 	}
 
-	/// Read blobs at a specified height.
+	/// Read one block at a specified height.
 	async fn read_at_height(
 		&self,
 		_request: tonic::Request<ReadAtHeightRequest>,
@@ -225,7 +224,7 @@ impl TryFrom<&SequencerBlock> for Blockv1 {
 
 	fn try_from(block: &SequencerBlock) -> Result<Self, Self::Error> {
 		Ok(Blockv1 {
-			blobckid: block.get_block_digest().into_vec(),
+			blockid: block.get_block_digest().into_vec(),
 			height: block.height.into(),
 			data: block.try_into()?,
 		})

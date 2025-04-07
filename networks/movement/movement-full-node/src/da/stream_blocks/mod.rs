@@ -1,10 +1,12 @@
 use crate::common_args::MovementArgs;
 use anyhow::Context;
 use clap::Parser;
-use movement_da_light_node_client::MovementDaLightNodeClient;
-use movement_da_light_node_proto::{blob_response, StreamReadFromHeightRequest};
+use movement_da_sequencer_client::DaSequencerClient;
+use movement_da_sequencer_client::GrpcDaSequencerClient;
+use movement_da_sequencer_proto::StreamReadFromHeightRequest;
 use tokio_stream::StreamExt;
 use tracing::info;
+use url::Url;
 
 #[derive(Debug, Parser, Clone)]
 #[clap(rename_all = "kebab-case", about = "Streams the DA blocks")]
@@ -17,11 +19,11 @@ pub struct StreamBlocks {
 
 impl StreamBlocks {
 	pub async fn execute(&self) -> Result<(), anyhow::Error> {
-		// Get the config
-
-		let mut client = MovementDaLightNodeClient::try_http2(self.light_node_url.as_str())
-			.await
-			.context("Failed to connect to light node")?;
+		let mut client = GrpcDaSequencerClient::try_connect(
+			&Url::parse(&self.light_node_url).expect("Can't parse provided url."),
+		)
+		.await
+		.expect("gRPC client connection failed.");
 
 		let mut blocks_from_da = client
 			.stream_read_from_height(StreamReadFromHeightRequest { height: self.from_height })
@@ -31,38 +33,9 @@ impl StreamBlocks {
 		info!("streaming blocks from DA");
 
 		while let Some(block_res) = blocks_from_da.next().await {
-			let response = block_res.context("Failed to get block")?;
-			let (_block_bytes, block_timestamp, block_id, da_height) = match response
-				.blob
-				.ok_or(anyhow::anyhow!("No blob in response"))?
-				.blob_type
-				.ok_or(anyhow::anyhow!("No blob type in response"))?
-			{
-				blob_response::BlobType::SequencedBlobBlock(blob) => {
-					tracing::info!("Receive SequencedBlobBlock blob");
-					(blob.data, blob.timestamp, blob.blob_id, blob.height)
-				}
-				blob_response::BlobType::PassedThroughBlob(blob) => {
-					tracing::info!("Receive PassedThroughBlob blob");
-					(blob.data, blob.timestamp, blob.blob_id, blob.height)
-				}
-				blob_response::BlobType::Heartbeat(_) => {
-					tracing::info!("Receive heartbeat blob");
-					continue;
-				}
-				_ => {
-					anyhow::bail!("Invalid blob type in response")
-				}
-			};
+			let block = block_res.context("Failed to get block")?;
 			// pretty print (with labels) the block_id, block_timestamp, and da_height
-			tracing::info!(
-				"Block ID: {}, Block Timestamp: {:?}, DA Height: {}",
-				hex::encode(block_id),
-				// unix date string from the block timestamp which is in microseconds
-				chrono::DateTime::from_timestamp_micros(block_timestamp as i64)
-					.context("Failed to convert timestamp to date")?,
-				da_height
-			);
+			tracing::info!("Block ID: {}, DA Height: {}", hex::encode(block.blockid), block.height);
 		}
 
 		info!("Finished streaming blocks from DA");

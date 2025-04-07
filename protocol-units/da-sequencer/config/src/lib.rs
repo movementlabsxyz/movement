@@ -1,9 +1,6 @@
 use godfig::env_default;
-use rand::rngs::OsRng;
-use rand::RngCore;
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
-use tracing::info;
 
 pub const DA_SEQUENCER_DIR: &str = "da-sequencer";
 
@@ -54,7 +51,6 @@ impl Default for DaSequencerConfig {
                         grpc_listen_address: default_grpc_listen_address(),
                         block_production_interval_millisec: default_block_production_interval_millisec(),
                         stream_heartbeat_interval_sec: default_stream_heartbeat_interval_sec(),
-                        signing_key: default_signing_key(),
                 }
         }
 }

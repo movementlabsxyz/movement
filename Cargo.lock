@@ -10095,7 +10095,6 @@ dependencies = [
  "maptos-framework-release-util",
  "movement-collections",
  "movement-config",
- "movement-da-light-node-client",
  "movement-da-sequencer-client",
  "movement-da-sequencer-proto",
  "movement-rest",
@@ -10117,7 +10116,9 @@ dependencies = [
  "tokio",
  "tonic 0.12.3",
  "tracing",
+ "tracing-subscriber 0.3.18",
  "tracing-test",
+ "url",
 ]
 
 [[package]]
@@ -11547,15 +11548,23 @@ name = "movement-da-sequencer-client"
 version = "0.3.4"
 dependencies = [
  "anyhow",
+ "async-stream",
+ "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
  "bytes 1.8.0",
  "ed25519-dalek 2.1.1",
+ "futures",
  "http-body-util",
  "hyper-util",
  "movement-da-sequencer-proto",
+ "movement-signer",
+ "movement-signer-loader",
+ "thiserror 1.0.69",
+ "tokio-stream",
  "tonic 0.12.3",
  "tonic-web",
  "tower 0.5.1",
  "tracing",
+ "url",
 ]
 
 [[package]]
@@ -11592,6 +11601,7 @@ dependencies = [
  "movement-da-sequencer-client",
  "movement-da-sequencer-config",
  "movement-da-sequencer-proto",
+ "movement-signer",
  "movement-types",
  "prost 0.13.3",
  "rand 0.7.3",
@@ -11706,8 +11716,8 @@ dependencies = [
  "mcr-settlement-config",
  "mcr-settlement-manager",
  "movement-config",
- "movement-da-light-node-client",
- "movement-da-light-node-proto",
+ "movement-da-sequencer-client",
+ "movement-da-sequencer-proto",
  "movement-da-util",
  "movement-rest",
  "movement-signer",
@@ -11725,6 +11735,7 @@ dependencies = [
  "tonic 0.12.3",
  "tracing",
  "tracing-subscriber 0.3.18",
+ "url",
  "zstd 0.13.2",
 ]
 

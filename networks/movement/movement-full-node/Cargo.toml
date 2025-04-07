@@ -14,7 +14,6 @@ rust-version = { workspace = true }
 [dependencies]
 maptos-dof-execution = { workspace = true }
 prost = { workspace = true }
-movement-da-light-node-proto = { workspace = true, features = ["client"] }
 movement-da-util = { workspace = true }
 maptos-execution-util = { workspace = true }
 mcr-settlement-client = { workspace = true, features = ["eth"] }
@@ -42,7 +41,6 @@ hyper = { workspace = true }
 hex = { workspace = true }
 mcr-settlement-config = { workspace = true }
 clap = { workspace =  true }
-movement-da-light-node-client = { workspace = true}
 aptos-framework-elsa-to-biarritz-rc1-migration = { workspace = true }
 movement-signer = { workspace = true }
 movement-signer-loader = { workspace = true }
@@ -54,6 +52,9 @@ k256 = { workspace = true }
 alloy-signer = { workspace = true }
 chrono = { workspace = true }
 maptos-opt-executor = { workspace = true }
+movement-da-sequencer-proto = { workspace = true }
+movement-da-sequencer-client = { workspace = true }
+url = { workspace = true }
 
 [features]
 default = []

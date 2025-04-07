@@ -1,30 +1,27 @@
 //! Task module to execute blocks from the DA and process settlement.
-
 use crate::node::da_db::DaDB;
-
+use anyhow::Context;
+use futures::{future::Either, stream};
 use maptos_dof_execution::{
 	DynOptFinExecutor, ExecutableBlock, ExecutableTransactions, HashValue,
 	SignatureVerifiedTransaction, SignedTransaction, Transaction,
 };
 use mcr_settlement_manager::{CommitmentEventStream, McrSettlementManagerOperations};
-use movement_da_light_node_client::MovementDaLightNodeClient;
-use movement_da_light_node_proto::{
-	blob_response, StreamReadFromHeightRequest, StreamReadFromHeightResponse,
-};
-use movement_types::block::{Block, BlockCommitment, BlockCommitmentEvent};
-
-use anyhow::Context;
-use futures::{future::Either, stream};
 use movement_config::execution_extension;
+use movement_da_sequencer_client::DaSequencerClient;
+use movement_da_sequencer_client::GrpcDaSequencerClient;
+use movement_da_sequencer_proto::Blockv1;
+use movement_da_sequencer_proto::StreamReadFromHeightRequest;
+use movement_types::block::{Block, BlockCommitment, BlockCommitmentEvent};
 use tokio::select;
 use tokio_stream::{Stream, StreamExt};
 use tracing::{debug, error, info, info_span, Instrument};
+use url::Url;
 
 pub struct Task<E, S> {
 	executor: E,
 	settlement_manager: Option<S>,
 	da_db: DaDB,
-	da_light_node_client: MovementDaLightNodeClient,
 	// Stream receiving commitment events, conditionally enabled
 	commitment_events:
 		Either<CommitmentEventStream, stream::Pending<<CommitmentEventStream as Stream>::Item>>,
@@ -37,7 +34,6 @@ impl<E, S> Task<E, S> {
 		executor: E,
 		settlement_manager: Option<S>,
 		da_db: DaDB,
-		da_light_node_client: MovementDaLightNodeClient,
 		commitment_events: Option<CommitmentEventStream>,
 		execution_extension: execution_extension::Config,
 		settlement_config: mcr_settlement_config::Config,
@@ -50,7 +46,6 @@ impl<E, S> Task<E, S> {
 			executor,
 			settlement_manager,
 			da_db,
-			da_light_node_client,
 			commitment_events,
 			execution_extension,
 			settlement_config,
@@ -67,11 +62,11 @@ where
 	E: DynOptFinExecutor,
 	S: McrSettlementManagerOperations,
 {
-	pub async fn run(mut self) -> anyhow::Result<()> {
+	pub async fn run(mut self, da_connection_url: Url) -> anyhow::Result<()> {
 		let synced_height = self.da_db.get_synced_height().await?;
 		info!("DA synced height: {:?}", synced_height);
-		let mut blocks_from_da = self
-			.da_light_node_client
+		let mut da_client = GrpcDaSequencerClient::try_connect(&da_connection_url).await?;
+		let mut blocks_from_da = da_client
 			.stream_read_from_height(StreamReadFromHeightRequest { height: synced_height })
 			.await
 			.map_err(|e| {
@@ -97,52 +92,28 @@ where
 		Ok(())
 	}
 
-	async fn process_block_from_da(
-		&mut self,
-		response: StreamReadFromHeightResponse,
-	) -> anyhow::Result<()> {
-		// get the block
-		let (block_bytes, block_timestamp, block_id, da_height) = match response
-			.blob
-			.ok_or(anyhow::anyhow!("No blob in response"))?
-			.blob_type
-			.ok_or(anyhow::anyhow!("No blob type in response"))?
-		{
-			// To allow for DA migrations we accept both sequenced and passed through blobs
-			blob_response::BlobType::SequencedBlobBlock(blob) => {
-				(blob.data, blob.timestamp, blob.blob_id, blob.height)
-			}
-			// To allow for DA migrations we accept both sequenced and passed through blobs
-			blob_response::BlobType::PassedThroughBlob(blob) => {
-				(blob.data, blob.timestamp, blob.blob_id, blob.height)
-			}
-			blob_response::BlobType::Heartbeat(_) => {
-				tracing::info!("Receive DA heartbeat");
-				// Do nothing.
-				return Ok(());
-			}
-			_ => anyhow::bail!("Invalid blob type"),
-		};
+	async fn process_block_from_da(&mut self, da_block: Blockv1) -> anyhow::Result<()> {
+		let block_timestamp = chrono::Utc::now().timestamp_micros() as u64;
 
 		info!(
-			block_id = %hex::encode(block_id.clone()),
-			da_height = da_height,
+			block_id = %hex::encode(da_block.blockid.clone()),
+			da_height = da_block.height,
 			time = block_timestamp,
 			"Processing block from DA"
 		);
 
 		// check if the block has already been executed
-		if self.da_db.has_executed_block(block_id.clone()).await? {
-			info!("Block already executed: {:#?}. It will be skipped", block_id);
+		if self.da_db.has_executed_block(da_block.blockid.clone()).await? {
+			info!("Block already executed: {:#?}. It will be skipped", da_block.blockid);
 			return Ok(());
 		}
 
 		// the da height must be greater than 1
-		if da_height < 2 {
-			anyhow::bail!("Invalid DA height: {:?}", da_height);
+		if da_block.height < 2 {
+			anyhow::bail!("Invalid DA height: {:?}", da_block.height);
 		}
 
-		let block: Block = bcs::from_bytes(&block_bytes[..])?;
+		let block: Block = bcs::from_bytes(&da_block.data[..])?;
 
 		// get the transactions
 		let transactions_count = block.transactions().len();
@@ -155,15 +126,15 @@ where
 
 		// mark the da_height - 1 as synced
 		// we can't mark this height as synced because we must allow for the possibility of multiple blocks at the same height according to the m1 da specifications (which currently is built on celestia which itself allows more than one block at the same height)
-		self.da_db.set_synced_height(da_height - 1).await?;
+		self.da_db.set_synced_height(da_block.height - 1).await?;
 
 		// set the block as executed
-		self.da_db.add_executed_block(block_id.clone()).await?;
+		self.da_db.add_executed_block(da_block.blockid.clone()).await?;
 
 		if self.settlement_enabled()
 			// only settle every super_block_size_heights 
 			// todo: replace with timeslot tolerance
-			&& da_height % self.settlement_config.settle.settlement_super_block_size == 0
+			&& da_block.height % self.settlement_config.settle.settlement_super_block_size == 0
 		{
 			info!("Posting block commitment via settlement manager");
 			match &self.settlement_manager {
@@ -180,7 +151,7 @@ where
 				}
 			}
 		} else {
-			info!(block_id = ?block_id, "Skipping settlement");
+			info!(block_id = ?da_block.blockid, "Skipping settlement");
 		}
 
 		Ok(())

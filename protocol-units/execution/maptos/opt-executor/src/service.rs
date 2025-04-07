@@ -93,6 +93,7 @@ mod tests {
 	use crate::executor::EXECUTOR_CHANNEL_SIZE;
 	use crate::Executor;
 	use aptos_mempool::MempoolClientRequest;
+	use movement_da_sequencer_client::EmptyDaSequencerClient;
 
 	use aptos_types::{
 		account_config, mempool_status::MempoolStatusCode, test_helpers::transaction_test_helpers,
@@ -102,7 +103,6 @@ mod tests {
 	use futures::channel::oneshot;
 	use futures::SinkExt;
 	use maptos_execution_util::config::chain::Config;
-	use tokio::sync::mpsc;
 
 	fn create_signed_transaction(sequence_number: u64, chain_config: &Config) -> SignedTransaction {
 		let address = account_config::aptos_test_root_address();
@@ -125,7 +125,7 @@ mod tests {
 			Executor::try_test_default(GENESIS_KEYPAIR.0.clone(), mempool_tx_exec_result_sender)
 				.await?;
 		let (context, background) = executor.background(mempool_commit_tx_receiver)?;
-		let mut transaction_pipe = background.into_transaction_pipe();
+		let transaction_pipe = background.into_transaction_pipe();
 		let service = Service::new(&context);
 		let handle = tokio::spawn(async move { service.run().await });
 
@@ -139,8 +139,9 @@ mod tests {
 			.send(MempoolClientRequest::SubmitTransaction(user_transaction.clone(), req_sender))
 			.await?;
 
-		// tick the transaction pipe
-		transaction_pipe.tick().await?;
+		// Run the transaction pipe
+		let da_client = EmptyDaSequencerClient;
+		let mempool_handle = tokio::spawn(transaction_pipe.run(da_client));
 
 		// receive the callback
 		let (status, _vm_status_code) = callback.await??;
@@ -153,6 +154,7 @@ mod tests {
 		// assert_eq!(received_transaction, user_transaction);
 
 		handle.abort();
+		mempool_handle.abort();
 
 		Ok(())
 	}

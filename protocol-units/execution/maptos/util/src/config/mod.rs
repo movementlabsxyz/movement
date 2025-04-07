@@ -51,7 +51,7 @@ pub struct Config {
 
 	// Da Sequencer client
 	#[serde(default)]
-	pub da_client: da_sequencer::Config,
+	pub da_sequencer: da_sequencer::Config,
 }
 
 impl Default for Config {
@@ -66,6 +66,7 @@ impl Default for Config {
 			load_shedding: load_shedding::Config::default(),
 			mempool: mempool::Config::default(),
 			access_control: aptos_account_whitelist::config::Config::default(),
+			da_sequencer: da_sequencer::Config::default(),
 		}
 	}
 }

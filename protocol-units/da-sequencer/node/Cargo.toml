@@ -44,6 +44,7 @@ movement-types = { workspace = true }
 tempfile = { workspace = true }
 rand = { workspace = true }
 movement-types = { workspace = true, features = ["testing"] }
+movement-signer = { workspace = true}
 
 [lints]
 #workspace = true

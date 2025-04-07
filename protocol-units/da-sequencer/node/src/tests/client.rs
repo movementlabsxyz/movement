@@ -1,26 +1,30 @@
-use crate::batch::{serialize_full_node_batch, FullNodeTxs};
+use crate::batch::FullNodeTxs;
 use crate::run;
 use crate::server::run_server;
+use crate::tests::generate_signing_key;
 use crate::tests::mock::mock_wait_and_get_next_block;
 use crate::tests::mock::mock_write_new_batch;
 use crate::tests::mock::{CelestiaMock, StorageMock};
 use ed25519_dalek::Signature;
 use futures::StreamExt;
+use movement_da_sequencer_client::serialize_full_node_batch;
 use movement_da_sequencer_client::DaSequencerClient;
+use movement_da_sequencer_client::GrpcDaSequencerClient;
 use movement_da_sequencer_config::DaSequencerConfig;
-use movement_da_sequencer_proto::blob_response::BlobType;
 use movement_da_sequencer_proto::BatchWriteRequest;
 use movement_da_sequencer_proto::StreamReadFromHeightRequest;
+use movement_signer::cryptography::ed25519::Signature as SigningSignature;
 use movement_types::transaction::Transaction;
 use std::net::SocketAddr;
 use tokio::sync::mpsc;
+use url::Url;
 
 #[tokio::test]
 async fn test_write_batch_gprc_main_loop_submit_one_batch() {
 	let (request_tx, request_rx) = mpsc::channel(100);
 
 	let config = DaSequencerConfig::default();
-	let signing_key = config.signing_key.clone();
+	let signing_key = generate_signing_key();
 	let verifying_key = signing_key.verifying_key();
 
 	// Start gprc server
@@ -38,8 +42,8 @@ async fn test_write_batch_gprc_main_loop_submit_one_batch() {
 	//need to wait the server is started before connecting
 	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
 
-	let connection_string = format!("http://127.0.0.1:{}", grpc_address.port());
-	let mut client = DaSequencerClient::try_connect(&connection_string)
+	let connection_url = Url::parse(&format!("http://127.0.0.1:{}", grpc_address.port())).unwrap();
+	let mut client = GrpcDaSequencerClient::try_connect(&connection_url.clone())
 		.await
 		.expect("gRPC client connection failed.");
 
@@ -47,8 +51,7 @@ async fn test_write_batch_gprc_main_loop_submit_one_batch() {
 
 	//verify the block produced contains the batch.
 	//Register to block stream
-	let connection_string = format!("http://127.0.0.1:{}", grpc_address.port());
-	let mut client = DaSequencerClient::try_connect(&connection_string)
+	let mut client = GrpcDaSequencerClient::try_connect(&connection_url)
 		.await
 		.expect("gRPC client connection failed.");
 
@@ -70,7 +73,7 @@ async fn test_write_batch_gprc_main_loop_failed_validate_batch() {
 	let (request_tx, request_rx) = mpsc::channel(100);
 
 	let config = DaSequencerConfig::default();
-	let signing_key = config.signing_key.clone();
+	let signing_key = generate_signing_key();
 	let verifying_key = signing_key.verifying_key();
 
 	// Start gprc server. Define a different address for each test.
@@ -95,14 +98,15 @@ async fn test_write_batch_gprc_main_loop_failed_validate_batch() {
 	let batch_bytes = bcs::to_bytes(&txs).expect("Serialization failed");
 	//define a dummy signature for the batch
 	let signature = Signature::from_bytes(&[0; 64]);
+	let signature = SigningSignature::try_from(&signature.to_bytes()[..]).unwrap();
 
 	// Serialize full node batch into raw bytes
 	let serialized =
 		serialize_full_node_batch(verifying_key, signature.clone(), batch_bytes.clone());
 
 	//send the bacth using the grpc client
-	let connection_string = format!("http://127.0.0.1:{}", grpc_address.port());
-	let mut client = DaSequencerClient::try_connect(&connection_string)
+	let connection_url = Url::parse(&format!("http://127.0.0.1:{}", grpc_address.port())).unwrap();
+	let mut client = GrpcDaSequencerClient::try_connect(&connection_url)
 		.await
 		.expect("gRPC client connection failed.");
 
@@ -114,8 +118,7 @@ async fn test_write_batch_gprc_main_loop_failed_validate_batch() {
 
 	//TODO verify no block has been produced.
 	//Register to block stream
-	let connection_string = format!("http://127.0.0.1:{}", grpc_address.port());
-	let mut client = DaSequencerClient::try_connect(&connection_string)
+	let mut client = GrpcDaSequencerClient::try_connect(&connection_url)
 		.await
 		.expect("gRPC client connection failed.");
 
@@ -144,7 +147,7 @@ async fn test_produce_block_and_stream() {
 	let mut config = DaSequencerConfig::default();
 	//update config to generate faster heartbeat.
 	config.stream_heartbeat_interval_sec = 1;
-	let signing_key = config.signing_key.clone();
+	let signing_key = generate_signing_key();
 	let verifying_key = signing_key.verifying_key();
 
 	// Start gprc server
@@ -163,8 +166,8 @@ async fn test_produce_block_and_stream() {
 	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
 
 	//Register to block stream
-	let connection_string = format!("http://127.0.0.1:{}", grpc_address.port());
-	let mut client = DaSequencerClient::try_connect(&connection_string)
+	let connection_url = Url::parse(&format!("http://127.0.0.1:{}", grpc_address.port())).unwrap();
+	let mut client = GrpcDaSequencerClient::try_connect(&connection_url)
 		.await
 		.expect("gRPC client connection failed.");
 
@@ -179,10 +182,7 @@ async fn test_produce_block_and_stream() {
 	if let Ok(Some(Ok(block))) =
 		tokio::time::timeout(std::time::Duration::from_secs(1), block_stream.next()).await
 	{
-		match block.response.unwrap().blob_type {
-			Some(BlobType::Heartbeat(_)) => (),
-			_ => panic!("Error get a genesis block at height 0 "),
-		}
+		panic!("Error get a genesis block at height 0 {block:?}");
 	}
 
 	mock_write_new_batch(&mut client, &signing_key, verifying_key).await;
@@ -201,7 +201,7 @@ async fn test_produce_block_and_stream() {
 	mock_wait_and_get_next_block(&mut block_stream, 3).await;
 
 	//create a new client and see if it steam all blocks.
-	let mut client2 = DaSequencerClient::try_connect(&connection_string)
+	let mut client2 = GrpcDaSequencerClient::try_connect(&connection_url)
 		.await
 		.expect("gRPC client connection failed.");
 	let mut block_stream2 = client2
@@ -219,14 +219,15 @@ async fn test_produce_block_and_stream() {
 	//wait at least one block production
 	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
 
-	//detect the heartbeat
-	match tokio::time::timeout(std::time::Duration::from_secs(1), block_stream.next()).await {
-		Ok(Some(Ok(block))) => match block.response.unwrap().blob_type {
-			Some(BlobType::Heartbeat(_)) => (),
-			_ => panic!("Not a heartbeat."),
-		},
-		_ => panic!("No hearbeat produced"),
-	};
+	// Wait enought to see if heartbeat are filtered.
+	if let Ok(Some(Ok(block))) =
+		tokio::time::timeout(std::time::Duration::from_secs(1), block_stream2.next()).await
+	{
+		panic!("Error get block without batch: {block:?}");
+	}
+
+	//the other stream should get the block 4.
+	mock_wait_and_get_next_block(&mut block_stream, 4).await;
 
 	grpc_jh.abort();
 	loop_jh.abort();

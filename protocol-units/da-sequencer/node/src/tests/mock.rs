@@ -1,4 +1,3 @@
-use crate::batch::serialize_full_node_batch;
 use crate::batch::DaBatch;
 use crate::batch::FullNodeTxs;
 use crate::block::BlockHeight;
@@ -9,11 +8,14 @@ use crate::DaSequencerError;
 use crate::DaSequencerExternalDa;
 use crate::DaSequencerStorage;
 use crate::SequencerBlock;
+use ed25519_dalek::Signer;
 use ed25519_dalek::{SigningKey, VerifyingKey};
 use futures::StreamExt;
-use movement_da_sequencer_client::{sign_batch, DaSequencerClient};
-use movement_da_sequencer_proto::blob_response::BlobType;
+use movement_da_sequencer_client::serialize_full_node_batch;
+use movement_da_sequencer_client::DaSequencerClient;
+use movement_da_sequencer_client::StreamReadBlockFromHeight;
 use movement_da_sequencer_proto::BatchWriteRequest;
+use movement_signer::cryptography::ed25519::Signature as SigningSignature;
 use movement_types::block::Block;
 use movement_types::block::BlockMetadata;
 use movement_types::block::Id;
@@ -24,7 +26,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 pub async fn mock_write_new_batch(
-	client: &mut DaSequencerClient,
+	client: &mut impl DaSequencerClient,
 	signing_key: &SigningKey,
 	verifying_key: VerifyingKey,
 ) {
@@ -33,7 +35,8 @@ pub async fn mock_write_new_batch(
 
 	//sign batch
 	let batch_bytes = bcs::to_bytes(&txs).expect("Serialization failed");
-	let signature = sign_batch(&batch_bytes, &signing_key);
+	let signature = signing_key.sign(&batch_bytes);
+	let signature = SigningSignature::try_from(&signature.to_bytes()[..]).unwrap();
 
 	// Serialize full node batch into raw bytes
 	let serialized =
@@ -45,25 +48,21 @@ pub async fn mock_write_new_batch(
 }
 
 pub async fn mock_wait_and_get_next_block(
-	block_stream: &mut tonic::Streaming<movement_da_sequencer_proto::StreamReadFromHeightResponse>,
+	block_stream: &mut StreamReadBlockFromHeight,
 	expected_height: u64,
 ) {
 	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
 	loop {
 		match tokio::time::timeout(std::time::Duration::from_secs(1), block_stream.next()).await {
-			Ok(Some(Ok(block))) => match block.response.unwrap().blob_type {
-				Some(BlobType::Blockv1(blockv1)) => {
-					assert_eq!(
-						blockv1.height, expected_height,
-						"stream block height 1, not the right height"
-					);
-					break;
-				}
-				Some(BlobType::Heartbeat(_)) => (),
-				None => panic!("Block stream broken at height {expected_height}"),
-			},
+			Ok(Some(Ok(block))) => {
+				assert_eq!(
+					block.height, expected_height,
+					"stream block height 1, not the right height"
+				);
+				break;
+			}
 			_ => panic!("No block produced at height {expected_height}"),
-		};
+		}
 	}
 }
 
