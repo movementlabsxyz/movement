@@ -6523,13 +6523,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "da-sequencer-node"
-version = "0.3.4"
-dependencies = [
- "movement-da-sequencer-node",
-]
-
-[[package]]
 name = "darling"
 version = "0.14.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10445,6 +10438,13 @@ name = "mirai-annotations"
 version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c9be0862c1b3f26a88803c4a49de6889c10e608b3ee9344e6ef5b45fb37ad3d1"
+
+[[package]]
+name = "mock-da-e2e"
+version = "0.3.4"
+dependencies = [
+ "movement-da-sequencer-node",
+]
 
 [[package]]
 name = "more-asserts"

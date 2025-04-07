@@ -1,5 +1,5 @@
 [package]
-name = "da-sequencer-node"
+name = "mock-da-e2e"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

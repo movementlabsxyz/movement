@@ -6,6 +6,7 @@ processes:
 
   build:
     command: |
-      ./scripts/services/movement-full-node/build
+      cargo run -p mock-da-e2e 
+      ./scripts/services/movement-full-node/scaffold
     availability:
       restart: exit_on_failure
