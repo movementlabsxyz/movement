@@ -27,8 +27,8 @@ pub async fn run<D, S>(
 	celestia: D,
 ) -> Result<(), DaSequencerError>
 where
-	D: DaSequencerExternalDa + Send + 'static,
-	S: DaSequencerStorage + Send + 'static,
+	D: DaSequencerExternalDa + Clone + Send + 'static,
+	S: DaSequencerStorage + Clone + Send + 'static,
 {
 	let mut produce_block_interval = tokio::time::interval(tokio::time::Duration::from_millis(
 		config.movement_da_sequencer_block_production_interval_millisec,

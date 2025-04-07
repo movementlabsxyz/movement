@@ -6,21 +6,18 @@ use crate::error::DaSequencerError;
 // TODO: use a sensible value for the max sequencer block size
 const MAX_SEQUENCER_BLOCK_SIZE: u64 = 1_000_000; // 1 MB
 
-#[derive(Clone, Copy, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct SequencerBlockDigest(pub [u8; 32]);
+#[derive(Clone, Copy, Default, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct SequencerBlockDigest {
+	pub height: BlockHeight,
+	pub id: [u8; SequencerBlockDigest::DIGEST_SIZE],
+}
 
-/// The id for an Ir Blob
 impl SequencerBlockDigest {
-	pub fn new(id: [u8; 32]) -> Self {
-		SequencerBlockDigest(id)
-	}
+	/// Size of a digest in bytes.
+	pub const DIGEST_SIZE: usize = 32;
 
-	pub fn as_slice(&self) -> &[u8] {
-		self.0.as_slice()
-	}
-
-	pub fn into_vec(&self) -> Vec<u8> {
-		self.0.to_vec()
+	pub fn new(height: BlockHeight, id: [u8; 32]) -> Self {
+		SequencerBlockDigest { height, id }
 	}
 }
 
@@ -37,12 +34,12 @@ pub struct SequencerBlock {
 
 impl SequencerBlock {
 	/// Try to construct a SequencerBlock, but fail if it exceeds the max encoded size.
-	pub fn try_new(height: BlockHeight, block: Block) -> Result<Self, DaSequencerError> {
+	pub fn try_new(_height: BlockHeight, _block: Block) -> Result<Self, DaSequencerError> {
 		todo!()
 	}
 
 	pub fn get_block_digest(&self) -> SequencerBlockDigest {
-		SequencerBlockDigest(*self.block.id().as_bytes())
+		SequencerBlockDigest::new(self.height, *self.block.id().as_bytes())
 	}
 
 	pub fn validate_size(&self) -> Result<(), DaSequencerError> {

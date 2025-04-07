@@ -19,7 +19,7 @@ pub struct Storage {
 	db: Arc<DB>,
 }
 
-pub trait DaSequencerStorage: Clone {
+pub trait DaSequencerStorage {
 	/// Save all batch's Tx in the pending Tx table. The batch's Tx has been verified and validated.
 	fn write_batch(&self, batch: DaBatch<FullNodeTxs>)
 		-> std::result::Result<(), DaSequencerError>;
@@ -166,7 +166,7 @@ impl DaSequencerStorage for Storage {
 			DaSequencerError::StorageAccess("Missing column family: blocks_by_digest".into())
 		})?;
 
-		let key = id.0;
+		let key = id.id;
 
 		let height_bytes = match self
 			.db
@@ -323,7 +323,7 @@ mod tests {
 			storage.db.cf_handle(cf::BLOCKS_BY_DIGEST).expect("missing 'block_digests' CF");
 		storage
 			.db
-			.put_cf(&cf_digests, digest.0, key)
+			.put_cf(&cf_digests, digest.id, key)
 			.expect("failed to write digest mapping");
 
 		let result = storage.get_block_with_digest(digest).expect("get_block_with_digest failed");
@@ -335,7 +335,7 @@ mod tests {
 
 		let stored_height_bytes = storage
 			.db
-			.get_cf(&cf_digests, digest.0)
+			.get_cf(&cf_digests, digest.id)
 			.expect("failed to read digest mapping")
 			.expect("digest not found");
 		assert_eq!(stored_height_bytes, key);
@@ -350,7 +350,7 @@ mod tests {
 		let path = temp_dir.path().to_str().unwrap();
 		let storage = Storage::try_new(path).expect("failed to create storage");
 
-		let fake_digest = SequencerBlockDigest([0u8; 32]);
+		let fake_digest = SequencerBlockDigest::new(BlockHeight(1), [0u8; 32]);
 		let result = storage.get_block_with_digest(fake_digest);
 
 		assert!(result.is_ok(), "Expected Ok, got Err: {:?}", result);
