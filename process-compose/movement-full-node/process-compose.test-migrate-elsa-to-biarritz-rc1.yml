@@ -5,6 +5,8 @@ processes:
   setup:
     environment:
       - "KNOWN_FRAMEWORK_RELEASE=elsa"
+      - APTOS_ACCOUNT_WHITELIST=$DOT_MOVEMENT_PATH/default_signer_address_whitelist
+      - MAPTOS_PRIVATE_KEY=random
 
   test-migrate-elsa-to-biarritz-rc1:
     command: |

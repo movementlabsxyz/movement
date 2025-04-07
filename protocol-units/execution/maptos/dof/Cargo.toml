@@ -34,9 +34,16 @@ movement-types = { workspace = true }
 movement-signer-loader = { workspace = true }
 
 [dev-dependencies]
+hex = { workspace = true }
+ed25519-dalek = { workspace = true, features = ["rand_core"] }
+movement-signer = { workspace = true }
+dotenv = { workspace = true }
+movement-signer-test = { workspace = true }
+movement-signing-aptos = { workspace = true }
 chrono = { workspace = true }
 aptos-db = { workspace = true }
 aptos-sdk = { workspace = true }
 aptos-proptest-helpers = { workspace = true }
 rand = { workspace = true }
 tempfile = { workspace = true }
+futures = { workspace = true }

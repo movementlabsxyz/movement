@@ -1,6 +1,8 @@
 use super::partial::MovementPartialNode;
 use anyhow::Context;
 use godfig::{backend::config_file::ConfigFile, Godfig};
+use maptos_opt_executor::executor::TxExecutionResult;
+use maptos_opt_executor::executor::EXECUTOR_CHANNEL_SIZE;
 use movement_config::Config;
 use tokio::signal::unix::signal;
 use tokio::signal::unix::SignalKind;
@@ -43,11 +45,14 @@ impl Manager {
 
 		let config = self.godfig.try_wait_for_ready().await?;
 
-		let node = MovementPartialNode::try_from_config(config)
+		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
+			futures::channel::mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+
+		let node = MovementPartialNode::try_from_config(config, mempool_tx_exec_result_sender)
 			.await
 			.context("Failed to create the executor")?;
 
-		let join_handle = tokio::spawn(node.run());
+		let join_handle = tokio::spawn(node.run(mempool_commit_tx_receiver));
 
 		// Use tokio::select! to wait for either the handle or a cancellation signal
 		tokio::select! {

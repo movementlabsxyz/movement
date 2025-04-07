@@ -8,6 +8,7 @@ pub mod state;
 
 #[cfg(test)]
 pub mod tests;
+
 use clap::Parser;
 
 #[derive(Parser)]

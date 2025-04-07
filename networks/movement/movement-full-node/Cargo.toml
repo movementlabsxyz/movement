@@ -16,6 +16,7 @@ maptos-dof-execution = { workspace = true }
 prost = { workspace = true }
 movement-da-light-node-proto = { workspace = true, features = ["client"] }
 movement-da-util = { workspace = true }
+maptos-execution-util = { workspace = true }
 mcr-settlement-client = { workspace = true, features = ["eth"] }
 mcr-settlement-manager = { workspace = true }
 serde_json = { workspace = true }
@@ -47,7 +48,12 @@ movement-signer = { workspace = true }
 movement-signer-loader = { workspace = true }
 syncador = { workspace = true }
 syncup = { workspace = true }
+aptos-crypto = { workspace = true }
+aptos-sdk = { workspace = true }
+k256 = { workspace = true }
+alloy-signer = { workspace = true }
 chrono = { workspace = true }
+maptos-opt-executor = { workspace = true }
 
 [features]
 default = []

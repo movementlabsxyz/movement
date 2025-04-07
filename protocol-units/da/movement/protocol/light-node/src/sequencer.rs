@@ -140,16 +140,17 @@ where
 	V: VerifierOperations<DaBlob<C>, DaBlob<C>>,
 {
 	async fn tick_build_blocks(&self, sender: Sender<Block>) -> Result<(), anyhow::Error> {
+		info!(target: "movement_timing", "tick_build_blocks");
 		let memseq = self.memseq.clone();
 
 		// this has an internal timeout based on its building time
 		// so in the worst case scenario we will roughly double the internal timeout
 		let uid = LOGGING_UID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-		debug!(target: "movement_timing", uid = %uid, "waiting_for_next_block",);
+		info!(target: "movement_timing", tick = &uid, "CALLED tick_build_blocks tick");
 		let block = memseq.wait_for_next_block().await?;
 		match block {
 			Some(block) => {
-				info!(target: "movement_timing", block_id = %block.id(), uid = %uid, transaction_count = block.transactions().len(), "received_block");
+				info!(target: "movement_timing", block_id = %block.id(), uid = %uid, transaction_count = block.transactions().len(), "tick_build_blocks: received_block");
 				sender.send(block).await?;
 				Ok(())
 			}
@@ -162,13 +163,26 @@ where
 	}
 
 	/// Submits blocks to the pass through.
+	///
+	/// Note: if you change the block submission architecture to an eventually consistent submission pattern, you will want to revert this to a sequential submission.
+	/// Currently, all of the blobs can just be sent through because we are relying on Celestia for order.
 	async fn submit_blocks(&self, blocks: Vec<Block>) -> Result<(), anyhow::Error> {
 		for block in blocks {
 			let data: InnerSignedBlobV1Data<C> = block.try_into()?;
 			let blob = data.try_to_sign(&self.pass_through.signer).await?;
 			self.pass_through.da.submit_blob(blob.into()).await?;
 		}
+		Ok(())
+	}
 
+	/// Collapses the back-pressured blocks into a single block and submits it.
+	///
+	/// todo: mark not pub once this is actually used
+	pub async fn submit_collapsed_blocks(&self, blocks: Vec<Block>) -> Result<(), anyhow::Error> {
+		let block = Block::collapse(blocks);
+		let data: InnerSignedBlobV1Data<C> = block.try_into()?;
+		let blob = data.try_to_sign(&self.pass_through.signer).await?;
+		self.pass_through.da.submit_blob(blob.into()).await?;
 		Ok(())
 	}
 
@@ -255,6 +269,8 @@ where
 		}
 	}
 
+	// FIXME: this does not work correctly, see details in move-rocks
+	#[allow(dead_code)]
 	async fn run_gc(&self) -> Result<(), anyhow::Error> {
 		loop {
 			self.memseq.gc().await?;
@@ -265,10 +281,11 @@ where
 		let (sender, mut receiver) = tokio::sync::mpsc::channel(2 ^ 10);
 
 		loop {
+			info!(target: "movement_timing", "START: run_block_propoer iteration");
 			match futures::try_join!(
 				self.run_block_builder(sender.clone()),
 				self.run_block_publisher(&mut receiver),
-				self.run_gc(),
+				// self.run_gc(),
 			) {
 				Ok(_) => {
 					info!("block proposer completed");
@@ -361,8 +378,9 @@ where
 		&self,
 		_request: tonic::Request<tonic::Streaming<grpc::StreamWriteBlobRequest>>,
 	) -> std::result::Result<tonic::Response<Self::StreamWriteBlobStream>, tonic::Status> {
-		unimplemented!("stream_write_blob")
+		Err(tonic::Status::unimplemented(""))
 	}
+
 	/// Read blobs at a specified height.
 	async fn read_at_height(
 		&self,

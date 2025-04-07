@@ -4,9 +4,10 @@ environment:
 
 processes:
 
-  movement-tests-load-tests:
+  # Test whether the full node is resistant to Gas DOS
+  test-sequence-number-ooo:
     command: |
-      LOADTEST_NUMBER_SCENARIO=10 LOADTEST_NUMBER_SCENARIO_PER_CLIENT=5 cargo run --bin movement-tests-e2e-load-alice-bob 
+      cargo run --bin movement-tests-sequence-number-ooo
     depends_on:
       movement-full-node:
         condition: process_healthy

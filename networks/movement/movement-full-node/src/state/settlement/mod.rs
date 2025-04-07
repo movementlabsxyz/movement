@@ -1,5 +1,6 @@
 pub mod accepted_commitment;
 pub mod commitment;
+
 use clap::Subcommand;
 
 #[derive(Subcommand, Debug)]

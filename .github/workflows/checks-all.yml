@@ -8,24 +8,39 @@ on:
       - synchronize
   push:
     branches:
-      - '**' 
+      - main
+    tags:
+      - '[0-9]*.[0-9]*.[0-9]*'
 
 jobs:
- 
+
+  read-github-context-object:
+    runs-on: ubuntu-latest
+    steps:
+      # I know this is not pretty (debug information) but it's useful to have this
+    - name: Read github context
+      env: 
+        GITHUB_CONTEXT: ${{ toJson(github) }}
+      run: |
+        echo "GITHUB_SHA=${GITHUB_SHA}"
+        echo "INFO: github context object content below"
+        echo "${GITHUB_CONTEXT}"
+
   build:
     strategy:
       matrix:
         include:
           - os: ubuntu-22.04
             arch: x86_64
-            runs-on: buildjet-8vcpu-ubuntu-2204
-          - os: macos-13-latest
+            runs-on: buildjet-16vcpu-ubuntu-2204
+          - os: macos-15
             arch: arm64
-            runs-on: macos-13-xlarge
+            runs-on: macos-15
 
     runs-on: ${{ matrix.runs-on }}
 
     steps:
+
     - name: Checkout repository
       uses: actions/checkout@v4
 
@@ -42,10 +57,10 @@ jobs:
         include:
           - os: ubuntu-22.04
             arch: x86_64
-            runs-on: buildjet-8vcpu-ubuntu-2204
-          - os: macos-13-latest
+            runs-on: buildjet-16vcpu-ubuntu-2204
+          - os: macos-15
             arch: arm64
-            runs-on: macos-13-xlarge
+            runs-on: macos-15
 
     runs-on: ${{ matrix.runs-on }}
 
@@ -69,7 +84,11 @@ jobs:
             -p movement-signer-test
 
   movement-full-node-local:
-    if: github.event.label.name == 'cicd:movement-full-node' ||  github.ref == 'refs/heads/main'
+    if: >
+      github.event.label.name == 'cicd:movement-full-node'
+      || github.ref == 'refs/heads/main'
+      || startsWith(github.ref, 'refs/tags/')
+
     strategy:
       matrix:
         include:
@@ -96,7 +115,10 @@ jobs:
         nix develop --command bash  -c "just movement-full-node native build.setup.eth-local.celestia-local.test -t=false"  
 
   movement-full-node-malicious:
-    if: github.event.label.name == 'cicd:movement-full-node-malicious' ||  github.ref == 'refs/heads/main'
+    if: >
+      github.event.label.name == 'cicd:movement-full-node-malicious'
+      || github.ref == 'refs/heads/main'
+      || startsWith(github.ref, 'refs/tags/')
 
     strategy:
       matrix:
@@ -123,7 +145,10 @@ jobs:
         nix develop --command bash  -c "just movement-full-node native build.setup.eth-local.celestia-local.gas-dos -t=false"
 
   movement-multi-node-local:
-    if: github.event.label.name == 'cicd:movement-multi-node-local' ||  github.ref == 'refs/heads/main'
+    if: >
+      github.event.label.name == 'cicd:movement-multi-node-local'
+      || github.ref == 'refs/heads/main'
+      || startsWith(github.ref, 'refs/tags/')
     strategy:
       matrix:
         include:
@@ -151,7 +176,10 @@ jobs:
         nix develop --command bash  -c "just movement-full-node native build.setup.eth-local.celestia-local.test-followers -t=false"
 
   movement-indexer-local:
-    if: github.event.label.name == 'cicd:movement-full-node' ||  github.ref == 'refs/heads/main'
+    if: >
+      github.event.label.name == 'cicd:movement-full-node'
+      || github.ref == 'refs/heads/main'
+      || startsWith(github.ref, 'refs/tags/')
     strategy:
       matrix:
         include:
@@ -183,7 +211,7 @@ jobs:
         include:
           - os: ubuntu-22.04
             arch: x86_64
-            runs-on: buildjet-8vcpu-ubuntu-2204
+            runs-on: buildjet-16vcpu-ubuntu-2204
 
     runs-on: ${{ matrix.runs-on }}
 
@@ -206,7 +234,10 @@ jobs:
 
   # Elsa to Biarritz RC1
   movement-elsa-to-biarritz-rc1-bring-up:
-    if: github.event.label.name == 'cicd:movement-elsa-to-biarritz-rc1' ||  github.ref == 'refs/heads/main'
+    if: >
+      github.event.label.name == 'cicd:movement-elsa-to-biarritz-rc1'
+      || github.ref == 'refs/heads/main'
+      || startsWith(github.ref, 'refs/tags/')
 
     strategy:
       matrix:
@@ -239,7 +270,7 @@ jobs:
         include:
           - os: ubuntu-22.04
             arch: x86_64
-            runs-on: buildjet-8vcpu-ubuntu-2204
+            runs-on: buildjet-16vcpu-ubuntu-2204
 
     runs-on: ${{ matrix.runs-on }}
 
@@ -254,12 +285,41 @@ jobs:
       # adjust the log level while debugging
       run: CELESTIA_LOG_LEVEL=FATAL nix develop --command bash  -c "just movement-celestia-da-light-node native build.setup.test.local -t=false"  
 
-    - name: Run foundry tests
-      # Run the foundry solidity contracts using the WETH9 contract on sepolia
-      run: cd protocol-units/bridge/contracts && forge test --fork-url https://ethereum-sepolia-rpc.publicnode.com -vv  
-
   governed-gas-pool:
-    if: github.event.label.name == 'cicd:governed-gas-pool' ||  github.ref == 'refs/heads/main'
+    if: >
+      github.event.label.name == 'cicd:governed-gas-pool'
+      || github.ref == 'refs/heads/main'
+      || startsWith(github.ref, 'refs/tags/')
+
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            arch: x86_64
+            runs-on: buildjet-16vcpu-ubuntu-2204
+
+    runs-on: ${{ matrix.runs-on }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@main
+
+    - name: Run Movement Full Node + indexer Tests Against Local ETH and Local Celestia
+      env:
+        CELESTIA_LOG_LEVEL: FATAL # adjust the log level while debugging
+      run: |
+        nix develop --command bash  -c "just movement-full-node native build.setup.eth-local.celestia-local.test-ggp-gas-fee -t=false"
+
+  core-resource-signer:
+    if: >
+      github.event.label.name == 'cicd:core-resource-signer'
+      || github.ref == 'refs/heads/main'
+      || startsWith(github.ref, 'refs/tags/')
     strategy:
       matrix:
         include:
@@ -311,13 +371,16 @@ jobs:
         nix develop --command bash  -c "just movement-full-node native build.setup.eth-local.celestia-local.test-ggp-gas-fee -t=false"
 
   mcr:
-    if: github.event.label.name == 'cicd:mcr' ||  github.ref == 'refs/heads/main'
+    if: >
+      github.event.label.name == 'cicd:mcr'
+      || github.ref == 'refs/heads/main'
+      || startsWith(github.ref, 'refs/tags/')
     strategy:
       matrix:
         include:
           - os: ubuntu-22.04
             arch: x86_64
-            runs-on: buildjet-8vcpu-ubuntu-2204
+            runs-on: buildjet-16vcpu-ubuntu-2204
 
     runs-on: ${{ matrix.runs-on }}
 
@@ -331,120 +394,13 @@ jobs:
     - name: Run MCR Client Tests
       run: nix develop --command bash  -c "just mcr-client native build.local.test -t=false"
 
-  ## any use of Move CLI requires ubuntu-24.04 and to not run on buildjet
-  move-modules-test:
-    if: github.event.label.name == 'cicd:bridge' ||  github.ref == 'refs/heads/main'
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-24.04
-            arch: x86_64
-            runs-on: ubuntu-24.04 
-
-    runs-on: ${{ matrix.runs-on }}
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Install Aptos CLI
-      run: |
-        curl -fsSL "https://aptos.dev/scripts/install_cli.py" | python3
-
-    - name: Install Nix
-      uses: DeterminateSystems/nix-installer-action@main
-
-    - name: Run Aptos Tests
-      run: |
-        nix develop --command bash -c "
-          set -e
-          set -x
-          chmod +x .github/scripts/update_move_toml.sh && \
-          ./.github/scripts/update_move_toml.sh && \
-          cd protocol-units/bridge/move-modules && \
-          aptos move test
-        "
-  
-  solidity-bridge-tests:
-    if: github.event.label.name == 'cicd:bridge' ||  github.ref == 'refs/heads/main'
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-22.04
-            arch: x86_64
-            runs-on: buildjet-8vcpu-ubuntu-2204
-
-    runs-on: ${{ matrix.runs-on }}
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Install Nix
-      uses: DeterminateSystems/nix-installer-action@main
-
-    - name: Run foundry tests
-      run: |
-        nix develop --command bash -c "
-            cd protocol-units/bridge/contracts && \
-            forge test --fork-url https://ethereum-sepolia-rpc.publicnode.com -vv
-        "
-
-# any use of Move CLI requires ubuntu-24.04 and to not run on buildjet
-  bridge-client-integration:
-    if: github.event.label.name == 'cicd:bridge' ||  github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/trusted-relayer'
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-24.04
-            arch: x86_64
-            runs-on: ubuntu-24.04 
-    runs-on: ${{ matrix.runs-on }}
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-    - name: Install Movement CLI
-      run: |
-        sudo apt-get update 
-        sudo apt-get install -y build-essential
-        sudo apt-get install -y binutils
-        sudo apt-get install -y lld
-        sudo apt-get install -y libudev-dev
-        sudo apt-get install -y libdw-dev
-        which ld
-        which lld
-        which gcc
-        which cc
-        echo $PATH
-        export GIT_CLONE_PROTECTION_ACTIVE=false
-        git clone https://github.com/movementlabsxyz/aptos-core/ 
-        cd aptos-core
-        cargo build -p movement
-        sudo cp target/debug/movement /usr/local/bin/
-        cd -
-    - name: Install Nix
-      uses: DeterminateSystems/nix-installer-action@main
-    - uses: cachix/cachix-action@v15
-      with:
-        name: movementlabs
-        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-    - name: Run eth_movement tests
-      run: |
-        nix develop --command bash -c "rust_backtrace=1 cargo test --test client_eth_tests -- --nocapture --test-threads=1"
-    - name: Run movement_eth tests
-      run: |
-        nix develop --command bash -c "rust_backtrace=1 cargo test --test client_mvt_tests -- --nocapture --test-threads=1"
-    - name: Run Relayer tests
-      run: |
-        nix develop --command bash -c "rust_backtrace=1 cargo test --test relayer -- --nocapture --test-threads=1"
-
 #  Indexer:
 #    strategy:
 #      matrix:
 #        include:
 #          - os: ubuntu-22.04
 #            arch: x86_64
-#            runs-on: buildjet-8vcpu-ubuntu-2204
+#            runs-on: buildjet-16vcpu-ubuntu-2204
 #
 #    runs-on: ${{ matrix.runs-on }}
 #

@@ -2,8 +2,10 @@ use crate::{
 	BlockMetadata, DynOptFinExecutor, ExecutableBlock, HashValue, MakeOptFinServices, Services,
 	SignedTransaction,
 };
+use aptos_sdk::types::account_address::AccountAddress;
 use maptos_execution_util::config::Config;
 use maptos_fin_view::FinalityView;
+use maptos_opt_executor::executor::TxExecutionResult;
 use maptos_opt_executor::{Context as OptContext, Executor as OptExecutor};
 use movement_types::block::BlockCommitment;
 
@@ -32,8 +34,11 @@ impl Executor {
 		Self { executor, finality_view }
 	}
 
-	pub fn try_from_config(config: Config) -> Result<Self, anyhow::Error> {
-		let executor = OptExecutor::try_from_config(config)?;
+	pub async fn try_from_config(
+		config: Config,
+		mempool_tx_exec_result_sender: futures::channel::mpsc::Sender<Vec<TxExecutionResult>>,
+	) -> Result<Self, anyhow::Error> {
+		let executor = OptExecutor::try_from_config(config, mempool_tx_exec_result_sender).await?;
 		Ok(Self::new(executor))
 	}
 }
@@ -53,12 +58,14 @@ impl DynOptFinExecutor for Executor {
 	fn background(
 		&self,
 		transaction_sender: Sender<(u64, SignedTransaction)>,
+		mempool_commit_tx_receiver: futures::channel::mpsc::Receiver<Vec<TxExecutionResult>>,
 		_config: &Config,
 	) -> Result<
 		(Context, impl Future<Output = Result<(), anyhow::Error>> + Send + 'static),
 		anyhow::Error,
 	> {
-		let (opt_context, background) = self.executor.background(transaction_sender)?;
+		let (opt_context, background) =
+			self.executor.background(transaction_sender, mempool_commit_tx_receiver)?;
 		let fin_service = self.finality_view.service(
 			opt_context.mempool_client_sender(),
 			self.config(),
@@ -82,7 +89,7 @@ impl DynOptFinExecutor for Executor {
 	}
 
 	async fn execute_block_opt(
-		&self,
+		&mut self,
 		block: ExecutableBlock,
 	) -> Result<BlockCommitment, anyhow::Error> {
 		debug!("Executing block: {:?}", block.block_id);
@@ -166,6 +173,7 @@ mod tests {
 		},
 	};
 	use maptos_execution_util::config::Config;
+	use maptos_opt_executor::executor::EXECUTOR_CHANNEL_SIZE;
 	use movement_signer_loader::identifiers::{local::Local, SignerIdentifier};
 
 	use rand::SeedableRng;
@@ -174,11 +182,15 @@ mod tests {
 
 	use std::collections::HashMap;
 
-	fn setup(mut maptos_config: Config) -> Result<(Executor, TempDir), anyhow::Error> {
+	async fn setup(
+		mut maptos_config: Config,
+		mempool_tx_exec_result_sender: futures::channel::mpsc::Sender<Vec<TxExecutionResult>>,
+	) -> Result<(Executor, TempDir), anyhow::Error> {
 		let tempdir = tempfile::tempdir()?;
 		// replace the db path with the temporary directory
 		maptos_config.chain.maptos_db_path.replace(tempdir.path().to_path_buf());
-		let executor = Executor::try_from_config(maptos_config)?;
+		let executor =
+			Executor::try_from_config(maptos_config, mempool_tx_exec_result_sender).await?;
 		Ok((executor, tempdir))
 	}
 
@@ -205,7 +217,11 @@ mod tests {
 		config.chain.maptos_private_key_signer_identifier = SignerIdentifier::Local(Local {
 			private_key_hex_bytes: private_key.to_encoded_string()?.to_string(),
 		});
-		let (executor, _tempdir) = setup(config)?;
+
+		let (mempool_tx_exec_result_sender, _mempool_commit_tx_receiver) =
+			futures::channel::mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+
+		let (mut executor, _tempdir) = setup(config, mempool_tx_exec_result_sender).await?;
 		let block_id = HashValue::random();
 		let block_metadata = executor
 			.build_block_metadata(block_id.clone(), chrono::Utc::now().timestamp_micros() as u64)
@@ -231,9 +247,15 @@ mod tests {
 		config.chain.maptos_private_key_signer_identifier = SignerIdentifier::Local(Local {
 			private_key_hex_bytes: private_key.to_encoded_string()?.to_string(),
 		});
-		let (executor, _tempdir) = setup(config.clone())?;
+
+		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
+			futures::channel::mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+
+		let (executor, _tempdir) = setup(config.clone(), mempool_tx_exec_result_sender).await?;
 		let (tx_sender, mut tx_receiver) = mpsc::channel(16);
-		let (context, background) = executor.background(tx_sender, &config)?;
+
+		let (context, background) =
+			executor.background(tx_sender, mempool_commit_tx_receiver, &config)?;
 		let services = context.services();
 		let api = services.get_opt_apis();
 
@@ -265,8 +287,13 @@ mod tests {
 		});
 		config.chain.maptos_read_only = true;
 		let (tx_sender, _tx_receiver) = mpsc::channel(16);
-		let (executor, _tempdir) = setup(config.clone())?;
-		let (context, background) = executor.background(tx_sender, &config)?;
+
+		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
+			futures::channel::mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+
+		let (executor, _tempdir) = setup(config.clone(), mempool_tx_exec_result_sender).await?;
+		let (context, background) =
+			executor.background(tx_sender, mempool_commit_tx_receiver, &config)?;
 		let services = context.services();
 		let api = services.get_opt_apis();
 
@@ -295,9 +322,14 @@ mod tests {
 		config.chain.maptos_private_key_signer_identifier = SignerIdentifier::Local(Local {
 			private_key_hex_bytes: private_key.to_encoded_string()?.to_string(),
 		});
-		let (executor, _tempdir) = setup(config.clone())?;
+
+		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
+			futures::channel::mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+
+		let (mut executor, _tempdir) = setup(config.clone(), mempool_tx_exec_result_sender).await?;
 		let (tx_sender, mut tx_receiver) = mpsc::channel(16);
-		let (context, background) = executor.background(tx_sender, &config)?;
+		let (context, background) =
+			executor.background(tx_sender, mempool_commit_tx_receiver, &config)?;
 		let services = context.services();
 		let api = services.get_opt_apis();
 
@@ -356,9 +388,14 @@ mod tests {
 		config.chain.maptos_private_key_signer_identifier = SignerIdentifier::Local(Local {
 			private_key_hex_bytes: private_key.to_encoded_string()?.to_string(),
 		});
-		let (executor, _tempdir) = setup(config.clone())?;
+
+		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
+			futures::channel::mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+
+		let (mut executor, _tempdir) = setup(config.clone(), mempool_tx_exec_result_sender).await?;
 		let (tx_sender, mut tx_receiver) = mpsc::channel(16);
-		let (context, background) = executor.background(tx_sender, &config)?;
+		let (context, background) =
+			executor.background(tx_sender, mempool_commit_tx_receiver, &config)?;
 		let services = context.services();
 		let api = services.get_opt_apis();
 
@@ -438,8 +475,14 @@ mod tests {
 		// Create an executor instance from the environment configuration.
 		let config = Config::default();
 		let (tx_sender, _tx_receiver) = mpsc::channel(16);
-		let executor = Executor::try_from_config(config.clone())?;
-		let (context, background) = executor.background(tx_sender, &config)?;
+
+		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
+			futures::channel::mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+
+		let mut executor =
+			Executor::try_from_config(config.clone(), mempool_tx_exec_result_sender).await?;
+		let (context, background) =
+			executor.background(tx_sender, mempool_commit_tx_receiver, &config)?;
 		let config = executor.config();
 		let services = context.services();
 		let apis = services.get_opt_apis();
@@ -511,8 +554,14 @@ mod tests {
 		// Create an executor instance from the environment configuration.
 		let config = Config::default();
 		let (tx_sender, _tx_receiver) = mpsc::channel(16);
-		let executor = Executor::try_from_config(config.clone())?;
-		let (context, background) = executor.background(tx_sender, &config)?;
+
+		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
+			futures::channel::mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+
+		let mut executor =
+			Executor::try_from_config(config.clone(), mempool_tx_exec_result_sender).await?;
+		let (context, background) =
+			executor.background(tx_sender, mempool_commit_tx_receiver, &config)?;
 		let config = executor.config();
 		let services = context.services();
 

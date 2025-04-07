@@ -146,7 +146,7 @@ where
 
 		// get the transactions
 		let transactions_count = block.transactions().len();
-		let span = info_span!(target: "movement_timing", "execute_block", id = ?block_id);
+		let span = info_span!(target: "movement_timing", "execute_block", block_id = %block.id());
 		let commitment =
 			self.execute_block_with_retries(block, block_timestamp).instrument(span).await?;
 
@@ -220,7 +220,7 @@ where
 		block_timestamp: u64,
 	) -> anyhow::Result<BlockCommitment> {
 		let block_id = block.id();
-		let block_hash = HashValue::from_slice(block.id())?;
+		let block_hash = HashValue::from_slice(block_id)?;
 
 		// get the transactions
 		let mut block_transactions = Vec::new();
@@ -242,6 +242,14 @@ where
 			{
 				continue;
 			}
+
+			info!(
+				target: "movement_timing",
+				tx_hash = %signed_transaction.committed_hash(),
+				sender = %signed_transaction.sender(),
+				sequence_number = signed_transaction.sequence_number(),
+				"execute_transaction",
+			);
 
 			let signature_verified_transaction = SignatureVerifiedTransaction::Valid(
 				Transaction::UserTransaction(signed_transaction),

@@ -158,8 +158,8 @@ pub fn execute_test(config: ExecutionConfig, create_scenario: Arc<scenario::Crea
 	let exec_results: Vec<_> = chunks
 		.into_par_iter()
 		.map(|(kind, chunk, create_scenario)| {
-			let client = TestClient::new(chunk);
-			client.run_scenarios(kind.clone(), create_scenario.clone())
+			let client = TestClient::new();
+			client.run_scenarios(kind.clone(), chunk, create_scenario.clone())
 		})
 		.collect();
 
@@ -187,18 +187,17 @@ pub fn execute_test(config: ExecutionConfig, create_scenario: Arc<scenario::Crea
 
 /// Runs the specified scenarios concurrently using Tokio.
 #[derive(Default)]
-struct TestClient {
-	scenario_chunk: Vec<usize>,
-}
+struct TestClient {}
 
 impl TestClient {
-	fn new(scenario_chunk: Vec<usize>) -> Self {
-		TestClient { scenario_chunk }
+	fn new() -> Self {
+		TestClient {}
 	}
 
 	fn run_scenarios(
 		self,
 		kind: TestKind,
+		scenario_chunk: Vec<usize>,
 		create_scanario: Arc<scenario::CreateScenarioFn>,
 	) -> ClientExecResult {
 		// Start the Tokio runtime on the current thread
@@ -207,14 +206,20 @@ impl TestClient {
 			Err(err) => panic!("Tokio RT runtime fail to start because of this error:{err}"),
 		};
 		let scenario_results = match kind {
-			TestKind::Load { .. } => rt.block_on(self.load_runner(create_scanario.clone())),
+			TestKind::Load { .. } => {
+				rt.block_on(self.load_runner(scenario_chunk, create_scanario.clone()))
+			}
 			TestKind::Soak { min_scenarios, max_scenarios, duration, number_cycle } => {
 				// The scenario that run all the time and part time are divided using the client.
 				// min_scenarios first ids are run permanently, the others client run part time.
 				//ids start at 1.
-				if *self.scenario_chunk.last().unwrap_or(&min_scenarios) <= min_scenarios {
+				if *scenario_chunk.last().unwrap_or(&min_scenarios) <= min_scenarios {
 					// Start scenarios that run all the time.
-					rt.block_on(self.soak_runner_in_a_loop(create_scanario.clone(), duration))
+					rt.block_on(self.soak_runner_in_a_loop(
+						scenario_chunk,
+						create_scanario.clone(),
+						duration,
+					))
 				} else {
 					//TODO
 
@@ -240,16 +245,31 @@ impl TestClient {
 
 	async fn load_runner(
 		self,
-		create_scanario: Arc<scenario::CreateScenarioFn>,
+		scenario_chunk: Vec<usize>,
+		create_scenario: Arc<scenario::CreateScenarioFn>,
 	) -> Vec<ScenarioExecMetric> {
 		//start all client's scenario
 		let mut set = tokio::task::JoinSet::new();
 		let start_time = std::time::Instant::now();
-		self.scenario_chunk.into_iter().for_each(|id| {
-			let scenario = create_scanario(id);
-			set.spawn(futures::future::join(futures::future::ready(id), scenario.run()));
-		});
+
 		let mut scenario_results = vec![];
+
+		let mut scenarios = vec![];
+		for id in scenario_chunk {
+			let mut scenario = create_scenario(id);
+			match scenario.prepare().await {
+				Ok(()) => scenarios.push((id, scenario)),
+				Err(err) => {
+					tracing::warn!("Error during scenario prepare: {err}");
+					scenario_results.push(ScenarioExecMetric::new(0, 0, ScenarioExecResult::Fail));
+				}
+			}
+		}
+
+		scenarios.into_iter().for_each(|(id, mut scenario)| {
+			let exec = async move { scenario.run().await };
+			set.spawn(futures::future::join(futures::future::ready(id), exec));
+		});
 		while let Some(res) = set.join_next().await {
 			let elapse = start_time.elapsed().as_millis();
 			let metrics = match res {
@@ -275,22 +295,34 @@ impl TestClient {
 
 	async fn soak_runner_in_a_loop(
 		self,
-		create_scanario: Arc<scenario::CreateScenarioFn>,
+		scenario_chunk: Vec<usize>,
+		create_scenario: Arc<scenario::CreateScenarioFn>,
 		duration: std::time::Duration,
 	) -> Vec<ScenarioExecMetric> {
 		let initial_start_time = std::time::Instant::now();
+		let mut scenario_results = vec![];
+
+		let mut scenarios = vec![];
+		for id in scenario_chunk {
+			let mut scenario = create_scenario(id);
+			match scenario.prepare().await {
+				Ok(()) => scenarios.push((id, scenario)),
+				Err(err) => {
+					tracing::warn!("Error during scenario prepare: {err}");
+					scenario_results.push(ScenarioExecMetric::new(0, 0, ScenarioExecResult::Fail));
+				}
+			}
+		}
 
 		let mut set = tokio::task::JoinSet::new();
 		//start min scenario
-		self.scenario_chunk.into_iter().for_each(|id| {
-			let create_scanario = create_scanario.clone();
+		scenarios.into_iter().for_each(|(id, scenario)| {
 			set.spawn(futures::future::join(
 				futures::future::ready(id),
-				run_scenarion_in_loop(id, create_scanario, duration.clone()),
+				run_scenarion_in_loop(id, scenario, duration.clone()),
 			));
 		});
 
-		let mut scenario_results = vec![];
 		while let Some(res) = set.join_next().await {
 			let metrics = match res {
 				Ok((id, Ok(elapse))) => ScenarioExecMetric::new(id, elapse, ScenarioExecResult::Ok),
@@ -318,7 +350,7 @@ impl TestClient {
 
 async fn run_scenarion_in_loop(
 	id: usize,
-	create_scanario: Arc<scenario::CreateScenarioFn>,
+	mut scenario: Box<dyn Scenario>,
 	duration: Duration,
 ) -> Result<u128, anyhow::Error> {
 	let start_time = std::time::Instant::now();
@@ -331,7 +363,7 @@ async fn run_scenarion_in_loop(
 
 		tracing::info!("{id} start new test");
 		let exec_start_time = std::time::Instant::now();
-		let scenario = create_scanario(id);
+
 		scenario.run().await?;
 		let exec_elapse = exec_start_time.elapsed().as_millis();
 		if average_time == 0 {

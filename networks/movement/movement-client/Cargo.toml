@@ -13,11 +13,18 @@ rust-version = { workspace = true }
 [[bin]]
 name = "demo_scenario"
 path = "src/bin/e2e/demo_scenario.rs"
-#[[bin]]
-# name = "basic_alice_bob"
-# path = "bin/basic_alice_bob.rs"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[[bin]]
+name = "movement-tests-e2e-load-alice-bob"
+path = "src/bin/e2e/load_alice_bob.rs"
+
+[[bin]]
+name = "movement-tests-e2e-soak-alice-bob"
+path = "src/bin/e2e/soak_alice_bob.rs"
+
+[[bin]]
+name = "bardock-tests-load-soak-basic"
+path = "src/bin/e2e/bardock_alice_bob.rs"
 
 [[bin]]
 name = "movement-tests-e2e-simple-interaction"
@@ -47,6 +54,9 @@ path = "src/bin/e2e/transfer.rs"
 name = "movement-tests-e2e-key-rotation"
 path = "src/bin/e2e/key_rotation.rs"
 
+[[bin]]
+name = "movement-tests-sequence-number-ooo"
+path = "src/bin/e2e/sequence_number_ooo.rs"
 
 [dependencies]
 aptos-language-e2e-tests = { workspace = true }

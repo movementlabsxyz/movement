@@ -36,6 +36,8 @@ fn construct_mempool_transaction_key(transaction: &MempoolTransaction) -> Result
 }
 
 fn construct_timestamp_threshold_key(timestamp_threshold: u64) -> Result<String, Error> {
+	// FIXME: this is wrong since the application priority buckets were introduced
+	// in construct_mempool_transaction_key above.
 	let mut key = String::with_capacity(32 + 1);
 	key.write_fmt(format_args!("{:032}:", timestamp_threshold))
 		.map_err(|_| Error::msg("Error writing timestamp threshold key"))?;
@@ -265,6 +267,9 @@ impl MempoolTransactionOperations for RocksdbMempool {
 			match iter.next() {
 				None => return Ok(None), // No transactions to pop
 				Some(res) => {
+					// Drop the database reader early
+					drop(iter);
+
 					let (key, value) = res?;
 					let transaction: MempoolTransaction = bcs::from_bytes(&value)?;
 
@@ -342,7 +347,7 @@ impl MempoolTransactionOperations for RocksdbMempool {
 			let mut transaction_count = 0;
 			let mut batch = WriteBatch::default();
 
-			if let Some(res) = iter.next() {
+			while let Some(res) = iter.next() {
 				let (key, value) = res?;
 				let transaction: MempoolTransaction = bcs::from_bytes(&value)?;
 

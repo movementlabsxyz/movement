@@ -1,6 +1,7 @@
 use crate::node::{da_db::DaDB, tasks};
 use maptos_dof_execution::MakeOptFinServices;
 use maptos_dof_execution::{v1::Executor, DynOptFinExecutor};
+use maptos_opt_executor::executor::TxExecutionResult;
 use mcr_settlement_client::McrSettlementClient;
 use mcr_settlement_manager::CommitmentEventStream;
 use mcr_settlement_manager::McrSettlementManager;
@@ -37,11 +38,16 @@ where
 
 	// ! Currently this only implements opt.
 	/// Runs the executor until crash or shutdown.
-	pub async fn run(self) -> Result<(), anyhow::Error> {
+	pub async fn run(
+		self,
+		mempool_commit_tx_receiver: futures::channel::mpsc::Receiver<Vec<TxExecutionResult>>,
+	) -> Result<(), anyhow::Error> {
 		let (transaction_sender, transaction_receiver) = mpsc::channel(16);
-		let (context, exec_background) = self
-			.executor
-			.background(transaction_sender, &self.config.execution_config.maptos_config)?;
+		let (context, exec_background) = self.executor.background(
+			transaction_sender,
+			mempool_commit_tx_receiver,
+			&self.config.execution_config.maptos_config,
+		)?;
 		let services = context.services();
 		let mut movement_rest = self.movement_rest;
 		movement_rest.set_context(services.opt_api_context());
@@ -57,8 +63,7 @@ where
 		let transaction_ingress_task = tasks::transaction_ingress::Task::new(
 			transaction_receiver,
 			self.light_node_client,
-			// FIXME: why are the struct member names so tautological?
-			self.config.celestia_da_light_node.celestia_da_light_node_config,
+			self.config.execution_config.maptos_config,
 		);
 
 		let (
@@ -81,13 +86,23 @@ where
 }
 
 impl MovementPartialNode<Executor> {
-	pub async fn try_executor_from_config(config: Config) -> Result<Executor, anyhow::Error> {
-		let executor = Executor::try_from_config(config.execution_config.maptos_config.clone())
-			.context("Failed to create the inner executor")?;
+	pub async fn try_executor_from_config(
+		config: Config,
+		mempool_tx_exec_result_sender: futures::channel::mpsc::Sender<Vec<TxExecutionResult>>,
+	) -> Result<Executor, anyhow::Error> {
+		let executor = Executor::try_from_config(
+			config.execution_config.maptos_config.clone(),
+			mempool_tx_exec_result_sender,
+		)
+		.await
+		.context("Failed to create the inner executor")?;
 		Ok(executor)
 	}
 
-	pub async fn try_from_config(config: Config) -> Result<Self, anyhow::Error> {
+	pub async fn try_from_config(
+		config: Config,
+		mempool_tx_exec_result_sender: futures::channel::mpsc::Sender<Vec<TxExecutionResult>>,
+	) -> Result<Self, anyhow::Error> {
 		let light_node_connection_protocol = config
 			.celestia_da_light_node
 			.celestia_da_light_node_config
@@ -141,8 +156,12 @@ impl MovementPartialNode<Executor> {
 		};
 
 		debug!("Creating the executor");
-		let executor = Executor::try_from_config(config.execution_config.maptos_config.clone())
-			.context("Failed to create the inner executor")?;
+		let executor = Executor::try_from_config(
+			config.execution_config.maptos_config.clone(),
+			mempool_tx_exec_result_sender,
+		)
+		.await
+		.context("Failed to create the inner executor")?;
 
 		let (settlement_manager, commitment_events) = if config.mcr.should_settle() {
 			debug!("Creating the settlement client");

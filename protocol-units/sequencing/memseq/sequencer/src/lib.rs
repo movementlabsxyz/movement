@@ -6,16 +6,16 @@ pub use movement_types::{
 };
 pub use sequencing_util::Sequencer;
 
-use tokio::sync::RwLock;
+use tokio::sync::{Notify, RwLock};
+use tokio::time::Instant;
 use tracing::{debug, info};
 
 use std::collections::BTreeSet;
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 /// The `Memseq` module is responsible for managing a mempool and sequencing transactions into blocks.
-#[derive(Clone)]
 pub struct Memseq<T: MempoolTransactionOperations> {
 	/// The mempool to get transactions from.
 	mempool: T,
@@ -25,6 +25,8 @@ pub struct Memseq<T: MempoolTransactionOperations> {
 	pub parent_block: Arc<RwLock<block::Id>>,
 	// this value should not be changed after initialization
 	building_time_ms: u64,
+	// The notifier used to wake up the block building routine
+	changed: Notify,
 }
 
 impl<T: MempoolTransactionOperations> Memseq<T> {
@@ -34,7 +36,7 @@ impl<T: MempoolTransactionOperations> Memseq<T> {
 		parent_block: Arc<RwLock<block::Id>>,
 		building_time_ms: u64,
 	) -> Self {
-		Self { mempool, block_size, parent_block, building_time_ms }
+		Self { mempool, block_size, parent_block, building_time_ms, changed: Notify::new() }
 	}
 
 	pub fn with_block_size(mut self, block_size: u32) -> Self {
@@ -89,23 +91,29 @@ impl Memseq<RocksdbMempool> {
 impl<T: MempoolTransactionOperations> Sequencer for Memseq<T> {
 	async fn publish_many(&self, transactions: Vec<Transaction>) -> Result<(), anyhow::Error> {
 		self.mempool.add_transactions(transactions).await?;
+		self.changed.notify_waiters();
 		Ok(())
 	}
 
 	async fn publish(&self, transaction: Transaction) -> Result<(), anyhow::Error> {
 		self.mempool.add_transaction(transaction).await?;
+		self.changed.notify_waiters();
 		Ok(())
 	}
 
 	/// Waits for the next block to be built, either when the block size is reached or the building time expires.
 	async fn wait_for_next_block(&self) -> Result<Option<Block>, anyhow::Error> {
+		info!(target: "movement_timing",  "CALLED wait_for_next_block");
 		let mut transactions = Vec::with_capacity(self.block_size as usize);
 
 		let now = Instant::now();
+		let build_deadline = now + Duration::from_millis(self.building_time_ms);
 
 		loop {
 			let current_block_size = transactions.len() as u32;
 			if current_block_size >= self.block_size {
+				info!("block is above the size limit");
+				info!(target: "movement_timing",  "BREAK out of wait_for_next_block");
 				break;
 			}
 
@@ -113,10 +121,9 @@ impl<T: MempoolTransactionOperations> Sequencer for Memseq<T> {
 			let mut transactions_to_add = self.mempool.pop_transactions(remaining as usize).await?;
 			transactions.append(&mut transactions_to_add);
 
-			// sleep to yield to other tasks and wait for more transactions
-			tokio::task::yield_now().await;
-
-			if now.elapsed().as_millis() as u64 > self.building_time_ms {
+			if let Err(_) = tokio::time::timeout_at(build_deadline, self.changed.notified()).await {
+				info!(target: "movement_timing",  "block building deadline elapsed");
+				info!(target: "movement_timing",  "BREAK out of wait_for_next_block");
 				break;
 			}
 		}
@@ -532,3 +539,5 @@ pub mod test {
 		}
 	}
 }
+
+pub mod degradation_tests {}

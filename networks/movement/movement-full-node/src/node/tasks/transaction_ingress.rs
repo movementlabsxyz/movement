@@ -1,12 +1,12 @@
 //! Task to process incoming transactions and write to DA
 
 use maptos_dof_execution::SignedTransaction;
+use maptos_execution_util::config::Config as MaptosConfig;
 use movement_da_light_node_client::MovementDaLightNodeClient;
 use movement_da_light_node_proto::{BatchWriteRequest, BlobWrite};
-use movement_da_util::config::Config as LightNodeConfig;
 
 use tokio::sync::mpsc;
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 
 use prost::Message;
 use std::ops::ControlFlow;
@@ -18,16 +18,16 @@ const LOGGING_UID: AtomicU64 = AtomicU64::new(0);
 pub struct Task {
 	transaction_receiver: mpsc::Receiver<(u64, SignedTransaction)>,
 	da_light_node_client: MovementDaLightNodeClient,
-	da_light_node_config: LightNodeConfig,
+	maptos_config: MaptosConfig,
 }
 
 impl Task {
 	pub(crate) fn new(
 		transaction_receiver: mpsc::Receiver<(u64, SignedTransaction)>,
 		da_light_node_client: MovementDaLightNodeClient,
-		da_light_node_config: LightNodeConfig,
+		maptos_config: MaptosConfig,
 	) -> Self {
-		Task { transaction_receiver, da_light_node_client, da_light_node_config }
+		Task { transaction_receiver, da_light_node_client, maptos_config }
 	}
 
 	pub async fn run(mut self) -> anyhow::Result<()> {
@@ -43,7 +43,7 @@ impl Task {
 
 		// limit the total time batching transactions
 		let start = Instant::now();
-		let (_, half_building_time) = self.da_light_node_config.block_building_parameters();
+		let half_building_time = self.maptos_config.load_shedding.batch_production_time;
 
 		let mut transactions = Vec::new();
 
@@ -66,13 +66,13 @@ impl Task {
 			{
 				Ok(transaction) => match transaction {
 					Some((application_priority, transaction)) => {
-						info!(
+						debug!(
 							target : "movement_timing",
 							batch_id = %batch_id,
 							tx_hash = %transaction.committed_hash(),
 							sender = %transaction.sender(),
 							sequence_number = transaction.sequence_number(),
-							"received transaction",
+							"Tx ingress received transaction",
 						);
 						let serialized_aptos_transaction = bcs::to_bytes(&transaction)?;
 						let movement_transaction = movement_types::transaction::Transaction::new(
