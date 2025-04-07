@@ -11,7 +11,7 @@ use tokio_stream::StreamExt;
 
 pub mod batch;
 mod block;
-mod celestia;
+pub mod celestia;
 pub mod error;
 pub mod server;
 mod storage;

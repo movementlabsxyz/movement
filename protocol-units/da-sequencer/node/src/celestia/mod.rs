@@ -8,6 +8,7 @@ use std::time::Duration;
 use tokio::sync::{mpsc, oneshot};
 
 pub mod blob;
+pub mod mock;
 
 /// Functions to implement to save block digest in an external DA like Celestia
 pub trait DaSequencerExternalDa: Clone {
