@@ -5,8 +5,11 @@ use opentelemetry::{
 };
 use opentelemetry_sdk::metrics::SdkMeterProvider;
 use prometheus::{Encoder, Registry, TextEncoder};
-use std::{env, net::SocketAddr};
-use tokio::net::TcpListener;
+use std::{env, net::SocketAddr, sync::Arc};
+use tokio::{
+    net::TcpListener,
+    sync::broadcast,
+};
 use tracing_subscriber::{
     fmt,
     prelude::*,
@@ -185,48 +188,30 @@ async fn serve_metrics(addr: String, registry: Registry) {
     
     println!("Metrics server listening on {}", addr);
 
-    let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel::<()>();
-    let mut shutdown_rx = shutdown_rx;
+    let (shutdown_tx, mut shutdown_rx) = broadcast::channel(1);
+    let registry = Arc::new(registry);
     
-    #[allow(unused_must_use)]
+    let shutdown_tx_clone = shutdown_tx.clone();
     tokio::spawn(async move {
-        tokio::signal::ctrl_c().await;
-        shutdown_tx.send(());
+        if let Err(e) = tokio::signal::ctrl_c().await {
+            eprintln!("Failed to listen for Ctrl+C: {}", e);
+        }
+        let _ = shutdown_tx_clone.send(());
     });
 
     loop {
         tokio::select! {
             accept_result = listener.accept() => {
                 match accept_result {
-                    Ok((mut stream, client_addr)) => {
-                        println!("Metrics server accepted connection from {}", client_addr);
-                        let registry = registry.clone();
-                        let encoder = TextEncoder::new();
+                    Ok((stream, client_addr)) => {
+                        let registry = Arc::clone(&registry);
+                        let shutdown_rx = shutdown_tx.subscribe();
                         
                         tokio::spawn(async move {
-                            let metrics = registry.gather();
-                            let mut buffer = vec![];
-                            encoder.encode(&metrics, &mut buffer).unwrap();
-                            
-                            let response = format!(
-                                "HTTP/1.1 200 OK\r\n\
-                                Content-Type: text/plain; charset=utf-8\r\n\
-                                Content-Length: {}\r\n\
-                                \r\n",
-                                buffer.len()
-                            );
-                            
-                             use tokio::io::{AsyncWriteExt, BufReader};
-
-                            let mut reader = BufReader::new(&buffer[..]);
-                            if let Err(e) = stream.write_all(response.as_bytes()).await {
-                                eprintln!("Error writing HTTP headers to {}: {}", client_addr, e);
-                            return;
+                            if let Err(e) = handle_metrics_request(stream, client_addr, registry, shutdown_rx).await {
+                                eprintln!("Error handling metrics request from {}: {}", client_addr, e);
                             }
-                            if let Err(e) = tokio::io::copy(&mut reader, &mut stream).await {
-                                eprintln!("Error serving metrics to {}: {}", client_addr, e);
-                            }
-                       });
+                        });
                     },
                     Err(e) => {
                         eprintln!("Error accepting connection: {}", e);
@@ -234,7 +219,7 @@ async fn serve_metrics(addr: String, registry: Registry) {
                 }
             },
             
-            _ = &mut shutdown_rx => {
+            _ = shutdown_rx.recv() => {
                 println!("Metrics server received shutdown signal, exiting...");
                 break;
             }
@@ -242,5 +227,36 @@ async fn serve_metrics(addr: String, registry: Registry) {
     }
     
     println!("Metrics server has shut down gracefully");
+}
+
+async fn handle_metrics_request(
+    mut stream: tokio::net::TcpStream,
+    client_addr: std::net::SocketAddr,
+    registry: Arc<Registry>,
+    mut shutdown_rx: broadcast::Receiver<()>,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let metrics = registry.gather();
+    let encoder = TextEncoder::new();
+    let mut buffer = vec![];
+    encoder.encode(&metrics, &mut buffer)?;
+    
+    let response = format!(
+        "HTTP/1.1 200 OK\r\n\
+        Content-Type: text/plain; charset=utf-8\r\n\
+        Content-Length: {}\r\n\
+        \r\n",
+        buffer.len()
+    );
+    
+    use tokio::io::AsyncWriteExt;
+    
+    stream.write_all(response.as_bytes()).await?;
+    
+    stream.write_all(&buffer).await?;
+    
+    stream.flush().await?;
+    stream.shutdown().await?;
+    
+    Ok(())
 }
 
