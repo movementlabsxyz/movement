@@ -1,9 +1,9 @@
 //! The blob submitter task.
 
-use super::{CelestiaBlobData, CelestiaHeight, ExternalDaNotification};
+use super::{BlockSource, CelestiaBlobData, CelestiaHeight, ExternalDaNotification};
 use crate::block::{BlockHeight, SequencerBlockDigest};
 
-use anyhow::{anyhow, Context};
+use anyhow::Context;
 use celestia_rpc::prelude::*;
 use celestia_rpc::{Client, TxConfig};
 use celestia_types::nmt::Namespace;
@@ -25,7 +25,7 @@ pub(crate) struct BlobSubmitter {
 	// The Celestia namespace
 	celestia_namespace: Namespace,
 	// Channel to receive digests from foreground
-	digest_receiver: mpsc::Receiver<SequencerBlockDigest>,
+	digest_receiver: mpsc::Receiver<(SequencerBlockDigest, BlockSource)>,
 	// Channel to send notifications from Celestia layer
 	notifier: mpsc::Sender<ExternalDaNotification>,
 }
@@ -34,7 +34,7 @@ impl BlobSubmitter {
 	pub(crate) fn new(
 		celestia_client: Arc<Client>,
 		celestia_namespace: Namespace,
-		digest_receiver: mpsc::Receiver<SequencerBlockDigest>,
+		digest_receiver: mpsc::Receiver<(SequencerBlockDigest, BlockSource)>,
 		notifier: mpsc::Sender<ExternalDaNotification>,
 	) -> Self {
 		BlobSubmitter { celestia_client, celestia_namespace, digest_receiver, notifier }
@@ -43,6 +43,8 @@ impl BlobSubmitter {
 	pub(crate) async fn run(mut self) -> Result<(), anyhow::Error> {
 		// Digests accumulated while waiting for client to submit
 		let mut buffered_digests: Vec<SequencerBlockDigest> = vec![];
+		// Digests accumulated on bootstrap
+		let mut bootstrap_digests: Vec<SequencerBlockDigest> = vec![];
 		// Size of the accumulated blob data
 		let mut total_data_size = 0;
 		let mut submit_request = None;
@@ -51,8 +53,12 @@ impl BlobSubmitter {
 				None => {
 					// No request is currently pending.
 					// Grab the accumulated digests, if there are any, and submit them in a blob.
-					if !buffered_digests.is_empty() {
-						let digests = mem::replace(&mut buffered_digests, vec![]);
+					// Bootstrap digests should be sent ahead of the digests that arrived with
+					// submit requests.
+					if !buffered_digests.is_empty() || !bootstrap_digests.is_empty() {
+						let mut digests = mem::replace(&mut bootstrap_digests, vec![]);
+						digests.append(&mut buffered_digests);
+						total_data_size = 0;
 						submit_request = Some(Box::pin(submit_blob(
 							&self.celestia_client,
 							self.celestia_namespace.clone(),
@@ -82,9 +88,13 @@ impl BlobSubmitter {
 						next = self.digest_receiver.recv(), if total_data_size + SequencerBlockDigest::DIGEST_SIZE <= MAX_CELESTIA_BLOB_SIZE => {
 							match next {
 								None => break,
-								Some(digest) => {
+								Some((digest, BlockSource::Input)) => {
 									total_data_size += digest.id.len();
 									buffered_digests.push(digest);
+								}
+								Some((digest, BlockSource::Bootstrap)) => {
+									total_data_size += digest.id.len();
+									bootstrap_digests.push(digest);
 								}
 							}
 						}

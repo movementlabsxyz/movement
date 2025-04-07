@@ -1,6 +1,7 @@
 use super::submit::BlobSubmitter;
-use super::{CelestiaBlobData, CelestiaClientOps, CelestiaHeight, ExternalDaNotification};
-use crate::block::BlockHeight;
+use super::{
+	BlockSource, CelestiaBlobData, CelestiaClientOps, CelestiaHeight, ExternalDaNotification,
+};
 use crate::block::SequencerBlockDigest;
 use crate::error::DaSequencerError;
 
@@ -21,7 +22,7 @@ pub struct CelestiaClient {
 	rpc_client: Arc<RpcClient>,
 	notifier: mpsc::Sender<ExternalDaNotification>,
 	// The sender end of the channel for the background sender task.
-	digest_sender: mpsc::Sender<SequencerBlockDigest>,
+	digest_sender: mpsc::Sender<(SequencerBlockDigest, BlockSource)>,
 }
 
 impl CelestiaClient {
@@ -58,7 +59,14 @@ impl CelestiaClientOps for CelestiaClient {
 		todo!()
 	}
 
-	async fn send_block(&self, block: SequencerBlockDigest) -> Result<(), DaSequencerError> {
-		self.digest_sender.send(block).await.map_err(|_| DaSequencerError::SendFailure)
+	async fn send_block(
+		&self,
+		block: SequencerBlockDigest,
+		source: BlockSource,
+	) -> Result<(), DaSequencerError> {
+		self.digest_sender
+			.send((block, source))
+			.await
+			.map_err(|_| DaSequencerError::SendFailure)
 	}
 }

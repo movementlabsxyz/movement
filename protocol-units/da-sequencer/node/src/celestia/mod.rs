@@ -2,8 +2,6 @@ pub mod blob;
 mod client;
 mod submit;
 
-pub use client::CelestiaClient;
-
 use crate::block::SequencerBlockDigest;
 use crate::block::{BlockHeight, SequencerBlock};
 use crate::celestia::blob::CelestiaBlobData;
@@ -61,6 +59,15 @@ pub enum ExternalDaNotification {
 	RequestBlock { at: BlockAt, callback: oneshot::Sender<Option<SequencerBlock>> },
 }
 
+/// Source for the block digest
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+enum BlockSource {
+	/// The block has arrived on the DA service.
+	Input,
+	/// The block has been recovered in bootstrap.
+	Bootstrap,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum BlockAt {
 	Height(BlockHeight),
@@ -80,6 +87,7 @@ pub trait CelestiaClientOps {
 	fn send_block(
 		&self,
 		block: SequencerBlockDigest,
+		source: BlockSource,
 	) -> impl Future<Output = Result<(), DaSequencerError>> + Send;
 }
 
@@ -117,7 +125,7 @@ impl<C: CelestiaClientOps + Sync + Clone> DaSequencerExternalDa for CelestiaExte
 	/// The block is not immediately sent but aggregated in a blob
 	/// until the client can send it to celestia.
 	async fn send_block(&self, block: SequencerBlockDigest) -> Result<(), DaSequencerError> {
-		self.celestia_client.send_block(block).await
+		self.celestia_client.send_block(block, BlockSource::Input).await
 	}
 
 	/// Get the blob from celestia at the given height.
@@ -157,7 +165,9 @@ impl<C: CelestiaClientOps + Sync + Clone> DaSequencerExternalDa for CelestiaExte
 		// Step 3: Request and send all missing blocks
 		for height in (block.height.0 + 1)..=current_block_height.0 {
 			block = self.request_block(BlockAt::Height(BlockHeight(height))).await?;
-			self.send_block(block.get_block_digest()).await?;
+			self.celestia_client
+				.send_block(block.get_block_digest(), BlockSource::Bootstrap)
+				.await?;
 		}
 
 		Ok(())
