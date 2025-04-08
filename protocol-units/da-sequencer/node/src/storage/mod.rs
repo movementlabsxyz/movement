@@ -204,13 +204,13 @@ impl DaSequencerStorage for Storage {
 
 	fn get_block_with_digest(
 		&self,
-		id: SequencerBlockDigest,
+		digest: SequencerBlockDigest,
 	) -> Result<Option<SequencerBlock>, DaSequencerError> {
 		let cf = self.db.cf_handle(cf::BLOCKS_BY_DIGEST).ok_or_else(|| {
 			DaSequencerError::StorageAccess("Missing column family: blocks_by_digest".into())
 		})?;
 
-		let key = id.0;
+		let key = digest.id;
 
 		let height_bytes = match self
 			.db
@@ -270,7 +270,7 @@ impl DaSequencerStorage for Storage {
 				let parent_block = self.get_block_at_height(height.parent())?.ok_or_else(|| {
 					DaSequencerError::StorageFormat("Missing parent block".into())
 				})?;
-				Id::new(parent_block.get_block_digest().0)
+				parent_block.get_block_digest().id
 			}
 		};
 
@@ -326,7 +326,7 @@ impl Storage {
 		let height_key = block.height.0.to_be_bytes();
 
 		write_batch.put_cf(&cf_blocks, height_key, &block_bytes);
-		write_batch.put_cf(&cf_digests, block.get_block_digest().0, &height_key);
+		write_batch.put_cf(&cf_digests, block.get_block_digest().id, &height_key);
 
 		if let Some(keys) = delete_keys {
 			let cf_pending = self.db.cf_handle(cf::PENDING_TRANSACTIONS).ok_or_else(|| {
@@ -591,7 +591,7 @@ mod tests {
 			storage.db.cf_handle(cf::BLOCKS_BY_DIGEST).expect("missing 'block_digests' CF");
 		storage
 			.db
-			.put_cf(&cf_digests, digest.0, key)
+			.put_cf(&cf_digests, digest.id, key)
 			.expect("failed to write digest mapping");
 
 		let result = storage.get_block_with_digest(digest).expect("get_block_with_digest failed");
@@ -603,7 +603,7 @@ mod tests {
 
 		let stored_height_bytes = storage
 			.db
-			.get_cf(&cf_digests, digest.0)
+			.get_cf(&cf_digests, digest.id)
 			.expect("failed to read digest mapping")
 			.expect("digest not found");
 		assert_eq!(stored_height_bytes, key);
@@ -618,7 +618,7 @@ mod tests {
 		let path = temp_dir.path().to_str().unwrap();
 		let storage = Storage::try_new(path).expect("failed to create storage");
 
-		let fake_digest = SequencerBlockDigest([0u8; 32]);
+		let fake_digest = SequencerBlockDigest::new(BlockHeight(1), Id::new([0u8; 32]));
 		let result = storage.get_block_with_digest(fake_digest);
 
 		assert!(result.is_ok(), "Expected Ok, got Err: {:?}", result);

@@ -20,6 +20,8 @@ prost = { workspace = true }
 aptos-sdk = { workspace = true }
 bcs = { workspace = true }
 chrono = { workspace = true }
+celestia-rpc = { workspace = true }
+celestia-types = { workspace = true }
 rand = { workspace = true }
 rocksdb = { workspace = true }
 serde = { workspace = true }
