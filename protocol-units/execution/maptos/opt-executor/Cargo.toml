@@ -93,4 +93,5 @@ dirs = { workspace = true }
 tracing-test = { workspace = true }
 async-trait = { workspace = true }
 aptos-sdk = { workspace = true }
+serial_test = "2"
 tracing-subscriber = { workspace = true }

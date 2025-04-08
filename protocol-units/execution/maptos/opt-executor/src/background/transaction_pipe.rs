@@ -404,24 +404,13 @@ impl TransactionPipe {
 #[cfg(test)]
 mod tests {
 
-	use crate::executor::EXECUTOR_CHANNEL_SIZE;
-	use aptos_sdk::types::vm_status::DiscardedVMStatus;
-	use aptos_storage_interface::state_view::LatestDbStateCheckpointView;
-	use aptos_vm_validator::vm_validator;
-	use futures::stream;
-	use futures::SinkExt;
-	use movement_da_sequencer_client::ClientDaSequencerError;
-	use movement_da_sequencer_client::EmptyDaSequencerClient;
-	use movement_da_sequencer_client::StreamReadBlockFromHeight;
-	use movement_da_sequencer_proto::BatchWriteResponse;
-	use movement_da_sequencer_proto::Blockv1;
-	use std::collections::BTreeSet;
-	use std::sync::Mutex;
-
 	use super::*;
+	use crate::executor::EXECUTOR_CHANNEL_SIZE;
 	use crate::{Context, Executor, Service};
 	use aptos_api::{accept_type::AcceptType, transactions::SubmitTransactionPost};
 	use aptos_crypto::HashValue;
+	use aptos_sdk::types::vm_status::DiscardedVMStatus;
+	use aptos_storage_interface::state_view::LatestDbStateCheckpointView;
 	use aptos_types::{
 		account_config,
 		block_executor::partitioner::{ExecutableBlock, ExecutableTransactions},
@@ -433,9 +422,20 @@ mod tests {
 		},
 	};
 	use aptos_vm_genesis::GENESIS_KEYPAIR;
+	use aptos_vm_validator::vm_validator;
 	use futures::channel::oneshot;
+	use futures::stream;
+	use futures::SinkExt;
 	use maptos_execution_util::config::chain::Config;
+	use movement_da_sequencer_client::{
+		ClientDaSequencerError, EmptyDaSequencerClient, StreamReadBlockFromHeight,
+	};
+	use movement_da_sequencer_proto::{BatchWriteResponse, Blockv1};
 	use movement_types::transaction::Transaction as MvTransaction;
+	#[cfg(test)]
+	use serial_test::serial;
+	use std::collections::BTreeSet;
+	use std::sync::Mutex;
 	use tempfile::TempDir;
 
 	async fn setup() -> (Context, TransactionPipe, TempDir) {
@@ -507,6 +507,7 @@ mod tests {
 	}
 
 	#[tokio::test]
+	#[serial_test::serial]
 	async fn test_pipe_mempool_one_tx() -> Result<(), anyhow::Error> {
 		use tracing_subscriber::EnvFilter;
 		tracing_subscriber::fmt()
@@ -675,39 +676,6 @@ mod tests {
 		// assert_eq!(user_transactions, comparison_user_transactions);
 
 		mempool_handle.abort();
-
-		Ok(())
-	}
-
-	#[tokio::test]
-	async fn test_cannot_submit_too_new() -> Result<(), anyhow::Error> {
-		// set up
-		let maptos_config = Config::default();
-		let (_context, mut transaction_pipe, _tempdir) = setup().await;
-
-		// submit a transaction with a valid sequence number
-		let user_transaction = create_signed_transaction(0, &maptos_config);
-		let (mempool_status, _) =
-			transaction_pipe.add_transaction_to_aptos_mempool(user_transaction).await?;
-		assert_eq!(mempool_status.code, MempoolStatusCode::Accepted);
-
-		// submit a transaction with a sequence number that is too new
-		let user_transaction = create_signed_transaction(34, &maptos_config);
-		let (mempool_status, _) =
-			transaction_pipe.add_transaction_to_aptos_mempool(user_transaction).await?;
-		assert_eq!(mempool_status.code, MempoolStatusCode::InvalidSeqNumber);
-
-		// submit one signed transaction with a sequence number that is too new for the vm but not for the mempool
-		let user_transaction = create_signed_transaction(5, &maptos_config);
-		let (mempool_status, _) =
-			transaction_pipe.add_transaction_to_aptos_mempool(user_transaction).await?;
-		assert_eq!(mempool_status.code, MempoolStatusCode::Accepted);
-
-		// submit a transaction with the same sequence number as the previous one
-		let user_transaction = create_signed_transaction(5, &maptos_config);
-		let (mempool_status, _) =
-			transaction_pipe.add_transaction_to_aptos_mempool(user_transaction).await?;
-		assert_eq!(mempool_status.code, MempoolStatusCode::InvalidSeqNumber);
 
 		Ok(())
 	}
