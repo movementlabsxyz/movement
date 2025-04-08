@@ -523,7 +523,7 @@ mod tests {
 		let da_client = TxPipeTestDaSequencerClient::new();
 		let mempool_handle = tokio::spawn(transaction_pipe.run(da_client.clone()));
 
-		let user_transaction = create_signed_transaction(1, &maptos_config);
+		let user_transaction = create_signed_transaction(0, &maptos_config);
 
 		// send transaction to mempool
 		let (req_sender, callback) = oneshot::channel();
