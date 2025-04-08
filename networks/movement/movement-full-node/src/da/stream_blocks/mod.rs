@@ -35,7 +35,11 @@ impl StreamBlocks {
 		while let Some(block_res) = blocks_from_da.next().await {
 			let block = block_res.context("Failed to get block")?;
 			// pretty print (with labels) the block_id, block_timestamp, and da_height
-			tracing::info!("Block ID: {}, DA Height: {}", hex::encode(block.blockid), block.height);
+			tracing::info!(
+				"Block ID: {}, DA Height: {}",
+				hex::encode(block.block_id),
+				block.height
+			);
 		}
 
 		info!("Finished streaming blocks from DA");

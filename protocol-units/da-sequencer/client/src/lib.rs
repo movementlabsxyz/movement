@@ -6,8 +6,8 @@ use movement_da_sequencer_proto::BatchWriteResponse;
 use movement_da_sequencer_proto::Blockv1;
 use movement_da_sequencer_proto::StreamReadFromHeightRequest;
 use movement_signer::{
-    Signing,
-    cryptography::ed25519::{Ed25519, Signature},
+	cryptography::ed25519::{Ed25519, Signature},
+	Signing,
 };
 use movement_signer_loader::LoadedSigner;
 use std::future::Future;
@@ -151,12 +151,12 @@ pub async fn sign_and_encode_batch(
 
 /// Serializes a full node batch with verifying key and signature prepended.
 pub fn serialize_full_node_batch(
-	verifier: VerifyingKey,
+	verifying_key: VerifyingKey,
 	signature: Signature,
 	mut data: Vec<u8>,
 ) -> Vec<u8> {
 	let mut serialized: Vec<u8> = Vec::with_capacity(64 + 32 + data.len());
-	serialized.extend_from_slice(&verifier.to_bytes());
+	serialized.extend_from_slice(&verifying_key.to_bytes());
 	serialized.extend_from_slice(&signature.as_bytes());
 	serialized.append(&mut data);
 	serialized
@@ -165,7 +165,7 @@ pub fn serialize_full_node_batch(
 /// Deserializes a full node batch into verifying key, signature, and data.
 pub fn deserialize_full_node_batch(
 	data: Vec<u8>,
-) -> std::result::Result<(VerifyingKey, ed25519_dalek::Signature, Vec<u8>), anyhow::Error> {
+) -> Result<(VerifyingKey, ed25519_dalek::Signature, Vec<u8>), anyhow::Error> {
 	let (pubkey_deserialized, rest) = data.split_at(32);
 	let (sign_deserialized, vec_deserialized) = rest.split_at(64);
 
@@ -173,11 +173,11 @@ pub fn deserialize_full_node_batch(
 	let pub_key_bytes: [u8; 32] = pubkey_deserialized.try_into()?;
 	let signature_bytes: [u8; 64] = sign_deserialized.try_into()?;
 
-	let public_key = VerifyingKey::try_from(pub_key_bytes.as_slice())?;
+	let verifying_key = VerifyingKey::try_from(pub_key_bytes.as_slice())?;
 	let signature = ed25519_dalek::Signature::try_from(signature_bytes.as_slice())?;
 
 	let data: Vec<u8> = vec_deserialized.to_vec();
-	Ok((public_key, signature, data))
+	Ok((verifying_key, signature, data))
 }
 
 /// Verifies a batch signature using the given verifying key.
@@ -189,6 +189,7 @@ pub fn verify_batch_signature(
 	Ok(verifying_key.verify(batch_data, signature)?)
 }
 
+/// A DaSequencerClient implementation that no nothing. Can be used to mock the DA.
 #[derive(Clone)]
 pub struct EmptyDaSequencerClient;
 

@@ -1,20 +1,19 @@
-use crate::batch::FullNodeTxs;
-use crate::run;
-use crate::server::run_server;
-use crate::tests::generate_signing_key;
-use crate::tests::make_test_whitelist;
-use crate::tests::mock::mock_wait_and_get_next_block;
-use crate::tests::mock::mock_write_new_batch;
-use crate::tests::mock::{CelestiaMock, StorageMock};
-use ed25519_dalek::Signature;
-use ed25519_dalek::Signer;
+use crate::{
+	batch::FullNodeTxs,
+	run,
+	server::run_server,
+	tests::{
+		generate_signing_key, make_test_whitelist,
+		mock::{mock_wait_and_get_next_block, mock_write_new_batch, CelestiaMock, StorageMock},
+	},
+};
+use ed25519_dalek::{Signature, Signer};
 use futures::StreamExt;
-use movement_da_sequencer_client::serialize_full_node_batch;
-use movement_da_sequencer_client::DaSequencerClient;
-use movement_da_sequencer_client::GrpcDaSequencerClient;
+use movement_da_sequencer_client::{
+	serialize_full_node_batch, DaSequencerClient, GrpcDaSequencerClient,
+};
 use movement_da_sequencer_config::DaSequencerConfig;
-use movement_da_sequencer_proto::BatchWriteRequest;
-use movement_da_sequencer_proto::StreamReadFromHeightRequest;
+use movement_da_sequencer_proto::{BatchWriteRequest, StreamReadFromHeightRequest};
 use movement_signer::cryptography::ed25519::Signature as SigningSignature;
 use movement_types::transaction::Transaction;
 use std::net::SocketAddr;
@@ -241,8 +240,9 @@ async fn test_produce_block_and_stream() {
 	loop_jh.abort();
 }
 
+/// Submit a batch using the same key to sign and verify using the white list.
 #[tokio::test]
-async fn test_write_batch_grpc_main_loop_good_white_list() {
+async fn test_grpc_client_should_write_one_batch_with_a_correct_whitelist() {
 	let config = DaSequencerConfig::default();
 
 	let signing_key = generate_signing_key();
@@ -286,8 +286,10 @@ async fn test_write_batch_grpc_main_loop_good_white_list() {
 	let _ = main_loop.await;
 }
 
+/// Submit a batch with an empty the white list.
+/// The batch is rejected because the submitter public key is not part of the white list.
 #[tokio::test]
-async fn test_write_batch_grpc_main_loop_empty_whitelist() {
+async fn test_grpc_client_should_write_one_batch_with_an_empty_whitelist() {
 	let (request_tx, request_rx) = mpsc::channel(100);
 
 	let config = DaSequencerConfig::default();
@@ -330,8 +332,10 @@ async fn test_write_batch_grpc_main_loop_empty_whitelist() {
 	tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
 }
 
+/// Submit a batch and sign it with a different key than the one declared in the whitelist.
+/// The batch is rejected because the submitter public key is not part of the white list.
 #[tokio::test]
-async fn test_write_batch_grpc_main_loop_bad_whitelist() {
+async fn test_grpc_client_should_write_one_batch_with_a_wrong_verifying_key_in_whitelist() {
 	let (request_tx, request_rx) = mpsc::channel(100);
 
 	let config = DaSequencerConfig::default();

@@ -249,7 +249,7 @@ impl TryFrom<&SequencerBlock> for Blockv1 {
 
 	fn try_from(block: &SequencerBlock) -> Result<Self, Self::Error> {
 		Ok(Blockv1 {
-			blockid: block.get_block_digest().into_vec(),
+			block_id: block.get_block_digest().into_vec(),
 			height: block.height.into(),
 			data: block.try_into()?,
 		})

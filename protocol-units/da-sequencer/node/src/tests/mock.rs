@@ -1,49 +1,24 @@
-use crate::batch::DaBatch;
-use crate::batch::FullNodeTxs;
-use crate::block::BlockHeight;
-use crate::block::SequencerBlockDigest;
-use crate::celestia::blob::Blob;
-use crate::celestia::CelestiaHeight;
-use crate::DaSequencerError;
-use crate::DaSequencerExternalDa;
-use crate::DaSequencerStorage;
-use crate::SequencerBlock;
-use ed25519_dalek::Signer;
-use ed25519_dalek::{SigningKey, VerifyingKey};
-use futures::StreamExt;
-use movement_da_sequencer_client::serialize_full_node_batch;
-use movement_da_sequencer_client::DaSequencerClient;
-use movement_da_sequencer_client::StreamReadBlockFromHeight;
-use movement_da_sequencer_proto::BatchWriteRequest;
-use movement_signer::cryptography::ed25519::Signature as SigningSignature;
-use movement_types::block::Block;
-use movement_types::block::BlockMetadata;
-use movement_types::block::Id;
-use movement_types::transaction::Transaction;
 use std::collections::BTreeSet;
 use std::future::Future;
-use std::sync::Arc;
 use std::sync::{Arc, Mutex};
 
 use ed25519_dalek::{Signer, SigningKey, VerifyingKey};
 use futures::StreamExt;
 
 use movement_da_sequencer_client::{
-    DaSequencerClient,
-    StreamReadBlockFromHeight,
-    serialize_full_node_batch,
+	serialize_full_node_batch, DaSequencerClient, StreamReadBlockFromHeight,
 };
 use movement_da_sequencer_proto::BatchWriteRequest;
 use movement_signer::cryptography::ed25519::Signature as SigningSignature;
 use movement_types::block::{Block, BlockMetadata, Id};
+use movement_types::transaction::Transaction;
 
 use crate::{
-    batch::{DaBatch, FullNodeTxs},
-    block::BlockHeight,
-    DaSequencerError,
-    DaSequencerExternalDa,
-    DaSequencerStorage,
-    SequencerBlock,
+	batch::{DaBatch, FullNodeTxs},
+	block::{BlockHeight, SequencerBlockDigest},
+	celestia::blob::Blob,
+	celestia::CelestiaHeight,
+	DaSequencerError, DaSequencerExternalDa, DaSequencerStorage, SequencerBlock,
 };
 
 pub async fn mock_write_new_batch(

@@ -96,7 +96,7 @@ where
 		let block_timestamp = chrono::Utc::now().timestamp_micros() as u64;
 
 		info!(
-			block_id = %hex::encode(da_block.blockid.clone()),
+			block_id = %hex::encode(da_block.block_id.clone()),
 			da_height = da_block.height,
 			time = block_timestamp,
 			"Processing block from DA"
@@ -104,7 +104,7 @@ where
 
 		// check if the block has already been executed
 		if self.da_db.has_executed_block(da_block.block_id.clone()).await? {
-			info!("Block already executed: {:#?}. It will be skipped", da_block.blockid);
+			info!("Block already executed: {:#?}. It will be skipped", da_block.block_id);
 			return Ok(());
 		}
 
@@ -133,7 +133,6 @@ where
 
 		if self.settlement_enabled()
 			// only settle every super_block_size_heights 
-			// todo: replace with timeslot tolerance
 			&& da_block.height % self.settlement_config.settle.settlement_super_block_size == 0
 		{
 			info!("Posting block commitment via settlement manager");

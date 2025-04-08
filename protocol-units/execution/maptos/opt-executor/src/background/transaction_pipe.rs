@@ -462,7 +462,6 @@ mod tests {
 	}
 
 	impl DaSequencerClient for TxPipeTestDaSequencerClient {
-		/// Stream reads from a given height.
 		async fn stream_read_from_height(
 			&mut self,
 			_request: movement_da_sequencer_proto::StreamReadFromHeightRequest,
