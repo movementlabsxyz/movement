@@ -1,13 +1,15 @@
 use crate::block::SequencerBlockDigest;
 use crate::block::{BlockHeight, SequencerBlock};
-use crate::celestia::blob::Blob;
 use crate::error::DaSequencerError;
 use std::future::Future;
-use std::ops::{Add, AddAssign};
 use std::time::Duration;
 use tokio::sync::{mpsc, oneshot};
 
-pub mod blob;
+mod blob;
+mod height;
+
+pub use blob::Blob;
+pub use height::CelestiaHeight;
 
 /// Functions to implement to save block digest in an external DA like Celestia
 pub trait DaSequencerExternalDa {
@@ -39,27 +41,6 @@ pub trait DaSequencerExternalDa {
 	) -> impl Future<Output = Result<(), DaSequencerError>> + Send;
 }
 
-#[derive(Clone, Copy, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct CelestiaHeight(u64);
-
-// Rust interprets (small) integer literals without a type suffix as i32
-impl<T: Into<i64>> Add<T> for CelestiaHeight {
-	type Output = Self;
-
-	fn add(self, rhs: T) -> Self::Output {
-		let value = <i64 as TryInto<u64>>::try_into(rhs.into()).unwrap(); // Panic for negative values.
-		CelestiaHeight(self.0 + value)
-	}
-}
-
-// Rust interprets (small) integer literals without a type suffix as i32
-impl<T: Into<i64>> AddAssign<T> for CelestiaHeight {
-	fn add_assign(&mut self, rhs: T) {
-		let value = <i64 as TryInto<u64>>::try_into(rhs.into()).unwrap(); // Panic for negative values.
-		self.0 += value;
-	}
-}
-
 /// Message, use to notify CelestiaClient activities.
 #[derive(Debug)]
 pub enum ExternalDaNotification {
@@ -70,7 +51,7 @@ pub enum ExternalDaNotification {
 	RequestBlock { height: BlockHeight, callback: oneshot::Sender<Option<SequencerBlock>> },
 }
 
-pub trait CelestiaClient {
+pub trait CelestiaClient: Sync + Clone {
 	fn send_blob(&self, blob: Blob) -> impl Future<Output = Result<(), DaSequencerError>> + Send;
 
 	fn get_blob_at_height(
@@ -79,7 +60,7 @@ pub trait CelestiaClient {
 	) -> impl Future<Output = Result<Option<Blob>, DaSequencerError>> + Send;
 }
 
-pub trait BlockOps {
+pub trait BlockOps: Sync + Clone {
 	fn notify_block_commited(
 		&self,
 		block_height: BlockHeight,
@@ -138,19 +119,19 @@ impl BlockOps for BlockProvider {
 const DELAY_SECONDS_BEFORE_BOOTSTRAPPING: Duration = Duration::from_secs(12);
 
 #[derive(Clone)]
-pub struct CelestiaExternalDa<B: BlockOps + Sync + Clone, C: CelestiaClient + Sync + Clone> {
+pub struct CelestiaExternalDa<B: BlockOps, C: CelestiaClient> {
 	block_provider: B,
 	celestia_client: C,
 }
 
-impl<B: BlockOps + Sync + Clone, C: CelestiaClient + Sync + Clone> CelestiaExternalDa<B, C> {
+impl<B: BlockOps, C: CelestiaClient> CelestiaExternalDa<B, C> {
 	/// Create the Celestia client and all async process to manage celestia access.
 	pub fn new(block_provider: B, celestia_client: C) -> Self {
 		CelestiaExternalDa { block_provider, celestia_client }
 	}
 }
 
-impl<C: CelestiaClient + Sync + Clone> CelestiaExternalDa<BlockProvider, C> {
+impl<C: CelestiaClient> CelestiaExternalDa<BlockProvider, C> {
 	pub fn with_notifier(
 		notifier: mpsc::Sender<ExternalDaNotification>,
 		celestia_client: C,
@@ -159,9 +140,7 @@ impl<C: CelestiaClient + Sync + Clone> CelestiaExternalDa<BlockProvider, C> {
 	}
 }
 
-impl<B: BlockOps + Sync + Clone, C: CelestiaClient + Sync + Clone> DaSequencerExternalDa
-	for CelestiaExternalDa<B, C>
-{
+impl<B: BlockOps, C: CelestiaClient> DaSequencerExternalDa for CelestiaExternalDa<B, C> {
 	/// Send the given block to Celestia.
 	/// The block is not immediately sent but aggregated in a blob
 	/// until the client can send it to celestia.
@@ -200,7 +179,7 @@ impl<B: BlockOps + Sync + Clone, C: CelestiaClient + Sync + Clone> DaSequencerEx
 				let mut finalized_blob = self.get_blob_at_height(celestia_height).await?.ok_or(
 					DaSequencerError::ExternalDaBootstrap(format!(
 						"Celestia has no blob at last known finalized height {}",
-						celestia_height.0
+						celestia_height
 					)),
 				)?;
 
@@ -220,20 +199,21 @@ impl<B: BlockOps + Sync + Clone, C: CelestiaClient + Sync + Clone> DaSequencerEx
 						None => break, // The tip is reached
 					}
 				}
-				let finalized_height = finalized_blob.last_block_height().ok_or(
-					DaSequencerError::ExternalDaBootstrap(format!(
+				let finalized_height: u64 = finalized_blob
+					.last_block_height()
+					.ok_or(DaSequencerError::ExternalDaBootstrap(format!(
 						"Celestia's last finalized blob at height {} is empty",
-						celestia_height.0 - 1
-					)),
-				)?;
+						celestia_height - 1
+					)))?
+					.into();
 
-				finalized_height.0 + 1
+				finalized_height + 1
 			}
 		};
 
 		// Send all missing blocks to Celestia up to the current block height
-		for height in height_from..=current_block_height.0 {
-			let block = self.block_provider.request_block(BlockHeight(height)).await?;
+		for height in height_from..=current_block_height.into() {
+			let block = self.block_provider.request_block(BlockHeight::from(height)).await?;
 			self.send_block(block.get_block_digest()).await?;
 		}
 
@@ -259,7 +239,7 @@ mod tests {
 		blocks
 			.iter()
 			.enumerate()
-			.map(|(height, block)| digest(block, BlockHeight(height as u64)))
+			.map(|(height, block)| digest(block, BlockHeight::from(height as u64)))
 			.collect()
 	}
 
@@ -353,7 +333,7 @@ mod tests {
 		) -> Result<Option<Blob>, DaSequencerError> {
 			let mut state = self.0.write().await;
 			state.add_call(CelestiaClientCalls::GetBlobsAtHeight(height));
-			Ok(state.get_at_height(height.0))
+			Ok(state.get_at_height(height.into()))
 		}
 	}
 
@@ -367,7 +347,7 @@ mod tests {
 		}
 
 		async fn get_height(&self) -> BlockHeight {
-			BlockHeight(self.0.read().await.get_height())
+			BlockHeight::from(self.0.read().await.get_height())
 		}
 
 		async fn into_calls(self) -> Vec<BlockProviderCalls> {
@@ -390,12 +370,12 @@ mod tests {
 
 		async fn request_block(
 			&self,
-			block_height: BlockHeight,
+			height: BlockHeight,
 		) -> Result<SequencerBlock, DaSequencerError> {
 			let mut state = self.0.write().await;
-			state.add_call(BlockProviderCalls::RequestBlock(block_height));
-			let block = state.get_at_height(block_height.0).unwrap();
-			Ok(SequencerBlock { height: BlockHeight(block_height.0), block })
+			state.add_call(BlockProviderCalls::RequestBlock(height));
+			let block = state.get_at_height(height.into()).unwrap();
+			Ok(SequencerBlock { height, block })
 		}
 	}
 
@@ -430,7 +410,7 @@ mod tests {
 		let celestia = CelestiaMock::new(blobs);
 		let da = CelestiaExternalDa::new(block_provider.clone(), celestia.clone());
 
-		let current_block_height = BlockHeight(0);
+		let current_block_height = BlockHeight::from(0);
 		let last_finalized_celestia_height = None;
 
 		assert!(da.bootstrap(current_block_height, last_finalized_celestia_height).await.is_ok());
@@ -448,14 +428,14 @@ mod tests {
 		let da = CelestiaExternalDa::new(block_provider.clone(), celestia.clone());
 
 		let current_block_height = block_provider.get_height().await;
-		let last_finalized_celestia_height = Some(CelestiaHeight(2));
+		let last_finalized_celestia_height = Some(CelestiaHeight::from(2));
 
 		assert!(da.bootstrap(current_block_height, last_finalized_celestia_height).await.is_ok());
 		assert_eq!(
 			celestia.into_calls().await,
 			vec![
-				CelestiaClientCalls::GetBlobsAtHeight(CelestiaHeight(2)),
-				CelestiaClientCalls::GetBlobsAtHeight(CelestiaHeight(3))
+				CelestiaClientCalls::GetBlobsAtHeight(2.into()),
+				CelestiaClientCalls::GetBlobsAtHeight(3.into()),
 			],
 		);
 		assert_eq!(block_provider.into_calls().await, vec![]);
@@ -471,23 +451,23 @@ mod tests {
 		let da = CelestiaExternalDa::new(block_provider.clone(), celestia.clone());
 
 		let current_block_height = block_provider.get_height().await;
-		let last_finalized_celestia_height = Some(CelestiaHeight(0));
+		let last_finalized_celestia_height = Some(CelestiaHeight::from(0));
 
 		assert!(da.bootstrap(current_block_height, last_finalized_celestia_height).await.is_ok());
 		assert_eq!(
 			celestia.into_calls().await,
 			vec![
-				CelestiaClientCalls::GetBlobsAtHeight(CelestiaHeight(0)),
-				CelestiaClientCalls::GetBlobsAtHeight(CelestiaHeight(1)),
-				CelestiaClientCalls::GetBlobsAtHeight(CelestiaHeight(2)),
-				CelestiaClientCalls::GetBlobsAtHeight(CelestiaHeight(3))
+				CelestiaClientCalls::GetBlobsAtHeight(0.into()),
+				CelestiaClientCalls::GetBlobsAtHeight(1.into()),
+				CelestiaClientCalls::GetBlobsAtHeight(2.into()),
+				CelestiaClientCalls::GetBlobsAtHeight(3.into())
 			],
 		);
 		assert_eq!(
 			block_provider.into_calls().await,
 			vec![
-				BlockProviderCalls::NotifyBlockCommited(BlockHeight(1), CelestiaHeight(1)),
-				BlockProviderCalls::NotifyBlockCommited(BlockHeight(2), CelestiaHeight(2))
+				BlockProviderCalls::NotifyBlockCommited(1.into(), 1.into()),
+				BlockProviderCalls::NotifyBlockCommited(2.into(), 2.into()),
 			]
 		);
 	}
@@ -502,23 +482,23 @@ mod tests {
 		let da = CelestiaExternalDa::new(block_provider.clone(), celestia.clone());
 
 		let current_block_height = block_provider.get_height().await;
-		let last_finalized_celestia_height = Some(CelestiaHeight(0));
+		let last_finalized_celestia_height = Some(CelestiaHeight::from(0));
 
 		assert!(da.bootstrap(current_block_height, last_finalized_celestia_height).await.is_ok());
 		assert_eq!(
 			celestia.into_calls().await,
 			vec![
-				CelestiaClientCalls::GetBlobsAtHeight(CelestiaHeight(0)),
-				CelestiaClientCalls::GetBlobsAtHeight(CelestiaHeight(1)),
-				CelestiaClientCalls::GetBlobsAtHeight(CelestiaHeight(2)),
+				CelestiaClientCalls::GetBlobsAtHeight(0.into()),
+				CelestiaClientCalls::GetBlobsAtHeight(1.into()),
+				CelestiaClientCalls::GetBlobsAtHeight(2.into()),
 				CelestiaClientCalls::SendBlob(Blob(vec![digests.get(2).cloned().unwrap()]))
 			]
 		);
 		assert_eq!(
 			block_provider.into_calls().await,
 			vec![
-				BlockProviderCalls::NotifyBlockCommited(BlockHeight(1), CelestiaHeight(1)),
-				BlockProviderCalls::RequestBlock(BlockHeight(2))
+				BlockProviderCalls::NotifyBlockCommited(1.into(), 1.into()),
+				BlockProviderCalls::RequestBlock(2.into())
 			]
 		);
 	}
@@ -546,8 +526,8 @@ mod tests {
 		assert_eq!(
 			block_provider.into_calls().await,
 			vec![
-				BlockProviderCalls::RequestBlock(BlockHeight(1)),
-				BlockProviderCalls::RequestBlock(BlockHeight(2))
+				BlockProviderCalls::RequestBlock(1.into()),
+				BlockProviderCalls::RequestBlock(2.into()),
 			]
 		);
 	}

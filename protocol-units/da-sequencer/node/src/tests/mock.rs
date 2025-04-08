@@ -3,7 +3,7 @@ use crate::batch::DaBatch;
 use crate::batch::FullNodeTxs;
 use crate::block::BlockHeight;
 use crate::block::SequencerBlockDigest;
-use crate::celestia::blob::Blob;
+use crate::celestia::Blob;
 use crate::celestia::CelestiaHeight;
 use crate::DaSequencerError;
 use crate::DaSequencerExternalDa;
