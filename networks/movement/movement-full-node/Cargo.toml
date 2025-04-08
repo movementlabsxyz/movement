@@ -55,7 +55,6 @@ alloy-signer = { workspace = true }
 chrono = { workspace = true }
 maptos-opt-executor = { workspace = true }
 
-movement-da-sequencer-node = { workspace = true }
 
 [features]
 default = []
