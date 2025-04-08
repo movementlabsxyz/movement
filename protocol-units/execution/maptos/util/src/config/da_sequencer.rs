@@ -3,6 +3,7 @@ use movement_signer_loader::identifiers::SignerIdentifier;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
+/// Configuration for the DA Sequencer.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Config {
 	/// The number of milliseconds a sequence number is valid for.

@@ -5,18 +5,18 @@ use movement_da_sequencer_proto::da_sequencer_node_service_client::DaSequencerNo
 use movement_da_sequencer_proto::BatchWriteResponse;
 use movement_da_sequencer_proto::Blockv1;
 use movement_da_sequencer_proto::StreamReadFromHeightRequest;
-use movement_signer::cryptography::ed25519::Ed25519;
-use movement_signer::cryptography::ed25519::Signature;
-use movement_signer::Signing;
+use movement_signer::{
+    Signing,
+    cryptography::ed25519::{Ed25519, Signature},
+};
 use movement_signer_loader::LoadedSigner;
 use std::future::Future;
 use std::time::Duration;
-use tokio_stream::Stream;
-use tokio_stream::StreamExt;
+use tokio_stream::{Stream, StreamExt};
 use tonic::transport::{Channel, ClientTlsConfig};
 use url::Url;
 
-// Errors thrown by Da Sequencer.
+/// Errors thrown by `DaSequencer`.
 #[derive(Debug, thiserror::Error)]
 pub enum ClientDaSequencerError {
 	#[error("Fail to open block stream: {0}")]
@@ -138,6 +138,7 @@ impl DaSequencerClient for GrpcDaSequencerClient {
 	}
 }
 
+/// Signs and encodes a batch for submission to the DA Sequencer.
 pub async fn sign_and_encode_batch(
 	batch_data: Vec<u8>,
 	signer: &LoadedSigner<Ed25519>,
@@ -148,6 +149,7 @@ pub async fn sign_and_encode_batch(
 	Ok(serialize_full_node_batch(verifying_key, signature, batch_data))
 }
 
+/// Serializes a full node batch with verifying key and signature prepended.
 pub fn serialize_full_node_batch(
 	verifier: VerifyingKey,
 	signature: Signature,
@@ -160,6 +162,7 @@ pub fn serialize_full_node_batch(
 	serialized
 }
 
+/// Deserializes a full node batch into verifying key, signature, and data.
 pub fn deserialize_full_node_batch(
 	data: Vec<u8>,
 ) -> std::result::Result<(VerifyingKey, ed25519_dalek::Signature, Vec<u8>), anyhow::Error> {
@@ -177,12 +180,13 @@ pub fn deserialize_full_node_batch(
 	Ok((public_key, signature, data))
 }
 
+/// Verifies a batch signature using the given verifying key.
 pub fn verify_batch_signature(
 	batch_data: &[u8],
 	signature: &ed25519_dalek::Signature,
-	public_key: &VerifyingKey,
+	verifying_key: &VerifyingKey,
 ) -> Result<(), anyhow::Error> {
-	Ok(public_key.verify(batch_data, signature)?)
+	Ok(verifying_key.verify(batch_data, signature)?)
 }
 
 #[derive(Clone)]

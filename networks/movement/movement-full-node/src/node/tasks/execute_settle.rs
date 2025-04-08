@@ -103,7 +103,7 @@ where
 		);
 
 		// check if the block has already been executed
-		if self.da_db.has_executed_block(da_block.blockid.clone()).await? {
+		if self.da_db.has_executed_block(da_block.block_id.clone()).await? {
 			info!("Block already executed: {:#?}. It will be skipped", da_block.blockid);
 			return Ok(());
 		}
@@ -129,7 +129,7 @@ where
 		self.da_db.set_synced_height(da_block.height - 1).await?;
 
 		// set the block as executed
-		self.da_db.add_executed_block(da_block.blockid.clone()).await?;
+		self.da_db.add_executed_block(da_block.block_id.clone()).await?;
 
 		if self.settlement_enabled()
 			// only settle every super_block_size_heights 
@@ -151,7 +151,7 @@ where
 				}
 			}
 		} else {
-			info!(block_id = ?da_block.blockid, "Skipping settlement");
+			info!(block_id = ?da_block.block_id, "Skipping settlement");
 		}
 
 		Ok(())

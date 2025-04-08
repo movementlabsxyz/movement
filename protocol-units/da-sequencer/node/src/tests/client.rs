@@ -22,7 +22,7 @@ use tokio::sync::mpsc;
 use url::Url;
 
 #[tokio::test]
-async fn test_write_batch_gprc_main_loop_submit_one_batch() {
+async fn test_should_write_batch() {
 	let (request_tx, request_rx) = mpsc::channel(100);
 
 	let config = DaSequencerConfig::default();
