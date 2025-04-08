@@ -9,6 +9,10 @@ homepage.workspace = true
 publish.workspace = true
 rust-version.workspace = true
 
+[[bin]]
+name = "mock-da"
+path = "src/main.rs"
+
 [dependencies]
 movement-da-sequencer-node = { workspace = true }
 
