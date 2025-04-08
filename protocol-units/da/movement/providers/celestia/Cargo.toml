@@ -22,7 +22,6 @@ bcs = { workspace = true }
 async-stream = { workspace = true }
 anyhow = { workspace = true }
 tracing = { workspace = true }
-tokio = { workspace = true }
 tonic = { workspace = true }
 movement-signer = { workspace = true }
 serde = { workspace = true }
