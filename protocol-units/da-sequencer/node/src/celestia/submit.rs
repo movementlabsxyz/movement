@@ -89,11 +89,11 @@ impl BlobSubmitter {
 							match next {
 								None => break,
 								Some((digest, BlockSource::Input)) => {
-									total_data_size += digest.id.len();
+									total_data_size += digest.id.as_bytes().len();
 									buffered_digests.push(digest);
 								}
 								Some((digest, BlockSource::Bootstrap)) => {
-									total_data_size += digest.id.len();
+									total_data_size += digest.id.as_bytes().len();
 									bootstrap_digests.push(digest);
 								}
 							}

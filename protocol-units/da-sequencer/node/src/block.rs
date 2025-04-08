@@ -1,4 +1,4 @@
-use movement_types::block::Block;
+use movement_types::block::{self, Block};
 use serde::{Deserialize, Serialize};
 
 use crate::error::DaSequencerError;
@@ -9,14 +9,14 @@ pub const MAX_SEQUENCER_BLOCK_SIZE: u64 = 1_000_000; // 1 MB
 #[derive(Clone, Copy, Default, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct SequencerBlockDigest {
 	pub height: BlockHeight,
-	pub id: [u8; Self::DIGEST_SIZE],
+	pub id: block::Id,
 }
 
 impl SequencerBlockDigest {
 	/// Size of a digest in bytes.
 	pub const DIGEST_SIZE: usize = 32;
 
-	pub fn new(height: BlockHeight, id: [u8; 32]) -> Self {
+	pub fn new(height: BlockHeight, id: block::Id) -> Self {
 		SequencerBlockDigest { height, id }
 	}
 }
@@ -60,7 +60,7 @@ impl SequencerBlock {
 	}
 
 	pub fn get_block_digest(&self) -> SequencerBlockDigest {
-		SequencerBlockDigest::new(self.height, *self.block.id().as_bytes())
+		SequencerBlockDigest::new(self.height, self.block.id())
 	}
 }
 

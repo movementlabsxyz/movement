@@ -160,7 +160,7 @@ impl<C: CelestiaClientOps + Sync + Clone> DaSequencerExternalDa for CelestiaExte
 			)))?;
 
 		// Step 2: Get the Block for digest
-		let mut block = self.request_block(BlockAt::Digest(digest.id)).await?;
+		let mut block = self.request_block(BlockAt::Digest(*digest.id.as_bytes())).await?;
 
 		// Step 3: Request and send all missing blocks
 		for height in (block.height.0 + 1)..=current_block_height.0 {

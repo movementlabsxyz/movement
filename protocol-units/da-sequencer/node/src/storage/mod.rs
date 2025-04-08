@@ -270,7 +270,7 @@ impl DaSequencerStorage for Storage {
 				let parent_block = self.get_block_at_height(height.parent())?.ok_or_else(|| {
 					DaSequencerError::StorageFormat("Missing parent block".into())
 				})?;
-				Id::new(parent_block.get_block_digest().id)
+				parent_block.get_block_digest().id
 			}
 		};
 
@@ -618,7 +618,7 @@ mod tests {
 		let path = temp_dir.path().to_str().unwrap();
 		let storage = Storage::try_new(path).expect("failed to create storage");
 
-		let fake_digest = SequencerBlockDigest::new(BlockHeight(1), [0u8; 32]);
+		let fake_digest = SequencerBlockDigest::new(BlockHeight(1), Id::new([0u8; 32]));
 		let result = storage.get_block_with_digest(fake_digest);
 
 		assert!(result.is_ok(), "Expected Ok, got Err: {:?}", result);
