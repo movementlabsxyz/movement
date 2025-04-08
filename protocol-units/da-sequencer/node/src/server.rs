@@ -1,18 +1,19 @@
 use crate::batch::FullNodeTxs;
 use crate::batch::{validate_batch, DaBatch, RawData};
 use crate::block::{BlockHeight, SequencerBlock};
+use crate::whitelist::Whitelist;
 use crate::DaSequencerError;
 use movement_da_sequencer_proto::da_sequencer_node_service_server::{
 	DaSequencerNodeService, DaSequencerNodeServiceServer,
 };
-use movement_da_sequencer_proto::Blockv1;
-use movement_da_sequencer_proto::{block_response::BlockType, BlockResponse};
-
 use movement_da_sequencer_proto::{
-	BatchWriteRequest, BatchWriteResponse, ReadAtHeightRequest, ReadAtHeightResponse,
-	StreamReadFromHeightRequest, StreamReadFromHeightResponse,
+	block_response::BlockType, BatchWriteRequest, BatchWriteResponse, BlockResponse, Blockv1,
+	ReadAtHeightRequest, ReadAtHeightResponse, StreamReadFromHeightRequest,
+	StreamReadFromHeightResponse,
 };
 use std::net::SocketAddr;
+use std::sync::Arc;
+use tokio::sync::RwLock;
 use tokio::sync::{mpsc, oneshot};
 use tokio_stream::Stream;
 use tonic::transport::Server;
@@ -21,17 +22,18 @@ use tonic::transport::Server;
 pub async fn run_server(
 	address: SocketAddr,
 	request_tx: mpsc::Sender<GrpcRequests>,
+	whitelist: Whitelist,
 ) -> Result<(), anyhow::Error> {
 	tracing::info!("Server listening on: {}", address);
+	let whitelist = Arc::new(RwLock::new(whitelist));
 	let reflection = tonic_reflection::server::Builder::configure()
 		.register_encoded_file_descriptor_set(movement_da_sequencer_proto::FILE_DESCRIPTOR_SET)
 		.build_v1()?;
 
-	tracing::info!("Server started on: {}", address);
 	Server::builder()
 		.max_frame_size(1024 * 1024 * 16 - 1)
 		.accept_http1(true)
-		.add_service(DaSequencerNodeServiceServer::new(DaSequencerNode { request_tx }))
+		.add_service(DaSequencerNodeServiceServer::new(DaSequencerNode { request_tx, whitelist }))
 		.add_service(reflection)
 		.serve(address)
 		.await?;
@@ -48,6 +50,7 @@ pub enum GrpcRequests {
 
 pub struct DaSequencerNode {
 	request_tx: mpsc::Sender<GrpcRequests>,
+	whitelist: Arc<RwLock<Whitelist>>,
 }
 
 #[tonic::async_trait]
@@ -182,21 +185,43 @@ impl DaSequencerNodeService for DaSequencerNode {
 		request: tonic::Request<BatchWriteRequest>,
 	) -> std::result::Result<tonic::Response<BatchWriteResponse>, tonic::Status> {
 		let batch_data = request.into_inner().data;
-		let batch = match movement_da_sequencer_client::deserialize_full_node_batch(batch_data)
-			.map_err(|_| DaSequencerError::DeserializationFailure)
-			.and_then(|(public_key, signature, bytes)| {
-				validate_batch(DaBatch::<RawData>::now(public_key, signature, bytes))
-			}) {
-			Ok(batch) => batch,
-			Err(err) => {
-				tracing::warn!(error = %err, "Invalid batch send, verification / validation failed.");
-				return Ok(tonic::Response::new(BatchWriteResponse { answer: false }));
+
+		// Try to deserialize the batch
+		let (public_key, signature, bytes) =
+			match movement_da_sequencer_client::deserialize_full_node_batch(batch_data).map_or_else(
+				|err| {
+					tracing::warn!("Invalid batch send: deserialization failed: {err}");
+					None
+				},
+				|res| Some(res),
+			) {
+				Some(res) => res,
+				None => return Ok(tonic::Response::new(BatchWriteResponse { answer: false })),
+			};
+
+		// Validate the batch
+		let validated = {
+			let whitelist = self.whitelist.read().await;
+			let raw_batch = DaBatch::<RawData>::now(public_key, signature, bytes);
+			match validate_batch(raw_batch, &whitelist).map_or_else(
+				|err| {
+					tracing::warn!("Invalid batch send: validation failed: {err}");
+					None
+				},
+				|validated| Some(validated),
+			) {
+				Some(validated) => validated,
+				None => return Ok(tonic::Response::new(BatchWriteResponse { answer: false })),
 			}
 		};
-		if let Err(err) = self.request_tx.send(GrpcRequests::WriteBatch(batch)).await {
-			tracing::error!(error = %err, "Internal grpc request channel closed, no more batch will be processed.");
+
+		if let Err(err) = self.request_tx.send(GrpcRequests::WriteBatch(validated)).await {
+			tracing::error!(
+				"Internal grpc request channel closed, no more batches will be processed: {err}"
+			);
 			return Ok(tonic::Response::new(BatchWriteResponse { answer: false }));
 		}
+
 		Ok(tonic::Response::new(BatchWriteResponse { answer: true }))
 	}
 

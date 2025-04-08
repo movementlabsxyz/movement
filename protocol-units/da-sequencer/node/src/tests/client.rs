@@ -2,10 +2,12 @@ use crate::batch::FullNodeTxs;
 use crate::run;
 use crate::server::run_server;
 use crate::tests::generate_signing_key;
+use crate::tests::make_test_whitelist;
 use crate::tests::mock::mock_wait_and_get_next_block;
 use crate::tests::mock::mock_write_new_batch;
 use crate::tests::mock::{CelestiaMock, StorageMock};
 use ed25519_dalek::Signature;
+use ed25519_dalek::Signer;
 use futures::StreamExt;
 use movement_da_sequencer_client::serialize_full_node_batch;
 use movement_da_sequencer_client::DaSequencerClient;
@@ -26,13 +28,15 @@ async fn test_write_batch_gprc_main_loop_submit_one_batch() {
 	let config = DaSequencerConfig::default();
 	let signing_key = generate_signing_key();
 	let verifying_key = signing_key.verifying_key();
+	let whitelist = make_test_whitelist(vec![verifying_key.clone()]);
 
 	// Start gprc server
 	// Start gprc server. Define a different address for each test.
 	let grpc_address = "0.0.0.0:30700"
 		.parse::<SocketAddr>()
 		.expect("Bad da sequencer listener address.");
-	let grpc_jh = tokio::spawn(async move { run_server(grpc_address, request_tx).await });
+	let grpc_jh =
+		tokio::spawn(async move { run_server(grpc_address, request_tx, whitelist).await });
 
 	//start main loop
 	let storage_mock = StorageMock::new();
@@ -75,13 +79,15 @@ async fn test_write_batch_gprc_main_loop_failed_validate_batch() {
 	let config = DaSequencerConfig::default();
 	let signing_key = generate_signing_key();
 	let verifying_key = signing_key.verifying_key();
+	let whitelist = make_test_whitelist(vec![verifying_key.clone()]);
 
 	// Start gprc server. Define a different address for each test.
 	let grpc_address = "0.0.0.0:30701"
 		.parse::<SocketAddr>()
 		.expect("Bad da sequencer listener address.");
 
-	let grpc_jh = tokio::spawn(async move { run_server(grpc_address, request_tx).await });
+	let grpc_jh =
+		tokio::spawn(async move { run_server(grpc_address, request_tx, whitelist).await });
 
 	//start main loop
 	let storage_mock = StorageMock::new();
@@ -149,13 +155,15 @@ async fn test_produce_block_and_stream() {
 	config.stream_heartbeat_interval_sec = 1;
 	let signing_key = generate_signing_key();
 	let verifying_key = signing_key.verifying_key();
+	let whitelist = make_test_whitelist(vec![verifying_key.clone()]);
 
 	// Start gprc server
 	// Start gprc server. Define a different address for each test.
 	let grpc_address = "0.0.0.0:30702"
 		.parse::<SocketAddr>()
 		.expect("Bad da sequencer listener address.");
-	let grpc_jh = tokio::spawn(async move { run_server(grpc_address, request_tx).await });
+	let grpc_jh =
+		tokio::spawn(async move { run_server(grpc_address, request_tx, whitelist).await });
 
 	//start main loop
 	let storage_mock = StorageMock::new();
@@ -231,4 +239,186 @@ async fn test_produce_block_and_stream() {
 
 	grpc_jh.abort();
 	loop_jh.abort();
+}
+
+#[tokio::test]
+async fn test_write_batch_grpc_main_loop_good_white_list() {
+	let config = DaSequencerConfig::default();
+
+	let signing_key = generate_signing_key();
+	let verifying_key = signing_key.verifying_key();
+	let whitelist = make_test_whitelist(vec![verifying_key.clone()]);
+	let (request_tx, request_rx) = mpsc::channel(100);
+
+	// Start gprc server. Define a different address for each test.
+	let grpc_address = "0.0.0.0:30703"
+		.parse::<SocketAddr>()
+		.expect("Bad da sequencer listener address.");
+	let grpc_task = tokio::spawn(run_server(grpc_address, request_tx, whitelist));
+	let main_loop = tokio::spawn(async move {
+		let storage = StorageMock::new();
+		let da = CelestiaMock::new();
+		run(config, request_rx, storage, da).await.unwrap();
+	});
+
+	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
+
+	let connection_url = Url::parse(&format!("http://{}", grpc_address)).unwrap();
+	let mut client = GrpcDaSequencerClient::try_connect(&connection_url)
+		.await
+		.expect("Failed to connect");
+
+	let tx = Transaction::test_only_new(b"abc".to_vec(), 1, 123);
+	let txs = FullNodeTxs::new(vec![tx]);
+	let batch_bytes = bcs::to_bytes(&txs).unwrap();
+	let signature = signing_key.sign(&batch_bytes);
+	let signature = SigningSignature::try_from(&signature.to_bytes()[..]).unwrap();
+	let data = serialize_full_node_batch(verifying_key, signature, batch_bytes);
+
+	let res = client.batch_write(BatchWriteRequest { data }).await;
+	let response = res.expect("batch_write failed");
+	assert!(response.answer);
+
+	grpc_task.abort();
+	let _ = grpc_task.await;
+
+	main_loop.abort();
+	let _ = main_loop.await;
+}
+
+#[tokio::test]
+async fn test_write_batch_grpc_main_loop_empty_whitelist() {
+	let (request_tx, request_rx) = mpsc::channel(100);
+
+	let config = DaSequencerConfig::default();
+	let signing_key = generate_signing_key();
+	let verifying_key = signing_key.verifying_key();
+
+	let whitelist = make_test_whitelist(vec![]);
+
+	// Start gprc server. Define a different address for each test.
+	let grpc_address = "0.0.0.0:30704"
+		.parse::<SocketAddr>()
+		.expect("Bad da sequencer listener address.");
+	let _grpc_jh =
+		tokio::spawn(async move { run_server(grpc_address, request_tx, whitelist).await });
+
+	let storage_mock = StorageMock::new();
+	let celestia_mock = CelestiaMock::new();
+	let _loop_jh = tokio::spawn(run(config, request_rx, storage_mock, celestia_mock));
+
+	tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
+
+	let tx = Transaction::test_only_new(b"test data".to_vec(), 1, 123);
+	let txs = FullNodeTxs::new(vec![tx]);
+	let batch_bytes = bcs::to_bytes(&txs).expect("Serialization failed");
+	let signature = signing_key.sign(&batch_bytes);
+	let signature = SigningSignature::try_from(&signature.to_bytes()[..]).unwrap();
+
+	let serialized = serialize_full_node_batch(verifying_key, signature, batch_bytes);
+
+	let connection_url = Url::parse(&format!("http://{}", grpc_address)).unwrap();
+	let mut client = GrpcDaSequencerClient::try_connect(&connection_url)
+		.await
+		.expect("gRPC client connection failed");
+
+	let request = BatchWriteRequest { data: serialized };
+	let res = client.batch_write(request).await.expect("Failed to send the batch.");
+	tracing::info!("{res:?}");
+	assert!(!res.answer);
+
+	tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+}
+
+#[tokio::test]
+async fn test_write_batch_grpc_main_loop_bad_whitelist() {
+	let (request_tx, request_rx) = mpsc::channel(100);
+
+	let config = DaSequencerConfig::default();
+	let signing_key = generate_signing_key();
+	let verifying_key = signing_key.verifying_key();
+
+	// Create a white list with another signkey
+	let other_signing_key = generate_signing_key();
+	let other_verifying_key = other_signing_key.verifying_key();
+	let whitelist = make_test_whitelist(vec![other_verifying_key]);
+
+	// Start gprc server. Define a different address for each test.
+	let grpc_address = "0.0.0.0:30705"
+		.parse::<SocketAddr>()
+		.expect("Bad da sequencer listener address.");
+	let _grpc_jh =
+		tokio::spawn(async move { run_server(grpc_address, request_tx, whitelist).await });
+
+	let storage_mock = StorageMock::new();
+	let celestia_mock = CelestiaMock::new();
+	let _loop_jh = tokio::spawn(run(config, request_rx, storage_mock, celestia_mock));
+
+	tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
+
+	let tx = Transaction::test_only_new(b"test data".to_vec(), 1, 123);
+	let txs = FullNodeTxs::new(vec![tx]);
+	let batch_bytes = bcs::to_bytes(&txs).expect("Serialization failed");
+	let signature = signing_key.sign(&batch_bytes);
+	let signature = SigningSignature::try_from(&signature.to_bytes()[..]).unwrap();
+
+	let serialized = serialize_full_node_batch(verifying_key, signature, batch_bytes);
+
+	let connection_url = Url::parse(&format!("http://{}", grpc_address)).unwrap();
+	let mut client = GrpcDaSequencerClient::try_connect(&connection_url)
+		.await
+		.expect("gRPC client connection failed");
+
+	let request = BatchWriteRequest { data: serialized };
+	let res = client.batch_write(request).await.expect("Failed to send the batch.");
+	tracing::info!("{res:?}");
+	assert!(!res.answer);
+
+	tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+}
+
+#[tokio::test]
+async fn test_write_batch_grpc_main_loop_bad_signature() {
+	let (request_tx, request_rx) = mpsc::channel(100);
+
+	let config = DaSequencerConfig::default();
+	let signing_key = generate_signing_key();
+	let verifying_key = signing_key.verifying_key();
+	let whitelist = make_test_whitelist(vec![verifying_key]);
+
+	// Start gprc server. Define a different address for each test.
+	let grpc_address = "0.0.0.0:30706"
+		.parse::<SocketAddr>()
+		.expect("Bad da sequencer listener address.");
+	let _grpc_jh =
+		tokio::spawn(async move { run_server(grpc_address, request_tx, whitelist).await });
+
+	let storage_mock = StorageMock::new();
+	let celestia_mock = CelestiaMock::new();
+	let _loop_jh = tokio::spawn(run(config, request_rx, storage_mock, celestia_mock));
+
+	tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
+
+	let tx = Transaction::test_only_new(b"test data".to_vec(), 1, 123);
+	let txs = FullNodeTxs::new(vec![tx]);
+	let batch_bytes = bcs::to_bytes(&txs).expect("Serialization failed");
+
+	// Create another key to sign
+	let other_signing_key = generate_signing_key();
+	let signature = other_signing_key.sign(&batch_bytes);
+	let signature = SigningSignature::try_from(&signature.to_bytes()[..]).unwrap();
+
+	let serialized = serialize_full_node_batch(verifying_key, signature, batch_bytes);
+
+	let connection_url = Url::parse(&format!("http://{}", grpc_address)).unwrap();
+	let mut client = GrpcDaSequencerClient::try_connect(&connection_url)
+		.await
+		.expect("gRPC client connection failed");
+
+	let request = BatchWriteRequest { data: serialized };
+	let res = client.batch_write(request).await.expect("Failed to send the batch.");
+	tracing::info!("{res:?}");
+	assert!(!res.answer);
+
+	tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
 }
