@@ -29,6 +29,6 @@ pub enum DaSequencerError {
 	ExternalDaBootstrap(String),
 	#[error("Error during requesting a block: {0}")]
 	BlockRetrieval(String),
-    #[error("Error during channel messaging: {0}")]
-    ChannelError(String),
+	#[error("Error during channel messaging: {0}")]
+	ChannelError(String),
 }

@@ -13,12 +13,12 @@ pub struct SequencerBlockDigest {
 }
 
 impl SequencerBlockDigest {
-    /// Size of a digest in bytes.
-    pub const DIGEST_SIZE: usize = 32;
+	/// Size of a digest in bytes.
+	pub const DIGEST_SIZE: usize = 32;
 
-    pub fn new(height: BlockHeight, id: [u8; 32]) -> Self {
-        SequencerBlockDigest { height, id }
-    }
+	pub fn new(height: BlockHeight, id: [u8; 32]) -> Self {
+		SequencerBlockDigest { height, id }
+	}
 
 	pub fn as_slice(&self) -> &[u8] {
 		self.id.as_slice()

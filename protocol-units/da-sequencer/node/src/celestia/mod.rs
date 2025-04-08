@@ -1,8 +1,6 @@
-use crate::block::SequencerBlockDigest;
-use crate::block::{BlockHeight, SequencerBlock};
+use crate::block::{BlockHeight, SequencerBlock, SequencerBlockDigest};
 use crate::error::DaSequencerError;
-use std::future::Future;
-use std::time::Duration;
+use std::{future::Future, time::Duration};
 use tokio::sync::{mpsc, oneshot};
 
 mod blob;

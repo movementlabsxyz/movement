@@ -1,7 +1,8 @@
 use serde::Serializer;
-use std::fmt::{Display, Formatter};
-use std::ops::Sub;
-use std::ops::{Add, AddAssign};
+use std::{
+	fmt::{Display, Formatter},
+	ops::{Add, AddAssign, Sub},
+};
 
 #[derive(Clone, Copy, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct CelestiaHeight(u64);
