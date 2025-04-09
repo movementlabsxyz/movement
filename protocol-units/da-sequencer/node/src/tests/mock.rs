@@ -16,7 +16,7 @@ use movement_types::transaction::Transaction;
 use crate::{
 	batch::{DaBatch, FullNodeTxs},
 	block::{BlockHeight, SequencerBlockDigest},
-	celestia::blob::Blob,
+	celestia::blob::CelestiaBlobData,
 	celestia::CelestiaHeight,
 	DaSequencerError, DaSequencerExternalDa, DaSequencerStorage, SequencerBlock,
 };
@@ -170,7 +170,7 @@ impl DaSequencerExternalDa for CelestiaMock {
 	fn get_blobs_at_height(
 		&self,
 		height: CelestiaHeight,
-	) -> impl Future<Output = Result<Option<Vec<Blob>>, DaSequencerError>> + Send {
+	) -> impl Future<Output = Result<Option<CelestiaBlobData>, DaSequencerError>> + Send {
 		//TODO return dummy error for now.
 		futures::future::ready(Err(DaSequencerError::DeserializationFailure))
 	}

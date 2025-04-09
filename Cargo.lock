@@ -11592,6 +11592,8 @@ dependencies = [
  "aptos-sdk",
  "async-stream",
  "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
+ "celestia-rpc",
+ "celestia-types",
  "chrono",
  "dot-movement",
  "ed25519-dalek 2.1.1",
