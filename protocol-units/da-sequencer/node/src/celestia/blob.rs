@@ -1,3 +1,6 @@
+use crate::DaSequencerError;
+
+use celestia_types::Blob;
 use movement_types::block;
 use serde::{Deserialize, Serialize};
 use std::slice::Iter;
@@ -7,6 +10,12 @@ use std::slice::Iter;
 pub struct CelestiaBlob(Vec<block::Id>);
 
 impl CelestiaBlob {
+	pub fn try_from_rpc(blob: Blob) -> Result<Self, DaSequencerError> {
+		let deserialized = bcs::from_bytes(&blob.data)
+			.map_err(|e| DaSequencerError::Deserialization(e.to_string()))?;
+		Ok(deserialized)
+	}
+
 	pub fn iter(&self) -> Iter<'_, block::Id> {
 		self.0.iter()
 	}
@@ -17,6 +26,11 @@ impl CelestiaBlob {
 
 	pub fn to_vec(self) -> Vec<block::Id> {
 		self.0
+	}
+
+	/// Merge contents from another blob
+	pub fn merge(&mut self, mut other: CelestiaBlob) {
+		self.0.append(&mut other.0)
 	}
 }
 

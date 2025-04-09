@@ -33,4 +33,6 @@ pub enum DaSequencerError {
 	SendFailure,
 	#[error("Error during channel messaging: {0}")]
 	ChannelError(String),
+	#[error("Celestia RPC error: {0}")]
+	Rpc(String),
 }

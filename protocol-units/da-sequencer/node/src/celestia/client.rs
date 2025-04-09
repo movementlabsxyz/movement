@@ -1,12 +1,14 @@
 use super::submit::BlobSubmitter;
 use super::{BlockSource, CelestiaBlob, CelestiaClientOps, CelestiaHeight, ExternalDaNotification};
 use crate::error::DaSequencerError;
-use celestia_rpc::Client as RpcClient;
-use celestia_types::nmt::Namespace;
 use movement_types::block;
-use std::sync::Arc;
+
+use celestia_rpc::{BlobClient as _, Client as RpcClient};
+use celestia_types::nmt::Namespace;
 use tokio::sync::mpsc;
 use url::Url;
+
+use std::sync::Arc;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -16,7 +18,8 @@ pub enum Error {
 
 #[derive(Clone)]
 pub struct CelestiaClient {
-	_rpc_client: Arc<RpcClient>,
+	rpc_client: Arc<RpcClient>,
+	celestia_namespace: Namespace,
 	_notifier: mpsc::Sender<ExternalDaNotification>,
 	// The sender end of the channel for the background sender task.
 	id_sender: mpsc::Sender<(block::Id, BlockSource)>,
@@ -32,28 +35,44 @@ impl CelestiaClient {
 	) -> Result<Self, Error> {
 		let rpc_client = RpcClient::new(&connection_url.to_string(), auth_token).await?;
 		let rpc_client = Arc::new(rpc_client);
-		let (digest_sender, digest_receiver) = mpsc::channel(8);
+		let (id_sender, id_receiver) = mpsc::channel(8);
 		let blob_submitter = BlobSubmitter::new(
 			Arc::clone(&rpc_client),
-			celestia_namespace,
-			digest_receiver,
+			celestia_namespace.clone(),
+			id_receiver,
 			notifier.clone(),
 		);
 		tokio::spawn(blob_submitter.run());
-		Ok(CelestiaClient {
-			_rpc_client: rpc_client,
-			_notifier: notifier,
-			id_sender: digest_sender,
-		})
+		Ok(CelestiaClient { rpc_client, celestia_namespace, _notifier: notifier, id_sender })
 	}
 }
 
 impl CelestiaClientOps for CelestiaClient {
 	async fn get_blob_at_height(
 		&self,
-		_height: CelestiaHeight,
+		height: CelestiaHeight,
 	) -> Result<Option<CelestiaBlob>, DaSequencerError> {
-		todo!()
+		match self
+			.rpc_client
+			.blob_get_all(height.into(), &[self.celestia_namespace])
+			.await
+			.map_err(|e| DaSequencerError::Rpc(e.to_string()))?
+		{
+			None => Ok(None),
+			Some(blobs) => {
+				let mut iter = blobs.into_iter();
+				if let Some(rpc_blob) = iter.next() {
+					let mut aggregate_blob = CelestiaBlob::try_from_rpc(rpc_blob)?;
+					while let Some(rpc_blob) = iter.next() {
+						let blob = CelestiaBlob::try_from_rpc(rpc_blob)?;
+						aggregate_blob.merge(blob);
+					}
+					Ok(Some(aggregate_blob))
+				} else {
+					Ok(None)
+				}
+			}
+		}
 	}
 
 	async fn send_block(
