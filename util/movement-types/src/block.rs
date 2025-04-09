@@ -14,22 +14,24 @@ pub enum BlockError {
 	BlockFull,
 }
 
+pub const ID_SIZE: usize = 32;
+
 #[derive(
 	Serialize, Deserialize, Clone, Copy, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord,
 )]
-pub struct Id([u8; 32]);
+pub struct Id([u8; ID_SIZE]);
 
 impl Id {
-	pub fn new(data: [u8; 32]) -> Self {
+	pub fn new(data: [u8; ID_SIZE]) -> Self {
 		Self(data)
 	}
 
-	pub fn as_bytes(&self) -> &[u8; 32] {
+	pub fn as_bytes(&self) -> &[u8; ID_SIZE] {
 		&self.0
 	}
 
 	pub fn test() -> Self {
-		Self([0; 32])
+		Self([0; ID_SIZE])
 	}
 
 	pub fn to_vec(&self) -> Vec<u8> {
@@ -37,7 +39,7 @@ impl Id {
 	}
 
 	pub fn genesis_block() -> Self {
-		Self([0; 32])
+		Self([0; ID_SIZE])
 	}
 }
 
@@ -136,18 +138,18 @@ impl Block {
 #[derive(
 	Serialize, Deserialize, Clone, Copy, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord,
 )]
-pub struct Commitment([u8; 32]);
+pub struct Commitment([u8; ID_SIZE]);
 
 impl Commitment {
-	pub fn new(data: [u8; 32]) -> Self {
+	pub fn new(data: [u8; ID_SIZE]) -> Self {
 		Self(data)
 	}
 
 	pub fn test() -> Self {
-		Self([0; 32])
+		Self([0; ID_SIZE])
 	}
 
-	pub fn as_bytes(&self) -> &[u8; 32] {
+	pub fn as_bytes(&self) -> &[u8; ID_SIZE] {
 		&self.0
 	}
 
@@ -168,8 +170,8 @@ impl fmt::Display for Commitment {
 	}
 }
 
-impl From<Commitment> for [u8; 32] {
-	fn from(commitment: Commitment) -> [u8; 32] {
+impl From<Commitment> for [u8; ID_SIZE] {
+	fn from(commitment: Commitment) -> [u8; ID_SIZE] {
 		commitment.0
 	}
 }

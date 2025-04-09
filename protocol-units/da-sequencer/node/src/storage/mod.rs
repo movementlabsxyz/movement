@@ -1,12 +1,12 @@
 use crate::{
 	batch::{DaBatch, FullNodeTxs},
-	block::{BlockHeight, SequencerBlock, SequencerBlockDigest, MAX_SEQUENCER_BLOCK_SIZE},
+	block::{BlockHeight, SequencerBlock, MAX_SEQUENCER_BLOCK_SIZE},
 	celestia::CelestiaHeight,
 	error::DaSequencerError,
 };
 use bcs;
 use movement_types::{
-	block::{Block, BlockMetadata, Id},
+	block::{self, Block, BlockMetadata},
 	transaction::Transaction,
 };
 use rocksdb::{ColumnFamilyDescriptor, Options, WriteBatch, DB};
@@ -50,8 +50,8 @@ impl TxCompositeKey {
 			return Err(DaSequencerError::StorageFormat("Invalid composite key length".into()));
 		}
 
-		let timestamp = u64::from_be_bytes(bytes[0..8].try_into().unwrap());
-		let index_in_batch = u32::from_be_bytes(bytes[8..12].try_into().unwrap());
+		let timestamp = u64::from_be_bytes(bytes[0..8].try_into()?);
+		let index_in_batch = u32::from_be_bytes(bytes[8..12].try_into()?);
 		let tx_id = bytes[12..44].try_into().map_err(|_| {
 			DaSequencerError::StorageFormat("Failed to extract tx_id from key".into())
 		})?;
@@ -67,20 +67,16 @@ pub struct Storage {
 
 pub trait DaSequencerStorage {
 	/// Save all batch's Tx in the pending Tx table. The batch's Tx has been verified and validated.
-	fn write_batch(&self, batch: DaBatch<FullNodeTxs>)
-		-> std::result::Result<(), DaSequencerError>;
+	fn write_batch(&self, batch: DaBatch<FullNodeTxs>) -> Result<(), DaSequencerError>;
 
 	/// Return, if exists, the Block at the given height.
 	fn get_block_at_height(
 		&self,
 		height: BlockHeight,
-	) -> std::result::Result<Option<SequencerBlock>, DaSequencerError>;
+	) -> Result<Option<SequencerBlock>, DaSequencerError>;
 
 	/// Return, if exists, the Block with specified sequencer id.
-	fn get_block_with_digest(
-		&self,
-		id: SequencerBlockDigest,
-	) -> std::result::Result<Option<SequencerBlock>, DaSequencerError>;
+	fn get_block_with_id(&self, id: block::Id) -> Result<Option<SequencerBlock>, DaSequencerError>;
 
 	/// Produces the next sequencer block from pending transactions.
 	///
@@ -94,14 +90,14 @@ pub trait DaSequencerStorage {
 	fn get_celestia_height_for_block(
 		&self,
 		heigh: BlockHeight,
-	) -> std::result::Result<Option<CelestiaHeight>, DaSequencerError>;
+	) -> Result<Option<CelestiaHeight>, DaSequencerError>;
 
 	/// Set the Celestia height for a given block height.
 	fn set_block_celestia_height(
 		&self,
 		block_heigh: BlockHeight,
 		celestia_heigh: CelestiaHeight,
-	) -> std::result::Result<(), DaSequencerError>;
+	) -> Result<(), DaSequencerError>;
 
 	fn get_current_block_height(&self) -> BlockHeight;
 }
@@ -151,7 +147,7 @@ impl Storage {
 		}
 	}
 
-	fn notify_block_celestia_sent(&self, heigh: BlockHeight) -> Result<(), DaSequencerError> {
+	fn notify_block_celestia_sent(&self, _height: BlockHeight) -> Result<(), DaSequencerError> {
 		todo!();
 	}
 }
@@ -202,15 +198,12 @@ impl DaSequencerStorage for Storage {
 		}
 	}
 
-	fn get_block_with_digest(
-		&self,
-		digest: SequencerBlockDigest,
-	) -> Result<Option<SequencerBlock>, DaSequencerError> {
+	fn get_block_with_id(&self, id: block::Id) -> Result<Option<SequencerBlock>, DaSequencerError> {
 		let cf = self.db.cf_handle(cf::BLOCKS_BY_DIGEST).ok_or_else(|| {
 			DaSequencerError::StorageAccess("Missing column family: blocks_by_digest".into())
 		})?;
 
-		let key = digest.id;
+		let key = id;
 
 		let height_bytes = match self
 			.db
@@ -265,12 +258,12 @@ impl DaSequencerStorage for Storage {
 		let height = self.determine_next_block_height()?;
 
 		let parent_id = match height.0 {
-			0 | 1 => Id::genesis_block(),
+			0 | 1 => block::Id::genesis_block(),
 			_ => {
 				let parent_block = self.get_block_at_height(height.parent())?.ok_or_else(|| {
 					DaSequencerError::StorageFormat("Missing parent block".into())
 				})?;
-				parent_block.get_block_digest().id
+				parent_block.id()
 			}
 		};
 
@@ -286,15 +279,15 @@ impl DaSequencerStorage for Storage {
 
 	fn get_celestia_height_for_block(
 		&self,
-		height: BlockHeight,
+		_height: BlockHeight,
 	) -> Result<Option<CelestiaHeight>, DaSequencerError> {
 		todo!();
 	}
 
 	fn set_block_celestia_height(
 		&self,
-		block_heigh: BlockHeight,
-		celestia_heigh: CelestiaHeight,
+		_block_height: BlockHeight,
+		_celestia_height: CelestiaHeight,
 	) -> Result<(), DaSequencerError> {
 		todo!()
 	}
@@ -323,10 +316,10 @@ impl Storage {
 		})?;
 
 		let mut write_batch = WriteBatch::default();
-		let height_key = block.height.0.to_be_bytes();
+		let height_key = block.height().0.to_be_bytes();
 
 		write_batch.put_cf(&cf_blocks, height_key, &block_bytes);
-		write_batch.put_cf(&cf_digests, block.get_block_digest().id, &height_key);
+		write_batch.put_cf(&cf_digests, block.id(), &height_key);
 
 		if let Some(keys) = delete_keys {
 			let cf_pending = self.db.cf_handle(cf::PENDING_TRANSACTIONS).ok_or_else(|| {
@@ -495,7 +488,7 @@ mod tests {
 		let composite_key = {
 			let mut key = Vec::with_capacity(44);
 			key.extend_from_slice(&batch.timestamp.to_be_bytes());
-			key.extend_from_slice(&(0u32).to_be_bytes()); // index = 0
+			key.extend_from_slice(&0u32.to_be_bytes()); // index = 0
 			key.extend_from_slice(tx_id.as_bytes());
 			key
 		};
@@ -504,7 +497,7 @@ mod tests {
 
 		// Construct a dummy block to save
 		let height = BlockHeight(1);
-		let block = Block::new(BlockMetadata::default(), Id::default(), [tx.clone()].into());
+		let block = Block::new(BlockMetadata::default(), block::Id::default(), [tx.clone()].into());
 		let sequencer_block = SequencerBlock::try_new(height, block).expect("valid block");
 
 		// Save the block and remove the pending tx
@@ -518,9 +511,8 @@ mod tests {
 		assert_eq!(fetched.unwrap(), sequencer_block);
 
 		// Check it can be fetched by digest
-		let digest = sequencer_block.get_block_digest();
-		let fetched_by_digest =
-			storage.get_block_with_digest(digest).expect("get by digest failed");
+		let id = sequencer_block.id();
+		let fetched_by_digest = storage.get_block_with_id(id).expect("get by digest failed");
 		assert!(fetched_by_digest.is_some(), "Expected block by digest");
 		assert_eq!(fetched_by_digest.unwrap(), sequencer_block);
 
@@ -545,7 +537,7 @@ mod tests {
 
 		let block_height = BlockHeight(42);
 		let dummy_block = Block::default();
-		let sequencer_block = SequencerBlock { height: block_height, block: dummy_block.clone() };
+		let sequencer_block = SequencerBlock::try_new(block_height, dummy_block.clone()).unwrap();
 
 		let encoded_block =
 			bcs::to_bytes(&sequencer_block).expect("failed to serialize SequencerBlock");
@@ -558,8 +550,7 @@ mod tests {
 
 		assert!(result.is_some(), "expected Some(block), got None");
 		let fetched_block = result.unwrap();
-		assert_eq!(fetched_block.height, sequencer_block.height);
-		assert_eq!(fetched_block.block, sequencer_block.block);
+		assert_eq!(fetched_block, sequencer_block);
 	}
 
 	#[test]
@@ -574,8 +565,8 @@ mod tests {
 
 		let block_height = BlockHeight(99);
 		let dummy_block = Block::default();
-		let sequencer_block = SequencerBlock { height: block_height, block: dummy_block.clone() };
-		let digest = sequencer_block.get_block_digest();
+		let sequencer_block = SequencerBlock::try_new(block_height, dummy_block.clone()).unwrap();
+		let id = sequencer_block.id();
 
 		let encoded_block =
 			bcs::to_bytes(&sequencer_block).expect("failed to serialize SequencerBlock");
@@ -589,21 +580,17 @@ mod tests {
 
 		let cf_digests =
 			storage.db.cf_handle(cf::BLOCKS_BY_DIGEST).expect("missing 'block_digests' CF");
-		storage
-			.db
-			.put_cf(&cf_digests, digest.id, key)
-			.expect("failed to write digest mapping");
+		storage.db.put_cf(&cf_digests, id, key).expect("failed to write digest mapping");
 
-		let result = storage.get_block_with_digest(digest).expect("get_block_with_digest failed");
+		let result = storage.get_block_with_id(id).expect("get_block_with_digest failed");
 
 		assert!(result.is_some(), "Expected Some(block), got None");
 		let fetched_block = result.unwrap();
-		assert_eq!(fetched_block.height, sequencer_block.height);
-		assert_eq!(fetched_block.block, sequencer_block.block);
+		assert_eq!(fetched_block, sequencer_block);
 
 		let stored_height_bytes = storage
 			.db
-			.get_cf(&cf_digests, digest.id)
+			.get_cf(&cf_digests, id)
 			.expect("failed to read digest mapping")
 			.expect("digest not found");
 		assert_eq!(stored_height_bytes, key);
@@ -611,15 +598,14 @@ mod tests {
 
 	#[test]
 	fn test_get_block_with_digest_returns_none_for_unknown_digest() {
-		use crate::block::SequencerBlockDigest;
 		use tempfile::tempdir;
 
 		let temp_dir = tempdir().expect("failed to create temp dir");
 		let path = temp_dir.path().to_str().unwrap();
 		let storage = Storage::try_new(path).expect("failed to create storage");
 
-		let fake_digest = SequencerBlockDigest::new(BlockHeight(1), Id::new([0u8; 32]));
-		let result = storage.get_block_with_digest(fake_digest);
+		let fake_id = block::Id::new([0u8; 32]);
+		let result = storage.get_block_with_id(fake_id);
 
 		assert!(result.is_ok(), "Expected Ok, got Err: {:?}", result);
 		assert!(result.unwrap().is_none(), "Expected None for unknown digest, got Some");
@@ -646,7 +632,7 @@ mod tests {
 
 		assert!(maybe_block.is_some(), "Expected Some(block), got None");
 		let block = maybe_block.unwrap();
-		let transactions: Vec<_> = block.block.transactions().cloned().collect();
+		let transactions: Vec<_> = block.transactions().cloned().collect();
 		assert_eq!(transactions.len(), 1, "Expected 1 transaction in block");
 		assert_eq!(transactions[0], tx_assert, "Transaction in block does not match original");
 
@@ -658,7 +644,7 @@ mod tests {
 		assert!(maybe_tx.is_none(), "Pending transaction was not cleared");
 
 		let cf_blocks = storage.db.cf_handle(cf::BLOCKS).expect("missing 'blocks' CF");
-		let height_key = block.height.0.to_be_bytes();
+		let height_key = block.height().0.to_be_bytes();
 		let stored_bytes = storage
 			.db
 			.get_cf(&cf_blocks, height_key)
@@ -693,7 +679,7 @@ mod tests {
 			.expect("produce_next_block failed")
 			.expect("expected Some(block)");
 
-		assert_eq!(block.height.0, 1, "Expected height to be 1");
+		assert_eq!(block.height().0, 1, "Expected height to be 1");
 
 		// Check no pending tx remain
 		let cf = storage.db.cf_handle(cf::PENDING_TRANSACTIONS).expect("missing pending CF");
@@ -701,7 +687,7 @@ mod tests {
 		assert!(iter.next().is_none(), "Expected no pending txs");
 
 		// Check block contains all txs
-		let block_tx_ids: BTreeSet<_> = block.block.transactions().map(|tx| tx.id()).collect();
+		let block_tx_ids: BTreeSet<_> = block.transactions().map(|tx| tx.id()).collect();
 		let original_tx_ids: BTreeSet<_> = txs.into_iter().map(|tx| tx.id()).collect();
 		assert_eq!(block_tx_ids, original_tx_ids);
 

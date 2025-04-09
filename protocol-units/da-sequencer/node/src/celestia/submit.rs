@@ -1,7 +1,7 @@
 //! The blob submitter task.
 
 use super::{BlockSource, CelestiaBlobData, CelestiaHeight, ExternalDaNotification};
-use crate::block::{BlockHeight, SequencerBlockDigest};
+use crate::block::BlockHeight;
 
 use anyhow::Context;
 use celestia_rpc::prelude::*;
@@ -12,6 +12,7 @@ use tokio::select;
 use tokio::sync::mpsc;
 use tracing::debug;
 
+use movement_types::block;
 use std::mem;
 use std::sync::Arc;
 
@@ -25,7 +26,7 @@ pub(crate) struct BlobSubmitter {
 	// The Celestia namespace
 	celestia_namespace: Namespace,
 	// Channel to receive digests from foreground
-	digest_receiver: mpsc::Receiver<(SequencerBlockDigest, BlockSource)>,
+	id_receiver: mpsc::Receiver<(block::Id, BlockSource)>,
 	// Channel to send notifications from Celestia layer
 	notifier: mpsc::Sender<ExternalDaNotification>,
 }
@@ -34,17 +35,17 @@ impl BlobSubmitter {
 	pub(crate) fn new(
 		celestia_client: Arc<Client>,
 		celestia_namespace: Namespace,
-		digest_receiver: mpsc::Receiver<(SequencerBlockDigest, BlockSource)>,
+		id_receiver: mpsc::Receiver<(block::Id, BlockSource)>,
 		notifier: mpsc::Sender<ExternalDaNotification>,
 	) -> Self {
-		BlobSubmitter { celestia_client, celestia_namespace, digest_receiver, notifier }
+		BlobSubmitter { celestia_client, celestia_namespace, id_receiver, notifier }
 	}
 
 	pub(crate) async fn run(mut self) -> Result<(), anyhow::Error> {
 		// Digests accumulated while waiting for client to submit
-		let mut buffered_digests: Vec<SequencerBlockDigest> = vec![];
+		let mut buffered_ids: Vec<block::Id> = vec![];
 		// Digests accumulated on bootstrap
-		let mut bootstrap_digests: Vec<SequencerBlockDigest> = vec![];
+		let mut bootstrap_ids: Vec<block::Id> = vec![];
 		// Size of the accumulated blob data
 		let mut total_data_size = 0;
 		let mut submit_request = None;
@@ -55,9 +56,9 @@ impl BlobSubmitter {
 					// Grab the accumulated digests, if there are any, and submit them in a blob.
 					// Bootstrap digests should be sent ahead of the digests that arrived with
 					// submit requests.
-					if !buffered_digests.is_empty() || !bootstrap_digests.is_empty() {
-						let mut digests = mem::replace(&mut bootstrap_digests, vec![]);
-						digests.append(&mut buffered_digests);
+					if !buffered_ids.is_empty() || !bootstrap_ids.is_empty() {
+						let mut digests = mem::replace(&mut bootstrap_ids, vec![]);
+						digests.append(&mut buffered_ids);
 						total_data_size = 0;
 						submit_request = Some(Box::pin(submit_blob(
 							&self.celestia_client,
@@ -72,11 +73,11 @@ impl BlobSubmitter {
 					// against the Celestia sanity limit.
 					select! {
 						res = pending_request => {
-							let (block_height, celestia_height) = res?;
+							let (block_ids, celestia_height) = res?;
 							if self
 								.notifier
 								.send(
-									ExternalDaNotification::BlockCommitted(block_height, celestia_height)
+									ExternalDaNotification::BlocksCommitted { block_ids, celestia_height }
 								)
 								.await
 								.is_err() {
@@ -85,16 +86,16 @@ impl BlobSubmitter {
 							}
 							submit_request = None;
 						}
-						next = self.digest_receiver.recv(), if total_data_size + SequencerBlockDigest::DIGEST_SIZE <= MAX_CELESTIA_BLOB_SIZE => {
+						next = self.id_receiver.recv(), if total_data_size + block::ID_SIZE <= MAX_CELESTIA_BLOB_SIZE => {
 							match next {
 								None => break,
-								Some((digest, BlockSource::Input)) => {
-									total_data_size += digest.id.as_bytes().len();
-									buffered_digests.push(digest);
+								Some((id, BlockSource::Input)) => {
+									total_data_size += block::ID_SIZE;
+									buffered_ids.push(id);
 								}
-								Some((digest, BlockSource::Bootstrap)) => {
-									total_data_size += digest.id.as_bytes().len();
-									bootstrap_digests.push(digest);
+								Some((id, BlockSource::Bootstrap)) => {
+									total_data_size += block::ID_SIZE;
+									bootstrap_ids.push(id);
 								}
 							}
 						}
@@ -109,11 +110,9 @@ impl BlobSubmitter {
 async fn submit_blob(
 	celestia_client: &Client,
 	namespace: Namespace,
-	digests: Vec<SequencerBlockDigest>,
-) -> Result<(BlockHeight, CelestiaHeight), anyhow::Error> {
-	let last_block_height =
-		digests.last().map(|digest| digest.height).expect("array of digests is empty");
-	let data = CelestiaBlobData { digests };
+	ids: Vec<block::Id>,
+) -> Result<(Vec<block::Id>, CelestiaHeight), anyhow::Error> {
+	let data = CelestiaBlobData::from(ids.clone());
 	let serialized_data = bcs::to_bytes(&data)?;
 	let blob = Blob::new(namespace, serialized_data, AppVersion::V2)?;
 	let config = TxConfig::default();
@@ -122,5 +121,5 @@ async fn submit_blob(
 		.blob_submit(&[blob], config)
 		.await
 		.context("failed to submit the blob")?;
-	Ok((last_block_height, CelestiaHeight::from(celestia_height)))
+	Ok((ids, CelestiaHeight::from(celestia_height)))
 }

@@ -113,16 +113,16 @@ where
 				produce_block = false;
 				match res {
 					Ok(Ok(Some(block))) => {
-						let block_digest = block.get_block_digest();
+						let block_id = block.id();
 						// Send the block to all registered follower
 						// For now send to the main loop because there are very few followers (<100).
-						tracing::info!(sender_len = %connected_grpc_sender.len(), block_height= %block.height.0, "New block produced, send to fullnodes.");
+						tracing::info!(sender_len = %connected_grpc_sender.len(), block_height= %block.height().0, "New block produced, send to fullnodes.");
 						stream_block_to_sender(&mut connected_grpc_sender, Some(block)).await;
 
 						//send the block to Celestia.
 						let celestia_send_jh = tokio::spawn({
 							let celestia = celestia.clone();
-							async move {celestia.send_block(block_digest).await}
+							async move {celestia.send_block(block_id).await}
 						});
 						spawn_result_futures.push(celestia_send_jh);
 					},

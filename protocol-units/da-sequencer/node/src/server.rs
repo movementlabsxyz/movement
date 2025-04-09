@@ -66,7 +66,7 @@ impl DaSequencerNodeService for DaSequencerNode {
 	async fn stream_read_from_height(
 		&self,
 		request: tonic::Request<StreamReadFromHeightRequest>,
-	) -> std::result::Result<tonic::Response<Self::StreamReadFromHeightStream>, tonic::Status> {
+	) -> Result<tonic::Response<Self::StreamReadFromHeightStream>, tonic::Status> {
 		tracing::info!(request = ?request, "Stream read from height request");
 
 		// Register the new produced block channel to get lastest block.
@@ -146,12 +146,12 @@ impl DaSequencerNodeService for DaSequencerNode {
 
 						Some(new_block) => {
 							// send newly produced block.
-							if current_block_height + 1 < new_block.height.0 {
+							if current_block_height + 1 < new_block.height().0 {
 								// we missed a block request.
-								current_produced_height = new_block.height;
+								current_produced_height = new_block.height();
 								continue;
 							}
-							current_block_height = new_block.height.0;
+							current_block_height = new_block.height().0;
 
 							let blockv1 = match new_block.try_into() {
 								Ok(b) => b,
@@ -180,10 +180,18 @@ impl DaSequencerNodeService for DaSequencerNode {
 		Ok(tonic::Response::new(Box::pin(output) as Self::StreamReadFromHeightStream))
 	}
 
+	/// Read one block at a specified height.
+	async fn read_at_height(
+		&self,
+		_request: tonic::Request<ReadAtHeightRequest>,
+	) -> std::result::Result<tonic::Response<ReadAtHeightResponse>, tonic::Status> {
+		Err(tonic::Status::unimplemented(""))
+	}
+
 	async fn batch_write(
 		&self,
 		request: tonic::Request<BatchWriteRequest>,
-	) -> std::result::Result<tonic::Response<BatchWriteResponse>, tonic::Status> {
+	) -> Result<tonic::Response<BatchWriteResponse>, tonic::Status> {
 		let batch_data = request.into_inner().data;
 
 		// Try to deserialize the batch
@@ -224,14 +232,6 @@ impl DaSequencerNodeService for DaSequencerNode {
 
 		Ok(tonic::Response::new(BatchWriteResponse { answer: true }))
 	}
-
-	/// Read one block at a specified height.
-	async fn read_at_height(
-		&self,
-		_request: tonic::Request<ReadAtHeightRequest>,
-	) -> std::result::Result<tonic::Response<ReadAtHeightResponse>, tonic::Status> {
-		Err(tonic::Status::unimplemented(""))
-	}
 }
 
 pub struct GrpcBatchData {}
@@ -249,8 +249,8 @@ impl TryFrom<&SequencerBlock> for BlockV1 {
 
 	fn try_from(block: &SequencerBlock) -> Result<Self, Self::Error> {
 		Ok(BlockV1 {
-			block_id: block.get_block_digest().id.to_vec(),
-			height: block.height.into(),
+			block_id: block.id().to_vec(),
+			height: block.height().into(),
 			data: block.try_into()?,
 		})
 	}
