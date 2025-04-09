@@ -5,7 +5,7 @@ package movementlabs.protocol_units.da.da_sequencer.v1_0_0;
 service DaSequencerNodeService {
   rpc StreamReadFromHeight (StreamReadFromHeightRequest) returns (stream StreamReadFromHeightResponse);
 
-  // Read blobs at a specified height.
+  // Read blocks at a specified height.
   rpc ReadAtHeight (ReadAtHeightRequest) returns (ReadAtHeightResponse);
 
   // Write a bacth. Return true if it's accepted.
@@ -20,8 +20,8 @@ message Blockv1 {
     uint64 height = 3;
 }
 
-message BlobResponse {
-    oneof blob_type {
+message BlockResponse {
+    oneof block_type {
       bool heartbeat = 1;
       Blockv1 blockv1 = 2;
     }
@@ -33,7 +33,7 @@ message StreamReadFromHeightRequest {
 }
 
 message StreamReadFromHeightResponse {
-    BlobResponse response = 1;
+    BlockResponse response = 1;
 }
 
 // ReadAtHeight
@@ -42,7 +42,7 @@ message ReadAtHeightRequest {
 }
 
 message ReadAtHeightResponse {
-    BlobResponse response = 1;
+    BlockResponse response = 1;
 }
 
 message BatchWriteRequest {

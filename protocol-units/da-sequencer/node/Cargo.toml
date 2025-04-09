@@ -48,7 +48,7 @@ tempfile = { workspace = true }
 rand = { workspace = true }
 rand_core = { workspace = true }
 movement-types = { workspace = true, features = ["testing"] }
-serial_test = "2"
+movement-signer = { workspace = true}
 
 [lints]
 #workspace = true

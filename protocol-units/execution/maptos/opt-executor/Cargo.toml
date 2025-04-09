@@ -33,6 +33,7 @@ tracing = { workspace = true }
 rand = { workspace = true }
 bcs = { workspace = true }
 futures = { workspace = true }
+url = { workspace = true }
 
 aptos-vm = { workspace = true }
 aptos-vm-validator = { workspace = true }
@@ -78,8 +79,8 @@ tempfile = { workspace = true }
 movement-config = { workspace = true }
 movement-signer-loader = { workspace = true }
 movement-signer = { workspace = true }
-movement-da-light-node-client = { workspace = true }
-movement-da-light-node-proto = { workspace = true }
+movement-da-sequencer-proto = { workspace = true }
+movement-da-sequencer-client = { workspace = true }
 prost = { workspace = true }
 once_cell = { workspace = true }
 
@@ -92,3 +93,4 @@ dirs = { workspace = true }
 tracing-test = { workspace = true }
 async-trait = { workspace = true }
 aptos-sdk = { workspace = true }
+tracing-subscriber = { workspace = true }

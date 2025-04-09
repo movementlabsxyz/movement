@@ -20,6 +20,14 @@ http-body-util = { workspace = true }
 bytes = { workspace = true }
 anyhow = { workspace = true }
 tracing = { workspace = true }
+movement-signer = { workspace = true }
+movement-signer-loader = { workspace = true }
+url = { workspace = true }
+tokio-stream = { workspace = true }
+futures = { workspace = true }
+async-stream = { workspace = true }
+thiserror = { workspace = true }
+bcs = { workspace = true }
 
 [lints]
 #workspace = true
