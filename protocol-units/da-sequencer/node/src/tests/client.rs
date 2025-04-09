@@ -426,3 +426,102 @@ async fn test_write_batch_grpc_main_loop_bad_signature() {
 
 	tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
 }
+
+#[tokio::test]
+async fn test_missed_grpc_heartbeat_twice_triggers_alert() {
+	use tokio::sync::mpsc::unbounded_channel;
+	use tokio_stream::StreamExt;
+
+	let (request_tx, request_rx) = mpsc::channel(100);
+
+	let mut config = DaSequencerConfig::default();
+	config.stream_heartbeat_interval_sec = 1; // short interval for test
+
+	let signing_key = generate_signing_key();
+	let verifying_key = signing_key.verifying_key();
+	let whitelist = make_test_whitelist(vec![verifying_key.clone()]);
+
+	let grpc_address = "0.0.0.0:30799".parse::<SocketAddr>().expect("Bad address");
+	let grpc_task = tokio::spawn(run_server(grpc_address, request_tx, whitelist));
+
+	let storage_mock = StorageMock::new();
+	let celestia_mock = CelestiaMock::new();
+	let stream_heartbeat_interval_sec = config.stream_heartbeat_interval_sec;
+	let loop_task = tokio::spawn(run(config, request_rx, storage_mock, celestia_mock));
+
+	tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
+
+	let url = Url::parse(&format!("http://{}", grpc_address)).unwrap();
+	let mut client = GrpcDaSequencerClient::try_connect(&url).await.expect("Failed to connect");
+
+	let (alert_tx, mut alert_rx) = unbounded_channel();
+	client.set_heartbeat_alert_channel(alert_tx);
+	client.stream_heartbeat_interval_sec = stream_heartbeat_interval_sec;
+
+	let mut stream = client
+		.stream_read_from_height(StreamReadFromHeightRequest { height: 0 })
+		.await
+		.expect("Failed to start stream");
+
+	// drop the stream to simulate missed heartbeats
+	drop(stream);
+
+	// Wait a little more than 2 intervals (2s + buffer)
+	tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+
+	assert!(alert_rx.try_recv().is_ok(), "Expected heartbeat alert after two missed heartbeats");
+
+	grpc_task.abort();
+	loop_task.abort();
+}
+
+#[tokio::test]
+async fn test_missed_grpc_heartbeat_once_does_not_trigger_alert() {
+	use tokio::sync::mpsc::unbounded_channel;
+	use tokio_stream::StreamExt;
+
+	let (request_tx, request_rx) = mpsc::channel(100);
+
+	let mut config = DaSequencerConfig::default();
+	config.stream_heartbeat_interval_sec = 1;
+
+	let signing_key = generate_signing_key();
+	let verifying_key = signing_key.verifying_key();
+	let whitelist = make_test_whitelist(vec![verifying_key.clone()]);
+
+	let grpc_address = "0.0.0.0:30800".parse::<SocketAddr>().expect("Bad address");
+	let grpc_task = tokio::spawn(run_server(grpc_address, request_tx, whitelist));
+
+	let storage_mock = StorageMock::new();
+	let celestia_mock = CelestiaMock::new();
+	let stream_heartbeat_interval_sec = config.stream_heartbeat_interval_sec;
+	let loop_task = tokio::spawn(run(config, request_rx, storage_mock, celestia_mock));
+
+	tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
+
+	let url = Url::parse(&format!("http://{}", grpc_address)).unwrap();
+	let mut client = GrpcDaSequencerClient::try_connect(&url).await.expect("Failed to connect");
+
+	let (alert_tx, mut alert_rx) = unbounded_channel();
+	client.set_heartbeat_alert_channel(alert_tx);
+	client.stream_heartbeat_interval_sec = stream_heartbeat_interval_sec;
+
+	let mut stream = client
+		.stream_read_from_height(StreamReadFromHeightRequest { height: 0 })
+		.await
+		.expect("Failed to start stream");
+
+	// Drop the stream to simulate a single missed heartbeat
+	drop(stream);
+
+	// Wait slightly longer than 1 interval but less than 2
+	tokio::time::sleep(tokio::time::Duration::from_millis(1500)).await;
+
+	assert!(
+		alert_rx.try_recv().is_err(),
+		"Did not expect heartbeat alert after one missed heartbeat"
+	);
+
+	grpc_task.abort();
+	loop_task.abort();
+}
