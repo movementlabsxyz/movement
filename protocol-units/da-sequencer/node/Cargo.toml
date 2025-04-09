@@ -38,7 +38,6 @@ futures = { workspace = true }
 dot-movement = { workspace = true }
 godfig = { workspace = true }
 
-movement-da-sequencer-client = { workspace = true }
 movement-da-sequencer-config = { workspace = true }
 movement-da-sequencer-proto = { workspace = true, features = ["server"] }
 movement-types = { workspace = true }
@@ -47,8 +46,10 @@ movement-types = { workspace = true }
 tempfile = { workspace = true }
 rand = { workspace = true }
 rand_core = { workspace = true }
+
+movement-da-sequencer-client = { workspace = true }
+movement-signer = { workspace = true }
 movement-types = { workspace = true, features = ["testing"] }
-movement-signer = { workspace = true}
 
 [lints]
 #workspace = true

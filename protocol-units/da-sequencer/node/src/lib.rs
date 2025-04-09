@@ -15,9 +15,10 @@ pub mod celestia;
 pub mod error;
 pub mod server;
 pub mod storage;
-#[cfg(test)]
-pub mod tests;
 pub mod whitelist;
+
+#[cfg(test)]
+mod tests;
 
 /// Run Da sequencing loop.
 /// This function only return in case of error that indicate a crash of the node.
