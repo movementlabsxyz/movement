@@ -180,8 +180,8 @@ async fn serve_metrics(addr: String, registry: Registry) {
             l
         },
         Err(e) => {
-            eprintln!("CRITICAL ERROR: Failed to bind metrics server to {}: {}", addr, e);
-            eprintln!("This may be because the port is already in use or you don't have permission.");
+            tracing::error!("CRITICAL ERROR: Failed to bind metrics server to {}: {}", addr, e);
+            tracing::error!("This may be because the port is already in use or you don't have permission.");
             return;
         }
     };
@@ -194,7 +194,7 @@ async fn serve_metrics(addr: String, registry: Registry) {
     let shutdown_tx_clone = shutdown_tx.clone();
     tokio::spawn(async move {
         if let Err(e) = tokio::signal::ctrl_c().await {
-            eprintln!("Failed to listen for Ctrl+C: {}", e);
+            tracing::error!("Failed to listen for Ctrl+C: {}", e);
         }
         let _ = shutdown_tx_clone.send(());
     });
@@ -209,12 +209,12 @@ async fn serve_metrics(addr: String, registry: Registry) {
                         
                         tokio::spawn(async move {
                             if let Err(e) = handle_metrics_request(stream, client_addr, registry, shutdown_rx).await {
-                                eprintln!("Error handling metrics request from {}: {}", client_addr, e);
+                                tracing::error!("Error handling metrics request from {}: {}", client_addr, e);
                             }
                         });
                     },
                     Err(e) => {
-                        eprintln!("Error accepting connection: {}", e);
+                        tracing::error!("Error accepting connection: {}", e);
                     }
                 }
             },
