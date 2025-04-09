@@ -10,7 +10,7 @@ use mcr_settlement_manager::{CommitmentEventStream, McrSettlementManagerOperatio
 use movement_config::execution_extension;
 use movement_da_sequencer_client::DaSequencerClient;
 use movement_da_sequencer_client::GrpcDaSequencerClient;
-use movement_da_sequencer_proto::Block;
+use movement_da_sequencer_proto::Blockv1;
 use movement_da_sequencer_proto::StreamReadFromHeightRequest;
 use movement_types::block::{Block, BlockCommitment, BlockCommitmentEvent};
 use tokio::select;
@@ -92,7 +92,7 @@ where
 		Ok(())
 	}
 
-	async fn process_block_from_da(&mut self, da_block: Block) -> anyhow::Result<()> {
+	async fn process_block_from_da(&mut self, da_block: Blockv1) -> anyhow::Result<()> {
 		let block_timestamp = chrono::Utc::now().timestamp_micros() as u64;
 
 		info!(

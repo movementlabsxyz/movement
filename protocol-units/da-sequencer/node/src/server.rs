@@ -7,7 +7,7 @@ use movement_da_sequencer_proto::da_sequencer_node_service_server::{
 	DaSequencerNodeService, DaSequencerNodeServiceServer,
 };
 use movement_da_sequencer_proto::{
-	block_response::BlockType, BatchWriteRequest, BatchWriteResponse, Block, BlockResponse,
+	block_response::BlockType, BatchWriteRequest, BatchWriteResponse, BlockResponse, Blockv1,
 	ReadAtHeightRequest, ReadAtHeightResponse, StreamReadFromHeightRequest,
 	StreamReadFromHeightResponse,
 };
@@ -116,7 +116,7 @@ impl DaSequencerNodeService for DaSequencerNode {
 					};
 					current_block_height +=1;
 
-					let block = match block.as_ref().map(|block| block.try_into()) {
+					let blockv1 = match block.as_ref().map(|block| block.try_into()) {
 						None => continue,
 						Some(Ok(block)) => block,
 						Some(Err(err)) => {
@@ -125,7 +125,7 @@ impl DaSequencerNodeService for DaSequencerNode {
 
 						}
 					};
-					BlockResponse { block_type: Some(BlockType::Block(block)) }
+					BlockResponse { block_type: Some(BlockType::Blockv1(blockv1)) }
 
 				} else {
 					//send block in produced channel
@@ -153,7 +153,7 @@ impl DaSequencerNodeService for DaSequencerNode {
 							}
 							current_block_height = new_block.height.0;
 
-							let block = match new_block.try_into() {
+							let blockv1 = match new_block.try_into() {
 								Ok(b) => b,
 								Err(err) => {
 									tracing::warn!(error = %err, "Stream block: block serialization failed.");
@@ -161,7 +161,7 @@ impl DaSequencerNodeService for DaSequencerNode {
 
 								}
 							};
-							BlockResponse { block_type: Some(BlockType::Block(block)) }
+							BlockResponse { block_type: Some(BlockType::Blockv1(blockv1)) }
 						}
 					}
 
@@ -236,19 +236,19 @@ impl DaSequencerNodeService for DaSequencerNode {
 
 pub struct GrpcBatchData {}
 
-impl TryFrom<SequencerBlock> for Block {
+impl TryFrom<SequencerBlock> for Blockv1 {
 	type Error = DaSequencerError;
 
 	fn try_from(block: SequencerBlock) -> Result<Self, Self::Error> {
-		Block::try_from(&block)
+		Blockv1::try_from(&block)
 	}
 }
 
-impl TryFrom<&SequencerBlock> for Block {
+impl TryFrom<&SequencerBlock> for Blockv1 {
 	type Error = DaSequencerError;
 
 	fn try_from(block: &SequencerBlock) -> Result<Self, Self::Error> {
-		Ok(Block {
+		Ok(Blockv1 {
 			block_id: block.get_block_digest().id.to_vec(),
 			height: block.height.into(),
 			data: block.try_into()?,
