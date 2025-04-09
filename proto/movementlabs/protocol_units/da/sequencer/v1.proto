@@ -14,7 +14,7 @@ service DaSequencerNodeService {
 }
 
 // Request and response messages
-message Blockv1 {
+message BlockV1 {
     bytes block_id = 1;
     bytes data = 2;
     uint64 height = 3;
@@ -23,7 +23,7 @@ message Blockv1 {
 message BlockResponse {
     oneof block_type {
       bool heartbeat = 1;
-      Blockv1 blockv1 = 2;
+      BlockV1 block_v1 = 2;
     }
 }
 

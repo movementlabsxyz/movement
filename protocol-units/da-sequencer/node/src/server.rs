@@ -7,7 +7,7 @@ use movement_da_sequencer_proto::da_sequencer_node_service_server::{
 	DaSequencerNodeService, DaSequencerNodeServiceServer,
 };
 use movement_da_sequencer_proto::{
-	block_response::BlockType, BatchWriteRequest, BatchWriteResponse, BlockResponse, Blockv1,
+	block_response::BlockType, BatchWriteRequest, BatchWriteResponse, BlockResponse, BlockV1,
 	ReadAtHeightRequest, ReadAtHeightResponse, StreamReadFromHeightRequest,
 	StreamReadFromHeightResponse,
 };
@@ -125,7 +125,7 @@ impl DaSequencerNodeService for DaSequencerNode {
 
 						}
 					};
-					BlockResponse { block_type: Some(BlockType::Blockv1(blockv1)) }
+					BlockResponse { block_type: Some(BlockType::BlockV1(blockv1)) }
 
 				} else {
 					//send block in produced channel
@@ -161,7 +161,7 @@ impl DaSequencerNodeService for DaSequencerNode {
 
 								}
 							};
-							BlockResponse { block_type: Some(BlockType::Blockv1(blockv1)) }
+							BlockResponse { block_type: Some(BlockType::BlockV1(blockv1)) }
 						}
 					}
 
@@ -236,19 +236,19 @@ impl DaSequencerNodeService for DaSequencerNode {
 
 pub struct GrpcBatchData {}
 
-impl TryFrom<SequencerBlock> for Blockv1 {
+impl TryFrom<SequencerBlock> for BlockV1 {
 	type Error = DaSequencerError;
 
 	fn try_from(block: SequencerBlock) -> Result<Self, Self::Error> {
-		Blockv1::try_from(&block)
+		BlockV1::try_from(&block)
 	}
 }
 
-impl TryFrom<&SequencerBlock> for Blockv1 {
+impl TryFrom<&SequencerBlock> for BlockV1 {
 	type Error = DaSequencerError;
 
 	fn try_from(block: &SequencerBlock) -> Result<Self, Self::Error> {
-		Ok(Blockv1 {
+		Ok(BlockV1 {
 			block_id: block.get_block_digest().id.to_vec(),
 			height: block.height.into(),
 			data: block.try_into()?,

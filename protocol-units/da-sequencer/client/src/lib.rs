@@ -3,7 +3,7 @@ use futures::stream;
 use movement_da_sequencer_proto::block_response;
 use movement_da_sequencer_proto::da_sequencer_node_service_client::DaSequencerNodeServiceClient;
 use movement_da_sequencer_proto::BatchWriteResponse;
-use movement_da_sequencer_proto::Blockv1;
+use movement_da_sequencer_proto::BlockV1;
 use movement_da_sequencer_proto::StreamReadFromHeightRequest;
 use movement_signer::{
 	cryptography::ed25519::{Ed25519, Signature},
@@ -24,7 +24,7 @@ pub enum ClientDaSequencerError {
 }
 
 pub type StreamReadBlockFromHeight =
-	std::pin::Pin<Box<dyn Stream<Item = Result<Blockv1, ClientDaSequencerError>> + Send + 'static>>;
+	std::pin::Pin<Box<dyn Stream<Item = Result<BlockV1, ClientDaSequencerError>> + Send + 'static>>;
 
 pub trait DaSequencerClient: Clone + Send {
 	/// Stream reads from a given height.
@@ -111,7 +111,7 @@ impl DaSequencerClient for GrpcDaSequencerClient {
 								Some(block_response::BlockType::Heartbeat(_)) => {
 									tracing::info!("Receive block stream Heartbeat");
 								}
-								Some(block_response::BlockType::Blockv1(block)) => yield block,
+								Some(block_response::BlockType::BlockV1(block)) => yield block,
 								None => todo!(),
 							}
 							None => todo!(),
@@ -199,7 +199,7 @@ impl DaSequencerClient for EmptyDaSequencerClient {
 		&mut self,
 		_request: movement_da_sequencer_proto::StreamReadFromHeightRequest,
 	) -> Result<StreamReadBlockFromHeight, ClientDaSequencerError> {
-		let never_ending_stream = stream::pending::<Result<Blockv1, ClientDaSequencerError>>();
+		let never_ending_stream = stream::pending::<Result<BlockV1, ClientDaSequencerError>>();
 
 		Ok(Box::pin(never_ending_stream))
 	}
