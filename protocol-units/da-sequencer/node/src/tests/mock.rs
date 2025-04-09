@@ -3,7 +3,7 @@ use crate::batch::DaBatch;
 use crate::batch::FullNodeTxs;
 use crate::block::BlockHeight;
 use crate::block::SequencerBlockDigest;
-use crate::celestia::Blob;
+use crate::celestia::blob::CelestiaBlobData;
 use crate::celestia::CelestiaHeight;
 use crate::DaSequencerError;
 use crate::DaSequencerExternalDa;
@@ -175,7 +175,7 @@ impl DaSequencerExternalDa for CelestiaMock {
 	fn get_blob_at_height(
 		&self,
 		_height: CelestiaHeight,
-	) -> impl Future<Output = Result<Option<Blob>, DaSequencerError>> + Send {
+	) -> impl Future<Output = Result<Option<CelestiaBlobData>, DaSequencerError>> + Send {
 		//TODO return dummy error for now.
 		futures::future::ready(Err(DaSequencerError::DeserializationFailure))
 	}

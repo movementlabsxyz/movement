@@ -1,12 +1,16 @@
+pub mod blob;
+mod client;
+mod height;
+mod submit;
+
 use crate::block::{BlockHeight, SequencerBlock, SequencerBlockDigest};
 use crate::error::DaSequencerError;
-use std::{future::Future, time::Duration};
 use tokio::sync::{mpsc, oneshot};
 
-mod blob;
-mod height;
+use std::future::Future;
+use std::time::Duration;
 
-pub use blob::Blob;
+pub use blob::CelestiaBlobData;
 pub use height::CelestiaHeight;
 
 /// Functions to implement to save block digest in an external DA like Celestia
@@ -23,7 +27,7 @@ pub trait DaSequencerExternalDa {
 	fn get_blob_at_height(
 		&self,
 		height: CelestiaHeight,
-	) -> impl Future<Output = Result<Option<Blob>, DaSequencerError>> + Send;
+	) -> impl Future<Output = Result<Option<CelestiaBlobData>, DaSequencerError>> + Send;
 
 	/// Bootstrap the Celestia client to recover from missing block.
 	/// In case of crash for example, block sent to Celestia can be behind the block created by the network.
@@ -43,19 +47,31 @@ pub trait DaSequencerExternalDa {
 #[derive(Debug)]
 pub enum ExternalDaNotification {
 	/// Notify that the block at specified height has been commited on celestia network
-	BlockCommited(BlockHeight, CelestiaHeight),
+	BlockCommitted(BlockHeight, CelestiaHeight),
 	/// Ask to send the block at specified height to the Celestia client.
 	/// Use during bootstrap to request block that are missing on Celestia network.
 	RequestBlock { height: BlockHeight, callback: oneshot::Sender<Option<SequencerBlock>> },
 }
 
-pub trait CelestiaClient: Sync + Clone {
-	fn send_blob(&self, blob: Blob) -> impl Future<Output = Result<(), DaSequencerError>> + Send;
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+enum BlockSource {
+	/// The block has arrived on the DA service.
+	Input,
+	/// The block has been recovered in bootstrap.
+	Bootstrap,
+}
 
+pub trait CelestiaClientOps: Sync + Clone {
 	fn get_blob_at_height(
 		&self,
 		height: CelestiaHeight,
-	) -> impl Future<Output = Result<Option<Blob>, DaSequencerError>> + Send;
+	) -> impl Future<Output = Result<Option<CelestiaBlobData>, DaSequencerError>> + Send;
+
+	fn send_block(
+		&self,
+		block: SequencerBlockDigest,
+		source: BlockSource,
+	) -> impl Future<Output = Result<(), DaSequencerError>> + Send;
 }
 
 pub trait BlockOps: Sync + Clone {
@@ -95,7 +111,7 @@ impl BlockOps for BlockProvider {
 		block_height: BlockHeight,
 		celestia_height: CelestiaHeight,
 	) -> Result<(), DaSequencerError> {
-		self.notify(ExternalDaNotification::BlockCommited(block_height, celestia_height))
+		self.notify(ExternalDaNotification::BlockCommitted(block_height, celestia_height))
 			.await
 	}
 
@@ -117,19 +133,19 @@ impl BlockOps for BlockProvider {
 const DELAY_SECONDS_BEFORE_BOOTSTRAPPING: Duration = Duration::from_secs(12);
 
 #[derive(Clone)]
-pub struct CelestiaExternalDa<B: BlockOps, C: CelestiaClient> {
+pub struct CelestiaExternalDa<B: BlockOps, C: CelestiaClientOps> {
 	block_provider: B,
 	celestia_client: C,
 }
 
-impl<B: BlockOps, C: CelestiaClient> CelestiaExternalDa<B, C> {
+impl<B: BlockOps, C: CelestiaClientOps> CelestiaExternalDa<B, C> {
 	/// Create the Celestia client and all async process to manage celestia access.
 	pub fn new(block_provider: B, celestia_client: C) -> Self {
 		CelestiaExternalDa { block_provider, celestia_client }
 	}
 }
 
-impl<C: CelestiaClient> CelestiaExternalDa<BlockProvider, C> {
+impl<C: CelestiaClientOps> CelestiaExternalDa<BlockProvider, C> {
 	pub fn with_notifier(
 		notifier: mpsc::Sender<ExternalDaNotification>,
 		celestia_client: C,
@@ -138,19 +154,19 @@ impl<C: CelestiaClient> CelestiaExternalDa<BlockProvider, C> {
 	}
 }
 
-impl<B: BlockOps, C: CelestiaClient> DaSequencerExternalDa for CelestiaExternalDa<B, C> {
+impl<B: BlockOps, C: CelestiaClientOps> DaSequencerExternalDa for CelestiaExternalDa<B, C> {
 	/// Send the given block to Celestia.
 	/// The block is not immediately sent but aggregated in a blob
 	/// until the client can send it to celestia.
 	async fn send_block(&self, block: SequencerBlockDigest) -> Result<(), DaSequencerError> {
-		self.celestia_client.send_blob(Blob(vec![block])).await
+		self.celestia_client.send_block(block, BlockSource::Input).await
 	}
 
 	/// Get the blob from celestia at the given height.
 	async fn get_blob_at_height(
 		&self,
 		height: CelestiaHeight,
-	) -> Result<Option<Blob>, DaSequencerError> {
+	) -> Result<Option<CelestiaBlobData>, DaSequencerError> {
 		self.celestia_client.get_blob_at_height(height).await
 	}
 
@@ -167,6 +183,7 @@ impl<B: BlockOps, C: CelestiaClient> DaSequencerExternalDa for CelestiaExternalD
 		last_finalized_celestia_height: Option<CelestiaHeight>,
 	) -> Result<(), DaSequencerError> {
 		// wait to ensure that no blob is pending in the Celestia network
+		#[cfg(not(test))]
 		tokio::time::sleep(DELAY_SECONDS_BEFORE_BOOTSTRAPPING).await;
 
 		// Determine that last finalized blob and block height
@@ -212,7 +229,9 @@ impl<B: BlockOps, C: CelestiaClient> DaSequencerExternalDa for CelestiaExternalD
 		// Send all missing blocks to Celestia up to the current block height
 		for height in height_from..=current_block_height.into() {
 			let block = self.block_provider.request_block(BlockHeight::from(height)).await?;
-			self.send_block(block.get_block_digest()).await?;
+			self.celestia_client
+				.send_block(block.get_block_digest(), BlockSource::Bootstrap)
+				.await?;
 		}
 
 		Ok(())
@@ -230,7 +249,7 @@ mod tests {
 	use tokio::sync::RwLock;
 
 	fn digest(block: &Block, block_height: BlockHeight) -> SequencerBlockDigest {
-		SequencerBlockDigest::new(block_height, *block.id().as_bytes())
+		SequencerBlockDigest::new(block_height, Id::new(*block.id().as_bytes()))
 	}
 
 	fn into_digests(blocks: &[Block]) -> Vec<SequencerBlockDigest> {
@@ -245,7 +264,7 @@ mod tests {
 	enum CelestiaClientCalls {
 		#[default]
 		Noop,
-		SendBlob(Blob),
+		SendBlock(SequencerBlockDigest, BlockSource),
 		GetBlobsAtHeight(CelestiaHeight),
 	}
 
@@ -302,10 +321,10 @@ mod tests {
 	}
 
 	#[derive(Clone)]
-	struct CelestiaMock(Arc<RwLock<StoreMockState<Blob, CelestiaClientCalls>>>);
+	struct CelestiaMock(Arc<RwLock<StoreMockState<CelestiaBlobData, CelestiaClientCalls>>>);
 
 	impl CelestiaMock {
-		fn new(init: Vec<Blob>) -> Self {
+		fn new(init: Vec<CelestiaBlobData>) -> Self {
 			let state = StoreMockState::from_iter(init);
 			Self(Arc::new(RwLock::new(state)))
 		}
@@ -317,21 +336,25 @@ mod tests {
 		}
 	}
 
-	impl CelestiaClient for CelestiaMock {
-		async fn send_blob(&self, blob: Blob) -> Result<(), DaSequencerError> {
-			let mut state = self.0.write().await;
-			state.add_call(CelestiaClientCalls::SendBlob(blob.clone()));
-			state.add(blob);
-			Ok(())
-		}
-
+	impl CelestiaClientOps for CelestiaMock {
 		async fn get_blob_at_height(
 			&self,
 			height: CelestiaHeight,
-		) -> Result<Option<Blob>, DaSequencerError> {
+		) -> Result<Option<CelestiaBlobData>, DaSequencerError> {
 			let mut state = self.0.write().await;
 			state.add_call(CelestiaClientCalls::GetBlobsAtHeight(height));
 			Ok(state.get_at_height(height.into()))
+		}
+
+		async fn send_block(
+			&self,
+			block: SequencerBlockDigest,
+			source: BlockSource,
+		) -> Result<(), DaSequencerError> {
+			let mut state = self.0.write().await;
+			state.add_call(CelestiaClientCalls::SendBlock(block.clone(), source));
+			state.add(CelestiaBlobData { digests: vec![block] });
+			Ok(())
 		}
 	}
 
@@ -421,7 +444,7 @@ mod tests {
 		let blocks = test_blocks(3);
 		let digests = into_digests(blocks.as_slice());
 		let block_provider = BlockProviderMock::new(blocks);
-		let blobs = digests.iter().map(|d| Blob(vec![d.clone()])).collect();
+		let blobs = digests.iter().map(|d| CelestiaBlobData { digests: vec![d.clone()] }).collect();
 		let celestia = CelestiaMock::new(blobs);
 		let da = CelestiaExternalDa::new(block_provider.clone(), celestia.clone());
 
@@ -444,7 +467,7 @@ mod tests {
 		let blocks = test_blocks(3);
 		let digests = into_digests(blocks.as_slice());
 		let block_provider = BlockProviderMock::new(blocks);
-		let blobs = digests.iter().map(|d| Blob(vec![d.clone()])).collect();
+		let blobs = digests.iter().map(|d| CelestiaBlobData { digests: vec![d.clone()] }).collect();
 		let celestia = CelestiaMock::new(blobs);
 		let da = CelestiaExternalDa::new(block_provider.clone(), celestia.clone());
 
@@ -475,7 +498,11 @@ mod tests {
 		let blocks = test_blocks(3);
 		let digests = into_digests(blocks.as_slice());
 		let block_provider = BlockProviderMock::new(blocks);
-		let blobs = digests.iter().take(digests.len() - 1).map(|d| Blob(vec![d.clone()])).collect();
+		let blobs = digests
+			.iter()
+			.take(digests.len() - 1)
+			.map(|d| CelestiaBlobData { digests: vec![d.clone()] })
+			.collect();
 		let celestia = CelestiaMock::new(blobs);
 		let da = CelestiaExternalDa::new(block_provider.clone(), celestia.clone());
 
@@ -489,7 +516,10 @@ mod tests {
 				CelestiaClientCalls::GetBlobsAtHeight(0.into()),
 				CelestiaClientCalls::GetBlobsAtHeight(1.into()),
 				CelestiaClientCalls::GetBlobsAtHeight(2.into()),
-				CelestiaClientCalls::SendBlob(Blob(vec![digests.get(2).cloned().unwrap()]))
+				CelestiaClientCalls::SendBlock(
+					digests.get(2).cloned().unwrap(),
+					BlockSource::Bootstrap
+				)
 			]
 		);
 		assert_eq!(
@@ -517,8 +547,14 @@ mod tests {
 		assert_eq!(
 			celestia.into_calls().await,
 			vec![
-				CelestiaClientCalls::SendBlob(Blob(vec![digests.get(1).cloned().unwrap()])),
-				CelestiaClientCalls::SendBlob(Blob(vec![digests.get(2).cloned().unwrap()])),
+				CelestiaClientCalls::SendBlock(
+					digests.get(1).cloned().unwrap(),
+					BlockSource::Bootstrap
+				),
+				CelestiaClientCalls::SendBlock(
+					digests.get(2).cloned().unwrap(),
+					BlockSource::Bootstrap
+				)
 			]
 		);
 		assert_eq!(
