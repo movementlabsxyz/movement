@@ -18,36 +18,25 @@ use aptos_vm_validator::vm_validator::{
 	get_account_sequence_number, TransactionValidation, VMValidator,
 };
 use bcs;
-use dot_movement;
 use futures::channel::mpsc as futures_mpsc;
 use futures::stream::FuturesUnordered;
 use futures::StreamExt;
 use maptos_execution_util::config::mempool::Config as MempoolConfig;
 use movement_collections::garbage::counted::GcCounter;
-use movement_config;
 use movement_da_sequencer_client::DaSequencerClient;
 use movement_da_sequencer_proto::BatchWriteRequest;
 use movement_signer::cryptography::ed25519::Ed25519;
 use movement_signer_loader::identifiers::SignerIdentifier;
 use movement_signer_loader::{Load, LoadedSigner};
 use movement_types::transaction::Transaction;
-use once_cell::sync::Lazy;
 use std::collections::{BTreeMap, HashSet};
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
 use tokio::task::JoinHandle;
 use tracing::{debug, info, info_span, warn, Instrument};
 
-const LOGGING_UID: AtomicU64 = AtomicU64::new(0);
 const GC_INTERVAL: Duration = Duration::from_secs(30);
 const MEMPOOL_INTERVAL: Duration = Duration::from_millis(240); // this is based on slot times and global TCP RTT, essentially we expect to collect all transactions sent in the same slot in around 240ms
-
-static MOVEMENT_CONFIG: Lazy<movement_config::Config> = Lazy::new(|| {
-	let dot_movement = dot_movement::DotMovement::try_from_env().unwrap();
-	let config = dot_movement.try_get_config_from_json::<movement_config::Config>().unwrap();
-	config
-});
 
 pub struct TransactionPipe {
 	// The receiver for Tx execution to commit in the mempool.
@@ -70,6 +59,8 @@ pub struct TransactionPipe {
 	whitelisted_accounts: Option<HashSet<AccountAddress>>,
 	/// Batch signer
 	da_batch_signer: SignerIdentifier,
+	/// Mempool configuration from maptos_execution.
+	mempool_config: MempoolConfig,
 }
 
 enum SequenceNumberValidity {
@@ -106,6 +97,7 @@ impl TransactionPipe {
 			),
 			whitelisted_accounts,
 			da_batch_signer,
+			mempool_config: mempool_config.clone(),
 		})
 	}
 
@@ -234,15 +226,13 @@ impl TransactionPipe {
 		Error,
 	> {
 		let transactions = self.core_mempool.get_batch_with_ranking_score(
-			1024 * 8,           // todo: move to config
-			1024 * 1024 * 1024, // todo: move to config
-			true,               // allow partial batches
-			BTreeMap::new(),
+			self.mempool_config.max_tx_per_batch,
+			self.mempool_config.max_batch_size,
+			true,            // allow partial batches
+			BTreeMap::new(), // exclude Tx
 		);
 
-		debug!("Sending {} transactions to the transaction channel", transactions.len());
-
-		let batch_id = LOGGING_UID.fetch_add(1, Ordering::SeqCst);
+		debug!("Create a batch of {} transactions and submit it.", transactions.len());
 
 		let batch: Vec<Transaction> = transactions
 			.into_iter()
@@ -251,17 +241,9 @@ impl TransactionPipe {
 				let sender = transaction.sender();
 				let seq = transaction.sequence_number();
 
-				debug!(
-					target: "movement_timing",
-					sender = %sender,
-					sequence_number = seq,
-					"Tx sent to Tx ingress"
-				);
-
 				self.core_mempool.commit_transaction(&sender, seq);
 				debug!(
 					target: "movement_timing",
-					batch_id = %batch_id,
 					tx_hash = %transaction.committed_hash(),
 					sender = %transaction.sender(),
 					sequence_number = transaction.sequence_number(),
@@ -381,6 +363,12 @@ impl TransactionPipe {
 			true,
 		);
 
+		info!(
+			tx_hash = %tx_hash,
+			status = %status,
+			"Transaction added to the mempool with status"
+		);
+
 		match status.code {
 			MempoolStatusCode::Accepted => {
 				let now = chrono::Utc::now().timestamp_millis() as u64;
@@ -411,7 +399,6 @@ mod tests {
 	use futures::stream;
 	use futures::SinkExt;
 	use movement_da_sequencer_client::ClientDaSequencerError;
-	use movement_da_sequencer_client::EmptyDaSequencerClient;
 	use movement_da_sequencer_client::StreamReadBlockFromHeight;
 	use movement_da_sequencer_proto::BatchWriteResponse;
 	use movement_da_sequencer_proto::Blockv1;
@@ -476,6 +463,7 @@ mod tests {
 			&mut self,
 			request: movement_da_sequencer_proto::BatchWriteRequest,
 		) -> Result<movement_da_sequencer_proto::BatchWriteResponse, tonic::Status> {
+			tracing::info!("TxPipeTestDaSequencerClient receive a batch");
 			let batch_data = request.data;
 			let batch: Vec<MvTransaction> =
 				match movement_da_sequencer_client::deserialize_full_node_batch(batch_data)
@@ -490,6 +478,7 @@ mod tests {
 						return Ok(BatchWriteResponse { answer: false });
 					}
 				};
+			tracing::info!("TxPipeTestDaSequencerClient that contains {} Tx", batch.len());
 			batch.into_iter().for_each(|tx| self.received_tx.lock().unwrap().push(tx));
 			Ok(BatchWriteResponse { answer: true })
 		}
@@ -508,13 +497,6 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_pipe_mempool_one_tx() -> Result<(), anyhow::Error> {
-		use tracing_subscriber::EnvFilter;
-		tracing_subscriber::fmt()
-			.with_env_filter(
-				EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("debug")),
-			)
-			.init();
-
 		// set up
 		let maptos_config = Config::default();
 		let (context, transaction_pipe, _tempdir) = setup().await;
@@ -523,7 +505,7 @@ mod tests {
 		let da_client = TxPipeTestDaSequencerClient::new();
 		let mempool_handle = tokio::spawn(transaction_pipe.run(da_client.clone()));
 
-		let user_transaction = create_signed_transaction(1, &maptos_config);
+		let user_transaction = create_signed_transaction(0, &maptos_config);
 
 		// send transaction to mempool
 		let (req_sender, callback) = oneshot::channel();
@@ -554,11 +536,11 @@ mod tests {
 		// set up
 		let maptos_config = Config::default();
 		let (context, transaction_pipe, _tempdir) = setup().await;
-		let user_transaction = create_signed_transaction(1, &maptos_config);
+		let user_transaction = create_signed_transaction(0, &maptos_config);
 
 		// Run the transaction pipe
-		let da_client = EmptyDaSequencerClient;
-		let mempool_handle = tokio::spawn(transaction_pipe.run(da_client));
+		let da_client = TxPipeTestDaSequencerClient::new();
+		let mempool_handle = tokio::spawn(transaction_pipe.run(da_client.clone()));
 
 		// send transaction to mempool
 		let (req_sender, callback) = oneshot::channel();
@@ -570,6 +552,15 @@ mod tests {
 		// drop the callback to simulate cancellation of the request
 		drop(callback);
 
+		// The Tx should be accepted and sent. wait Tx propagation
+		let _ = tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+		//validate teh Tx has been sent to the DA
+		{
+			let txs = da_client.received_tx.lock().unwrap();
+			assert_eq!(txs.len(), 1);
+			assert_eq!(txs.get(0).unwrap().sequence_number(), user_transaction.sequence_number());
+		}
+
 		mempool_handle.abort();
 		Ok(())
 	}
@@ -578,39 +569,32 @@ mod tests {
 	async fn test_pipe_mempool_with_duplicate_transaction() -> Result<(), anyhow::Error> {
 		// set up
 		let maptos_config = Config::default();
-		let (context, transaction_pipe, _tempdir) = setup().await;
+		let (context, mut transaction_pipe, _tempdir) = setup().await;
 		let mut mempool_client_sender = context.mempool_client_sender();
-		let user_transaction = create_signed_transaction(1, &maptos_config);
+		let user_transaction = create_signed_transaction(0, &maptos_config);
 
-		// send transaction to mempool
-		let (req_sender, callback) = oneshot::channel();
-		mempool_client_sender
-			.send(MempoolClientRequest::SubmitTransaction(user_transaction.clone(), req_sender))
+		// Add 2 time the transaction to mempool
+		let (mempool_status, _) = transaction_pipe
+			.add_transaction_to_aptos_mempool(user_transaction.clone())
 			.await?;
+		assert_eq!(mempool_status.code, MempoolStatusCode::Accepted);
+
+		let (mempool_status, _) =
+			transaction_pipe.add_transaction_to_aptos_mempool(user_transaction).await?;
+		assert_eq!(mempool_status.code, MempoolStatusCode::Accepted);
 
 		// Run the transaction pipe
-		let da_client = EmptyDaSequencerClient;
-		let mempool_handle = tokio::spawn(transaction_pipe.run(da_client));
+		let da_client = TxPipeTestDaSequencerClient::new();
+		let mempool_handle = tokio::spawn(transaction_pipe.run(da_client.clone()));
 
-		// receive the callback
-		let (status, _vm_status_code) = callback.await??;
-		assert_eq!(status.code, MempoolStatusCode::Accepted);
-
-		// receive the transaction: todo, uncomment after reworking DA sequencer
-		// let received_batch = tx_receiver.recv().await.unwrap();
-		// let (_, tx) = received_batch.into_iter().next().expect("empty batch");
-		// assert_eq!(tx, user_transaction);
-
-		// send the same transaction again
-		let (req_sender, callback) = oneshot::channel();
-		mempool_client_sender
-			.send(MempoolClientRequest::SubmitTransaction(user_transaction.clone(), req_sender))
-			.await?;
-
-		callback.await??;
-
-		// assert that there is no new transaction. todo: restore once da sequencer is reworked
-		// assert!(tx_receiver.try_recv().is_err());
+		//wait Tx propagation
+		// Verify the Tx is added only one time
+		let _ = tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+		//validate teh Tx has been sent to the DA
+		{
+			let txs = da_client.received_tx.lock().unwrap();
+			assert_eq!(txs.len(), 1);
+		}
 
 		mempool_handle.abort();
 
@@ -623,39 +607,47 @@ mod tests {
 		let service = Service::new(&context);
 
 		// Run the transaction pipe
-		let da_client = EmptyDaSequencerClient;
-		let mempool_handle = tokio::spawn(transaction_pipe.run(da_client));
+		let da_client = TxPipeTestDaSequencerClient::new();
+		let mempool_handle = tokio::spawn(transaction_pipe.run(da_client.clone()));
 
 		let api = service.get_apis();
-		let user_transaction = create_signed_transaction(1, &context.config().chain);
+		let user_transaction = create_signed_transaction(0, &context.config().chain);
 		//let comparison_user_transaction = user_transaction.clone();
 		let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
 		let request = SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
 		api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
 
-		// receive the transaction: todo, uncomment after reworking DA sequencer
-		// let received_batch = tx_receiver.recv().await.unwrap();
-		// let (_, tx) = received_batch.into_iter().next().expect("empty batch");
-		// assert_eq!(tx, comparison_user_transaction);
+		//wait Tx propagation
+		let _ = tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+		//validate teh Tx has been sent to the DA
+		{
+			let txs = da_client.received_tx.lock().unwrap();
+			assert_eq!(txs.len(), 1);
+			assert_eq!(txs.get(0).unwrap().sequence_number(), user_transaction.sequence_number());
+		}
 
 		mempool_handle.abort();
 
 		Ok(())
 	}
 
+	// Ignore test because with the new Aptos core mempool, Tx with a seqnumber too higher from the db one stay in it.
+	// Need to execute block to update ledger db or use several account.
+	// This test should be done in the e2e test.
 	#[tokio::test]
+	#[ignore]
 	async fn test_repeated_pipe_mempool_from_api() -> Result<(), anyhow::Error> {
 		let (context, transaction_pipe, _tempdir) = setup().await;
 		let service = Service::new(&context);
 
 		// Run the transaction pipe
-		let da_client = EmptyDaSequencerClient;
-		let mempool_handle = tokio::spawn(transaction_pipe.run(da_client));
+		let da_client = TxPipeTestDaSequencerClient::new();
+		let mempool_handle = tokio::spawn(transaction_pipe.run(da_client.clone()));
 
 		let api = service.get_apis();
 		let mut user_transactions: BTreeSet<Vec<u8>> = BTreeSet::new();
 		//let mut comparison_user_transactions: BTreeSet<Vec<u8>> = BTreeSet::new();
-		for i in 1..25 {
+		for i in 0..25 {
 			let user_transaction = create_signed_transaction(i, &context.config().chain);
 			let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
 			user_transactions.insert(bcs_user_transaction.clone());
@@ -663,16 +655,15 @@ mod tests {
 			let request =
 				SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
 			api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
-
-			// todo: restore after da sequencer is reworked
-			// let received_batch = tx_receiver.recv().await.unwrap();
-			// let (_, tx) = received_batch.into_iter().next().expect("empty batch");
-			// let bcs_received_transaction = bcs::to_bytes(&tx)?;
-			// comparison_user_transactions.insert(bcs_received_transaction.clone());
 		}
 
-		// assert_eq!(user_transactions.len(), comparison_user_transactions.len());
-		// assert_eq!(user_transactions, comparison_user_transactions);
+		//wait Tx propagation
+		let _ = tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+		//validate teh Tx has been sent to the DA
+		{
+			let txs = da_client.received_tx.lock().unwrap();
+			assert_eq!(txs.len(), 25);
+		}
 
 		mempool_handle.abort();
 
@@ -680,7 +671,7 @@ mod tests {
 	}
 
 	#[tokio::test]
-	async fn test_cannot_submit_too_new() -> Result<(), anyhow::Error> {
+	async fn test_submit_with_different_seqnumber() -> Result<(), anyhow::Error> {
 		// set up
 		let maptos_config = Config::default();
 		let (_context, mut transaction_pipe, _tempdir) = setup().await;
@@ -695,7 +686,7 @@ mod tests {
 		let user_transaction = create_signed_transaction(34, &maptos_config);
 		let (mempool_status, _) =
 			transaction_pipe.add_transaction_to_aptos_mempool(user_transaction).await?;
-		assert_eq!(mempool_status.code, MempoolStatusCode::InvalidSeqNumber);
+		assert_eq!(mempool_status.code, MempoolStatusCode::Accepted);
 
 		// submit one signed transaction with a sequence number that is too new for the vm but not for the mempool
 		let user_transaction = create_signed_transaction(5, &maptos_config);
@@ -707,7 +698,7 @@ mod tests {
 		let user_transaction = create_signed_transaction(5, &maptos_config);
 		let (mempool_status, _) =
 			transaction_pipe.add_transaction_to_aptos_mempool(user_transaction).await?;
-		assert_eq!(mempool_status.code, MempoolStatusCode::InvalidSeqNumber);
+		assert_eq!(mempool_status.code, MempoolStatusCode::Accepted);
 
 		Ok(())
 	}
@@ -724,7 +715,7 @@ mod tests {
 		let transaction_pipe = background.into_transaction_pipe();
 
 		// Run the transaction pipe
-		let da_client = EmptyDaSequencerClient;
+		let da_client = TxPipeTestDaSequencerClient::new();
 		let mempool_handle = tokio::spawn(transaction_pipe.run(da_client));
 
 		let tx = create_signed_transaction(0, &context.config().chain);

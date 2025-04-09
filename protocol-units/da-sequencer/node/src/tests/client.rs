@@ -240,7 +240,7 @@ async fn test_produce_block_and_stream() {
 	loop_jh.abort();
 }
 
-/// Submit a batch using the same key to sign and verify using the white list.
+/// Submit a batch using the same key to sign and verifying using the white list.
 #[tokio::test]
 async fn test_grpc_client_should_write_one_batch_with_a_correct_whitelist() {
 	let config = DaSequencerConfig::default();

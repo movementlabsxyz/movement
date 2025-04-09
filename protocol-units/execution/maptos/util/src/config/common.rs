@@ -241,3 +241,12 @@ env_default!(default_sequence_number_ttl_ms, "MAPTOS_SEQUENCE_NUMBER_TTL_MS", u6
 env_default!(default_gc_slot_duration_ms, "MAPTOS_GC_SLOT_DURATION_MS", u64, 1000 * 2);
 
 env_default!(default_ingress_account_whitelist, "MAPTOS_INGRESS_ACCOUNT_WHITELIST", String);
+
+env_default!(default_max_tx_per_batch, "MAPTOS_MAX_TX_PER_BATCH", u64, 1024 * 8);
+
+env_default!(
+	default_max_batch_size,
+	"MAPTOS_MAX_BATCH_SIZE",
+	u64,
+	1024 * 1024 //1Mo
+);
