@@ -31,4 +31,6 @@ pub enum DaSequencerError {
 	BlockRetrieval(String),
 	#[error("failed to send block digest to external DA")]
 	SendFailure,
+	#[error("Error during channel messaging: {0}")]
+	ChannelError(String),
 }

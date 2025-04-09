@@ -65,7 +65,7 @@ pub struct Storage {
 	db: Arc<DB>,
 }
 
-pub trait DaSequencerStorage: Clone {
+pub trait DaSequencerStorage {
 	/// Save all batch's Tx in the pending Tx table. The batch's Tx has been verified and validated.
 	fn write_batch(&self, batch: DaBatch<FullNodeTxs>)
 		-> std::result::Result<(), DaSequencerError>;

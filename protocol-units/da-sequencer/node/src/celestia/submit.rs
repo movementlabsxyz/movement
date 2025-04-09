@@ -122,5 +122,5 @@ async fn submit_blob(
 		.blob_submit(&[blob], config)
 		.await
 		.context("failed to submit the blob")?;
-	Ok((last_block_height, CelestiaHeight::new(celestia_height)))
+	Ok((last_block_height, CelestiaHeight::from(celestia_height)))
 }

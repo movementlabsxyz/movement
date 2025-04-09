@@ -162,14 +162,14 @@ impl CelestiaMock {
 impl DaSequencerExternalDa for CelestiaMock {
 	fn send_block(
 		&self,
-		block: SequencerBlockDigest,
+		_block: SequencerBlockDigest,
 	) -> impl Future<Output = Result<(), DaSequencerError>> + Send {
 		futures::future::ready(Ok(()))
 	}
 
-	fn get_blobs_at_height(
+	fn get_blob_at_height(
 		&self,
-		height: CelestiaHeight,
+		_height: CelestiaHeight,
 	) -> impl Future<Output = Result<Option<CelestiaBlobData>, DaSequencerError>> + Send {
 		//TODO return dummy error for now.
 		futures::future::ready(Err(DaSequencerError::DeserializationFailure))
@@ -177,7 +177,8 @@ impl DaSequencerExternalDa for CelestiaMock {
 
 	fn bootstrap(
 		&self,
-		current_block_height: BlockHeight,
+		_current_block_height: BlockHeight,
+		_last_finalized_celestia_height: Option<CelestiaHeight>,
 	) -> impl Future<Output = Result<(), DaSequencerError>> + Send {
 		futures::future::ready(Ok(()))
 	}

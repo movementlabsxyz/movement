@@ -18,6 +18,7 @@ enum Error {
 	Rpc(#[from] celestia_rpc::Error),
 }
 
+#[derive(Clone)]
 pub struct CelestiaClient {
 	rpc_client: Arc<RpcClient>,
 	notifier: mpsc::Sender<ExternalDaNotification>,
@@ -48,13 +49,9 @@ impl CelestiaClient {
 }
 
 impl CelestiaClientOps for CelestiaClient {
-	async fn get_current_height(&self) -> Result<CelestiaHeight, DaSequencerError> {
-		todo!()
-	}
-
-	async fn get_blobs_at_height(
+	async fn get_blob_at_height(
 		&self,
-		height: u64,
+		_height: CelestiaHeight,
 	) -> Result<Option<CelestiaBlobData>, DaSequencerError> {
 		todo!()
 	}
