@@ -11,7 +11,7 @@ processes:
       export ETH_RPC_CONNECTION_PORT=8090
       export MAYBE_RUN_LOCAL=true
       export MAYBE_DEPLOY_MCR=true
-      movement-full-node-setup
+      movement-full-node run
     depends_on:
       build:
         condition: process_completed_successfully
@@ -23,15 +23,17 @@ processes:
   movement-faucet: 
     command : |
       movement-faucet-service run-simple --do-not-delegate
-
-  test-with-mock-da:
-    command: |
-      movement-full-node run
-      cargo run --bin mock-da
     depends_on:
       movement-full-node:
         condition: process_healthy
+
+  test-with-mock-da:
+    command: |
+      cargo run --bin mock-da
+    depends_on:
       movement-faucet:
+        condition: process_healthy
+      setup:
         condition: process_healthy
     availability:
       exit_on_end: true

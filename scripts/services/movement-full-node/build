@@ -21,7 +21,6 @@ echo "Building movement-full-node-setup..."
 cargo build $CARGO_PROFILE_FLAGS -p movement-full-node-setup
 echo "Built movement-full-node-setup!"
 
-
 echo "Bulding movement-util..."
 cargo build $CARGO_PROFILE_FLAGS -p movement-util
 echo "Built movement-util!"
