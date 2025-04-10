@@ -1,7 +1,6 @@
 //! The blob submitter task.
 
 use super::{BlockSource, CelestiaBlobData, CelestiaHeight, ExternalDaNotification};
-use crate::block::BlockHeight;
 
 use anyhow::Context;
 use celestia_rpc::prelude::*;

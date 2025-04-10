@@ -11,15 +11,15 @@ use tokio::sync::mpsc;
 use url::Url;
 
 #[derive(Debug, thiserror::Error)]
-enum Error {
+pub enum Error {
 	#[error("Celestia RPC error: {}", .0)]
 	Rpc(#[from] celestia_rpc::Error),
 }
 
 #[derive(Clone)]
 pub struct CelestiaClient {
-	rpc_client: Arc<RpcClient>,
-	notifier: mpsc::Sender<ExternalDaNotification>,
+	_rpc_client: Arc<RpcClient>,
+	_notifier: mpsc::Sender<ExternalDaNotification>,
 	// The sender end of the channel for the background sender task.
 	id_sender: mpsc::Sender<(block::Id, BlockSource)>,
 }
@@ -42,7 +42,11 @@ impl CelestiaClient {
 			notifier.clone(),
 		);
 		tokio::spawn(blob_submitter.run());
-		Ok(CelestiaClient { rpc_client, notifier, id_sender: digest_sender })
+		Ok(CelestiaClient {
+			_rpc_client: rpc_client,
+			_notifier: notifier,
+			id_sender: digest_sender,
+		})
 	}
 }
 

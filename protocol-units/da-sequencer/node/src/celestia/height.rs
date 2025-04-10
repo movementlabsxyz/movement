@@ -1,4 +1,3 @@
-use serde::Serializer;
 use std::{
 	fmt::{Display, Formatter},
 	ops::{Add, AddAssign, Sub},

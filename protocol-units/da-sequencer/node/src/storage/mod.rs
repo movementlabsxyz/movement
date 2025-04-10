@@ -10,7 +10,6 @@ use movement_types::{
 	transaction::Transaction,
 };
 use rocksdb::{ColumnFamilyDescriptor, Options, WriteBatch, DB};
-use std::ops::Deref;
 use std::{collections::BTreeSet, result::Result, sync::Arc};
 
 pub mod cf {
@@ -45,7 +44,7 @@ impl TxCompositeKey {
 	}
 
 	/// Decode a composite key from a byte slice.
-	fn decode(bytes: &[u8]) -> Result<Self, DaSequencerError> {
+	fn _decode(bytes: &[u8]) -> Result<Self, DaSequencerError> {
 		if bytes.len() != 44 {
 			return Err(DaSequencerError::StorageFormat("Invalid composite key length".into()));
 		}
@@ -145,10 +144,6 @@ impl Storage {
 		} else {
 			Ok(BlockHeight(1))
 		}
-	}
-
-	fn notify_block_celestia_sent(&self, _height: BlockHeight) -> Result<(), DaSequencerError> {
-		todo!();
 	}
 }
 

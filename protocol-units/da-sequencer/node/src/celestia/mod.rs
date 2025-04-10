@@ -11,7 +11,7 @@ use crate::{
 	error::DaSequencerError,
 };
 use movement_types::block;
-use std::{future::Future, time::Duration};
+use std::future::Future;
 use tokio::sync::{mpsc, oneshot};
 
 /// Functions to implement to save block digest in an external DA like Celestia
@@ -55,8 +55,8 @@ pub enum ExternalDaNotification {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-enum BlockSource {
-	/// The block has arrived on the DA service.
+pub enum BlockSource {
+	/// The block has arrived at the DA service.
 	Input,
 	/// The block has been recovered in bootstrap.
 	Bootstrap,
@@ -146,7 +146,8 @@ impl BlockOps for BlockProvider {
 	}
 }
 
-const DELAY_SECONDS_BEFORE_BOOTSTRAPPING: Duration = Duration::from_secs(12);
+#[cfg(not(test))]
+const DELAY_SECONDS_BEFORE_BOOTSTRAPPING: std::time::Duration = std::time::Duration::from_secs(12);
 
 #[derive(Clone)]
 pub struct CelestiaExternalDa<B: BlockOps, C: CelestiaClientOps> {
@@ -510,7 +511,7 @@ mod tests {
 		);
 		assert_eq!(
 			block_provider.into_calls().await,
-			vec![BlockProviderCalls::RequestBlockForId(ids.get(2).copied().unwrap())]
+			vec![BlockProviderCalls::RequestBlockForId(ids[2])]
 		);
 	}
 
@@ -539,15 +540,9 @@ mod tests {
 		assert_eq!(
 			block_provider.into_calls().await,
 			vec![
-				BlockProviderCalls::NotifyBlocksCommitted(
-					vec![ids.get(1).copied().unwrap()],
-					1.into()
-				),
-				BlockProviderCalls::NotifyBlocksCommitted(
-					vec![ids.get(2).copied().unwrap()],
-					2.into()
-				),
-				BlockProviderCalls::RequestBlockForId(ids.get(2).copied().unwrap()),
+				BlockProviderCalls::NotifyBlocksCommitted(vec![ids[1]], 1.into()),
+				BlockProviderCalls::NotifyBlocksCommitted(vec![ids[2]], 2.into()),
+				BlockProviderCalls::RequestBlockForId(ids[2]),
 			]
 		);
 	}
@@ -575,20 +570,14 @@ mod tests {
 				CelestiaClientCalls::GetBlobsAtHeight(0.into()),
 				CelestiaClientCalls::GetBlobsAtHeight(1.into()),
 				CelestiaClientCalls::GetBlobsAtHeight(2.into()),
-				CelestiaClientCalls::SendBlock(
-					ids.get(2).copied().unwrap(),
-					BlockSource::Bootstrap
-				)
+				CelestiaClientCalls::SendBlock(ids[2], BlockSource::Bootstrap)
 			]
 		);
 		assert_eq!(
 			block_provider.into_calls().await,
 			vec![
-				BlockProviderCalls::NotifyBlocksCommitted(
-					vec![ids.get(1).copied().unwrap()],
-					1.into()
-				),
-				BlockProviderCalls::RequestBlockForId(ids.get(1).copied().unwrap()),
+				BlockProviderCalls::NotifyBlocksCommitted(vec![ids[1]], 1.into()),
+				BlockProviderCalls::RequestBlockForId(ids[1]),
 				BlockProviderCalls::RequestBlockAtHeight(2.into())
 			]
 		);
@@ -610,14 +599,8 @@ mod tests {
 		assert_eq!(
 			celestia.into_calls().await,
 			vec![
-				CelestiaClientCalls::SendBlock(
-					ids.get(1).copied().unwrap(),
-					BlockSource::Bootstrap
-				),
-				CelestiaClientCalls::SendBlock(
-					ids.get(2).copied().unwrap(),
-					BlockSource::Bootstrap
-				)
+				CelestiaClientCalls::SendBlock(ids[1], BlockSource::Bootstrap),
+				CelestiaClientCalls::SendBlock(ids[2], BlockSource::Bootstrap)
 			]
 		);
 		assert_eq!(

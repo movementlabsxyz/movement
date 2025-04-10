@@ -10,13 +10,13 @@ use tokio::task::JoinHandle;
 use tokio_stream::StreamExt;
 
 pub mod batch;
-mod block;
-mod celestia;
+pub mod block;
+pub mod celestia;
 pub mod error;
 pub mod server;
-mod storage;
+pub mod storage;
 #[cfg(test)]
-mod tests;
+pub mod tests;
 pub mod whitelist;
 
 /// Run Da sequencing loop.
