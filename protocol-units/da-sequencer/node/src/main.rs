@@ -3,10 +3,7 @@ use movement_da_sequencer_config::DaSequencerConfig;
 use movement_da_sequencer_node::server::run_server;
 use movement_da_sequencer_node::whitelist::Whitelist;
 use std::error::Error;
-use std::path::PathBuf;
-use std::sync::Arc;
 use tokio::sync::mpsc;
-use tokio::sync::RwLock;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -37,14 +34,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
 	whitelist_path.push(&da_sequencer_config.whitelist_relative_path);
 	let whitelist = Whitelist::from_file_and_spawn_reload_thread(whitelist_path)?;
 
-	let (request_tx, request_rx) = mpsc::channel(100);
+	let (request_tx, _request_rx) = mpsc::channel(100);
 	// Start gprc server
 	let grpc_address = da_sequencer_config.grpc_listen_address;
-	let grpc_jh =
+	let _grpc_jh =
 		tokio::spawn(async move { run_server(grpc_address, request_tx, whitelist).await });
 
 	//Start the main loop
 	todo!();
-
-	Ok(())
 }

@@ -10,13 +10,13 @@ use movement_da_sequencer_client::{
 };
 use movement_da_sequencer_proto::BatchWriteRequest;
 use movement_signer::cryptography::ed25519::Signature as SigningSignature;
-use movement_types::block::{Block, BlockMetadata, Id};
+use movement_types::block::{self, Block, BlockMetadata};
 use movement_types::transaction::Transaction;
 
 use crate::{
 	batch::{DaBatch, FullNodeTxs},
-	block::{BlockHeight, SequencerBlockDigest},
-	celestia::blob::CelestiaBlobData,
+	block::BlockHeight,
+	celestia::blob::CelestiaBlob,
 	celestia::CelestiaHeight,
 	DaSequencerError, DaSequencerExternalDa, DaSequencerStorage, SequencerBlock,
 };
@@ -67,7 +67,7 @@ pub struct StorageMockInternal {
 	pub batches: Vec<DaBatch<FullNodeTxs>>,
 	pub produced_blocks: Vec<SequencerBlock>,
 	pub current_height: u64,
-	pub parent_block_id: Id,
+	pub parent_block_id: block::Id,
 }
 
 #[derive(Debug, Clone)]
@@ -81,17 +81,14 @@ impl StorageMock {
 			batches: Vec::new(),
 			current_height: 0,
 			produced_blocks: vec![],
-			parent_block_id: Id::genesis_block(),
+			parent_block_id: block::Id::genesis_block(),
 		};
 		StorageMock { inner: Arc::new(Mutex::new(inner)) }
 	}
 }
 
 impl DaSequencerStorage for StorageMock {
-	fn write_batch(
-		&self,
-		batch: DaBatch<FullNodeTxs>,
-	) -> std::result::Result<(), DaSequencerError> {
+	fn write_batch(&self, batch: DaBatch<FullNodeTxs>) -> Result<(), DaSequencerError> {
 		tracing::info!("Mock: Storage, call write_batch");
 		let mut inner = self.inner.lock().unwrap();
 		inner.batches.push(batch);
@@ -101,17 +98,14 @@ impl DaSequencerStorage for StorageMock {
 	fn get_block_at_height(
 		&self,
 		height: BlockHeight,
-	) -> std::result::Result<Option<SequencerBlock>, DaSequencerError> {
+	) -> Result<Option<SequencerBlock>, DaSequencerError> {
 		let inner = self.inner.lock().unwrap();
-		Ok(inner.produced_blocks.iter().find(|b| b.height == height).cloned())
+		Ok(inner.produced_blocks.iter().find(|b| b.height() == height).cloned())
 	}
 
-	fn get_block_with_digest(
-		&self,
-		id: SequencerBlockDigest,
-	) -> std::result::Result<Option<SequencerBlock>, DaSequencerError> {
+	fn get_block_with_id(&self, id: block::Id) -> Result<Option<SequencerBlock>, DaSequencerError> {
 		let inner = self.inner.lock().unwrap();
-		Ok(inner.produced_blocks.iter().find(|b| b.get_block_digest() == id).cloned())
+		Ok(inner.produced_blocks.iter().find(|b| b.id() == id).cloned())
 	}
 
 	fn produce_next_block(&self) -> Result<Option<SequencerBlock>, DaSequencerError> {
@@ -132,16 +126,16 @@ impl DaSequencerStorage for StorageMock {
 
 	fn get_celestia_height_for_block(
 		&self,
-		heigh: BlockHeight,
-	) -> std::result::Result<Option<CelestiaHeight>, DaSequencerError> {
+		_height: BlockHeight,
+	) -> Result<Option<CelestiaHeight>, DaSequencerError> {
 		todo!();
 	}
 
 	fn set_block_celestia_height(
 		&self,
-		block_heigh: BlockHeight,
-		celestia_heigh: CelestiaHeight,
-	) -> std::result::Result<(), DaSequencerError> {
+		_block_height: BlockHeight,
+		_celestia_height: CelestiaHeight,
+	) -> Result<(), DaSequencerError> {
 		todo!();
 	}
 
@@ -162,7 +156,7 @@ impl CelestiaMock {
 impl DaSequencerExternalDa for CelestiaMock {
 	fn send_block(
 		&self,
-		_block: SequencerBlockDigest,
+		_block_id: block::Id,
 	) -> impl Future<Output = Result<(), DaSequencerError>> + Send {
 		futures::future::ready(Ok(()))
 	}
@@ -170,7 +164,7 @@ impl DaSequencerExternalDa for CelestiaMock {
 	fn get_blob_at_height(
 		&self,
 		_height: CelestiaHeight,
-	) -> impl Future<Output = Result<Option<CelestiaBlobData>, DaSequencerError>> + Send {
+	) -> impl Future<Output = Result<Option<CelestiaBlob>, DaSequencerError>> + Send {
 		//TODO return dummy error for now.
 		futures::future::ready(Err(DaSequencerError::DeserializationFailure))
 	}

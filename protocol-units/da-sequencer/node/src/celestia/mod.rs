@@ -1,17 +1,18 @@
 pub mod blob;
-mod client;
-mod height;
-mod submit;
+pub mod client;
+pub mod height;
+pub mod submit;
 
-use crate::block::{BlockHeight, SequencerBlock, SequencerBlockDigest};
-use crate::error::DaSequencerError;
-use tokio::sync::{mpsc, oneshot};
-
-use std::future::Future;
-use std::time::Duration;
-
-pub use blob::CelestiaBlobData;
+pub use blob::CelestiaBlob;
 pub use height::CelestiaHeight;
+
+use crate::{
+	block::{BlockHeight, SequencerBlock},
+	error::DaSequencerError,
+};
+use movement_types::block;
+use std::future::Future;
+use tokio::sync::{mpsc, oneshot};
 
 /// Functions to implement to save block digest in an external DA like Celestia
 pub trait DaSequencerExternalDa {
@@ -20,14 +21,14 @@ pub trait DaSequencerExternalDa {
 	/// Until the client can send it to celestia.
 	fn send_block(
 		&self,
-		block: SequencerBlockDigest,
+		block_id: block::Id,
 	) -> impl Future<Output = Result<(), DaSequencerError>> + Send;
 
 	/// Get the blob from celestia at the given height.
 	fn get_blob_at_height(
 		&self,
 		height: CelestiaHeight,
-	) -> impl Future<Output = Result<Option<CelestiaBlobData>, DaSequencerError>> + Send;
+	) -> impl Future<Output = Result<Option<CelestiaBlob>, DaSequencerError>> + Send;
 
 	/// Bootstrap the Celestia client to recover from missing block.
 	/// In case of crash for example, block sent to Celestia can be behind the block created by the network.
@@ -46,16 +47,16 @@ pub trait DaSequencerExternalDa {
 /// Message, use to notify CelestiaClient activities.
 #[derive(Debug)]
 pub enum ExternalDaNotification {
-	/// Notify that the block at specified height has been commited on celestia network
-	BlockCommitted(BlockHeight, CelestiaHeight),
+	/// Notify that the block at specified height has been committed on celestia network
+	BlocksCommitted { block_ids: Vec<block::Id>, celestia_height: CelestiaHeight },
 	/// Ask to send the block at specified height to the Celestia client.
 	/// Use during bootstrap to request block that are missing on Celestia network.
 	RequestBlock { height: BlockHeight, callback: oneshot::Sender<Option<SequencerBlock>> },
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-enum BlockSource {
-	/// The block has arrived on the DA service.
+pub enum BlockSource {
+	/// The block has arrived at the DA service.
 	Input,
 	/// The block has been recovered in bootstrap.
 	Bootstrap,
@@ -65,25 +66,30 @@ pub trait CelestiaClientOps: Sync + Clone {
 	fn get_blob_at_height(
 		&self,
 		height: CelestiaHeight,
-	) -> impl Future<Output = Result<Option<CelestiaBlobData>, DaSequencerError>> + Send;
+	) -> impl Future<Output = Result<Option<CelestiaBlob>, DaSequencerError>> + Send;
 
 	fn send_block(
 		&self,
-		block: SequencerBlockDigest,
+		block_id: block::Id,
 		source: BlockSource,
 	) -> impl Future<Output = Result<(), DaSequencerError>> + Send;
 }
 
 pub trait BlockOps: Sync + Clone {
-	fn notify_block_commited(
+	fn notify_blocks_committed(
 		&self,
-		block_height: BlockHeight,
+		block_ids: Vec<block::Id>,
 		celestia_height: CelestiaHeight,
 	) -> impl Future<Output = Result<(), DaSequencerError>> + Send;
 
-	fn request_block(
+	fn request_block_at_height(
 		&self,
 		height: BlockHeight,
+	) -> impl Future<Output = Result<SequencerBlock, DaSequencerError>> + Send;
+
+	fn request_block_with_id(
+		&self,
+		id: block::Id,
 	) -> impl Future<Output = Result<SequencerBlock, DaSequencerError>> + Send;
 }
 
@@ -106,16 +112,19 @@ impl BlockProvider {
 }
 
 impl BlockOps for BlockProvider {
-	async fn notify_block_commited(
+	async fn notify_blocks_committed(
 		&self,
-		block_height: BlockHeight,
+		block_ids: Vec<block::Id>,
 		celestia_height: CelestiaHeight,
 	) -> Result<(), DaSequencerError> {
-		self.notify(ExternalDaNotification::BlockCommitted(block_height, celestia_height))
+		self.notify(ExternalDaNotification::BlocksCommitted { block_ids, celestia_height })
 			.await
 	}
 
-	async fn request_block(&self, height: BlockHeight) -> Result<SequencerBlock, DaSequencerError> {
+	async fn request_block_at_height(
+		&self,
+		height: BlockHeight,
+	) -> Result<SequencerBlock, DaSequencerError> {
 		let (tx, rx) = oneshot::channel();
 		self.notify(ExternalDaNotification::RequestBlock { height, callback: tx })
 			.await?;
@@ -128,9 +137,17 @@ impl BlockOps for BlockProvider {
 		)))?;
 		Ok(block)
 	}
+
+	async fn request_block_with_id(
+		&self,
+		_id: block::Id,
+	) -> Result<SequencerBlock, DaSequencerError> {
+		todo!()
+	}
 }
 
-const DELAY_SECONDS_BEFORE_BOOTSTRAPPING: Duration = Duration::from_secs(12);
+#[cfg(not(test))]
+const DELAY_SECONDS_BEFORE_BOOTSTRAPPING: std::time::Duration = std::time::Duration::from_secs(12);
 
 #[derive(Clone)]
 pub struct CelestiaExternalDa<B: BlockOps, C: CelestiaClientOps> {
@@ -158,15 +175,15 @@ impl<B: BlockOps, C: CelestiaClientOps> DaSequencerExternalDa for CelestiaExtern
 	/// Send the given block to Celestia.
 	/// The block is not immediately sent but aggregated in a blob
 	/// until the client can send it to celestia.
-	async fn send_block(&self, block: SequencerBlockDigest) -> Result<(), DaSequencerError> {
-		self.celestia_client.send_block(block, BlockSource::Input).await
+	async fn send_block(&self, block_id: block::Id) -> Result<(), DaSequencerError> {
+		self.celestia_client.send_block(block_id, BlockSource::Input).await
 	}
 
 	/// Get the blob from celestia at the given height.
 	async fn get_blob_at_height(
 		&self,
 		height: CelestiaHeight,
-	) -> Result<Option<CelestiaBlobData>, DaSequencerError> {
+	) -> Result<Option<CelestiaBlob>, DaSequencerError> {
 		self.celestia_client.get_blob_at_height(height).await
 	}
 
@@ -191,36 +208,38 @@ impl<B: BlockOps, C: CelestiaClientOps> DaSequencerExternalDa for CelestiaExtern
 			None => 1, // No blobs have been sent to Celestia yet, sync from the start
 			Some(last_finalized_celestia_height) => {
 				let mut celestia_height = last_finalized_celestia_height;
-				let mut finalized_blob = self.get_blob_at_height(celestia_height).await?.ok_or(
-					DaSequencerError::ExternalDaBootstrap(format!(
+				let mut last_block_id = self
+					.get_blob_at_height(celestia_height)
+					.await?
+					.ok_or(DaSequencerError::ExternalDaBootstrap(format!(
 						"Celestia has no blob at last known finalized height {}",
 						celestia_height
-					)),
-				)?;
+					)))?
+					.last_block_id();
 
 				// Increase the Celestia height until the tip is reached
 				loop {
 					celestia_height += 1;
 					match self.get_blob_at_height(celestia_height).await? {
 						Some(blob) => {
+							last_block_id = blob.last_block_id();
+
 							// The blocks in this blob are not confirmed yet.
-							for block in blob.iter() {
-								self.block_provider
-									.notify_block_commited(block.height, celestia_height)
-									.await?;
-							}
-							finalized_blob = blob;
+							self.block_provider
+								.notify_blocks_committed(blob.to_vec(), celestia_height)
+								.await?;
 						}
 						None => break, // The tip is reached
 					}
 				}
-				let finalized_height: u64 = finalized_blob
-					.last_block_height()
-					.ok_or(DaSequencerError::ExternalDaBootstrap(format!(
+				let finalized_block_id =
+					last_block_id.ok_or(DaSequencerError::ExternalDaBootstrap(format!(
 						"Celestia's last finalized blob at height {} is empty",
 						celestia_height - 1
-					)))?
-					.into();
+					)))?;
+				let finalized_block =
+					self.block_provider.request_block_with_id(finalized_block_id).await?;
+				let finalized_height: u64 = finalized_block.height().into();
 
 				finalized_height + 1
 			}
@@ -228,9 +247,10 @@ impl<B: BlockOps, C: CelestiaClientOps> DaSequencerExternalDa for CelestiaExtern
 
 		// Send all missing blocks to Celestia up to the current block height
 		for height in height_from..=current_block_height.into() {
-			let block = self.block_provider.request_block(BlockHeight::from(height)).await?;
+			let sequencer_block =
+				self.block_provider.request_block_at_height(BlockHeight::from(height)).await?;
 			self.celestia_client
-				.send_block(block.get_block_digest(), BlockSource::Bootstrap)
+				.send_block(sequencer_block.id(), BlockSource::Bootstrap)
 				.await?;
 		}
 
@@ -241,30 +261,22 @@ impl<B: BlockOps, C: CelestiaClientOps> DaSequencerExternalDa for CelestiaExtern
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use movement_types::block::{Block, BlockMetadata, Id};
+	use movement_types::block::{self, Block, BlockMetadata};
 	use movement_types::transaction::Transaction;
 	use rand::Rng;
 	use std::collections::{BTreeSet, HashMap};
 	use std::sync::Arc;
 	use tokio::sync::RwLock;
 
-	fn digest(block: &Block, block_height: BlockHeight) -> SequencerBlockDigest {
-		SequencerBlockDigest::new(block_height, Id::new(*block.id().as_bytes()))
-	}
-
-	fn into_digests(blocks: &[Block]) -> Vec<SequencerBlockDigest> {
-		blocks
-			.iter()
-			.enumerate()
-			.map(|(height, block)| digest(block, BlockHeight::from(height as u64)))
-			.collect()
+	fn into_ids(blocks: &[Block]) -> Vec<block::Id> {
+		blocks.iter().map(|block| block.id()).collect()
 	}
 
 	#[derive(Clone, Default, Debug, Eq, PartialEq)]
 	enum CelestiaClientCalls {
 		#[default]
 		Noop,
-		SendBlock(SequencerBlockDigest, BlockSource),
+		SendBlock(block::Id, BlockSource),
 		GetBlobsAtHeight(CelestiaHeight),
 	}
 
@@ -272,20 +284,43 @@ mod tests {
 	enum BlockProviderCalls {
 		#[default]
 		Noop,
-		NotifyBlockCommited(BlockHeight, CelestiaHeight),
-		RequestBlock(BlockHeight),
+		NotifyBlocksCommitted(Vec<block::Id>, CelestiaHeight),
+		RequestBlockAtHeight(BlockHeight),
+		RequestBlockForId(block::Id),
+	}
+
+	trait Id {
+		fn id(&self) -> block::Id;
+	}
+
+	impl Id for Block {
+		fn id(&self) -> block::Id {
+			self.id()
+		}
+	}
+
+	impl Id for CelestiaBlob {
+		fn id(&self) -> block::Id {
+			self.iter().next().copied().unwrap()
+		}
 	}
 
 	#[derive(Clone)]
-	struct StoreMockState<B: Clone, C> {
+	struct StoreMockState<B: Id + Clone, C> {
 		height: u64,
 		data: HashMap<u64, B>,
+		index: HashMap<block::Id, u64>,
 		calls: Vec<C>,
 	}
 
-	impl<B: Clone, C> StoreMockState<B, C> {
+	impl<B: Id + Clone, C> StoreMockState<B, C> {
 		fn new() -> Self {
-			Self { height: 0, data: Default::default(), calls: Default::default() }
+			Self {
+				height: 0,
+				data: Default::default(),
+				index: Default::default(),
+				calls: Default::default(),
+			}
 		}
 
 		fn get_height(&self) -> u64 {
@@ -293,12 +328,17 @@ mod tests {
 		}
 
 		fn add(&mut self, value: B) {
+			self.index.insert(value.id(), self.height);
 			self.data.insert(self.height, value);
 			self.height += 1;
 		}
 
 		fn get_at_height(&self, height: u64) -> Option<B> {
 			self.data.get(&height).cloned()
+		}
+
+		fn get_for_id(&self, id: &block::Id) -> Option<(u64, B)> {
+			self.index.get(id).and_then(|h| self.data.get(h).map(|b| (*h, b.clone())))
 		}
 
 		fn add_call(&mut self, call: C) {
@@ -310,7 +350,7 @@ mod tests {
 		}
 	}
 
-	impl<B: Clone, C> FromIterator<B> for StoreMockState<B, C> {
+	impl<B: Id + Clone, C> FromIterator<B> for StoreMockState<B, C> {
 		fn from_iter<T: IntoIterator<Item = B>>(iter: T) -> Self {
 			let mut state: StoreMockState<B, C> = StoreMockState::new();
 			for item in iter {
@@ -321,10 +361,10 @@ mod tests {
 	}
 
 	#[derive(Clone)]
-	struct CelestiaMock(Arc<RwLock<StoreMockState<CelestiaBlobData, CelestiaClientCalls>>>);
+	struct CelestiaMock(Arc<RwLock<StoreMockState<CelestiaBlob, CelestiaClientCalls>>>);
 
 	impl CelestiaMock {
-		fn new(init: Vec<CelestiaBlobData>) -> Self {
+		fn new(init: Vec<CelestiaBlob>) -> Self {
 			let state = StoreMockState::from_iter(init);
 			Self(Arc::new(RwLock::new(state)))
 		}
@@ -340,7 +380,7 @@ mod tests {
 		async fn get_blob_at_height(
 			&self,
 			height: CelestiaHeight,
-		) -> Result<Option<CelestiaBlobData>, DaSequencerError> {
+		) -> Result<Option<CelestiaBlob>, DaSequencerError> {
 			let mut state = self.0.write().await;
 			state.add_call(CelestiaClientCalls::GetBlobsAtHeight(height));
 			Ok(state.get_at_height(height.into()))
@@ -348,12 +388,12 @@ mod tests {
 
 		async fn send_block(
 			&self,
-			block: SequencerBlockDigest,
+			block_id: block::Id,
 			source: BlockSource,
 		) -> Result<(), DaSequencerError> {
 			let mut state = self.0.write().await;
-			state.add_call(CelestiaClientCalls::SendBlock(block.clone(), source));
-			state.add(CelestiaBlobData { digests: vec![block] });
+			state.add_call(CelestiaClientCalls::SendBlock(block_id, source));
+			state.add(CelestiaBlob::from(vec![block_id]));
 			Ok(())
 		}
 	}
@@ -379,24 +419,34 @@ mod tests {
 	}
 
 	impl BlockOps for BlockProviderMock {
-		async fn notify_block_commited(
+		async fn notify_blocks_committed(
 			&self,
-			block_height: BlockHeight,
+			block_ids: Vec<block::Id>,
 			celestia_height: CelestiaHeight,
 		) -> Result<(), DaSequencerError> {
 			let mut state = self.0.write().await;
-			state.add_call(BlockProviderCalls::NotifyBlockCommited(block_height, celestia_height));
+			state.add_call(BlockProviderCalls::NotifyBlocksCommitted(block_ids, celestia_height));
 			Ok(())
 		}
 
-		async fn request_block(
+		async fn request_block_at_height(
 			&self,
 			height: BlockHeight,
 		) -> Result<SequencerBlock, DaSequencerError> {
 			let mut state = self.0.write().await;
-			state.add_call(BlockProviderCalls::RequestBlock(height));
+			state.add_call(BlockProviderCalls::RequestBlockAtHeight(height));
 			let block = state.get_at_height(height.into()).unwrap();
-			Ok(SequencerBlock { height, block })
+			Ok(SequencerBlock::try_new(height, block)?)
+		}
+
+		async fn request_block_with_id(
+			&self,
+			id: block::Id,
+		) -> Result<SequencerBlock, DaSequencerError> {
+			let mut state = self.0.write().await;
+			state.add_call(BlockProviderCalls::RequestBlockForId(id));
+			let (height, block) = state.get_for_id(&id).unwrap();
+			Ok(SequencerBlock::try_new(BlockHeight::from(height), block)?)
 		}
 	}
 
@@ -408,7 +458,7 @@ mod tests {
 		let mut rng = rand::thread_rng();
 		let mut blocks = Vec::with_capacity(count);
 		let genesis = Block::default();
-		let mut parent: Id = genesis.id();
+		let mut parent: block::Id = genesis.id();
 		blocks.push(genesis);
 
 		for _ in 0..count - 1 {
@@ -442,9 +492,9 @@ mod tests {
 	#[tokio::test]
 	async fn test_celestia_external_da_bootstrap_in_sync() {
 		let blocks = test_blocks(3);
-		let digests = into_digests(blocks.as_slice());
+		let ids = into_ids(blocks.as_slice());
 		let block_provider = BlockProviderMock::new(blocks);
-		let blobs = digests.iter().map(|d| CelestiaBlobData { digests: vec![d.clone()] }).collect();
+		let blobs = ids.iter().map(|id| CelestiaBlob::from(vec![*id])).collect();
 		let celestia = CelestiaMock::new(blobs);
 		let da = CelestiaExternalDa::new(block_provider.clone(), celestia.clone());
 
@@ -459,15 +509,18 @@ mod tests {
 				CelestiaClientCalls::GetBlobsAtHeight(3.into()),
 			],
 		);
-		assert_eq!(block_provider.into_calls().await, vec![]);
+		assert_eq!(
+			block_provider.into_calls().await,
+			vec![BlockProviderCalls::RequestBlockForId(ids[2])]
+		);
 	}
 
 	#[tokio::test]
 	async fn test_celestia_external_da_bootstrap_missing_confirmations() {
 		let blocks = test_blocks(3);
-		let digests = into_digests(blocks.as_slice());
+		let ids = into_ids(blocks.as_slice());
 		let block_provider = BlockProviderMock::new(blocks);
-		let blobs = digests.iter().map(|d| CelestiaBlobData { digests: vec![d.clone()] }).collect();
+		let blobs = ids.iter().map(|id| CelestiaBlob::from(vec![*id])).collect();
 		let celestia = CelestiaMock::new(blobs);
 		let da = CelestiaExternalDa::new(block_provider.clone(), celestia.clone());
 
@@ -487,8 +540,9 @@ mod tests {
 		assert_eq!(
 			block_provider.into_calls().await,
 			vec![
-				BlockProviderCalls::NotifyBlockCommited(1.into(), 1.into()),
-				BlockProviderCalls::NotifyBlockCommited(2.into(), 2.into()),
+				BlockProviderCalls::NotifyBlocksCommitted(vec![ids[1]], 1.into()),
+				BlockProviderCalls::NotifyBlocksCommitted(vec![ids[2]], 2.into()),
+				BlockProviderCalls::RequestBlockForId(ids[2]),
 			]
 		);
 	}
@@ -496,13 +550,10 @@ mod tests {
 	#[tokio::test]
 	async fn test_celestia_external_da_bootstrap_one_behind() {
 		let blocks = test_blocks(3);
-		let digests = into_digests(blocks.as_slice());
+		let ids = into_ids(blocks.as_slice());
 		let block_provider = BlockProviderMock::new(blocks);
-		let blobs = digests
-			.iter()
-			.take(digests.len() - 1)
-			.map(|d| CelestiaBlobData { digests: vec![d.clone()] })
-			.collect();
+		let blobs =
+			ids.iter().take(ids.len() - 1).map(|id| CelestiaBlob::from(vec![*id])).collect();
 		let celestia = CelestiaMock::new(blobs);
 		let da = CelestiaExternalDa::new(block_provider.clone(), celestia.clone());
 
@@ -516,17 +567,15 @@ mod tests {
 				CelestiaClientCalls::GetBlobsAtHeight(0.into()),
 				CelestiaClientCalls::GetBlobsAtHeight(1.into()),
 				CelestiaClientCalls::GetBlobsAtHeight(2.into()),
-				CelestiaClientCalls::SendBlock(
-					digests.get(2).cloned().unwrap(),
-					BlockSource::Bootstrap
-				)
+				CelestiaClientCalls::SendBlock(ids[2], BlockSource::Bootstrap)
 			]
 		);
 		assert_eq!(
 			block_provider.into_calls().await,
 			vec![
-				BlockProviderCalls::NotifyBlockCommited(1.into(), 1.into()),
-				BlockProviderCalls::RequestBlock(2.into())
+				BlockProviderCalls::NotifyBlocksCommitted(vec![ids[1]], 1.into()),
+				BlockProviderCalls::RequestBlockForId(ids[1]),
+				BlockProviderCalls::RequestBlockAtHeight(2.into())
 			]
 		);
 	}
@@ -534,7 +583,7 @@ mod tests {
 	#[tokio::test]
 	async fn test_celestia_external_da_bootstrap_from_genesis() {
 		let blocks = test_blocks(3);
-		let digests = into_digests(blocks.as_slice());
+		let ids = into_ids(blocks.as_slice());
 		let block_provider = BlockProviderMock::new(blocks);
 		let blobs = vec![];
 		let celestia = CelestiaMock::new(blobs);
@@ -547,21 +596,15 @@ mod tests {
 		assert_eq!(
 			celestia.into_calls().await,
 			vec![
-				CelestiaClientCalls::SendBlock(
-					digests.get(1).cloned().unwrap(),
-					BlockSource::Bootstrap
-				),
-				CelestiaClientCalls::SendBlock(
-					digests.get(2).cloned().unwrap(),
-					BlockSource::Bootstrap
-				)
+				CelestiaClientCalls::SendBlock(ids[1], BlockSource::Bootstrap),
+				CelestiaClientCalls::SendBlock(ids[2], BlockSource::Bootstrap)
 			]
 		);
 		assert_eq!(
 			block_provider.into_calls().await,
 			vec![
-				BlockProviderCalls::RequestBlock(1.into()),
-				BlockProviderCalls::RequestBlock(2.into()),
+				BlockProviderCalls::RequestBlockAtHeight(1.into()),
+				BlockProviderCalls::RequestBlockAtHeight(2.into()),
 			]
 		);
 	}
