@@ -1,6 +1,4 @@
 //use anyhow::Context;
-use aptos_sdk::coin_client::CoinClient;
-use aptos_sdk::rest_client::{Client, FaucetClient};
 use howzit::Howzit;
 use once_cell::sync::Lazy;
 use std::io::Write;
