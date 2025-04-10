@@ -1,10 +1,10 @@
 //use anyhow::Context;
 use aptos_sdk::coin_client::CoinClient;
-use aptos_sdk::rest_client::{AptosBaseUrl, Client, FaucetClient};
+use aptos_sdk::rest_client::{Client, FaucetClient};
 use howzit::Howzit;
 use once_cell::sync::Lazy;
 use std::io::Write;
-use std::{env, path::PathBuf};
+use std::{env, path::PathBuf, str::FromStr};
 use url::Url;
 
 static SUZUKA_CONFIG: Lazy<movement_config::Config> = Lazy::new(|| {
@@ -58,10 +58,6 @@ pub async fn main() -> Result<(), anyhow::Error> {
 		)
 		.init();
 
-	let rest_client = Client::new(NODE_URL.clone());
-	let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
-	let coin_client = CoinClient::new(&rest_client);
-
 	let crate_path = env!("CARGO_MANIFEST_DIR");
 	let crate_path_buf = PathBuf::from(crate_path);
 	let bench_output_file =
@@ -69,9 +65,9 @@ pub async fn main() -> Result<(), anyhow::Error> {
 
 	let howzit = Howzit::generate(
 		crate_path_buf.join("howzit"),
-		rest_client.clone(),
+		NODE_URL.clone(),
 		FAUCET_URL.clone(),
-		token,
+		None, // For now we are going to run local. A var can be used to set this to a testnet later.
 	);
 
 	howzit.build_and_publish().await?;

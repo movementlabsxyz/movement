@@ -108,20 +108,19 @@ impl Howzit {
 	/// Generates a new Howzit instance with a random wallet
 	pub fn generate(
 		howzit_package_path: PathBuf,
-		rest_client: Client,
+		node_url: Url,
 		faucet_client_url: Url,
 		faucet_auth_token: Option<String>,
 	) -> Self {
 		let wallet = LocalAccount::generate(&mut rand::rngs::OsRng);
-		let mut faucet_client =
-			FaucetClient::new_from_rest_client(faucet_client_url.clone(), rest_client.clone());
+		let mut faucet_client = FaucetClient::new(faucet_client_url.clone(), node_url.clone());
 		if let Some(ref token) = faucet_auth_token {
 			faucet_client = faucet_client.with_auth_token(token.clone());
 		}
 		Howzit {
 			howzit_package_path,
 			wallet: Arc::new(RwLock::new(wallet)),
-			rest_client,
+			rest_client: Client::new(node_url.clone()),
 			faucet_client_url,
 			faucet_client,
 			faucet_auth_token,

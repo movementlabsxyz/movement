@@ -25,6 +25,7 @@ bcs = { workspace = true }
 chrono = { workspace = true }
 futures = { workspace = true }
 godfig = { workspace = true }
+dot-movement = { workspace = true }
 movement-config = { workspace = true }
 rand = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
