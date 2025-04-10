@@ -14,7 +14,7 @@ mod block;
 pub mod celestia;
 pub mod error;
 pub mod server;
-mod storage;
+pub mod storage;
 #[cfg(test)]
 mod tests;
 pub mod whitelist;
@@ -28,8 +28,8 @@ pub async fn run<D, S>(
 	celestia: D,
 ) -> Result<(), DaSequencerError>
 where
-	D: DaSequencerExternalDa + Send + 'static,
-	S: DaSequencerStorage + Send + 'static,
+	D: DaSequencerExternalDa + Clone + Send + 'static,
+	S: DaSequencerStorage + Clone + Send + 'static,
 {
 	let mut produce_block_interval = tokio::time::interval(tokio::time::Duration::from_millis(
 		config.block_production_interval_millisec,
@@ -51,12 +51,14 @@ where
 						connected_grpc_sender.push(produced_tx);
 
 						// Send back the current height.
-						let _ = tokio::task::spawn_blocking({
+						let start_jh = tokio::task::spawn_blocking({
 							let storage = storage.clone();
 							move || {
-								let current_height = storage.get_current_block_height();
+								let current_height = storage.get_current_block_height()?;
 								let _ = curent_height_callback.send(current_height);
-						}}).await;
+								Ok::<(), DaSequencerError>(())
+						}});
+						spawn_result_futures.push(start_jh);
 					},
 					GrpcRequests::GetBlockHeight(block_height, callback) => {
 						let get_block_jh = tokio::task::spawn_blocking({

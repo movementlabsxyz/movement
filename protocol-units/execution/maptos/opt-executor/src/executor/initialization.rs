@@ -3,6 +3,7 @@ use crate::background::BackgroundTask;
 use crate::executor::TxExecutionResult;
 use crate::executor::EXECUTOR_CHANNEL_SIZE;
 use crate::{bootstrap, Context};
+use movement_da_sequencer_client::DaSequencerClient;
 use movement_signer::cryptography::ed25519::Ed25519;
 use movement_signer::Signing;
 use movement_signer_loader::{Load, LoadedSigner};
@@ -15,7 +16,6 @@ use aptos_crypto::ed25519::Ed25519PublicKey;
 use aptos_crypto::ValidCryptoMaterialStringExt;
 use aptos_executor::block_executor::BlockExecutor;
 use aptos_mempool::MempoolClientRequest;
-use aptos_types::transaction::SignedTransaction;
 use dot_movement::DotMovement;
 use maptos_execution_util::config::Config;
 #[cfg(test)]
@@ -24,7 +24,6 @@ use movement_signer_loader::identifiers::{local::Local, SignerIdentifier};
 use anyhow::Context as _;
 use futures::channel::mpsc as futures_mpsc;
 use movement_collections::garbage::{counted::GcCounter, Duration};
-use tokio::sync::mpsc;
 
 use tempfile::TempDir;
 
@@ -136,11 +135,6 @@ impl Executor {
 		maptos_config: &Config,
 		mempool_tx_exec_result_sender: futures::channel::mpsc::Sender<Vec<TxExecutionResult>>,
 	) -> Result<Self, anyhow::Error> {
-		// let raw_private_key =
-		// 	maptos_config.chain.maptos_private_key_signer_identifier.try_raw_private_key()?;
-		// let private_key = Ed25519PrivateKey::try_from(raw_private_key.as_slice())?;
-		// let public_key = private_key.public_key();
-
 		let loader: LoadedSigner<Ed25519> =
 			maptos_config.chain.maptos_private_key_signer_identifier.load().await?;
 		let public_key = Ed25519PublicKey::try_from(loader.public_key().await?.as_bytes())?;
@@ -215,6 +209,8 @@ impl Executor {
 		let node_config = self.node_config.clone();
 		let maptos_config = self.config.clone();
 
+		let da_batch_signer = maptos_config.da_sequencer.batch_signer_identifier.clone();
+
 		// use the default signer, block executor, and mempool
 		let (mempool_client_sender, mempool_client_receiver) =
 			futures_mpsc::channel::<MempoolClientRequest>(EXECUTOR_CHANNEL_SIZE);
@@ -231,6 +227,7 @@ impl Executor {
 				&self.config.access_control,
 				self.transactions_in_flight.clone(),
 				maptos_config.load_shedding.max_transactions_in_flight,
+				da_batch_signer,
 			)?
 		};
 

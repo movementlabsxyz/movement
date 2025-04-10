@@ -1,0 +1,23 @@
+{"timestamp":"2025-04-10T16:52:38.018027Z","level":"INFO","fields":{"message":"Scenario:4\n=== Final Balances ===\n Alice: 99998997900\n Bob: 998600"},"target":"movement_tests_e2e_load_alice_bob"}
+{"timestamp":"2025-04-10T16:52:38.018963Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":4,\"elapse_millli\":18735,\"result\":\"Ok\"}"},"target":"exec"}
+{"timestamp":"2025-04-10T16:52:39.029555Z","level":"INFO","fields":{"message":"Scenario:9\n=== Final Balances ===\n Alice: 99998997900\n Bob: 998600"},"target":"movement_tests_e2e_load_alice_bob"}
+{"timestamp":"2025-04-10T16:52:39.029860Z","level":"INFO","fields":{"message":"Scenario:1\n=== Final Balances ===\n Alice: 99998997900\n Bob: 998600"},"target":"movement_tests_e2e_load_alice_bob"}
+{"timestamp":"2025-04-10T16:52:39.030707Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":1,\"elapse_millli\":19747,\"result\":\"Ok\"}"},"target":"exec"}
+{"timestamp":"2025-04-10T16:52:39.030708Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":9,\"elapse_millli\":19747,\"result\":\"Ok\"}"},"target":"exec"}
+{"timestamp":"2025-04-10T16:52:39.031481Z","level":"INFO","fields":{"message":"Scenario:2\n=== Final Balances ===\n Alice: 99998997900\n Bob: 998600"},"target":"movement_tests_e2e_load_alice_bob"}
+{"timestamp":"2025-04-10T16:52:39.032229Z","level":"INFO","fields":{"message":"Scenario:7\n=== Final Balances ===\n Alice: 99998997900\n Bob: 998600"},"target":"movement_tests_e2e_load_alice_bob"}
+{"timestamp":"2025-04-10T16:52:39.032342Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":2,\"elapse_millli\":19749,\"result\":\"Ok\"}"},"target":"exec"}
+{"timestamp":"2025-04-10T16:52:39.033129Z","level":"INFO","fields":{"message":"Scenario:3\n=== Final Balances ===\n Alice: 99998997900\n Bob: 998600"},"target":"movement_tests_e2e_load_alice_bob"}
+{"timestamp":"2025-04-10T16:52:39.033333Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":7,\"elapse_millli\":19750,\"result\":\"Ok\"}"},"target":"exec"}
+{"timestamp":"2025-04-10T16:52:39.034177Z","level":"INFO","fields":{"message":"Scenario:8\n=== Final Balances ===\n Alice: 99998997900\n Bob: 998600"},"target":"movement_tests_e2e_load_alice_bob"}
+{"timestamp":"2025-04-10T16:52:39.034282Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":3,\"elapse_millli\":19751,\"result\":\"Ok\"}"},"target":"exec"}
+{"timestamp":"2025-04-10T16:52:39.034745Z","level":"INFO","fields":{"message":"Scenario:5\n=== Final Balances ===\n Alice: 99998997900\n Bob: 998600"},"target":"movement_tests_e2e_load_alice_bob"}
+{"timestamp":"2025-04-10T16:52:39.034985Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":8,\"elapse_millli\":19751,\"result\":\"Ok\"}"},"target":"exec"}
+{"timestamp":"2025-04-10T16:52:39.035730Z","level":"INFO","fields":{"message":"Scenario:10\n=== Final Balances ===\n Alice: 99998997900\n Bob: 998600"},"target":"movement_tests_e2e_load_alice_bob"}
+{"timestamp":"2025-04-10T16:52:39.035749Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":5,\"elapse_millli\":19752,\"result\":\"Ok\"}"},"target":"exec"}
+{"timestamp":"2025-04-10T16:52:39.035822Z","level":"INFO","fields":{"metrics_client_execution":"{\"average_execution_time_milli\":19546}"},"target":"exec"}
+{"timestamp":"2025-04-10T16:52:39.036660Z","level":"INFO","fields":{"message":"Scenario:6\n=== Final Balances ===\n Alice: 99998997900\n Bob: 998600"},"target":"movement_tests_e2e_load_alice_bob"}
+{"timestamp":"2025-04-10T16:52:39.037994Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":10,\"elapse_millli\":19754,\"result\":\"Ok\"}"},"target":"exec"}
+{"timestamp":"2025-04-10T16:52:39.038036Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":6,\"elapse_millli\":19754,\"result\":\"Ok\"}"},"target":"exec"}
+{"timestamp":"2025-04-10T16:52:39.038080Z","level":"INFO","fields":{"metrics_client_execution":"{\"average_execution_time_milli\":19751}"},"target":"exec"}
+{"timestamp":"2025-04-10T16:52:39.038229Z","level":"INFO","fields":{"metrics_average_exec_time":"19648"},"target":"exec"}

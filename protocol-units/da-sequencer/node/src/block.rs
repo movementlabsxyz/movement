@@ -1,25 +1,24 @@
-use movement_types::block::Block;
+use movement_types::block::{self, Block};
 use serde::{Deserialize, Serialize};
+use std::ops::Add;
 
 use crate::error::DaSequencerError;
 
 // TODO: use a sensible value for the max sequencer block size
 pub const MAX_SEQUENCER_BLOCK_SIZE: u64 = 1_000_000; // 1 MB
 
-#[derive(Clone, Copy, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct SequencerBlockDigest(pub [u8; 32]);
+#[derive(Clone, Copy, Default, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct SequencerBlockDigest {
+	pub height: BlockHeight,
+	pub id: block::Id,
+}
 
 impl SequencerBlockDigest {
-	pub fn new(id: [u8; 32]) -> Self {
-		SequencerBlockDigest(id)
-	}
+	/// Size of a digest in bytes.
+	pub const DIGEST_SIZE: usize = 32;
 
-	pub fn as_slice(&self) -> &[u8] {
-		self.0.as_slice()
-	}
-
-	pub fn into_vec(&self) -> Vec<u8> {
-		self.0.to_vec()
+	pub fn new(height: BlockHeight, id: block::Id) -> Self {
+		SequencerBlockDigest { height, id }
 	}
 }
 
@@ -48,6 +47,16 @@ impl From<BlockHeight> for u64 {
 	}
 }
 
+// Rust interprets (small) integer literals without a type suffix as i32
+impl<T: Into<i64>> Add<T> for BlockHeight {
+	type Output = Self;
+
+	fn add(self, rhs: T) -> Self::Output {
+		let value = <i64 as TryInto<u64>>::try_into(rhs.into()).expect("Added a negative value");
+		BlockHeight(self.0 + value)
+	}
+}
+
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct SequencerBlock {
 	pub height: BlockHeight,
@@ -62,7 +71,7 @@ impl SequencerBlock {
 	}
 
 	pub fn get_block_digest(&self) -> SequencerBlockDigest {
-		SequencerBlockDigest(*self.block.id().as_bytes())
+		SequencerBlockDigest::new(self.height, self.block.id())
 	}
 }
 

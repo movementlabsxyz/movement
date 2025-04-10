@@ -235,7 +235,6 @@ mod tests {
 	use crate::executor::EXECUTOR_CHANNEL_SIZE;
 	use crate::Service;
 	use aptos_api::accept_type::AcceptType;
-	use aptos_crypto::ValidCryptoMaterialStringExt;
 	use aptos_crypto::{
 		ed25519::{Ed25519PrivateKey, Ed25519Signature},
 		HashValue, PrivateKey, Uniform,
@@ -258,7 +257,6 @@ mod tests {
 		transaction::{RawTransaction, Script, SignedTransaction, Transaction, TransactionPayload},
 	};
 	use rand::SeedableRng;
-	use tokio::sync::mpsc;
 	use tracing::debug;
 
 	fn create_signed_transaction(sequence_number: u64, chain_id: ChainId) -> SignedTransaction {
@@ -309,7 +307,7 @@ mod tests {
 	}
 
 	// https://github.com/movementlabsxyz/aptos-core/blob/ea91067b81f9673547417bff9c70d5a2fe1b0e7b/execution/executor-test-helpers/src/integration_test_impl.rs#L535
-	#[tracing_test::traced_test]
+	// #[tracing_test::traced_test]
 	#[tokio::test]
 	async fn test_execute_block_state_db() -> Result<(), anyhow::Error> {
 		// use aptos_logger::{Level, Logger};

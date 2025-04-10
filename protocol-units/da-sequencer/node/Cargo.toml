@@ -20,6 +20,8 @@ prost = { workspace = true }
 aptos-sdk = { workspace = true }
 bcs = { workspace = true }
 chrono = { workspace = true }
+celestia-rpc = { workspace = true }
+celestia-types = { workspace = true }
 rand = { workspace = true }
 rocksdb = { workspace = true }
 serde = { workspace = true }
@@ -46,7 +48,7 @@ tempfile = { workspace = true }
 rand = { workspace = true }
 rand_core = { workspace = true }
 movement-types = { workspace = true, features = ["testing"] }
-serial_test = "2"
+movement-signer = { workspace = true}
 
 [lints]
 #workspace = true

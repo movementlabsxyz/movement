@@ -10,7 +10,7 @@ use movement_types::{
 	transaction::Transaction,
 };
 use rocksdb::{ColumnFamilyDescriptor, Options, WriteBatch, DB};
-use std::ops::Deref;
+use std::path::Path;
 use std::{collections::BTreeSet, result::Result, sync::Arc};
 
 pub mod cf {
@@ -65,7 +65,7 @@ pub struct Storage {
 	db: Arc<DB>,
 }
 
-pub trait DaSequencerStorage: Clone {
+pub trait DaSequencerStorage {
 	/// Save all batch's Tx in the pending Tx table. The batch's Tx has been verified and validated.
 	fn write_batch(&self, batch: DaBatch<FullNodeTxs>)
 		-> std::result::Result<(), DaSequencerError>;
@@ -103,11 +103,11 @@ pub trait DaSequencerStorage: Clone {
 		celestia_heigh: CelestiaHeight,
 	) -> std::result::Result<(), DaSequencerError>;
 
-	fn get_current_block_height(&self) -> BlockHeight;
+	fn get_current_block_height(&self) -> Result<BlockHeight, DaSequencerError>;
 }
 
 impl Storage {
-	pub fn try_new(path: &str) -> Result<Self, DaSequencerError> {
+	pub fn try_new(path: impl AsRef<Path>) -> Result<Self, DaSequencerError> {
 		let mut options = Options::default();
 
 		options.create_if_missing(true);
@@ -130,25 +130,7 @@ impl Storage {
 	}
 
 	fn determine_next_block_height(&self) -> Result<BlockHeight, DaSequencerError> {
-		let cf = self.db.cf_handle(cf::BLOCKS).ok_or_else(|| {
-			DaSequencerError::StorageAccess("Missing column family: blocks".into())
-		})?;
-
-		let mut iter = self.db.iterator_cf(&cf, rocksdb::IteratorMode::End);
-		if let Some(Ok((key, _value))) = iter.next() {
-			if key.len() != 8 {
-				return Err(DaSequencerError::StorageFormat(
-					"Invalid block height key length".into(),
-				));
-			}
-
-			let mut arr = [0u8; 8];
-			arr.copy_from_slice(&key);
-			let last_height = u64::from_be_bytes(arr);
-			Ok(BlockHeight(last_height + 1))
-		} else {
-			Ok(BlockHeight(1))
-		}
+		Ok(self.get_current_block_height()? + 1)
 	}
 
 	fn notify_block_celestia_sent(&self, heigh: BlockHeight) -> Result<(), DaSequencerError> {
@@ -204,13 +186,13 @@ impl DaSequencerStorage for Storage {
 
 	fn get_block_with_digest(
 		&self,
-		id: SequencerBlockDigest,
+		digest: SequencerBlockDigest,
 	) -> Result<Option<SequencerBlock>, DaSequencerError> {
 		let cf = self.db.cf_handle(cf::BLOCKS_BY_DIGEST).ok_or_else(|| {
 			DaSequencerError::StorageAccess("Missing column family: blocks_by_digest".into())
 		})?;
 
-		let key = id.0;
+		let key = digest.id;
 
 		let height_bytes = match self
 			.db
@@ -270,7 +252,7 @@ impl DaSequencerStorage for Storage {
 				let parent_block = self.get_block_at_height(height.parent())?.ok_or_else(|| {
 					DaSequencerError::StorageFormat("Missing parent block".into())
 				})?;
-				Id::new(parent_block.get_block_digest().0)
+				parent_block.get_block_digest().id
 			}
 		};
 
@@ -299,8 +281,26 @@ impl DaSequencerStorage for Storage {
 		todo!()
 	}
 
-	fn get_current_block_height(&self) -> BlockHeight {
-		todo!();
+	fn get_current_block_height(&self) -> Result<BlockHeight, DaSequencerError> {
+		let cf = self.db.cf_handle(cf::BLOCKS).ok_or_else(|| {
+			DaSequencerError::StorageAccess("Missing column family: blocks".into())
+		})?;
+
+		let mut iter = self.db.iterator_cf(&cf, rocksdb::IteratorMode::End);
+		if let Some(Ok((key, _value))) = iter.next() {
+			if key.len() != 8 {
+				return Err(DaSequencerError::StorageFormat(
+					"Invalid block height key length".into(),
+				));
+			}
+
+			let mut arr = [0u8; 8];
+			arr.copy_from_slice(&key);
+			let last_height = u64::from_be_bytes(arr);
+			Ok(BlockHeight(last_height))
+		} else {
+			Ok(BlockHeight(0))
+		}
 	}
 }
 
@@ -326,7 +326,7 @@ impl Storage {
 		let height_key = block.height.0.to_be_bytes();
 
 		write_batch.put_cf(&cf_blocks, height_key, &block_bytes);
-		write_batch.put_cf(&cf_digests, block.get_block_digest().0, &height_key);
+		write_batch.put_cf(&cf_digests, block.get_block_digest().id, &height_key);
 
 		if let Some(keys) = delete_keys {
 			let cf_pending = self.db.cf_handle(cf::PENDING_TRANSACTIONS).ok_or_else(|| {
@@ -591,7 +591,7 @@ mod tests {
 			storage.db.cf_handle(cf::BLOCKS_BY_DIGEST).expect("missing 'block_digests' CF");
 		storage
 			.db
-			.put_cf(&cf_digests, digest.0, key)
+			.put_cf(&cf_digests, digest.id, key)
 			.expect("failed to write digest mapping");
 
 		let result = storage.get_block_with_digest(digest).expect("get_block_with_digest failed");
@@ -603,7 +603,7 @@ mod tests {
 
 		let stored_height_bytes = storage
 			.db
-			.get_cf(&cf_digests, digest.0)
+			.get_cf(&cf_digests, digest.id)
 			.expect("failed to read digest mapping")
 			.expect("digest not found");
 		assert_eq!(stored_height_bytes, key);
@@ -618,7 +618,7 @@ mod tests {
 		let path = temp_dir.path().to_str().unwrap();
 		let storage = Storage::try_new(path).expect("failed to create storage");
 
-		let fake_digest = SequencerBlockDigest([0u8; 32]);
+		let fake_digest = SequencerBlockDigest::new(BlockHeight(1), Id::new([0u8; 32]));
 		let result = storage.get_block_with_digest(fake_digest);
 
 		assert!(result.is_ok(), "Expected Ok, got Err: {:?}", result);

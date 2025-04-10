@@ -1,28 +1,8 @@
-use ed25519_dalek::SigningKey;
 use godfig::env_default;
-use rand::rngs::OsRng;
-use rand::RngCore;
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
-use tracing::info;
 
 pub const DA_SEQUENCER_DIR: &str = "da-sequencer";
-
-fn default_whitelist_relative_path() -> String {
-	"da-sequencer/whitelist".to_string()
-}
-
-fn default_signing_key() -> SigningKey {
-	let mut bytes = [0u8; 32];
-	OsRng.fill_bytes(&mut bytes);
-
-	let signing_key = SigningKey::from_bytes(&bytes);
-	let verifying_key = signing_key.verifying_key();
-
-	info!("Using batch signing public key: {}", hex::encode(verifying_key.to_bytes()));
-
-	signing_key
-}
 
 pub fn get_config_path(dot_movement: &dot_movement::DotMovement) -> std::path::PathBuf {
 	let mut pathbuff = std::path::PathBuf::from(dot_movement.get_path());
@@ -44,8 +24,8 @@ pub struct DaSequencerConfig {
 	#[serde(default = "default_whitelist_relative_path")]
 	pub whitelist_relative_path: String,
 
-	#[serde(skip_deserializing, skip_serializing, default = "default_signing_key")]
-	pub signing_key: SigningKey,
+	#[serde(default = "default_db_storage_relative_path")]
+	pub db_storage_relative_path: String,
 }
 
 env_default!(
@@ -70,6 +50,19 @@ env_default!(
 	10
 );
 
+env_default!(
+	default_whitelist_relative_path,
+	"MOVEMENT_DA_WHITELIST_RELATIVE_PATH",
+	String,
+	"whitelist.pubkeys".to_string()
+);
+env_default!(
+	default_db_storage_relative_path,
+	"MOVEMENT_DA_DB_STORAGE_RELATIVE_PATH",
+	String,
+	"da-store".to_string()
+);
+
 impl Default for DaSequencerConfig {
 	fn default() -> Self {
 		Self {
@@ -77,7 +70,7 @@ impl Default for DaSequencerConfig {
 			block_production_interval_millisec: default_block_production_interval_millisec(),
 			stream_heartbeat_interval_sec: default_stream_heartbeat_interval_sec(),
 			whitelist_relative_path: default_whitelist_relative_path(),
-			signing_key: default_signing_key(),
+			db_storage_relative_path: default_db_storage_relative_path(),
 		}
 	}
 }

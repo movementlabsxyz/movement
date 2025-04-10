@@ -1,17 +1,13 @@
 use crate::{
 	BlockMetadata, DynOptFinExecutor, ExecutableBlock, HashValue, MakeOptFinServices, Services,
-	SignedTransaction,
 };
-use aptos_sdk::types::account_address::AccountAddress;
+use anyhow::format_err;
+use async_trait::async_trait;
 use maptos_execution_util::config::Config;
 use maptos_fin_view::FinalityView;
 use maptos_opt_executor::executor::TxExecutionResult;
 use maptos_opt_executor::{Context as OptContext, Executor as OptExecutor};
 use movement_types::block::BlockCommitment;
-
-use anyhow::format_err;
-use async_trait::async_trait;
-use tokio::sync::mpsc::Sender;
 use tracing::debug;
 
 use std::future::Future;
@@ -58,7 +54,7 @@ impl DynOptFinExecutor for Executor {
 	fn background(
 		&self,
 		mempool_commit_tx_receiver: futures::channel::mpsc::Receiver<Vec<TxExecutionResult>>,
-		_config: &Config,
+		config: &Config,
 	) -> Result<
 		(Context, impl Future<Output = Result<(), anyhow::Error>> + Send + 'static),
 		anyhow::Error,
@@ -70,10 +66,11 @@ impl DynOptFinExecutor for Executor {
 			opt_context.node_config().clone(),
 		);
 		let indexer_runtime = opt_context.run_indexer_grpc_service()?;
+		let da_sequencer_url = config.da_sequencer.connection_url.clone();
 		let background = async move {
 			// The indexer runtime should live as long as the Tx pipe.
 			let _indexer_runtime = indexer_runtime;
-			background.run().await?;
+			background.run(da_sequencer_url).await?;
 			Ok(())
 		};
 		Ok((Context { opt_context, fin_service }, background))

@@ -1,25 +1,28 @@
-use crate::{
-	batch::{serialize_full_node_batch, DaBatch, FullNodeTxs},
-	block::{BlockHeight, SequencerBlockDigest},
-	celestia::{blob::Blob, CelestiaHeight},
-	DaSequencerError, DaSequencerExternalDa, DaSequencerStorage, SequencerBlock,
-};
-use ed25519_dalek::{SigningKey, VerifyingKey};
+use std::collections::BTreeSet;
+use std::future::Future;
+use std::sync::{Arc, Mutex};
+
+use ed25519_dalek::{Signer, SigningKey, VerifyingKey};
 use futures::StreamExt;
-use movement_da_sequencer_client::{sign_batch, DaSequencerClient};
-use movement_da_sequencer_proto::{blob_response::BlobType, BatchWriteRequest};
-use movement_types::{
-	block::{Block, BlockMetadata, Id},
-	transaction::Transaction,
+
+use movement_da_sequencer_client::{
+	serialize_full_node_batch, DaSequencerClient, StreamReadBlockFromHeight,
 };
-use std::{
-	collections::BTreeSet,
-	future::Future,
-	sync::{Arc, Mutex},
+use movement_da_sequencer_proto::BatchWriteRequest;
+use movement_signer::cryptography::ed25519::Signature as SigningSignature;
+use movement_types::block::{Block, BlockMetadata, Id};
+use movement_types::transaction::Transaction;
+
+use crate::{
+	batch::{DaBatch, FullNodeTxs},
+	block::{BlockHeight, SequencerBlockDigest},
+	celestia::blob::CelestiaBlobData,
+	celestia::CelestiaHeight,
+	DaSequencerError, DaSequencerExternalDa, DaSequencerStorage, SequencerBlock,
 };
 
 pub async fn mock_write_new_batch(
-	client: &mut DaSequencerClient,
+	client: &mut impl DaSequencerClient,
 	signing_key: &SigningKey,
 	verifying_key: VerifyingKey,
 ) {
@@ -28,7 +31,8 @@ pub async fn mock_write_new_batch(
 
 	//sign batch
 	let batch_bytes = bcs::to_bytes(&txs).expect("Serialization failed");
-	let signature = sign_batch(&batch_bytes, &signing_key);
+	let signature = signing_key.sign(&batch_bytes);
+	let signature = SigningSignature::try_from(&signature.to_bytes()[..]).unwrap();
 
 	// Serialize full node batch into raw bytes
 	let serialized =
@@ -40,25 +44,21 @@ pub async fn mock_write_new_batch(
 }
 
 pub async fn mock_wait_and_get_next_block(
-	block_stream: &mut tonic::Streaming<movement_da_sequencer_proto::StreamReadFromHeightResponse>,
+	block_stream: &mut StreamReadBlockFromHeight,
 	expected_height: u64,
 ) {
 	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
 	loop {
 		match tokio::time::timeout(std::time::Duration::from_secs(1), block_stream.next()).await {
-			Ok(Some(Ok(block))) => match block.response.unwrap().blob_type {
-				Some(BlobType::Blockv1(blockv1)) => {
-					assert_eq!(
-						blockv1.height, expected_height,
-						"stream block height 1, not the right height"
-					);
-					break;
-				}
-				Some(BlobType::Heartbeat(_)) => (),
-				None => panic!("Block stream broken at height {expected_height}"),
-			},
+			Ok(Some(Ok(block))) => {
+				assert_eq!(
+					block.height, expected_height,
+					"stream block height 1, not the right height"
+				);
+				break;
+			}
 			_ => panic!("No block produced at height {expected_height}"),
-		};
+		}
 	}
 }
 
@@ -147,5 +147,39 @@ impl DaSequencerStorage for StorageMock {
 
 	fn get_current_block_height(&self) -> BlockHeight {
 		self.inner.lock().unwrap().current_height.into()
+	}
+}
+
+#[derive(Debug, Clone)]
+pub struct CelestiaMock {}
+
+impl CelestiaMock {
+	pub fn new() -> Self {
+		CelestiaMock {}
+	}
+}
+
+impl DaSequencerExternalDa for CelestiaMock {
+	fn send_block(
+		&self,
+		_block: SequencerBlockDigest,
+	) -> impl Future<Output = Result<(), DaSequencerError>> + Send {
+		futures::future::ready(Ok(()))
+	}
+
+	fn get_blob_at_height(
+		&self,
+		_height: CelestiaHeight,
+	) -> impl Future<Output = Result<Option<CelestiaBlobData>, DaSequencerError>> + Send {
+		//TODO return dummy error for now.
+		futures::future::ready(Err(DaSequencerError::DeserializationFailure))
+	}
+
+	fn bootstrap(
+		&self,
+		_current_block_height: BlockHeight,
+		_last_finalized_celestia_height: Option<CelestiaHeight>,
+	) -> impl Future<Output = Result<(), DaSequencerError>> + Send {
+		futures::future::ready(Ok(()))
 	}
 }

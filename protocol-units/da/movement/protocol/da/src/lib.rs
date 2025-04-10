@@ -56,34 +56,31 @@ pub trait DaOperations<C>: Send + Sync
 where
 	C: Curve + Send + Sync + 'static + std::fmt::Debug,
 {
-	fn submit_blob(
-		&self,
-		data: DaBlob<C>,
-	) -> Pin<Box<dyn Future<Output = Result<(), DaError>> + Send + '_>>;
+	fn submit_blob(&self, data: DaBlob<C>) -> impl Future<Output = Result<(), DaError>> + Send;
 
 	fn get_da_blobs_at_height(
 		&self,
 		height: u64,
-	) -> Pin<Box<dyn Future<Output = Result<Vec<DaBlob<C>>, DaError>> + Send + '_>>;
+	) -> impl Future<Output = Result<Vec<DaBlob<C>>, DaError>> + Send;
 
 	fn get_da_blobs_at_height_for_stream(
 		&self,
 		height: u64,
-	) -> Pin<Box<dyn Future<Output = Result<Vec<DaBlob<C>>, DaError>> + Send + '_>> {
+	) -> impl Future<Output = Result<Vec<DaBlob<C>>, DaError>> + Send {
 		self.get_da_blobs_at_height(height)
 	}
 
 	fn stream_certificates(
 		&self,
-	) -> Pin<Box<dyn Future<Output = Result<CertificateStream, DaError>> + Send + '_>>;
+	) -> impl Future<Output = Result<CertificateStream, DaError>> + Send;
 
 	fn stream_da_blobs_between_heights(
 		&self,
 		start_height: u64,
 		end_height: u64,
-	) -> Pin<Box<dyn Future<Output = Result<DaBlobStream<C>, DaError>> + Send + '_>> {
+	) -> impl Future<Output = Result<DaBlobStream<C>, DaError>> + Send {
 		info!("streaming DA blobs between heights {} and {}", start_height, end_height);
-		let fut = async move {
+		async move {
 			let stream = try_stream! {
 				for height in start_height..end_height {
 					let blobs = self.get_da_blobs_at_height_for_stream(height).await?;
@@ -93,15 +90,14 @@ where
 				}
 			};
 			Ok(Box::pin(stream) as DaBlobStream<C>)
-		};
-		Box::pin(fut)
+		}
 	}
 
 	fn stream_da_blobs_from_height(
 		&self,
 		start_height: u64,
-	) -> Pin<Box<dyn Future<Output = Result<DaBlobStream<C>, DaError>> + Send + '_>> {
-		let fut = async move {
+	) -> impl Future<Output = Result<DaBlobStream<C>, DaError>> + Send {
+		async move {
 			let certificate_stream = self.stream_certificates().await?;
 			let stream = try_stream! {
 				let mut last_height = start_height;
@@ -144,7 +140,6 @@ where
 			};
 
 			Ok(Box::pin(stream) as DaBlobStream<C>)
-		};
-		Box::pin(fut)
+		}
 	}
 }

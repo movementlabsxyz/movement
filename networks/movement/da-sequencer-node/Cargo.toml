@@ -1,5 +1,5 @@
 [package]
-name = "mock-da-e2e"
+name = "da-sequencer-node"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -11,7 +11,7 @@ rust-version.workspace = true
 
 [[bin]]
 name = "mock-da"
-path = "src/main.rs"
+path = "bin/mock-da.rs"
 
 [dependencies]
 movement-da-sequencer-node = { workspace = true }

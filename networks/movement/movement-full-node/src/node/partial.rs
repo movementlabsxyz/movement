@@ -6,16 +6,14 @@ use mcr_settlement_client::McrSettlementClient;
 use mcr_settlement_manager::CommitmentEventStream;
 use mcr_settlement_manager::McrSettlementManager;
 use movement_config::Config;
-use movement_da_light_node_client::MovementDaLightNodeClient;
 use movement_rest::MovementRest;
 
 use anyhow::Context;
-use tokio::try_join;
+// use tokio::try_join;
 use tracing::debug;
 
 pub struct MovementPartialNode<T> {
 	executor: T,
-	light_node_client: MovementDaLightNodeClient,
 	settlement_manager: Option<McrSettlementManager>,
 	commitment_events: Option<CommitmentEventStream>,
 	movement_rest: MovementRest,
@@ -51,18 +49,22 @@ where
 			self.executor,
 			self.settlement_manager,
 			self.da_db,
-			self.light_node_client.clone(),
 			self.commitment_events,
 			self.config.execution_extension.clone(),
 			self.config.mcr.clone(),
 		);
-		let (execution_and_settlement_result, background_task_result, services_result) = try_join!(
-			tokio::spawn(async move { exec_settle_task.run().await }),
+
+		let da_sequencer_url =
+			self.config.execution_config.maptos_config.da_sequencer.connection_url.clone();
+		let (result, _index, _remaining) = futures::future::select_all(vec![
+			tokio::spawn(async move { exec_settle_task.run(da_sequencer_url).await }),
 			tokio::spawn(exec_background),
 			tokio::spawn(services.run()),
 			// tokio::spawn(async move { movement_rest.run_service().await }),
-		)?;
-		execution_and_settlement_result.and(background_task_result).and(services_result)
+		])
+		.await;
+		result??;
+		Ok(())
 	}
 }
 
@@ -84,58 +86,6 @@ impl MovementPartialNode<Executor> {
 		config: Config,
 		mempool_tx_exec_result_sender: futures::channel::mpsc::Sender<Vec<TxExecutionResult>>,
 	) -> Result<Self, anyhow::Error> {
-		let light_node_connection_protocol = config
-			.celestia_da_light_node
-			.celestia_da_light_node_config
-			.movement_da_light_node_connection_protocol();
-
-		// todo: extract into getter
-		let light_node_connection_hostname = config
-			.celestia_da_light_node
-			.celestia_da_light_node_config
-			.movement_da_light_node_connection_hostname();
-
-		// todo: extract into getter
-		let light_node_connection_port = config
-			.celestia_da_light_node
-			.celestia_da_light_node_config
-			.movement_da_light_node_connection_port();
-		// todo: extract into getter
-		debug!(
-			"Connecting to light node at {}:{}",
-			light_node_connection_hostname, light_node_connection_port
-		);
-		let light_node_client = if config
-			.celestia_da_light_node
-			.celestia_da_light_node_config
-			.movement_da_light_node_http1()
-		{
-			debug!("Creating the http1 client");
-			MovementDaLightNodeClient::try_http1(
-				format!(
-					"{}://{}:{}",
-					light_node_connection_protocol,
-					light_node_connection_hostname,
-					light_node_connection_port
-				)
-				.as_str(),
-			)
-			.context("Failed to connect to light node")?
-		} else {
-			debug!("Creating the http2 client");
-			MovementDaLightNodeClient::try_http2(
-				format!(
-					"{}://{}:{}",
-					light_node_connection_protocol,
-					light_node_connection_hostname,
-					light_node_connection_port
-				)
-				.as_str(),
-			)
-			.await
-			.context("Failed to connect to light node")?
-		};
-
 		debug!("Creating the executor");
 		let executor = Executor::try_from_config(
 			config.execution_config.maptos_config.clone(),
@@ -171,14 +121,6 @@ impl MovementPartialNode<Executor> {
 			)
 			.await?;
 
-		Ok(Self {
-			executor,
-			light_node_client,
-			settlement_manager,
-			commitment_events,
-			movement_rest,
-			config,
-			da_db,
-		})
+		Ok(Self { executor, settlement_manager, commitment_events, movement_rest, config, da_db })
 	}
 }
