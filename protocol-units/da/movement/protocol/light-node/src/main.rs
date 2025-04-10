@@ -7,7 +7,7 @@ use movement_signer_loader::LoadedSigner;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-	let tracing_config = movement_tracing::Config::with_metrics_addr("0.0.0.0:9464");
+	let tracing_config = movement_tracing::Config::default();
 	let _guard = movement_tracing::init_tracing_subscriber(tracing_config);
 
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;

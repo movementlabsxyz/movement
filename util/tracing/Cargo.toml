@@ -18,6 +18,8 @@ opentelemetry_sdk = { version = "0.28", features = ["metrics", "rt-tokio"] }
 opentelemetry-prometheus = { version = "0.28" }
 prometheus = { version = "0.13.4", features = ["process"] }
 tokio = { workspace = true, features = ["full"] }
+godfig = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
 
 [lints]
 workspace = true

@@ -11845,10 +11845,12 @@ dependencies = [
 name = "movement-tracing"
 version = "0.3.4"
 dependencies = [
+ "godfig",
  "opentelemetry",
  "opentelemetry-prometheus",
  "opentelemetry_sdk",
  "prometheus",
+ "serde",
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.18",

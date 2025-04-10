@@ -5,7 +5,7 @@ use opentelemetry::{
 };
 use opentelemetry_sdk::metrics::SdkMeterProvider;
 use prometheus::{Encoder, Registry, TextEncoder};
-use std::{env, net::SocketAddr, sync::Arc};
+use std::{net::SocketAddr, sync::Arc};
 use tokio::{
     net::TcpListener,
     sync::broadcast,
@@ -16,24 +16,52 @@ use tracing_subscriber::{
     filter::{EnvFilter, LevelFilter},
     Layer,
 };
+use godfig::env_default;
+use serde::{Deserialize, Serialize};
+use tracing::error;
+// The default metrics address hostname
+env_default!(
+    default_metrics_hostname,
+    "MOVEMENT_METRICS_HOSTNAME",
+    String,
+    "127.0.0.1".to_string()
+);
 
-const METRICS_ADDR_ENV: &str = "MOVEMENT_METRICS_ADDR";
-const DEFAULT_METRICS_ADDR: &str = "127.0.0.1:9464";
+// The default metrics address port
+env_default!(default_metrics_port, "MOVEMENT_METRICS_PORT", u16, 9464);
 
-#[derive(Default)]
+#[derive(Default, Serialize, Deserialize, Clone)]
 pub struct Config {
-    pub metrics_addr: Option<String>,
+    #[serde(default = "default_metrics_hostname")]
+    pub metrics_hostname: String,
+    #[serde(default = "default_metrics_port")]
+    pub metrics_port: u16,
 }
 
 impl Config {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn default() -> Self {
+        Self {
+            metrics_hostname: default_metrics_hostname(),
+            metrics_port: default_metrics_port(),
+        }
     }
 
-    pub fn with_metrics_addr(addr: impl Into<String>) -> Self {
-        Self {
-            metrics_addr: Some(addr.into()),
+    pub fn with_metrics_addr(mut self, addr: impl Into<String>) -> Self {
+        let addr_str = addr.into();
+        if let Ok(socket_addr) = addr_str.parse::<SocketAddr>() {
+            self.metrics_hostname = socket_addr.ip().to_string();
+            self.metrics_port = socket_addr.port();
+        } else if let Some((host, port)) = addr_str.split_once(':') {
+            if let Ok(port) = port.parse() {
+                self.metrics_hostname = host.to_string();
+                self.metrics_port = port;
+            }
         }
+        self
+    }
+
+    pub fn get_socket_addr(&self) -> String {
+        format!("{}:{}", self.metrics_hostname, self.metrics_port)
     }
 }
 
@@ -104,15 +132,14 @@ fn initialize_sync(config: Config) -> WorkerGuard {
     tracing::subscriber::set_global_default(subscriber)
         .expect("Failed to set tracing subscriber");
 
-    let metrics_addr = config.metrics_addr
-        .or_else(|| env::var(METRICS_ADDR_ENV).ok())
-        .unwrap_or_else(|| DEFAULT_METRICS_ADDR.to_string());
-
-    println!("Metrics server starting on {}", metrics_addr);
-    
-    let server_addr = metrics_addr.clone();
-    let server_registry = registry.clone();
-    let metrics_server = tokio::spawn(serve_metrics(server_addr, server_registry));
+    let config_clone = config.clone();
+    let registry = Arc::new(registry);
+    let registry_clone = registry.clone();
+    let metrics_server = tokio::spawn(async move {
+        if let Err(e) = serve_metrics(&config_clone, registry_clone).await {
+            tracing::error!("Metrics server error: {}", e);
+        }
+    });
 
     TelemetryGuard {
         _meter_provider: meter_provider,
@@ -158,11 +185,14 @@ pub async fn init_telemetry(config: Config) -> TelemetryGuard {
     tracing::subscriber::set_global_default(subscriber)
         .expect("Failed to set tracing subscriber");
 
-    let metrics_addr = config.metrics_addr
-        .or_else(|| env::var(METRICS_ADDR_ENV).ok())
-        .unwrap_or_else(|| DEFAULT_METRICS_ADDR.to_string());
-
-    let metrics_server = tokio::spawn(serve_metrics(metrics_addr, registry));
+    let config_clone = config.clone();
+    let registry = Arc::new(registry);
+    let registry_clone = registry.clone();
+    let metrics_server = tokio::spawn(async move {
+        if let Err(e) = serve_metrics(&config_clone, registry_clone).await {
+            tracing::error!("Metrics server error: {}", e);
+        }
+    });
 
     TelemetryGuard {
         _meter_provider: meter_provider,
@@ -170,8 +200,18 @@ pub async fn init_telemetry(config: Config) -> TelemetryGuard {
     }
 }
 
-async fn serve_metrics(addr: String, registry: Registry) {
-    let addr: SocketAddr = addr.parse().expect("Invalid metrics address");
+pub async fn serve_metrics(
+    config: &Config,
+    registry: Arc<Registry>,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let addr = match config.get_socket_addr().parse::<SocketAddr>() {
+        Ok(addr) => addr,
+        Err(e) => {
+            error!("Failed to parse metrics address: {}", e);
+            return Err(Box::new(e));
+        }
+    };
+    
     println!("Attempting to bind metrics server to {}", addr);
     
     let listener = match TcpListener::bind(addr).await {
@@ -182,14 +222,13 @@ async fn serve_metrics(addr: String, registry: Registry) {
         Err(e) => {
             tracing::error!("CRITICAL ERROR: Failed to bind metrics server to {}: {}", addr, e);
             tracing::error!("This may be because the port is already in use or you don't have permission.");
-            return;
+            return Err(Box::new(e));
         }
     };
     
     println!("Metrics server listening on {}", addr);
 
     let (shutdown_tx, mut shutdown_rx) = broadcast::channel(1);
-    let registry = Arc::new(registry);
     
     let shutdown_tx_clone = shutdown_tx.clone();
     tokio::spawn(async move {
@@ -227,13 +266,14 @@ async fn serve_metrics(addr: String, registry: Registry) {
     }
     
     println!("Metrics server has shut down gracefully");
+    Ok(())
 }
 
 async fn handle_metrics_request(
     mut stream: tokio::net::TcpStream,
-    client_addr: std::net::SocketAddr,
+    _client_addr: std::net::SocketAddr,
     registry: Arc<Registry>,
-    mut shutdown_rx: broadcast::Receiver<()>,
+    mut _shutdown_rx: broadcast::Receiver<()>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let metrics = registry.gather();
     let encoder = TextEncoder::new();
@@ -251,9 +291,7 @@ async fn handle_metrics_request(
     use tokio::io::AsyncWriteExt;
     
     stream.write_all(response.as_bytes()).await?;
-    
     stream.write_all(&buffer).await?;
-    
     stream.flush().await?;
     stream.shutdown().await?;
     
