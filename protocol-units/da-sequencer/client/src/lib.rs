@@ -54,22 +54,19 @@ pub struct GrpcDaSequencerClient {
 }
 
 impl GrpcDaSequencerClient {
-	/// Create the heartbeat alert channel
-	pub fn set_heartbeat_alert_channel(&mut self, tx: UnboundedSender<()>) {
-		self.heartbeat_alert_tx = Some(tx);
-	}
-	pub fn set_stream_heartbeat_interval(&mut self, secs: u64) {
-		self.stream_heartbeat_interval_sec = secs;
-	}
 	/// Creates an http2 connection to the Da Sequencer node service.
-	pub async fn try_connect(connection_url: &Url) -> Result<Self, anyhow::Error> {
+	pub async fn try_connect(
+		connection_url: &Url,
+		heartbeat_alert_tx: Option<UnboundedSender<()>>,
+		stream_heartbeat_interval_sec: u64,
+	) -> Result<Self, anyhow::Error> {
 		for _ in 0..5 {
 			match GrpcDaSequencerClient::connect(connection_url.clone()).await {
 				Ok(client) => {
 					return Ok(GrpcDaSequencerClient {
 						client,
-						heartbeat_alert_tx: None,
-						stream_heartbeat_interval_sec: 10, // default value
+						heartbeat_alert_tx,
+						stream_heartbeat_interval_sec,
 					});
 				}
 				Err(err) => {
@@ -77,13 +74,14 @@ impl GrpcDaSequencerClient {
 						"DA sequencer Http2 connection failed: {}. Retrying in 10s...",
 						err
 					);
-					std::thread::sleep(std::time::Duration::from_secs(10));
+					std::thread::sleep(Duration::from_secs(10));
 				}
 			}
 		}
-		return Err(anyhow::anyhow!(
-			"Error DA Sequencer Http2 connection failed more than 5 time aborting.",
-		));
+
+		Err(anyhow::anyhow!(
+			"Error DA Sequencer Http2 connection failed more than 5 times. Aborting."
+		))
 	}
 
 	/// Connects to a da sequencer node service using the given connection string.
@@ -142,27 +140,26 @@ impl DaSequencerClient for GrpcDaSequencerClient {
 		}
 
 		let output = async_stream::try_stream! {
-				loop {
-						match stream.next().await {
-								Some(Ok(block_response)) => {
-										match block_response.response {
-												Some(response) => match response.block_type {
-														Some(block_response::BlockType::Heartbeat(_)) => {
-																tracing::info!("Received heartbeat");
-																*last_msg_time.lock().await = Instant::now();
-														}
-														Some(block_response::BlockType::BlockV1(block)) => {
-																*last_msg_time.lock().await = Instant::now();
-																yield block;
-														}
-														None => todo!(),
-												},
-												None => todo!(),
-										}
+			loop {
+				match stream.next().await {
+					Some(Ok(block_response)) => {
+						match block_response.response {
+							Some(response) => match response.block_type {
+								Some(block_response::BlockType::Heartbeat(_)) => {
+									tracing::info!("Received heartbeat");
+									*last_msg_time.lock().await = Instant::now();
 								}
-								_ => todo!(),
+								Some(block_response::BlockType::BlockV1(block)) => {
+									yield block;
+								}
+								None => todo!(),
+							},
+							None => todo!(),
 						}
+					}
+					_ => todo!(),
 				}
+			}
 		};
 
 		Ok(Box::pin(output) as StreamReadBlockFromHeight)
