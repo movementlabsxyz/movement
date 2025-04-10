@@ -21,6 +21,8 @@ impl StreamBlocks {
 	pub async fn execute(&self) -> Result<(), anyhow::Error> {
 		let mut client = GrpcDaSequencerClient::try_connect(
 			&Url::parse(&self.light_node_url).expect("Can't parse provided url."),
+			None,
+			10,
 		)
 		.await
 		.expect("gRPC client connection failed.");

@@ -64,7 +64,8 @@ impl BackgroundTask {
 
 		match self.inner {
 			Full(transaction_pipe) => {
-				let da_client = GrpcDaSequencerClient::try_connect(&da_connection_url).await?;
+				let da_client =
+					GrpcDaSequencerClient::try_connect(&da_connection_url, None, 10).await?;
 				transaction_pipe.run(da_client).await
 			}
 			ReadOnly(null_mempool) => null_mempool.run().await,

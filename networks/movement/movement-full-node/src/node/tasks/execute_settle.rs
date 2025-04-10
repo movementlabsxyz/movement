@@ -65,7 +65,8 @@ where
 	pub async fn run(mut self, da_connection_url: Url) -> anyhow::Result<()> {
 		let synced_height = self.da_db.get_synced_height().await?;
 		info!("DA synced height: {:?}", synced_height);
-		let mut da_client = GrpcDaSequencerClient::try_connect(&da_connection_url).await?;
+		let mut da_client =
+			GrpcDaSequencerClient::try_connect(&da_connection_url, None, 10).await?;
 		let mut blocks_from_da = da_client
 			.stream_read_from_height(StreamReadFromHeightRequest { height: synced_height })
 			.await
