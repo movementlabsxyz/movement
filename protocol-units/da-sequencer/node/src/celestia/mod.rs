@@ -236,7 +236,7 @@ impl<B: BlockOps, C: CelestiaClientOps> DaSequencerExternalDa for CelestiaExtern
 
 							// The blocks in this blob are not confirmed yet.
 							self.block_provider
-								.notify_blocks_committed(blob.to_vec(), celestia_height)
+								.notify_blocks_committed(blob.into_block_ids(), celestia_height)
 								.await?;
 						}
 						None => break, // The tip is reached
@@ -311,7 +311,7 @@ mod tests {
 
 	impl Id for CelestiaBlob {
 		fn id(&self) -> block::Id {
-			self.iter().next().copied().unwrap()
+			self.block_ids().next().copied().unwrap()
 		}
 	}
 

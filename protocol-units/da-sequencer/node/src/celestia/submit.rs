@@ -1,6 +1,9 @@
 //! The blob submitter task.
 
 use super::{BlockSource, CelestiaBlob, CelestiaHeight, ExternalDaNotification};
+use movement_signer::cryptography::ed25519::Ed25519;
+use movement_signer_loader::LoadedSigner;
+use movement_types::block;
 
 use anyhow::Context;
 use celestia_rpc::prelude::*;
@@ -11,7 +14,6 @@ use tokio::select;
 use tokio::sync::mpsc;
 use tracing::debug;
 
-use movement_types::block;
 use std::mem;
 use std::sync::Arc;
 
@@ -24,6 +26,8 @@ pub(crate) struct BlobSubmitter {
 	celestia_client: Arc<Client>,
 	// The Celestia namespace
 	celestia_namespace: Namespace,
+	// An instance of signer
+	signer: LoadedSigner<Ed25519>,
 	// Channel to receive digests from foreground
 	id_receiver: mpsc::Receiver<(block::Id, BlockSource)>,
 	// Channel to send notifications from Celestia layer
@@ -34,10 +38,11 @@ impl BlobSubmitter {
 	pub(crate) fn new(
 		celestia_client: Arc<Client>,
 		celestia_namespace: Namespace,
+		signer: LoadedSigner<Ed25519>,
 		id_receiver: mpsc::Receiver<(block::Id, BlockSource)>,
 		notifier: mpsc::Sender<ExternalDaNotification>,
 	) -> Self {
-		BlobSubmitter { celestia_client, celestia_namespace, id_receiver, notifier }
+		BlobSubmitter { celestia_client, celestia_namespace, signer, id_receiver, notifier }
 	}
 
 	pub(crate) async fn run(mut self) -> Result<(), anyhow::Error> {
@@ -61,6 +66,7 @@ impl BlobSubmitter {
 						total_data_size = 0;
 						submit_request = Some(Box::pin(submit_blob(
 							&self.celestia_client,
+							&self.signer,
 							self.celestia_namespace.clone(),
 							digests,
 						)));
@@ -109,10 +115,11 @@ impl BlobSubmitter {
 
 async fn submit_blob(
 	celestia_client: &Client,
+	signer: &LoadedSigner<Ed25519>,
 	namespace: Namespace,
 	ids: Vec<block::Id>,
 ) -> Result<(Vec<block::Id>, CelestiaHeight), anyhow::Error> {
-	let data = CelestiaBlob::from(ids.clone());
+	let data = CelestiaBlob::sign(&ids, signer).await?;
 	let serialized_data = bcs::to_bytes(&data)?;
 	let blob = Blob::new(namespace, serialized_data, AppVersion::V2)?;
 	let config = TxConfig::default();

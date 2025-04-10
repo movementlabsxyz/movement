@@ -56,6 +56,36 @@ macro_rules! fixed_size {
 				self.0.to_vec()
 			}
 		}
+
+		impl serde::Serialize for $Name {
+			fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+			where
+				S: serde::Serializer,
+			{
+				let bytes = self.to_bytes();
+				serializer.serialize_bytes(&bytes)
+			}
+		}
+
+		impl<'de> serde::Deserialize<'de> for $Name {
+			fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+			where
+				D: serde::Deserializer<'de>,
+			{
+				let bytes = Vec::<u8>::deserialize(deserializer)?;
+				if bytes.len() != Self::BYTES_LEN {
+					return Err(serde::de::Error::invalid_length(
+						bytes.len(),
+						&concat!("expected ", stringify!($len), " bytes"),
+					));
+				}
+
+				let mut inner = [0u8; Self::BYTES_LEN];
+				inner.copy_from_slice(&bytes);
+
+				Ok(Self(inner))
+			}
+		}
 	};
 }
 

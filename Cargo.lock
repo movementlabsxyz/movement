@@ -11605,6 +11605,7 @@ dependencies = [
  "movement-da-sequencer-config",
  "movement-da-sequencer-proto",
  "movement-signer",
+ "movement-signer-loader",
  "movement-types",
  "once_cell",
  "prost 0.13.3",

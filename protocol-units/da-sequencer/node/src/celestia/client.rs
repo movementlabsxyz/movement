@@ -1,17 +1,23 @@
 use super::submit::BlobSubmitter;
 use super::{BlockSource, CelestiaBlob, CelestiaClientOps, CelestiaHeight, ExternalDaNotification};
 use crate::error::DaSequencerError;
+use movement_signer_loader::identifiers::SignerIdentifier;
+use movement_signer_loader::Load;
+use movement_types::block;
+
 use celestia_rpc::Client as RpcClient;
 use celestia_types::nmt::Namespace;
-use movement_types::block;
-use std::sync::Arc;
 use tokio::sync::mpsc;
 use url::Url;
+
+use std::sync::Arc;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
 	#[error("Celestia RPC error: {}", .0)]
 	Rpc(#[from] celestia_rpc::Error),
+	#[error("failed to initialize remote signer: {}", .0)]
+	SignerLoad(movement_signer_loader::LoaderError),
 }
 
 #[derive(Clone)]
@@ -27,15 +33,24 @@ impl CelestiaClient {
 	pub async fn new(
 		connection_url: Url,
 		auth_token: Option<&str>,
+		signer_identifier: SignerIdentifier,
 		celestia_namespace: Namespace,
 		notifier: mpsc::Sender<ExternalDaNotification>,
 	) -> Result<Self, Error> {
-		let rpc_client = RpcClient::new(&connection_url.to_string(), auth_token).await?;
+		let (rpc_client, signer) = tokio::try_join!(
+			async {
+				RpcClient::new(&connection_url.to_string(), auth_token)
+					.await
+					.map_err(Error::Rpc)
+			},
+			async { signer_identifier.load().await.map_err(Error::SignerLoad) },
+		)?;
 		let rpc_client = Arc::new(rpc_client);
 		let (digest_sender, digest_receiver) = mpsc::channel(8);
 		let blob_submitter = BlobSubmitter::new(
 			Arc::clone(&rpc_client),
 			celestia_namespace,
+			signer,
 			digest_receiver,
 			notifier.clone(),
 		);

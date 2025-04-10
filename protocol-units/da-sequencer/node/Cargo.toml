@@ -40,6 +40,9 @@ godfig = { workspace = true }
 
 movement-da-sequencer-config = { workspace = true }
 movement-da-sequencer-proto = { workspace = true, features = ["server"] }
+movement-da-sequencer-client = { workspace = true }
+movement-signer = { workspace = true }
+movement-signer-loader = { workspace = true }
 movement-types = { workspace = true }
 
 [dev-dependencies]
@@ -47,8 +50,6 @@ tempfile = { workspace = true }
 rand = { workspace = true }
 rand_core = { workspace = true }
 
-movement-da-sequencer-client = { workspace = true }
-movement-signer = { workspace = true }
 movement-types = { workspace = true, features = ["testing"] }
 
 [lints]

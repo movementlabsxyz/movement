@@ -1,36 +1,41 @@
+use crate::DaSequencerError;
+use movement_signer::cryptography::ed25519::{Ed25519, PublicKey, Signature};
+use movement_signer::{SignerError, Signing, Verify};
 use movement_types::block;
 use serde::{Deserialize, Serialize};
-use std::slice::Iter;
 
 /// The blob format that is stored in Celestia DA.
-#[derive(Clone, Default, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct CelestiaBlob(Vec<block::Id>);
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CelestiaBlob {
+	// serialized data
+	data: Vec<u8>,
+	// signer's public key
+	public_key: PublicKey,
+	// ed25519 signature
+	signature: Signature,
+}
 
 impl CelestiaBlob {
-	pub fn iter(&self) -> Iter<'_, block::Id> {
-		self.0.iter()
+	pub async fn sign<S>(block_ids: &[block::Id], signer: &S) -> Result<Self, SignerError>
+	where
+		S: Signing<Ed25519>,
+	{
+		let public_key = signer.public_key().await?;
+		// Serialization shoud never fail
+		let data = bcs::to_bytes(block_ids).unwrap();
+		let signature = signer.sign(&data).await?;
+		Ok(CelestiaBlob { data, public_key, signature })
 	}
 
-	pub fn last_block_id(&self) -> Option<block::Id> {
-		self.0.last().copied()
+	pub fn public_key(&self) -> PublicKey {
+		self.public_key
 	}
 
-	pub fn to_vec(self) -> Vec<block::Id> {
-		self.0
-	}
-}
-
-impl IntoIterator for CelestiaBlob {
-	type Item = block::Id;
-	type IntoIter = <Vec<block::Id> as IntoIterator>::IntoIter;
-
-	fn into_iter(self) -> Self::IntoIter {
-		self.0.into_iter()
-	}
-}
-
-impl From<Vec<block::Id>> for CelestiaBlob {
-	fn from(value: Vec<block::Id>) -> Self {
-		Self(value)
+	pub fn verified_block_ids(&self) -> Result<Vec<block::Id>, DaSequencerError> {
+		Ed25519::verify(&self.data, &self.signature, &self.public_key)
+			.map_err(|_| DaSequencerError::InvalidSignature)?;
+		let block_ids = bcs::from_bytes(&self.data)
+			.map_err(|e| DaSequencerError::Deserialization(e.to_string()))?;
+		Ok(block_ids)
 	}
 }
