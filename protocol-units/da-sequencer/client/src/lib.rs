@@ -10,8 +10,12 @@ use movement_signer::{
 	Signing,
 };
 use movement_signer_loader::LoadedSigner;
-use std::future::Future;
-use std::time::Duration;
+use std::{
+	future::Future,
+	sync::Arc,
+	time::{Duration, Instant},
+};
+use tokio::sync::{mpsc::UnboundedSender, Mutex};
 use tokio_stream::{Stream, StreamExt};
 use tonic::transport::{Channel, ClientTlsConfig};
 use url::Url;
@@ -45,26 +49,39 @@ pub trait DaSequencerClient: Clone + Send {
 #[derive(Debug, Clone)]
 pub struct GrpcDaSequencerClient {
 	client: DaSequencerNodeServiceClient<tonic::transport::Channel>,
+	heartbeat_alert_tx: Option<UnboundedSender<()>>,
+	pub stream_heartbeat_interval_sec: u64,
 }
 
 impl GrpcDaSequencerClient {
 	/// Creates an http2 connection to the Da Sequencer node service.
-	pub async fn try_connect(connection_url: &Url) -> Result<Self, anyhow::Error> {
+	pub async fn try_connect(
+		connection_url: &Url,
+		heartbeat_alert_tx: Option<UnboundedSender<()>>,
+		stream_heartbeat_interval_sec: u64,
+	) -> Result<Self, anyhow::Error> {
 		for _ in 0..5 {
 			match GrpcDaSequencerClient::connect(connection_url.clone()).await {
-				Ok(client) => return Ok(GrpcDaSequencerClient { client }),
+				Ok(client) => {
+					return Ok(GrpcDaSequencerClient {
+						client,
+						heartbeat_alert_tx,
+						stream_heartbeat_interval_sec,
+					});
+				}
 				Err(err) => {
 					tracing::warn!(
 						"DA sequencer Http2 connection failed: {}. Retrying in 10s...",
 						err
 					);
-					std::thread::sleep(std::time::Duration::from_secs(10));
+					std::thread::sleep(Duration::from_secs(10));
 				}
 			}
 		}
-		return Err(anyhow::anyhow!(
-			"Error DA Sequencer Http2 connection failed more than 5 time aborting.",
-		));
+
+		Err(anyhow::anyhow!(
+			"Error DA Sequencer Http2 connection failed more than 5 times. Aborting."
+		))
 	}
 
 	/// Connects to a da sequencer node service using the given connection string.
@@ -101,31 +118,51 @@ impl DaSequencerClient for GrpcDaSequencerClient {
 			.stream_read_from_height(request)
 			.await
 			.map_err(|err| ClientDaSequencerError::FailToOpenBlockStream(err.to_string()))?;
+
+		let mut stream = response.into_inner();
+		let last_msg_time = Arc::new(Mutex::new(Instant::now()));
+
+		if let Some(tx) = self.heartbeat_alert_tx.clone() {
+			let last_msg_time = Arc::clone(&last_msg_time);
+			let heartbeat_interval = Duration::from_secs(self.stream_heartbeat_interval_sec);
+			let missed_heartbeat_threshold = heartbeat_interval * 2;
+
+			tokio::spawn(async move {
+				loop {
+					tokio::time::sleep(heartbeat_interval).await;
+					let elapsed = last_msg_time.lock().await.elapsed();
+					if elapsed > missed_heartbeat_threshold {
+						let _ = tx.send(());
+						break;
+					}
+				}
+			});
+		}
+
 		let output = async_stream::try_stream! {
-			let mut stream = response.into_inner();
 			loop {
 				match stream.next().await {
 					Some(Ok(block_response)) => {
 						match block_response.response {
 							Some(response) => match response.block_type {
 								Some(block_response::BlockType::Heartbeat(_)) => {
-									tracing::info!("Receive block stream Heartbeat");
+									tracing::info!("Received heartbeat");
+									*last_msg_time.lock().await = Instant::now();
 								}
-								Some(block_response::BlockType::BlockV1(block)) => yield block,
+								Some(block_response::BlockType::BlockV1(block)) => {
+									yield block;
+								}
 								None => todo!(),
-							}
+							},
 							None => todo!(),
 						}
 					}
-
 					_ => todo!(),
 				}
 			}
 		};
 
 		Ok(Box::pin(output) as StreamReadBlockFromHeight)
-
-		//		Ok(response.into_inner())
 	}
 
 	/// Writes a batch of transactions to the Da Sequencer node

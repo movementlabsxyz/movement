@@ -22,8 +22,8 @@ pub struct DaSequencerConfig {
 	#[serde(default = "default_block_production_interval_millisec")]
 	pub block_production_interval_millisec: u64,
 
-        #[serde(default = "default_stream_heartbeat_interval_sec")]
-        pub stream_heartbeat_interval_sec: u64,
+	#[serde(default = "default_stream_heartbeat_interval_sec")]
+	pub stream_heartbeat_interval_sec: u64,
 
 	#[serde(default = "default_whitelist_relative_path")]
 	pub whitelist_relative_path: String,
@@ -52,12 +52,12 @@ env_default!(
 );
 
 impl Default for DaSequencerConfig {
-        fn default() -> Self {
-                Self {
-                        grpc_listen_address: default_grpc_listen_address(),
-                        block_production_interval_millisec: default_block_production_interval_millisec(),
-                        stream_heartbeat_interval_sec: default_stream_heartbeat_interval_sec(),
-                        whitelist_relative_path: default_whitelist_relative_path(),
-                }
-        }
+	fn default() -> Self {
+		Self {
+			grpc_listen_address: default_grpc_listen_address(),
+			block_production_interval_millisec: default_block_production_interval_millisec(),
+			stream_heartbeat_interval_sec: default_stream_heartbeat_interval_sec(),
+			whitelist_relative_path: default_whitelist_relative_path(),
+		}
+	}
 }

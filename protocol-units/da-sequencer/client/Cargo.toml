@@ -23,6 +23,7 @@ tracing = { workspace = true }
 movement-signer = { workspace = true }
 movement-signer-loader = { workspace = true }
 url = { workspace = true }
+tokio = { workspace = true }
 tokio-stream = { workspace = true }
 futures = { workspace = true }
 async-stream = { workspace = true }
