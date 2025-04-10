@@ -1,7 +1,5 @@
 use super::submit::BlobSubmitter;
-use super::{
-	BlockSource, CelestiaBlobData, CelestiaClientOps, CelestiaHeight, ExternalDaNotification,
-};
+use super::{BlockSource, CelestiaBlob, CelestiaClientOps, CelestiaHeight, ExternalDaNotification};
 use crate::error::DaSequencerError;
 use celestia_rpc::Client as RpcClient;
 use celestia_types::nmt::Namespace;
@@ -54,7 +52,7 @@ impl CelestiaClientOps for CelestiaClient {
 	async fn get_blob_at_height(
 		&self,
 		_height: CelestiaHeight,
-	) -> Result<Option<CelestiaBlobData>, DaSequencerError> {
+	) -> Result<Option<CelestiaBlob>, DaSequencerError> {
 		todo!()
 	}
 

@@ -4,9 +4,9 @@ use std::slice::Iter;
 
 /// The blob format that is stored in Celestia DA.
 #[derive(Clone, Default, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct CelestiaBlobData(Vec<block::Id>);
+pub struct CelestiaBlob(Vec<block::Id>);
 
-impl CelestiaBlobData {
+impl CelestiaBlob {
 	pub fn iter(&self) -> Iter<'_, block::Id> {
 		self.0.iter()
 	}
@@ -20,7 +20,7 @@ impl CelestiaBlobData {
 	}
 }
 
-impl IntoIterator for CelestiaBlobData {
+impl IntoIterator for CelestiaBlob {
 	type Item = block::Id;
 	type IntoIter = <Vec<block::Id> as IntoIterator>::IntoIter;
 
@@ -29,7 +29,7 @@ impl IntoIterator for CelestiaBlobData {
 	}
 }
 
-impl From<Vec<block::Id>> for CelestiaBlobData {
+impl From<Vec<block::Id>> for CelestiaBlob {
 	fn from(value: Vec<block::Id>) -> Self {
 		Self(value)
 	}

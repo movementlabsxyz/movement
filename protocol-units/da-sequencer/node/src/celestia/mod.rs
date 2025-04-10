@@ -3,7 +3,7 @@ pub mod client;
 pub mod height;
 pub mod submit;
 
-pub use blob::CelestiaBlobData;
+pub use blob::CelestiaBlob;
 pub use height::CelestiaHeight;
 
 use crate::{
@@ -28,7 +28,7 @@ pub trait DaSequencerExternalDa {
 	fn get_blob_at_height(
 		&self,
 		height: CelestiaHeight,
-	) -> impl Future<Output = Result<Option<CelestiaBlobData>, DaSequencerError>> + Send;
+	) -> impl Future<Output = Result<Option<CelestiaBlob>, DaSequencerError>> + Send;
 
 	/// Bootstrap the Celestia client to recover from missing block.
 	/// In case of crash for example, block sent to Celestia can be behind the block created by the network.
@@ -66,7 +66,7 @@ pub trait CelestiaClientOps: Sync + Clone {
 	fn get_blob_at_height(
 		&self,
 		height: CelestiaHeight,
-	) -> impl Future<Output = Result<Option<CelestiaBlobData>, DaSequencerError>> + Send;
+	) -> impl Future<Output = Result<Option<CelestiaBlob>, DaSequencerError>> + Send;
 
 	fn send_block(
 		&self,
@@ -183,7 +183,7 @@ impl<B: BlockOps, C: CelestiaClientOps> DaSequencerExternalDa for CelestiaExtern
 	async fn get_blob_at_height(
 		&self,
 		height: CelestiaHeight,
-	) -> Result<Option<CelestiaBlobData>, DaSequencerError> {
+	) -> Result<Option<CelestiaBlob>, DaSequencerError> {
 		self.celestia_client.get_blob_at_height(height).await
 	}
 
@@ -299,7 +299,7 @@ mod tests {
 		}
 	}
 
-	impl Id for CelestiaBlobData {
+	impl Id for CelestiaBlob {
 		fn id(&self) -> block::Id {
 			self.iter().next().copied().unwrap()
 		}
@@ -361,10 +361,10 @@ mod tests {
 	}
 
 	#[derive(Clone)]
-	struct CelestiaMock(Arc<RwLock<StoreMockState<CelestiaBlobData, CelestiaClientCalls>>>);
+	struct CelestiaMock(Arc<RwLock<StoreMockState<CelestiaBlob, CelestiaClientCalls>>>);
 
 	impl CelestiaMock {
-		fn new(init: Vec<CelestiaBlobData>) -> Self {
+		fn new(init: Vec<CelestiaBlob>) -> Self {
 			let state = StoreMockState::from_iter(init);
 			Self(Arc::new(RwLock::new(state)))
 		}
@@ -380,7 +380,7 @@ mod tests {
 		async fn get_blob_at_height(
 			&self,
 			height: CelestiaHeight,
-		) -> Result<Option<CelestiaBlobData>, DaSequencerError> {
+		) -> Result<Option<CelestiaBlob>, DaSequencerError> {
 			let mut state = self.0.write().await;
 			state.add_call(CelestiaClientCalls::GetBlobsAtHeight(height));
 			Ok(state.get_at_height(height.into()))
@@ -393,7 +393,7 @@ mod tests {
 		) -> Result<(), DaSequencerError> {
 			let mut state = self.0.write().await;
 			state.add_call(CelestiaClientCalls::SendBlock(block_id, source));
-			state.add(CelestiaBlobData::from(vec![block_id]));
+			state.add(CelestiaBlob::from(vec![block_id]));
 			Ok(())
 		}
 	}
@@ -494,7 +494,7 @@ mod tests {
 		let blocks = test_blocks(3);
 		let ids = into_ids(blocks.as_slice());
 		let block_provider = BlockProviderMock::new(blocks);
-		let blobs = ids.iter().map(|id| CelestiaBlobData::from(vec![*id])).collect();
+		let blobs = ids.iter().map(|id| CelestiaBlob::from(vec![*id])).collect();
 		let celestia = CelestiaMock::new(blobs);
 		let da = CelestiaExternalDa::new(block_provider.clone(), celestia.clone());
 
@@ -520,7 +520,7 @@ mod tests {
 		let blocks = test_blocks(3);
 		let ids = into_ids(blocks.as_slice());
 		let block_provider = BlockProviderMock::new(blocks);
-		let blobs = ids.iter().map(|id| CelestiaBlobData::from(vec![*id])).collect();
+		let blobs = ids.iter().map(|id| CelestiaBlob::from(vec![*id])).collect();
 		let celestia = CelestiaMock::new(blobs);
 		let da = CelestiaExternalDa::new(block_provider.clone(), celestia.clone());
 
@@ -552,11 +552,8 @@ mod tests {
 		let blocks = test_blocks(3);
 		let ids = into_ids(blocks.as_slice());
 		let block_provider = BlockProviderMock::new(blocks);
-		let blobs = ids
-			.iter()
-			.take(ids.len() - 1)
-			.map(|id| CelestiaBlobData::from(vec![*id]))
-			.collect();
+		let blobs =
+			ids.iter().take(ids.len() - 1).map(|id| CelestiaBlob::from(vec![*id])).collect();
 		let celestia = CelestiaMock::new(blobs);
 		let da = CelestiaExternalDa::new(block_provider.clone(), celestia.clone());
 

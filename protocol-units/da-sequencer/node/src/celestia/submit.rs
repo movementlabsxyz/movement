@@ -1,6 +1,6 @@
 //! The blob submitter task.
 
-use super::{BlockSource, CelestiaBlobData, CelestiaHeight, ExternalDaNotification};
+use super::{BlockSource, CelestiaBlob, CelestiaHeight, ExternalDaNotification};
 
 use anyhow::Context;
 use celestia_rpc::prelude::*;
@@ -111,7 +111,7 @@ async fn submit_blob(
 	namespace: Namespace,
 	ids: Vec<block::Id>,
 ) -> Result<(Vec<block::Id>, CelestiaHeight), anyhow::Error> {
-	let data = CelestiaBlobData::from(ids.clone());
+	let data = CelestiaBlob::from(ids.clone());
 	let serialized_data = bcs::to_bytes(&data)?;
 	let blob = Blob::new(namespace, serialized_data, AppVersion::V2)?;
 	let config = TxConfig::default();
