@@ -184,7 +184,7 @@ impl DaSequencerNodeService for DaSequencerNode {
 	async fn read_at_height(
 		&self,
 		_request: tonic::Request<ReadAtHeightRequest>,
-	) -> std::result::Result<tonic::Response<ReadAtHeightResponse>, tonic::Status> {
+	) -> Result<tonic::Response<ReadAtHeightResponse>, tonic::Status> {
 		Err(tonic::Status::unimplemented(""))
 	}
 

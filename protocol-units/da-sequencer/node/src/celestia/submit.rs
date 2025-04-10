@@ -85,15 +85,16 @@ impl BlobSubmitter {
 							}
 							submit_request = None;
 						}
-						next = self.id_receiver.recv(), if total_data_size + block::ID_SIZE <= MAX_CELESTIA_BLOB_SIZE => {
+						next = self.id_receiver.recv(),
+								if total_data_size + block::Id::SIZE <= MAX_CELESTIA_BLOB_SIZE => {
 							match next {
 								None => break,
 								Some((id, BlockSource::Input)) => {
-									total_data_size += block::ID_SIZE;
+									total_data_size += block::Id::SIZE;
 									buffered_ids.push(id);
 								}
 								Some((id, BlockSource::Bootstrap)) => {
-									total_data_size += block::ID_SIZE;
+									total_data_size += block::Id::SIZE;
 									bootstrap_ids.push(id);
 								}
 							}
