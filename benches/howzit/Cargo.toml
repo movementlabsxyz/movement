@@ -16,21 +16,23 @@ name = "howzit-bench"
 path = "src/bin/howzit-bench.rs"
 
 [dependencies]
+anyhow = { workspace = true }
+aptos-cached-packages = { workspace = true }
+aptos-framework = { workspace = true }
 aptos-sdk = { workspace = true }
 aptos-types = { workspace = true }
-aptos-framework = { workspace = true }
-aptos-cached-packages = { workspace = true }
-tokio = { workspace = true }
-serde = { workspace = true, features = ["derive"] }
-anyhow = { workspace = true }
 bcs = { workspace = true }
-godfig = { workspace = true }
-rand = { workspace = true }
+chrono = { workspace = true }
 futures = { workspace = true }
-url = { workspace = true }
+godfig = { workspace = true }
+movement-config = { workspace = true }
+rand = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+tokio = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
-chrono = { workspace = true }
+url = { workspace = true }
+once_cell = { workspace = true }
 
 
 [lints]

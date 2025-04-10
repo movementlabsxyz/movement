@@ -80,21 +80,25 @@ pub struct Howzit {
 	pub rest_client: Client,
 	faucet_client_url: Url,
 	pub faucet_client: FaucetClient,
-	pub faucet_auth_token: String,
+	/// Only required if using on a live network
+	pub faucet_auth_token: Option<String>,
 }
 
 impl Clone for Howzit {
 	fn clone(&self) -> Self {
+		let mut faucet_client = FaucetClient::new_from_rest_client(
+			self.faucet_client_url.clone(),
+			self.rest_client.clone(),
+		);
+		if let Some(ref token) = self.faucet_auth_token {
+			faucet_client = faucet_client.with_auth_token(token.clone());
+		};
 		Howzit {
 			howzit_package_path: self.howzit_package_path.clone(),
 			wallet: self.wallet.clone(),
 			rest_client: self.rest_client.clone(),
 			faucet_client_url: self.faucet_client_url.clone(),
-			faucet_client: FaucetClient::new_from_rest_client(
-				self.faucet_client_url.clone(),
-				self.rest_client.clone(),
-			)
-			.with_auth_token(self.faucet_auth_token.clone()),
+			faucet_client,
 			faucet_auth_token: self.faucet_auth_token.clone(),
 		}
 	}
@@ -106,16 +110,20 @@ impl Howzit {
 		howzit_package_path: PathBuf,
 		rest_client: Client,
 		faucet_client_url: Url,
-		faucet_auth_token: String,
+		faucet_auth_token: Option<String>,
 	) -> Self {
 		let wallet = LocalAccount::generate(&mut rand::rngs::OsRng);
+		let mut faucet_client =
+			FaucetClient::new_from_rest_client(faucet_client_url.clone(), rest_client.clone());
+		if let Some(ref token) = faucet_auth_token {
+			faucet_client = faucet_client.with_auth_token(token.clone());
+		}
 		Howzit {
 			howzit_package_path,
 			wallet: Arc::new(RwLock::new(wallet)),
-			rest_client: rest_client.clone(),
-			faucet_client_url: faucet_client_url.clone(),
-			faucet_client: FaucetClient::new_from_rest_client(faucet_client_url, rest_client)
-				.with_auth_token(faucet_auth_token.clone()),
+			rest_client,
+			faucet_client_url,
+			faucet_client,
 			faucet_auth_token,
 		}
 	}
