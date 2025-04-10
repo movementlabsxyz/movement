@@ -1,4 +1,4 @@
-//use anyhow::Context;
+use anyhow::Context;
 use howzit::Howzit;
 use once_cell::sync::Lazy;
 use std::io::Write;
@@ -56,6 +56,10 @@ pub async fn main() -> Result<(), anyhow::Error> {
 		)
 		.init();
 
+	let token = std::env::var("AUTH_TOKEN").context("AUTH_TOKEN not set")?;
+	let bench_output_file =
+		std::env::var("BENCH_OUTPUT_FILE").unwrap_or("howzit_bench_output.dat".to_string());
+
 	let crate_path = env!("CARGO_MANIFEST_DIR");
 	let crate_path_buf = PathBuf::from(crate_path);
 	let bench_output_file =
@@ -65,7 +69,7 @@ pub async fn main() -> Result<(), anyhow::Error> {
 		crate_path_buf.join("howzit"),
 		NODE_URL.clone(),
 		FAUCET_URL.clone(),
-		None, // For now we are going to run local. A var can be used to set this to a testnet later.
+		token,
 	);
 
 	howzit.build_and_publish().await?;
