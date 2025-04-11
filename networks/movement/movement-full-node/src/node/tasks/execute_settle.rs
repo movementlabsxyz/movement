@@ -116,7 +116,7 @@ where
 		}
 
 		// the da height must be greater than 1
-		if da_block.height < 2 {
+		if da_block.height < 1 {
 			anyhow::bail!("Invalid DA height: {:?}", da_block.height);
 		}
 
