@@ -1,29 +1,36 @@
-use crate::block::{BlockHeight, SequencerBlockDigest};
-use std::slice::Iter;
-
+use movement_types::block;
 use serde::{Deserialize, Serialize};
+use std::slice::Iter;
 
 /// The blob format that is stored in Celestia DA.
 #[derive(Clone, Default, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct CelestiaBlobData {
-	pub digests: Vec<SequencerBlockDigest>,
-}
+pub struct CelestiaBlob(Vec<block::Id>);
 
-impl CelestiaBlobData {
-	pub fn iter(&self) -> Iter<'_, SequencerBlockDigest> {
-		self.digests.iter()
+impl CelestiaBlob {
+	pub fn iter(&self) -> Iter<'_, block::Id> {
+		self.0.iter()
 	}
 
-	pub fn last_block_height(&self) -> Option<BlockHeight> {
-		self.digests.last().map(|b| b.height)
+	pub fn last_block_id(&self) -> Option<block::Id> {
+		self.0.last().copied()
+	}
+
+	pub fn to_vec(self) -> Vec<block::Id> {
+		self.0
 	}
 }
 
-impl IntoIterator for CelestiaBlobData {
-	type Item = SequencerBlockDigest;
-	type IntoIter = <Vec<SequencerBlockDigest> as IntoIterator>::IntoIter;
+impl IntoIterator for CelestiaBlob {
+	type Item = block::Id;
+	type IntoIter = <Vec<block::Id> as IntoIterator>::IntoIter;
 
 	fn into_iter(self) -> Self::IntoIter {
-		self.digests.into_iter()
+		self.0.into_iter()
+	}
+}
+
+impl From<Vec<block::Id>> for CelestiaBlob {
+	fn from(value: Vec<block::Id>) -> Self {
+		Self(value)
 	}
 }

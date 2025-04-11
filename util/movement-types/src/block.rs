@@ -17,19 +17,21 @@ pub enum BlockError {
 #[derive(
 	Serialize, Deserialize, Clone, Copy, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord,
 )]
-pub struct Id([u8; 32]);
+pub struct Id([u8; Id::SIZE]);
 
 impl Id {
-	pub fn new(data: [u8; 32]) -> Self {
+	pub const SIZE: usize = 32;
+
+	pub fn new(data: [u8; Self::SIZE]) -> Self {
 		Self(data)
 	}
 
-	pub fn as_bytes(&self) -> &[u8; 32] {
+	pub fn as_bytes(&self) -> &[u8; Self::SIZE] {
 		&self.0
 	}
 
 	pub fn test() -> Self {
-		Self([0; 32])
+		Self([0; Self::SIZE])
 	}
 
 	pub fn to_vec(&self) -> Vec<u8> {
@@ -37,7 +39,7 @@ impl Id {
 	}
 
 	pub fn genesis_block() -> Self {
-		Self([0; 32])
+		Self([0; Self::SIZE])
 	}
 }
 
@@ -136,18 +138,18 @@ impl Block {
 #[derive(
 	Serialize, Deserialize, Clone, Copy, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord,
 )]
-pub struct Commitment([u8; 32]);
+pub struct Commitment([u8; Id::SIZE]);
 
 impl Commitment {
-	pub fn new(data: [u8; 32]) -> Self {
+	pub fn new(data: [u8; Id::SIZE]) -> Self {
 		Self(data)
 	}
 
 	pub fn test() -> Self {
-		Self([0; 32])
+		Self([0; Id::SIZE])
 	}
 
-	pub fn as_bytes(&self) -> &[u8; 32] {
+	pub fn as_bytes(&self) -> &[u8; Id::SIZE] {
 		&self.0
 	}
 
@@ -168,8 +170,8 @@ impl fmt::Display for Commitment {
 	}
 }
 
-impl From<Commitment> for [u8; 32] {
-	fn from(commitment: Commitment) -> [u8; 32] {
+impl From<Commitment> for [u8; Id::SIZE] {
+	fn from(commitment: Commitment) -> [u8; Id::SIZE] {
 		commitment.0
 	}
 }
@@ -252,7 +254,7 @@ pub mod test {
 		// construct a different block
 		let mut diff_block1 = super::Block::test();
 		let new_transaction = super::Transaction::new(vec![4, 5, 6], 0, 0);
-		diff_block1.add_transaction(new_transaction.clone());
+		diff_block1.add_transaction(new_transaction.clone()).unwrap();
 		let collapsed = super::Block::collapse(vec![block1, diff_block1]);
 		assert_eq!(collapsed.transactions().count(), 2);
 		assert_eq!(collapsed.transactions().next(), Some(&new_transaction));

@@ -80,6 +80,13 @@ env_default!(
 	"http://0.0.0.0:30730".parse().expect("Bad da sequencer connection url.")
 );
 
+env_default!(
+	default_stream_heartbeat_interval_sec,
+	"MOVEMENT_DA_STREAM_HEARTBEAT_INTERVAL_MILLISEC",
+	u64,
+	10
+);
+
 pub fn default_batch_signer_identifier() -> SignerIdentifier {
 	match std::env::var("MAPTOS_DA_SEQUENCER_SIGNER_IDENTIFIER") {
 		Ok(val) => SignerIdentifier::try_from_canonical_string(&val).unwrap(),

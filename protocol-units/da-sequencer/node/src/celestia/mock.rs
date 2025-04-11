@@ -1,9 +1,8 @@
+use crate::celestia::CelestiaBlob;
 use crate::{
-	block::{BlockHeight, SequencerBlockDigest},
-	celestia::{CelestiaBlobData, CelestiaHeight},
-	error::DaSequencerError,
-	DaSequencerExternalDa,
+	block::BlockHeight, celestia::CelestiaHeight, error::DaSequencerError, DaSequencerExternalDa,
 };
+use movement_types::block;
 use std::future::Future;
 
 #[derive(Debug, Clone)]
@@ -18,7 +17,7 @@ impl CelestiaMock {
 impl DaSequencerExternalDa for CelestiaMock {
 	fn send_block(
 		&self,
-		_block: SequencerBlockDigest,
+		_block: block::Id,
 	) -> impl Future<Output = Result<(), DaSequencerError>> + Send {
 		futures::future::ready(Ok(()))
 	}
@@ -26,7 +25,7 @@ impl DaSequencerExternalDa for CelestiaMock {
 	fn get_blob_at_height(
 		&self,
 		_height: CelestiaHeight,
-	) -> impl Future<Output = Result<Option<CelestiaBlobData>, DaSequencerError>> + Send {
+	) -> impl Future<Output = Result<Option<CelestiaBlob>, DaSequencerError>> + Send {
 		//TODO return dummy error for now.
 		futures::future::ready(Err(DaSequencerError::DeserializationFailure))
 	}

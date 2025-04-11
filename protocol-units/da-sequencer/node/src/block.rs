@@ -1,4 +1,4 @@
-use movement_types::block::{self, Block};
+use movement_types::block::{self, Block, Transactions};
 use serde::{Deserialize, Serialize};
 use std::ops::Add;
 
@@ -6,21 +6,6 @@ use crate::error::DaSequencerError;
 
 // TODO: use a sensible value for the max sequencer block size
 pub const MAX_SEQUENCER_BLOCK_SIZE: u64 = 1_000_000; // 1 MB
-
-#[derive(Clone, Copy, Default, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct SequencerBlockDigest {
-	pub height: BlockHeight,
-	pub id: block::Id,
-}
-
-impl SequencerBlockDigest {
-	/// Size of a digest in bytes.
-	pub const DIGEST_SIZE: usize = 32;
-
-	pub fn new(height: BlockHeight, id: block::Id) -> Self {
-		SequencerBlockDigest { height, id }
-	}
-}
 
 #[derive(
 	Serialize, Deserialize, Clone, Copy, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord,
@@ -59,8 +44,8 @@ impl<T: Into<i64>> Add<T> for BlockHeight {
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct SequencerBlock {
-	pub height: BlockHeight,
-	pub block: Block,
+	height: BlockHeight,
+	block: Block,
 }
 
 impl SequencerBlock {
@@ -70,8 +55,20 @@ impl SequencerBlock {
 		Ok(sb)
 	}
 
-	pub fn get_block_digest(&self) -> SequencerBlockDigest {
-		SequencerBlockDigest::new(self.height, self.block.id())
+	pub fn id(&self) -> block::Id {
+		self.block.id()
+	}
+
+	pub fn height(&self) -> BlockHeight {
+		self.height
+	}
+
+	pub fn transactions(&self) -> Transactions {
+		self.block.transactions()
+	}
+
+	pub fn inner_block(self) -> Block {
+		self.block
 	}
 }
 

@@ -67,10 +67,11 @@ impl DynOptFinExecutor for Executor {
 		);
 		let indexer_runtime = opt_context.run_indexer_grpc_service()?;
 		let da_sequencer_url = config.da_sequencer.connection_url.clone();
+		let stream_heartbeat_interval_sec = config.da_sequencer.stream_heartbeat_interval_sec;
 		let background = async move {
 			// The indexer runtime should live as long as the Tx pipe.
 			let _indexer_runtime = indexer_runtime;
-			background.run(da_sequencer_url).await?;
+			background.run(da_sequencer_url, stream_heartbeat_interval_sec).await?;
 			Ok(())
 		};
 		Ok((Context { opt_context, fin_service }, background))

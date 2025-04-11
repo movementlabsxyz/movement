@@ -10,7 +10,7 @@ use mcr_settlement_manager::{CommitmentEventStream, McrSettlementManagerOperatio
 use movement_config::execution_extension;
 use movement_da_sequencer_client::DaSequencerClient;
 use movement_da_sequencer_client::GrpcDaSequencerClient;
-use movement_da_sequencer_proto::Blockv1;
+use movement_da_sequencer_proto::BlockV1;
 use movement_da_sequencer_proto::StreamReadFromHeightRequest;
 use movement_types::block::{Block, BlockCommitment, BlockCommitmentEvent};
 use tokio::select;
@@ -62,11 +62,18 @@ where
 	E: DynOptFinExecutor,
 	S: McrSettlementManagerOperations,
 {
-	pub async fn run(mut self, da_connection_url: Url) -> anyhow::Result<()> {
+	pub async fn run(
+		mut self,
+		da_connection_url: Url,
+		stream_heartbeat_interval_sec: u64,
+	) -> anyhow::Result<()> {
 		let synced_height = self.da_db.get_synced_height().await?;
 		info!("DA synced height: {:?}", synced_height);
-		let mut da_client = GrpcDaSequencerClient::try_connect(&da_connection_url).await?;
-		let mut blocks_from_da = da_client
+		let mut da_client =
+			GrpcDaSequencerClient::try_connect(&da_connection_url, stream_heartbeat_interval_sec)
+				.await?;
+		// TODO manage alert_channel in the issue #1169
+		let (mut blocks_from_da, alert_channel) = da_client
 			.stream_read_from_height(StreamReadFromHeightRequest { height: synced_height })
 			.await
 			.map_err(|e| {
@@ -92,7 +99,7 @@ where
 		Ok(())
 	}
 
-	async fn process_block_from_da(&mut self, da_block: Blockv1) -> anyhow::Result<()> {
+	async fn process_block_from_da(&mut self, da_block: BlockV1) -> anyhow::Result<()> {
 		let block_timestamp = chrono::Utc::now().timestamp_micros() as u64;
 
 		info!(

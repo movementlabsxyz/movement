@@ -3,15 +3,20 @@ use futures::stream;
 use movement_da_sequencer_proto::block_response;
 use movement_da_sequencer_proto::da_sequencer_node_service_client::DaSequencerNodeServiceClient;
 use movement_da_sequencer_proto::BatchWriteResponse;
-use movement_da_sequencer_proto::Blockv1;
+use movement_da_sequencer_proto::BlockV1;
 use movement_da_sequencer_proto::StreamReadFromHeightRequest;
 use movement_signer::{
 	cryptography::ed25519::{Ed25519, Signature},
 	Signing,
 };
 use movement_signer_loader::LoadedSigner;
-use std::future::Future;
-use std::time::Duration;
+use std::{
+	future::Future,
+	sync::Arc,
+	time::{Duration, Instant},
+};
+use tokio::sync::mpsc::unbounded_channel;
+use tokio::sync::{mpsc::UnboundedReceiver, Mutex};
 use tokio_stream::{Stream, StreamExt};
 use tonic::transport::{Channel, ClientTlsConfig};
 use url::Url;
@@ -24,14 +29,16 @@ pub enum ClientDaSequencerError {
 }
 
 pub type StreamReadBlockFromHeight =
-	std::pin::Pin<Box<dyn Stream<Item = Result<Blockv1, ClientDaSequencerError>> + Send + 'static>>;
+	std::pin::Pin<Box<dyn Stream<Item = Result<BlockV1, ClientDaSequencerError>> + Send + 'static>>;
 
 pub trait DaSequencerClient: Clone + Send {
 	/// Stream reads from a given height.
 	fn stream_read_from_height(
 		&mut self,
 		request: StreamReadFromHeightRequest,
-	) -> impl Future<Output = Result<StreamReadBlockFromHeight, ClientDaSequencerError>> + Send;
+	) -> impl Future<
+		Output = Result<(StreamReadBlockFromHeight, UnboundedReceiver<()>), ClientDaSequencerError>,
+	> + Send;
 
 	/// Writes a batch of transactions to the Da Sequencer node
 	fn batch_write(
@@ -45,26 +52,33 @@ pub trait DaSequencerClient: Clone + Send {
 #[derive(Debug, Clone)]
 pub struct GrpcDaSequencerClient {
 	client: DaSequencerNodeServiceClient<tonic::transport::Channel>,
+	pub stream_heartbeat_interval_sec: u64,
 }
 
 impl GrpcDaSequencerClient {
 	/// Creates an http2 connection to the Da Sequencer node service.
-	pub async fn try_connect(connection_url: &Url) -> Result<Self, anyhow::Error> {
+	pub async fn try_connect(
+		connection_url: &Url,
+		stream_heartbeat_interval_sec: u64,
+	) -> Result<Self, anyhow::Error> {
 		for _ in 0..5 {
 			match GrpcDaSequencerClient::connect(connection_url.clone()).await {
-				Ok(client) => return Ok(GrpcDaSequencerClient { client }),
+				Ok(client) => {
+					return Ok(GrpcDaSequencerClient { client, stream_heartbeat_interval_sec });
+				}
 				Err(err) => {
 					tracing::warn!(
 						"DA sequencer Http2 connection failed: {}. Retrying in 10s...",
 						err
 					);
-					std::thread::sleep(std::time::Duration::from_secs(10));
+					std::thread::sleep(Duration::from_secs(10));
 				}
 			}
 		}
-		return Err(anyhow::anyhow!(
-			"Error DA Sequencer Http2 connection failed more than 5 time aborting.",
-		));
+
+		Err(anyhow::anyhow!(
+			"Error DA Sequencer Http2 connection failed more than 5 times. Aborting."
+		))
 	}
 
 	/// Connects to a da sequencer node service using the given connection string.
@@ -95,37 +109,60 @@ impl DaSequencerClient for GrpcDaSequencerClient {
 	async fn stream_read_from_height(
 		&mut self,
 		request: StreamReadFromHeightRequest,
-	) -> Result<StreamReadBlockFromHeight, ClientDaSequencerError> {
+	) -> Result<(StreamReadBlockFromHeight, UnboundedReceiver<()>), ClientDaSequencerError> {
 		let response = self
 			.client
 			.stream_read_from_height(request)
 			.await
 			.map_err(|err| ClientDaSequencerError::FailToOpenBlockStream(err.to_string()))?;
+
+		let mut stream = response.into_inner();
+		let last_msg_time = Arc::new(Mutex::new(Instant::now()));
+
+		let (alert_tx, alert_rx) = unbounded_channel();
+		let last_msg_time = Arc::clone(&last_msg_time);
+		let heartbeat_interval = Duration::from_secs(self.stream_heartbeat_interval_sec);
+		let missed_heartbeat_threshold = heartbeat_interval * 2;
+
+		// Start missing heartbeat loop.
+		tokio::spawn({
+			let last_msg_time = Arc::clone(&last_msg_time);
+			async move {
+				loop {
+					tokio::time::sleep(heartbeat_interval).await;
+					let elapsed = last_msg_time.lock().await.elapsed();
+					if elapsed > missed_heartbeat_threshold {
+						let _ = alert_tx.send(());
+						break;
+					}
+				}
+			}
+		});
+
 		let output = async_stream::try_stream! {
-			let mut stream = response.into_inner();
 			loop {
 				match stream.next().await {
 					Some(Ok(block_response)) => {
 						match block_response.response {
 							Some(response) => match response.block_type {
 								Some(block_response::BlockType::Heartbeat(_)) => {
-									tracing::info!("Receive block stream Heartbeat");
+									tracing::info!("Received heartbeat");
+									*last_msg_time.lock().await = Instant::now();
 								}
-								Some(block_response::BlockType::Blockv1(block)) => yield block,
+								Some(block_response::BlockType::BlockV1(block)) => {
+									yield block;
+								}
 								None => todo!(),
-							}
+							},
 							None => todo!(),
 						}
 					}
-
 					_ => todo!(),
 				}
 			}
 		};
 
-		Ok(Box::pin(output) as StreamReadBlockFromHeight)
-
-		//		Ok(response.into_inner())
+		Ok((Box::pin(output) as StreamReadBlockFromHeight, alert_rx))
 	}
 
 	/// Writes a batch of transactions to the Da Sequencer node
@@ -198,10 +235,11 @@ impl DaSequencerClient for EmptyDaSequencerClient {
 	async fn stream_read_from_height(
 		&mut self,
 		_request: movement_da_sequencer_proto::StreamReadFromHeightRequest,
-	) -> Result<StreamReadBlockFromHeight, ClientDaSequencerError> {
-		let never_ending_stream = stream::pending::<Result<Blockv1, ClientDaSequencerError>>();
+	) -> Result<(StreamReadBlockFromHeight, UnboundedReceiver<()>), ClientDaSequencerError> {
+		let never_ending_stream = stream::pending::<Result<BlockV1, ClientDaSequencerError>>();
+		let (_alert_tx, alert_rx) = unbounded_channel();
 
-		Ok(Box::pin(never_ending_stream))
+		Ok((Box::pin(never_ending_stream), alert_rx))
 	}
 
 	/// Writes a batch of transactions to the Da Sequencer node

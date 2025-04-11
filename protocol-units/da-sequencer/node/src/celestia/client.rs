@@ -1,29 +1,25 @@
 use super::submit::BlobSubmitter;
-use super::{
-	BlockSource, CelestiaBlobData, CelestiaClientOps, CelestiaHeight, ExternalDaNotification,
-};
-use crate::block::SequencerBlockDigest;
+use super::{BlockSource, CelestiaBlob, CelestiaClientOps, CelestiaHeight, ExternalDaNotification};
 use crate::error::DaSequencerError;
-
 use celestia_rpc::Client as RpcClient;
 use celestia_types::nmt::Namespace;
+use movement_types::block;
+use std::sync::Arc;
 use tokio::sync::mpsc;
 use url::Url;
 
-use std::sync::Arc;
-
 #[derive(Debug, thiserror::Error)]
-enum Error {
+pub enum Error {
 	#[error("Celestia RPC error: {}", .0)]
 	Rpc(#[from] celestia_rpc::Error),
 }
 
 #[derive(Clone)]
 pub struct CelestiaClient {
-	rpc_client: Arc<RpcClient>,
-	notifier: mpsc::Sender<ExternalDaNotification>,
+	_rpc_client: Arc<RpcClient>,
+	_notifier: mpsc::Sender<ExternalDaNotification>,
 	// The sender end of the channel for the background sender task.
-	digest_sender: mpsc::Sender<(SequencerBlockDigest, BlockSource)>,
+	id_sender: mpsc::Sender<(block::Id, BlockSource)>,
 }
 
 impl CelestiaClient {
@@ -44,7 +40,11 @@ impl CelestiaClient {
 			notifier.clone(),
 		);
 		tokio::spawn(blob_submitter.run());
-		Ok(CelestiaClient { rpc_client, notifier, digest_sender })
+		Ok(CelestiaClient {
+			_rpc_client: rpc_client,
+			_notifier: notifier,
+			id_sender: digest_sender,
+		})
 	}
 }
 
@@ -52,17 +52,17 @@ impl CelestiaClientOps for CelestiaClient {
 	async fn get_blob_at_height(
 		&self,
 		_height: CelestiaHeight,
-	) -> Result<Option<CelestiaBlobData>, DaSequencerError> {
+	) -> Result<Option<CelestiaBlob>, DaSequencerError> {
 		todo!()
 	}
 
 	async fn send_block(
 		&self,
-		block: SequencerBlockDigest,
+		block_id: block::Id,
 		source: BlockSource,
 	) -> Result<(), DaSequencerError> {
-		self.digest_sender
-			.send((block, source))
+		self.id_sender
+			.send((block_id, source))
 			.await
 			.map_err(|_| DaSequencerError::SendFailure)
 	}

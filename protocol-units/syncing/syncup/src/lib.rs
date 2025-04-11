@@ -1,4 +1,5 @@
 use movement_types::{actor, application};
+use std::future::Future;
 use std::path::PathBuf;
 use syncador::backend::{archive, clear, glob, pipeline, s3, PullOperations, PushOperations};
 use tokio::time::interval;
@@ -6,12 +7,12 @@ use tracing::{info, warn};
 
 pub trait SyncupOperations {
 	/// Syncs up the files in the glob to the target.
-	async fn syncup(
+	fn syncup(
 		self,
-	) -> Result<impl std::future::Future<Output = Result<(), anyhow::Error>>, anyhow::Error>;
+	) -> impl Future<Output = Result<impl Future<Output = Result<(), anyhow::Error>>, anyhow::Error>>;
 
 	/// Removes the syncing resources.
-	async fn remove_syncup_resources(self) -> Result<(), anyhow::Error>;
+	fn remove_syncup_resources(self) -> impl Future<Output = Result<(), anyhow::Error>>;
 }
 
 pub trait Syncupable {
@@ -86,7 +87,7 @@ pub async fn syncup(
 	target: Target,
 	application_id: application::Id,
 	syncer_id: actor::Id,
-) -> Result<impl std::future::Future<Output = Result<(), anyhow::Error>>, anyhow::Error> {
+) -> Result<impl Future<Output = Result<(), anyhow::Error>>, anyhow::Error> {
 	info!("Running syncup with root {:?}, glob {}, and target {:?}", root_dir, glob, target);
 
 	// create the pipelines for the target
@@ -158,7 +159,7 @@ where
 {
 	async fn syncup(
 		self,
-	) -> Result<impl std::future::Future<Output = Result<(), anyhow::Error>>, anyhow::Error> {
+	) -> Result<impl Future<Output = Result<(), anyhow::Error>>, anyhow::Error> {
 		let is_leader = self.try_leader()?;
 		let root_dir = self.try_root_dir()?;
 		let glob = self.try_glob()?;

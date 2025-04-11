@@ -11559,6 +11559,7 @@ dependencies = [
  "movement-signer",
  "movement-signer-loader",
  "thiserror 1.0.69",
+ "tokio",
  "tokio-stream",
  "tonic 0.12.3",
  "tonic-web",

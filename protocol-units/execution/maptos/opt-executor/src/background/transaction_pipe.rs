@@ -401,7 +401,7 @@ mod tests {
 	use movement_da_sequencer_client::ClientDaSequencerError;
 	use movement_da_sequencer_client::StreamReadBlockFromHeight;
 	use movement_da_sequencer_proto::BatchWriteResponse;
-	use movement_da_sequencer_proto::Blockv1;
+	use movement_da_sequencer_proto::BlockV1;
 	use std::collections::BTreeSet;
 	use std::sync::Mutex;
 
@@ -453,7 +453,7 @@ mod tests {
 			&mut self,
 			_request: movement_da_sequencer_proto::StreamReadFromHeightRequest,
 		) -> Result<StreamReadBlockFromHeight, ClientDaSequencerError> {
-			let never_ending_stream = stream::pending::<Result<Blockv1, ClientDaSequencerError>>();
+			let never_ending_stream = stream::pending::<Result<BlockV1, ClientDaSequencerError>>();
 
 			Ok(Box::pin(never_ending_stream))
 		}
