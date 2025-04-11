@@ -404,6 +404,8 @@ mod tests {
 	use movement_da_sequencer_proto::BlockV1;
 	use std::collections::BTreeSet;
 	use std::sync::Mutex;
+	use tokio::sync::mpsc::unbounded_channel;
+	use tokio::sync::mpsc::UnboundedReceiver;
 
 	use super::*;
 	use crate::{Context, Executor, Service};
@@ -452,10 +454,11 @@ mod tests {
 		async fn stream_read_from_height(
 			&mut self,
 			_request: movement_da_sequencer_proto::StreamReadFromHeightRequest,
-		) -> Result<StreamReadBlockFromHeight, ClientDaSequencerError> {
+		) -> Result<(StreamReadBlockFromHeight, UnboundedReceiver<()>), ClientDaSequencerError> {
 			let never_ending_stream = stream::pending::<Result<BlockV1, ClientDaSequencerError>>();
 
-			Ok(Box::pin(never_ending_stream))
+			let (_alert_tx, alert_rx) = unbounded_channel();
+			Ok((Box::pin(never_ending_stream), alert_rx))
 		}
 
 		/// Writes a batch of transactions to the Da Sequencer node
