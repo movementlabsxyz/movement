@@ -376,13 +376,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
-
       - name: Run cargo fmt
         run: |
-          nix develop --command bash -c "cargo fmt --all -- --check"
-
+          cargo fmt --all -- --check
 
 #  Indexer:
 #    strategy:
