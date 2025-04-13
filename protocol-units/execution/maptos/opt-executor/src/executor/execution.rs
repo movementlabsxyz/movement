@@ -44,11 +44,14 @@ impl Executor {
 			let senders_and_sequence_numbers = metadata_access_transactions
 				.iter()
 				.map(|transaction| match transaction.clone().into_inner() {
-					Transaction::UserTransaction(transaction) => (
-						transaction.committed_hash(),
-						transaction.sender(),
-						transaction.sequence_number(),
-					),
+					Transaction::UserTransaction(transaction) => {
+						info!("Transaction before exec: {:?}", transaction);
+						(
+							transaction.committed_hash(),
+							transaction.sender(),
+							transaction.sequence_number(),
+						)
+					}
 					_ => (HashValue::zero(), AccountAddress::ZERO, 0u64),
 				})
 				.collect::<Vec<(HashValue, AccountAddress, u64)>>();
