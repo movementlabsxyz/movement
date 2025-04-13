@@ -125,9 +125,11 @@ impl TransactionPipe {
 				for tx_result in batch {
 					if let TransactionStatus::Discard(discard_status) = tx_result.status {
 						tracing::info!(
-							"Transaction pipe, mempool rejecting Tx:{} with status:{:?}",
+							"Transaction pipe, mempool rejecting tx:{} sender:{} with status:{:?} Result:{:?}",
 							tx_result.hash,
-							discard_status
+							tx_result.sender,
+							discard_status,
+							tx_result,
 						);
 						self.core_mempool.reject_transaction(
 							&tx_result.sender,
@@ -140,7 +142,7 @@ impl TransactionPipe {
 							tx_hash = %tx_result.hash,
 							sender = %tx_result.sender,
 							sequence_number = %tx_result.seq_number,
-							"mempool rejected transaction",
+							"Tx execution succeed.",
 						);
 					}
 				}
@@ -303,7 +305,7 @@ impl TransactionPipe {
 		match tx_result.status() {
 			Some(_) => {
 				let ms = MempoolStatus::new(MempoolStatusCode::VmError);
-				debug!("Transaction not accepted: {:?}", tx_result.status());
+				warn!("Transaction not accepted: {:?}", tx_result.status());
 				return Ok((ms, tx_result.status()));
 			}
 			None => {
