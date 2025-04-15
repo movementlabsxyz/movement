@@ -1,4 +1,7 @@
 use super::Executor;
+use aptos_types::account_config::aptos_test_root_address;
+use aptos_sdk::types::AccountKey;
+use tracing::debug;
 use crate::executor::TxExecutionResult;
 use aptos_crypto::HashValue;
 use aptos_executor_types::{BlockExecutorTrait, StateComputeResult};
@@ -17,7 +20,7 @@ use aptos_types::{
 };
 use futures::SinkExt;
 use movement_types::block::{BlockCommitment, Commitment, Id};
-use tracing::{debug, info};
+use tracing::info;
 
 impl Executor {
 	pub async fn execute_block(
@@ -240,14 +243,11 @@ mod tests {
 		ed25519::{Ed25519PrivateKey, Ed25519Signature},
 		HashValue, PrivateKey, Uniform,
 	};
-	use aptos_sdk::{
-		transaction_builder::TransactionFactory,
-		types::{AccountKey, LocalAccount},
-	};
+	use aptos_sdk::{transaction_builder::TransactionFactory, types::LocalAccount};
 	use aptos_storage_interface::state_view::DbStateViewAtVersion;
 	use aptos_types::{
 		account_address::AccountAddress,
-		account_config::{aptos_test_root_address, AccountResource},
+		account_config::AccountResource,
 		block_executor::partitioner::ExecutableTransactions,
 		block_metadata::BlockMetadata,
 		chain_id::ChainId,

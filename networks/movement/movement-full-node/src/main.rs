@@ -2,18 +2,18 @@
 
 use clap::*;
 use movement_full_node::MovementFullNode;
-const TIMING_LOG_ENV: &str = "SUZUKA_TIMING_LOG";
-use std::env;
+use std::time::Duration;
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
-	let tracing_config =
-		movement_tracing::Config { timing_log_path: env::var_os(TIMING_LOG_ENV).map(Into::into) };
-	let _guard = movement_tracing::init_tracing_subscriber(tracing_config);
+    let tracing_config = movement_tracing::Config::default();
+    let _guard = movement_tracing::init_telemetry(tracing_config).await;
+    
+    tokio::time::sleep(Duration::from_secs(1)).await;
 
-	let suzuka_util = MovementFullNode::parse();
+    let suzuka_util = MovementFullNode::parse();
+    let result = suzuka_util.execute().await;
 
-	suzuka_util.execute().await?;
-
-	Ok(())
+    result
 }
+
