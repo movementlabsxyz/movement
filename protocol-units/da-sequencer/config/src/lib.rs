@@ -4,10 +4,6 @@ use std::net::SocketAddr;
 
 pub const DA_SEQUENCER_DIR: &str = "da-sequencer";
 
-fn default_whitelist_relative_path() -> String {
-	"da-sequencer/whitelist".to_string()
-}
-
 pub fn get_config_path(dot_movement: &dot_movement::DotMovement) -> std::path::PathBuf {
 	let mut pathbuff = std::path::PathBuf::from(dot_movement.get_path());
 	pathbuff.push(DA_SEQUENCER_DIR);
@@ -27,6 +23,9 @@ pub struct DaSequencerConfig {
 
 	#[serde(default = "default_whitelist_relative_path")]
 	pub whitelist_relative_path: String,
+
+	#[serde(default = "default_db_storage_relative_path")]
+	pub db_storage_relative_path: String,
 }
 
 env_default!(
@@ -51,6 +50,19 @@ env_default!(
 	10
 );
 
+env_default!(
+	default_whitelist_relative_path,
+	"MOVEMENT_DA_WHITELIST_RELATIVE_PATH",
+	String,
+	"whitelist.pubkeys".to_string()
+);
+env_default!(
+	default_db_storage_relative_path,
+	"MOVEMENT_DA_DB_STORAGE_RELATIVE_PATH",
+	String,
+	"da-store".to_string()
+);
+
 impl Default for DaSequencerConfig {
 	fn default() -> Self {
 		Self {
@@ -58,6 +70,7 @@ impl Default for DaSequencerConfig {
 			block_production_interval_millisec: default_block_production_interval_millisec(),
 			stream_heartbeat_interval_sec: default_stream_heartbeat_interval_sec(),
 			whitelist_relative_path: default_whitelist_relative_path(),
+			db_storage_relative_path: default_db_storage_relative_path(),
 		}
 	}
 }

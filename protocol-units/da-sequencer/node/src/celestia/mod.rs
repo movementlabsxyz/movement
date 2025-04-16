@@ -1,6 +1,7 @@
 pub mod blob;
 pub mod client;
 pub mod height;
+pub mod mock;
 pub mod submit;
 
 pub use blob::CelestiaBlob;

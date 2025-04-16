@@ -9,8 +9,12 @@ homepage.workspace = true
 publish.workspace = true
 rust-version.workspace = true
 
+[[bin]]
+name = "mock-da"
+path = "bin/mock-da.rs"
+
 [dependencies]
-movement-da-sequencer-node= { workspace = true }
+movement-da-sequencer-node = { workspace = true }
 
 [lints]
 workspace = true

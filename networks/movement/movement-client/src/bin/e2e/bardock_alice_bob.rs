@@ -24,7 +24,7 @@ fn main() {
 		number_cycle: 1,
 	};
 
-	config.number_scenario_per_client = 20; // 20Client Requests
+	config.scenarios_per_client = 20; // 20Client Requests
 
 	// Init the Test before execution
 	if let Err(err) = init_test(&config) {

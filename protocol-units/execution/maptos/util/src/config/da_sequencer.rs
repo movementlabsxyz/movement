@@ -1,3 +1,4 @@
+use crate::config::common::default_stream_heartbeat_interval_sec;
 use crate::config::common::{default_batch_signer_identifier, default_da_sequencer_connection_url};
 use movement_signer_loader::identifiers::SignerIdentifier;
 use serde::{Deserialize, Serialize};
@@ -13,6 +14,9 @@ pub struct Config {
 	/// The signing key used to sign batches.
 	#[serde(skip_deserializing, skip_serializing, default = "default_batch_signer_identifier")]
 	pub batch_signer_identifier: SignerIdentifier,
+
+	#[serde(default = "default_stream_heartbeat_interval_sec")]
+	pub stream_heartbeat_interval_sec: u64,
 }
 
 impl Default for Config {
@@ -20,6 +24,7 @@ impl Default for Config {
 		Self {
 			connection_url: default_da_sequencer_connection_url(),
 			batch_signer_identifier: default_batch_signer_identifier(),
+			stream_heartbeat_interval_sec: default_stream_heartbeat_interval_sec(),
 		}
 	}
 }

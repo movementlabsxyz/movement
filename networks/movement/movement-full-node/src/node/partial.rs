@@ -9,7 +9,7 @@ use movement_config::Config;
 use movement_rest::MovementRest;
 
 use anyhow::Context;
-use tokio::try_join;
+// use tokio::try_join;
 use tracing::debug;
 
 pub struct MovementPartialNode<T> {
@@ -56,13 +56,23 @@ where
 
 		let da_sequencer_url =
 			self.config.execution_config.maptos_config.da_sequencer.connection_url.clone();
-		let (execution_and_settlement_result, background_task_result, services_result) = try_join!(
-			tokio::spawn(async move { exec_settle_task.run(da_sequencer_url).await }),
+		let stream_heartbeat_interval_sec = self
+			.config
+			.execution_config
+			.maptos_config
+			.da_sequencer
+			.stream_heartbeat_interval_sec;
+		let (result, _index, _remaining) = futures::future::select_all(vec![
+			tokio::spawn(async move {
+				exec_settle_task.run(da_sequencer_url, stream_heartbeat_interval_sec).await
+			}),
 			tokio::spawn(exec_background),
 			tokio::spawn(services.run()),
 			// tokio::spawn(async move { movement_rest.run_service().await }),
-		)?;
-		execution_and_settlement_result.and(background_task_result).and(services_result)
+		])
+		.await;
+		result??;
+		Ok(())
 	}
 }
 

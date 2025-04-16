@@ -21,11 +21,12 @@ impl StreamBlocks {
 	pub async fn execute(&self) -> Result<(), anyhow::Error> {
 		let mut client = GrpcDaSequencerClient::try_connect(
 			&Url::parse(&self.light_node_url).expect("Can't parse provided url."),
+			10,
 		)
 		.await
 		.expect("gRPC client connection failed.");
 
-		let mut blocks_from_da = client
+		let (mut blocks_from_da, _aleert_channel) = client
 			.stream_read_from_height(StreamReadFromHeightRequest { height: self.from_height })
 			.await
 			.context("Failed to stream blocks from DA")?;

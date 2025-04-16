@@ -51,12 +51,14 @@ where
 						connected_grpc_sender.push(produced_tx);
 
 						// Send back the current height.
-						let _ = tokio::task::spawn_blocking({
+						let start_jh = tokio::task::spawn_blocking({
 							let storage = storage.clone();
 							move || {
-								let current_height = storage.get_current_block_height();
+								let current_height = storage.get_current_block_height()?;
 								let _ = curent_height_callback.send(current_height);
-						}}).await;
+								Ok::<(), DaSequencerError>(())
+						}});
+						spawn_result_futures.push(start_jh);
 					},
 					GrpcRequests::GetBlockHeight(block_height, callback) => {
 						let get_block_jh = tokio::task::spawn_blocking({

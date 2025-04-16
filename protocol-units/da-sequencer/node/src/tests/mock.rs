@@ -139,8 +139,8 @@ impl DaSequencerStorage for StorageMock {
 		todo!();
 	}
 
-	fn get_current_block_height(&self) -> BlockHeight {
-		self.inner.lock().unwrap().current_height.into()
+	fn get_current_block_height(&self) -> Result<BlockHeight, DaSequencerError> {
+		Ok(self.inner.lock().unwrap().current_height.into())
 	}
 }
 

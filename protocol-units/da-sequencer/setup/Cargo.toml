@@ -10,6 +10,19 @@ publish.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+dot-movement = { workspace = true }
+godfig = { workspace = true }
+movement-da-sequencer-config = { workspace = true }
+tokio = { workspace = true }
+tracing-subscriber = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+ed25519-dalek = { workspace = true }
+
+maptos-execution-util = { workspace = true }
+movement-signer = { workspace = true }
+movement-signer-loader = { workspace = true }
+movement-da-sequencer-node = { workspace = true }
 
 [lints]
 workspace = true

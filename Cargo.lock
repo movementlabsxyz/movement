@@ -11636,6 +11636,20 @@ dependencies = [
 [[package]]
 name = "movement-da-sequencer-setup"
 version = "0.3.4"
+dependencies = [
+ "anyhow",
+ "dot-movement",
+ "ed25519-dalek 2.1.1",
+ "godfig",
+ "maptos-execution-util",
+ "movement-da-sequencer-config",
+ "movement-da-sequencer-node",
+ "movement-signer",
+ "movement-signer-loader",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+]
 
 [[package]]
 name = "movement-da-util"
@@ -11721,6 +11735,7 @@ dependencies = [
  "mcr-settlement-config",
  "mcr-settlement-manager",
  "movement-config",
+ "movement-da-light-node-client",
  "movement-da-sequencer-client",
  "movement-da-sequencer-proto",
  "movement-da-util",

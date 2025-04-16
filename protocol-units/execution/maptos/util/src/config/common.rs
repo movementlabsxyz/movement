@@ -80,6 +80,13 @@ env_default!(
 	"http://0.0.0.0:30730".parse().expect("Bad da sequencer connection url.")
 );
 
+env_default!(
+	default_stream_heartbeat_interval_sec,
+	"MOVEMENT_DA_STREAM_HEARTBEAT_INTERVAL_MILLISEC",
+	u64,
+	10
+);
+
 pub fn default_batch_signer_identifier() -> SignerIdentifier {
 	match std::env::var("MAPTOS_DA_SEQUENCER_SIGNER_IDENTIFIER") {
 		Ok(val) => SignerIdentifier::try_from_canonical_string(&val).unwrap(),
@@ -88,10 +95,7 @@ pub fn default_batch_signer_identifier() -> SignerIdentifier {
 			let key = Ed25519PrivateKey::genesis();
 
 			let verifying_key = key.verifying_key();
-			tracing::info!(
-				"Using batch signing public key: {}",
-				hex::encode(verifying_key.to_bytes())
-			);
+			tracing::info!("Using batch signing public key: {}", key.to_encoded_string().unwrap());
 
 			// remove the 0x prefix
 			let key = key.to_encoded_string().unwrap();

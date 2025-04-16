@@ -62,11 +62,18 @@ where
 	E: DynOptFinExecutor,
 	S: McrSettlementManagerOperations,
 {
-	pub async fn run(mut self, da_connection_url: Url) -> anyhow::Result<()> {
+	pub async fn run(
+		mut self,
+		da_connection_url: Url,
+		stream_heartbeat_interval_sec: u64,
+	) -> anyhow::Result<()> {
 		let synced_height = self.da_db.get_synced_height().await?;
 		info!("DA synced height: {:?}", synced_height);
-		let mut da_client = GrpcDaSequencerClient::try_connect(&da_connection_url).await?;
-		let mut blocks_from_da = da_client
+		let mut da_client =
+			GrpcDaSequencerClient::try_connect(&da_connection_url, stream_heartbeat_interval_sec)
+				.await?;
+		// TODO manage alert_channel in the issue #1169
+		let (mut blocks_from_da, alert_channel) = da_client
 			.stream_read_from_height(StreamReadFromHeightRequest { height: synced_height })
 			.await
 			.map_err(|e| {
@@ -109,7 +116,7 @@ where
 		}
 
 		// the da height must be greater than 1
-		if da_block.height < 2 {
+		if da_block.height < 1 {
 			anyhow::bail!("Invalid DA height: {:?}", da_block.height);
 		}
 

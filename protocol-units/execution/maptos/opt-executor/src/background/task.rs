@@ -59,12 +59,20 @@ impl BackgroundTask {
 	}
 
 	/// Runs the background task.
-	pub async fn run(self, da_connection_url: Url) -> Result<(), Error> {
+	pub async fn run(
+		self,
+		da_connection_url: Url,
+		stream_heartbeat_interval_sec: u64,
+	) -> Result<(), Error> {
 		use BackgroundInner::*;
 
 		match self.inner {
 			Full(transaction_pipe) => {
-				let da_client = GrpcDaSequencerClient::try_connect(&da_connection_url).await?;
+				let da_client = GrpcDaSequencerClient::try_connect(
+					&da_connection_url,
+					stream_heartbeat_interval_sec,
+				)
+				.await?;
 				transaction_pipe.run(da_client).await
 			}
 			ReadOnly(null_mempool) => null_mempool.run().await,

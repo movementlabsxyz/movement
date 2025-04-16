@@ -24,7 +24,7 @@ pub async fn run_server(
 	request_tx: mpsc::Sender<GrpcRequests>,
 	whitelist: Whitelist,
 ) -> Result<(), anyhow::Error> {
-	tracing::info!("Server listening on: {}", address);
+	tracing::info!("Da Sequencer gRpc Server listening on: {}", address);
 	let whitelist = Arc::new(RwLock::new(whitelist));
 	let reflection = tonic_reflection::server::Builder::configure()
 		.register_encoded_file_descriptor_set(movement_da_sequencer_proto::FILE_DESCRIPTOR_SET)
@@ -116,7 +116,7 @@ impl DaSequencerNodeService for DaSequencerNode {
 					};
 					current_block_height +=1;
 
-					let blockv1 = match block.as_ref().map(|block| block.try_into()) {
+					let blockv1 = match block.map(|block| block.try_into()) {
 						None => continue,
 						Some(Ok(block)) => block,
 						Some(Err(err)) => {
@@ -236,22 +236,23 @@ impl DaSequencerNodeService for DaSequencerNode {
 
 pub struct GrpcBatchData {}
 
+// impl TryFrom<SequencerBlock> for BlockV1 {
+// 	type Error = DaSequencerError;
+
+// 	fn try_from(block: SequencerBlock) -> Result<Self, Self::Error> {
+// 		BlockV1::try_from(&block)
+// 	}
+// }
+
 impl TryFrom<SequencerBlock> for BlockV1 {
 	type Error = DaSequencerError;
 
 	fn try_from(block: SequencerBlock) -> Result<Self, Self::Error> {
-		BlockV1::try_from(&block)
-	}
-}
-
-impl TryFrom<&SequencerBlock> for BlockV1 {
-	type Error = DaSequencerError;
-
-	fn try_from(block: &SequencerBlock) -> Result<Self, Self::Error> {
 		Ok(BlockV1 {
 			block_id: block.id().to_vec(),
 			height: block.height().into(),
-			data: block.try_into()?,
+			data: bcs::to_bytes(&block.inner_block())
+				.map_err(|e| DaSequencerError::Deserialization(e.to_string()))?,
 		})
 	}
 }
