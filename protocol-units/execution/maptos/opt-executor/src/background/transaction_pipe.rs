@@ -309,7 +309,7 @@ impl TransactionPipe {
 				return Ok((ms, tx_result.status()));
 			}
 			None => {
-				debug!("Transaction accepted by VM: {:?}", transaction);
+				info!("Transaction accepted by VM: {:?}", transaction);
 			}
 		}
 

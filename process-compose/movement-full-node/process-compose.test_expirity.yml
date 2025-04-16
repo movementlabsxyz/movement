@@ -1,0 +1,16 @@
+version: "3"
+
+environment:
+
+processes:
+
+  movement-tests-expirity:
+    command: |
+      RUST_BACKTRACE=1 RUST_LOG=info cargo run --bin test_expirity
+    depends_on:
+      movement-full-node:
+        condition: process_healthy
+      movement-faucet:
+        condition: process_healthy
+    availability:
+      exit_on_end: true
