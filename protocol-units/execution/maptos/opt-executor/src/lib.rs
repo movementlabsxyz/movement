@@ -11,6 +11,14 @@ pub use context::Context;
 pub use executor::Executor;
 pub use service::Service;
 
+// Re-export dependencies
+pub use aptos_crypto;
+pub use aptos_db;
+pub use aptos_executor;
+pub use aptos_executor_test_helpers;
+pub use aptos_storage_interface;
+pub use aptos_types;
+
 #[cfg(test)]
 mod tests {
 
