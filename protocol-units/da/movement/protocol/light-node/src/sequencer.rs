@@ -1,5 +1,5 @@
 use movement_da_light_node_da::DaOperations;
-use movement_da_light_node_prevalidator::{aptos::whitelist::Validator, PrevalidatorOperations};
+use movement_da_light_node_prevalidator::aptos::Validator;
 use movement_signer::cryptography::secp256k1::Secp256k1;
 use movement_signer_loader::LoadedSigner;
 use std::boxed::Box;
@@ -53,7 +53,7 @@ where
 {
 	pub pass_through: LightNodePassThrough<O, C, Da, V>,
 	pub memseq: Arc<memseq::Memseq<memseq::RocksdbMempool>>,
-	pub prevalidator: Option<Arc<Validator>>,
+	pub prevalidator: Arc<Validator>,
 }
 
 impl<O, C, Da, V> Debug for LightNode<O, C, Da, V>
@@ -104,10 +104,10 @@ impl LightNodeRuntime
 
 		// prevalidator
 		let whitelisted_accounts = config.whitelisted_accounts()?;
-		let prevalidator = match whitelisted_accounts {
-			Some(whitelisted_accounts) => Some(Arc::new(Validator::new(whitelisted_accounts))),
-			None => None,
-		};
+		let prevalidator = Arc::new(match whitelisted_accounts {
+			Some(whitelisted_accounts) => Validator::with_whitelist(whitelisted_accounts),
+			None => Validator::new(),
+		});
 
 		Ok(Self { pass_through, memseq, prevalidator })
 	}
@@ -409,30 +409,22 @@ where
 			let transaction: Transaction = serde_json::from_slice(&blob.data)
 				.map_err(|e| tonic::Status::internal(e.to_string()))?;
 
-			match &self.prevalidator {
-				Some(prevalidator) => {
-					// match the prevalidated status, if validation error discard if internal error raise internal error
-					match prevalidator.prevalidate(transaction).await {
-						Ok(prevalidated) => {
-							transactions.push(prevalidated.into_inner());
+			// match the prevalidated status, if validation error discard if internal error raise internal error
+			match self.prevalidator.prevalidate(&transaction) {
+				Ok(()) => {
+					transactions.push(transaction);
+				}
+				Err(e) => {
+					match e {
+						movement_da_light_node_prevalidator::Error::Validation(_) => {
+							// discard the transaction
+							info!("discarding transaction due to prevalidation error {:?}", e);
 						}
-						Err(e) => {
-							match e {
-								movement_da_light_node_prevalidator::Error::Validation(_) => {
-									// discard the transaction
-									info!(
-										"discarding transaction due to prevalidation error {:?}",
-										e
-									);
-								}
-								movement_da_light_node_prevalidator::Error::Internal(e) => {
-									return Err(tonic::Status::internal(e.to_string()));
-								}
-							}
+						movement_da_light_node_prevalidator::Error::Internal(e) => {
+							return Err(tonic::Status::internal(e.to_string()));
 						}
 					}
 				}
-				None => transactions.push(transaction),
 			}
 		}
 
