@@ -8,7 +8,7 @@ processes:
     env:
       MOVEMENT_SWAP_PATH: ${MOVEMENT_SWAP_PATH}
     command: |
-      LOADTEST_NUMBER_SCENARIO=1 LOADTEST_NUMBER_SCENARIO_PER_CLIENT=1 cargo test -p movement-tests hey_partners_load -- --nocapture
+      LOADTEST_NUMBER_SCENARIOS=1 LOADTEST_SCENARIOS_PER_CLIENT=1 cargo test -p movement-tests hey_partners_load -- --nocapture
     depends_on:
       movement-full-node:
         condition: process_healthy

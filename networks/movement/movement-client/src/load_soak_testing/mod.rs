@@ -61,7 +61,7 @@ pub struct ExecutionConfig {
 	/// The path to the file where execution data are written to be processed later.
 	pub execfile: String,
 	/// The number of started scenarios per client. number_scenarios / number_scenario_per_client defines the number of clients.
-	pub number_scenario_per_client: usize,
+	pub scenarios_per_client: usize,
 }
 
 impl ExecutionConfig {
@@ -69,14 +69,14 @@ impl ExecutionConfig {
 		match self.kind {
 			TestKind::Load { number_scenarios } => {
 				assert!(
-					number_scenarios >= self.number_scenario_per_client,
+					number_scenarios >= self.scenarios_per_client,
 					"Number of running scenario less than the number of scenario per client."
 				);
 			}
 			TestKind::Soak { min_scenarios, max_scenarios, .. } => {
 				assert!(max_scenarios >= min_scenarios, "max scenarios less than min scenarios");
 				assert!(
-					min_scenarios >= self.number_scenario_per_client,
+					min_scenarios >= self.scenarios_per_client,
 					"Number of min running scenario less than the number of scenario per client."
 				);
 			}
@@ -86,20 +86,19 @@ impl ExecutionConfig {
 
 impl Default for ExecutionConfig {
 	fn default() -> Self {
-		let number_scenarios: usize = std::env::var("LOADTEST_NUMBER_SCENARIO")
+		let number_scenarios: usize = std::env::var("LOADTEST_NUMBER_SCENARIOS")
 			.map_err(|err| err.to_string())
 			.and_then(|val| val.parse().map_err(|err: std::num::ParseIntError| err.to_string()))
 			.unwrap_or(10);
-		let number_scenario_per_client: usize =
-			std::env::var("LOADTEST_NUMBER_SCENARIO_PER_CLIENT")
-				.unwrap_or("2".to_string())
-				.parse()
-				.unwrap_or(2);
+		let number_scenario_per_client: usize = std::env::var("LOADTEST_SCENARIOS_PER_CLIENT")
+			.unwrap_or("2".to_string())
+			.parse()
+			.unwrap_or(2);
 		ExecutionConfig {
 			kind: TestKind::build_load_test(number_scenarios),
 			logfile: "log_file.txt".to_string(),
 			execfile: "test_result.txt".to_string(),
-			number_scenario_per_client,
+			scenarios_per_client: number_scenario_per_client,
 		}
 	}
 }
@@ -148,7 +147,7 @@ pub fn execute_test(config: ExecutionConfig, create_scenario: Arc<scenario::Crea
 	let ids: Vec<_> = (1..=number_scenarios).collect();
 	let chunks: Vec<_> = ids
 		.into_iter()
-		.chunks(config.number_scenario_per_client)
+		.chunks(config.scenarios_per_client)
 		.into_iter()
 		.map(|chunk| {
 			(config.kind.clone(), chunk.into_iter().collect::<Vec<_>>(), create_scenario.clone())
