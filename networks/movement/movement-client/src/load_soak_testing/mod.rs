@@ -96,7 +96,7 @@ impl Default for ExecutionConfig {
 			.unwrap_or(2);
 		ExecutionConfig {
 			kind: TestKind::build_load_test(number_scenarios),
-			logfile: "log_file.txt".to_string(),
+			logfile: "test_log.txt".to_string(),
 			execfile: "test_result.txt".to_string(),
 			scenarios_per_client: number_scenario_per_client,
 		}
