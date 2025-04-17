@@ -1,29 +1,38 @@
 //! Task processing incoming transactions for the opt API.
-
 use super::Error;
 use crate::executor::TxExecutionResult;
 use crate::gc_account_sequence_number::UsedSequenceNumberPool;
 use aptos_account_whitelist::config::Config as WhitelistConfig;
 use aptos_config::config::NodeConfig;
-use aptos_mempool::core_mempool::CoreMempool;
-use aptos_mempool::SubmissionStatus;
-use aptos_mempool::{core_mempool::TimelineState, MempoolClientRequest};
-use aptos_storage_interface::state_view::LatestDbStateCheckpointView;
-use aptos_storage_interface::DbReader;
-use aptos_types::account_address::AccountAddress;
-use aptos_types::mempool_status::{MempoolStatus, MempoolStatusCode};
-use aptos_types::transaction::SignedTransaction;
-use aptos_types::transaction::TransactionStatus;
-use aptos_vm_validator::vm_validator::get_account_sequence_number;
-use aptos_vm_validator::vm_validator::{TransactionValidation, VMValidator};
+use aptos_mempool::{
+	core_mempool::{CoreMempool, TimelineState},
+	MempoolClientRequest, SubmissionStatus,
+};
+use aptos_storage_interface::{state_view::LatestDbStateCheckpointView, DbReader};
+use aptos_types::{
+	account_address::AccountAddress,
+	mempool_status::{MempoolStatus, MempoolStatusCode},
+	transaction::{SignedTransaction, TransactionStatus},
+};
+use aptos_vm_validator::vm_validator::{
+	get_account_sequence_number, TransactionValidation, VMValidator,
+};
+use bcs;
 use futures::channel::mpsc as futures_mpsc;
+use futures::stream::FuturesUnordered;
+use futures::StreamExt;
 use maptos_execution_util::config::mempool::Config as MempoolConfig;
 use movement_collections::garbage::counted::GcCounter;
-use std::collections::BTreeMap;
-use std::collections::HashSet;
+use movement_da_sequencer_client::DaSequencerClient;
+use movement_da_sequencer_proto::BatchWriteRequest;
+use movement_signer::cryptography::ed25519::Ed25519;
+use movement_signer_loader::identifiers::SignerIdentifier;
+use movement_signer_loader::{Load, LoadedSigner};
+use movement_types::transaction::Transaction;
+use std::collections::{BTreeMap, HashSet};
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
-use tokio::sync::mpsc;
+use tokio::task::JoinHandle;
 use tracing::{debug, info, info_span, warn, Instrument};
 
 const GC_INTERVAL: Duration = Duration::from_secs(30);
@@ -34,8 +43,6 @@ pub struct TransactionPipe {
 	mempool_commit_tx_receiver: futures_mpsc::Receiver<Vec<TxExecutionResult>>,
 	// The receiver for the mempool client.
 	mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
-	// Sender for the channel with accepted transactions.
-	transaction_sender: mpsc::Sender<(u64, SignedTransaction)>,
 	// Access to the ledger DB. TODO: reuse an instance of VMValidator
 	db_reader: Arc<dyn DbReader>,
 	// State of the Aptos mempool
@@ -44,14 +51,16 @@ pub struct TransactionPipe {
 	transactions_in_flight: Arc<RwLock<GcCounter>>,
 	// The configured limit on transactions in flight
 	in_flight_limit: Option<u64>,
-	// Timestamp of the last mempool send
-	last_mempool_send: Instant,
 	// Timestamp of the last garbage collection
 	last_gc: Instant,
 	// The pool of used sequence numbers
 	used_sequence_number_pool: UsedSequenceNumberPool,
 	/// The accounts whitelisted for ingress
 	whitelisted_accounts: Option<HashSet<AccountAddress>>,
+	/// Batch signer
+	da_batch_signer: SignerIdentifier,
+	/// Mempool configuration from maptos_execution.
+	mempool_config: MempoolConfig,
 }
 
 enum SequenceNumberValidity {
@@ -63,13 +72,13 @@ impl TransactionPipe {
 	pub(crate) fn new(
 		mempool_commit_tx_receiver: futures_mpsc::Receiver<Vec<TxExecutionResult>>, // Sender, seq number)
 		mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
-		transaction_sender: mpsc::Sender<(u64, SignedTransaction)>,
 		db_reader: Arc<dyn DbReader>,
 		node_config: &NodeConfig,
 		mempool_config: &MempoolConfig,
 		whitelist_config: &WhitelistConfig,
 		transactions_in_flight: Arc<RwLock<GcCounter>>,
 		transactions_in_flight_limit: Option<u64>,
+		da_batch_signer: SignerIdentifier,
 	) -> Result<Self, anyhow::Error> {
 		let whitelisted_accounts = whitelist_config.whitelisted_accounts()?;
 		info!("Whitelisted accounts: {:?}", whitelisted_accounts);
@@ -77,18 +86,18 @@ impl TransactionPipe {
 		Ok(TransactionPipe {
 			mempool_commit_tx_receiver,
 			mempool_client_receiver,
-			transaction_sender,
 			db_reader,
 			core_mempool: CoreMempool::new(node_config),
 			transactions_in_flight,
 			in_flight_limit: transactions_in_flight_limit,
-			last_mempool_send: Instant::now(),
 			last_gc: Instant::now(),
 			used_sequence_number_pool: UsedSequenceNumberPool::new(
 				mempool_config.sequence_number_ttl_ms,
 				mempool_config.gc_slot_duration_ms,
 			),
 			whitelisted_accounts,
+			da_batch_signer,
+			mempool_config: mempool_config.clone(),
 		})
 	}
 
@@ -103,141 +112,164 @@ impl TransactionPipe {
 		}
 	}
 
-	pub async fn run(mut self) -> Result<(), Error> {
+	pub async fn run(mut self, da_client: (impl DaSequencerClient + 'static)) -> Result<(), Error> {
+		let mut build_batch_interval = tokio::time::interval(MEMPOOL_INTERVAL);
+		let mut mempool_gc_interval = tokio::time::interval(tokio::time::Duration::from_secs(10));
+		let mut sent_batch_futures = FuturesUnordered::new();
+
 		loop {
-			self.tick().await?;
-			let _ = tokio::time::sleep(tokio::time::Duration::from_millis(100));
-		}
-	}
+			tokio::select! {
+				Some(request) = self.mempool_client_receiver.next() => {
+					self.tick_requests(request).await?;
+				}
+				Some(batches) = self.mempool_commit_tx_receiver.next() => {
+					self.tick_commit_tx(batches).await?;
+				}
+				_ = build_batch_interval.tick() => {
+					let batch_jh = self.tick_mempool_sender(&da_client).await?;
+					if let Some(jh) = batch_jh {
+						sent_batch_futures.push(jh);
+					}
+				}
+				_ = mempool_gc_interval.tick() => {
+					self.tick_gc();
+				}
 
-	pub async fn tick(&mut self) -> Result<(), Error> {
-		self.tick_requests().await?;
-		self.tick_mempool_sender().await?;
-		self.tick_commit_tx().await?;
-		self.tick_gc();
-		Ok(())
-	}
-
-	/// Pipes a batch of transactions from the executor to commit then in the Aptos mempool.
-	pub(crate) async fn tick_commit_tx(&mut self) -> Result<(), Error> {
-		match self.mempool_commit_tx_receiver.try_next() {
-			Ok(Some(batch)) => {
-				for tx_result in batch {
-					if let TransactionStatus::Discard(discard_status) = tx_result.status {
-						tracing::info!(
-							"Transaction pipe, mempool rejecting Tx:{} with status:{:?}",
-							tx_result.hash,
-							discard_status
-						);
-						self.core_mempool.reject_transaction(
-							&tx_result.sender,
-							tx_result.seq_number,
-							&tx_result.hash,
-							&discard_status,
-						)
-					} else {
-						tracing::info!(
-							tx_hash = %tx_result.hash,
-							sender = %tx_result.sender,
-							sequence_number = %tx_result.seq_number,
-							"mempool rejected transaction",
-						);
+				Some(result) = sent_batch_futures.next() => {
+					match result {
+						Ok(Ok(response)) => {
+							if !response.answer {
+								tracing::error!("DA Sequencer reject batch.");
+								panic!("DA Sequencer reject batch., can't send batch, exit process");
+							}
+						}
+						Ok(Err(err)) => {
+							tracing::error!("Send batch to Da failed because of a connection issue: {err}");
+							//TODO put some reconnection for now panic.
+							panic!("DA connection failed, can't send batch, exit process");
+						}
+						Err(err) => {
+							tracing::error!("Tokio send batch task execution failed: {err}");
+							//TODO see what consequence of this error.
+						}
 					}
 				}
 			}
-			Ok(None) => return Err(Error::InputClosed),
-			Err(_) => (),
+		}
+	}
+
+	/// Pipes a batch of transactions from the executor to commit then in the Aptos mempool.
+	pub(crate) async fn tick_commit_tx(
+		&mut self,
+		batches: Vec<TxExecutionResult>,
+	) -> Result<(), Error> {
+		for tx_result in batches {
+			if let TransactionStatus::Discard(discard_status) = tx_result.status {
+				tracing::info!(
+					"Transaction pipe, mempool rejecting Tx:{} with status:{:?}",
+					tx_result.hash,
+					discard_status
+				);
+				self.core_mempool.reject_transaction(
+					&tx_result.sender,
+					tx_result.seq_number,
+					&tx_result.hash,
+					&discard_status,
+				)
+			} else {
+				tracing::info!(
+					tx_hash = %tx_result.hash,
+					sender = %tx_result.sender,
+					sequence_number = %tx_result.seq_number,
+					"mempool rejected transaction",
+				);
+			}
 		}
 		Ok(())
 	}
 
 	/// Pipes a batch of transactions from the mempool to the transaction channel.
-	/// todo: it may be wise to move the batching logic up a level to the consuming structs.
-	pub(crate) async fn tick_requests(&mut self) -> Result<(), Error> {
-		// try to immediately get the next request
-		// if we don't do this, then the `tick_mempool_sender` process would be held up by receiving a new transaction
+	pub async fn tick_requests(&mut self, request: MempoolClientRequest) -> Result<(), Error> {
+		match request {
+			MempoolClientRequest::SubmitTransaction(transaction, callback) => {
+				let span = info_span!(
+					target: "movement_timing",
+					"submit_transaction",
+					tx_hash = %transaction.committed_hash(),
+					sender = %transaction.sender(),
+					sequence_number = transaction.sequence_number(),
+				);
+				let status =
+					self.add_transaction_to_aptos_mempool(transaction).instrument(span).await?;
 
-		// todo: for some reason this causes the core_mempool API to flag the receiver as gone. This workaround needs to be reinvestigated.
-		// we use select to make this timeout after 1ms
-		/*let timeout = tokio::time::sleep(Duration::from_millis(1));
-
-		let next = tokio::select! {
-			next = self.mempool_client_receiver.next() => next, // If received, process it
-			_ = timeout => None, // If timeout, return None
-		};*/
-
-		// this also causes the core_mempool API to flag the receiver as gone
-		// let next = self.mempool_client_receiver.try_next().map_err(|_| Error::InputClosed)?;
-		match self.mempool_client_receiver.try_next() {
-			Ok(Some(request)) => match request {
-				MempoolClientRequest::SubmitTransaction(transaction, callback) => {
-					let span = info_span!(
-						target: "movement_timing",
-						"submit_transaction",
-						tx_hash = %transaction.committed_hash(),
-						sender = %transaction.sender(),
-						sequence_number = transaction.sequence_number(),
-					);
-					let status =
-						self.add_transaction_to_aptos_mempool(transaction).instrument(span).await?;
-
-					callback.send(Ok(status)).unwrap_or_else(|_| {
-						debug!("SubmitTransaction request canceled");
-					});
-				}
-				MempoolClientRequest::GetTransactionByHash(hash, sender) => {
-					let mempool_result = self.core_mempool.get_by_hash(hash);
-					sender.send(mempool_result).unwrap_or_else(|_| {
-						debug!("GetTransactionByHash request canceled");
-					});
-				}
-			},
-			Ok(None) => return Err(Error::InputClosed),
-			Err(_) => (),
+				callback.send(Ok(status)).unwrap_or_else(|_| {
+					debug!("SubmitTransaction request canceled");
+				});
+			}
+			MempoolClientRequest::GetTransactionByHash(hash, sender) => {
+				let mempool_result = self.core_mempool.get_by_hash(hash);
+				sender.send(mempool_result).unwrap_or_else(|_| {
+					debug!("GetTransactionByHash request canceled");
+				});
+			}
 		}
 
 		Ok(())
 	}
 
-	pub(crate) async fn tick_mempool_sender(&mut self) -> Result<(), Error> {
-		if self.last_mempool_send.elapsed() > MEMPOOL_INTERVAL {
-			// pop some transactions from the mempool
-			let transactions = self.core_mempool.get_batch_with_ranking_score(
-				1024 * 8,           // todo: move out to config
-				1024 * 1024 * 1024, // todo: move out to config
-				true,               // allows the mempool to return batch before one is full
-				BTreeMap::new(),
-			);
-			debug!("Sending {:?} transactions to the transaction channel", transactions.len());
+	/// Extracts a batch of transactions from the mempool and sends it to the DA.
+	pub(crate) async fn tick_mempool_sender(
+		&mut self,
+		da_client: &(impl DaSequencerClient + 'static),
+	) -> Result<
+		Option<JoinHandle<Result<movement_da_sequencer_proto::BatchWriteResponse, tonic::Status>>>,
+		Error,
+	> {
+		let transactions = self.core_mempool.get_batch_with_ranking_score(
+			self.mempool_config.max_tx_per_batch,
+			self.mempool_config.max_batch_size,
+			true,            // allow partial batches
+			BTreeMap::new(), // exclude Tx
+		);
 
-			// send them to the transaction channel
-			for (transaction, ranking_score) in transactions {
-				// clone the channel sender
-				let sender = self.transaction_sender.clone();
+		debug!("Create a batch of {} transactions and submit it.", transactions.len());
 
-				// grab the sender and sequence number
-				let transaction_sender = transaction.sender();
-				let sequence_number = transaction.sequence_number();
+		let batch: Vec<Transaction> = transactions
+			.into_iter()
+			.map(|(transaction, ranking_score)| {
+				let priority = u64::MAX - ranking_score;
+				let sender = transaction.sender();
+				let seq = transaction.sequence_number();
 
-				// application priority for movement is the inverse of the ranking score
-				let application_priority = u64::MAX - ranking_score;
-				let _ = sender.send((application_priority, transaction)).await;
-
-				// commit the transaction now that we have sent it
+				self.core_mempool.commit_transaction(&sender, seq);
 				debug!(
 					target: "movement_timing",
-					sender = %transaction_sender,
-					sequence_number = sequence_number,
-					"Tx sent to Tx ingress"
+					tx_hash = %transaction.committed_hash(),
+					sender = %transaction.sender(),
+					sequence_number = transaction.sequence_number(),
+					"Tx build batch add transaction",
 				);
-				self.core_mempool.commit_transaction(&transaction_sender, sequence_number);
-			}
+				bcs::to_bytes(&transaction).map(|serialized| {
+					Transaction::new(serialized, priority, transaction.sequence_number())
+				})
+			})
+			.collect::<Result<Vec<_>, _>>()?;
 
-			// update the last send
-			self.last_mempool_send = Instant::now();
+		if !batch.is_empty() {
+			// Build batch and submit request.
+			let batch_bytes = bcs::to_bytes(&batch).expect("Serialization failed");
+			let loader: LoadedSigner<Ed25519> = self.da_batch_signer.load().await?;
+			let encoded =
+				movement_da_sequencer_client::sign_and_encode_batch(batch_bytes, &loader).await?;
+			//send the batch in a separate task to avoid to slow the loop.
+			let handle = tokio::spawn({
+				let mut client = da_client.clone();
+				async move { client.batch_write(BatchWriteRequest { data: encoded }).await }
+			});
+			Ok(Some(handle))
+		} else {
+			Ok(None)
 		}
-
-		Ok(())
 	}
 
 	pub(crate) fn tick_gc(&mut self) {
@@ -331,6 +363,12 @@ impl TransactionPipe {
 			true,
 		);
 
+		info!(
+			tx_hash = %tx_hash,
+			status = %status,
+			"Transaction added to the mempool with status"
+		);
+
 		match status.code {
 			MempoolStatusCode::Accepted => {
 				let now = chrono::Utc::now().timestamp_millis() as u64;
@@ -358,8 +396,14 @@ mod tests {
 	use aptos_sdk::types::vm_status::DiscardedVMStatus;
 	use aptos_storage_interface::state_view::LatestDbStateCheckpointView;
 	use aptos_vm_validator::vm_validator;
+	use futures::stream;
 	use futures::SinkExt;
+	use movement_da_sequencer_client::ClientDaSequencerError;
+	use movement_da_sequencer_client::StreamReadBlockFromHeight;
+	use movement_da_sequencer_proto::BatchWriteResponse;
+	use movement_da_sequencer_proto::BlockV1;
 	use std::collections::BTreeSet;
+	use std::sync::Mutex;
 
 	use super::*;
 	use crate::{Context, Executor, Service};
@@ -378,22 +422,66 @@ mod tests {
 	use aptos_vm_genesis::GENESIS_KEYPAIR;
 	use futures::channel::oneshot;
 	use maptos_execution_util::config::chain::Config;
+	use movement_types::transaction::Transaction as MvTransaction;
 	use tempfile::TempDir;
 
-	async fn setup() -> (Context, TransactionPipe, mpsc::Receiver<(u64, SignedTransaction)>, TempDir)
-	{
-		let (tx_sender, tx_receiver) = mpsc::channel(16);
+	async fn setup() -> (Context, TransactionPipe, TempDir) {
 		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
 			futures_mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
-
 		let (executor, tempdir) =
 			Executor::try_test_default(GENESIS_KEYPAIR.0.clone(), mempool_tx_exec_result_sender)
 				.await
 				.unwrap();
-		let (context, background) =
-			executor.background(tx_sender, mempool_commit_tx_receiver).unwrap();
+		let (context, background) = executor.background(mempool_commit_tx_receiver).unwrap();
 		let transaction_pipe = background.into_transaction_pipe();
-		(context, transaction_pipe, tx_receiver, tempdir)
+		(context, transaction_pipe, tempdir)
+	}
+
+	#[derive(Clone)]
+	pub struct TxPipeTestDaSequencerClient {
+		pub received_tx: Arc<Mutex<Vec<MvTransaction>>>,
+	}
+
+	impl TxPipeTestDaSequencerClient {
+		fn new() -> Self {
+			TxPipeTestDaSequencerClient { received_tx: Arc::new(Mutex::new(vec![])) }
+		}
+	}
+
+	impl DaSequencerClient for TxPipeTestDaSequencerClient {
+		async fn stream_read_from_height(
+			&mut self,
+			_request: movement_da_sequencer_proto::StreamReadFromHeightRequest,
+		) -> Result<StreamReadBlockFromHeight, ClientDaSequencerError> {
+			let never_ending_stream = stream::pending::<Result<BlockV1, ClientDaSequencerError>>();
+
+			Ok(Box::pin(never_ending_stream))
+		}
+
+		/// Writes a batch of transactions to the Da Sequencer node
+		async fn batch_write(
+			&mut self,
+			request: movement_da_sequencer_proto::BatchWriteRequest,
+		) -> Result<movement_da_sequencer_proto::BatchWriteResponse, tonic::Status> {
+			tracing::info!("TxPipeTestDaSequencerClient receive a batch");
+			let batch_data = request.data;
+			let batch: Vec<MvTransaction> =
+				match movement_da_sequencer_client::deserialize_full_node_batch(batch_data)
+					.map_err(|_| "bcs deserialisation error.".to_string())
+					.and_then(|(_, _, bytes)| {
+						bcs::from_bytes(&bytes)
+							.map_err(|_| "bcs deserialisation error.".to_string())
+					}) {
+					Ok(batch) => batch,
+					Err(err) => {
+						tracing::warn!(error = %err, "Invalid batch send, verification / validation failed.");
+						return Ok(BatchWriteResponse { answer: false });
+					}
+				};
+			tracing::info!("TxPipeTestDaSequencerClient that contains {} Tx", batch.len());
+			batch.into_iter().for_each(|tx| self.received_tx.lock().unwrap().push(tx));
+			Ok(BatchWriteResponse { answer: true })
+		}
 	}
 
 	fn create_signed_transaction(sequence_number: u64, chain_config: &Config) -> SignedTransaction {
@@ -408,11 +496,16 @@ mod tests {
 	}
 
 	#[tokio::test]
-	async fn test_pipe_mempool() -> Result<(), anyhow::Error> {
+	async fn test_pipe_mempool_one_tx() -> Result<(), anyhow::Error> {
 		// set up
 		let maptos_config = Config::default();
-		let (context, mut transaction_pipe, mut tx_receiver, _tempdir) = setup().await;
-		let user_transaction = create_signed_transaction(1, &maptos_config);
+		let (context, transaction_pipe, _tempdir) = setup().await;
+
+		// Run the transaction pipe
+		let da_client = TxPipeTestDaSequencerClient::new();
+		let mempool_handle = tokio::spawn(transaction_pipe.run(da_client.clone()));
+
+		let user_transaction = create_signed_transaction(0, &maptos_config);
 
 		// send transaction to mempool
 		let (req_sender, callback) = oneshot::channel();
@@ -421,17 +514,20 @@ mod tests {
 			.send(MempoolClientRequest::SubmitTransaction(user_transaction.clone(), req_sender))
 			.await?;
 
-		// tick the transaction pipe
-		transaction_pipe.tick().await?;
-
 		// receive the callback
 		let (status, _vm_status_code) = callback.await??;
 		assert_eq!(status.code, MempoolStatusCode::Accepted);
 
-		// receive the transaction
-		let received_transaction = tx_receiver.recv().await.unwrap();
-		assert_eq!(received_transaction.1, user_transaction);
+		//wait Tx propagation
+		let _ = tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+		//validate teh Tx has been sent to the DA
+		{
+			let txs = da_client.received_tx.lock().unwrap();
+			assert_eq!(txs.len(), 1);
+			assert_eq!(txs.get(0).unwrap().sequence_number(), user_transaction.sequence_number());
+		}
 
+		mempool_handle.abort();
 		Ok(())
 	}
 
@@ -439,8 +535,12 @@ mod tests {
 	async fn test_pipe_mempool_cancellation() -> Result<(), anyhow::Error> {
 		// set up
 		let maptos_config = Config::default();
-		let (context, mut transaction_pipe, _tx_receiver, _tempdir) = setup().await;
-		let user_transaction = create_signed_transaction(1, &maptos_config);
+		let (context, transaction_pipe, _tempdir) = setup().await;
+		let user_transaction = create_signed_transaction(0, &maptos_config);
+
+		// Run the transaction pipe
+		let da_client = TxPipeTestDaSequencerClient::new();
+		let mempool_handle = tokio::spawn(transaction_pipe.run(da_client.clone()));
 
 		// send transaction to mempool
 		let (req_sender, callback) = oneshot::channel();
@@ -452,9 +552,16 @@ mod tests {
 		// drop the callback to simulate cancellation of the request
 		drop(callback);
 
-		// tick the transaction pipe, should succeed
-		transaction_pipe.tick().await?;
+		// The Tx should be accepted and sent. wait Tx propagation
+		let _ = tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+		//validate teh Tx has been sent to the DA
+		{
+			let txs = da_client.received_tx.lock().unwrap();
+			assert_eq!(txs.len(), 1);
+			assert_eq!(txs.get(0).unwrap().sequence_number(), user_transaction.sequence_number());
+		}
 
+		mempool_handle.abort();
 		Ok(())
 	}
 
@@ -462,66 +569,32 @@ mod tests {
 	async fn test_pipe_mempool_with_duplicate_transaction() -> Result<(), anyhow::Error> {
 		// set up
 		let maptos_config = Config::default();
-		let (context, mut transaction_pipe, mut tx_receiver, _tempdir) = setup().await;
+		let (context, mut transaction_pipe, _tempdir) = setup().await;
 		let mut mempool_client_sender = context.mempool_client_sender();
-		let user_transaction = create_signed_transaction(1, &maptos_config);
+		let user_transaction = create_signed_transaction(0, &maptos_config);
 
-		// send transaction to mempool
-		let (req_sender, callback) = oneshot::channel();
-		mempool_client_sender
-			.send(MempoolClientRequest::SubmitTransaction(user_transaction.clone(), req_sender))
+		// Add 2 time the transaction to mempool
+		let (mempool_status, _) = transaction_pipe
+			.add_transaction_to_aptos_mempool(user_transaction.clone())
 			.await?;
+		assert_eq!(mempool_status.code, MempoolStatusCode::Accepted);
 
-		// tick the transaction pipe
-		transaction_pipe.tick().await?;
+		let (mempool_status, _) =
+			transaction_pipe.add_transaction_to_aptos_mempool(user_transaction).await?;
+		assert_eq!(mempool_status.code, MempoolStatusCode::Accepted);
 
-		// receive the callback
-		let (status, _vm_status_code) = callback.await??;
-		assert_eq!(status.code, MempoolStatusCode::Accepted);
+		// Run the transaction pipe
+		let da_client = TxPipeTestDaSequencerClient::new();
+		let mempool_handle = tokio::spawn(transaction_pipe.run(da_client.clone()));
 
-		// receive the transaction
-		let received_transaction =
-			tx_receiver.recv().await.ok_or(anyhow::anyhow!("No transaction received"))?;
-		assert_eq!(received_transaction.1, user_transaction);
-
-		// send the same transaction again
-		let (req_sender, callback) = oneshot::channel();
-		mempool_client_sender
-			.send(MempoolClientRequest::SubmitTransaction(user_transaction.clone(), req_sender))
-			.await?;
-
-		// tick the transaction pipe
-		transaction_pipe.tick().await?;
-
-		callback.await??;
-
-		// assert that there is no new transaction
-		assert!(tx_receiver.try_recv().is_err());
-
-		Ok(())
-	}
-
-	#[tokio::test]
-	async fn test_pipe_mempool_from_api() -> Result<(), anyhow::Error> {
-		let (context, mut transaction_pipe, mut tx_receiver, _tempdir) = setup().await;
-		let service = Service::new(&context);
-
-		#[allow(unreachable_code)]
-		let mempool_handle = tokio::spawn(async move {
-			loop {
-				transaction_pipe.tick().await?;
-			}
-			Ok(()) as Result<(), anyhow::Error>
-		});
-
-		let api = service.get_apis();
-		let user_transaction = create_signed_transaction(1, &context.config().chain);
-		let comparison_user_transaction = user_transaction.clone();
-		let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
-		let request = SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
-		api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
-		let received_transaction = tx_receiver.recv().await.unwrap();
-		assert_eq!(received_transaction.1, comparison_user_transaction);
+		//wait Tx propagation
+		// Verify the Tx is added only one time
+		let _ = tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+		//validate teh Tx has been sent to the DA
+		{
+			let txs = da_client.received_tx.lock().unwrap();
+			assert_eq!(txs.len(), 1);
+		}
 
 		mempool_handle.abort();
 
@@ -529,22 +602,52 @@ mod tests {
 	}
 
 	#[tokio::test]
-	async fn test_repeated_pipe_mempool_from_api() -> Result<(), anyhow::Error> {
-		let (context, mut transaction_pipe, mut tx_receiver, _tempdir) = setup().await;
+	async fn test_pipe_mempool_from_api() -> Result<(), anyhow::Error> {
+		let (context, transaction_pipe, _tempdir) = setup().await;
 		let service = Service::new(&context);
 
-		#[allow(unreachable_code)]
-		let mempool_handle = tokio::spawn(async move {
-			loop {
-				transaction_pipe.tick().await?;
-			}
-			Ok(()) as Result<(), anyhow::Error>
-		});
+		// Run the transaction pipe
+		let da_client = TxPipeTestDaSequencerClient::new();
+		let mempool_handle = tokio::spawn(transaction_pipe.run(da_client.clone()));
 
 		let api = service.get_apis();
-		let mut user_transactions = BTreeSet::new();
-		let mut comparison_user_transactions = BTreeSet::new();
-		for i in 1..25 {
+		let user_transaction = create_signed_transaction(0, &context.config().chain);
+		//let comparison_user_transaction = user_transaction.clone();
+		let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
+		let request = SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
+		api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
+
+		//wait Tx propagation
+		let _ = tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+		//validate teh Tx has been sent to the DA
+		{
+			let txs = da_client.received_tx.lock().unwrap();
+			assert_eq!(txs.len(), 1);
+			assert_eq!(txs.get(0).unwrap().sequence_number(), user_transaction.sequence_number());
+		}
+
+		mempool_handle.abort();
+
+		Ok(())
+	}
+
+	// Ignore test because with the new Aptos core mempool, Tx with a seqnumber too higher from the db one stay in it.
+	// Need to execute block to update ledger db or use several account.
+	// This test should be done in the e2e test.
+	#[tokio::test]
+	#[ignore]
+	async fn test_repeated_pipe_mempool_from_api() -> Result<(), anyhow::Error> {
+		let (context, transaction_pipe, _tempdir) = setup().await;
+		let service = Service::new(&context);
+
+		// Run the transaction pipe
+		let da_client = TxPipeTestDaSequencerClient::new();
+		let mempool_handle = tokio::spawn(transaction_pipe.run(da_client.clone()));
+
+		let api = service.get_apis();
+		let mut user_transactions: BTreeSet<Vec<u8>> = BTreeSet::new();
+		//let mut comparison_user_transactions: BTreeSet<Vec<u8>> = BTreeSet::new();
+		for i in 0..25 {
 			let user_transaction = create_signed_transaction(i, &context.config().chain);
 			let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
 			user_transactions.insert(bcs_user_transaction.clone());
@@ -552,14 +655,15 @@ mod tests {
 			let request =
 				SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
 			api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
-
-			let received_transaction = tx_receiver.recv().await.unwrap();
-			let bcs_received_transaction = bcs::to_bytes(&received_transaction.1)?;
-			comparison_user_transactions.insert(bcs_received_transaction.clone());
 		}
 
-		assert_eq!(user_transactions.len(), comparison_user_transactions.len());
-		assert_eq!(user_transactions, comparison_user_transactions);
+		//wait Tx propagation
+		let _ = tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+		//validate teh Tx has been sent to the DA
+		{
+			let txs = da_client.received_tx.lock().unwrap();
+			assert_eq!(txs.len(), 25);
+		}
 
 		mempool_handle.abort();
 
@@ -567,10 +671,10 @@ mod tests {
 	}
 
 	#[tokio::test]
-	async fn test_cannot_submit_too_new() -> Result<(), anyhow::Error> {
+	async fn test_submit_with_different_seqnumber() -> Result<(), anyhow::Error> {
 		// set up
 		let maptos_config = Config::default();
-		let (_context, mut transaction_pipe, _tx_receiver, _tempdir) = setup().await;
+		let (_context, mut transaction_pipe, _tempdir) = setup().await;
 
 		// submit a transaction with a valid sequence number
 		let user_transaction = create_signed_transaction(0, &maptos_config);
@@ -582,7 +686,7 @@ mod tests {
 		let user_transaction = create_signed_transaction(34, &maptos_config);
 		let (mempool_status, _) =
 			transaction_pipe.add_transaction_to_aptos_mempool(user_transaction).await?;
-		assert_eq!(mempool_status.code, MempoolStatusCode::InvalidSeqNumber);
+		assert_eq!(mempool_status.code, MempoolStatusCode::Accepted);
 
 		// submit one signed transaction with a sequence number that is too new for the vm but not for the mempool
 		let user_transaction = create_signed_transaction(5, &maptos_config);
@@ -594,31 +698,25 @@ mod tests {
 		let user_transaction = create_signed_transaction(5, &maptos_config);
 		let (mempool_status, _) =
 			transaction_pipe.add_transaction_to_aptos_mempool(user_transaction).await?;
-		assert_eq!(mempool_status.code, MempoolStatusCode::InvalidSeqNumber);
+		assert_eq!(mempool_status.code, MempoolStatusCode::Accepted);
 
 		Ok(())
 	}
 
 	#[tokio::test]
 	async fn test_sequence_number_too_old() -> Result<(), anyhow::Error> {
-		let (tx_sender, _tx_receiver) = mpsc::channel(16);
-
 		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
 			futures_mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
 
 		let (mut executor, _tempdir) =
 			Executor::try_test_default(GENESIS_KEYPAIR.0.clone(), mempool_tx_exec_result_sender)
 				.await?;
-		let (context, background) = executor.background(tx_sender, mempool_commit_tx_receiver)?;
-		let mut transaction_pipe = background.into_transaction_pipe();
+		let (context, background) = executor.background(mempool_commit_tx_receiver)?;
+		let transaction_pipe = background.into_transaction_pipe();
 
-		#[allow(unreachable_code)]
-		let mempool_handle = tokio::spawn(async move {
-			loop {
-				transaction_pipe.tick().await?;
-			}
-			Ok(()) as Result<(), anyhow::Error>
-		});
+		// Run the transaction pipe
+		let da_client = TxPipeTestDaSequencerClient::new();
+		let mempool_handle = tokio::spawn(transaction_pipe.run(da_client));
 
 		let tx = create_signed_transaction(0, &context.config().chain);
 

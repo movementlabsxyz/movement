@@ -1,10 +1,10 @@
 use crate::{Certificate, CertificateStream, DaError, DaOperations};
 use movement_da_util::blob::ir::blob::DaBlob;
 use movement_signer::cryptography::Curve;
+
 use std::collections::{HashMap, VecDeque};
-use std::future::Future;
-use std::pin::Pin;
 use std::sync::{Arc, Mutex};
+
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 
@@ -66,73 +66,57 @@ impl<C> DaOperations<C> for Mock<C>
 where
 	C: Curve + Send + Sync + 'static + std::fmt::Debug,
 {
-	fn submit_blob(
-		&self,
-		data: DaBlob<C>,
-	) -> Pin<Box<dyn Future<Output = Result<(), DaError>> + Send + '_>> {
+	async fn submit_blob(&self, data: DaBlob<C>) -> Result<(), DaError> {
 		let submitted_blobs = self.submitted_blobs.clone();
-		Box::pin(async move {
-			submitted_blobs
-				.lock()
-				.map_err(|_| {
-					DaError::Internal("Failed to acquire lock for submitted blobs".to_string())
-				})?
-				.push(data);
-			Ok(())
-		})
+		submitted_blobs
+			.lock()
+			.map_err(|_| {
+				DaError::Internal("Failed to acquire lock for submitted blobs".to_string())
+			})?
+			.push(data);
+		Ok(())
 	}
 
-	fn get_da_blobs_at_height(
-		&self,
-		height: u64,
-	) -> Pin<Box<dyn Future<Output = Result<Vec<DaBlob<C>>, DaError>> + Send + '_>> {
-		let height_results = self.height_results.clone();
-		Box::pin(async move {
-			height_results
-				.lock()
-				.map_err(|_| {
-					DaError::Internal("Failed to acquire lock for height results".to_string())
-				})?
-				.remove(&height)
-				.ok_or_else(|| DaError::Internal(format!("No result set for height {}", height)))?
-		})
+	async fn get_da_blobs_at_height(&self, height: u64) -> Result<Vec<DaBlob<C>>, DaError> {
+		let mut locked = self.height_results.lock().map_err(|_| {
+			DaError::Internal("Failed to acquire lock for height results".to_string())
+		})?;
+		locked
+			.remove(&height)
+			.ok_or_else(|| DaError::Internal(format!("No result set for height {}", height)))?
 	}
 
-	fn stream_certificates(
-		&self,
-	) -> Pin<Box<dyn Future<Output = Result<CertificateStream, DaError>> + Send + '_>> {
+	async fn stream_certificates(&self) -> Result<CertificateStream, DaError> {
 		let certificate_queue = self.certificate_queue.clone();
 
-		Box::pin(async move {
-			// Create an mpsc channel for streaming certificates.
-			let (sender, receiver) = mpsc::channel(10);
+		// Create an mpsc channel for streaming certificates.
+		let (sender, receiver) = mpsc::channel(10);
 
-			// Move certificates from the queue into the channel in a background task.
-			let queue_worker = async move {
-				loop {
-					// Lock the queue and pop the next certificate.
-					let certificate = {
-						let mut queue = certificate_queue.lock().unwrap();
-						queue.pop_front()
-					};
+		// Move certificates from the queue into the channel in a background task.
+		let queue_worker = async move {
+			loop {
+				// Lock the queue and pop the next certificate.
+				let certificate = {
+					let mut queue = certificate_queue.lock().unwrap();
+					queue.pop_front()
+				};
 
-					match certificate {
-						Some(cert) => {
-							if sender.send(cert).await.is_err() {
-								break; // Stop if the receiver has been dropped.
-							}
+				match certificate {
+					Some(cert) => {
+						if sender.send(cert).await.is_err() {
+							break; // Stop if the receiver has been dropped.
 						}
-						None => break, // Exit the loop when the queue is empty.
 					}
+					None => break, // Exit the loop when the queue is empty.
 				}
-			};
+			}
+		};
 
-			tokio::spawn(queue_worker);
+		tokio::spawn(queue_worker);
 
-			// Wrap the receiver in a `ReceiverStream` and return it.
-			let stream = ReceiverStream::new(receiver);
-			Ok(Box::pin(stream) as CertificateStream)
-		})
+		// Wrap the receiver in a `ReceiverStream` and return it.
+		let stream = ReceiverStream::new(receiver);
+		Ok(Box::pin(stream) as CertificateStream)
 	}
 }
 
