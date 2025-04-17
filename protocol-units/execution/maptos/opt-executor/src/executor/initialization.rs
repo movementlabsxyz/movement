@@ -22,6 +22,7 @@ use maptos_execution_util::config::Config;
 use movement_signer_loader::identifiers::{local::Local, SignerIdentifier};
 
 use anyhow::Context as _;
+use aptos_crypto::Uniform;
 use futures::channel::mpsc as futures_mpsc;
 use movement_collections::garbage::{counted::GcCounter, Duration};
 use tokio::sync::mpsc;
@@ -201,6 +202,37 @@ impl Executor {
 		maptos_config.chain.maptos_db_path.replace(tempdir.path().to_path_buf());
 		let executor = Self::try_from_config(maptos_config, mempool_tx_exec_result_sender).await?;
 		Ok((executor, tempdir))
+	}
+
+	#[cfg(test)]
+	pub async fn try_test() -> Result<
+		(
+			Self,
+			TempDir,
+			Ed25519PrivateKey,
+			futures::channel::mpsc::Receiver<Vec<TxExecutionResult>>,
+		),
+		anyhow::Error,
+	> {
+		// generate a random private key
+		let private_key = Ed25519PrivateKey::generate_for_testing();
+
+		// generate a sender
+		let (mempool_tx_exec_result_sender, receiver) =
+			futures_mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+		let tempdir = tempfile::tempdir()?;
+
+		let mut maptos_config = Config::default();
+		let raw_private_key_hex = private_key.to_encoded_string()?.to_string();
+		let prefix_stripped =
+			raw_private_key_hex.strip_prefix("0x").unwrap_or(&raw_private_key_hex);
+		maptos_config.chain.maptos_private_key_signer_identifier =
+			SignerIdentifier::Local(Local { private_key_hex_bytes: prefix_stripped.to_string() });
+
+		// replace the db path with the temporary directory
+		maptos_config.chain.maptos_db_path.replace(tempdir.path().to_path_buf());
+		let executor = Self::try_from_config(maptos_config, mempool_tx_exec_result_sender).await?;
+		Ok((executor, tempdir, private_key, receiver))
 	}
 
 	/// Creates an instance of [`Context`] and the background [`TransactionPipe`]
