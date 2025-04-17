@@ -120,9 +120,9 @@ pub struct Executor {
 	// Shared reference on the counter of transactions in flight.
 	transactions_in_flight: Arc<RwLock<GcCounter>>,
 	// The config for the executor.
-	pub(crate) config: Config,
+	pub config: Config,
 	/// The node config derived from the maptos config.
-	pub(crate) node_config: NodeConfig,
+	pub node_config: NodeConfig,
 }
 
 impl Executor {
