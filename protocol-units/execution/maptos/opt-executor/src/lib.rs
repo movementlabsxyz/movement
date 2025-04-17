@@ -16,6 +16,7 @@ pub use aptos_crypto;
 pub use aptos_db;
 pub use aptos_executor;
 pub use aptos_executor_test_helpers;
+pub use aptos_sdk;
 pub use aptos_storage_interface;
 pub use aptos_types;
 
