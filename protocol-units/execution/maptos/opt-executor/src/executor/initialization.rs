@@ -8,17 +8,15 @@ use movement_signer::Signing;
 use movement_signer_loader::{Load, LoadedSigner};
 
 use aptos_config::config::NodeConfig;
-#[cfg(test)]
 use aptos_crypto::ed25519::Ed25519PrivateKey;
 use aptos_crypto::ed25519::Ed25519PublicKey;
-#[cfg(test)]
 use aptos_crypto::ValidCryptoMaterialStringExt;
 use aptos_executor::block_executor::BlockExecutor;
 use aptos_mempool::MempoolClientRequest;
 use aptos_types::transaction::SignedTransaction;
 use dot_movement::DotMovement;
 use maptos_execution_util::config::Config;
-#[cfg(test)]
+
 use movement_signer_loader::identifiers::{local::Local, SignerIdentifier};
 
 use anyhow::Context as _;
@@ -204,8 +202,7 @@ impl Executor {
 		Ok((executor, tempdir))
 	}
 
-	#[cfg(test)]
-	pub async fn try_test() -> Result<
+	pub async fn try_generated() -> Result<
 		(
 			Self,
 			TempDir,
