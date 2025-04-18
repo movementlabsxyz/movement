@@ -245,14 +245,9 @@ impl TransactionPipe {
 				*counter = 0;
 			}
 			MempoolClientRequest::GetTransactionByHash(hash, sender) => {
-				tokio::task::spawn_blocking({
-					let core_mempool = core_mempool.clone();
-					move || {
-						let mempool_result = { core_mempool.read().unwrap().get_by_hash(hash) };
-						sender.send(mempool_result).unwrap_or_else(|_| {
-							info!("GetTransactionByHash request canceled");
-						});
-					}
+				let mempool_result = { core_mempool.read().unwrap().get_by_hash(hash) };
+				sender.send(mempool_result).unwrap_or_else(|_| {
+					info!("GetTransactionByHash request canceled");
 				});
 
 				*counter += 1;
