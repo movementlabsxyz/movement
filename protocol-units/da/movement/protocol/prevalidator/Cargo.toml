@@ -28,14 +28,13 @@ thiserror = { workspace = true }
 serde_json = { workspace = true }
 ecdsa = { workspace = true, features = ["signing", "verifying", "der"] }
 tracing = { workspace = true }
-movement-types = { workspace = true}
+movement-types = { workspace = true }
 bcs = { workspace = true }
-aptos-types = { workspace = true, optional = true}
+aptos-types = { workspace = true, optional = true }
 
 [dev-dependencies]
-movement-da-light-node-setup = { workspace = true }
-dot-movement = { workspace = true }
-k256 = { workspace = true }
+aptos-crypto = { workspace = true }
+aptos-sdk = { workspace = true }
 rand = { workspace = true }
 
 
