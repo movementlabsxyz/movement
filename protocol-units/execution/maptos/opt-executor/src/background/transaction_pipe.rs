@@ -36,7 +36,7 @@ use tokio::task::JoinHandle;
 use tracing::{debug, info, info_span, warn, Instrument};
 
 const GC_INTERVAL: Duration = Duration::from_secs(30);
-const MEMPOOL_INTERVAL: Duration = Duration::from_millis(1000); // this is based on slot times and global TCP RTT, essentially we expect to collect all transactions sent in the same slot in around 240ms
+const MEMPOOL_INTERVAL: Duration = Duration::from_millis(240); // this is based on slot times and global TCP RTT, essentially we expect to collect all transactions sent in the same slot in around 240ms
 
 pub struct TransactionPipe {
 	// The receiver for Tx execution to commit in the mempool.
@@ -159,6 +159,7 @@ impl TransactionPipe {
 			let mempool_config = self.mempool_config.clone();
 			async move {
 				loop {
+					tracing::info!("Start Tx pipe loop");
 					tokio::select! {
 						Some(batches) = self.mempool_commit_tx_receiver.next() => {
 							TransactionPipe::tick_commit_tx(&core_mempool, batches).await?;
