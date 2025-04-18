@@ -1,6 +1,6 @@
 //! Prevalidation of Aptos transactions.
 
-use crate::Error;
+use crate::{Error, Prevalidated};
 
 use aptos_types::account_address::AccountAddress;
 use aptos_types::transaction::SignedTransaction as AptosTransaction;
@@ -33,7 +33,10 @@ impl Validator {
 
 	/// Returns `Ok` if the transaction is valid accordingly to this instance's
 	/// configuration. `Err` is returned for validation errors.
-	pub fn prevalidate(&self, transaction: &Transaction) -> Result<(), Error> {
+	pub fn prevalidate(
+		&self,
+		transaction: Transaction,
+	) -> Result<Prevalidated<Transaction>, Error> {
 		// Deserialize data as Aptos transaction, fail if invalid.
 		let aptos_transaction: AptosTransaction =
 			bcs::from_bytes(&transaction.data()).map_err(|e| {
@@ -52,6 +55,6 @@ impl Validator {
 			}
 		}
 
-		Ok(())
+		Ok(Prevalidated(transaction))
 	}
 }
