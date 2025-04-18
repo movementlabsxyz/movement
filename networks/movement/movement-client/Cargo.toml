@@ -43,6 +43,10 @@ name = "movement-tests-e2e-whitelist"
 path = "src/bin/e2e/whitelist.rs"
 
 [[bin]]
+name = "movement-tests-update-core-resources"
+path = "src/bin/e2e/update_core_resources.rs"
+
+[[bin]]
 name = "movement-tests-e2e-ggp-gas-fee"
 path = "src/bin/e2e/ggp_gas_fee.rs"
 
