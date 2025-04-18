@@ -24,7 +24,7 @@ fn main() {
 	};
 
 	// 2 Clients and 10 Requests per client
-	config.number_scenario_per_client = 10;
+	config.scenarios_per_client = 10;
 
 	// Init the Test before execution
 	if let Err(err) = init_test(&config) {
