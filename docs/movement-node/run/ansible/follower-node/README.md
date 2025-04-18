@@ -1,5 +1,5 @@
 # Follower Node
-Follower Nodes are nodes that are configured to sync with a Leader Node and are used to test the Movement Testnet. This document provides instructions on how to set up a Follower Node to sync with a Leader Node.
+Follower Nodes are nodes that are configured to sync with a Da-Sequencer and execute streamed block. It provides RPC and Tx grpc service too. This document provides instructions on how to set up a Follower Node to sync with the Da Sequencer.
 
 ## Hardware Recommendations
 By running the a Follower Node locally, you will be able to gauge the performance on a given network. If you are joining a network with high load, like the Movement Testnet, we recommend the following:
@@ -7,10 +7,14 @@ By running the a Follower Node locally, you will be able to gauge the performanc
 - 64 GB RAM
 - 2 TB SSD w/ 60K IOPS and 200 MiB/s throughput
 
+## Container rev
+
+The current container rev for installation is:
+
+CONTAINER_REV=d963665
+
 ## Running a Movement Node on Follower Node
 You can join any sufficiently upgraded network as a Folloewr Node by running a Movement Node with container tags specified to latest commit hash on this branch, the [`follower`](../../../../../docker/compose/movement-full-node/docker-compose.follower.yml) overlay. 
-
-**Note**: the scripts provided herein have hardcoded constants for the Movement Testnet. You will need to change these to match the environment you are running on.
 
 For example, here's how a template for a systemd service file running the above via Docker Compose might look, where the template parameters are replaced with the appropriate values above:
 
@@ -25,16 +29,14 @@ User={{ user }}
 WorkingDirectory=/home/{{ user }}/movement
 Environment="DOT_MOVEMENT_PATH=/home/{{ user }}/.movement"
 Environment="CONTAINER_REV={{ rev }}"
-Environment="MOVEMENT_SYNC={{ movement_sync }}"
-Environment="MOVEMENT_DA_LIGHT_NODE_CONNECTION_HOSTNAME={{ movement_da_light_node_connection_hostname }}"
-ExecStart=/usr/bin/docker compose --env-file .env -f /home/{{ user }}/movement/docker/compose/movement-full-node/docker-compose.yml -f /home/{{ user }}/movement/docker/compose/movement-full-node/docker-compose.follower.yml up --force-recreate --remove-orphans
+ExecStart=/usr/bin/docker compose --env-file .env -f /home/{{ user }}/movement/docker/compose/movement-full-node/docker-compose.follower.yml up --force-recreate --remove-orphans
 Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target
 ```
 
-An Ansible script to deploy the above systemd service is available [here](./movement-full-follower.yml). An example usage with an ec2 inventory is below. You may also benefit from watching our tutorial [VIDEO](https://www.loom.com/share/59e6a31a08ef4260bdc9b082a3980f52).
+An Ansible script to deploy the above systemd service is available [here for testnet](./testnet/movement-full-follower.yml) and [here for Mainnet](./mainnet/movement-full-follower.yml). An example usage with an ec2 inventory is below. You may also benefit from watching our tutorial [VIDEO](https://www.loom.com/share/59e6a31a08ef4260bdc9b082a3980f52).
 
 ```shell
 ansible-playbook --inventory <your-inventory> \
@@ -49,9 +51,93 @@ The username (`ubuntu` in this example) is the remote user to connect to instanc
 
 This will set up the Movement Node to connect to sync with the Follower Node environment.
 
-For a basic check on syncing, assert that there is a `0.tar.gz` file in the `~/.movement` directory. This file is unarchived into the same directory when syncing. If you see it, that indicates that the syncing resource was fetched. It is not rearchived itself.
+## After instance creation and restart
+After the ansible script execution, the follower node should be installed but doesn't start. Syncing from height zero is not allowed by default or the configuration doesn't exist.
 
-If you do not see the `0.tar.gz` that could indicate an issue with sync. See the troubleshooting steps below.
+### Run setup docker script
+First the node configuration should be created or updated.
+Verify the `$HOME` variable is set correctly defined and point to the folder where the `.movement` folder is installed.
+
+```
+#!/bin/bash -e
+
+# Stop the node if needed.
+systemctl stop  movement-full-follower.service
+
+export DOT_MOVEMENT_PATH=$HOME/.movement
+export CONTAINER_REV=d963665
+export AWS_DEFAULT_REGION=us-west-1
+export AWS_REGION=us-west-1
+export MAPTOS_CHAIN_ID=126
+export AWS_ACCESS_KEY_ID="<access key>"
+export AWS_SECRET_ACCESS_KEY="<secret key>"
+
+# Restore the DB.
+/usr/bin/docker compose --env-file $HOME/movement/.env -f $HOME/movement/docker/compose/movement-full-node/snapshot/docker-compose.restore.yml up --force-recreate
+
+# Start the node.
+systemctl start  movement-full-follower.service
+
+```
+
+### Restoration for a new installation
+
+Before starting a new installation, the node DB must be restored first using the restoration script.
+
+In the Home directory create a new script file call `restore.sh` and copy / paste this content using `nano` or `vi`.
+
+For Mainnet:
+
+```
+#!/bin/bash -e
+
+# Stop the node if needed.
+systemctl stop  movement-full-follower.service
+
+export DOT_MOVEMENT_PATH=$HOME/.movement
+export CONTAINER_REV=d963665
+export AWS_DEFAULT_REGION=us-west-1
+export AWS_REGION=us-west-1
+export MAPTOS_CHAIN_ID=126
+export AWS_ACCESS_KEY_ID="<access key>"
+export AWS_SECRET_ACCESS_KEY="<secret key>"
+
+# Restore the DB.
+/usr/bin/docker compose --env-file $HOME/movement/.env -f $HOME/movement/docker/compose/movement-full-node/snapshot/docker-compose.restore.yml up --force-recreate
+
+# Start the node.
+systemctl start  movement-full-follower.service
+
+```
+
+
+For Testnet:
+
+```
+#!/bin/bash -e
+
+# Stop the node if needed.
+systemctl stop  movement-full-follower.service
+
+export DOT_MOVEMENT_PATH=$HOME/.movement
+export CONTAINER_REV=d963665
+export AWS_DEFAULT_REGION=us-west-1
+export AWS_REGION=us-west-1
+export MAPTOS_CHAIN_ID=250
+export AWS_ACCESS_KEY_ID="<access key>"
+export AWS_SECRET_ACCESS_KEY="<secret key>"
+
+# Restore the DB.
+/usr/bin/docker compose --env-file $HOME/movement/.env -f $HOME/movement/docker/compose/movement-full-node/snapshot/docker-compose.restore.yml up --force-recreate
+
+# Start the node.
+systemctl start  movement-full-follower.service
+
+```
+
+### Update from an existing installation
+
+If you update from an existing installation, the setup script should update your configuration.
 
 ## Troubleshooting 
 

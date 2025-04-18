@@ -3,7 +3,6 @@ use crate::background::BackgroundTask;
 use crate::executor::TxExecutionResult;
 use crate::executor::EXECUTOR_CHANNEL_SIZE;
 use crate::{bootstrap, Context};
-use movement_da_sequencer_client::DaSequencerClient;
 use movement_signer::cryptography::ed25519::Ed25519;
 use movement_signer::Signing;
 use movement_signer_loader::{Load, LoadedSigner};
@@ -205,22 +204,22 @@ impl Executor {
 	pub fn background(
 		&self,
 		mempool_commit_tx_receiver: futures_mpsc::Receiver<Vec<TxExecutionResult>>,
+		mempool_request_sender: futures_mpsc::Sender<MempoolClientRequest>,
 	) -> anyhow::Result<(Context, BackgroundTask)> {
 		let node_config = self.node_config.clone();
 		let maptos_config = self.config.clone();
 
 		let da_batch_signer = maptos_config.da_sequencer.batch_signer_identifier.clone();
 
-		// use the default signer, block executor, and mempool
-		let (mempool_client_sender, mempool_client_receiver) =
-			futures_mpsc::channel::<MempoolClientRequest>(EXECUTOR_CHANNEL_SIZE);
-
 		let background_task = if maptos_config.chain.maptos_read_only {
+			// use the default signer, block executor, and mempool
+			//TODO correct the mempool_client_sender not used.
+			let (mempool_client_sender, mempool_client_receiver) =
+				futures_mpsc::channel::<MempoolClientRequest>(EXECUTOR_CHANNEL_SIZE);
 			BackgroundTask::read_only(mempool_client_receiver)
 		} else {
 			BackgroundTask::transaction_pipe(
 				mempool_commit_tx_receiver,
-				mempool_client_receiver,
 				self.db().reader.clone(),
 				&node_config,
 				&self.config.mempool,
@@ -231,7 +230,8 @@ impl Executor {
 			)?
 		};
 
-		let cx = Context::new(self.db().clone(), mempool_client_sender, maptos_config, node_config);
+		let cx =
+			Context::new(self.db().clone(), mempool_request_sender, maptos_config, node_config);
 
 		Ok((cx, background_task))
 	}

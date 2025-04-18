@@ -66,8 +66,14 @@ where
 		mut self,
 		da_connection_url: Url,
 		stream_heartbeat_interval_sec: u64,
+		allow_sync_from_zero: bool,
 	) -> anyhow::Result<()> {
 		let synced_height = self.da_db.get_synced_height().await?;
+		// Sync Da from 0 is rejected by default. Only if forced it's allowed.
+		if !allow_sync_from_zero && synced_height == 0 {
+			return Err(anyhow::anyhow!("Da Sync from height zero is not allowed."));
+		}
+
 		info!("DA synced height: {:?}", synced_height);
 		let mut da_client =
 			GrpcDaSequencerClient::try_connect(&da_connection_url, stream_heartbeat_interval_sec)

@@ -47,7 +47,7 @@ processes:
       da-setup:
         condition: process_completed_successfully
     readiness_probe:
-      initial_delay_seconds: 10
+      initial_delay_seconds: 30
       exec:
         command: echo "true"
     

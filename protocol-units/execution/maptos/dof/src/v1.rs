@@ -2,10 +2,13 @@ use crate::{
 	BlockMetadata, DynOptFinExecutor, ExecutableBlock, HashValue, MakeOptFinServices, Services,
 };
 use anyhow::format_err;
+use aptos_mempool::MempoolClientRequest;
 use async_trait::async_trait;
+use futures::channel::mpsc as futures_mpsc;
 use maptos_execution_util::config::Config;
 use maptos_fin_view::FinalityView;
 use maptos_opt_executor::executor::TxExecutionResult;
+use maptos_opt_executor::executor::EXECUTOR_CHANNEL_SIZE;
 use maptos_opt_executor::{Context as OptContext, Executor as OptExecutor};
 use movement_types::block::BlockCommitment;
 use tracing::debug;
@@ -59,7 +62,13 @@ impl DynOptFinExecutor for Executor {
 		(Context, impl Future<Output = Result<(), anyhow::Error>> + Send + 'static),
 		anyhow::Error,
 	> {
-		let (opt_context, background) = self.executor.background(mempool_commit_tx_receiver)?;
+		tracing::info!("ICI  EXECUTOR_CHANNEL_SIZE:{EXECUTOR_CHANNEL_SIZE} ");
+		// use the default signer, block executor, and mempool
+		let (mempool_client_sender, mempool_client_receiver) =
+			futures_mpsc::channel::<MempoolClientRequest>(EXECUTOR_CHANNEL_SIZE);
+
+		let (opt_context, background) =
+			self.executor.background(mempool_commit_tx_receiver, mempool_client_sender)?;
 		let fin_service = self.finality_view.service(
 			opt_context.mempool_client_sender(),
 			self.config(),
@@ -71,7 +80,9 @@ impl DynOptFinExecutor for Executor {
 		let background = async move {
 			// The indexer runtime should live as long as the Tx pipe.
 			let _indexer_runtime = indexer_runtime;
-			background.run(da_sequencer_url, stream_heartbeat_interval_sec).await?;
+			background
+				.run(da_sequencer_url, stream_heartbeat_interval_sec, mempool_client_receiver)
+				.await?;
 			Ok(())
 		};
 		Ok((Context { opt_context, fin_service }, background))

@@ -69,6 +69,8 @@ impl Local {
 		dot_movement: DotMovement,
 		mut config: movement_config::Config,
 	) -> Result<movement_config::Config, anyhow::Error> {
+		// Allow Da sync from Height zero
+		config.da_db.allow_sync_from_zero = true;
 		// update the db path
 		let db_path = dot_movement.get_path().join(config.da_db.da_db_path.clone());
 		config.da_db.da_db_path = db_path

@@ -36,17 +36,16 @@ use tokio::task::JoinHandle;
 use tracing::{debug, info, info_span, warn, Instrument};
 
 const GC_INTERVAL: Duration = Duration::from_secs(30);
-const MEMPOOL_INTERVAL: Duration = Duration::from_millis(240); // this is based on slot times and global TCP RTT, essentially we expect to collect all transactions sent in the same slot in around 240ms
+const MEMPOOL_INTERVAL: Duration = Duration::from_millis(1000); // this is based on slot times and global TCP RTT, essentially we expect to collect all transactions sent in the same slot in around 240ms
 
 pub struct TransactionPipe {
 	// The receiver for Tx execution to commit in the mempool.
 	mempool_commit_tx_receiver: futures_mpsc::Receiver<Vec<TxExecutionResult>>,
 	// The receiver for the mempool client.
-	mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
 	// Access to the ledger DB. TODO: reuse an instance of VMValidator
 	db_reader: Arc<dyn DbReader>,
 	// State of the Aptos mempool
-	core_mempool: CoreMempool,
+	core_mempool: Arc<RwLock<CoreMempool>>,
 	// Shared reference on the counter of transactions in flight.
 	transactions_in_flight: Arc<RwLock<GcCounter>>,
 	// The configured limit on transactions in flight
@@ -71,7 +70,6 @@ enum SequenceNumberValidity {
 impl TransactionPipe {
 	pub(crate) fn new(
 		mempool_commit_tx_receiver: futures_mpsc::Receiver<Vec<TxExecutionResult>>, // Sender, seq number)
-		mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
 		db_reader: Arc<dyn DbReader>,
 		node_config: &NodeConfig,
 		mempool_config: &MempoolConfig,
@@ -85,9 +83,8 @@ impl TransactionPipe {
 
 		Ok(TransactionPipe {
 			mempool_commit_tx_receiver,
-			mempool_client_receiver,
 			db_reader,
-			core_mempool: CoreMempool::new(node_config),
+			core_mempool: Arc::new(RwLock::new(CoreMempool::new(node_config))),
 			transactions_in_flight,
 			in_flight_limit: transactions_in_flight_limit,
 			last_gc: Instant::now(),
@@ -112,55 +109,162 @@ impl TransactionPipe {
 		}
 	}
 
-	pub async fn run(mut self, da_client: (impl DaSequencerClient + 'static)) -> Result<(), Error> {
-		let mut build_batch_interval = tokio::time::interval(MEMPOOL_INTERVAL);
+	pub async fn run(
+		mut self,
+		da_client: (impl DaSequencerClient + 'static + std::marker::Sync),
+		mut mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
+	) -> Result<(), Error> {
+		let mut build_batch_deadline = tokio::time::Instant::now() + MEMPOOL_INTERVAL;
 		let mut mempool_gc_interval = tokio::time::interval(tokio::time::Duration::from_secs(10));
 		let mut sent_batch_futures = FuturesUnordered::new();
 
-		loop {
-			tokio::select! {
-				Some(request) = self.mempool_client_receiver.next() => {
-					self.tick_requests(request).await?;
-				}
-				Some(batches) = self.mempool_commit_tx_receiver.next() => {
-					self.tick_commit_tx(batches).await?;
-				}
-				_ = build_batch_interval.tick() => {
-					let batch_jh = self.tick_mempool_sender(&da_client).await?;
-					if let Some(jh) = batch_jh {
-						sent_batch_futures.push(jh);
-					}
-				}
-				_ = mempool_gc_interval.tick() => {
-					self.tick_gc();
-				}
-
-				Some(result) = sent_batch_futures.next() => {
-					match result {
-						Ok(Ok(response)) => {
-							if !response.answer {
-								tracing::error!("DA Sequencer reject batch.");
-								panic!("DA Sequencer reject batch., can't send batch, exit process");
-							}
+		// Request loop processing
+		let request_jh = tokio::spawn({
+			let core_mempool = self.core_mempool.clone();
+			let db_reader = self.db_reader.clone();
+			let transactions_in_flight = self.transactions_in_flight.clone();
+			let in_flight_limit = self.in_flight_limit.clone();
+			let mut counter = 0;
+			async move {
+				// Process messages received on the channel.
+				loop {
+					match mempool_client_receiver.next().await {
+						Some(request) => {
+							TransactionPipe::tick_requests(
+								request,
+								&core_mempool,
+								&db_reader,
+								&transactions_in_flight,
+								in_flight_limit,
+								&mut counter,
+							)
+							.await?;
 						}
-						Ok(Err(err)) => {
-							tracing::error!("Send batch to Da failed because of a connection issue: {err}");
-							//TODO put some reconnection for now panic.
-							panic!("DA connection failed, can't send batch, exit process");
-						}
-						Err(err) => {
-							tracing::error!("Tokio send batch task execution failed: {err}");
-							//TODO see what consequence of this error.
+						None => {
+							//Channel closed end loop
+							return Err(Error::InternalError(
+								"Mempool Request channel closed. End request processing"
+									.to_string(),
+							));
 						}
 					}
 				}
 			}
+		});
+
+		// Tx processing loop
+		let pipe_jh = tokio::spawn({
+			let core_mempool = self.core_mempool.clone();
+			let da_batch_signer = self.da_batch_signer.clone();
+			let mempool_config = self.mempool_config.clone();
+			async move {
+				loop {
+					tokio::select! {
+						Some(batches) = self.mempool_commit_tx_receiver.next() => {
+							TransactionPipe::tick_commit_tx(&core_mempool, batches).await?;
+						}
+						_ = tokio::time::sleep_until(build_batch_deadline) => {
+							build_batch_deadline = tokio::time::Instant::now() + MEMPOOL_INTERVAL;
+							if let Some(jh) = TransactionPipe::tick_mempool_sender(&core_mempool, &da_client, &da_batch_signer, &mempool_config).await? {
+								sent_batch_futures.push(jh);
+							}
+						}
+						_ = mempool_gc_interval.tick() => {
+							self.tick_gc();
+						}
+
+						Some(result) = sent_batch_futures.next() => {
+							match result {
+								Ok(Ok(response)) => {
+									if !response.answer {
+										tracing::error!("DA Sequencer reject batch.");
+										panic!("DA Sequencer reject batch., can't send batch, exit process");
+									}
+								}
+								Ok(Err(err)) => {
+									tracing::error!("Send batch to Da failed because of a connection issue: {err}");
+									//TODO put some reconnection for now panic.
+									panic!("DA connection failed, can't send batch, exit process");
+								}
+								Err(err) => {
+									tracing::error!("Tokio send batch task execution failed: {err}");
+									//TODO see what consequence of this error.
+								}
+							}
+						}
+					}
+				}
+			}
+		});
+
+		tokio::select! {
+			res = request_jh => {
+				tracing::error!("Tx request loop break with error: {res:?}.");
+				res.map_err(|err| anyhow::anyhow!("Tx request loop break with error: {err:?}."))?
+			}
+			res = pipe_jh => {
+				tracing::error!("Tx pipe loop break with error: {res:?}.");
+				res.map_err(|err| anyhow::anyhow!("Tx pipe loop break with error: {err:?}."))?
+			}
 		}
+	}
+
+	/// Pipes a batch of transactions from the mempool to the transaction channel.
+	pub async fn tick_requests(
+		request: MempoolClientRequest,
+		core_mempool: &Arc<RwLock<CoreMempool>>,
+		db_reader: &Arc<dyn DbReader>,
+		transactions_in_flight: &Arc<RwLock<GcCounter>>,
+		in_flight_limit: Option<u64>,
+		counter: &mut u64,
+	) -> Result<(), Error> {
+		match request {
+			MempoolClientRequest::SubmitTransaction(transaction, callback) => {
+				let span = info_span!(
+					target: "movement_timing",
+					"submit_transaction",
+					tx_hash = %transaction.committed_hash(),
+					sender = %transaction.sender(),
+					sequence_number = transaction.sequence_number(),
+					expiration_ts = transaction.expiration_timestamp_secs(),
+				);
+				let status = TransactionPipe::add_transaction_to_aptos_mempool(
+					transaction,
+					core_mempool,
+					db_reader,
+					transactions_in_flight,
+					in_flight_limit,
+				)
+				.instrument(span)
+				.await?;
+
+				tracing::info!("Sending back Tx status: {status:?} and counter={counter}");
+				callback.send(Ok(status)).unwrap_or_else(|_| {
+					debug!("SubmitTransaction request canceled");
+				});
+				*counter = 0;
+			}
+			MempoolClientRequest::GetTransactionByHash(hash, sender) => {
+				tokio::task::spawn_blocking({
+					let core_mempool = core_mempool.clone();
+					move || {
+						let mempool_result = { core_mempool.read().unwrap().get_by_hash(hash) };
+						sender.send(mempool_result).unwrap_or_else(|_| {
+							info!("GetTransactionByHash request canceled");
+						});
+					}
+				});
+
+				*counter += 1;
+			}
+		}
+
+		Ok(())
 	}
 
 	/// Pipes a batch of transactions from the executor to commit then in the Aptos mempool.
 	pub(crate) async fn tick_commit_tx(
-		&mut self,
+		core_mempool: &RwLock<CoreMempool>,
 		batches: Vec<TxExecutionResult>,
 	) -> Result<(), Error> {
 		for tx_result in batches {
@@ -170,7 +274,7 @@ impl TransactionPipe {
 					tx_result.hash,
 					discard_status
 				);
-				self.core_mempool.reject_transaction(
+				core_mempool.write().unwrap().reject_transaction(
 					&tx_result.sender,
 					tx_result.seq_number,
 					&tx_result.hash,
@@ -188,83 +292,63 @@ impl TransactionPipe {
 		Ok(())
 	}
 
-	/// Pipes a batch of transactions from the mempool to the transaction channel.
-	pub async fn tick_requests(&mut self, request: MempoolClientRequest) -> Result<(), Error> {
-		match request {
-			MempoolClientRequest::SubmitTransaction(transaction, callback) => {
-				let span = info_span!(
-					target: "movement_timing",
-					"submit_transaction",
-					tx_hash = %transaction.committed_hash(),
-					sender = %transaction.sender(),
-					sequence_number = transaction.sequence_number(),
-				);
-				let status =
-					self.add_transaction_to_aptos_mempool(transaction).instrument(span).await?;
-
-				callback.send(Ok(status)).unwrap_or_else(|_| {
-					debug!("SubmitTransaction request canceled");
-				});
-			}
-			MempoolClientRequest::GetTransactionByHash(hash, sender) => {
-				let mempool_result = self.core_mempool.get_by_hash(hash);
-				sender.send(mempool_result).unwrap_or_else(|_| {
-					debug!("GetTransactionByHash request canceled");
-				});
-			}
-		}
-
-		Ok(())
-	}
-
 	/// Extracts a batch of transactions from the mempool and sends it to the DA.
 	pub(crate) async fn tick_mempool_sender(
-		&mut self,
+		core_mempool: &RwLock<CoreMempool>,
 		da_client: &(impl DaSequencerClient + 'static),
+		da_batch_signer: &SignerIdentifier,
+		mempool_config: &MempoolConfig,
 	) -> Result<
 		Option<JoinHandle<Result<movement_da_sequencer_proto::BatchWriteResponse, tonic::Status>>>,
 		Error,
 	> {
-		let transactions = self.core_mempool.get_batch_with_ranking_score(
-			self.mempool_config.max_tx_per_batch,
-			self.mempool_config.max_batch_size,
-			true,            // allow partial batches
-			BTreeMap::new(), // exclude Tx
-		);
+		let batch: Vec<Transaction> = {
+			let mut core_mempool = core_mempool.write().unwrap();
+			let transactions = core_mempool.get_batch_with_ranking_score(
+				mempool_config.max_tx_per_batch,
+				mempool_config.max_batch_size,
+				true,            // allow partial batches
+				BTreeMap::new(), // exclude Tx
+			);
 
-		debug!("Create a batch of {} transactions and submit it.", transactions.len());
+			info!("Create a batch of {} transactions and submit it.", transactions.len());
 
-		let batch: Vec<Transaction> = transactions
-			.into_iter()
-			.map(|(transaction, ranking_score)| {
-				let priority = u64::MAX - ranking_score;
-				let sender = transaction.sender();
-				let seq = transaction.sequence_number();
-
-				self.core_mempool.commit_transaction(&sender, seq);
-				debug!(
-					target: "movement_timing",
-					tx_hash = %transaction.committed_hash(),
-					sender = %transaction.sender(),
-					sequence_number = transaction.sequence_number(),
-					"Tx build batch add transaction",
-				);
-				bcs::to_bytes(&transaction).map(|serialized| {
-					Transaction::new(serialized, priority, transaction.sequence_number())
+			transactions
+				.into_iter()
+				.map(|(transaction, ranking_score)| {
+					let priority = u64::MAX - ranking_score;
+					let sender = transaction.sender();
+					let seq = transaction.sequence_number();
+					core_mempool.commit_transaction(&sender, seq);
+					debug!(
+						target: "movement_timing",
+						tx_hash = %transaction.committed_hash(),
+						sender = %transaction.sender(),
+						sequence_number = transaction.sequence_number(),
+						"Tx build batch add transaction",
+					);
+					bcs::to_bytes(&transaction).map(|serialized| {
+						Transaction::new(serialized, priority, transaction.sequence_number())
+					})
 				})
-			})
-			.collect::<Result<Vec<_>, _>>()?;
+				.collect::<Result<Vec<_>, _>>()?
+		};
 
 		if !batch.is_empty() {
 			// Build batch and submit request.
-			let batch_bytes = bcs::to_bytes(&batch).expect("Serialization failed");
-			let loader: LoadedSigner<Ed25519> = self.da_batch_signer.load().await?;
-			let encoded =
-				movement_da_sequencer_client::sign_and_encode_batch(batch_bytes, &loader).await?;
+			tracing::info!("Build new batch with {} tx.", batch.len());
+			let loader: LoadedSigner<Ed25519> = da_batch_signer.load().await?;
 			//send the batch in a separate task to avoid to slow the loop.
 			let handle = tokio::spawn({
 				let mut client = da_client.clone();
-				async move { client.batch_write(BatchWriteRequest { data: encoded }).await }
+				async move {
+					let batch_bytes = bcs::to_bytes(&batch).expect("Serialization failed");
+					let encoded =
+						movement_da_sequencer_client::sign_and_encode_batch(batch_bytes, &loader)
+							.await
+							.unwrap();
+					client.batch_write(BatchWriteRequest { data: encoded }).await
+				}
 			});
 			Ok(Some(handle))
 		} else {
@@ -274,6 +358,7 @@ impl TransactionPipe {
 
 	pub(crate) fn tick_gc(&mut self) {
 		if self.last_gc.elapsed() >= GC_INTERVAL {
+			tracing::info!("Start execute mempool gc");
 			// todo: these will be slightly off, but gc does not need to be exact
 			let now = Instant::now();
 			let epoch_ms_now = chrono::Utc::now().timestamp_millis() as u64;
@@ -289,25 +374,31 @@ impl TransactionPipe {
 			}
 
 			// garbage collect the core mempool
-			self.core_mempool.gc();
+			{
+				self.core_mempool.write().unwrap().gc();
+			}
 
 			self.last_gc = now;
+			tracing::info!("End execute mempool gc");
 		}
 	}
 
 	// Adds a transaction to the mempool.
 	async fn add_transaction_to_aptos_mempool(
-		&mut self,
 		transaction: SignedTransaction,
+		core_mempool: &RwLock<CoreMempool>,
+		db_reader: &Arc<dyn DbReader>,
+		transactions_in_flight: &Arc<RwLock<GcCounter>>,
+		in_flight_limit: Option<u64>,
 	) -> Result<SubmissionStatus, Error> {
 		// Check whether the account is whitelisted
-		if !self.is_whitelisted(&transaction.sender())? {
-			return Ok((MempoolStatus::new(MempoolStatusCode::TooManyTransactions), None));
-		}
+		// if !self.is_whitelisted(&transaction.sender())? {
+		// 	return Ok((MempoolStatus::new(MempoolStatusCode::TooManyTransactions), None));
+		// }
 
 		// For now, we are going to consider a transaction in flight until it exits the mempool and is sent to the DA as is indicated by WriteBatch.
 		let in_flight = {
-			let transactions_in_flight = self.transactions_in_flight.read().unwrap();
+			let transactions_in_flight = transactions_in_flight.read().unwrap();
 			transactions_in_flight.get_count()
 		};
 		info!(
@@ -315,7 +406,7 @@ impl TransactionPipe {
 			in_flight = %in_flight,
 			"transactions_in_flight"
 		);
-		if let Some(inflight_limit) = self.in_flight_limit {
+		if let Some(inflight_limit) = in_flight_limit {
 			if in_flight >= inflight_limit {
 				info!(
 					target: "movement_timing",
@@ -328,24 +419,23 @@ impl TransactionPipe {
 
 		// Pre-execute Tx to validate its content.
 		// Re-create the validator for each Tx because it uses a frozen version of the ledger.
-		let vm_validator = VMValidator::new(Arc::clone(&self.db_reader));
+		let vm_validator = VMValidator::new(Arc::clone(&db_reader));
 		let tx_result = vm_validator.validate_transaction(transaction.clone())?;
 		// invert the application priority with the u64 max minus the score from aptos (which is high to low)
 		let ranking_score = tx_result.score();
 		match tx_result.status() {
 			Some(_) => {
 				let ms = MempoolStatus::new(MempoolStatusCode::VmError);
-				debug!("Transaction not accepted: {:?}", tx_result.status());
+				warn!(status = ?tx_result.status(), "Transaction not accepted by VM");
 				return Ok((ms, tx_result.status()));
 			}
 			None => {
-				debug!("Transaction accepted by VM: {:?}", transaction);
+				info!("Transaction accepted by VM");
 			}
 		}
 
 		// Add the txn for future validation
-		let state_view = self
-			.db_reader
+		let state_view = db_reader
 			.latest_state_checkpoint_view()
 			.expect("Failed to get latest state checkpoint view.");
 		let db_seq_num = get_account_sequence_number(&state_view, transaction.sender())?;
@@ -355,32 +445,28 @@ impl TransactionPipe {
 			tx_seq_num = %transaction.sequence_number(),
 		);
 		let tx_hash = transaction.committed_hash();
-		let status = self.core_mempool.add_txn(
-			transaction,
-			ranking_score,
-			db_seq_num, //std::cmp::min(*db_seq_num + 1, sequence_number),
-			TimelineState::NonQualified,
-			true,
-		);
-
-		info!(
-			tx_hash = %tx_hash,
-			status = %status,
-			"Transaction added to the mempool with status"
-		);
+		let status = {
+			core_mempool.write().unwrap().add_txn(
+				transaction,
+				ranking_score,
+				db_seq_num, //std::cmp::min(*db_seq_num + 1, sequence_number),
+				TimelineState::NonQualified,
+				true,
+			)
+		};
 
 		match status.code {
 			MempoolStatusCode::Accepted => {
 				let now = chrono::Utc::now().timestamp_millis() as u64;
-				debug!(%tx_hash, "transaction accepted");
+				info!(%tx_hash, "transaction accepted by mempool");
 				// increment transactions in flight
 				{
-					let mut transactions_in_flight = self.transactions_in_flight.write().unwrap();
+					let mut transactions_in_flight = transactions_in_flight.write().unwrap();
 					transactions_in_flight.increment(now, 1);
 				}
 			}
 			_ => {
-				warn!("Transaction not accepted: {:?}", status);
+				warn!(status = ?tx_result.status(), "Transaction not accepted by mempool");
 			}
 		}
 

@@ -113,11 +113,11 @@ impl Scenario for BasicScenario {
 		let txn_hash = coin_client
 			.transfer(&mut alice, bob.address(), 1_000_000, None)
 			.await
-			.context("Failed to submit transaction to transfer coins")?;
+			.context("Prepare Failed to submit transaction to transfer coins")?;
 		rest_client
 			.wait_for_transaction(&txn_hash)
 			.await
-			.context("Failed when waiting for the transfer transaction")?;
+			.context("Prepare Failed when waiting for the transfer transaction")?;
 		tracing::info!("Scenario:{} prepare done. account created and founded", self.id,);
 
 		self.alice = Some(alice);
@@ -132,26 +132,48 @@ impl Scenario for BasicScenario {
 		let alice = self.alice.as_mut().unwrap();
 		let bob = self.bob.as_mut().unwrap();
 
-		for _ in 0..2 {
+		for index in 0..2 {
 			// Have Bob send Alice some coins.
+			tracing::info!("Scenario:{} Before Sent Tx Alice -> Bob index:{index}", self.id);
 			let txn_hash = coin_client
 				.transfer(bob, alice.address(), 10, None)
 				.await
-				.context("Failed to submit transaction to transfer coins")?;
+				//				.context("Failed to submit transaction to transfer coins")
+				.map_err(|err| anyhow::anyhow!("Alice Tx sublit failed because {err}"))?;
+			tracing::info!(
+				"Scenario:{} Sent Tx Alice -> Bob   index:{index} submit:{:?}",
+				self.id,
+				txn_hash
+			);
 			rest_client
 				.wait_for_transaction(&txn_hash)
 				.await
-				.context("Failed when waiting for the transfer transaction")?;
+				//				.context("Failed when waiting for the transfer transaction")
+				.map_err(|err| {
+					anyhow::anyhow!("Alice Tx failed:{txn_hash:?} index:{index} because {err}")
+				})?;
 
 			// Have Alice send Bob some more coins.
+			tracing::info!("Scenario:{} Before Sent Tx Bob -> Alice index:{index}", self.id);
 			let txn_hash = coin_client
 				.transfer(alice, bob.address(), 10, None)
 				.await
-				.context("Failed to submit transaction to transfer coins")?;
+				//				.context("Failed to submit transaction to transfer coins")
+				.map_err(|err| {
+					anyhow::anyhow!("Bob Tx submit index:{index} failed because {err}")
+				})?;
+			tracing::info!(
+				"Scenario:{} Sent Tx Bob -> Alice  index:{index} submit:{:?}",
+				self.id,
+				txn_hash
+			);
 			rest_client
 				.wait_for_transaction(&txn_hash)
 				.await
-				.context("Failed when waiting for the transfer transaction")?;
+				//				.context("Failed when waiting for the transfer transaction")
+				.map_err(|err| {
+					anyhow::anyhow!("Bob Tx failed:{txn_hash:?} index:{index} because {err}")
+				})?;
 		}
 
 		// Print final balances.

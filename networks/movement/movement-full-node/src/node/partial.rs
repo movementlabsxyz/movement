@@ -64,7 +64,13 @@ where
 			.stream_heartbeat_interval_sec;
 		let (result, _index, _remaining) = futures::future::select_all(vec![
 			tokio::spawn(async move {
-				exec_settle_task.run(da_sequencer_url, stream_heartbeat_interval_sec).await
+				exec_settle_task
+					.run(
+						da_sequencer_url,
+						stream_heartbeat_interval_sec,
+						self.config.da_db.allow_sync_from_zero,
+					)
+					.await
 			}),
 			tokio::spawn(exec_background),
 			tokio::spawn(services.run()),

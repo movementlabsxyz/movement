@@ -67,6 +67,10 @@ impl SequencerBlock {
 		self.block.transactions()
 	}
 
+	pub fn len(&self) -> usize {
+		self.block.transactions().count()
+	}
+
 	pub fn inner_block(self) -> Block {
 		self.block
 	}

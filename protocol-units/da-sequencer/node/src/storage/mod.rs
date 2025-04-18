@@ -248,6 +248,12 @@ impl DaSequencerStorage for Storage {
 		let tx_set: BTreeSet<_> = selected_txs.into_iter().collect();
 		let block = Block::new(BlockMetadata::default(), parent_id, tx_set);
 		let sequencer_block = SequencerBlock::try_new(height, block)?;
+		tracing::info!(
+			"Producing new block: id:{} height:{} nb Tx:{}",
+			sequencer_block.id(),
+			sequencer_block.height().0,
+			sequencer_block.len()
+		);
 
 		// Save the block and clean up pending txs
 		self.save_block(&sequencer_block, Some(keys_to_delete))?;
