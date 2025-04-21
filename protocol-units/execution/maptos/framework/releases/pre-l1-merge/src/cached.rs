@@ -27,6 +27,7 @@ script {
     use aptos_framework::governed_gas_pool;
     use aptos_framework::aptos_coin;
     use aptos_framework::signer;
+    use aptos_framework::version;
 
     fun main(core_resources: &signer) {
         let core_signer = aptos_governance::get_signer_testnet_only(core_resources, @0000000000000000000000000000000000000000000000000000000000000001);
@@ -38,6 +39,12 @@ script {
 
         // this will burn the mint capability for the core_resource signer
         aptos_coin::destroy_mint_capability_from(&core_signer, core_address);
+
+       // this will burn the Delegations struct for the core_resource signer
+        aptos_coin::destroy_delegations_from(&core_signer, core_address);
+
+        // this will burn the SetVersionCap for the core_resource signer
+        version::destroy_set_version_capability_from(&core_signer, core_address);
     }
 }
 "#
