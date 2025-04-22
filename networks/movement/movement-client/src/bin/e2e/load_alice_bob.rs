@@ -63,8 +63,9 @@ static NODE_URL: Lazy<Url> = Lazy::new(|| {
 		.maptos_rest_connection_port
 		.clone();
 
-	let node_connection_url =
-		format!("http://{}:{}", node_connection_address, node_connection_port);
+	// let node_connection_url =
+	// 	format!("http://{}:{}", node_connection_address, node_connection_port);
+	let node_connection_url = "http://ec2-100-24-16-218.compute-1.amazonaws.com".to_string();
 
 	Url::from_str(node_connection_url.as_str()).unwrap()
 });
@@ -83,7 +84,8 @@ static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
 		.maptos_faucet_rest_connection_port
 		.clone();
 
-	let faucet_listen_url = format!("http://{}:{}", faucet_listen_address, faucet_listen_port);
+	// let faucet_listen_url = format!("http://{}:{}", faucet_listen_address, faucet_listen_port);
+	let faucet_listen_url = "http://ec2-100-24-16-218.compute-1.amazonaws.com:81".to_string();
 
 	Url::from_str(faucet_listen_url.as_str()).unwrap()
 });
@@ -94,6 +96,7 @@ impl Scenario for BasicScenario {
 	async fn prepare(&mut self) -> Result<(), anyhow::Error> {
 		let rest_client = Client::new(NODE_URL.clone());
 		let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
+		let faucet_client = faucet_client.with_auth_token("notreal".to_string());
 		let coin_client = CoinClient::new(&rest_client);
 
 		// Create two accounts locally, Alice and Bob.
@@ -108,8 +111,8 @@ impl Scenario for BasicScenario {
 		);
 
 		// Create the accounts on chain, but only fund Alice.
-		faucet_client.fund(alice.address(), 100_000_000_000).await?;
-		faucet_client.create_account(bob.address()).await?;
+		faucet_client.fund(alice.address(), 100_000_000_000).await.unwrap();
+		faucet_client.create_account(bob.address()).await.unwrap();
 
 		// Have Alice send Bob some coins.
 		let pending_tx = coin_client

@@ -72,7 +72,13 @@ pub fn init_tracing_subscriber(config: Config) -> WorkerGuard {
 		}
 	};
 
-	tracing_subscriber::registry().with(log_layer).with(timing_layer).init();
+	let console_layer = console_subscriber::spawn();
+
+	tracing_subscriber::registry()
+		.with(console_layer)
+		.with(log_layer)
+		.with(timing_layer)
+		.init();
 
 	WorkerGuard { _drop_me: timing_writer_guard }
 }
