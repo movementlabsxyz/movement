@@ -53,7 +53,7 @@ processes:
     
   movement-full-node:
     command: |
-      CONSOLE_BIND=127.0.0.1:12345 RUST_BACKTRACE=1 movement-full-node run
+      RUST_BACKTRACE=1 movement-full-node run
     depends_on:
       da-sequencer:
         condition: process_healthy

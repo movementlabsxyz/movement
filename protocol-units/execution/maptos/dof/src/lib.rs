@@ -3,6 +3,7 @@ pub mod v1;
 
 use maptos_opt_executor::executor::TxExecutionResult;
 use services::Services;
+use tokio::sync::mpsc::UnboundedReceiver;
 
 pub use aptos_crypto::hash::HashValue;
 pub use aptos_types::{
@@ -12,12 +13,9 @@ pub use aptos_types::{
 	transaction::signature_verified_transaction::SignatureVerifiedTransaction,
 	transaction::{SignedTransaction, Transaction},
 };
+use async_trait::async_trait;
 use maptos_execution_util::config::Config;
 use movement_types::block::BlockCommitment;
-
-use async_trait::async_trait;
-use tokio::sync::mpsc::Sender;
-
 use std::future::Future;
 
 #[async_trait]
@@ -27,7 +25,7 @@ pub trait DynOptFinExecutor {
 	/// Initialize the background task responsible for transaction processing.
 	fn background(
 		&self,
-		mempool_commit_tx_receiver: futures::channel::mpsc::Receiver<Vec<TxExecutionResult>>,
+		mempool_commit_tx_receiver: UnboundedReceiver<Vec<TxExecutionResult>>,
 		config: &Config,
 	) -> Result<
 		(Self::Context, impl Future<Output = Result<(), anyhow::Error>> + Send + 'static),
@@ -41,7 +39,7 @@ pub trait DynOptFinExecutor {
 	) -> Result<bool, anyhow::Error>;
 
 	/// Executes a block optimistically
-	async fn execute_block_opt(
+	fn execute_block_opt(
 		&mut self,
 		block: ExecutableBlock,
 	) -> Result<BlockCommitment, anyhow::Error>;
@@ -89,32 +87,33 @@ pub trait MakeOptFinServices {
 mod tests {
 	use crate::{v1::Executor, DynOptFinExecutor};
 	use crate::{ExecutableBlock, ExecutableTransactions, SignatureVerifiedTransaction};
-	use maptos_execution_util::config::Config;
-	use maptos_opt_executor::executor::{TxExecutionResult, EXECUTOR_CHANNEL_SIZE};
-	use movement_signer_test::ed25519::TestSigner;
-	use movement_signing_aptos::TransactionSigner;
-
+	use anyhow::Context;
 	use aptos_crypto::{ed25519::Ed25519PrivateKey, HashValue, Uniform};
 	use aptos_types::account_address::AccountAddress;
 	use aptos_types::chain_id::ChainId;
 	use aptos_types::transaction::{
 		RawTransaction, Script, SignedTransaction, Transaction, TransactionPayload,
 	};
-
-	use anyhow::Context;
+	use maptos_execution_util::config::Config;
+	use maptos_opt_executor::executor::TxExecutionResult;
 	use movement_signer_loader::identifiers::{local::Local, SignerIdentifier};
+	use movement_signer_test::ed25519::TestSigner;
+	use movement_signing_aptos::TransactionSigner;
 	use tempfile::TempDir;
+	use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver};
 
-	async fn setup(mut maptos_config: Config) -> Result<(Executor, TempDir), anyhow::Error> {
+	async fn setup(
+		mut maptos_config: Config,
+	) -> Result<(Executor, TempDir, UnboundedReceiver<Vec<TxExecutionResult>>), anyhow::Error> {
 		let tempdir = tempfile::tempdir()?;
 		// replace the db path with the temporary directory
 		maptos_config.chain.maptos_db_path.replace(tempdir.path().to_path_buf());
 		// No mempool don't use the receiver.
-		let (mempool_tx_exec_result_sender, _mempool_commit_tx_receiver) =
-			futures::channel::mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
+			unbounded_channel::<Vec<TxExecutionResult>>();
 		let executor =
 			Executor::try_from_config(maptos_config, mempool_tx_exec_result_sender).await?;
-		Ok((executor, tempdir))
+		Ok((executor, tempdir, mempool_commit_tx_receiver))
 	}
 
 	async fn create_signed_transaction(
@@ -142,7 +141,7 @@ mod tests {
 		config.chain.maptos_private_key_signer_identifier =
 			SignerIdentifier::Local(Local { private_key_hex_bytes });
 		let signer = TestSigner::new(signing_key);
-		let (mut executor, _tempdir) = setup(config).await?;
+		let (mut executor, _tempdir, _mempool_commit_tx_receiver) = setup(config).await?;
 		let transaction = create_signed_transaction(&signer).await?;
 		let block_id = HashValue::random();
 		let block_metadata = executor
@@ -155,7 +154,7 @@ mod tests {
 				.collect(),
 		);
 		let block = ExecutableBlock::new(block_id.clone(), txs);
-		executor.execute_block_opt(block).await?;
+		executor.execute_block_opt(block)?;
 		Ok(())
 	}
 }

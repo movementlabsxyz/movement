@@ -32,6 +32,6 @@ cargo build $CARGO_PROFILE_FLAGS -p movement-da-sequencer-setup
 echo "Built movement-da-sequencer-setup"
 
 echo "Building da-sequencer-node..."
-cargo build $CARGO_PROFILE_FLAGS -p da-sequencer-node
+cargo build $CARGO_PROFILE_FLAGS -p movement-da-sequencer-node
 echo "Built da-sequencer-node"
 

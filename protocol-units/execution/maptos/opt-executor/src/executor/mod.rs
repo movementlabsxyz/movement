@@ -18,6 +18,7 @@ use std::cmp::Ordering;
 use std::hash::Hash;
 use std::hash::Hasher;
 use std::sync::{Arc, RwLock};
+use tokio::sync::mpsc::UnboundedSender;
 use tracing::info;
 
 #[derive(Debug, Clone)]
@@ -110,7 +111,7 @@ pub const EXECUTOR_CHANNEL_SIZE: usize = 2_usize.pow(16);
 /// against the `AptosVM`.
 pub struct Executor {
 	/// Send commited Tx
-	pub mempool_tx_exec_result_sender: futures::channel::mpsc::Sender<Vec<TxExecutionResult>>, // Sender, seq number)
+	pub mempool_tx_exec_result_sender: UnboundedSender<Vec<TxExecutionResult>>,
 	/// The executing type.
 	pub block_executor: Arc<BlockExecutor<AptosVM>>,
 	/// The signer of the executor's transactions.

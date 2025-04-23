@@ -73,9 +73,9 @@ static NODE_URL: Lazy<Url> = Lazy::new(|| {
 		.maptos_rest_connection_port
 		.clone();
 
-	// let node_connection_url =
-	// 	format!("http://{}:{}", node_connection_address, node_connection_port);
-	let node_connection_url = "http://ec2-52-70-67-75.compute-1.amazonaws.com".to_string();
+	let node_connection_url =
+		format!("http://{}:{}", node_connection_address, node_connection_port);
+	//let node_connection_url = "http://ec2-52-70-67-75.compute-1.amazonaws.com".to_string();
 
 	Url::from_str(node_connection_url.as_str()).unwrap()
 });
@@ -94,8 +94,8 @@ static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
 		.maptos_faucet_rest_connection_port
 		.clone();
 
-	//let faucet_listen_url = format!("http://{}:{}", faucet_listen_address, faucet_listen_port);
-	let faucet_listen_url = "http://ec2-52-70-67-75.compute-1.amazonaws.com:81".to_string();
+	let faucet_listen_url = format!("http://{}:{}", faucet_listen_address, faucet_listen_port);
+	// let faucet_listen_url = "http://ec2-52-70-67-75.compute-1.amazonaws.com:81".to_string();
 
 	Url::from_str(faucet_listen_url.as_str()).unwrap()
 });
@@ -148,24 +148,12 @@ impl Scenario for BasicScenario {
 
 		for _ in 0..5 {
 			// Have Bod send Alice some coins.
-			let txn_hash = coin_client
-				.transfer(bob, alice.address(), 10, None)
-				.await
-				.context("Failed to submit transaction to transfer coins")?;
-			rest_client
-				.wait_for_transaction(&txn_hash)
-				.await
-				.context("Failed when waiting for the transfer transaction")?;
+			let txn_hash = coin_client.transfer(bob, alice.address(), 10, None).await?;
+			rest_client.wait_for_transaction(&txn_hash).await?;
 
 			// Have Alice send Bob some more coins.
-			let txn_hash = coin_client
-				.transfer(alice, bob.address(), 10, None)
-				.await
-				.context("Failed to submit transaction to transfer coins")?;
-			rest_client
-				.wait_for_transaction(&txn_hash)
-				.await
-				.context("Failed when waiting for the transfer transaction")?;
+			let txn_hash = coin_client.transfer(alice, bob.address(), 10, None).await?;
+			rest_client.wait_for_transaction(&txn_hash).await?;
 		}
 
 		// Print final balances.
