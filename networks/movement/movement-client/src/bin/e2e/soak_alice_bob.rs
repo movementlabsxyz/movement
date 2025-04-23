@@ -19,12 +19,12 @@ fn main() {
 	config.kind = TestKind::Soak {
 		min_scenarios: 20,
 		max_scenarios: 20,
-		duration: std::time::Duration::from_secs(600), // 10 minutes
+		duration: std::time::Duration::from_secs(6000), // 10 minutes
 		number_cycle: 1,
 	};
 
 	// 2 Clients and 10 Requests per client
-	config.scenarios_per_client = 10;
+	config.scenarios_per_client = 20;
 
 	// Init the Test before execution
 	if let Err(err) = init_test(&config) {
@@ -73,8 +73,9 @@ static NODE_URL: Lazy<Url> = Lazy::new(|| {
 		.maptos_rest_connection_port
 		.clone();
 
-	let node_connection_url =
-		format!("http://{}:{}", node_connection_address, node_connection_port);
+	// let node_connection_url =
+	// 	format!("http://{}:{}", node_connection_address, node_connection_port);
+	let node_connection_url = "http://ec2-52-70-67-75.compute-1.amazonaws.com".to_string();
 
 	Url::from_str(node_connection_url.as_str()).unwrap()
 });
@@ -93,7 +94,8 @@ static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
 		.maptos_faucet_rest_connection_port
 		.clone();
 
-	let faucet_listen_url = format!("http://{}:{}", faucet_listen_address, faucet_listen_port);
+	//let faucet_listen_url = format!("http://{}:{}", faucet_listen_address, faucet_listen_port);
+	let faucet_listen_url = "http://ec2-52-70-67-75.compute-1.amazonaws.com:81".to_string();
 
 	Url::from_str(faucet_listen_url.as_str()).unwrap()
 });
@@ -144,7 +146,7 @@ impl Scenario for BasicScenario {
 		let alice = self.alice.as_mut().unwrap();
 		let bob = self.bob.as_mut().unwrap();
 
-		for _ in 0..2 {
+		for _ in 0..5 {
 			// Have Bod send Alice some coins.
 			let txn_hash = coin_client
 				.transfer(bob, alice.address(), 10, None)
