@@ -63,9 +63,9 @@ static NODE_URL: Lazy<Url> = Lazy::new(|| {
 		.maptos_rest_connection_port
 		.clone();
 
-	// let node_connection_url =
-	// 	format!("http://{}:{}", node_connection_address, node_connection_port);
-	let node_connection_url = "http://ec2-52-70-67-75.compute-1.amazonaws.com".to_string();
+	let node_connection_url =
+		format!("http://{}:{}", node_connection_address, node_connection_port);
+	//	let node_connection_url = "http://ec2-52-70-67-75.compute-1.amazonaws.com".to_string();
 
 	Url::from_str(node_connection_url.as_str()).unwrap()
 });
@@ -84,8 +84,8 @@ static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
 		.maptos_faucet_rest_connection_port
 		.clone();
 
-	// let faucet_listen_url = format!("http://{}:{}", faucet_listen_address, faucet_listen_port);
-	let faucet_listen_url = "http://ec2-52-70-67-75.compute-1.amazonaws.com:81".to_string();
+	let faucet_listen_url = format!("http://{}:{}", faucet_listen_address, faucet_listen_port);
+	// let faucet_listen_url = "http://ec2-52-70-67-75.compute-1.amazonaws.com:81".to_string();
 
 	Url::from_str(faucet_listen_url.as_str()).unwrap()
 });
