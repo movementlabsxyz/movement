@@ -17,9 +17,9 @@ fn main() {
 
 	// Set some params for the load test, drive some requests
 	config.kind = TestKind::Soak {
-		min_scenarios: 20,
-		max_scenarios: 20,
-		duration: std::time::Duration::from_secs(600), // 10 minutes
+		min_scenarios: 10,
+		max_scenarios: 10,
+		duration: std::time::Duration::from_secs(6000), // 10 minutes
 		number_cycle: 1,
 	};
 

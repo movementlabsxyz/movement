@@ -11,9 +11,9 @@ use maptos_opt_executor::executor::TxExecutionResult;
 use maptos_opt_executor::executor::EXECUTOR_CHANNEL_SIZE;
 use maptos_opt_executor::{Context as OptContext, Executor as OptExecutor};
 use movement_types::block::BlockCommitment;
-use tracing::debug;
-
 use std::future::Future;
+use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
+use tracing::debug;
 
 pub struct Executor {
 	executor: OptExecutor,
@@ -35,7 +35,7 @@ impl Executor {
 
 	pub async fn try_from_config(
 		config: Config,
-		mempool_tx_exec_result_sender: futures::channel::mpsc::Sender<Vec<TxExecutionResult>>,
+		mempool_tx_exec_result_sender: UnboundedSender<Vec<TxExecutionResult>>,
 	) -> Result<Self, anyhow::Error> {
 		let executor = OptExecutor::try_from_config(config, mempool_tx_exec_result_sender).await?;
 		Ok(Self::new(executor))
@@ -56,7 +56,7 @@ impl DynOptFinExecutor for Executor {
 
 	fn background(
 		&self,
-		mempool_commit_tx_receiver: futures::channel::mpsc::Receiver<Vec<TxExecutionResult>>,
+		mempool_commit_tx_receiver: UnboundedReceiver<Vec<TxExecutionResult>>,
 		config: &Config,
 	) -> Result<
 		(Context, impl Future<Output = Result<(), anyhow::Error>> + Send + 'static),
@@ -94,12 +94,12 @@ impl DynOptFinExecutor for Executor {
 		self.executor.has_executed_transaction(transaction_hash)
 	}
 
-	async fn execute_block_opt(
+	fn execute_block_opt(
 		&mut self,
 		block: ExecutableBlock,
 	) -> Result<BlockCommitment, anyhow::Error> {
 		debug!("Executing block: {:?}", block.block_id);
-		self.executor.execute_block(block).await
+		self.executor.execute_block(block)
 	}
 
 	fn set_finalized_block_height(&self, height: u64) -> Result<(), anyhow::Error> {
@@ -179,18 +179,16 @@ mod tests {
 		},
 	};
 	use maptos_execution_util::config::Config;
-	use maptos_opt_executor::executor::EXECUTOR_CHANNEL_SIZE;
 	use movement_signer_loader::identifiers::{local::Local, SignerIdentifier};
-
 	use rand::SeedableRng;
+	use std::collections::HashMap;
 	use tempfile::TempDir;
 	use tokio::sync::mpsc;
-
-	use std::collections::HashMap;
+	use tokio::sync::mpsc::unbounded_channel;
 
 	async fn setup(
 		mut maptos_config: Config,
-		mempool_tx_exec_result_sender: futures::channel::mpsc::Sender<Vec<TxExecutionResult>>,
+		mempool_tx_exec_result_sender: UnboundedSender<Vec<TxExecutionResult>>,
 	) -> Result<(Executor, TempDir), anyhow::Error> {
 		let tempdir = tempfile::tempdir()?;
 		// replace the db path with the temporary directory
@@ -225,7 +223,7 @@ mod tests {
 		});
 
 		let (mempool_tx_exec_result_sender, _mempool_commit_tx_receiver) =
-			futures::channel::mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+			unbounded_channel::<Vec<TxExecutionResult>>();
 
 		let (mut executor, _tempdir) = setup(config, mempool_tx_exec_result_sender).await?;
 		let block_id = HashValue::random();
@@ -242,7 +240,7 @@ mod tests {
 			.collect(),
 		);
 		let block = ExecutableBlock::new(block_id.clone(), txs);
-		executor.execute_block_opt(block).await?;
+		executor.execute_block_opt(block)?;
 		Ok(())
 	}
 
@@ -255,7 +253,7 @@ mod tests {
 		});
 
 		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
-			futures::channel::mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+			unbounded_channel::<Vec<TxExecutionResult>>();
 
 		let (executor, _tempdir) = setup(config.clone(), mempool_tx_exec_result_sender).await?;
 		let (tx_sender, mut tx_receiver) = mpsc::channel(16);
@@ -295,7 +293,7 @@ mod tests {
 		let (tx_sender, _tx_receiver) = mpsc::channel::<Vec<(u64, SignedTransaction)>>(16);
 
 		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
-			futures::channel::mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+			unbounded_channel::<Vec<TxExecutionResult>>();
 
 		let (executor, _tempdir) = setup(config.clone(), mempool_tx_exec_result_sender).await?;
 		let (context, background) = executor.background(mempool_commit_tx_receiver, &config)?;
@@ -329,7 +327,7 @@ mod tests {
 		});
 
 		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
-			futures::channel::mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+			unbounded_channel::<Vec<TxExecutionResult>>();
 
 		let (mut executor, _tempdir) = setup(config.clone(), mempool_tx_exec_result_sender).await?;
 		let (tx_sender, mut tx_receiver) = mpsc::channel(16);
@@ -367,7 +365,7 @@ mod tests {
 			.collect(),
 		);
 		let block = ExecutableBlock::new(block_id.clone(), txs);
-		let commitment = executor.execute_block_opt(block).await?;
+		let commitment = executor.execute_block_opt(block)?;
 
 		assert_eq!(commitment.block_id().to_vec(), block_id.to_vec());
 		assert_eq!(commitment.height(), 1);
@@ -395,7 +393,7 @@ mod tests {
 		});
 
 		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
-			futures::channel::mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+			unbounded_channel::<Vec<TxExecutionResult>>();
 
 		let (mut executor, _tempdir) = setup(config.clone(), mempool_tx_exec_result_sender).await?;
 		let (tx_sender, mut tx_receiver) = mpsc::channel(16);
@@ -446,7 +444,7 @@ mod tests {
 				.collect(),
 			);
 			let block = ExecutableBlock::new(block_id.clone(), txs);
-			executor.execute_block_opt(block).await?;
+			executor.execute_block_opt(block)?;
 
 			blockheight += 1;
 			current_version += txns_to_commit.len() as u64;
@@ -478,11 +476,13 @@ mod tests {
 	#[tokio::test]
 	async fn test_execute_block_state_get_api() -> Result<(), anyhow::Error> {
 		// Create an executor instance from the environment configuration.
-		let config = Config::default();
-		let (tx_sender, _tx_receiver) = mpsc::channel::<Vec<(u64, SignedTransaction)>>(16);
+		let mut config = Config::default();
+		let tempdir = tempfile::tempdir()?;
+		// replace the db path with the temporary directory
+		config.chain.maptos_db_path.replace(tempdir.path().to_path_buf());
 
 		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
-			futures::channel::mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+			unbounded_channel::<Vec<TxExecutionResult>>();
 
 		let mut executor =
 			Executor::try_from_config(config.clone(), mempool_tx_exec_result_sender).await?;
@@ -538,7 +538,7 @@ mod tests {
 				transactions.into_iter().map(SignatureVerifiedTransaction::Valid).collect(),
 			);
 			let block = ExecutableBlock::new(block_id.clone(), executable_transactions);
-			executor.execute_block_opt(block).await?;
+			executor.execute_block_opt(block)?;
 
 			// Retrieve the executor's API interface and fetch the transaction by each hash.
 			for hash in transaction_hashes {
@@ -560,7 +560,7 @@ mod tests {
 		let (tx_sender, _tx_receiver) = mpsc::channel::<Vec<(u64, SignedTransaction)>>(16);
 
 		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
-			futures::channel::mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+			unbounded_channel::<Vec<TxExecutionResult>>();
 
 		let mut executor =
 			Executor::try_from_config(config.clone(), mempool_tx_exec_result_sender).await?;
@@ -614,7 +614,7 @@ mod tests {
 				transactions.into_iter().map(SignatureVerifiedTransaction::Valid).collect(),
 			);
 			let block = ExecutableBlock::new(block_id.clone(), executable_transactions);
-			executor.execute_block_opt(block).await?;
+			executor.execute_block_opt(block)?;
 		}
 
 		// Set the fin height

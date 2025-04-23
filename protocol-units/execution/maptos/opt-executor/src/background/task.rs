@@ -10,6 +10,7 @@ use movement_collections::garbage::counted::GcCounter;
 use movement_da_sequencer_client::GrpcDaSequencerClient;
 use movement_signer_loader::identifiers::SignerIdentifier;
 use std::sync::{Arc, RwLock};
+use tokio::sync::mpsc::UnboundedReceiver;
 use url::Url;
 
 /// The background task for the executor, processing the incoming transactions
@@ -27,7 +28,7 @@ enum BackgroundInner {
 impl BackgroundTask {
 	/// Constructs the full background tasks for transaction processing.
 	pub(crate) fn transaction_pipe(
-		mempool_commit_tx_receiver: futures_mpsc::Receiver<Vec<TxExecutionResult>>, // Sender, seq number)
+		mempool_commit_tx_receiver: UnboundedReceiver<Vec<TxExecutionResult>>, // Sender, seq number)
 		db_reader: Arc<dyn DbReader>,
 		node_config: &NodeConfig,
 		mempool_config: &MempoolConfig,
