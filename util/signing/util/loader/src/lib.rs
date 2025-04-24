@@ -8,7 +8,6 @@ use movement_signer::{
 };
 use std::sync::Arc;
 use tracing::debug;
-use tracing::info;
 
 /// A signer loaded dynamically.
 #[derive(Clone)]
