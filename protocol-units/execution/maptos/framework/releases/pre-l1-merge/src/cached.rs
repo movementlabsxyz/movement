@@ -36,15 +36,6 @@ script {
 
         // this initialize function is idempotent, already initialized GGP will not error.
         governed_gas_pool::initialize(&core_signer, b"aptos_framework::governed_gas_pool");
-
-        // this will burn the mint capability for the core_resource signer
-        aptos_coin::destroy_mint_capability_from(&core_signer, core_address);
-
-       // this will burn the Delegations struct for the core_resource signer
-        aptos_coin::destroy_delegations_from(&core_signer, core_address);
-
-        // this will burn the SetVersionCap for the core_resource signer
-        version::destroy_set_version_capability_from(&core_signer, core_address);
     }
 }
 "#
