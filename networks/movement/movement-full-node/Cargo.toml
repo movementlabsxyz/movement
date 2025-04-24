@@ -55,6 +55,8 @@ chrono = { workspace = true }
 maptos-opt-executor = { workspace = true }
 movement-da-sequencer-proto = { workspace = true }
 movement-da-sequencer-client = { workspace = true }
+movement-da-sequencer-node = { workspace = true }
+
 url = { workspace = true }
 
 

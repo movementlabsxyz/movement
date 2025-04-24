@@ -11737,6 +11737,7 @@ dependencies = [
  "movement-config",
  "movement-da-light-node-client",
  "movement-da-sequencer-client",
+ "movement-da-sequencer-node",
  "movement-da-sequencer-proto",
  "movement-da-util",
  "movement-rest",

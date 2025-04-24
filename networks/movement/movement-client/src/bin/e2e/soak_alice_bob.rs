@@ -17,14 +17,14 @@ fn main() {
 
 	// Set some params for the load test, drive some requests
 	config.kind = TestKind::Soak {
-		min_scenarios: 20,
-		max_scenarios: 20,
+		min_scenarios: 60,
+		max_scenarios: 60,
 		duration: std::time::Duration::from_secs(6000), // 10 minutes
 		number_cycle: 1,
 	};
 
 	// 2 Clients and 10 Requests per client
-	config.scenarios_per_client = 20;
+	config.scenarios_per_client = 60;
 
 	// Init the Test before execution
 	if let Err(err) = init_test(&config) {
