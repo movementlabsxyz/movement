@@ -71,7 +71,7 @@ impl GrpcDaSequencerClient {
 						"DA sequencer Http2 connection failed: {}. Retrying in 10s...",
 						err
 					);
-					let _ = tokio::time::sleep(Duration::from_secs(10));
+					let _ = tokio::time::sleep(Duration::from_secs(10)).await;
 				}
 			}
 		}

@@ -10,7 +10,7 @@ pub async fn setup_movement_node(
 ) -> Result<DaSequencerConfig, anyhow::Error> {
 	//update whitelist with node public key.
 	let loader: LoadedSigner<Ed25519> =
-		maptos_config.chain.maptos_private_key_signer_identifier.load().await?;
+		maptos_config.da_sequencer.batch_signer_identifier.load().await?;
 
 	let verifying_key =
 		ed25519_dalek::VerifyingKey::from_bytes(&loader.public_key().await?.to_bytes())?;

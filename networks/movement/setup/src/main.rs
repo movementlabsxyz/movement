@@ -51,9 +51,7 @@ async fn main() -> Result<(), anyhow::Error> {
 	// Apply all of the setup steps
 	let anvil_join_handle = godfig
 		.try_transaction_with_result(|config| async move {
-			tracing::info!("Config option: {:?}", config);
 			let config = config.unwrap_or_default();
-			tracing::info!("Config: {:?}", config);
 
 			// set up anvil
 			let (config, anvil_join_handle) = Local::default().setup(dot_movement, config).await?;

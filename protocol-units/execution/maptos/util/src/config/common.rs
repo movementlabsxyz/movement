@@ -92,10 +92,13 @@ pub fn default_batch_signer_identifier() -> SignerIdentifier {
 		Ok(val) => SignerIdentifier::try_from_canonical_string(&val).unwrap(),
 		Err(_) => {
 			// encoded key string
-			let key = Ed25519PrivateKey::genesis();
+			let key = Ed25519PrivateKey::generate(&mut rand::rngs::OsRng);
 
 			let verifying_key = key.verifying_key();
-			tracing::info!("Using batch signing public key: {}", key.to_encoded_string().unwrap());
+			tracing::info!(
+				"Using batch signing public key: {}",
+				verifying_key.to_encoded_string().unwrap()
+			);
 
 			// remove the 0x prefix
 			let key = key.to_encoded_string().unwrap();

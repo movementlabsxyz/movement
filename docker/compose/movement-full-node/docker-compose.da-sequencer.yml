@@ -1,5 +1,7 @@
 version: "3.8"
+
 services:
+
   movement-da-sequencer:
     image: ghcr.io/movementlabsxyz/movement-full-node:${CONTAINER_REV}
     container_name: movement-da-sequencer
@@ -14,4 +16,5 @@ services:
       retries: 10
       interval: 10s
       timeout: 5s
-   restart: on-failure:3
+    restart: on-failure:3
+

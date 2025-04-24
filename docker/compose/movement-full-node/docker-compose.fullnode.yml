@@ -1,5 +1,7 @@
 version: "3.8"
+
 services:
+
   movement-full-node:
     image: ghcr.io/movementlabsxyz/movement-full-node:${CONTAINER_REV}
     container_name: movement-full-node
@@ -20,3 +22,4 @@ services:
       interval: 10s
       timeout: 5s
     restart: on-failure:5
+

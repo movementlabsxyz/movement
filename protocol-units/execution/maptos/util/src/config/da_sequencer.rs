@@ -12,7 +12,7 @@ pub struct Config {
 	pub connection_url: Url,
 
 	/// The signing key used to sign batches.
-	#[serde(skip_deserializing, skip_serializing, default = "default_batch_signer_identifier")]
+	#[serde(default = "default_batch_signer_identifier")]
 	pub batch_signer_identifier: SignerIdentifier,
 
 	#[serde(default = "default_stream_heartbeat_interval_sec")]
