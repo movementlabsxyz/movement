@@ -104,7 +104,6 @@ impl Whitelist {
 			.map(|pk| format!("0x{}", hex::encode(pk.to_bytes())))
 			.collect::<Vec<String>>();
 
-		let tosee: &Path = path.as_ref();
 		let file = fs::File::create(path)?;
 		let mut writer = BufWriter::new(file);
 

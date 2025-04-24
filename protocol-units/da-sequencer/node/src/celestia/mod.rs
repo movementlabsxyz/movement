@@ -15,29 +15,37 @@ use movement_types::block;
 use std::future::Future;
 use tokio::sync::{mpsc, oneshot};
 
-/// Functions to implement to save block digest in an external DA like Celestia
+/// Functionality for a connector to an external DA like Celestia for handling blobs with block ids.
 pub trait DaSequencerExternalDa {
-	/// send the given block to Celestia.
-	/// The block is not immediately sent but aggregated in a blob
-	/// Until the client can send it to celestia.
+	/// Send the given block id to the external DA. The block id is not immediately sent but
+	/// aggregated in a batch and eventually sent to Celestia.
 	fn send_block(
 		&self,
 		block_id: block::Id,
 	) -> impl Future<Output = Result<(), DaSequencerError>> + Send;
 
-	/// Get the blob from celestia at the given height.
+	/// Get the blob of block ids from the external DA at the given Celestia height.
 	fn get_blob_at_height(
 		&self,
 		height: CelestiaHeight,
 	) -> impl Future<Output = Result<Option<CelestiaBlob>, DaSequencerError>> + Send;
 
-	/// Bootstrap the Celestia client to recover from missing block.
-	/// In case of crash for example, block sent to Celestia can be behind the block created by the network.
-	/// The role of this function is to recover this missing block to all block of the network are sent to celestia.
-	/// The basic algorithm is start from 'last_sent_block_height' to 'current_block_height' and request using the notifier channel
-	/// The missing block. Not sure last_notified_celestia_height is useful.
-	/// During this boostrap new block are sent to the client.
-	/// These block should be buffered until the boostrap is done then sent after in order.
+	/// Synchronize with the Celestia network to resend missing block and retrieve lost block
+	/// confirmations. During a crash, blocks batched to be sent to Celestia are lost.
+	/// The role of this function is to resend all missing blocks up to the current block height as
+	/// batches to Celestia. These block should be buffered until the synchronization is done then
+	/// sent after in order. The last committed Celestia height and the current Movement block
+	/// height are passed as arguments to the function. The bootstrapping algorithm delays execution
+	/// by 12 seconds to allow Celestia to finalize any blobs currently in process.
+	/// Then the algorithm requests blobs for the next Celestia height until no blobs are returned.
+	/// It sends a "blocks committed" notification for each requested batch of blocks. If no blobs
+	/// were requested in the previous step, the algorithm must request the blob at the last
+	/// committed Celestia height. The last block in the highest blob determines the finalized
+	/// block height in Celestia. All blocks from the finalized block height + 1 to the current
+	/// block height (inclusive) are sent to the Celestia client to be batched into blobs and then
+	/// sent to Celestia. During the synchronization process, the Celestia client buffers all
+	/// incoming blocks from the network. After successfully finishing the synchronization process,
+	/// the buffered blocks are batched into blobs and sent to Celestia.
 	fn bootstrap(
 		&self,
 		current_block_height: BlockHeight,
@@ -45,24 +53,28 @@ pub trait DaSequencerExternalDa {
 	) -> impl Future<Output = Result<(), DaSequencerError>> + Send;
 }
 
-/// Message, use to notify CelestiaClient activities.
+/// Notification messages for communication with the execution environment (main loop).
 #[derive(Debug)]
 pub enum ExternalDaNotification {
-	/// Notify that the block at specified height has been committed on celestia network
+	/// Notify that the block has been committed on the Celestia network at the specified height.
 	BlocksCommitted { block_ids: Vec<block::Id>, celestia_height: CelestiaHeight },
-	/// Ask to send the block at specified height to the Celestia client.
-	/// Use during bootstrap to request block that are missing on Celestia network.
-	RequestBlock { height: BlockHeight, callback: oneshot::Sender<Option<SequencerBlock>> },
+	/// Request a block at s specified height.
+	/// Used during the synchronization to request a block that is missing on the Celestia network.
+	RequestBlockAtHeight { height: BlockHeight, callback: oneshot::Sender<Option<SequencerBlock>> },
+	/// Request a block for a specified block id.
+	/// Used during the synchronization to determine the finalized block height on the Celestia network.
+	RequestBlockForId { id: block::Id, callback: oneshot::Sender<Option<SequencerBlock>> },
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum BlockSource {
-	/// The block has arrived at the DA service.
+	/// A new block arrived from the Movement network.
 	Input,
-	/// The block has been recovered in bootstrap.
+	/// The synchronization process with the Celestia network resends a block.
 	Bootstrap,
 }
 
+/// Upstream dependency for the interaction with the Celestia network.
 pub trait CelestiaClientOps: Sync + Clone {
 	fn get_blob_at_height(
 		&self,
@@ -76,6 +88,7 @@ pub trait CelestiaClientOps: Sync + Clone {
 	) -> impl Future<Output = Result<(), DaSequencerError>> + Send;
 }
 
+/// Upstream dependency for the interaction with the block storage.
 pub trait BlockOps: Sync + Clone {
 	fn notify_blocks_committed(
 		&self,
@@ -127,7 +140,7 @@ impl BlockOps for BlockProvider {
 		height: BlockHeight,
 	) -> Result<SequencerBlock, DaSequencerError> {
 		let (tx, rx) = oneshot::channel();
-		self.notify(ExternalDaNotification::RequestBlock { height, callback: tx })
+		self.notify(ExternalDaNotification::RequestBlockAtHeight { height, callback: tx })
 			.await?;
 		let block = rx.await.map_err(|e| {
 			DaSequencerError::ChannelError(format!("Broken notifier channel: {}", e))
@@ -141,14 +154,19 @@ impl BlockOps for BlockProvider {
 
 	async fn request_block_with_id(
 		&self,
-		_id: block::Id,
+		id: block::Id,
 	) -> Result<SequencerBlock, DaSequencerError> {
-		todo!()
+		let (tx, rx) = oneshot::channel();
+		self.notify(ExternalDaNotification::RequestBlockForId { id, callback: tx })
+			.await?;
+		let block = rx.await.map_err(|e| {
+			DaSequencerError::ChannelError(format!("Broken notifier channel: {}", e))
+		})?;
+		let block = block
+			.ok_or(DaSequencerError::BlockRetrieval(format!("Block for id {:?} not found", id)))?;
+		Ok(block)
 	}
 }
-
-#[cfg(not(test))]
-const DELAY_SECONDS_BEFORE_BOOTSTRAPPING: std::time::Duration = std::time::Duration::from_secs(12);
 
 #[derive(Clone)]
 pub struct CelestiaExternalDa<B: BlockOps, C: CelestiaClientOps> {
@@ -157,7 +175,10 @@ pub struct CelestiaExternalDa<B: BlockOps, C: CelestiaClientOps> {
 }
 
 impl<B: BlockOps, C: CelestiaClientOps> CelestiaExternalDa<B, C> {
-	/// Create the Celestia client and all async process to manage celestia access.
+	#[cfg(not(test))]
+	const DELAY_SECONDS_BEFORE_BOOTSTRAPPING: std::time::Duration =
+		std::time::Duration::from_secs(12);
+
 	pub fn new(block_provider: B, celestia_client: C) -> Self {
 		CelestiaExternalDa { block_provider, celestia_client }
 	}
@@ -173,14 +194,10 @@ impl<C: CelestiaClientOps> CelestiaExternalDa<BlockProvider, C> {
 }
 
 impl<B: BlockOps, C: CelestiaClientOps> DaSequencerExternalDa for CelestiaExternalDa<B, C> {
-	/// Send the given block to Celestia.
-	/// The block is not immediately sent but aggregated in a blob
-	/// until the client can send it to celestia.
 	async fn send_block(&self, block_id: block::Id) -> Result<(), DaSequencerError> {
 		self.celestia_client.send_block(block_id, BlockSource::Input).await
 	}
 
-	/// Get the blob from celestia at the given height.
 	async fn get_blob_at_height(
 		&self,
 		height: CelestiaHeight,
@@ -188,13 +205,6 @@ impl<B: BlockOps, C: CelestiaClientOps> DaSequencerExternalDa for CelestiaExtern
 		self.celestia_client.get_blob_at_height(height).await
 	}
 
-	/// Bootstrap the Celestia client to recover from missing block.
-	/// In case of crash for example, block sent to Celestia can be behind the block created by the network.
-	/// The role of this function is to recover this missing block to all block of the network are sent to celestia.
-	/// The basic algorithm is start from 'last_sent_block_height' to 'current_block_height' and request using the notifier channel
-	/// the missing block. Not sure last_notified_celestia_height is useful.
-	/// During this boostrap new block are sent to the client.
-	/// These block should be buffered until the boostrap is done then sent after in order.
 	async fn bootstrap(
 		&self,
 		current_block_height: BlockHeight,
@@ -202,7 +212,7 @@ impl<B: BlockOps, C: CelestiaClientOps> DaSequencerExternalDa for CelestiaExtern
 	) -> Result<(), DaSequencerError> {
 		// wait to ensure that no blob is pending in the Celestia network
 		#[cfg(not(test))]
-		tokio::time::sleep(DELAY_SECONDS_BEFORE_BOOTSTRAPPING).await;
+		tokio::time::sleep(Self::DELAY_SECONDS_BEFORE_BOOTSTRAPPING).await;
 
 		// Determine that last finalized blob and block height
 		let height_from = match last_finalized_celestia_height {

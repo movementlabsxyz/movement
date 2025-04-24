@@ -11,12 +11,11 @@ use movement_da_sequencer_proto::{
 	ReadAtHeightRequest, ReadAtHeightResponse, StreamReadFromHeightRequest,
 	StreamReadFromHeightResponse,
 };
-use std::net::SocketAddr;
-use std::sync::Arc;
-use tokio::sync::RwLock;
 use tokio::sync::{mpsc, oneshot};
 use tokio_stream::Stream;
 use tonic::transport::Server;
+
+use std::net::SocketAddr;
 
 /// Runs the server
 pub async fn run_server(
@@ -24,8 +23,7 @@ pub async fn run_server(
 	request_tx: mpsc::Sender<GrpcRequests>,
 	whitelist: Whitelist,
 ) -> Result<(), anyhow::Error> {
-	tracing::info!("Da Sequencer gRpc Server listening on: {}", address);
-	let whitelist = Arc::new(RwLock::new(whitelist));
+	tracing::info!("Server listening on: {}", address);
 	let reflection = tonic_reflection::server::Builder::configure()
 		.register_encoded_file_descriptor_set(movement_da_sequencer_proto::FILE_DESCRIPTOR_SET)
 		.build_v1()?;
@@ -50,7 +48,7 @@ pub enum GrpcRequests {
 
 pub struct DaSequencerNode {
 	request_tx: mpsc::Sender<GrpcRequests>,
-	whitelist: Arc<RwLock<Whitelist>>,
+	whitelist: Whitelist,
 }
 
 #[tonic::async_trait]
@@ -209,9 +207,8 @@ impl DaSequencerNodeService for DaSequencerNode {
 
 		// Validate the batch
 		let validated = {
-			let whitelist = self.whitelist.read().await;
 			let raw_batch = DaBatch::<RawData>::now(public_key, signature, bytes);
-			match validate_batch(raw_batch, &whitelist).map_or_else(
+			match validate_batch(raw_batch, &self.whitelist).map_or_else(
 				|err| {
 					tracing::warn!("Invalid batch send: validation failed: {err}");
 					None
