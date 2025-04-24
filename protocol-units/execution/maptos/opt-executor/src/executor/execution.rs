@@ -3,6 +3,8 @@ use crate::executor::TxExecutionResult;
 use aptos_crypto::HashValue;
 use aptos_executor_types::{BlockExecutorTrait, StateComputeResult};
 use aptos_sdk::types::account_address::AccountAddress;
+use aptos_sdk::types::AccountKey;
+use aptos_types::account_config::aptos_test_root_address;
 use aptos_types::{
 	aggregate_signature::AggregateSignature,
 	block_executor::{
@@ -16,7 +18,8 @@ use aptos_types::{
 	validator_verifier::{ValidatorConsensusInfo, ValidatorVerifier},
 };
 use movement_types::block::{BlockCommitment, Commitment, Id};
-use tracing::{debug, info};
+use tracing::debug;
+use tracing::info;
 
 impl Executor {
 	pub fn execute_block(
@@ -245,7 +248,7 @@ mod tests {
 	use aptos_storage_interface::state_view::DbStateViewAtVersion;
 	use aptos_types::{
 		account_address::AccountAddress,
-		account_config::{aptos_test_root_address, AccountResource},
+		account_config::AccountResource,
 		block_executor::partitioner::ExecutableTransactions,
 		block_metadata::BlockMetadata,
 		chain_id::ChainId,

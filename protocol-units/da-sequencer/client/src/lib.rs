@@ -110,6 +110,8 @@ impl DaSequencerClient for GrpcDaSequencerClient {
 		&mut self,
 		request: StreamReadFromHeightRequest,
 	) -> Result<(StreamReadBlockFromHeight, UnboundedReceiver<()>), ClientDaSequencerError> {
+		let start_height = if request.height == 0 { 1 } else { request.height };
+
 		let response = self
 			.client
 			.stream_read_from_height(request)
@@ -140,6 +142,8 @@ impl DaSequencerClient for GrpcDaSequencerClient {
 		});
 
 		let output = async_stream::try_stream! {
+			// Block da height is monotonic.
+			let mut expected_height = start_height;
 			loop {
 				match stream.next().await {
 					Some(Ok(block_response)) => {
@@ -150,7 +154,17 @@ impl DaSequencerClient for GrpcDaSequencerClient {
 									*last_msg_time.lock().await = Instant::now();
 								}
 								Some(block_response::BlockType::BlockV1(block)) => {
-									yield block;
+									// Detect non consecutive height.
+									if block.height != expected_height {
+										tracing::error!("Not an expected block height from DA: expected:{expected_height} received:{}", block.height);
+										// only break because we don't report error in the stream.
+										// The client re connection will detect end of heartbeat and reconnect.
+										break;
+									} else {
+										expected_height +=1;
+										yield block;
+
+									}
 								}
 								None => todo!(),
 							},

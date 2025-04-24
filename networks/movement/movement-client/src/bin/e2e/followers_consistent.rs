@@ -12,8 +12,6 @@ use tokio::sync::RwLock;
 use tracing::info;
 use url::Url;
 
-const TIMING_LOG_ENV: &str = "SUZUKA_TIMING_LOG";
-
 pub fn get_movement_config(
 	dot_movement: &DotMovement,
 ) -> Result<movement_config::Config, anyhow::Error> {
@@ -394,13 +392,10 @@ pub async fn basic_coin_transfers(
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
-	let tracing_config = movement_tracing::Config {
-		timing_log_path: std::env::var_os(TIMING_LOG_ENV).map(Into::into),
-	};
+	let dot_movement = DotMovement::try_from_env().context("Failed to get .movement path")?;
+	let config = get_movement_config(&dot_movement)?;
+	let tracing_config = movement_tracing::Config::default();
 	let _guard = movement_tracing::init_tracing_subscriber(tracing_config);
-
-	// Get the lead dot movement from the environment.
-	let dot_movement = DotMovement::try_from_env()?;
 
 	// Get the follower count from the first argument.
 	let follower_count = std::env::args()
