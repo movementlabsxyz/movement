@@ -12,38 +12,50 @@ static SUZUKA_CONFIG: Lazy<movement_config::Config> = Lazy::new(|| {
 });
 
 static NODE_URL: Lazy<Url> = Lazy::new(|| {
-	let node_connection_address = SUZUKA_CONFIG
+	let mut node_connection_address = SUZUKA_CONFIG
 		.execution_config
 		.maptos_config
 		.client
 		.maptos_rest_connection_hostname
 		.clone();
+
+	if node_connection_address == "0.0.0.0" {
+		node_connection_address = "127.0.0.1".to_string();
+	}
+
 	let node_connection_port = SUZUKA_CONFIG
 		.execution_config
 		.maptos_config
 		.client
 		.maptos_rest_connection_port
 		.clone();
+
 	let node_connection_url =
 		format!("http://{}:{}", node_connection_address, node_connection_port);
-	Url::from_str(node_connection_url.as_str()).unwrap()
+	Url::from_str(&node_connection_url).unwrap()
 });
 
 static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
-	let faucet_listen_address = SUZUKA_CONFIG
+	let mut faucet_listen_address = SUZUKA_CONFIG
 		.execution_config
 		.maptos_config
 		.client
 		.maptos_faucet_rest_connection_hostname
 		.clone();
+
+	if faucet_listen_address == "0.0.0.0" {
+		faucet_listen_address = "127.0.0.1".to_string();
+	}
+
 	let faucet_listen_port = SUZUKA_CONFIG
 		.execution_config
 		.maptos_config
 		.client
 		.maptos_faucet_rest_connection_port
 		.clone();
+
 	let faucet_listen_url = format!("http://{}:{}", faucet_listen_address, faucet_listen_port);
-	Url::from_str(faucet_listen_url.as_str()).unwrap()
+	Url::from_str(&faucet_listen_url).unwrap()
 });
 
 #[tokio::main]
@@ -57,8 +69,6 @@ pub async fn main() -> Result<(), anyhow::Error> {
 		.init();
 
 	let token = std::env::var("AUTH_TOKEN").context("AUTH_TOKEN not set")?;
-	let bench_output_file =
-		std::env::var("BENCH_OUTPUT_FILE").unwrap_or("howzit_bench_output.dat".to_string());
 
 	let crate_path = env!("CARGO_MANIFEST_DIR");
 	let crate_path_buf = PathBuf::from(crate_path);
@@ -71,6 +81,8 @@ pub async fn main() -> Result<(), anyhow::Error> {
 		FAUCET_URL.clone(),
 		token,
 	);
+
+	tracing::info!("Generated howzit");
 
 	howzit.build_and_publish().await?;
 

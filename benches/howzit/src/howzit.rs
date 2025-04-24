@@ -119,7 +119,7 @@ impl Howzit {
 			rest_client: Client::new(node_url.clone()),
 			faucet_client_url,
 			faucet_client,
-			faucet_auth_token: token.clone(),
+			faucet_auth_token: token,
 		}
 	}
 
@@ -223,7 +223,8 @@ impl Howzit {
 		tracing::info!("Funding Alice");
 		let start_time = chrono::Utc::now();
 		match self.faucet_client.fund(alice.address(), 10_000_000_000).await {
-			Ok(_) => {
+			Ok(v) => {
+				tracing::info!("Successfully created Alice account: {:?}", v);
 				let end_time = chrono::Utc::now();
 				let mut results = results.write().await;
 				results.push((
@@ -252,7 +253,8 @@ impl Howzit {
 		tracing::info!("Funding Bob");
 		let start_time = chrono::Utc::now();
 		match self.faucet_client.fund(bob.address(), 10_000_000_000).await {
-			Ok(_) => {
+			Ok(v) => {
+				tracing::info!("Successfully created Bob account: {:?}", v);
 				let end_time = chrono::Utc::now();
 				let mut results = results.write().await;
 				results.push((
