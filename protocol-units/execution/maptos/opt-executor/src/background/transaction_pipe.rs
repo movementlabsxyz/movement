@@ -191,7 +191,7 @@ impl TransactionPipe {
 						Some(result) = sent_batch_futures.next() => {
 							match result {
 								Ok(Ok(response)) => {
-									tracing::info!("After sent batch.");
+									debug!("After sent batch.");
 									if !response.answer {
 										tracing::error!("DA Sequencer reject batch.");
 										panic!("DA Sequencer reject batch., can't send batch, exit process");
@@ -254,7 +254,7 @@ impl TransactionPipe {
 				.instrument(span)
 				.await?;
 
-				tracing::info!("Sending back Tx status: {status:?} and counter={counter}");
+				debug!("Sending back Tx status: {status:?} and counter={counter}");
 				callback.send(Ok(status)).unwrap_or_else(|_| {
 					debug!("SubmitTransaction request canceled");
 				});
@@ -343,7 +343,7 @@ impl TransactionPipe {
 				.collect::<Result<Vec<_>, _>>()?
 		};
 
-		tracing::info!("Get batch from mempool {}", batch.len());
+		debug!("Get batch from mempool {}", batch.len());
 
 		if !batch.is_empty() {
 			// Build batch and submit request.
@@ -353,13 +353,11 @@ impl TransactionPipe {
 			let handle = tokio::spawn({
 				let mut client = da_client.clone();
 				async move {
-					tracing::info!("Before sign batch.");
 					let batch_bytes = bcs::to_bytes(&batch).expect("Serialization failed");
 					let encoded =
 						movement_da_sequencer_client::sign_and_encode_batch(batch_bytes, &loader)
 							.await
 							.unwrap();
-					tracing::info!("Before send batch.");
 					client.batch_write(BatchWriteRequest { data: encoded }).await
 				}
 			});
@@ -371,7 +369,7 @@ impl TransactionPipe {
 
 	pub(crate) fn tick_gc(&mut self) {
 		if self.last_gc.elapsed() >= GC_INTERVAL {
-			tracing::info!("Start execute mempool gc");
+			debug!("Start execute mempool gc");
 			// todo: these will be slightly off, but gc does not need to be exact
 			let now = Instant::now();
 			let epoch_ms_now = chrono::Utc::now().timestamp_millis() as u64;
@@ -392,7 +390,7 @@ impl TransactionPipe {
 			}
 
 			self.last_gc = now;
-			tracing::info!("End execute mempool gc");
+			debug!("End execute mempool gc");
 		}
 	}
 
@@ -421,9 +419,9 @@ impl TransactionPipe {
 		);
 		if let Some(inflight_limit) = in_flight_limit {
 			if in_flight >= inflight_limit {
-				info!(
+				warn!(
 					target: "movement_timing",
-					"shedding_load"
+					"mempool full, shedding_load"
 				);
 				let status = MempoolStatus::new(MempoolStatusCode::MempoolIsFull);
 				return Ok((status, None));
@@ -443,7 +441,7 @@ impl TransactionPipe {
 				return Ok((ms, tx_result.status()));
 			}
 			None => {
-				info!("Transaction accepted by VM");
+				debug!("Transaction accepted by VM");
 			}
 		}
 
@@ -471,7 +469,7 @@ impl TransactionPipe {
 		match status.code {
 			MempoolStatusCode::Accepted => {
 				let now = chrono::Utc::now().timestamp_millis() as u64;
-				info!(%tx_hash, "transaction accepted by mempool");
+				debug!(%tx_hash, "transaction accepted by mempool");
 				// increment transactions in flight
 				{
 					let mut transactions_in_flight = transactions_in_flight.write().unwrap();

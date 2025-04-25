@@ -26,8 +26,6 @@ impl Executor {
 		&mut self,
 		block: ExecutableBlock,
 	) -> Result<BlockCommitment, anyhow::Error> {
-		info!("execute_block start.");
-
 		let (block_metadata, block, senders_and_sequence_numbers) = {
 			// get the block metadata transaction
 			let metadata_access_block = block.transactions.clone();
@@ -69,8 +67,6 @@ impl Executor {
 		let block_id = block.block_id.clone();
 		let parent_block_id = self.block_executor.committed_block_id();
 
-		info!("execute_block Before VM execute.");
-
 		let block_executor_clone = self.block_executor.clone();
 		let state_compute: StateComputeResult = block_executor_clone.execute_block(
 			block,
@@ -98,8 +94,6 @@ impl Executor {
 		);
 		let block_executor_clone = self.block_executor.clone();
 		block_executor_clone.commit_blocks(vec![block_id], ledger_info_with_sigs);
-
-		info!("execute_block Before after commit block.");
 
 		// commit mempool transactions in batches of size 16
 		for chunk in tx_execution_results.chunks(16) {

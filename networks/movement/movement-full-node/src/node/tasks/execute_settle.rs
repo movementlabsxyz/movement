@@ -91,7 +91,6 @@ where
 			select! {
 				Some(res) = blocks_from_da.next() => {
 					let response = res.context("failed to get next block from DA")?;
-					info!("Received block from DA");
 					let span = info_span!(target: "movement_timing", "process_block_from_da", block_id = %hex::encode(response.block_id.clone()));
 					self.process_block_from_da(response).instrument(span).await?;
 				}
@@ -126,7 +125,6 @@ where
 				"Block execution failed, executor already in use. Block {:?} failed.",
 				block_id
 			);
-			//			return Err(anyhow::anyhow!("Block execution failed, executor already in use."));
 		}
 
 		let (commitment_opt, executor) = tokio::task::spawn_blocking({
@@ -142,8 +140,6 @@ where
 					return Ok((None, executor));
 				}
 
-				info!("process_block_from_da block not executed");
-
 				// the da height must be greater than 1
 				if da_block.height < 1 {
 					anyhow::bail!("Invalid DA height: {:?}", da_block.height);
@@ -154,8 +150,6 @@ where
 				// get the transactions
 				let transactions_count = block.transactions().len();
 
-				info!("process_block_from_da before execute");
-
 				let commitment = Self::execute_block_with_retries(
 					&mut executor,
 					block,
@@ -163,8 +157,6 @@ where
 					block_retry_count,
 					block_retry_increment_microseconds,
 				)?;
-
-				info!("process_block_from_da block executed.");
 
 				// decrement the number of transactions in flight on the executor
 				executor.decrement_transactions_in_flight(transactions_count as u64);
@@ -187,13 +179,10 @@ where
 			None => return Ok(()),
 		};
 
-		info!("process_block_from_da da db updated.");
-
 		if self.settlement_enabled()
 			// only settle every super_block_size_heights 
 			&& da_block_height % self.settlement_config.settle.settlement_super_block_size == 0
 		{
-			info!("Posting block commitment via settlement manager");
 			match &self.settlement_manager {
 				Some(settlement_manager) => {
 					match settlement_manager.post_block_commitment(commitment).await {
@@ -249,7 +238,6 @@ where
 		block: Block,
 		block_timestamp: u64,
 	) -> anyhow::Result<BlockCommitment> {
-		info!("settle execute_block start.");
 		let block_id = block.id();
 		let block_hash = HashValue::from_slice(block_id)?;
 
@@ -259,8 +247,6 @@ where
 			HashValue::sha3_256_of(block_id.as_bytes().as_slice()),
 			block_timestamp,
 		)?;
-
-		info!("settle execute_block build_block_metadata done.");
 
 		let block_metadata_transaction =
 			SignatureVerifiedTransaction::Valid(Transaction::BlockMetadata(block_metadata));
@@ -296,7 +282,7 @@ where
 		let block_id = executable_block.block_id;
 		let commitment = executor.execute_block_opt(executable_block)?;
 
-		info!("Executed block: {}", block_id);
+		debug!("Executed block: {}", block_id);
 
 		Ok(commitment)
 	}
