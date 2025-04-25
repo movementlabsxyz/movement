@@ -13380,6 +13380,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "pre-l1-merge-to-post-l1-merge"
+version = "0.3.4"
+dependencies = [
+ "aptos-framework-biarritz-rc1-release",
+ "aptos-framework-pre-l1-merge-release",
+ "aptos-sdk",
+ "dot-movement",
+ "maptos-framework-release-util",
+ "movement-config",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "pretty"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
