@@ -90,6 +90,7 @@ aptos-framework-release-script-release = { path = "protocol-units/execution/mapt
 
 # framework migrations
 aptos-framework-elsa-to-biarritz-rc1-migration = { path = "protocol-units/execution/maptos/framework/migrations/elsa-to-biarritz-rc1" }
+aptos-framework-biarritz-rc1-to-pre-l1-merge-migration = { path = "protocol-units/execution/maptos/framework/migrations/biarritz-rc1-to-pre-l1-merge" }
 
 ## infra
 movement-rest = { path = "protocol-units/movement-rest" }

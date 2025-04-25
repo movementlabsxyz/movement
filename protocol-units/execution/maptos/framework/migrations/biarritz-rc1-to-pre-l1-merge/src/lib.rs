@@ -1,4 +1,5 @@
 pub mod dot_movement;
+pub use dot_movement::*;
 
 use aptos_framework_biarritz_rc1_release::cached::full::feature_upgrade::BiarritzRc1;
 use maptos_framework_release_util::{Release, ReleaseSigner};
@@ -11,19 +12,21 @@ impl BiarritzRc1ToPreL1Merge {
 		Self
 	}
 
-	pub async fn migrate_framework_from_biarritza_rc1_to_pre_l1_merge(
+	pub async fn migrate_framework_from_biarritz_rc1_to_pre_l1_merge(
 		&self,
 		client: &aptos_sdk::rest_client::Client,
-		signer: &impl ReleaseSigner,
+		framework_signer: &impl ReleaseSigner,
+		faucet_signer: &impl ReleaseSigner,
 	) -> Result<(), BiarritzRc1ToPreL1MergeError> {
-		// todo: validate that the current release is Elsa
-
-		// upgrade to Biarritz RC1 with the gas upgrade
+		// First perform framework upgrade with core resource account override
 		let biarritz_rc1 = BiarritzRc1::new();
 		biarritz_rc1
-			.release(signer, 2_000_000, 100, 60_000, client)
+			.release(framework_signer, 2_000_000, 100, 60_000, client)
 			.await
 			.map_err(|e| BiarritzRc1ToPreL1MergeError::MigrationFailed(e.into()))?;
+
+		// Then perform faucet operations with regular signer
+		// TODO: Add faucet operations here using faucet_signer
 
 		Ok(())
 	}
@@ -38,7 +41,7 @@ pub enum BiarritzRc1ToPreL1MergeError {
 
 pub trait MigrateBiarritzRc1ToPreL1Merge {
 	/// Migrate from Elsa to Biarritz RC1.
-	fn migrate_framework_from_biarritza_rc1_to_pre_l1_merge(
+	fn migrate_framework_from_biarritz_rc1_to_pre_l1_merge(
 		&self,
 	) -> impl Future<Output = Result<(), BiarritzRc1ToPreL1MergeError>>;
 }

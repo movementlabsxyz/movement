@@ -11620,6 +11620,7 @@ dependencies = [
  "alloy-signer",
  "anyhow",
  "aptos-crypto",
+ "aptos-framework-biarritz-rc1-to-pre-l1-merge-migration",
  "aptos-framework-elsa-to-biarritz-rc1-migration",
  "aptos-sdk",
  "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
