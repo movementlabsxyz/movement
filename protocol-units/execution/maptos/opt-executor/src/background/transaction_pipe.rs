@@ -191,6 +191,7 @@ impl TransactionPipe {
 						Some(result) = sent_batch_futures.next() => {
 							match result {
 								Ok(Ok(response)) => {
+									tracing::info!("After sent batch.");
 									if !response.answer {
 										tracing::error!("DA Sequencer reject batch.");
 										panic!("DA Sequencer reject batch., can't send batch, exit process");
@@ -342,6 +343,8 @@ impl TransactionPipe {
 				.collect::<Result<Vec<_>, _>>()?
 		};
 
+		tracing::info!("Get batch from mempool {}", batch.len());
+
 		if !batch.is_empty() {
 			// Build batch and submit request.
 			tracing::info!("Build new batch with {} tx.", batch.len());
@@ -350,11 +353,13 @@ impl TransactionPipe {
 			let handle = tokio::spawn({
 				let mut client = da_client.clone();
 				async move {
+					tracing::info!("Before sign batch.");
 					let batch_bytes = bcs::to_bytes(&batch).expect("Serialization failed");
 					let encoded =
 						movement_da_sequencer_client::sign_and_encode_batch(batch_bytes, &loader)
 							.await
 							.unwrap();
+					tracing::info!("Before send batch.");
 					client.batch_write(BatchWriteRequest { data: encoded }).await
 				}
 			});
