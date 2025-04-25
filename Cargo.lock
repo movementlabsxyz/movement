@@ -1952,6 +1952,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "aptos-framework-post-l1-merge-release"
+version = "0.3.4"
+dependencies = [
+ "anyhow",
+ "aptos-framework",
+ "aptos-framework-release-script-release",
+ "aptos-framework-set-feature-flags-release",
+ "aptos-framework-upgrade-gas-release",
+ "aptos-gas-schedule",
+ "aptos-release-builder",
+ "aptos-sdk",
+ "aptos-types",
+ "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
+ "dot-movement",
+ "hex",
+ "maptos-framework-release-util",
+ "movement-client",
+ "movement-config",
+ "once_cell",
+ "tempfile",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "url",
+]
+
+[[package]]
 name = "aptos-framework-pre-l1-merge-release"
 version = "0.3.4"
 dependencies = [

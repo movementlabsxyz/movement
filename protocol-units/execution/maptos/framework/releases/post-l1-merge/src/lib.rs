@@ -10,10 +10,10 @@ commit_hash_with_script!(
 	"d00f5e5ef3179919b3fc8245ac774f8509ed6a3e",          // Commit hash
 	6,                                                   // Bytecode version
 	"biarritz-rc1.mrb",                                  // MRB file name
-	"CACHE_POST_L1_MERGE_FRAMEWORK_RELEASE"              // Cache environment variable for Elsa
+	"CACHE_PRE_L1_MERGE_FRAMEWORK_RELEASE"               // Cache environment variable for Elsa
 );
 
-generate_gas_upgrade_module!(gas_upgrade, PreL1Merge, {
+generate_gas_upgrade_module!(gas_upgrade, PostL1Merge, {
 	let mut gas_parameters = AptosGasParameters::initial();
 	gas_parameters.vm.txn.max_transaction_size_in_bytes = GasQuantity::new(100_000_000);
 	gas_parameters.vm.txn.max_execution_gas = GasQuantity::new(10_000_000_000);
