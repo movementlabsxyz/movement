@@ -15,18 +15,16 @@ impl BiarritzRc1ToPreL1Merge {
 	pub async fn migrate_framework_from_biarritz_rc1_to_pre_l1_merge(
 		&self,
 		client: &aptos_sdk::rest_client::Client,
-		framework_signer: &impl ReleaseSigner,
-		faucet_signer: &impl ReleaseSigner,
+		signer: &impl ReleaseSigner,
 	) -> Result<(), BiarritzRc1ToPreL1MergeError> {
-		// First perform framework upgrade with core resource account override
+		// todo: validate that the current release is Elsa
+
+		// upgrade to Biarritz RC1 with the gas upgrade
 		let biarritz_rc1 = BiarritzRc1::new();
 		biarritz_rc1
-			.release(framework_signer, 2_000_000, 100, 60_000, client)
+			.release(signer, 2_000_000, 100, 60_000, client)
 			.await
 			.map_err(|e| BiarritzRc1ToPreL1MergeError::MigrationFailed(e.into()))?;
-
-		// Then perform faucet operations with regular signer
-		// TODO: Add faucet operations here using faucet_signer
 
 		Ok(())
 	}
