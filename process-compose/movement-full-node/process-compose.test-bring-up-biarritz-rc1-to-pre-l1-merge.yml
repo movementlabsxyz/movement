@@ -5,6 +5,8 @@ processes:
   setup:
     environment:
       - "KNOWN_FRAMEWORK_RELEASE=biarritz-rc1"
+      - APTOS_ACCOUNT_WHITELIST=$DOT_MOVEMENT_PATH/default_signer_address_whitelist
+      - MAPTOS_PRIVATE_KEY=random
 
   test-bring-up-biarritz-rc1-to-pre-l1-merge:
     command: |
