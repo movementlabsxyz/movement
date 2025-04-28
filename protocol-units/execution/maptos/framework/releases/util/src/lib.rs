@@ -3,6 +3,7 @@ pub mod voter;
 
 use aptos_framework::{ReleaseBundle, ReleasePackage};
 use aptos_release_builder::aptos_framework_path;
+// use aptos_release_builder::components::feature_flags::{FeatureFlag, Features};
 use aptos_release_builder::components::framework::{
 	generate_upgrade_proposals_release_packages_with_repo, FrameworkReleaseConfig,
 };
@@ -20,6 +21,7 @@ use aptos_sdk::{
 		LocalAccount,
 	},
 };
+use aptos_types::on_chain_config::{FeatureFlag as AptosFeatureFlag, Features as AptosFeatures};
 use movement::account::key_rotation::lookup_address;
 use std::future::Future;
 use std::path::PathBuf;
@@ -199,6 +201,11 @@ pub enum ReleaseBundleError {
 pub trait Release {
 	/// Returns a [ReleaseBundle] that contains the release packages.
 	fn release_bundle(&self) -> Result<ReleaseBundle, ReleaseBundleError>;
+
+	/// Returns the [Features] for the release.
+	fn features(&self) -> Result<AptosFeatures, ReleaseBundleError> {
+		Ok(AptosFeatures::default())
+	}
 
 	/// Returns the [RawTransaction]s for proposing the release.
 	fn proposal_raw_transactions(
