@@ -188,6 +188,7 @@ macro_rules! generate_feature_upgrade_module {
 			use aptos_release_builder::aptos_framework_path;
 			use aptos_release_builder::components::feature_flags::Features;
 			use aptos_sdk::move_types::gas_algebra::GasQuantity;
+			use aptos_types::on_chain_config::Features as AptosFeatures;
 			use maptos_framework_release_util::{Release, ReleaseBundleError};
 			use tracing::info;
 
@@ -208,6 +209,10 @@ macro_rules! generate_feature_upgrade_module {
 			impl Release for $struct_name {
 				fn release_bundle(&self) -> Result<ReleaseBundle, ReleaseBundleError> {
 					self.with_features.release_bundle()
+				}
+
+				fn features(&self) -> Result<AptosFeatures, ReleaseBundleError> {
+					self.with_features.features().into()
 				}
 
 				async fn propose_release(
