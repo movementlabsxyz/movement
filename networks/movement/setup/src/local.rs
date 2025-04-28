@@ -13,6 +13,15 @@ impl Local {
 		Self { mcr_settlement_strategy: Default::default() }
 	}
 
+	pub async fn setup_da_sequencer(
+		&self,
+		dot_movement: DotMovement,
+		config: movement_config::Config,
+	) -> Result<movement_config::Config, anyhow::Error> {
+		// run the da_db config setup
+		self.setup_da_db_config(dot_movement.clone(), config).await
+	}
+
 	async fn run_da_light_node_setup(
 		&self,
 		dot_movement: DotMovement,

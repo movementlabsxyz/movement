@@ -1,0 +1,28 @@
+services:
+  setup:
+    image: ghcr.io/movementlabsxyz/movement-full-node-setup:${CONTAINER_REV}
+    container_name: setup
+    environment:
+      DOT_MOVEMENT_PATH: /.movement
+      # needs to have a connection to the movement-celestia-da-light-node
+      MOVEMENT_DA_LIGHT_NODE_CONNECTION_PROTOCOL: ${MOVEMENT_DA_LIGHT_NODE_CONNECTION_PROTOCOL:?MOVEMENT_DA_LIGHT_NODE_CONNECTION_PROTOCOL is not set}
+      MOVEMENT_DA_LIGHT_NODE_CONNECTION_HOSTNAME: ${MOVEMENT_DA_LIGHT_NODE_CONNECTION_HOSTNAME:?MOVEMENT_DA_LIGHT_NODE_CONNECTION_HOSTNAME is not set}
+      MOVEMENT_DA_LIGHT_NODE_CONNECTION_PORT: ${MOVEMENT_DA_LIGHT_NODE_CONNECTION_PORT:?MOVEMENT_DA_LIGHT_NODE_CONNECTION_PORT is not set}
+      INDEXER_PROCESSOR_POSTGRES_CONNECTION_STRING: postgres://postgres:password@postgres:5432/postgres
+      AWS_REGION: ${AWS_REGION:?AWS_REGION is not set}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      MOVEMENT_SYNC: ${MOVEMENT_SYNC}
+      MAYBE_RUN_LOCAL: "false"
+      RUST_LOG: info,aws_sdk_s3=debug
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+      # mount if exists
+      - ~/.aws/:/root/.aws:ro
+
+    healthcheck:
+      test: [ "CMD-SHELL", "echo 'health check'" ]
+      retries: 10
+      interval: 10s
+      timeout: 5s
+
