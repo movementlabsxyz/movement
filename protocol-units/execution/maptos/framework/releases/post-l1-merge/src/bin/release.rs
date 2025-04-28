@@ -1,4 +1,6 @@
-use aptos_framework_pre_l1_merge_release::cached::full::feature_upgrade::PreL1Merge;
+use aptos_framework_post_l1_merge_release::{
+	cached::full::feature_upgrade::PreL1Merge, PostL1Merge,
+};
 use maptos_framework_release_util::{LocalAccountReleaseSigner, Release};
 use movement_client::types::{account_config::aptos_test_root_address, LocalAccount};
 use once_cell::sync::Lazy;
@@ -43,8 +45,7 @@ async fn main() -> Result<(), anyhow::Error> {
 		)
 		.init();
 
-	// form the elsa release
-	let biarritz_rc1 = PreL1Merge::new();
+	let post_l1_release = PostL1Merge::new();
 
 	// get the root account
 	let raw_private_key = MOVEMENT_CONFIG
@@ -64,7 +65,7 @@ async fn main() -> Result<(), anyhow::Error> {
 	let rest_client = movement_client::rest_client::Client::new(NODE_URL.clone());
 
 	// release the elsa release
-	biarritz_rc1
+	post_l1_release
 		.release(&local_account_release_signer, 2_000_000, 100, 60, &rest_client)
 		.await?;
 
