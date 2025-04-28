@@ -11774,6 +11774,7 @@ dependencies = [
  "futures",
  "godfig",
  "hex",
+ "maptos-execution-util",
  "mcr-settlement-config",
  "mcr-settlement-setup",
  "movement-config",

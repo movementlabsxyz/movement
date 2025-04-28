@@ -1,7 +1,4 @@
-version: "3.8"
-
-services:
-    
+services:    
   movement-faucet-service:
     image: ghcr.io/movementlabsxyz/movement-faucet-service:${CONTAINER_REV}
     container_name: movement-faucet-service

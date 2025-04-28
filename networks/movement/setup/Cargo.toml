@@ -18,6 +18,7 @@ movement-da-light-node-setup = { workspace = true }
 mcr-settlement-setup = { workspace = true }
 mcr-settlement-config = { workspace = true }
 movement-config = { workspace = true }
+maptos-execution-util = { workspace = true }
 
 anyhow = { workspace = true }
 tokio = { workspace = true }
