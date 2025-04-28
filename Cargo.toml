@@ -82,6 +82,7 @@ maptos-framework-release-util = { path = "protocol-units/execution/maptos/framew
 aptos-framework-head-release = { path = "protocol-units/execution/maptos/framework/releases/head" }
 aptos-framework-elsa-release = { path = "protocol-units/execution/maptos/framework/releases/elsa" }
 aptos-framework-biarritz-rc1-release = { path = "protocol-units/execution/maptos/framework/releases/biarritz-rc1" }
+aptos-framework-pre-l1-merge-release = { path = "protocol-units/execution/maptos/framework/releases/pre-l1-merge" }
 aptos-framework-upgrade-gas-release = { path = "protocol-units/execution/maptos/framework/releases/upgrade-gas" }
 aptos-framework-known-release = { path = "protocol-units/execution/maptos/framework/releases/known-release" }
 aptos-framework-set-feature-flags-release = { path = "protocol-units/execution/maptos/framework/releases/feature-flags" }
@@ -89,6 +90,7 @@ aptos-framework-release-script-release = { path = "protocol-units/execution/mapt
 
 # framework migrations
 aptos-framework-elsa-to-biarritz-rc1-migration = { path = "protocol-units/execution/maptos/framework/migrations/elsa-to-biarritz-rc1" }
+aptos-framework-biarritz-rc1-to-pre-l1-merge-migration = { path = "protocol-units/execution/maptos/framework/migrations/biarritz-rc1-to-pre-l1-merge" }
 
 ## infra
 movement-rest = { path = "protocol-units/movement-rest" }
