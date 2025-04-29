@@ -12,7 +12,7 @@ use movement_config::{
 };
 
 impl MigrateBiarritzRc1ToPreL1Merge for DotMovement {
-	async fn migrate_framework_from_biarritza_rc1_to_pre_l1_merge(
+	async fn migrate_framework_from_biarritz_rc1_to_pre_l1_merge(
 		&self,
 	) -> Result<(), BiarritzRc1ToPreL1MergeError> {
 		// get the movement config from dot movement
@@ -37,10 +37,10 @@ impl MigrateBiarritzRc1ToPreL1Merge for DotMovement {
 		// write the signer with a core resource account override
 		let signer = OverrideAccountAddressReleaseSigner::core_resource_account(signer);
 
-		// migrate the framework from Elsa to Biarritz RC1
-		let biarritza_rc1_to_pre_l1_merge = BiarritzRc1ToPreL1Merge::new();
-		biarritza_rc1_to_pre_l1_merge
-			.migrate_framework_from_biarritza_rc1_to_pre_l1_merge(&rest_client, &signer)
+		// migrate the framework from Biarritz RC1 to Pre-L1 Merge
+		let biarritz_rc1_to_pre_l1_merge = BiarritzRc1ToPreL1Merge::new();
+		biarritz_rc1_to_pre_l1_merge
+			.migrate_framework_from_biarritz_rc1_to_pre_l1_merge(&rest_client, &signer)
 			.await?;
 
 		Ok(())
