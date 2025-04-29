@@ -106,15 +106,6 @@ where
 	}
 
 	async fn process_block_from_da(&mut self, da_block: BlockV1) -> anyhow::Result<()> {
-		let block_timestamp = chrono::Utc::now().timestamp_micros() as u64;
-
-		info!(
-			block_id = %hex::encode(da_block.block_id.clone()),
-			da_height = da_block.height,
-			time = block_timestamp,
-			"Processing block from DA"
-		);
-
 		let da_block_height = da_block.height;
 		let block_id = da_block.block_id.clone();
 
@@ -147,8 +138,17 @@ where
 
 				let block: Block = bcs::from_bytes(&da_block.data[..])?;
 
+				info!(
+					block_id = %hex::encode(&block.id()),
+					da_height = da_block_height,
+					time = block.timestamp(),
+					"Processing block from DA"
+				);
+
 				// get the transactions
 				let transactions_count = block.transactions().len();
+
+				let block_timestamp = block.timestamp();
 
 				let commitment = Self::execute_block_with_retries(
 					&mut executor,
@@ -265,6 +265,7 @@ where
 				tx_hash = %signed_transaction.committed_hash(),
 				sender = %signed_transaction.sender(),
 				sequence_number = signed_transaction.sequence_number(),
+				timestamp_secs = signed_transaction.expiration_timestamp_secs(),
 				"execute_transaction",
 			);
 
