@@ -21,6 +21,8 @@ processes:
     depends_on:
       build:
         condition: process_completed_successfully
+      setup:
+        condition: process_completed_successfully
 
   da-sequencer:
     command: |
