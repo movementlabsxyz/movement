@@ -22,28 +22,10 @@ processes:
       build:
         condition: process_completed_successfully
 
-  celestia-light-node:
-    command: |
-      exit 1
-    depends_on:
-      setup:
-        condition: process_healthy
-
-  celestia-light-node-synced:
-    command: |
-      wait-for-celestia-light-node
-    depends_on:
-      celestia-light-node:
-        condition: process_healthy
-
   da-sequencer:
     command: |
       RUST_BACKTRACE=1 movement-full-node da run
     depends_on:
-      celestia-light-node:
-        condition: process_healthy
-      celestia-light-node-synced:
-        condition: process_completed_successfully
       da-setup:
         condition: process_completed_successfully
     readiness_probe:
@@ -55,6 +37,8 @@ processes:
     command: |
       RUST_BACKTRACE=1 movement-full-node run
     depends_on:
+      setup:
+        condition: process_completed_successfully
       da-sequencer:
         condition: process_healthy
     readiness_probe:

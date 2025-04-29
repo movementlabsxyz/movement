@@ -85,7 +85,7 @@ static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
 		.clone();
 
 	let faucet_listen_url = format!("http://{}:{}", faucet_listen_address, faucet_listen_port);
-	// let faucet_listen_url = "http://ec2-52-70-67-75.compute-1.amazonaws.com:81".to_string();
+	//	let faucet_listen_url = "http://ec2-52-70-67-75.compute-1.amazonaws.com:81".to_string();
 
 	Url::from_str(faucet_listen_url.as_str()).unwrap()
 });

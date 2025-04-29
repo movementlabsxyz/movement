@@ -166,12 +166,25 @@ impl DaSequencerClient for GrpcDaSequencerClient {
 
 									}
 								}
-								None => todo!(),
+								None =>  {
+									tracing::error!("Da sequencer client stream return a none block. Da height not available, break.");
+									break
+								},
 							},
-							None => todo!(),
+							None => {
+								tracing::error!("Da sequencer client stream return non. Stream closed.");
+								break
+							}
 						}
 					}
-					_ => todo!(),
+					Some(Err(err)) => {
+						tracing::error!("Da sequencer client connection return an error:{err}");
+						break;
+					}
+					None => {
+						tracing::error!("Da sequencer client connection return an error.");
+						break;
+					}
 				}
 			}
 		};
