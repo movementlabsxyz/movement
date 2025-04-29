@@ -222,7 +222,8 @@ macro_rules! generate_feature_upgrade_module {
 					gas_unit_price: u64,
 					expiration_timestamp_secs: u64,
 					client: &aptos_sdk::rest_client::Client,
-				) -> Result<Vec<aptos_types::transaction::SignedTransaction>, ReleaseBundleError> {
+				) -> Result<Vec<aptos_types::transaction::SignedTransaction>, ReleaseBundleError>
+				{
 					info!("Proposing release {} with feature flags", stringify!($struct_name));
 					self.with_features
 						.propose_release(

@@ -136,7 +136,7 @@ async fn main() -> Result<(), anyhow::Error> {
 		.transfer(&mut alice, bob.address(), 1_000, None)
 		.await
 		.context("Failed to submit transaction to transfer coins")?; // <:!:section_5
-															 // :!:>section_6
+															   // :!:>section_6
 	rest_client
 		.wait_for_transaction(&txn_hash)
 		.await
