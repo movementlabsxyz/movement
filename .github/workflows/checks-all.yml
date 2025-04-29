@@ -360,9 +360,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-
-    - name: Run MCR Client Tests
-      run: nix develop --command bash  -c "just mcr-client native build.local.test -t=false"
+      - name: Run MCR Client Tests
+        run: nix develop --command bash  -c "just mcr-client native build.local.test -t=false"
  
   cargo-fmt-check:
     name: Cargo Format Check
