@@ -1,6 +1,4 @@
-use aptos_framework_post_l1_merge_release::{
-	cached::full::feature_upgrade::PreL1Merge, PostL1Merge,
-};
+use aptos_framework_post_l1_merge_release::cached::full::feature_upgrade::PostL1Merge;
 use maptos_framework_release_util::{LocalAccountReleaseSigner, Release};
 use movement_client::types::{account_config::aptos_test_root_address, LocalAccount};
 use once_cell::sync::Lazy;

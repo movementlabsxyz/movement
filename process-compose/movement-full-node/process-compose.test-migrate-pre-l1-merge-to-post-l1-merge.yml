@@ -10,7 +10,7 @@ processes:
 
   test-migrate-biarritz-rc1-to-pre-l1-merge:
     command: |
-      cargo run --bin aptos-framework-post-l1-merge-release-tool
+      cargo run --bin aptos-framework-pre-l1-merge-release-tool
     depends_on:
       movement-full-node:
         condition: process_healthy

@@ -32,6 +32,7 @@ script {
     use aptos_framework::aptos_coin;
     use aptos_framework::signer;
     use aptos_framework::version;
+    use aptos_framework::account;
 
     fun main(core_resources: &signer) {
         let core_signer = aptos_governance::get_signer_testnet_only(core_resources, @0000000000000000000000000000000000000000000000000000000000000001);
@@ -40,6 +41,8 @@ script {
 
         // this initialize function is idempotent, already initialized GGP will not error.
         governed_gas_pool::initialize(&core_signer, b"aptos_framework::governed_gas_pool");
+
+        account::destroy_account_from(core_resources, core_address);
     }
 }
 "#
@@ -49,10 +52,10 @@ script {
 
 pub mod full {
 
-	use super::script::script::PreL1Merge;
+	use super::script::script::PostL1Merge;
 	use aptos_framework_set_feature_flags_release::generate_feature_upgrade_module;
 
-	generate_feature_upgrade_module!(feature_upgrade, PreL1Merge, {
+	generate_feature_upgrade_module!(feature_upgrade, PostL1Merge, {
 		use aptos_release_builder::components::feature_flags::FeatureFlag;
 		use aptos_types::on_chain_config::FeatureFlag as AptosFeatureFlag;
 

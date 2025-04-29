@@ -10,7 +10,7 @@ commit_hash_with_script!(
 	"035700578e23aff9bff4aba0a415cf26cf7731a5",                   // Commit hash
 	6,                                                            // Bytecode version
 	"035700578e23aff9bff4aba0a415cf26cf7731a5-post-l1-merge.mrb", // MRB file name
-	"CACHE_POST_L1_MERGE_FRAMEWORK_RELEASE"                       // Cache environment variable
+	"POST_L1_MERGE_FRAMEWORK_RELEASE"                             // Cache environment variable
 );
 
 generate_gas_upgrade_module!(gas_upgrade, PostL1Merge, {
