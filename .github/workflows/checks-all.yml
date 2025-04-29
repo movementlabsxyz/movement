@@ -230,10 +230,10 @@ jobs:
           nix develop --command bash  -c "just movement-full-node native build.setup.eth-holesky.celestia-local.test -t=false"
           nix develop --command bash  -c "just movement-full-node native build.setup.eth-holesky.celestia-local.test -t=false"
 
-  # Elsa to Biarritz RC1
-  movement-elsa-to-biarritz-rc1-bring-up:
+  # Gas Dos
+  gas-dos:
     if: >
-      github.event.label.name == 'cicd:movement-elsa-to-biarritz-rc1'
+      github.event.label.name == 'cicd:gas-dos'
       || github.ref == 'refs/heads/main'
       || startsWith(github.ref, 'refs/tags/')
 
@@ -375,6 +375,128 @@ jobs:
       - name: Run cargo fmt
         run: |
           cargo fmt --all -- --check
+
+  # Elsa to Biarritz RC1 Checks
+  movement-elsa-to-biarritz-rc1-bring-up:
+    if: >
+      github.event.label.name == 'cicd:movement-elsa-to-biarritz-rc1'
+      || github.ref == 'refs/heads/main'
+      || startsWith(github.ref, 'refs/tags/')
+
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            arch: x86_64
+            runs-on: buildjet-16vcpu-ubuntu-2204
+
+    runs-on: ${{ matrix.runs-on }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Run Elsa to Biarritz RC1 Bring Up Test
+        env:
+          CELESTIA_LOG_LEVEL: FATAL
+        run: |
+          nix develop --command bash  -c "just movement-full-node native build.setup.eth-local.celestia-local.test-bring-up-elsa-to-biarritz-rc1 -t=false"
+
+  movement-elsa-to-biarritz-rc1-migrate:
+    if: >
+      github.event.label.name == 'cicd:movement-elsa-to-biarritz-rc1'
+      || github.ref == 'refs/heads/main'
+      || startsWith(github.ref, 'refs/tags/')
+
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            arch: x86_64
+            runs-on: buildjet-16vcpu-ubuntu-2204
+
+    runs-on: ${{ matrix.runs-on }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Run Elsa to Biarritz RC1 Migrate Test
+        env:
+          CELESTIA_LOG_LEVEL: FATAL
+        run: |
+          nix develop --command bash  -c "just movement-full-node native build.setup.eth-local.celestia-local.test-migrate-elsa-to-biarritz-rc1 -t=false" 
+
+  # Biarritz RC1 to Pre-L1 Merge Checks
+  movement-biarritz-rc1-to-pre-l1-merge-bring-up:
+    if: >
+      github.event.label.name == 'cicd:movement-biarritz-rc1-to-pre-l1-merge'
+      || github.ref == 'refs/heads/main'
+      || startsWith(github.ref, 'refs/tags/')
+
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            arch: x86_64
+            runs-on: buildjet-16vcpu-ubuntu-2204
+
+    runs-on: ${{ matrix.runs-on }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Run Biarritz RC1 to Pre-L1 Merge Bring Up Test
+        env:
+          CELESTIA_LOG_LEVEL: FATAL
+        run: |
+          nix develop --command bash  -c "just movement-full-node native build.setup.eth-local.celestia-local.test-bring-up-biarritz-rc1-to-pre-l1-merge -t=false"
+
+  movement-biarritz-rc1-to-pre-l1-merge-migrate:
+    if: >
+      github.event.label.name == 'cicd:movement-biarritz-rc1-to-pre-l1-merge'
+      || github.ref == 'refs/heads/main'
+      || startsWith(github.ref, 'refs/tags/')
+
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            arch: x86_64
+            runs-on: buildjet-16vcpu-ubuntu-2204
+
+    runs-on: ${{ matrix.runs-on }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Run Biarritz RC1 to Pre-L1 Merge Migrate Test
+        env:
+          CELESTIA_LOG_LEVEL: FATAL
+        run: |
+          nix develop --command bash  -c "just movement-full-node native build.setup.eth-local.celestia-local.test-migrate-biarritz-rc1-to-pre-l1-merge -t=false"
 
 #  Indexer:
 #    strategy:
