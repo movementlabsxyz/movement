@@ -376,8 +376,11 @@ jobs:
           cargo fmt --all -- --check
 
   # Elsa to Biarritz RC1 Checks
-  movement-elsa-to-biarritz-rc1-bring-up:
-
+  bring-up-elsa-to-biarritz-rc1:
+    if: >
+      github.event.label.name == 'cicd:bring-up-elsa-to-biarritz-rc1'
+      || github.ref == 'refs/heads/main'
+      || startsWith(github.ref, 'refs/tags/')
     strategy:
       matrix:
         include:
@@ -402,8 +405,11 @@ jobs:
         run: |
           nix develop --command bash  -c "just movement-full-node native build.setup.eth-local.celestia-local.test-bring-up-elsa-to-biarritz-rc1 -t=false"
 
-  movement-elsa-to-biarritz-rc1-migrate:
-
+  migrate-elsa-to-biarritz-rc1:
+    if: >
+      github.event.label.name == 'cicd:migrate-elsa-to-biarritz-rc1'
+      || github.ref == 'refs/heads/main'
+      || startsWith(github.ref, 'refs/tags/')
     strategy:
       matrix:
         include:
@@ -429,8 +435,11 @@ jobs:
           nix develop --command bash  -c "just movement-full-node native build.setup.eth-local.celestia-local.test-migrate-elsa-to-biarritz-rc1 -t=false" 
 
   # Biarritz RC1 to Pre-L1 Merge Checks
-  movement-biarritz-rc1-to-pre-l1-merge-bring-up:
-
+  bring-up-biarritz-rc1-to-pre-l1-merge:
+    if: >
+      github.event.label.name == 'cicd:bring-up-biarritz-rc1-to-pre-l1-merge'
+      || github.ref == 'refs/heads/main'
+      || startsWith(github.ref, 'refs/tags/')
     strategy:
       matrix:
         include:
@@ -455,8 +464,11 @@ jobs:
         run: |
           nix develop --command bash  -c "just movement-full-node native build.setup.eth-local.celestia-local.test-bring-up-biarritz-rc1-to-pre-l1-merge -t=false"
 
-  movement-biarritz-rc1-to-pre-l1-merge-migrate:
-
+  migrate-biarritz-rc1-to-pre-l1-merge:
+    if: >
+      github.event.label.name == 'cicd:migrate-biarritz-rc1-to-pre-l1-merge'
+      || github.ref == 'refs/heads/main'
+      || startsWith(github.ref, 'refs/tags/')
     strategy:
       matrix:
         include:
