@@ -221,7 +221,7 @@ celestia-types = { git = "https://github.com/eigerco/lumina", rev = "c6e5b7f5e3a
 
 # External Dependencies
 
-alloy = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2", features = [
+alloy = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy", rev = "21ec1f2d4367952c103706f51652d47379ce9b1a", features = [
   "node-bindings",
   "rpc-types-trace",
   "json-rpc",
@@ -233,23 +233,23 @@ alloy = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy", rev 
   "providers",
 ] }
 alloy-rpc-types-eth = "0.1.3"
-alloy-eips = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
-alloy-contract = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
-alloy-network = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
+alloy-eips = { git = "https://github.com/alloy-rs/alloy.git", rev = "21ec1f2d4367952c103706f51652d47379ce9b1a" }
+alloy-contract = { git = "https://github.com/alloy-rs/alloy.git", rev = "21ec1f2d4367952c103706f51652d47379ce9b1a" }
+alloy-network = { git = "https://github.com/alloy-rs/alloy.git", rev = "21ec1f2d4367952c103706f51652d47379ce9b1a" }
 alloy-primitives = { version = "0.7.2", default-features = false }
-alloy-consensus = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
-alloy-provider = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2", features = [
+alloy-consensus = { git = "https://github.com/alloy-rs/alloy.git", rev = "21ec1f2d4367952c103706f51652d47379ce9b1a" }
+alloy-provider = { git = "https://github.com/alloy-rs/alloy.git", rev = "21ec1f2d4367952c103706f51652d47379ce9b1a", features = [
   "ws",
 ] }
 alloy-rlp = "0.3.5"
-alloy-rpc-types = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
+alloy-rpc-types = { git = "https://github.com/alloy-rs/alloy.git", rev = "21ec1f2d4367952c103706f51652d47379ce9b1a" }
 alloy-sol-types = { version = "0.7.2", features = ["json"] }
-alloy-signer = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
-alloy-transport = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
-alloy-transport-http = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2", features = [
+alloy-signer = { git = "https://github.com/alloy-rs/alloy.git", rev = "21ec1f2d4367952c103706f51652d47379ce9b1a" }
+alloy-transport = { git = "https://github.com/alloy-rs/alloy.git", rev = "21ec1f2d4367952c103706f51652d47379ce9b1a" }
+alloy-transport-http = { git = "https://github.com/alloy-rs/alloy.git", rev = "21ec1f2d4367952c103706f51652d47379ce9b1a", features = [
   "reqwest-rustls-tls",
 ] }
-alloy-transport-ws = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
+alloy-transport-ws = { git = "https://github.com/alloy-rs/alloy.git", rev = "21ec1f2d4367952c103706f51652d47379ce9b1a" }
 
 anyhow = "1.0"
 async-stream = "0.3.0"
