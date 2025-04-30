@@ -62,11 +62,11 @@ impl DaDB {
 		let cf = da_db
 			.cf_handle(SYNCED_HEIGHT)
 			.ok_or(anyhow::anyhow!("No synced_height column family"))?;
-		let height = serde_json::to_string(&height)
+		let height_str = serde_json::to_string(&height)
 			.map_err(|e| anyhow::anyhow!("Failed to serialize synced height: {:?}", e))?;
 		da_db
-			.put_cf(&cf, "synced_height", height)
-			.map_err(|e| anyhow::anyhow!("Failed to set synced height: {:?}", e))?;
+			.put_cf(&cf, "synced_height", height_str)
+			.map_err(|e| anyhow::anyhow!("Failed to set synced height_str: {:?}", e))?;
 		tracing::info!("Da db set_synced_height: {height}");
 		Ok(())
 	}
