@@ -67,7 +67,6 @@ impl DaDB {
 		da_db
 			.put_cf(&cf, "synced_height", height_str)
 			.map_err(|e| anyhow::anyhow!("Failed to set synced height_str: {:?}", e))?;
-		tracing::info!("Da db set_synced_height: {height}");
 		Ok(())
 	}
 
@@ -89,7 +88,6 @@ impl DaDB {
 			};
 			Ok::<u64, anyhow::Error>(height)
 		}?;
-		tracing::info!("Da db set_synced_height: {height}");
 		Ok(height)
 	}
 
