@@ -5,7 +5,7 @@ use std::ops::Add;
 use crate::error::DaSequencerError;
 
 // TODO: use a sensible value for the max sequencer block size
-pub const MAX_SEQUENCER_BLOCK_SIZE: u64 = 1_000_000; // 1 MB
+pub const MAX_SEQUENCER_BLOCK_SIZE: u64 = 100_000_000; // 100 MB
 
 #[derive(
 	Serialize, Deserialize, Clone, Copy, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord,
