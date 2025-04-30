@@ -75,26 +75,10 @@ where
 			}),
 			tokio::spawn(exec_background),
 			tokio::spawn(services.run()),
-			// tokio::spawn(async move { movement_rest.run_service().await }),
 		])
 		.await;
 		result??;
 		Ok(())
-
-		// let (execution_and_settlement_result, background_task_result, services_result) = try_join!(
-		// 	tokio::spawn(async move {
-		// 		exec_settle_task
-		// 			.run(
-		// 				da_sequencer_url,
-		// 				stream_heartbeat_interval_sec,
-		// 				self.config.da_db.allow_sync_from_zero,
-		// 			)
-		// 			.await
-		// 	}),
-		// 	tokio::spawn(exec_background),
-		// 	tokio::spawn(services.run()),
-		// )?;
-		// execution_and_settlement_result.and(background_task_result).and(services_result)
 	}
 }
 
