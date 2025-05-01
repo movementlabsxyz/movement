@@ -6,5 +6,5 @@ commit_hash_with_script!(
 	"f3a2758f6e13e4ac3d7e7425c576817358f9b596",          // Commit hash
 	6,                                                   // Bytecode version
 	"post-l1-merge.mrb",                                 // MRB file name
-	"POST_L1_MERGE_FRAMEWORK_RELEASE"                    // Cache environment variable for Elsa
+	"CACHE_POST_L1_MERGE_FRAMEWORK_RELEASE"              // Cache environment variable for Elsa
 );
