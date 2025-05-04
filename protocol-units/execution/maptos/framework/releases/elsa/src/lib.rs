@@ -4,14 +4,6 @@ use aptos_framework_upgrade_gas_release::generate_gas_upgrade_module;
 use maptos_framework_release_util::commit_hash_with_script;
 use maptos_framework_release_util::compiler::Compiler;
 
-// Helper to select compiler based on TEST_FRAMEWORK_REV
-pub fn get_compiler_from_env() -> Compiler {
-	match std::env::var("TEST_FRAMEWORK_REV") {
-		Ok(rev) => Compiler::test(&rev),
-		Err(_) => Compiler::movement(),
-	}
-}
-
 // Example usage of the macro to generate a build script for Elsa.
 commit_hash_with_script!(
 	Elsa,                                                // Struct name

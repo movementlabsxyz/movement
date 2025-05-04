@@ -1952,8 +1952,6 @@ dependencies = [
 ]
 
 [[package]]
-<<<<<<< HEAD
-=======
 name = "aptos-framework-post-l1-merge-release"
 version = "0.3.4"
 dependencies = [
@@ -1981,7 +1979,6 @@ dependencies = [
 ]
 
 [[package]]
->>>>>>> 0xmovses/post-merge-upgrade
 name = "aptos-framework-pre-l1-merge-release"
 version = "0.3.4"
 dependencies = [

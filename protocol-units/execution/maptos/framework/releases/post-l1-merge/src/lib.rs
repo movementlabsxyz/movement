@@ -2,6 +2,18 @@ pub mod cached;
 
 use aptos_framework_upgrade_gas_release::generate_gas_upgrade_module;
 use maptos_framework_release_util::commit_hash_with_script;
+use maptos_framework_release_util::compiler::Compiler;
+
+pub fn get_compiler_from_env() -> Compiler {
+	match std::env::var("TEST_FRAMEWORK_REV") {
+		Ok(rev) => {
+			// Convert String to &'static str to satisfy Compiler::test
+			let static_rev: &'static str = Box::leak(rev.into_boxed_str());
+			Compiler::test(static_rev)
+		}
+		Err(_) => Compiler::movement(),
+	}
+}
 
 // Example usage of the macro to generate a build script for PreL1Merge.
 commit_hash_with_script!(

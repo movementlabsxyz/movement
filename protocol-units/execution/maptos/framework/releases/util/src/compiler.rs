@@ -49,7 +49,7 @@ impl Compiler {
 		}
 	}
 
-	pub fn test(rev: &str) -> Self {
+	pub fn test(rev: &'static str) -> Self {
 		Self {
 			repo: "https://github.com/movementlabsxyz/aptos-core.git",
 			rev,
@@ -213,5 +213,15 @@ impl Compiler {
 			.context(format!("Failed to compile the script in {}", package_dir.display()))?;
 
 		Ok(pack)
+	}
+
+	pub fn from_env() -> Self {
+		match std::env::var("TEST_FRAMEWORK_REV") {
+			Ok(rev) => {
+				let static_rev: &'static str = Box::leak(rev.into_boxed_str());
+				Compiler::test(static_rev)
+			}
+			Err(_) => Compiler::movement(),
+		}
 	}
 }
