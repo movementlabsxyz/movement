@@ -1,0 +1,53 @@
+[package]
+name = "aptos-framework-post-l1-merge-release"
+description = "Post L1 Merge Releaser Binary"
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+
+version = { workspace = true }
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "aptos-framework-post-l1-merge-release-tool"
+path = "src/bin/release.rs"
+
+[dependencies]
+maptos-framework-release-util = { workspace = true }
+movement-config = { workspace = true }
+movement-client = { workspace = true }
+once_cell = { workspace = true }
+aptos-framework = { workspace = true }
+tokio = { workspace = true }
+anyhow = { workspace = true }
+url = { workspace = true }
+dot-movement = { workspace = true }
+tempfile = { workspace = true }
+bcs = { workspace = true }
+aptos-framework-upgrade-gas-release = { workspace = true }
+aptos-framework-set-feature-flags-release = { workspace = true }
+aptos-framework-release-script-release = { workspace = true }
+aptos-types = { workspace = true }
+aptos-gas-schedule = { workspace = true }
+aptos-sdk = { workspace = true }
+aptos-release-builder = { workspace = true }
+hex = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+[build-dependencies]
+maptos-framework-release-util = { workspace = true }
+movement-config = { workspace = true }
+movement-client = { workspace = true }
+once_cell = { workspace = true }
+aptos-framework = { workspace = true }
+tokio = { workspace = true }
+anyhow = { workspace = true }
+url = { workspace = true }
+dot-movement = { workspace = true }
+tempfile = { workspace = true }
+bcs = { workspace = true }

@@ -2,6 +2,7 @@ pub mod cached;
 
 use aptos_framework_upgrade_gas_release::generate_gas_upgrade_module;
 use maptos_framework_release_util::commit_hash_with_script;
+<<<<<<< HEAD
 use maptos_framework_release_util::compiler::Compiler;
 
 // Helper to select compiler based on TEST_FRAMEWORK_REV
@@ -11,15 +12,24 @@ pub fn get_compiler_from_env() -> Compiler {
 		Err(_) => Compiler::movement(),
 	}
 }
+=======
+>>>>>>> 0xmovses/post-merge-upgrade
 
 // Example usage of the macro to generate a build script for PreL1Merge.
 commit_hash_with_script!(
 	PreL1Merge,                                          // Struct name
 	"https://github.com/movementlabsxyz/aptos-core.git", // Repository URL
+<<<<<<< HEAD
 	"edafe2e5ed6ce462fa81d08faf5d5008fa836ca2",          // Commit hash
 	6,                                                   // Bytecode version
 	"pre-l1-merge.mrb",                                  // MRB file name
 	"CACHE_PRE_L1_MERGE_FRAMEWORK_RELEASE"               // Cache environment variable
+=======
+	"d00f5e5ef3179919b3fc8245ac774f8509ed6a3e",          // Commit hash
+	6,                                                   // Bytecode version
+	"biarritz-rc1.mrb",                                  // MRB file name
+	"CACHE_PRE_L1_MERGE_FRAMEWORK_RELEASE"               // Cache environment variable for Elsa
+>>>>>>> 0xmovses/post-merge-upgrade
 );
 
 generate_gas_upgrade_module!(gas_upgrade, PreL1Merge, {

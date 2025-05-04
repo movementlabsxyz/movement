@@ -1,13 +1,13 @@
 use aptos_framework_upgrade_gas_release::generate_gas_upgrade_module;
 use maptos_framework_release_util::mrb_release;
 
-<<<<<<< HEAD
-mrb_release!(PreL1Merge, BIARRTIZ_RC1, "edafe2e5ed6ce462fa81d08faf5d5008fa836ca2-pre-l1-merge.mrb");
-=======
-mrb_release!(PreL1Merge, BIARRTIZ_RC1, "d00f5e5ef3179919b3fc8245ac774f8509ed6a3e-biarritz-rc1.mrb");
->>>>>>> 0xmovses/post-merge-upgrade
+mrb_release!(
+	PostL1Merge,
+	BIARRTIZ_RC1,
+	"f3a2758f6e13e4ac3d7e7425c576817358f9b596-post-l1-merge.mrb"
+);
 
-generate_gas_upgrade_module!(gas_upgrade, PreL1Merge, {
+generate_gas_upgrade_module!(gas_upgrade, PostL1Merge, {
 	let mut gas_parameters = AptosGasParameters::initial();
 	gas_parameters.vm.txn.max_transaction_size_in_bytes = GasQuantity::new(100_000_000);
 	gas_parameters.vm.txn.max_execution_gas = GasQuantity::new(10_000_000_000);
@@ -20,10 +20,10 @@ generate_gas_upgrade_module!(gas_upgrade, PreL1Merge, {
 });
 
 pub mod script {
-	use super::gas_upgrade::PreL1Merge;
+	use super::gas_upgrade::PostL1Merge;
 	use aptos_framework_release_script_release::generate_script_module;
 
-	generate_script_module!(script, PreL1Merge, {
+	generate_script_module!(script, PostL1Merge, {
 		r#"
 script {
     use aptos_framework::aptos_governance;
@@ -32,6 +32,7 @@ script {
     use aptos_framework::aptos_coin;
     use aptos_framework::signer;
     use aptos_framework::version;
+    use aptos_framework::account;
 
     fun main(core_resources: &signer) {
         let core_signer = aptos_governance::get_signer_testnet_only(core_resources, @0000000000000000000000000000000000000000000000000000000000000001);
@@ -40,6 +41,8 @@ script {
 
         // this initialize function is idempotent, already initialized GGP will not error.
         governed_gas_pool::initialize(&core_signer, b"aptos_framework::governed_gas_pool");
+
+        account::destroy_account_from(core_resources, core_address);
     }
 }
 "#
@@ -49,10 +52,10 @@ script {
 
 pub mod full {
 
-	use super::script::script::PreL1Merge;
+	use super::script::script::PostL1Merge;
 	use aptos_framework_set_feature_flags_release::generate_feature_upgrade_module;
 
-	generate_feature_upgrade_module!(feature_upgrade, PreL1Merge, {
+	generate_feature_upgrade_module!(feature_upgrade, PostL1Merge, {
 		use aptos_release_builder::components::feature_flags::FeatureFlag;
 		use aptos_types::on_chain_config::FeatureFlag as AptosFeatureFlag;
 
