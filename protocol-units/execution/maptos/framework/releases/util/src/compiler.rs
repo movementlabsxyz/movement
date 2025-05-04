@@ -49,6 +49,16 @@ impl Compiler {
 		}
 	}
 
+	pub fn test(rev: &str) -> Self {
+		Self {
+			repo: "https://github.com/movementlabsxyz/aptos-core.git",
+			rev,
+			subdir_path: "aptos-move/framework/aptos-framework",
+			bytecode_version: 6,
+			framework_local_dir: None,
+		}
+	}
+
 	/// Initializes a Move package directory with a Move.toml file for the temporary compilation.
 	fn init_move_dir(
 		&self,

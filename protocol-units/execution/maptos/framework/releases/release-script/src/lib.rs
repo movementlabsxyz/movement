@@ -43,7 +43,7 @@ where
 			println!("file: {:?}", file.path());
 		}
 
-		let compiler = Compiler::movement();
+		let compiler = crate::get_compiler_from_env();
 
 		let bytecode = compiler
 			.compile_in_temp_dir_to_bytecode("release_script", &release_script_script_path)

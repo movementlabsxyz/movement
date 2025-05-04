@@ -52,7 +52,7 @@ where
 			println!("file: {:?}", file.path());
 		}
 
-		let compiler = Compiler::movement();
+		let compiler = crate::get_compiler_from_env();
 		let bytecode = compiler
 			.compile_in_temp_dir_to_bytecode("feature_flags", &feature_flags_script_path)
 			.map_err(|e| ReleaseBundleError::Build(e.into()))?;
