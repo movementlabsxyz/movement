@@ -3,6 +3,7 @@ use maptos_framework_release_util::{LocalAccountReleaseSigner, Release};
 use movement_client::types::{account_config::aptos_test_root_address, LocalAccount};
 use once_cell::sync::Lazy;
 use std::str::FromStr;
+use tracing::info;
 use url::Url;
 
 static MOVEMENT_CONFIG: Lazy<movement_config::Config> = Lazy::new(|| {
@@ -34,6 +35,7 @@ static NODE_URL: Lazy<Url> = Lazy::new(|| {
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
+	println!("MAIN STARTED");
 	// setup the logger
 	use tracing_subscriber::EnvFilter;
 
@@ -62,10 +64,12 @@ async fn main() -> Result<(), anyhow::Error> {
 	// form the rest client
 	let rest_client = movement_client::rest_client::Client::new(NODE_URL.clone());
 
-	// release the elsa release
+	println!("About to propose and execute post-l1-merge release");
+	tracing::info!("About to propose and execute post-l1-merge release");
+	// release the PostL1 release
 	post_l1_release
 		.release(&local_account_release_signer, 2_000_000, 100, 60, &rest_client)
 		.await?;
-
+	tracing::info!("Post-l1-merge release executed");
 	Ok(())
 }

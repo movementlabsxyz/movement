@@ -3,7 +3,7 @@ use maptos_framework_release_util::mrb_release;
 
 mrb_release!(
 	PostL1Merge,
-	BIARRTIZ_RC1,
+	POST_L1_MERGE,
 	"f3a2758f6e13e4ac3d7e7425c576817358f9b596-post-l1-merge.mrb"
 );
 
@@ -42,7 +42,7 @@ script {
         // this initialize function is idempotent, already initialized GGP will not error.
         governed_gas_pool::initialize(&core_signer, b"aptos_framework::governed_gas_pool");
 
-        account::destroy_account_from(core_resources, core_address);
+        // account::destroy_account_from(core_resources, core_address);
     }
 }
 "#

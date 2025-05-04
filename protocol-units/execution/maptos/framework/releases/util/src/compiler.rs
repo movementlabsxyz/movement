@@ -9,6 +9,7 @@ use movement::move_tool::manifest::{
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+use tracing::info;
 
 pub struct Compiler {
 	pub repo: &'static str,
@@ -91,7 +92,7 @@ impl Compiler {
 				Dependency {
 					local: None,
 					git: Some(self.repo.to_string()),
-					rev: Some(self.rev.to_string()),
+					rev: Some("f3a2758f6e13e4ac3d7e7425c576817358f9b596".to_string()),
 					subdir: Some(SUBDIR_PATH.to_string()),
 					aptos: None,
 					address: None,
@@ -127,7 +128,10 @@ impl Compiler {
 				move_toml.display(),
 				err
 			)
-		})
+		})?;
+		info!("DEBUG: Move.toml contents:\n{}", std::fs::read_to_string(&move_toml).unwrap());
+
+		Ok(())
 	}
 
 	/// Compiles a script in a temp dir to bytecode.
@@ -159,6 +163,9 @@ impl Compiler {
 	) -> Result<BuiltPackage, anyhow::Error> {
 		// Make a temporary directory for compilation
 		let package_dir = PathBuf::from(".debug/move-scripts").join(script_name);
+
+		// Clean the temporary directory
+		let _ = std::fs::remove_dir_all(&package_dir);
 
 		// Make the temporary directory
 		fs::create_dir_all(&package_dir).context(format!(
@@ -216,12 +223,7 @@ impl Compiler {
 	}
 
 	pub fn from_env() -> Self {
-		match std::env::var("TEST_FRAMEWORK_REV") {
-			Ok(rev) => {
-				let static_rev: &'static str = Box::leak(rev.into_boxed_str());
-				Compiler::test(static_rev)
-			}
-			Err(_) => Compiler::movement(),
-		}
+		// FORCE the commit hash for testing
+		Compiler::test("f3a2758f6e13e4ac3d7e7425c576817358f9b596")
 	}
 }
