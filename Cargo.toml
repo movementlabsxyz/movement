@@ -44,9 +44,7 @@ members = [
   "protocol-units/da-sequencer/config",
   "protocol-units/da-sequencer/setup",
   "protocol-units/da-sequencer/client",
-  "protocol-units/da-sequencer/node",
-  "protocol-units/da-sequencer/*",
-
+  "protocol-units/da-sequencer/node"
 ]
 
 [workspace.package]

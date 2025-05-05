@@ -2921,7 +2921,7 @@ dependencies = [
  "aptos-metrics-core",
  "cfg-if",
  "once_cell",
- "procfs",
+ "procfs 0.14.2",
  "prometheus",
  "sysinfo",
 ]
@@ -11636,6 +11636,20 @@ dependencies = [
 [[package]]
 name = "movement-da-sequencer-setup"
 version = "0.3.4"
+dependencies = [
+ "anyhow",
+ "dot-movement",
+ "ed25519-dalek 2.1.1",
+ "godfig",
+ "maptos-execution-util",
+ "movement-da-sequencer-config",
+ "movement-da-sequencer-node",
+ "movement-signer",
+ "movement-signer-loader",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+]
 
 [[package]]
 name = "movement-da-util"
@@ -11705,7 +11719,6 @@ dependencies = [
  "aptos-framework-elsa-to-biarritz-rc1-migration",
  "aptos-sdk",
  "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
- "chrono",
  "clap 4.5.21",
  "console-subscriber",
  "dot-movement",
@@ -11721,7 +11734,9 @@ dependencies = [
  "mcr-settlement-config",
  "mcr-settlement-manager",
  "movement-config",
+ "movement-da-light-node-client",
  "movement-da-sequencer-client",
+ "movement-da-sequencer-node",
  "movement-da-sequencer-proto",
  "movement-da-util",
  "movement-rest",
@@ -11758,6 +11773,7 @@ dependencies = [
  "futures",
  "godfig",
  "hex",
+ "maptos-execution-util",
  "mcr-settlement-config",
  "mcr-settlement-setup",
  "movement-config",
@@ -11968,7 +11984,14 @@ dependencies = [
 name = "movement-tracing"
 version = "0.3.4"
 dependencies = [
- "tracing-appender",
+ "godfig",
+ "opentelemetry",
+ "opentelemetry-prometheus",
+ "opentelemetry_sdk",
+ "prometheus",
+ "serde",
+ "tokio",
+ "tracing",
  "tracing-subscriber 0.3.18",
 ]
 
@@ -11982,6 +12005,7 @@ dependencies = [
  "aptos-types",
  "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
  "blake3",
+ "chrono",
  "rand 0.7.3",
  "serde",
  "serde_with",
@@ -12489,6 +12513,55 @@ dependencies = [
  "libc",
  "pkg-config",
  "vcpkg",
+]
+
+[[package]]
+name = "opentelemetry"
+version = "0.28.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "236e667b670a5cdf90c258f5a55794ec5ac5027e960c224bff8367a59e1e6426"
+dependencies = [
+ "futures-core",
+ "futures-sink",
+ "js-sys",
+ "pin-project-lite",
+ "thiserror 2.0.7",
+ "tracing",
+]
+
+[[package]]
+name = "opentelemetry-prometheus"
+version = "0.28.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "765a76ba13ec77043903322f85dc5434d7d01a37e75536d0f871ed7b9b5bbf0d"
+dependencies = [
+ "once_cell",
+ "opentelemetry",
+ "opentelemetry_sdk",
+ "prometheus",
+ "protobuf",
+ "tracing",
+]
+
+[[package]]
+name = "opentelemetry_sdk"
+version = "0.28.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "84dfad6042089c7fc1f6118b7040dc2eb4ab520abbf410b79dc481032af39570"
+dependencies = [
+ "async-trait",
+ "futures-channel",
+ "futures-executor",
+ "futures-util",
+ "glob",
+ "opentelemetry",
+ "percent-encoding",
+ "rand 0.8.5",
+ "serde_json",
+ "thiserror 2.0.7",
+ "tokio",
+ "tokio-stream",
+ "tracing",
 ]
 
 [[package]]
@@ -13677,6 +13750,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "procfs"
+version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "731e0d9356b0c25f16f33b5be79b1c57b562f141ebfcdb0ad8ac2c13a24293b4"
+dependencies = [
+ "bitflags 2.6.0",
+ "hex",
+ "lazy_static",
+ "procfs-core",
+ "rustix 0.38.40",
+]
+
+[[package]]
+name = "procfs-core"
+version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2d3554923a69f4ce04c4a754260c338f505ce22642d3830e049a399fc2059a29"
+dependencies = [
+ "bitflags 2.6.0",
+ "hex",
+]
+
+[[package]]
 name = "prometheus"
 version = "0.13.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -13685,8 +13781,11 @@ dependencies = [
  "cfg-if",
  "fnv",
  "lazy_static",
+ "libc",
  "memchr",
  "parking_lot 0.12.3",
+ "procfs 0.16.0",
+ "protobuf",
  "thiserror 1.0.69",
 ]
 
@@ -16738,9 +16837,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-util"
-version = "0.7.12"
+version = "0.7.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "61e7c3654c13bcd040d4a03abee2c75b1d14a37b423cf5a813ceae1cc903ec6a"
+checksum = "6b9590b93e6fcc1739458317cccd391ad3955e2bde8913edf6f95f9e65a8f034"
 dependencies = [
  "bytes 1.8.0",
  "futures-core",
@@ -17047,18 +17146,6 @@ dependencies = [
  "pin-project-lite",
  "tracing-attributes",
  "tracing-core",
-]
-
-[[package]]
-name = "tracing-appender"
-version = "0.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3566e8ce28cc0a3fe42519fc80e6b4c943cc4c8cef275620eb8dac2d3d4e06cf"
-dependencies = [
- "crossbeam-channel",
- "thiserror 1.0.69",
- "time",
- "tracing-subscriber 0.3.18",
 ]
 
 [[package]]

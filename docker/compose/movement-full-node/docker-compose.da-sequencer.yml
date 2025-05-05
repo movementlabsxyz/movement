@@ -1,0 +1,22 @@
+version: "3.8"
+
+services:
+
+  movement-da-sequencer:
+    image: ghcr.io/movementlabsxyz/movement-full-node:${CONTAINER_REV}
+    container_name: movement-da-sequencer
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+      - RUST_BACKTRACE=1
+    command: da run
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+    ports:
+      - "30730:30730"
+    healthcheck:
+      test: [ "CMD-SHELL", "echo 'health check'" ]
+      retries: 10
+      interval: 10s
+      timeout: 5s
+    restart: on-failure:3
+

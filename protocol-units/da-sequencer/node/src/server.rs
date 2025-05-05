@@ -114,7 +114,7 @@ impl DaSequencerNodeService for DaSequencerNode {
 					};
 					current_block_height +=1;
 
-					let blockv1 = match block.as_ref().map(|block| block.try_into()) {
+					let blockv1 = match block.map(|block| block.try_into()) {
 						None => continue,
 						Some(Ok(block)) => block,
 						Some(Err(err)) => {
@@ -233,22 +233,23 @@ impl DaSequencerNodeService for DaSequencerNode {
 
 pub struct GrpcBatchData {}
 
+// impl TryFrom<SequencerBlock> for BlockV1 {
+// 	type Error = DaSequencerError;
+
+// 	fn try_from(block: SequencerBlock) -> Result<Self, Self::Error> {
+// 		BlockV1::try_from(&block)
+// 	}
+// }
+
 impl TryFrom<SequencerBlock> for BlockV1 {
 	type Error = DaSequencerError;
 
 	fn try_from(block: SequencerBlock) -> Result<Self, Self::Error> {
-		BlockV1::try_from(&block)
-	}
-}
-
-impl TryFrom<&SequencerBlock> for BlockV1 {
-	type Error = DaSequencerError;
-
-	fn try_from(block: &SequencerBlock) -> Result<Self, Self::Error> {
 		Ok(BlockV1 {
 			block_id: block.id().to_vec(),
 			height: block.height().into(),
-			data: block.try_into()?,
+			data: bcs::to_bytes(&block.inner_block())
+				.map_err(|e| DaSequencerError::Deserialization(e.to_string()))?,
 		})
 	}
 }

@@ -19,6 +19,8 @@ profile.json
 ./docker/compose/grafana-alloy/.env
 *.dat
 *.log
+test_log.txt
+test_result.txt
 venv
 *.pem
 *.jot.*

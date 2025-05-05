@@ -1,0 +1,23 @@
+services:
+  setup:
+    image: ghcr.io/movementlabsxyz/movement-full-node-setup:${CONTAINER_REV}
+    container_name: setup
+    environment:
+      DOT_MOVEMENT_PATH: /.movement
+      # needs to have a connection to the movement-celestia-da-light-node
+      MOVEMENT_DA_LIGHT_NODE_CONNECTION_PROTOCOL: ${MOVEMENT_DA_LIGHT_NODE_CONNECTION_PROTOCOL:?MOVEMENT_DA_LIGHT_NODE_CONNECTION_PROTOCOL}
+      MOVEMENT_DA_LIGHT_NODE_CONNECTION_HOSTNAME: ${MOVEMENT_DA_LIGHT_NODE_CONNECTION_HOSTNAME:?MOVEMENT_DA_LIGHT_NODE_CONNECTION_HOSTNAME}
+      MOVEMENT_DA_LIGHT_NODE_CONNECTION_PORT: ${MOVEMENT_DA_LIGHT_NODE_CONNECTION_PORT:?MOVEMENT_DA_LIGHT_NODE_CONNECTION_PORT}
+      MAYBE_RUN_LOCAL: "false"
+      RUST_LOG: info,aws_sdk_s3=debug
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+      # mount if exists
+      - ~/.aws/:/root/.aws:ro
+
+    healthcheck:
+      test: [ "CMD-SHELL", "echo 'health check'" ]
+      retries: 10
+      interval: 10s
+      timeout: 5s
+

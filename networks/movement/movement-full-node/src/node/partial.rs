@@ -7,9 +7,10 @@ use mcr_settlement_manager::CommitmentEventStream;
 use mcr_settlement_manager::McrSettlementManager;
 use movement_config::Config;
 use movement_rest::MovementRest;
+use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
 use anyhow::Context;
-use tokio::try_join;
+//use tokio::try_join;
 use tracing::debug;
 
 pub struct MovementPartialNode<T> {
@@ -37,7 +38,7 @@ where
 	/// Runs the executor until crash or shutdown.
 	pub async fn run(
 		self,
-		mempool_commit_tx_receiver: futures::channel::mpsc::Receiver<Vec<TxExecutionResult>>,
+		mempool_commit_tx_receiver: UnboundedReceiver<Vec<TxExecutionResult>>,
 	) -> Result<(), anyhow::Error> {
 		let (context, exec_background) = self
 			.executor
@@ -56,20 +57,35 @@ where
 
 		let da_sequencer_url =
 			self.config.execution_config.maptos_config.da_sequencer.connection_url.clone();
-		let (execution_and_settlement_result, background_task_result, services_result) = try_join!(
-			tokio::spawn(async move { exec_settle_task.run(da_sequencer_url).await }),
+		let stream_heartbeat_interval_sec = self
+			.config
+			.execution_config
+			.maptos_config
+			.da_sequencer
+			.stream_heartbeat_interval_sec;
+		let (result, _index, _remaining) = futures::future::select_all(vec![
+			tokio::spawn(async move {
+				exec_settle_task
+					.run(
+						da_sequencer_url,
+						stream_heartbeat_interval_sec,
+						self.config.da_db.allow_sync_from_zero,
+					)
+					.await
+			}),
 			tokio::spawn(exec_background),
 			tokio::spawn(services.run()),
-			// tokio::spawn(async move { movement_rest.run_service().await }),
-		)?;
-		execution_and_settlement_result.and(background_task_result).and(services_result)
+		])
+		.await;
+		result??;
+		Ok(())
 	}
 }
 
 impl MovementPartialNode<Executor> {
 	pub async fn try_executor_from_config(
 		config: Config,
-		mempool_tx_exec_result_sender: futures::channel::mpsc::Sender<Vec<TxExecutionResult>>,
+		mempool_tx_exec_result_sender: UnboundedSender<Vec<TxExecutionResult>>,
 	) -> Result<Executor, anyhow::Error> {
 		let executor = Executor::try_from_config(
 			config.execution_config.maptos_config.clone(),
@@ -82,7 +98,7 @@ impl MovementPartialNode<Executor> {
 
 	pub async fn try_from_config(
 		config: Config,
-		mempool_tx_exec_result_sender: futures::channel::mpsc::Sender<Vec<TxExecutionResult>>,
+		mempool_tx_exec_result_sender: UnboundedSender<Vec<TxExecutionResult>>,
 	) -> Result<Self, anyhow::Error> {
 		debug!("Creating the executor");
 		let executor = Executor::try_from_config(

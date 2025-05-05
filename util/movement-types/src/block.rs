@@ -70,18 +70,29 @@ pub struct Block {
 	parent: Id,
 	transactions: BTreeSet<Transaction>,
 	id: Id,
+	timestamp: u64,
 }
 
 impl Block {
 	pub fn new(metadata: BlockMetadata, parent: Id, transactions: BTreeSet<Transaction>) -> Self {
+		let timestamp = chrono::Utc::now().timestamp_micros() as u64;
+		let id = Self::generate_id_with_block_data(parent, timestamp, &transactions);
+		Self { metadata, parent, transactions, id, timestamp }
+	}
+
+	fn generate_id_with_block_data(
+		parent: Id,
+		timestamp: u64,
+		transactions: &BTreeSet<Transaction>,
+	) -> Id {
 		let mut hasher = blake3::Hasher::new();
 		hasher.update(parent.as_bytes());
-		for transaction in &transactions {
+		hasher.update(&timestamp.to_le_bytes());
+		for transaction in transactions {
 			hasher.update(&transaction.id().as_ref());
 		}
 		let id = Id(hasher.finalize().into());
-
-		Self { metadata, parent, transactions, id }
+		id
 	}
 
 	pub fn into_parts(self) -> (BlockMetadata, Id, BTreeSet<Transaction>, Id) {
@@ -98,6 +109,10 @@ impl Block {
 
 	pub fn transactions(&self) -> Transactions {
 		self.transactions.iter()
+	}
+
+	pub fn timestamp(&self) -> u64 {
+		self.timestamp
 	}
 
 	pub fn metadata(&self) -> &BlockMetadata {
@@ -132,6 +147,12 @@ impl Block {
 		}
 
 		Block::new(BlockMetadata::BlockMetadata, parent, transactions)
+	}
+
+	pub fn verify_id(&self) -> bool {
+		let block_id =
+			Self::generate_id_with_block_data(self.parent, self.timestamp, &self.transactions);
+		block_id == self.id
 	}
 }
 

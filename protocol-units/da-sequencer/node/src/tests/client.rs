@@ -46,7 +46,7 @@ async fn test_should_write_batch() {
 	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
 
 	let connection_url = Url::parse(&format!("http://127.0.0.1:{}", grpc_address.port())).unwrap();
-	let mut client = GrpcDaSequencerClient::try_connect(&connection_url.clone(), None, 10)
+	let mut client = GrpcDaSequencerClient::try_connect(&connection_url.clone(), 10)
 		.await
 		.expect("gRPC client connection failed.");
 
@@ -54,11 +54,11 @@ async fn test_should_write_batch() {
 
 	//verify the block produced contains the batch.
 	//Register to block stream
-	let mut client = GrpcDaSequencerClient::try_connect(&connection_url.clone(), None, 10)
+	let mut client = GrpcDaSequencerClient::try_connect(&connection_url.clone(), 10)
 		.await
 		.expect("gRPC client connection failed.");
 
-	let mut block_stream = client
+	let (mut block_stream, _alert_channel) = client
 		.stream_read_from_height(StreamReadFromHeightRequest { height: 0 })
 		.await
 		.expect("Failed to register to block stream");
@@ -111,7 +111,7 @@ async fn test_write_batch_gprc_main_loop_failed_validate_batch() {
 
 	//send the bacth using the grpc client
 	let connection_url = Url::parse(&format!("http://127.0.0.1:{}", grpc_address.port())).unwrap();
-	let mut client = GrpcDaSequencerClient::try_connect(&connection_url.clone(), None, 10)
+	let mut client = GrpcDaSequencerClient::try_connect(&connection_url.clone(), 10)
 		.await
 		.expect("gRPC client connection failed.");
 
@@ -123,11 +123,11 @@ async fn test_write_batch_gprc_main_loop_failed_validate_batch() {
 
 	//TODO verify no block has been produced.
 	//Register to block stream
-	let mut client = GrpcDaSequencerClient::try_connect(&connection_url.clone(), None, 10)
+	let mut client = GrpcDaSequencerClient::try_connect(&connection_url.clone(), 10)
 		.await
 		.expect("gRPC client connection failed.");
 
-	let mut block_stream = client
+	let (mut block_stream, _alert_channel) = client
 		.stream_read_from_height(StreamReadFromHeightRequest { height: 0 })
 		.await
 		.expect("Failed to register to block stream");
@@ -174,11 +174,11 @@ async fn test_produce_block_and_stream() {
 
 	//Register to block stream
 	let connection_url = Url::parse(&format!("http://127.0.0.1:{}", grpc_address.port())).unwrap();
-	let mut client = GrpcDaSequencerClient::try_connect(&connection_url.clone(), None, 10)
+	let mut client = GrpcDaSequencerClient::try_connect(&connection_url.clone(), 10)
 		.await
 		.expect("gRPC client connection failed.");
 
-	let mut block_stream = client
+	let (mut block_stream, _alert_channel) = client
 		.stream_read_from_height(StreamReadFromHeightRequest { height: 0 })
 		.await
 		.expect("Failed to register to block stream");
@@ -208,10 +208,10 @@ async fn test_produce_block_and_stream() {
 	mock_wait_and_get_next_block(&mut block_stream, 3).await;
 
 	//create a new client and see if it steam all blocks.
-	let mut client2 = GrpcDaSequencerClient::try_connect(&connection_url.clone(), None, 10)
+	let mut client2 = GrpcDaSequencerClient::try_connect(&connection_url.clone(), 10)
 		.await
 		.expect("gRPC client connection failed.");
-	let mut block_stream2 = client2
+	let (mut block_stream2, _alert_channel2) = client2
 		.stream_read_from_height(StreamReadFromHeightRequest { height: 2 })
 		.await
 		.expect("Failed to register to block stream");
@@ -264,7 +264,7 @@ async fn test_grpc_client_should_write_one_batch_with_a_correct_whitelist() {
 	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
 
 	let connection_url = Url::parse(&format!("http://{}", grpc_address)).unwrap();
-	let mut client = GrpcDaSequencerClient::try_connect(&connection_url.clone(), None, 10)
+	let mut client = GrpcDaSequencerClient::try_connect(&connection_url.clone(), 10)
 		.await
 		.expect("Failed to connect");
 
@@ -320,7 +320,7 @@ async fn test_grpc_client_should_write_one_batch_with_an_empty_whitelist() {
 	let serialized = serialize_full_node_batch(verifying_key, signature, batch_bytes);
 
 	let connection_url = Url::parse(&format!("http://{}", grpc_address)).unwrap();
-	let mut client = GrpcDaSequencerClient::try_connect(&connection_url.clone(), None, 10)
+	let mut client = GrpcDaSequencerClient::try_connect(&connection_url.clone(), 10)
 		.await
 		.expect("gRPC client connection failed");
 
@@ -369,7 +369,7 @@ async fn test_grpc_client_should_write_one_batch_with_a_wrong_verifying_key_in_w
 	let serialized = serialize_full_node_batch(verifying_key, signature, batch_bytes);
 
 	let connection_url = Url::parse(&format!("http://{}", grpc_address)).unwrap();
-	let mut client = GrpcDaSequencerClient::try_connect(&connection_url.clone(), None, 10)
+	let mut client = GrpcDaSequencerClient::try_connect(&connection_url.clone(), 10)
 		.await
 		.expect("gRPC client connection failed");
 
@@ -415,7 +415,7 @@ async fn test_write_batch_grpc_main_loop_bad_signature() {
 	let serialized = serialize_full_node_batch(verifying_key, signature, batch_bytes);
 
 	let connection_url = Url::parse(&format!("http://{}", grpc_address)).unwrap();
-	let mut client = GrpcDaSequencerClient::try_connect(&connection_url.clone(), None, 10)
+	let mut client = GrpcDaSequencerClient::try_connect(&connection_url.clone(), 10)
 		.await
 		.expect("gRPC client connection failed");
 	let request = BatchWriteRequest { data: serialized };
@@ -428,9 +428,6 @@ async fn test_write_batch_grpc_main_loop_bad_signature() {
 
 #[tokio::test]
 async fn test_missed_grpc_heartbeat_twice_triggers_alert() {
-	use tokio::sync::mpsc::unbounded_channel;
-	use tokio_stream::StreamExt;
-
 	let (request_tx, request_rx) = mpsc::channel(100);
 
 	let mut config = DaSequencerConfig::default();
@@ -444,18 +441,16 @@ async fn test_missed_grpc_heartbeat_twice_triggers_alert() {
 
 	let storage_mock = StorageMock::new();
 	let celestia_mock = CelestiaMock::new();
-	let stream_heartbeat_interval_sec = config.stream_heartbeat_interval_sec;
 	config.stream_heartbeat_interval_sec = 1; // short interval for test
 	let loop_task = tokio::spawn(run(config, request_rx, storage_mock, celestia_mock));
 
 	tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
 	let connection_url = Url::parse(&format!("http://{}", grpc_address)).unwrap();
-	let (alert_tx, mut alert_rx) = unbounded_channel();
-	let mut client = GrpcDaSequencerClient::try_connect(&connection_url, Some(alert_tx), 1)
+	let mut client = GrpcDaSequencerClient::try_connect(&connection_url, 1)
 		.await
 		.expect("Failed to connect");
 
-	let mut stream = client
+	let (stream, mut alert_rx) = client
 		.stream_read_from_height(StreamReadFromHeightRequest { height: 0 })
 		.await
 		.expect("Failed to start stream");
@@ -474,9 +469,6 @@ async fn test_missed_grpc_heartbeat_twice_triggers_alert() {
 
 #[tokio::test]
 async fn test_missed_grpc_heartbeat_once_does_not_trigger_alert() {
-	use tokio::sync::mpsc::unbounded_channel;
-	use tokio_stream::StreamExt;
-
 	let (request_tx, request_rx) = mpsc::channel(100);
 
 	let mut config = DaSequencerConfig::default();
@@ -491,17 +483,15 @@ async fn test_missed_grpc_heartbeat_once_does_not_trigger_alert() {
 	let storage_mock = StorageMock::new();
 	let celestia_mock = CelestiaMock::new();
 	config.stream_heartbeat_interval_sec = 1; // short interval for test
-	let stream_heartbeat_interval_sec = config.stream_heartbeat_interval_sec;
 	let loop_task = tokio::spawn(run(config, request_rx, storage_mock, celestia_mock));
 
 	tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
 
 	let connection_url = Url::parse(&format!("http://{}", grpc_address)).unwrap();
-	let (alert_tx, mut alert_rx) = unbounded_channel();
-	let mut client = GrpcDaSequencerClient::try_connect(&connection_url, Some(alert_tx), 1)
+	let mut client = GrpcDaSequencerClient::try_connect(&connection_url, 1)
 		.await
 		.expect("Failed to connect");
-	let mut stream = client
+	let (stream, mut alert_rx) = client
 		.stream_read_from_height(StreamReadFromHeightRequest { height: 0 })
 		.await
 		.expect("Failed to start stream");

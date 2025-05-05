@@ -10,6 +10,7 @@ use movement_collections::garbage::counted::GcCounter;
 use movement_da_sequencer_client::GrpcDaSequencerClient;
 use movement_signer_loader::identifiers::SignerIdentifier;
 use std::sync::{Arc, RwLock};
+use tokio::sync::mpsc::UnboundedReceiver;
 use url::Url;
 
 /// The background task for the executor, processing the incoming transactions
@@ -27,8 +28,7 @@ enum BackgroundInner {
 impl BackgroundTask {
 	/// Constructs the full background tasks for transaction processing.
 	pub(crate) fn transaction_pipe(
-		mempool_commit_tx_receiver: futures_mpsc::Receiver<Vec<TxExecutionResult>>, // Sender, seq number)
-		mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
+		mempool_commit_tx_receiver: UnboundedReceiver<Vec<TxExecutionResult>>, // Sender, seq number)
 		db_reader: Arc<dyn DbReader>,
 		node_config: &NodeConfig,
 		mempool_config: &MempoolConfig,
@@ -40,7 +40,6 @@ impl BackgroundTask {
 		Ok(Self {
 			inner: BackgroundInner::Full(TransactionPipe::new(
 				mempool_commit_tx_receiver,
-				mempool_client_receiver,
 				db_reader,
 				node_config,
 				mempool_config,
@@ -59,13 +58,22 @@ impl BackgroundTask {
 	}
 
 	/// Runs the background task.
-	pub async fn run(self, da_connection_url: Url) -> Result<(), Error> {
+	pub async fn run(
+		self,
+		da_connection_url: Url,
+		stream_heartbeat_interval_sec: u64,
+		mempool_request_sender: futures_mpsc::Receiver<MempoolClientRequest>,
+	) -> Result<(), Error> {
 		use BackgroundInner::*;
 
 		match self.inner {
 			Full(transaction_pipe) => {
-				let da_client = GrpcDaSequencerClient::try_connect(&da_connection_url).await?;
-				transaction_pipe.run(da_client).await
+				let da_client = GrpcDaSequencerClient::try_connect(
+					&da_connection_url,
+					stream_heartbeat_interval_sec,
+				)
+				.await?;
+				transaction_pipe.run(da_client, mempool_request_sender).await
 			}
 			ReadOnly(null_mempool) => null_mempool.run().await,
 		}

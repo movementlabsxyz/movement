@@ -14,9 +14,10 @@ pub use service::Service;
 #[cfg(test)]
 mod tests {
 
-	use crate::executor::{TxExecutionResult, EXECUTOR_CHANNEL_SIZE};
+	use crate::executor::TxExecutionResult;
 	use crate::Executor;
 	use aptos_crypto::HashValue;
+	use aptos_mempool::MempoolClientRequest;
 	use aptos_sdk::types::account_config::aptos_test_root_address;
 	use aptos_sdk::types::account_config::AccountResource;
 	use aptos_sdk::{transaction_builder::TransactionFactory, types::LocalAccount};
@@ -30,7 +31,7 @@ mod tests {
 		transaction::signature_verified_transaction::{
 			into_signature_verified_block, SignatureVerifiedTransaction,
 		},
-		transaction::{RawTransaction, Script, SignedTransaction, Transaction, TransactionPayload},
+		transaction::{RawTransaction, Script, Transaction, TransactionPayload},
 	};
 	use movement_signer::cryptography::ed25519::Ed25519;
 	use movement_signer_hashicorp_vault::hsm::HashiCorpVault;
@@ -58,14 +59,15 @@ mod tests {
 		);
 		let signed_transaction = TransactionSigner::sign_transaction(&hsm, raw_transaction).await?;
 
-		let (tx_sender, _tx_receiver) = mpsc::channel::<Vec<(u64, SignedTransaction)>>(1);
+		let (tx_sender, _tx_receiver) = futures::channel::mpsc::channel::<MempoolClientRequest>(10);
 
 		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
-			futures::channel::mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+			mpsc::unbounded_channel::<Vec<TxExecutionResult>>();
 
 		let (mut executor, _tempdir) =
 			Executor::try_test_default_with_public_key(public_key, mempool_tx_exec_result_sender)?;
-		let (_context, _transaction_pipe) = executor.background(mempool_commit_tx_receiver)?;
+		let (_context, _transaction_pipe) =
+			executor.background(mempool_commit_tx_receiver, tx_sender)?;
 		let block_id = HashValue::random();
 		let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
 			block_id,
@@ -84,7 +86,7 @@ mod tests {
 			tx,
 		]);
 		let block = ExecutableBlock::new(block_id.clone(), txs);
-		executor.execute_block(block).await?;
+		executor.execute_block(block)?;
 
 		Ok(())
 	}
@@ -98,13 +100,13 @@ mod tests {
 		let public_key = TransactionSigner::public_key(&hsm).await?;
 		let account_address = aptos_test_root_address();
 
-		let (tx_sender, _tx_receiver) = mpsc::channel::<Vec<(u64, SignedTransaction)>>(1);
-
+		let (tx_sender, _tx_receiver) = futures::channel::mpsc::channel::<MempoolClientRequest>(1);
 		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
-			futures::channel::mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+			mpsc::unbounded_channel::<Vec<TxExecutionResult>>();
 		let (mut executor, _tempdir) =
 			Executor::try_test_default_with_public_key(public_key, mempool_tx_exec_result_sender)?;
-		let (context, _transaction_pipe) = executor.background(mempool_commit_tx_receiver)?;
+		let (context, _transaction_pipe) =
+			executor.background(mempool_commit_tx_receiver, tx_sender)?;
 
 		// Seed for random number generator, used here to generate predictable results in a test environment.
 		let seed = [3u8; 32];
@@ -154,7 +156,7 @@ mod tests {
 			Transaction::UserTransaction(signed_mint_transaction),
 		]));
 		let block = ExecutableBlock::new(block_id.clone(), transactions);
-		executor.execute_block(block).await?;
+		executor.execute_block(block)?;
 
 		// Access the database reader to verify state after execution.
 		let db_reader = executor.db_reader();

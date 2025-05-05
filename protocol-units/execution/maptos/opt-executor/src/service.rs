@@ -91,10 +91,10 @@ impl Service {
 mod tests {
 	use super::*;
 	use crate::executor::TxExecutionResult;
-	use crate::executor::EXECUTOR_CHANNEL_SIZE;
 	use crate::Executor;
 	use aptos_mempool::MempoolClientRequest;
 	use movement_da_sequencer_client::EmptyDaSequencerClient;
+	use tokio::sync::mpsc::unbounded_channel;
 
 	use aptos_types::{
 		account_config, mempool_status::MempoolStatusCode, test_helpers::transaction_test_helpers,
@@ -119,13 +119,14 @@ mod tests {
 	#[tokio::test]
 	#[ignore]
 	async fn test_pipe_mempool_while_server_running() -> Result<(), anyhow::Error> {
+		let (tx_sender, tx_receiver) = futures::channel::mpsc::channel::<MempoolClientRequest>(10);
 		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
-			futures::channel::mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+			unbounded_channel::<Vec<TxExecutionResult>>();
 
 		let (executor, _tempdir) =
 			Executor::try_test_default(GENESIS_KEYPAIR.0.clone(), mempool_tx_exec_result_sender)
 				.await?;
-		let (context, background) = executor.background(mempool_commit_tx_receiver)?;
+		let (context, background) = executor.background(mempool_commit_tx_receiver, tx_sender)?;
 		let transaction_pipe = background.into_transaction_pipe();
 		let service = Service::new(&context);
 		let handle = tokio::spawn(async move { service.run().await });
@@ -142,7 +143,7 @@ mod tests {
 
 		// Run the transaction pipe
 		let da_client = EmptyDaSequencerClient;
-		let mempool_handle = tokio::spawn(transaction_pipe.run(da_client));
+		let mempool_handle = tokio::spawn(transaction_pipe.run(da_client, tx_receiver));
 
 		// receive the callback
 		let (status, _vm_status_code) = callback.await??;

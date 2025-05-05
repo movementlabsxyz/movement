@@ -6,9 +6,11 @@ use aptos_sdk::{
 };
 use movement_client::load_soak_testing::{execute_test, init_test, ExecutionConfig, Scenario};
 use once_cell::sync::Lazy;
+use tracing::info;
+use url::Url;
+
 use std::str::FromStr;
 use std::sync::Arc;
-use url::Url;
 
 fn main() {
 	// Define the Test config. Use the default parameters.
@@ -63,6 +65,7 @@ static NODE_URL: Lazy<Url> = Lazy::new(|| {
 
 	let node_connection_url =
 		format!("http://{}:{}", node_connection_address, node_connection_port);
+	//	let node_connection_url = "http://ec2-52-70-67-75.compute-1.amazonaws.com".to_string();
 
 	Url::from_str(node_connection_url.as_str()).unwrap()
 });
@@ -82,15 +85,18 @@ static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
 		.clone();
 
 	let faucet_listen_url = format!("http://{}:{}", faucet_listen_address, faucet_listen_port);
+	//	let faucet_listen_url = "http://ec2-52-70-67-75.compute-1.amazonaws.com:81".to_string();
 
 	Url::from_str(faucet_listen_url.as_str()).unwrap()
 });
 
 #[async_trait::async_trait]
 impl Scenario for BasicScenario {
+	#[tracing::instrument(skip(self), fields(scenario = self.id))]
 	async fn prepare(&mut self) -> Result<(), anyhow::Error> {
 		let rest_client = Client::new(NODE_URL.clone());
 		let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
+		let faucet_client = faucet_client.with_auth_token("notreal".to_string());
 		let coin_client = CoinClient::new(&rest_client);
 
 		// Create two accounts locally, Alice and Bob.
@@ -98,33 +104,35 @@ impl Scenario for BasicScenario {
 		let bob = LocalAccount::generate(&mut rand::rngs::OsRng); // <:!:section_2
 
 		// Print account addresses.
-		tracing::info!(
-			"Scenario:{} prepare \n=== Addresses ===\nAlice: {}\nBob: {}",
-			self.id,
-			alice.address().to_hex_literal(),
-			bob.address().to_hex_literal()
+		info!(
+			address_alice = %alice.address().to_hex_literal(),
+			address_bob = %bob.address().to_hex_literal(),
+			"accounts created",
 		);
 
 		// Create the accounts on chain, but only fund Alice.
-		faucet_client.fund(alice.address(), 100_000_000_000).await?;
-		faucet_client.create_account(bob.address()).await?;
+		faucet_client.fund(alice.address(), 100_000_000_000).await.unwrap();
+		faucet_client.create_account(bob.address()).await.unwrap();
 
 		// Have Alice send Bob some coins.
-		let txn_hash = coin_client
+		let pending_tx = coin_client
 			.transfer(&mut alice, bob.address(), 1_000_000, None)
 			.await
-			.context("Failed to submit transaction to transfer coins")?;
+			.context("Prepare Failed to submit transaction to transfer coins")?;
+
+		info!(tx_hash = %pending_tx.hash, "waiting for transaction");
 		rest_client
-			.wait_for_transaction(&txn_hash)
+			.wait_for_transaction(&pending_tx)
 			.await
-			.context("Failed when waiting for the transfer transaction")?;
-		tracing::info!("Scenario:{} prepare done. account created and founded", self.id,);
+			.context("Prepare Failed when waiting for the transfer transaction")?;
+		info!("Scenario:{} prepare done. account created and founded", self.id,);
 
 		self.alice = Some(alice);
 		self.bob = Some(bob);
 		Ok(())
 	}
 
+	#[tracing::instrument(skip(self), fields(scenario = self.id))]
 	async fn run(&mut self) -> Result<()> {
 		let rest_client = Client::new(NODE_URL.clone());
 		let coin_client = CoinClient::new(&rest_client); // Print initial balances.
@@ -132,32 +140,39 @@ impl Scenario for BasicScenario {
 		let alice = self.alice.as_mut().unwrap();
 		let bob = self.bob.as_mut().unwrap();
 
-		for _ in 0..2 {
+		for index in 0..2 {
 			// Have Bob send Alice some coins.
-			let txn_hash = coin_client
+			info!("Scenario:{} Before Sent Tx Alice -> Bob index:{index}", self.id);
+			let pending_tx = coin_client
 				.transfer(bob, alice.address(), 10, None)
 				.await
-				.context("Failed to submit transaction to transfer coins")?;
-			rest_client
-				.wait_for_transaction(&txn_hash)
-				.await
-				.context("Failed when waiting for the transfer transaction")?;
+				//				.context("Failed to submit transaction to transfer coins")
+				.map_err(|err| anyhow::anyhow!("Alice Tx sublit failed because {err}"))?;
+			info!(scenario = %self.id, tx_hash = %pending_tx.hash, index = %index, "waiting for Bob -> Alice transfer to complete");
+
+			rest_client.wait_for_transaction(&pending_tx).await.map_err(|err| {
+				anyhow::anyhow!("Alice Tx failed:{pending_tx:?} index:{index} because {err}")
+			})?;
 
 			// Have Alice send Bob some more coins.
-			let txn_hash = coin_client
+			info!("Scenario:{} Before Sent Tx Bob -> Alice index:{index}", self.id);
+			let pending_tx = coin_client
 				.transfer(alice, bob.address(), 10, None)
 				.await
-				.context("Failed to submit transaction to transfer coins")?;
-			rest_client
-				.wait_for_transaction(&txn_hash)
-				.await
-				.context("Failed when waiting for the transfer transaction")?;
+				//				.context("Failed to submit transaction to transfer coins")
+				.map_err(|err| {
+					anyhow::anyhow!("Bob Tx submit index:{index} failed because {err}")
+				})?;
+			info!(scenario = %self.id, tx_hash = %pending_tx.hash, index = %index, "waiting for Alice -> Bob transfer to complete");
+
+			rest_client.wait_for_transaction(&pending_tx).await.map_err(|err| {
+				anyhow::anyhow!("Bob Tx failed:{pending_tx:?} index:{index} because {err}")
+			})?;
 		}
 
 		// Print final balances.
-		tracing::info!(
-			"Scenario:{}\n=== Final Balances ===\n Alice: {:?}\n Bob: {:?}",
-			self.id,
+		info!(
+			"final balances, Alice: {:?}, Bob: {:?}",
 			coin_client
 				.get_account_balance(&alice.address())
 				.await

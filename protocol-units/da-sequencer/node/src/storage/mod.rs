@@ -10,6 +10,7 @@ use movement_types::{
 	transaction::Transaction,
 };
 use rocksdb::{ColumnFamilyDescriptor, Options, WriteBatch, DB};
+use std::path::Path;
 use std::{collections::BTreeSet, result::Result, sync::Arc};
 
 pub mod cf {
@@ -98,11 +99,11 @@ pub trait DaSequencerStorage {
 		celestia_heigh: CelestiaHeight,
 	) -> Result<(), DaSequencerError>;
 
-	fn get_current_block_height(&self) -> BlockHeight;
+	fn get_current_block_height(&self) -> Result<BlockHeight, DaSequencerError>;
 }
 
 impl Storage {
-	pub fn try_new(path: &str) -> Result<Self, DaSequencerError> {
+	pub fn try_new(path: impl AsRef<Path>) -> Result<Self, DaSequencerError> {
 		let mut options = Options::default();
 
 		options.create_if_missing(true);
@@ -125,25 +126,7 @@ impl Storage {
 	}
 
 	fn determine_next_block_height(&self) -> Result<BlockHeight, DaSequencerError> {
-		let cf = self.db.cf_handle(cf::BLOCKS).ok_or_else(|| {
-			DaSequencerError::StorageAccess("Missing column family: blocks".into())
-		})?;
-
-		let mut iter = self.db.iterator_cf(&cf, rocksdb::IteratorMode::End);
-		if let Some(Ok((key, _value))) = iter.next() {
-			if key.len() != 8 {
-				return Err(DaSequencerError::StorageFormat(
-					"Invalid block height key length".into(),
-				));
-			}
-
-			let mut arr = [0u8; 8];
-			arr.copy_from_slice(&key);
-			let last_height = u64::from_be_bytes(arr);
-			Ok(BlockHeight(last_height + 1))
-		} else {
-			Ok(BlockHeight(1))
-		}
+		Ok(self.get_current_block_height()? + 1)
 	}
 }
 
@@ -265,6 +248,12 @@ impl DaSequencerStorage for Storage {
 		let tx_set: BTreeSet<_> = selected_txs.into_iter().collect();
 		let block = Block::new(BlockMetadata::default(), parent_id, tx_set);
 		let sequencer_block = SequencerBlock::try_new(height, block)?;
+		tracing::info!(
+			"Producing new block: id:{} height:{} nb Tx:{}",
+			sequencer_block.id(),
+			sequencer_block.height().0,
+			sequencer_block.len()
+		);
 
 		// Save the block and clean up pending txs
 		self.save_block(&sequencer_block, Some(keys_to_delete))?;
@@ -287,8 +276,26 @@ impl DaSequencerStorage for Storage {
 		todo!()
 	}
 
-	fn get_current_block_height(&self) -> BlockHeight {
-		todo!();
+	fn get_current_block_height(&self) -> Result<BlockHeight, DaSequencerError> {
+		let cf = self.db.cf_handle(cf::BLOCKS).ok_or_else(|| {
+			DaSequencerError::StorageAccess("Missing column family: blocks".into())
+		})?;
+
+		let mut iter = self.db.iterator_cf(&cf, rocksdb::IteratorMode::End);
+		if let Some(Ok((key, _value))) = iter.next() {
+			if key.len() != 8 {
+				return Err(DaSequencerError::StorageFormat(
+					"Invalid block height key length".into(),
+				));
+			}
+
+			let mut arr = [0u8; 8];
+			arr.copy_from_slice(&key);
+			let last_height = u64::from_be_bytes(arr);
+			Ok(BlockHeight(last_height))
+		} else {
+			Ok(BlockHeight(0))
+		}
 	}
 }
 

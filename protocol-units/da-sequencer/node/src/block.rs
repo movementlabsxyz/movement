@@ -1,10 +1,11 @@
 use movement_types::block::{self, Block, Transactions};
 use serde::{Deserialize, Serialize};
+use std::ops::Add;
 
 use crate::error::DaSequencerError;
 
 // TODO: use a sensible value for the max sequencer block size
-pub const MAX_SEQUENCER_BLOCK_SIZE: u64 = 1_000_000; // 1 MB
+pub const MAX_SEQUENCER_BLOCK_SIZE: u64 = 100_000_000; // 100 MB
 
 #[derive(
 	Serialize, Deserialize, Clone, Copy, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord,
@@ -31,6 +32,16 @@ impl From<BlockHeight> for u64 {
 	}
 }
 
+// Rust interprets (small) integer literals without a type suffix as i32
+impl<T: Into<i64>> Add<T> for BlockHeight {
+	type Output = Self;
+
+	fn add(self, rhs: T) -> Self::Output {
+		let value = <i64 as TryInto<u64>>::try_into(rhs.into()).expect("Added a negative value");
+		BlockHeight(self.0 + value)
+	}
+}
+
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct SequencerBlock {
 	height: BlockHeight,
@@ -54,6 +65,14 @@ impl SequencerBlock {
 
 	pub fn transactions(&self) -> Transactions {
 		self.block.transactions()
+	}
+
+	pub fn len(&self) -> usize {
+		self.block.transactions().count()
+	}
+
+	pub fn inner_block(self) -> Block {
+		self.block
 	}
 }
 
