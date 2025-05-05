@@ -75,7 +75,7 @@ env_default!(
 // The default Da Sequencer connection url
 env_default!(
 	default_da_sequencer_connection_url,
-	"MAPTOS_FIN_VIEW_DA_SEQUENCER_CONNECTION_URL",
+	"MAPTOS_DA_SEQUENCER_CONNECTION_URL",
 	Url,
 	"http://0.0.0.0:30730".parse().expect("Bad da sequencer connection url.")
 );
