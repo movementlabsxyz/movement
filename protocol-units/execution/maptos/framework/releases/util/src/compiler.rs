@@ -92,7 +92,7 @@ impl Compiler {
 				Dependency {
 					local: None,
 					git: Some(self.repo.to_string()),
-					rev: Some("f3a2758f6e13e4ac3d7e7425c576817358f9b596".to_string()),
+					rev: Some("dd038ea10e667484d71bf657ae6caaa222156dcf".to_string()),
 					subdir: Some(SUBDIR_PATH.to_string()),
 					aptos: None,
 					address: None,
@@ -223,7 +223,7 @@ impl Compiler {
 	}
 
 	pub fn from_env() -> Self {
-		// FORCE the commit hash for testing
-		Compiler::test("f3a2758f6e13e4ac3d7e7425c576817358f9b596")
+		// Force the commit hash for testing
+		Compiler::test("dd038ea10e667484d71bf657ae6caaa222156dcf")
 	}
 }

@@ -4,7 +4,7 @@ use maptos_framework_release_util::mrb_release;
 mrb_release!(
 	PostL1Merge,
 	POST_L1_MERGE,
-	"f3a2758f6e13e4ac3d7e7425c576817358f9b596-post-l1-merge.mrb"
+	"dd038ea10e667484d71bf657ae6caaa222156dcf-post-l1-merge.mrb"
 );
 
 generate_gas_upgrade_module!(gas_upgrade, PostL1Merge, {
@@ -64,6 +64,7 @@ pub mod full {
 		// Note: when testing into the future, you may have to use a different revision of [aptos_types] in this crate's Cargo.toml
 		// Or, I suppose you can keep and GOVERNED_GAS_POOL feature flag and a GOVERNED_GAS_POOL_V2 feature flag and just make sure you're disabling the former and enabling the latter. Thereafter, it won't matter what happens to the GOVERNED_GAS_POOL feature flag, i.e., it can be replaced.
 		aptos_feature_flags.push(AptosFeatureFlag::GOVERNED_GAS_POOL);
+		aptos_feature_flags.push(AptosFeatureFlag::DECOMMISSION_CORE_RESOURCES);
 
 		Features {
 			enabled: aptos_feature_flags.into_iter().map(FeatureFlag::from).collect(),
