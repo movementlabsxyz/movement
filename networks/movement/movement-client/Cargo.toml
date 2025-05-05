@@ -93,6 +93,7 @@ tonic = { workspace = true }
 movement-da-light-node-client = { workspace = true }
 movement-da-light-node-proto = { workspace = true, features = ["client"] }
 movement-types = { workspace = true }
+hex = { workspace = true }
 
 [dev-dependencies]
 reqwest = { workspace = true }

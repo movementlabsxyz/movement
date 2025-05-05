@@ -193,18 +193,17 @@ impl TransactionPipe {
 								Ok(Ok(response)) => {
 									debug!("After sent batch.");
 									if !response.answer {
-										tracing::error!("DA Sequencer reject batch.");
-										panic!("DA Sequencer reject batch., can't send batch, exit process");
+										tracing::error!("DA Sequencer reject batch, can't send batch, exit process");
+										return Err(Error::InternalError("DA Sequencer reject batch, can't send batch, exit process"));
 									}
 								}
 								Ok(Err(err)) => {
-									tracing::error!("Send batch to Da failed because of a connection issue: {err}");
-									//TODO put some reconnection for now panic.
-									panic!("DA connection failed, can't send batch, exit process");
+									tracing::error!("Send batch to Da failed because of a connection issue: {err}, can't send batch, exit process");
+										return Err(Error::InternalError("Send batch to Da failed because of a connection issue: {err}, can't send batch, exit process"));
 								}
 								Err(err) => {
-									tracing::error!("Tokio send batch task execution failed: {err}");
-									//TODO see what consequence of this error.
+									tracing::error!("Tokio send batch task execution failed: {err}, can't send batch, exit process");
+										return Err(Error::InternalError("Tokio send batch task execution failed: {err}, can't send batch, exit process"));
 								}
 							}
 						}

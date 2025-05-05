@@ -182,7 +182,7 @@ impl DaSequencerClient for GrpcDaSequencerClient {
 						break;
 					}
 					None => {
-						tracing::error!("Da sequencer client connection return an error.");
+						tracing::error!("Da sequencer client connection return None.");
 						break;
 					}
 				}
