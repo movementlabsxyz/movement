@@ -4,7 +4,7 @@ use maptos_framework_release_util::mrb_release;
 mrb_release!(
 	PostL1Merge,
 	BIARRTIZ_RC1,
-	"f3a2758f6e13e4ac3d7e7425c576817358f9b596-post-l1-merge.mrb"
+	"867b1828618ad33bfb3b10c50665cb67113f60e2-post-l1-merge.mrb"
 );
 
 generate_gas_upgrade_module!(gas_upgrade, PostL1Merge, {
