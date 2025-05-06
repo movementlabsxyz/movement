@@ -34,6 +34,7 @@ use std::time::Duration;
 use crate::{passthrough::LightNode as LightNodePassThrough, LightNodeRuntime};
 
 const LOGGING_UID: AtomicU64 = AtomicU64::new(0);
+const BLOCK_PROPOSER_CHANNEL_BUFFER_SIZE: usize = 2usize.pow(10);
 
 #[derive(Clone)]
 pub struct LightNode<O, C, Da, V>
@@ -279,7 +280,7 @@ where
 	}
 
 	pub async fn run_block_proposer(&self) -> Result<(), anyhow::Error> {
-		let (sender, mut receiver) = tokio::sync::mpsc::channel(2 ^ 10);
+		let (sender, mut receiver) = tokio::sync::mpsc::channel(BLOCK_PROPOSER_CHANNEL_BUFFER_SIZE);
 
 		loop {
 			info!(target: "movement_timing", "START: run_block_propoer iteration");
