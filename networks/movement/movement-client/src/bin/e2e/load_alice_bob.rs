@@ -125,7 +125,8 @@ impl Scenario for BasicScenario {
 			.wait_for_transaction(&pending_tx)
 			.await
 			.context("Prepare Failed when waiting for the transfer transaction")?;
-		info!("Scenario:{} prepare done. account created and founded", self.id,);
+
+		info!("account created and funded");
 
 		self.alice = Some(alice);
 		self.bob = Some(bob);
