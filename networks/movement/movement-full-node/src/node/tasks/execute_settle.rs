@@ -237,6 +237,9 @@ where
 		block_timestamp: u64,
 	) -> anyhow::Result<BlockCommitment> {
 		let block_id = block.id();
+
+		let _span = info_span!("execute_block", %block_id).entered();
+
 		let block_hash = HashValue::from_slice(block_id)?;
 
 		// get the transactions
