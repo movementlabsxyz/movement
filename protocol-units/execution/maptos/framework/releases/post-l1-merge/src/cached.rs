@@ -35,13 +35,7 @@ script {
     use aptos_framework::account;
 
     fun main(core_resources: &signer) {
-        let core_signer = aptos_governance::get_signer_testnet_only(core_resources, @0000000000000000000000000000000000000000000000000000000000000001);
-
-        let core_address: address = signer::address_of(core_resources);
-
-        // this initialize function is idempotent, already initialized GGP will not error.
-        governed_gas_pool::initialize(&core_signer, b"aptos_framework::governed_gas_pool");
-
+       
     }
 }
 "#
@@ -62,7 +56,7 @@ pub mod full {
 		let mut aptos_feature_flags = AptosFeatureFlag::default_features();
 		// Note: when testing into the future, you may have to use a different revision of [aptos_types] in this crate's Cargo.toml
 		// Or, I suppose you can keep and GOVERNED_GAS_POOL feature flag and a GOVERNED_GAS_POOL_V2 feature flag and just make sure you're disabling the former and enabling the latter. Thereafter, it won't matter what happens to the GOVERNED_GAS_POOL feature flag, i.e., it can be replaced.
-		aptos_feature_flags.push(AptosFeatureFlag::GOVERNED_GAS_POOL);
+		aptos_feature_flags.push(AptosFeatureFlag::DECOMMISSION_CORE_RESOURCES);
 
 		Features {
 			enabled: aptos_feature_flags.into_iter().map(FeatureFlag::from).collect(),
