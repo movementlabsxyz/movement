@@ -42,7 +42,6 @@ script {
         // this initialize function is idempotent, already initialized GGP will not error.
         governed_gas_pool::initialize(&core_signer, b"aptos_framework::governed_gas_pool");
 
-        account::destroy_account_from(core_resources, core_address);
     }
 }
 "#
