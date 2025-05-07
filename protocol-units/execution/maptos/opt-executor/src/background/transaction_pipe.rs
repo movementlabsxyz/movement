@@ -348,6 +348,7 @@ impl TransactionPipe {
 			// Build batch and submit request.
 			tracing::info!("Build new batch with {} tx.", batch.len());
 			let loader: LoadedSigner<Ed25519> = da_batch_signer.load().await?;
+
 			//send the batch in a separate task to avoid to slow the loop.
 			let handle = tokio::spawn({
 				let mut client = da_client.clone();

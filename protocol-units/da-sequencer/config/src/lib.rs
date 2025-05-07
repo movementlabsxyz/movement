@@ -26,6 +26,9 @@ pub struct DaSequencerConfig {
 
 	#[serde(default = "default_db_storage_relative_path")]
 	pub db_storage_relative_path: String,
+
+	#[serde(default)]
+	pub main_node_verifying_key: Option<String>,
 }
 
 env_default!(
@@ -71,6 +74,7 @@ impl Default for DaSequencerConfig {
 			stream_heartbeat_interval_sec: default_stream_heartbeat_interval_sec(),
 			whitelist_relative_path: default_whitelist_relative_path(),
 			db_storage_relative_path: default_db_storage_relative_path(),
+			main_node_verifying_key: None,
 		}
 	}
 }

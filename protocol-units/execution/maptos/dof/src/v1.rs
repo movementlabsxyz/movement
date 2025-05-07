@@ -7,6 +7,7 @@ use async_trait::async_trait;
 use futures::channel::mpsc as futures_mpsc;
 use maptos_execution_util::config::Config;
 use maptos_fin_view::FinalityView;
+use maptos_opt_executor::executor::ExecutionState;
 use maptos_opt_executor::executor::TxExecutionResult;
 use maptos_opt_executor::executor::EXECUTOR_CHANNEL_SIZE;
 use maptos_opt_executor::{Context as OptContext, Executor as OptExecutor};
@@ -97,7 +98,7 @@ impl DynOptFinExecutor for Executor {
 	fn execute_block_opt(
 		&mut self,
 		block: ExecutableBlock,
-	) -> Result<BlockCommitment, anyhow::Error> {
+	) -> Result<(BlockCommitment, ExecutionState), anyhow::Error> {
 		debug!("Executing block: {:?}", block.block_id);
 		self.executor.execute_block(block)
 	}

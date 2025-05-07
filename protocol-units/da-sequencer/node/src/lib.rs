@@ -1,3 +1,4 @@
+use crate::block::NodeState;
 use crate::block::SequencerBlock;
 use crate::celestia::mock::CelestiaMock;
 use crate::celestia::DaSequencerExternalDa;
@@ -8,10 +9,11 @@ use crate::storage::DaSequencerStorage;
 use crate::storage::Storage;
 use crate::whitelist::Whitelist;
 use anyhow::Context;
+use ed25519_dalek::VerifyingKey;
 use futures::stream::FuturesUnordered;
 use godfig::{backend::config_file::ConfigFile, Godfig};
+use hex::FromHex;
 use movement_da_sequencer_config::DaSequencerConfig;
-use std::error::Error;
 use tokio::signal::unix::signal;
 use tokio::signal::unix::SignalKind;
 use tokio::sync::mpsc;
@@ -51,8 +53,22 @@ pub async fn start(mut dot_movement: dot_movement::DotMovement) -> Result<(), an
 	let (request_tx, request_rx) = mpsc::channel(GRPC_REQUEST_CHANNEL_SIZE);
 	// Start gprc server
 	let grpc_address = da_sequencer_config.grpc_listen_address;
-	let grpc_jh =
-		tokio::spawn(async move { run_server(grpc_address, request_tx, whitelist).await });
+	let verifying_key = da_sequencer_config
+		.main_node_verifying_key
+		.clone()
+		.map(|str| {
+			<[u8; 32]>::from_hex(str)
+				.map_err(|_| anyhow::anyhow!("Invalid main_node_verifying_key hex"))
+				.and_then(|hex| {
+					VerifyingKey::from_bytes(&hex)
+						.map_err(|_| anyhow::anyhow!("Invalid main_node_verifying_key key"))
+				})
+		})
+		.transpose()?;
+
+	let grpc_jh = tokio::spawn(async move {
+		run_server(grpc_address, request_tx, whitelist, verifying_key).await
+	});
 
 	//Start the main loop
 	let db_storage_path = dotmovement_path.join(&da_sequencer_config.db_storage_relative_path);
@@ -119,6 +135,7 @@ where
 	let mut produce_block = false;
 	let mut produce_block_jh = get_pending_future();
 	let mut connected_grpc_sender = vec![];
+	let mut current_node_state = None;
 
 	loop {
 		tokio::select! {
@@ -170,6 +187,7 @@ where
 						});
 						spawn_result_futures.push(write_batch_jh);
 					},
+					GrpcRequests::SendState(state) => current_node_state = Some(state),
 
 				}
 			}
@@ -197,7 +215,7 @@ where
 						// Send the block to all registered follower
 						// For now send to the main loop because there are very few followers (<100).
 						tracing::info!(sender_len = %connected_grpc_sender.len(), block_height= %block.height().0, "New block produced, send to fullnodes.");
-						stream_block_to_sender(&mut connected_grpc_sender, Some(block)).await;
+						stream_block_to_sender(&mut connected_grpc_sender, Some((block, current_node_state.clone()))).await;
 
 						//send the block to Celestia.
 						let celestia_send_jh = tokio::spawn({
@@ -237,8 +255,8 @@ where
 }
 
 async fn stream_block_to_sender(
-	senders: &mut Vec<mpsc::UnboundedSender<Option<SequencerBlock>>>,
-	data: Option<SequencerBlock>,
+	senders: &mut Vec<mpsc::UnboundedSender<Option<(SequencerBlock, Option<NodeState>)>>>,
+	data: Option<(SequencerBlock, Option<NodeState>)>,
 ) {
 	let mut new_sender = vec![];
 	for sender in senders.drain(..) {

@@ -1,10 +1,9 @@
 use super::Executor;
+use crate::executor::ExecutionState;
 use crate::executor::TxExecutionResult;
 use aptos_crypto::HashValue;
 use aptos_executor_types::{BlockExecutorTrait, StateComputeResult};
 use aptos_sdk::types::account_address::AccountAddress;
-use aptos_sdk::types::AccountKey;
-use aptos_types::account_config::aptos_test_root_address;
 use aptos_types::{
 	aggregate_signature::AggregateSignature,
 	block_executor::{
@@ -25,7 +24,7 @@ impl Executor {
 	pub fn execute_block(
 		&mut self,
 		block: ExecutableBlock,
-	) -> Result<BlockCommitment, anyhow::Error> {
+	) -> Result<(BlockCommitment, ExecutionState), anyhow::Error> {
 		let (block_metadata, block, senders_and_sequence_numbers) = {
 			// get the block metadata transaction
 			let metadata_access_block = block.transactions.clone();
@@ -92,23 +91,30 @@ impl Executor {
 			state_compute.root_hash(),
 			version,
 		);
-		let block_executor_clone = self.block_executor.clone();
-		block_executor_clone.commit_blocks(vec![block_id], ledger_info_with_sigs);
-
-		// commit mempool transactions in batches of size 16
-		for chunk in tx_execution_results.chunks(16) {
-			self.mempool_tx_exec_result_sender.send(chunk.to_vec())?;
-		}
-
-		let proof = self.db().reader.get_state_proof(version)?;
 
 		// Context has a reach-around to the db so the block height should
 		// have been updated to the most recently committed block.
 		// Race conditions, anyone?
 		let block_height = self.get_block_head_height()?;
 
-		let commitment = Commitment::digest_state_proof(&proof);
-		Ok(BlockCommitment::new(block_height.into(), Id::new(*block_id.clone()), commitment))
+		let new_execution_state = ExecutionState::build(&ledger_info_with_sigs, block_height);
+
+		let block_executor_clone = self.block_executor.clone();
+		block_executor_clone.commit_blocks(vec![block_id], ledger_info_with_sigs)?;
+
+		// commit mempool transactions
+		self.mempool_tx_exec_result_sender.send(tx_execution_results)?;
+
+		let proof = self.db().reader.get_state_proof(version)?;
+
+		debug!("proof :{proof:?}");
+
+		let commitment = BlockCommitment::new(
+			block_height.into(),
+			Id::new(*block_id.clone()),
+			Commitment::digest_state_proof(&proof),
+		);
+		Ok((commitment, new_execution_state))
 	}
 
 	pub fn get_block_head_height(&self) -> Result<u64, anyhow::Error> {

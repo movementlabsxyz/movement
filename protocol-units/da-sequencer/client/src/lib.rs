@@ -46,6 +46,12 @@ pub trait DaSequencerClient: Clone + Send {
 		request: movement_da_sequencer_proto::BatchWriteRequest,
 	) -> impl Future<Output = Result<movement_da_sequencer_proto::BatchWriteResponse, tonic::Status>>
 	       + Send;
+	fn send_state(
+		&mut self,
+		signer: &LoadedSigner<Ed25519>,
+		state: movement_da_sequencer_proto::MainNodeState,
+	) -> impl Future<Output = Result<movement_da_sequencer_proto::BatchWriteResponse, tonic::Status>>
+	       + Send;
 }
 
 /// Grpc implementation of the DA Sequencer client
@@ -200,6 +206,32 @@ impl DaSequencerClient for GrpcDaSequencerClient {
 		let response = self.client.batch_write(request).await?;
 		Ok(response.into_inner())
 	}
+
+	async fn send_state(
+		&mut self,
+		signer: &LoadedSigner<Ed25519>,
+		state: movement_da_sequencer_proto::MainNodeState,
+	) -> Result<movement_da_sequencer_proto::BatchWriteResponse, tonic::Status> {
+		let serialized = serialize_node_state(&state);
+		let signature = signer.sign(&serialized).await.map_err(|err| {
+			tonic::Status::new(tonic::Code::Unauthenticated, format!("State signgin failed: {err}"))
+		})?;
+
+		let request = movement_da_sequencer_proto::MainNodeStateRequest {
+			state: Some(state),
+			signature: signature.as_bytes().to_vec(),
+		};
+		let response = self.client.send_state(request).await?;
+		Ok(response.into_inner())
+	}
+}
+
+pub fn serialize_node_state(state: &movement_da_sequencer_proto::MainNodeState) -> Vec<u8> {
+	let mut serialized: Vec<u8> = Vec::with_capacity(64 + 64 + 64);
+	serialized.extend_from_slice(&state.block_height.to_le_bytes());
+	serialized.extend_from_slice(&state.ledger_timestamp.to_le_bytes());
+	serialized.extend_from_slice(&state.ledger_version.to_le_bytes());
+	serialized
 }
 
 /// Signs and encodes a batch for submission to the DA Sequencer.
@@ -214,7 +246,7 @@ pub async fn sign_and_encode_batch(
 }
 
 /// Serializes a full node batch with verifying key and signature prepended.
-pub fn serialize_full_node_batch(
+fn serialize_full_node_batch(
 	verifying_key: VerifyingKey,
 	signature: Signature,
 	mut data: Vec<u8>,
@@ -273,6 +305,13 @@ impl DaSequencerClient for EmptyDaSequencerClient {
 	async fn batch_write(
 		&mut self,
 		_request: movement_da_sequencer_proto::BatchWriteRequest,
+	) -> Result<movement_da_sequencer_proto::BatchWriteResponse, tonic::Status> {
+		Ok(BatchWriteResponse { answer: true })
+	}
+	async fn send_state(
+		&mut self,
+		_signer: &LoadedSigner<Ed25519>,
+		_state: movement_da_sequencer_proto::MainNodeState,
 	) -> Result<movement_da_sequencer_proto::BatchWriteResponse, tonic::Status> {
 		Ok(BatchWriteResponse { answer: true })
 	}

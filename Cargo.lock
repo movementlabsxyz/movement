@@ -11716,6 +11716,8 @@ version = "0.3.4"
 dependencies = [
  "alloy-signer",
  "anyhow",
+ "aptos-api",
+ "aptos-api-types",
  "aptos-crypto",
  "aptos-framework-elsa-to-biarritz-rc1-migration",
  "aptos-sdk",

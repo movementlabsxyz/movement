@@ -49,6 +49,8 @@ syncador = { workspace = true }
 syncup = { workspace = true }
 aptos-crypto = { workspace = true }
 aptos-sdk = { workspace = true }
+aptos-api = { workspace = true }
+aptos-api-types = { workspace = true }
 k256 = { workspace = true }
 alloy-signer = { workspace = true }
 maptos-opt-executor = { workspace = true }
