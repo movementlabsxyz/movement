@@ -52,10 +52,7 @@ pub mod full {
 		use aptos_release_builder::components::feature_flags::FeatureFlag;
 		use aptos_types::on_chain_config::FeatureFlag as AptosFeatureFlag;
 
-		// start with the default features and append the Governed Gas Pool feature
 		let mut aptos_feature_flags = AptosFeatureFlag::default_features();
-		// Note: when testing into the future, you may have to use a different revision of [aptos_types] in this crate's Cargo.toml
-		// Or, I suppose you can keep and GOVERNED_GAS_POOL feature flag and a GOVERNED_GAS_POOL_V2 feature flag and just make sure you're disabling the former and enabling the latter. Thereafter, it won't matter what happens to the GOVERNED_GAS_POOL feature flag, i.e., it can be replaced.
 		aptos_feature_flags.push(AptosFeatureFlag::DECOMMISSION_CORE_RESOURCES);
 
 		Features {
