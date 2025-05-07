@@ -6,5 +6,5 @@ commit_hash_with_script!(
 	"867b1828618ad33bfb3b10c50665cb67113f60e2",          // Commit hash
 	6,                                                   // Bytecode version
 	"post-l1-merge.mrb",                                 // MRB file name
-	"CACHE_POST_L1_MERGE_FRAMEWORK_RELEASE"              // Cache environment variable for the post-l1-merge framework release
+	"CACHE_POST_L1_MERGE_FRAMEWORK_RELEASE" // Cache environment variable for the post-l1-merge framework release
 );
