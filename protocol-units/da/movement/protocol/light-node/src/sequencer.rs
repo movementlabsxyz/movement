@@ -283,7 +283,7 @@ where
 		let (sender, mut receiver) = tokio::sync::mpsc::channel(BLOCK_PROPOSER_CHANNEL_BUFFER_SIZE);
 
 		loop {
-			info!(target: "movement_timing", "START: run_block_propoer iteration");
+			info!(target: "movement_timing", "START: run_block_proposer iteration");
 			match futures::try_join!(
 				self.run_block_builder(sender.clone()),
 				self.run_block_publisher(&mut receiver),
