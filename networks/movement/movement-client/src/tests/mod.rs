@@ -324,7 +324,7 @@ async fn test_complex_alice_internal() -> Result<(), anyhow::Error> {
 	let five_sec = time::Duration::from_millis(5000);
 	thread::sleep(five_sec);
 
-	let yaml_content = fs::read_to_string(".aptos/config.yaml")?;
+	let yaml_content = fs::read_to_string(".movement/config.yaml")?;
 
 	let config: Config = serde_yaml::from_str(&yaml_content)?;
 
