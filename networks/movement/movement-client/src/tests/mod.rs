@@ -309,7 +309,7 @@ async fn test_complex_alice_internal() -> Result<(), anyhow::Error> {
 
 	// Get the root path of the cargo workspace
 	let root: PathBuf = cargo_workspace()?;
-	let additional_path = "networks/movement/movements-tests/src/tests/complex-alice/";
+	let additional_path = "networks/movement/movement-client/src/tests/complex-alice/";
 	let combined_path = root.join(additional_path);
 
 	// Convert the combined path to a string
@@ -324,7 +324,7 @@ async fn test_complex_alice_internal() -> Result<(), anyhow::Error> {
 	let five_sec = time::Duration::from_millis(5000);
 	thread::sleep(five_sec);
 
-	let yaml_content = fs::read_to_string(".aptos/config.yaml")?;
+	let yaml_content = fs::read_to_string(".movement/config.yaml")?;
 
 	let config: Config = serde_yaml::from_str(&yaml_content)?;
 
@@ -584,7 +584,7 @@ pub async fn test_hey_partners() -> Result<(), anyhow::Error> {
 
 async fn test_hey_partners_internal() -> Result<(), anyhow::Error> {
 	let root: PathBuf = cargo_workspace()?;
-	let additional_path = "networks/movement/movements-tests/src/tests/hey-partners/";
+	let additional_path = "networks/movement/movement-client/src/tests/hey-partners/";
 	let combined_path = root.join(additional_path);
 
 	let test = combined_path.to_string_lossy();
