@@ -14,6 +14,9 @@ use movement_da_sequencer_client::DaSequencerClient;
 use movement_da_sequencer_client::GrpcDaSequencerClient;
 use movement_da_sequencer_proto::BlockV1;
 use movement_da_sequencer_proto::StreamReadFromHeightRequest;
+use movement_signer::cryptography::ed25519::Ed25519;
+use movement_signer_loader::identifiers::SignerIdentifier;
+use movement_signer_loader::{Load, LoadedSigner};
 use movement_types::block::{Block, BlockCommitment, BlockCommitmentEvent};
 use tokio::select;
 use tokio_stream::{Stream, StreamExt};
@@ -69,6 +72,8 @@ where
 		da_connection_url: Url,
 		stream_heartbeat_interval_sec: u64,
 		allow_sync_from_zero: bool,
+		propagate_execution_state: bool,
+		da_batch_signer: &SignerIdentifier,
 	) -> anyhow::Result<()> {
 		let synced_height = self.da_db.get_synced_height()?;
 		// Sync Da from 0 is rejected by default. Only if forced it's allowed.
@@ -107,6 +112,26 @@ where
 							let main_node_state = node_state_verifier.get_state(new_state.block_height.into());
 							tracing::error!("State from Da verification failed, local node state: {new_state:?} main_node_state:{main_node_state:?}");
 							break;
+						}
+
+						// If main node send new execution result state
+						if propagate_execution_state {
+							tokio::spawn({
+								let mut client = da_client.clone();
+								let signer: LoadedSigner<Ed25519> = da_batch_signer.load().await?;
+								let state = movement_da_sequencer_proto::MainNodeState {
+									block_height: new_state.block_height,
+									ledger_timestamp:  new_state.ledger_timestamp,
+									ledger_version: new_state.ledger_version,
+
+								};
+								async move {
+									if let Err(err) = client.send_state(&signer, state).await {
+										tracing::error!("Send execution state to da sequencer failed : {err}");
+									}
+								}
+							});
+
 						}
 					}
 				}
@@ -173,7 +198,7 @@ where
 					&mut executor,
 					block,
 					block_timestamp,
-					1, //block_retry_count,
+					block_retry_count,
 					block_retry_increment_microseconds,
 				)?;
 
