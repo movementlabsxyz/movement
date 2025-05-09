@@ -28,23 +28,23 @@ impl Executor {
 		block: ExecutableBlock,
 	) -> Result<BlockCommitment, anyhow::Error> {
 		let (block_metadata, block, senders_and_sequence_numbers) = {
-			// get the block metadata transaction
-			let metadata_access_block = block.transactions.clone();
-			let metadata_access_transactions = metadata_access_block.into_txns();
+			// Break down the block into parts that will be used in execution
+			let block_id = block.block_id;
+			let transactions = block.transactions.into_txns();
 
-			let first_signed = metadata_access_transactions
+			let first_signed = transactions
 				.first()
 				.ok_or(anyhow::anyhow!("Block must contain a block metadata transaction"))?;
 			// cloning is cheaper than moving the array
 			let block_metadata = match first_signed.clone().into_inner() {
-				Transaction::BlockMetadata(metadata) => metadata.clone(),
+				Transaction::BlockMetadata(metadata) => metadata,
 				_ => {
 					anyhow::bail!("First transaction in block must be a block metadata transaction")
 				}
 			};
 
 			// senders and sequence numbers
-			let senders_and_sequence_numbers = metadata_access_transactions
+			let senders_and_sequence_numbers = transactions
 				.iter()
 				.map(|transaction| match transaction.clone().into_inner() {
 					Transaction::UserTransaction(transaction) => (
@@ -57,10 +57,8 @@ impl Executor {
 				.collect::<Vec<(HashValue, AccountAddress, u64)>>();
 
 			// reconstruct the block
-			let block = ExecutableBlock::new(
-				block.block_id.clone(),
-				ExecutableTransactions::Unsharded(metadata_access_transactions),
-			);
+			let block =
+				ExecutableBlock::new(block_id, ExecutableTransactions::Unsharded(transactions));
 
 			(block_metadata, block, senders_and_sequence_numbers)
 		};

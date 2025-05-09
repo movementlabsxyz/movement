@@ -87,7 +87,7 @@ where
 
 impl MovementPartialNode<Executor> {
 	pub async fn try_executor_from_config(
-		config: Config,
+		config: &Config,
 		mempool_tx_exec_result_sender: futures::channel::mpsc::Sender<Vec<TxExecutionResult>>,
 	) -> Result<Executor, anyhow::Error> {
 		let executor = Executor::try_from_config(
@@ -156,12 +156,8 @@ impl MovementPartialNode<Executor> {
 		};
 
 		debug!("Creating the executor");
-		let executor = Executor::try_from_config(
-			config.execution_config.maptos_config.clone(),
-			mempool_tx_exec_result_sender,
-		)
-		.await
-		.context("Failed to create the inner executor")?;
+		let executor =
+			Self::try_executor_from_config(&config, mempool_tx_exec_result_sender).await?;
 
 		let (settlement_manager, commitment_events) = if config.mcr.should_settle() {
 			debug!("Creating the settlement client");
