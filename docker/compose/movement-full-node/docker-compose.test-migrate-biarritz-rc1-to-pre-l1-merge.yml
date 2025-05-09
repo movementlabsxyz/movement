@@ -39,5 +39,5 @@ services:
     depends_on:
       movement-full-node:
         condition: service_healthy
-      movement-faucet:
+      movement-faucet-service:
         condition: service_healthy
