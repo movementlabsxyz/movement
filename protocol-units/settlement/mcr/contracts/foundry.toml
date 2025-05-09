@@ -5,6 +5,7 @@ libs = ["lib"]
 ffi = true
 gas_limit = 9223372036854775807  # this is only needed for the multiround settlement test
 build_info = true
+via_ir = true
 extra_output = ["storageLayout"]
 
 solc = "0.8.26"
