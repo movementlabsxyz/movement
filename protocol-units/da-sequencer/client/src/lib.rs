@@ -246,7 +246,7 @@ pub async fn sign_and_encode_batch(
 }
 
 /// Serializes a full node batch with verifying key and signature prepended.
-fn serialize_full_node_batch(
+pub fn serialize_full_node_batch(
 	verifying_key: VerifyingKey,
 	signature: Signature,
 	mut data: Vec<u8>,

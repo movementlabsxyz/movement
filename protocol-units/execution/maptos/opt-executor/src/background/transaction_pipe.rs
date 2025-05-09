@@ -584,6 +584,13 @@ mod tests {
 			batch.into_iter().for_each(|tx| self.received_tx.lock().unwrap().push(tx));
 			Ok(BatchWriteResponse { answer: true })
 		}
+		async fn send_state(
+			&mut self,
+			signer: &LoadedSigner<Ed25519>,
+			state: movement_da_sequencer_proto::MainNodeState,
+		) -> Result<movement_da_sequencer_proto::BatchWriteResponse, tonic::Status> {
+			Ok(BatchWriteResponse { answer: true })
+		}
 	}
 
 	fn create_signed_transaction(sequence_number: u64, chain_config: &Config) -> SignedTransaction {

@@ -241,6 +241,7 @@ mod tests {
 		HashValue, PrivateKey, Uniform,
 	};
 	use aptos_mempool::MempoolClientRequest;
+	use aptos_sdk::types::account_config::aptos_test_root_address;
 	use aptos_sdk::{
 		transaction_builder::TransactionFactory,
 		types::{AccountKey, LocalAccount},
@@ -404,7 +405,7 @@ mod tests {
 				]));
 			debug!("Number of transactions: {}", transactions.num_transactions());
 			let block = ExecutableBlock::new(block_id.clone(), transactions);
-			let block_commitment = executor.execute_block(block)?;
+			let (block_commitment, _) = executor.execute_block(block)?;
 
 			// Access the database reader to verify state after execution.
 			let db_reader = executor.db_reader();
