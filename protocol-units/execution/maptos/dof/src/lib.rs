@@ -1,6 +1,7 @@
 mod services;
 pub mod v1;
 
+use maptos_opt_executor::executor::ExecutionState;
 use maptos_opt_executor::executor::TxExecutionResult;
 use services::Services;
 use tokio::sync::mpsc::UnboundedReceiver;
@@ -42,7 +43,7 @@ pub trait DynOptFinExecutor {
 	fn execute_block_opt(
 		&mut self,
 		block: ExecutableBlock,
-	) -> Result<BlockCommitment, anyhow::Error>;
+	) -> Result<(BlockCommitment, ExecutionState), anyhow::Error>;
 
 	/// Update the height of the latest finalized block
 	fn set_finalized_block_height(&self, block_height: u64) -> Result<(), anyhow::Error>;

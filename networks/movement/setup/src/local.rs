@@ -63,6 +63,9 @@ impl Local {
 			.join(".maptos");
 		config.execution_config.maptos_config.chain.maptos_db_path.replace(db_path);
 
+		// Set as main node that send state.
+		config.execution_config.maptos_config.da_sequencer.propagate_execution_state = true;
+
 		// write the maptos signer address to the default signer address whitelist
 		let default_signer_address_whitelist_path =
 			dot_movement.get_path().join("default_signer_address_whitelist");

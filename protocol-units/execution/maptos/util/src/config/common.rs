@@ -87,6 +87,13 @@ env_default!(
 	10
 );
 
+env_default!(
+	default_propagate_execution_state,
+	"MOVEMENT_DA_PROPAGATE_EXECUTION_STATE",
+	bool,
+	false
+);
+
 pub fn default_batch_signer_identifier() -> SignerIdentifier {
 	match std::env::var("MAPTOS_DA_SEQUENCER_SIGNER_IDENTIFIER") {
 		Ok(val) => SignerIdentifier::try_from_canonical_string(&val).unwrap(),

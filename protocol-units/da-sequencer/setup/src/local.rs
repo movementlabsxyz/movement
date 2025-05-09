@@ -5,7 +5,7 @@ use movement_signer_loader::{Load, LoadedSigner};
 
 pub async fn setup_movement_node(
 	dot_movement: &dot_movement::DotMovement,
-	da_sequencer_config: DaSequencerConfig,
+	mut da_sequencer_config: DaSequencerConfig,
 	maptos_config: &maptos_execution_util::config::Config,
 ) -> Result<DaSequencerConfig, anyhow::Error> {
 	//update whitelist with node public key.
@@ -22,6 +22,10 @@ pub async fn setup_movement_node(
 	}
 	Whitelist::save(&whitelist_path, &[verifying_key])?;
 
+	// Register the full node has main node for state propagation.
+	let pk_str = hex::encode(verifying_key.to_bytes());
+
+	da_sequencer_config.main_node_verifying_key = Some(pk_str);
 	tracing::info!("Da Sequencer local setup done.");
 	Ok(da_sequencer_config)
 }

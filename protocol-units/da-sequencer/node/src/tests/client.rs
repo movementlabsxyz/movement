@@ -35,7 +35,7 @@ async fn test_should_write_batch() {
 		.parse::<SocketAddr>()
 		.expect("Bad da sequencer listener address.");
 	let grpc_jh =
-		tokio::spawn(async move { run_server(grpc_address, request_tx, whitelist).await });
+		tokio::spawn(async move { run_server(grpc_address, request_tx, whitelist, None).await });
 
 	//start main loop
 	let storage_mock = StorageMock::new();
@@ -86,7 +86,7 @@ async fn test_write_batch_gprc_main_loop_failed_validate_batch() {
 		.expect("Bad da sequencer listener address.");
 
 	let grpc_jh =
-		tokio::spawn(async move { run_server(grpc_address, request_tx, whitelist).await });
+		tokio::spawn(async move { run_server(grpc_address, request_tx, whitelist, None).await });
 
 	//start main loop
 	let storage_mock = StorageMock::new();
@@ -162,7 +162,7 @@ async fn test_produce_block_and_stream() {
 		.parse::<SocketAddr>()
 		.expect("Bad da sequencer listener address.");
 	let grpc_jh =
-		tokio::spawn(async move { run_server(grpc_address, request_tx, whitelist).await });
+		tokio::spawn(async move { run_server(grpc_address, request_tx, whitelist, None).await });
 
 	//start main loop
 	let storage_mock = StorageMock::new();
@@ -254,7 +254,7 @@ async fn test_grpc_client_should_write_one_batch_with_a_correct_whitelist() {
 	let grpc_address = "0.0.0.0:30703"
 		.parse::<SocketAddr>()
 		.expect("Bad da sequencer listener address.");
-	let grpc_task = tokio::spawn(run_server(grpc_address, request_tx, whitelist));
+	let grpc_task = tokio::spawn(run_server(grpc_address, request_tx, whitelist, None));
 	let main_loop = tokio::spawn(async move {
 		let storage = StorageMock::new();
 		let da = CelestiaMock::new();
@@ -303,7 +303,7 @@ async fn test_grpc_client_should_write_one_batch_with_an_empty_whitelist() {
 		.parse::<SocketAddr>()
 		.expect("Bad da sequencer listener address.");
 	let _grpc_jh =
-		tokio::spawn(async move { run_server(grpc_address, request_tx, whitelist).await });
+		tokio::spawn(async move { run_server(grpc_address, request_tx, whitelist, None).await });
 
 	let storage_mock = StorageMock::new();
 	let celestia_mock = CelestiaMock::new();
@@ -352,7 +352,7 @@ async fn test_grpc_client_should_write_one_batch_with_a_wrong_verifying_key_in_w
 		.parse::<SocketAddr>()
 		.expect("Bad da sequencer listener address.");
 	let _grpc_jh =
-		tokio::spawn(async move { run_server(grpc_address, request_tx, whitelist).await });
+		tokio::spawn(async move { run_server(grpc_address, request_tx, whitelist, None).await });
 
 	let storage_mock = StorageMock::new();
 	let celestia_mock = CelestiaMock::new();
@@ -395,7 +395,7 @@ async fn test_write_batch_grpc_main_loop_bad_signature() {
 		.parse::<SocketAddr>()
 		.expect("Bad da sequencer listener address.");
 	let _grpc_jh =
-		tokio::spawn(async move { run_server(grpc_address, request_tx, whitelist).await });
+		tokio::spawn(async move { run_server(grpc_address, request_tx, whitelist, None).await });
 
 	let storage_mock = StorageMock::new();
 	let celestia_mock = CelestiaMock::new();
@@ -437,7 +437,7 @@ async fn test_missed_grpc_heartbeat_twice_triggers_alert() {
 	let whitelist = make_test_whitelist(vec![verifying_key.clone()]);
 
 	let grpc_address = "0.0.0.0:30799".parse::<SocketAddr>().expect("Bad address");
-	let grpc_task = tokio::spawn(run_server(grpc_address, request_tx, whitelist));
+	let grpc_task = tokio::spawn(run_server(grpc_address, request_tx, whitelist, None));
 
 	let storage_mock = StorageMock::new();
 	let celestia_mock = CelestiaMock::new();
@@ -478,7 +478,7 @@ async fn test_missed_grpc_heartbeat_once_does_not_trigger_alert() {
 	let whitelist = make_test_whitelist(vec![verifying_key.clone()]);
 
 	let grpc_address = "0.0.0.0:30800".parse::<SocketAddr>().expect("Bad address");
-	let grpc_task = tokio::spawn(run_server(grpc_address, request_tx, whitelist));
+	let grpc_task = tokio::spawn(run_server(grpc_address, request_tx, whitelist, None));
 
 	let storage_mock = StorageMock::new();
 	let celestia_mock = CelestiaMock::new();

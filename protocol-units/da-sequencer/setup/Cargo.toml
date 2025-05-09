@@ -18,6 +18,7 @@ tracing-subscriber = { workspace = true }
 anyhow = { workspace = true }
 tracing = { workspace = true }
 ed25519-dalek = { workspace = true }
+hex = { workspace = true }
 
 maptos-execution-util = { workspace = true }
 movement-signer = { workspace = true }

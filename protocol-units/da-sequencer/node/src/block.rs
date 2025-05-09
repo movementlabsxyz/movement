@@ -7,6 +7,19 @@ use crate::error::DaSequencerError;
 // TODO: use a sensible value for the max sequencer block size
 pub const MAX_SEQUENCER_BLOCK_SIZE: u64 = 100_000_000; // 100 MB
 
+#[derive(Debug, Clone)]
+pub struct NodeState {
+	pub block_height: u64,
+	pub ledger_timestamp: u64,
+	pub ledger_version: u64,
+}
+
+impl NodeState {
+	pub fn new(block_height: u64, ledger_timestamp: u64, ledger_version: u64) -> Self {
+		NodeState { block_height, ledger_timestamp, ledger_version }
+	}
+}
+
 #[derive(
 	Serialize, Deserialize, Clone, Copy, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord,
 )]

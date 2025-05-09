@@ -7,6 +7,7 @@ use async_trait::async_trait;
 use futures::channel::mpsc as futures_mpsc;
 use maptos_execution_util::config::Config;
 use maptos_fin_view::FinalityView;
+use maptos_opt_executor::executor::ExecutionState;
 use maptos_opt_executor::executor::TxExecutionResult;
 use maptos_opt_executor::executor::EXECUTOR_CHANNEL_SIZE;
 use maptos_opt_executor::{Context as OptContext, Executor as OptExecutor};
@@ -97,7 +98,7 @@ impl DynOptFinExecutor for Executor {
 	fn execute_block_opt(
 		&mut self,
 		block: ExecutableBlock,
-	) -> Result<BlockCommitment, anyhow::Error> {
+	) -> Result<(BlockCommitment, ExecutionState), anyhow::Error> {
 		debug!("Executing block: {:?}", block.block_id);
 		self.executor.execute_block(block)
 	}
@@ -365,7 +366,7 @@ mod tests {
 			.collect(),
 		);
 		let block = ExecutableBlock::new(block_id.clone(), txs);
-		let commitment = executor.execute_block_opt(block)?;
+		let (commitment, _) = executor.execute_block_opt(block)?;
 
 		assert_eq!(commitment.block_id().to_vec(), block_id.to_vec());
 		assert_eq!(commitment.height(), 1);
@@ -396,7 +397,7 @@ mod tests {
 			unbounded_channel::<Vec<TxExecutionResult>>();
 
 		let (mut executor, _tempdir) = setup(config.clone(), mempool_tx_exec_result_sender).await?;
-		let (tx_sender, mut tx_receiver) = mpsc::channel(16);
+		let (_tx_sender, mut tx_receiver) = mpsc::channel(16);
 		let (context, background) = executor.background(mempool_commit_tx_receiver, &config)?;
 		let services = context.services();
 		let api = services.get_opt_apis();
@@ -557,7 +558,7 @@ mod tests {
 	async fn test_set_finalized_block_height_get_fin_api() -> Result<(), anyhow::Error> {
 		// Create an executor instance from the environment configuration.
 		let config = Config::default();
-		let (tx_sender, _tx_receiver) = mpsc::channel::<Vec<(u64, SignedTransaction)>>(16);
+		let (_tx_sender, _tx_receiver) = mpsc::channel::<Vec<(u64, SignedTransaction)>>(16);
 
 		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
 			unbounded_channel::<Vec<TxExecutionResult>>();
