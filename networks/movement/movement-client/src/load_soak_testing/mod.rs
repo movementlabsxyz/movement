@@ -6,6 +6,7 @@ use std::{fs::File, sync::Arc};
 use tracing_subscriber::{filter, prelude::*};
 
 mod scenario;
+pub mod util;
 pub use scenario::Scenario;
 
 const EXEC_LOG_FILTER: &str = "exec";
@@ -31,7 +32,7 @@ pub fn init_test(config: &ExecutionConfig) -> Result<(), std::io::Error> {
 	tracing_subscriber::registry()
 		.with(
 			stdout_log
-				.with_filter(filter::LevelFilter::INFO)
+				.with_filter(filter::LevelFilter::WARN)
 				.and_then(file_log.with_filter(filter::LevelFilter::WARN))
 				// Add a filter that rejects spans and
 				// events whose targets start with `exec`.

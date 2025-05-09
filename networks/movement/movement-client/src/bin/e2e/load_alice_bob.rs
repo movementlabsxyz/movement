@@ -4,13 +4,15 @@ use aptos_sdk::{
 	rest_client::{Client, FaucetClient},
 	types::LocalAccount,
 };
+use movement_client::load_soak_testing::util::add_account_to_accounts_file;
+use movement_client::load_soak_testing::util::create_signed_transfer_transaction;
+use movement_client::load_soak_testing::util::get_account_from_list;
+use movement_client::load_soak_testing::util::FAUCET_URL;
+use movement_client::load_soak_testing::util::NODE_URL;
 use movement_client::load_soak_testing::{execute_test, init_test, ExecutionConfig, Scenario};
-use once_cell::sync::Lazy;
-use tracing::info;
-use url::Url;
-
-use std::str::FromStr;
+use std::path::Path;
 use std::sync::Arc;
+use tracing::info;
 
 fn main() {
 	// Define the Test config. Use the default parameters.
@@ -43,53 +45,6 @@ impl BasicScenario {
 	}
 }
 
-static SUZUKA_CONFIG: Lazy<movement_config::Config> = Lazy::new(|| {
-	let dot_movement = dot_movement::DotMovement::try_from_env().unwrap();
-	let config = dot_movement.try_get_config_from_json::<movement_config::Config>().unwrap();
-	config
-});
-
-static NODE_URL: Lazy<Url> = Lazy::new(|| {
-	let node_connection_address = SUZUKA_CONFIG
-		.execution_config
-		.maptos_config
-		.client
-		.maptos_rest_connection_hostname
-		.clone();
-	let node_connection_port = SUZUKA_CONFIG
-		.execution_config
-		.maptos_config
-		.client
-		.maptos_rest_connection_port
-		.clone();
-
-	let node_connection_url =
-		format!("http://{}:{}", node_connection_address, node_connection_port);
-	//	let node_connection_url = "http://ec2-52-70-67-75.compute-1.amazonaws.com".to_string();
-
-	Url::from_str(node_connection_url.as_str()).unwrap()
-});
-
-static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
-	let faucet_listen_address = SUZUKA_CONFIG
-		.execution_config
-		.maptos_config
-		.client
-		.maptos_faucet_rest_connection_hostname
-		.clone();
-	let faucet_listen_port = SUZUKA_CONFIG
-		.execution_config
-		.maptos_config
-		.client
-		.maptos_faucet_rest_connection_port
-		.clone();
-
-	let faucet_listen_url = format!("http://{}:{}", faucet_listen_address, faucet_listen_port);
-	//	let faucet_listen_url = "http://ec2-52-70-67-75.compute-1.amazonaws.com:81".to_string();
-
-	Url::from_str(faucet_listen_url.as_str()).unwrap()
-});
-
 #[async_trait::async_trait]
 impl Scenario for BasicScenario {
 	#[tracing::instrument(skip(self), fields(scenario = self.id))]
@@ -97,39 +52,63 @@ impl Scenario for BasicScenario {
 		let rest_client = Client::new(NODE_URL.clone());
 		let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
 		let faucet_client = faucet_client.with_auth_token("notreal".to_string());
-		let coin_client = CoinClient::new(&rest_client);
 
-		// Create two accounts locally, Alice and Bob.
-		let mut alice = LocalAccount::generate(&mut rand::rngs::OsRng);
-		let bob = LocalAccount::generate(&mut rand::rngs::OsRng); // <:!:section_2
+		if std::env::var_os("TEST_ALICE_BOB_ACCOUNT_READ_FROM_FILE").is_some() {
+			//bob always 0. Only use to receive transfer.
+			let (priv_key, address) = get_account_from_list(0)?;
+			let sequence_number = match rest_client.get_account(address).await {
+				Ok(response) => response.into_inner().sequence_number,
+				Err(_) => {
+					tracing::warn!("File private_key:{priv_key} not created, create it.");
+					faucet_client.fund(address, 100_000_000_000).await.unwrap();
+					0
+				}
+			};
+			self.bob = Some(LocalAccount::new(address, priv_key, sequence_number));
+			// Alice account is the scenario id   + 1 (because bob is 0)
+			let (priv_key, address) = get_account_from_list(self.id + 1)?;
+			let sequence_number = match rest_client.get_account(address).await {
+				Ok(response) => response.into_inner().sequence_number,
+				Err(_) => {
+					tracing::warn!("File private_key:{priv_key} not created, create it.");
+					faucet_client.fund(address, 100_000_000_000).await.unwrap();
+					0
+				}
+			};
+			info!("Scenario:{} prepare done. account loaded", self.id,);
+			self.alice = Some(LocalAccount::new(address, priv_key, sequence_number));
+		} else {
+			//create and fund a new account.
 
-		// Print account addresses.
-		info!(
-			address_alice = %alice.address().to_hex_literal(),
-			address_bob = %bob.address().to_hex_literal(),
-			"accounts created",
-		);
+			// Create two accounts locally, Alice and Bob.
+			let alice = LocalAccount::generate(&mut rand::rngs::OsRng);
+			let bob = LocalAccount::generate(&mut rand::rngs::OsRng); // <:!:section_2
 
-		// Create the accounts on chain, but only fund Alice.
-		faucet_client.fund(alice.address(), 100_000_000_000).await.unwrap();
-		faucet_client.create_account(bob.address()).await.unwrap();
+			// Print account addresses.
+			info!(
+				address_alice = %alice.address().to_hex_literal(),
+				address_bob = %bob.address().to_hex_literal(),
+				"accounts created",
+			);
 
-		// Have Alice send Bob some coins.
-		let pending_tx = coin_client
-			.transfer(&mut alice, bob.address(), 1_000_000, None)
-			.await
-			.context("Prepare Failed to submit transaction to transfer coins")?;
+			// Create the accounts on chain, but only fund Alice.
+			faucet_client.fund(alice.address(), 100_000_000_000).await.unwrap();
+			faucet_client.create_account(bob.address()).await.unwrap();
+			info!("Scenario:{} prepare done. account created and founded", self.id,);
 
-		info!(tx_hash = %pending_tx.hash, "waiting for transaction");
-		rest_client
-			.wait_for_transaction(&pending_tx)
-			.await
-			.context("Prepare Failed when waiting for the transfer transaction")?;
+			if let Some(account_file) = std::env::var_os("TEST_ALICE_BOB_ACCOUNT_FILE_PATH") {
+				let account_file = Path::new(&account_file);
+				add_account_to_accounts_file(
+					account_file,
+					alice.public_key(),
+					alice.private_key(),
+				)?;
+			}
 
-		info!("account created and funded");
+			self.alice = Some(alice);
+			self.bob = Some(bob);
+		}
 
-		self.alice = Some(alice);
-		self.bob = Some(bob);
 		Ok(())
 	}
 
@@ -141,34 +120,37 @@ impl Scenario for BasicScenario {
 		let alice = self.alice.as_mut().unwrap();
 		let bob = self.bob.as_mut().unwrap();
 
+		let mut sequence_number = alice.sequence_number();
+
 		for index in 0..2 {
-			// Have Bob send Alice some coins.
-			info!("Scenario:{} Before Sent Tx Alice -> Bob index:{index}", self.id);
-			let pending_tx = coin_client
-				.transfer(bob, alice.address(), 10, None)
-				.await
-				//				.context("Failed to submit transaction to transfer coins")
-				.map_err(|err| anyhow::anyhow!("Alice Tx sublit failed because {err}"))?;
-			info!(scenario = %self.id, tx_hash = %pending_tx.hash, index = %index, "waiting for Bob -> Alice transfer to complete");
-
-			rest_client.wait_for_transaction(&pending_tx).await.map_err(|err| {
-				anyhow::anyhow!("Alice Tx failed:{pending_tx:?} index:{index} because {err}")
-			})?;
-
+			//			let _ = tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
 			// Have Alice send Bob some more coins.
-			info!("Scenario:{} Before Sent Tx Bob -> Alice index:{index}", self.id);
-			let pending_tx = coin_client
-				.transfer(alice, bob.address(), 10, None)
-				.await
-				//				.context("Failed to submit transaction to transfer coins")
-				.map_err(|err| {
-					anyhow::anyhow!("Bob Tx submit index:{index} failed because {err}")
-				})?;
-			info!(scenario = %self.id, tx_hash = %pending_tx.hash, index = %index, "waiting for Alice -> Bob transfer to complete");
+			// let pending_tx = coin_client
+			// 	.transfer(alice, bob.address(), 10, None)
+			// 	.await
+			// 	.map_err(|err| anyhow::anyhow!("Alice Tx submit failed because {err}"))?;
 
-			rest_client.wait_for_transaction(&pending_tx).await.map_err(|err| {
-				anyhow::anyhow!("Bob Tx failed:{pending_tx:?} index:{index} because {err}")
-			})?;
+			let pending_tx = create_signed_transfer_transaction(
+				250,
+				&alice,
+				bob.address(),
+				100,
+				sequence_number,
+			)
+			.await?;
+			let tx_hash = rest_client.submit(&pending_tx).await.unwrap().into_inner();
+
+			sequence_number += 1;
+
+			//			info!(scenario = %self.id, tx_hash = ?tx_hash, index = %index, "waiting for Alice -> Bod transfer to complete");
+
+			rest_client
+				.wait_for_transaction(&tx_hash)
+				.await
+				.map_err(|err| {
+					anyhow::anyhow!("Alice Tx failed:{pending_tx:?} index:{index} because {err}")
+				})
+				.unwrap();
 		}
 
 		// Print final balances.
