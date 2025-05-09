@@ -13,7 +13,7 @@ services:
     restart: "no"
 
   movement-full-node:
-    image: movementlabs/movement-full-node:latest
+    image: ghcr.io/movementlabsxyz/movement-full-node:3fd678d
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8080/-/healthy || exit 1"]
       interval: 5s
