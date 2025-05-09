@@ -11,6 +11,9 @@ rust-version = { workspace = true }
 
 ### define here all scenarios execution binaries 
 [[bin]]
+name = "test_expirity"
+path = "src/bin/test_expirity.rs"
+[[bin]]
 name = "demo_scenario"
 path = "src/bin/e2e/demo_scenario.rs"
 
