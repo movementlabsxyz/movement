@@ -14,7 +14,7 @@ use aptos_types::{
 use aptos_vm::AptosVM;
 use aptos_vm_genesis::{encode_genesis_change_set, GenesisConfiguration, TestValidator, Validator};
 use maptos_framework_release_util::Release;
-use tracing::warn;
+use tracing::debug;
 
 use std::path::Path;
 
@@ -29,7 +29,7 @@ fn genesis_change_set_and_validators(
 	let validators_: Vec<Validator> = test_validators.iter().map(|t| t.data.clone()).collect();
 	let validators = &validators_;
 
-	warn!("Genesis validators: {:?}", validators);
+	debug!("genesis validators: {:?}", validators);
 
 	// This number should not exceed u64::MAX / 1_000_000_000
 	// to avoid overflowing calculations in aptos-vm-genesis.
