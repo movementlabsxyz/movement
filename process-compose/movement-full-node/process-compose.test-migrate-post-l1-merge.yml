@@ -1,0 +1,18 @@
+version: "3"
+
+processes:
+
+  setup:
+    environment:
+      - "KNOWN_FRAMEWORK_RELEASE=biarritz-rc1"
+      - APTOS_ACCOUNT_WHITELIST=$DOT_MOVEMENT_PATH/default_signer_address_whitelist
+      - MAPTOS_PRIVATE_KEY=random
+
+  test-migrate-pre-to-post-l1-merge:
+    command: |
+      cargo run --bin aptos-framework-post-l1-merge-release-tool
+    depends_on:
+      movement-full-node:
+        condition: process_healthy
+      movement-faucet:
+        condition: process_healthy

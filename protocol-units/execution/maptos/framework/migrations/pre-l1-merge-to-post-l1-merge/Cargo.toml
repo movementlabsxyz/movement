@@ -1,0 +1,22 @@
+[package]
+name = "pre-l1-merge-to-post-l1-merge"
+description = "post-l1-merge migration"
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+
+version = { workspace = true }
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+maptos-framework-release-util = { workspace = true }
+aptos-sdk = { workspace = true }
+aptos-framework-biarritz-rc1-release = { workspace = true }
+aptos-framework-pre-l1-merge-release = { workspace = true }
+thiserror = { workspace = true }
+dot-movement = { workspace = true }
+movement-config = { workspace = true }
