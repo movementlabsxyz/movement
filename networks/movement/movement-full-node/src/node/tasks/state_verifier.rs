@@ -11,6 +11,26 @@ pub struct NodeState {
 	pub ledger_version: u64,
 }
 
+impl From<&MainNodeState> for NodeState {
+	fn from(main_node_state: &MainNodeState) -> Self {
+		NodeState {
+			block_height: main_node_state.block_height,
+			ledger_timestamp: main_node_state.ledger_timestamp,
+			ledger_version: main_node_state.ledger_version,
+		}
+	}
+}
+
+impl From<&ExecutionState> for NodeState {
+	fn from(state: &ExecutionState) -> Self {
+		NodeState {
+			block_height: state.block_height,
+			ledger_timestamp: state.ledger_timestamp,
+			ledger_version: state.ledger_version,
+		}
+	}
+}
+
 pub struct StateVerifier {
 	states: BTreeMap<u64, NodeState>,
 }
@@ -20,27 +40,21 @@ impl StateVerifier {
 		StateVerifier { states: BTreeMap::new() }
 	}
 
-	pub fn validate(&self, local_state: &ExecutionState) -> bool {
+	pub fn validate(&self, local_state: &NodeState) -> bool {
 		//if the height is not present, return true.
 		self.states
 			.get(&local_state.block_height.into())
 			.map(|s| {
-				let ledger_timestamp: u64 = local_state.ledger_timestamp.into();
-				let ledger_version: u64 = local_state.ledger_version.into();
-				s.ledger_timestamp == ledger_timestamp && s.ledger_version == ledger_version
+				s.ledger_timestamp == local_state.ledger_timestamp
+					&& s.ledger_version == local_state.ledger_version
 			})
 			.unwrap_or(true)
 	}
 
-	pub fn add_state(&mut self, main_node_state: MainNodeState) {
+	pub fn add_state(&mut self, new_state: NodeState) {
 		if self.states.len() >= MAX_STATE_ENTRY {
 			self.states.pop_first();
 		}
-		let new_state = NodeState {
-			block_height: main_node_state.block_height,
-			ledger_timestamp: main_node_state.ledger_timestamp,
-			ledger_version: main_node_state.ledger_version,
-		};
 		// State can only be added once
 		if !self.states.contains_key(&new_state.block_height) {
 			self.states.insert(new_state.block_height, new_state);
@@ -62,24 +76,30 @@ mod test {
 
 		// Verify with no state stored. Validation true.
 		let state1 = ExecutionState { block_height: 1, ledger_timestamp: 2, ledger_version: 3 };
-		assert!(state_verifier.validate(&state1), "Empty state verifier validate a state");
+		assert!(
+			state_verifier.validate(&(&state1).into()),
+			"Empty state verifier validate a state"
+		);
 
 		// Add the same state and validate it
 		let new_state = MainNodeState { block_height: 1, ledger_timestamp: 2, ledger_version: 3 };
-		state_verifier.add_state(new_state);
-		assert!(state_verifier.validate(&state1), "Same state added doesn't valid.");
+		state_verifier.add_state((&new_state).into());
+		assert!(state_verifier.validate(&(&state1).into()), "Same state added doesn't valid.");
 
 		// Add a different state for same height and validate it
 		let state2 = ExecutionState { block_height: 1, ledger_timestamp: 3, ledger_version: 3 };
-		assert!(!state_verifier.validate(&state2), "Diff ts state valid");
+		assert!(!state_verifier.validate(&(&state2).into()), "Diff ts state valid");
 		let state3 = ExecutionState { block_height: 1, ledger_timestamp: 2, ledger_version: 4 };
-		assert!(!state_verifier.validate(&state3), "Diff version state valid");
+		assert!(!state_verifier.validate(&(&state3).into()), "Diff version state valid");
 
 		// Add a different state with same key
 		let new_state = MainNodeState { block_height: 1, ledger_timestamp: 3, ledger_version: 3 };
-		state_verifier.add_state(new_state);
-		assert!(state_verifier.validate(&state1), "State updated, old one doesn't validate");
-		assert!(!state_verifier.validate(&state2), "State updated, new one is valid");
+		state_verifier.add_state((&new_state).into());
+		assert!(
+			state_verifier.validate(&(&state1).into()),
+			"State updated, old one doesn't validate"
+		);
+		assert!(!state_verifier.validate(&(&state2).into()), "State updated, new one is valid");
 
 		// Fill the state, oldest height should be removed.
 		for index in 0u64..MAX_STATE_ENTRY as u64 {
@@ -88,10 +108,10 @@ mod test {
 				ledger_timestamp: index + 3,
 				ledger_version: index + 4,
 			};
-			state_verifier.add_state(state);
+			state_verifier.add_state((&state).into());
 		}
 		// Previous diff state should validate on height 1 that has been removed
-		assert!(state_verifier.validate(&state2), "Previous state2 not valid");
-		assert!(state_verifier.validate(&state1), "Previous state3 not valid");
+		assert!(state_verifier.validate(&(&state2).into()), "Previous state2 not valid");
+		assert!(state_verifier.validate(&(&state1).into()), "Previous state3 not valid");
 	}
 }

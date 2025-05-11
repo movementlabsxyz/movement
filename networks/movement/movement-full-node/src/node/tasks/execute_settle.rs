@@ -81,14 +81,15 @@ where
 			return Err(anyhow::anyhow!("Da Sync from height zero is not allowed."));
 		}
 
-		let mut node_state_verifier = StateVerifier::new();
+		let mut node_local_state_verifier = StateVerifier::new();
+		let mut node_main_state_verifier = StateVerifier::new();
 
 		info!("DA synced height: {:?}", synced_height);
 		let mut da_client =
 			GrpcDaSequencerClient::try_connect(&da_connection_url, stream_heartbeat_interval_sec)
 				.await?;
 		// TODO manage alert_channel in the issue #1169
-		let (mut blocks_from_da, alert_channel) = da_client
+		let (mut blocks_from_da, mut alert_channel) = da_client
 			.stream_read_from_height(StreamReadFromHeightRequest { height: synced_height })
 			.await
 			.map_err(|e| {
@@ -103,16 +104,23 @@ where
 					let span = info_span!(target: "movement_timing", "process_block_from_da", block_id = %hex::encode(response.block_id.clone()));
 					tracing::info!("Receive state from DA: {:?}",response.node_state);
 					if let Some(main_state) = response.node_state {
-						node_state_verifier.add_state(main_state);
+						// validate received state with local node executed state
+						if !node_main_state_verifier.validate(&(&main_state).into()) {
+							let main_node_state = node_main_state_verifier.get_state(main_state.block_height.into());
+							tracing::error!("Main State from Da verification failed, local node state: {main_state:?} main_node_state:{main_node_state:?}");
+							break;
+						}
+						node_local_state_verifier.add_state((&main_state).into());
 					}
 					let new_state = self.process_block_from_da(response).instrument(span).await?;
 					tracing::info!("New state after execution: {new_state:?}");
 					if let Some(new_state) = new_state {
-						if !node_state_verifier.validate(&new_state) {
-							let main_node_state = node_state_verifier.get_state(new_state.block_height.into());
-							tracing::error!("State from Da verification failed, local node state: {new_state:?} main_node_state:{main_node_state:?}");
+						if !node_local_state_verifier.validate(&(&new_state).into()) {
+							let main_node_state = node_local_state_verifier.get_state(new_state.block_height.into());
+							tracing::error!("Local state from Da verification failed, local node state: {new_state:?} main_node_state:{main_node_state:?}");
 							break;
 						}
+						node_main_state_verifier.add_state((&new_state).into());
 
 						// If main node send new execution result state
 						if propagate_execution_state {
@@ -140,7 +148,10 @@ where
 					info!("Received commitment event");
 					self.process_commitment_event(event).await?;
 				}
-				else => break,
+				_ = alert_channel.recv() => {
+					tracing::error!("Da client stream channel timeout because it's idle. Exit");
+					break;
+				}
 			}
 		}
 		Ok(())
