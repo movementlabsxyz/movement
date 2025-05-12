@@ -282,8 +282,6 @@ impl DaSequencerNodeService for DaSequencerNode {
 	}
 }
 
-pub struct GrpcBatchData {}
-
 impl TryFrom<SequencerBlock> for BlockV1 {
 	type Error = DaSequencerError;
 
