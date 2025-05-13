@@ -1,4 +1,6 @@
+use ed25519_dalek::VerifyingKey;
 use godfig::env_default;
+use hex::FromHex;
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 
@@ -26,6 +28,27 @@ pub struct DaSequencerConfig {
 
 	#[serde(default = "default_db_storage_relative_path")]
 	pub db_storage_relative_path: String,
+
+	#[serde(default)]
+	pub main_node_verifying_key: Option<String>,
+}
+
+impl DaSequencerConfig {
+	pub fn get_main_node_verifying_key(&self) -> Result<Option<VerifyingKey>, anyhow::Error> {
+		self.main_node_verifying_key
+			.clone()
+			.map(|str| {
+				//remove 0x at the beginning if exist
+				let str = str.strip_prefix("0x").unwrap_or(&str);
+				<[u8; 32]>::from_hex(str)
+					.map_err(|_| anyhow::anyhow!("Invalid main_node_verifying_key hex"))
+					.and_then(|hex| {
+						VerifyingKey::from_bytes(&hex)
+							.map_err(|_| anyhow::anyhow!("Invalid main_node_verifying_key key"))
+					})
+			})
+			.transpose()
+	}
 }
 
 env_default!(
@@ -71,6 +94,7 @@ impl Default for DaSequencerConfig {
 			stream_heartbeat_interval_sec: default_stream_heartbeat_interval_sec(),
 			whitelist_relative_path: default_whitelist_relative_path(),
 			db_storage_relative_path: default_db_storage_relative_path(),
+			main_node_verifying_key: None,
 		}
 	}
 }

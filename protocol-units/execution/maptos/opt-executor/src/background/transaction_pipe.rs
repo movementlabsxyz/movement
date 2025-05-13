@@ -348,6 +348,7 @@ impl TransactionPipe {
 			// Build batch and submit request.
 			tracing::info!("Build new batch with {} tx.", batch.len());
 			let loader: LoadedSigner<Ed25519> = da_batch_signer.load().await?;
+
 			//send the batch in a separate task to avoid to slow the loop.
 			let handle = tokio::spawn({
 				let mut client = da_client.clone();
@@ -581,6 +582,13 @@ mod tests {
 				};
 			tracing::info!("TxPipeTestDaSequencerClient that contains {} Tx", batch.len());
 			batch.into_iter().for_each(|tx| self.received_tx.lock().unwrap().push(tx));
+			Ok(BatchWriteResponse { answer: true })
+		}
+		async fn send_state(
+			&mut self,
+			signer: &LoadedSigner<Ed25519>,
+			state: movement_da_sequencer_proto::MainNodeState,
+		) -> Result<movement_da_sequencer_proto::BatchWriteResponse, tonic::Status> {
 			Ok(BatchWriteResponse { answer: true })
 		}
 	}

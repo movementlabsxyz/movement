@@ -1,27 +1,31 @@
 use crate::batch::FullNodeTxs;
 use crate::batch::{validate_batch, DaBatch, RawData};
+use crate::block::NodeState;
 use crate::block::{BlockHeight, SequencerBlock};
 use crate::whitelist::Whitelist;
 use crate::DaSequencerError;
+use ed25519_dalek::{Verifier, VerifyingKey};
+use movement_da_sequencer_client::serialize_node_state;
 use movement_da_sequencer_proto::da_sequencer_node_service_server::{
 	DaSequencerNodeService, DaSequencerNodeServiceServer,
 };
+use movement_da_sequencer_proto::{MainNodeState, MainNodeStateRequest};
 use movement_da_sequencer_proto::{
 	block_response::BlockType, BatchWriteRequest, BatchWriteResponse, BlockResponse, BlockV1,
 	ReadAtHeightRequest, ReadAtHeightResponse, StreamReadFromHeightRequest,
 	StreamReadFromHeightResponse,
 };
+use std::net::SocketAddr;
 use tokio::sync::{mpsc, oneshot};
 use tokio_stream::Stream;
 use tonic::transport::Server;
-
-use std::net::SocketAddr;
 
 /// Runs the server
 pub async fn run_server(
 	address: SocketAddr,
 	request_tx: mpsc::Sender<GrpcRequests>,
 	whitelist: Whitelist,
+	main_node_verifying_key: Option<VerifyingKey>,
 ) -> Result<(), anyhow::Error> {
 	tracing::info!("Server listening on: {}", address);
 	let reflection = tonic_reflection::server::Builder::configure()
@@ -31,7 +35,11 @@ pub async fn run_server(
 	Server::builder()
 		.max_frame_size(1024 * 1024 * 16 - 1)
 		.accept_http1(true)
-		.add_service(DaSequencerNodeServiceServer::new(DaSequencerNode { request_tx, whitelist }))
+		.add_service(DaSequencerNodeServiceServer::new(DaSequencerNode {
+			request_tx,
+			whitelist,
+			main_node_verifying_key,
+		}))
 		.add_service(reflection)
 		.serve(address)
 		.await?;
@@ -41,14 +49,19 @@ pub async fn run_server(
 
 #[derive(Debug)]
 pub enum GrpcRequests {
-	StartBlockStream(mpsc::UnboundedSender<Option<SequencerBlock>>, oneshot::Sender<BlockHeight>),
+	StartBlockStream(
+		mpsc::UnboundedSender<Option<(SequencerBlock, Option<NodeState>)>>,
+		oneshot::Sender<BlockHeight>,
+	),
 	GetBlockHeight(BlockHeight, oneshot::Sender<Option<SequencerBlock>>),
 	WriteBatch(DaBatch<FullNodeTxs>),
+	SendState(NodeState),
 }
 
 pub struct DaSequencerNode {
 	request_tx: mpsc::Sender<GrpcRequests>,
 	whitelist: Whitelist,
+	main_node_verifying_key: Option<VerifyingKey>,
 }
 
 #[tonic::async_trait]
@@ -142,7 +155,7 @@ impl DaSequencerNodeService for DaSequencerNode {
 							BlockResponse { block_type: Some(BlockType::Heartbeat(true)) }
 						}
 
-						Some(new_block) => {
+						Some((new_block, state)) => {
 							// send newly produced block.
 							if current_block_height + 1 < new_block.height().0 {
 								// we missed a block request.
@@ -151,7 +164,7 @@ impl DaSequencerNodeService for DaSequencerNode {
 							}
 							current_block_height = new_block.height().0;
 
-							let blockv1 = match new_block.try_into() {
+							let mut blockv1: BlockV1 = match new_block.try_into() {
 								Ok(b) => b,
 								Err(err) => {
 									tracing::warn!(error = %err, "Stream block: block serialization failed.");
@@ -159,12 +172,10 @@ impl DaSequencerNodeService for DaSequencerNode {
 
 								}
 							};
+							blockv1.node_state = state.map(|s| s.into());
 							BlockResponse { block_type: Some(BlockType::BlockV1(blockv1)) }
 						}
 					}
-
-
-
 				};
 				let response = StreamReadFromHeightResponse {
 					response: Some(response_content)
@@ -229,17 +240,50 @@ impl DaSequencerNodeService for DaSequencerNode {
 
 		Ok(tonic::Response::new(BatchWriteResponse { answer: true }))
 	}
+
+	async fn send_state(
+		&self,
+		request: tonic::Request<MainNodeStateRequest>,
+	) -> Result<tonic::Response<BatchWriteResponse>, tonic::Status> {
+		if self.main_node_verifying_key.is_none() {
+			tracing::warn!("Receive a node state and no verifying key is defined.");
+			return Ok(tonic::Response::new(BatchWriteResponse { answer: false }));
+		}
+		let state_data = request.into_inner();
+
+		let state = match state_data.state {
+			Some(state) => state,
+			None => {
+				tracing::warn!("Bad node state data, no state in it.");
+				return Ok(tonic::Response::new(BatchWriteResponse { answer: false }));
+			}
+		};
+
+		let data = serialize_node_state(&state);
+		let signature = ed25519_dalek::Signature::try_from(state_data.signature.as_slice())
+			.map_err(|err| {
+				tonic::Status::new(
+					tonic::Code::Unauthenticated,
+					format!("send_state bad signature: {err}"),
+				)
+			})?;
+		//unwrap tested just before
+		if let Err(err) = self.main_node_verifying_key.as_ref().unwrap().verify(&data, &signature) {
+			tracing::warn!("Grpc send_state called with a wrong signature : {err}");
+			return Ok(tonic::Response::new(BatchWriteResponse { answer: false }));
+		}
+
+		let state =
+			NodeState::new(state.block_height, state.ledger_timestamp, state.ledger_version);
+		if let Err(err) = self.request_tx.send(GrpcRequests::SendState(state)).await {
+			tracing::error!(
+				"Internal grpc request channel closed, no more state will be processed: {err}"
+			);
+			return Ok(tonic::Response::new(BatchWriteResponse { answer: false }));
+		}
+		Ok(tonic::Response::new(BatchWriteResponse { answer: true }))
+	}
 }
-
-pub struct GrpcBatchData {}
-
-// impl TryFrom<SequencerBlock> for BlockV1 {
-// 	type Error = DaSequencerError;
-
-// 	fn try_from(block: SequencerBlock) -> Result<Self, Self::Error> {
-// 		BlockV1::try_from(&block)
-// 	}
-// }
 
 impl TryFrom<SequencerBlock> for BlockV1 {
 	type Error = DaSequencerError;
@@ -250,6 +294,17 @@ impl TryFrom<SequencerBlock> for BlockV1 {
 			height: block.height().into(),
 			data: bcs::to_bytes(&block.inner_block())
 				.map_err(|e| DaSequencerError::Deserialization(e.to_string()))?,
+			node_state: None,
 		})
+	}
+}
+
+impl From<NodeState> for MainNodeState {
+	fn from(state: NodeState) -> Self {
+		MainNodeState {
+			block_height: state.block_height,
+			ledger_timestamp: state.ledger_timestamp,
+			ledger_version: state.ledger_version,
+		}
 	}
 }

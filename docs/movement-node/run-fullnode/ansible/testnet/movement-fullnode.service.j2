@@ -1,0 +1,20 @@
+[Unit]
+Description=Movement Full Follower
+After=network.target
+
+[Service]
+Type=simple
+User={{ user }}
+WorkingDirectory=/home/{{ user }}/movement
+Environment="DOT_MOVEMENT_PATH=/home/{{ user }}/.movement"
+Environment="CONTAINER_REV={{ rev }}"
+Environment="MAPTOS_CHAIN_ID={{ chain_id }}"
+Environment="MAPTOS_PRIVATE_KEY=random"
+
+Environment="MAPTOS_DA_SEQUENCER_CONNECTION_URL=https://m1-da-light-node.testnet.bardock.movementnetwork.xyz:443"
+
+ExecStart=/usr/bin/docker compose --env-file .env -f /home/{{ user }}/movement/docker/compose/movement-full-node/docker-compose.fullnode.yml -f /home/{{ user }}/movement/docker/compose/movement-full-node/docker-compose.faucet.yml up --force-recreate --remove-orphans
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

@@ -120,6 +120,11 @@ impl Scenario for BasicScenario {
 		let alice = self.alice.as_mut().unwrap();
 		let bob = self.bob.as_mut().unwrap();
 
+		let chain_id: u8 = std::env::var_os("TEST_ALICE_BOB_CHAIN_ID")
+			.map(|str| str.to_string_lossy().into_owned())
+			.map(|val| val.parse().unwrap_or(27))
+			.unwrap_or(27);
+
 		let mut sequence_number = alice.sequence_number();
 
 		for index in 0..2 {
@@ -131,7 +136,7 @@ impl Scenario for BasicScenario {
 			// 	.map_err(|err| anyhow::anyhow!("Alice Tx submit failed because {err}"))?;
 
 			let pending_tx = create_signed_transfer_transaction(
-				250,
+				chain_id,
 				&alice,
 				bob.address(),
 				100,

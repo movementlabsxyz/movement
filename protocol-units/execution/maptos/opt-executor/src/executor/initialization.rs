@@ -211,7 +211,7 @@ impl Executor {
 		let background_task = if maptos_config.chain.maptos_read_only {
 			// use the default signer, block executor, and mempool
 			//TODO correct the mempool_client_sender not used.
-			let (mempool_client_sender, mempool_client_receiver) =
+			let (_mempool_client_sender, mempool_client_receiver) =
 				futures_mpsc::channel::<MempoolClientRequest>(EXECUTOR_CHANNEL_SIZE);
 			BackgroundTask::read_only(mempool_client_receiver)
 		} else {

@@ -31,4 +31,4 @@ thiserror = { workspace = true }
 bcs = { workspace = true }
 
 [lints]
-#workspace = true
+workspace = true

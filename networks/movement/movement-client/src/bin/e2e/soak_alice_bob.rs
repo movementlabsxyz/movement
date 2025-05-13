@@ -1,6 +1,5 @@
 use anyhow::Result;
 use aptos_sdk::{
-	coin_client::CoinClient,
 	rest_client::{Client, FaucetClient},
 	types::LocalAccount,
 };
@@ -127,14 +126,18 @@ impl Scenario for BasicScenario {
 
 	async fn run(&mut self) -> Result<()> {
 		let rest_client = Client::new(NODE_URL.clone());
-		let coin_client = CoinClient::new(&rest_client); // Print initial balances.
+
+		let chain_id: u8 = std::env::var_os("TEST_ALICE_BOB_CHAIN_ID")
+			.map(|str| str.to_string_lossy().into_owned())
+			.map(|val| val.parse().unwrap_or(27))
+			.unwrap_or(27);
 
 		let alice = self.alice.as_mut().unwrap();
 		let bob = self.bob.as_mut().unwrap();
 
 		for index in 0..50 {
 			let pending_tx = create_signed_transfer_transaction(
-				250,
+				chain_id,
 				&alice,
 				bob.address(),
 				100,

@@ -11573,6 +11573,7 @@ dependencies = [
 name = "movement-da-sequencer-config"
 version = "0.3.4"
 dependencies = [
+ "anyhow",
  "dot-movement",
  "ed25519-dalek 2.1.1",
  "godfig",
@@ -11642,6 +11643,7 @@ dependencies = [
  "dot-movement",
  "ed25519-dalek 2.1.1",
  "godfig",
+ "hex",
  "maptos-execution-util",
  "movement-da-sequencer-config",
  "movement-da-sequencer-node",
@@ -11716,6 +11718,8 @@ version = "0.3.4"
 dependencies = [
  "alloy-signer",
  "anyhow",
+ "aptos-api",
+ "aptos-api-types",
  "aptos-crypto",
  "aptos-framework-elsa-to-biarritz-rc1-migration",
  "aptos-sdk",

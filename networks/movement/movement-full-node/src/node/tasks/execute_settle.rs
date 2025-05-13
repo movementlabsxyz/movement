@@ -1,17 +1,22 @@
 //! Task module to execute blocks from the DA and process settlement.
 use crate::node::da_db::DaDB;
+use crate::node::tasks::state_verifier::StateVerifier;
 use anyhow::Context;
 use futures::{future::Either, stream};
 use maptos_dof_execution::{
 	DynOptFinExecutor, ExecutableBlock, ExecutableTransactions, HashValue,
 	SignatureVerifiedTransaction, SignedTransaction, Transaction,
 };
+use maptos_opt_executor::executor::ExecutionState;
 use mcr_settlement_manager::{CommitmentEventStream, McrSettlementManagerOperations};
 use movement_config::execution_extension;
 use movement_da_sequencer_client::DaSequencerClient;
 use movement_da_sequencer_client::GrpcDaSequencerClient;
 use movement_da_sequencer_proto::BlockV1;
 use movement_da_sequencer_proto::StreamReadFromHeightRequest;
+use movement_signer::cryptography::ed25519::Ed25519;
+use movement_signer_loader::identifiers::SignerIdentifier;
+use movement_signer_loader::{Load, LoadedSigner};
 use movement_types::block::{Block, BlockCommitment, BlockCommitmentEvent};
 use tokio::select;
 use tokio_stream::{Stream, StreamExt};
@@ -67,6 +72,8 @@ where
 		da_connection_url: Url,
 		stream_heartbeat_interval_sec: u64,
 		allow_sync_from_zero: bool,
+		propagate_execution_state: bool,
+		da_batch_signer: &SignerIdentifier,
 	) -> anyhow::Result<()> {
 		let synced_height = self.da_db.get_synced_height()?;
 		// Sync Da from 0 is rejected by default. Only if forced it's allowed.
@@ -74,12 +81,15 @@ where
 			return Err(anyhow::anyhow!("Da Sync from height zero is not allowed."));
 		}
 
+		let mut node_local_state_verifier = StateVerifier::new();
+		let mut node_main_state_verifier = StateVerifier::new();
+
 		info!("DA synced height: {:?}", synced_height);
 		let mut da_client =
 			GrpcDaSequencerClient::try_connect(&da_connection_url, stream_heartbeat_interval_sec)
 				.await?;
 		// TODO manage alert_channel in the issue #1169
-		let (mut blocks_from_da, alert_channel) = da_client
+		let (mut blocks_from_da, mut alert_channel) = da_client
 			.stream_read_from_height(StreamReadFromHeightRequest { height: synced_height })
 			.await
 			.map_err(|e| {
@@ -92,20 +102,71 @@ where
 				Some(res) = blocks_from_da.next() => {
 					let response = res.context("failed to get next block from DA")?;
 					let span = info_span!(target: "movement_timing", "process_block_from_da", block_id = %hex::encode(response.block_id.clone()));
-					self.process_block_from_da(response).instrument(span).await?;
+					tracing::info!("Receive state from DA: {:?}",response.node_state);
+					if let Some(main_state) = response.node_state {
+						// validate received state with local node executed state
+						if !node_main_state_verifier.validate(&(&main_state).into()) {
+							let main_node_state = node_main_state_verifier.get_state(main_state.block_height.into());
+							tracing::error!("Main State from Da verification failed, local node state: {main_state:?} main_node_state:{main_node_state:?}");
+							break;
+						}
+						node_local_state_verifier.add_state((&main_state).into());
+					}
+					let new_state = self.process_block_from_da(response).instrument(span).await?;
+					tracing::info!("New state after execution: {new_state:?}");
+					if let Some(new_state) = new_state {
+						if !node_local_state_verifier.validate(&(&new_state).into()) {
+							let main_node_state = node_local_state_verifier.get_state(new_state.block_height.into());
+							tracing::error!("Local state from Da verification failed, local node state: {new_state:?} main_node_state:{main_node_state:?}");
+							break;
+						}
+						node_main_state_verifier.add_state((&new_state).into());
+
+						// If main node send new execution result state
+						if propagate_execution_state {
+							tokio::spawn({
+								let mut client = da_client.clone();
+								let signer: LoadedSigner<Ed25519> = match da_batch_signer.load().await {
+									Ok(signer) => signer,
+									Err(err) => {
+										tracing::error!("Failed to load DA batch signer: {err}");
+										break;
+									}
+								};
+								let state = movement_da_sequencer_proto::MainNodeState {
+									block_height: new_state.block_height,
+									ledger_timestamp:  new_state.ledger_timestamp,
+									ledger_version: new_state.ledger_version,
+
+								};
+								async move {
+									if let Err(err) = client.send_state(&signer, state).await {
+										tracing::error!("Send execution state to da sequencer failed : {err}");
+									}
+								}
+							});
+
+						}
+					}
 				}
 				Some(res) = self.commitment_events.next() => {
 					let event = res.context("failed to get commitment event")?;
 					info!("Received commitment event");
 					self.process_commitment_event(event).await?;
 				}
-				else => break,
+				_ = alert_channel.recv() => {
+					tracing::error!("Da client stream channel timeout because it's idle. Exit");
+					break;
+				}
 			}
 		}
 		Ok(())
 	}
 
-	async fn process_block_from_da(&mut self, da_block: BlockV1) -> anyhow::Result<()> {
+	async fn process_block_from_da(
+		&mut self,
+		da_block: BlockV1,
+	) -> anyhow::Result<Option<ExecutionState>> {
 		let da_block_height = da_block.height;
 		let block_id = da_block.block_id.clone();
 
@@ -118,7 +179,13 @@ where
 			);
 		}
 
-		let (commitment_opt, executor) = tokio::task::spawn_blocking({
+		// Block execution is a synchronous task.
+		// Group all synchronous actions of block execution into a single `spawn_blocking` task.
+		// This avoids calling `spawn_blocking` multiple times for short-lived operations.
+		// Since only one block can be executed at a time (DA is pulled one block after another),
+		// the executor is moved into the `spawn_blocking` task.
+		// We use `Option::take` to transfer the executor from the DA loop to the execution processing.
+		let (exec_result, executor) = tokio::task::spawn_blocking({
 			let da_db = self.da_db.clone();
 			let block_retry_count = self.execution_extension.block_retry_count;
 			let block_retry_increment_microseconds =
@@ -150,7 +217,7 @@ where
 
 				let block_timestamp = block.timestamp();
 
-				let commitment = Self::execute_block_with_retries(
+				let exec_result = Self::execute_block_with_retries(
 					&mut executor,
 					block,
 					block_timestamp,
@@ -166,15 +233,15 @@ where
 				// set the block as executed
 				da_db.add_executed_block(da_block.block_id.clone())?;
 
-				Ok((Some(commitment), executor))
+				Ok((Some(exec_result), executor))
 			}
 		})
 		.await??;
 		self.executor.replace(executor);
 
-		let commitment = match commitment_opt {
-			Some(commitment) => commitment,
-			None => return Ok(()),
+		let (commitment, new_ledger_state) = match exec_result {
+			Some(exec_result) => exec_result,
+			None => return Ok(None),
 		};
 
 		if self.settlement_enabled()
@@ -198,7 +265,7 @@ where
 			info!(block_id = ?block_id, "Skipping settlement");
 		}
 
-		Ok(())
+		Ok(Some(new_ledger_state))
 	}
 }
 
@@ -215,7 +282,7 @@ where
 		mut block_timestamp: u64,
 		block_retry_count: u64,
 		block_retry_increment_microseconds: u64,
-	) -> anyhow::Result<BlockCommitment> {
+	) -> anyhow::Result<(BlockCommitment, ExecutionState)> {
 		for _ in 0..block_retry_count {
 			// we have to clone here because the block is supposed to be consumed by the executor
 			match Self::execute_block(executor, block.clone(), block_timestamp) {
@@ -235,7 +302,7 @@ where
 		executor: &mut E,
 		block: Block,
 		block_timestamp: u64,
-	) -> anyhow::Result<BlockCommitment> {
+	) -> anyhow::Result<(BlockCommitment, ExecutionState)> {
 		let block_id = block.id();
 
 		let _span = info_span!("execute_block", %block_id).entered();
@@ -261,7 +328,7 @@ where
 				continue;
 			}
 
-			info!(
+			debug!(
 				target: "movement_timing",
 				tx_hash = %signed_transaction.committed_hash(),
 				sender = %signed_transaction.sender(),
@@ -282,11 +349,11 @@ where
 		// form the executable block and execute it
 		let executable_block = ExecutableBlock::new(block_hash, block);
 		let block_id = executable_block.block_id;
-		let commitment = executor.execute_block_opt(executable_block)?;
+		let exec_result = executor.execute_block_opt(executable_block)?;
 
 		debug!("Executed block: {}", block_id);
 
-		Ok(commitment)
+		Ok(exec_result)
 	}
 
 	async fn process_commitment_event(

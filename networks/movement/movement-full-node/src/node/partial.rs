@@ -55,23 +55,43 @@ where
 			self.config.mcr.clone(),
 		);
 
-		let da_sequencer_url =
-			self.config.execution_config.maptos_config.da_sequencer.connection_url.clone();
-		let stream_heartbeat_interval_sec = self
-			.config
-			.execution_config
-			.maptos_config
-			.da_sequencer
-			.stream_heartbeat_interval_sec;
 		let (result, _index, _remaining) = futures::future::select_all(vec![
-			tokio::spawn(async move {
-				exec_settle_task
-					.run(
-						da_sequencer_url,
-						stream_heartbeat_interval_sec,
-						self.config.da_db.allow_sync_from_zero,
-					)
-					.await
+			tokio::spawn({
+				let da_signer = self
+					.config
+					.execution_config
+					.maptos_config
+					.da_sequencer
+					.batch_signer_identifier
+					.clone();
+
+				let propagate_execution_state = self
+					.config
+					.execution_config
+					.maptos_config
+					.da_sequencer
+					.propagate_execution_state;
+
+				let da_sequencer_url =
+					self.config.execution_config.maptos_config.da_sequencer.connection_url.clone();
+				let stream_heartbeat_interval_sec = self
+					.config
+					.execution_config
+					.maptos_config
+					.da_sequencer
+					.stream_heartbeat_interval_sec;
+
+				async move {
+					exec_settle_task
+						.run(
+							da_sequencer_url,
+							stream_heartbeat_interval_sec,
+							self.config.da_db.allow_sync_from_zero,
+							propagate_execution_state,
+							&da_signer,
+						)
+						.await
+				}
 			}),
 			tokio::spawn(exec_background),
 			tokio::spawn(services.run()),
