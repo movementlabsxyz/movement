@@ -28,7 +28,13 @@ pub async fn run_server(
 	main_node_verifying_key: Option<VerifyingKey>,
 ) -> Result<(), anyhow::Error> {
 	tracing::info!("Server listening on: {}", address);
-	let reflection = tonic_reflection::server::Builder::configure()
+// Enables gRPC introspection, a feature that allows gRPC clients 
+// (like grpcurl, Postman, or IDEs) to query the server for:
+// - Available services and RPC methods
+// - Input/output message types
+// - Field types, enums, and nested structures 
+// - Metadata like documentation or options (if included)
+let reflection = tonic_reflection::server::Builder::configure()
 		.register_encoded_file_descriptor_set(movement_da_sequencer_proto::FILE_DESCRIPTOR_SET)
 		.build_v1()?;
 

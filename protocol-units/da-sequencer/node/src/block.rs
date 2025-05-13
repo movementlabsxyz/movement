@@ -44,7 +44,9 @@ impl From<BlockHeight> for u64 {
 		height.0
 	}
 }
-
+/// A block produced by the sequencer, including its height and contents.
+///
+/// Contains the block height and the inner `Block` with ordered transactions.
 // Rust interprets (small) integer literals without a type suffix as i32
 impl<T: Into<i64>> Add<T> for BlockHeight {
 	type Output = Self;

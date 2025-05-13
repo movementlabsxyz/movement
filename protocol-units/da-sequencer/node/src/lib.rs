@@ -101,7 +101,9 @@ pub async fn start(mut dot_movement: dot_movement::DotMovement) -> Result<(), an
 }
 
 /// Run Da sequencing loop.
-/// This function only return in case of error that indicate a crash of the node.
+/// Runs the DA sequencing loop.
+///
+/// This function only returns if a critical error occurs, indicating a node crash or unrecoverable failure.
 pub async fn run<D, S>(
 	config: DaSequencerConfig,
 	mut request_rx: mpsc::Receiver<GrpcRequests>,
