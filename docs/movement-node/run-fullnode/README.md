@@ -1,5 +1,5 @@
 # Full Node
-Full Nodes are nodes start all the function to send transaction, sync with the Da-Sequencer and execute streamed block. It provides RPC and Tx indexer grpc service too. This document provides instructions on how to set up a Full Node to sync with the Da Sequencer.
+Full Nodes are nodes which start all the functions to send transactions, sync with the Da-Sequencer and execute streamed blocks. It provides RPC and indexer grpc services too. This document provides instructions on how to set up a Full Node to sync with the Da Sequencer.
 
 ## Hardware Recommendations
 By running the a Follower Node locally, you will be able to gauge the performance on a given network. If you are joining a network with high load, like the Movement Testnet, we recommend the following:
@@ -14,18 +14,18 @@ The current container rev for installation is:
 CONTAINER_REV=289c0b8
 
 ## Running a Movement Node on Follower Node
-You can join any sufficiently upgraded network as a Full Node by running a Movement Node with container tags specified to latest commit hash on this branch, the [`fullnode`](../../../../../docker/compose/movement-full-node/docker-compose.fullnode.yml) overlay.
+You can join any network as a Full Node by running a Movement Node with container tags specified to latest commit hash on this branch, the [`fullnode`](../../../../../docker/compose/movement-full-node/docker-compose.fullnode.yml) overlay.
 
-To install the node software, you can use the automated docker procedure or install by hand using the manual one.
+To install the node software, you can use the automated docker procedure or install manually.
 
 ### Docker installation
 The docker installation is done in 2 steps:
- * install the software into an instance
- * configure them to sync to a specific network.
+ 1. Install the software into an instance
+ 2. Configure them to sync to a specific network.
 
- 3 networks are started and you can run a not for any of them.
+ Three networks are started and you can run a node for any of them.
 
- The process is the same for all network, the difference are the parameter used. So take care to use the right ones.
+ The process is the same for all networks, the differences are the parameters used. So take care to use the right ones.
 
 #### Install Fullnode
 An Ansible script is provided to deploy the needed software on an instance, execute this command depending on the network you need:
@@ -35,10 +35,10 @@ An Ansible script is provided to deploy the needed software on an instance, exec
  * [Mainnet](ansible/mainnet/README.md)
 
  The username (`ubuntu` use in the scrpt) is an example of user to define so that the script is able to connect to instances in the inventory.
- All software will be installed under this user.
+ All the software will be installed under this user.
 
 
-The Ansible has successfully installed the software into the instance. The node must be configured to sync its data.
+The Ansible script has successfully installed the software into the instance. The node must be configured to sync its data.
 
 #### Configure Fullnode
 
@@ -49,13 +49,11 @@ The first step is to setup the node config file or update it if you start from a
 
 To set/migrate run the script: `$HOME/movement/docs/movement-node/run-fullnode/scripts/setup_migrate.sh`
 
-After execution write the batch signing public key generated during the setup and printed during execution.
-It must be send to Movement so that they can add the new node to the da-sequencer fullnode white list.
+After execution save the batch signing public key generated during the setup and printed during execution.
+It must be sent to Movement team so that they can add the new node to the da-sequencer fullnode whitelist.
 
 2) Sync the node
-By default syncing from height zero is not allowed to avoid to stream all block from origin inadvertently.
-The easier is to restore the most resent snapshot of the node DB using this script depending on the network.
-Before running the script, update it with the Access and secret key provided by Movement:
+By default, syncing from height zero is not allowed to prevent inadvertently streaming all blocks from the origin. The easiest method is to restore the most recent snapshot of the node DB using the appropriate script for the network. Before running the script, update it with the access key and secret key provided by Movement.
 
   * Devnet: `$HOME/movement/docs/movement-node/run-fullnode/scripts/devnet/restore.sh`
   * Testnet: `$HOME/movement/docs/movement-node/run-fullnode/scripts/testnet/restore.sh`
@@ -67,7 +65,7 @@ The node should start and sync.
 
 ## Verify the node is working
 
-To verify that the full node has sync correctly, use these commands:
+To verify that the full node has synced correctly, use these commands:
 1) get local state: `curl 127.0.0.1:30731/v1`
 2) get the network state:
  * Devnet:
@@ -77,9 +75,9 @@ To verify that the full node has sync correctly, use these commands:
 
 Run both until you get the same `ledger_version` and `block_height` state in both. You can use `curl -Z url1 url2` to send both call at the same time.
 
-If you can't get the same value after some time or the difference between you node and the main one doesn't change must, it means that the new fullnode can't sync.
+If you don't get the same value after some time, or if the difference between your node and the main one doesn't change much, it means that the new full node is unable to sync.
 
-Retry to do a restoration first and if it still failed, contact Movement support.
+Try restoring it again first. If the issue persists, contact Movement support.
 
 ## Troubleshooting 
 

@@ -9,8 +9,7 @@ use movement_da_sequencer_client::serialize_node_state;
 use movement_da_sequencer_proto::da_sequencer_node_service_server::{
 	DaSequencerNodeService, DaSequencerNodeServiceServer,
 };
-use movement_da_sequencer_proto::MainNodeState;
-use movement_da_sequencer_proto::MainNodeStateRequest;
+use movement_da_sequencer_proto::{MainNodeState, MainNodeStateRequest};
 use movement_da_sequencer_proto::{
 	block_response::BlockType, BatchWriteRequest, BatchWriteResponse, BlockResponse, BlockV1,
 	ReadAtHeightRequest, ReadAtHeightResponse, StreamReadFromHeightRequest,

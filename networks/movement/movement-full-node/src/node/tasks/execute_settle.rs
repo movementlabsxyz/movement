@@ -126,7 +126,13 @@ where
 						if propagate_execution_state {
 							tokio::spawn({
 								let mut client = da_client.clone();
-								let signer: LoadedSigner<Ed25519> = da_batch_signer.load().await?;
+								let signer: LoadedSigner<Ed25519> = match da_batch_signer.load().await {
+									Ok(signer) => signer,
+									Err(err) => {
+										tracing::error!("Failed to load DA batch signer: {err}");
+										return;
+									}
+								};
 								let state = movement_da_sequencer_proto::MainNodeState {
 									block_height: new_state.block_height,
 									ledger_timestamp:  new_state.ledger_timestamp,

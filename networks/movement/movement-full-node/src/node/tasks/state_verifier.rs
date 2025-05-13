@@ -67,6 +67,9 @@ impl StateVerifier {
 	}
 
 	pub fn add_state(&mut self, new_state: NodeState) {
+		// If the number of stored states exceeds the maximum allowed entries,
+		// remove the oldest entry (smallest key) to maintain a fixed-size cache.
+		// This ensures that the most recent states are retained.
 		if self.states.len() >= MAX_STATE_ENTRY {
 			self.states.pop_first();
 		}
