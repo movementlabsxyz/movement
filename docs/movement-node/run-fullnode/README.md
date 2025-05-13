@@ -47,6 +47,11 @@ Stop the node using the command: `systemctl stop movement-fullnode.service`
 1) Update config
 The first step is to setup the node config file or update it if you start from an existing installation.
 
+Define the da-sequencer connection url depending on the network:
+ * Devnet: export MAPTOS_DA_SEQUENCER_CONNECTION_URL=https://da-sequencer.devnet.movementinfra.xyz
+ * Testnet: export MAPTOS_DA_SEQUENCER_CONNECTION_URL=https://m1-da-light-node.testnet.bardock.movementnetwork.xyz
+ * Mainnet: export MAPTOS_DA_SEQUENCER_CONNECTION_URL=https://m1-da-light-node.mainnet.movementnetwork.xyz
+
 To set/migrate run the script: `$HOME/movement/docs/movement-node/run-fullnode/scripts/setup_migrate.sh`
 
 After execution save the batch signing public key generated during the setup and printed during execution.
