@@ -1,0 +1,78 @@
+services:
+  prometheus:
+    image: prom/prometheus:v2.49.1
+    container_name: movement-prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1
+      interval: 5s
+      timeout: 3s
+      retries: 3
+
+  grafana:
+    image: grafana/grafana:10.2.3
+    container_name: movement-grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    depends_on:
+      - prometheus
+
+  movement-full-node:
+    environment:
+      - MOVEMENT_METRICS_ADDR=127.0.0.1:9464
+      - MOVEMENT_OTLP=http://otel-collector:4317
+    ports:
+      - "9464:9464"
+    depends_on:
+      - prometheus:
+          condition: service_healthy
+      - otel-collector:
+          condition: service_healthy
+
+  movement-celestia-da-light-node:
+    environment:
+      - MOVEMENT_METRICS_ADDR=127.0.0.1:9464
+      - MOVEMENT_OTLP=http://otel-collector:4317
+    ports:
+      - "9465:9464"
+    depends_on:
+      - prometheus:
+          condition: service_healthy
+      - otel-collector:
+          condition: service_healthy
+
+  otel-collector:
+    image: otel/opentelemetry-collector:0.96.0
+    container_name: movement-otel-collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
+      - "8888:8888" # Prometheus metrics exposed by the collector
+      - "8889:8889" # Prometheus exporter metrics
+      - "13133:13133" # Health check extension
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:13133 || exit 1
+      interval: 5s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  prometheus_data:

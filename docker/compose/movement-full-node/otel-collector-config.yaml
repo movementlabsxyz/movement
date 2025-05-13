@@ -1,0 +1,37 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 127.0.0.1:4317
+      http:
+        endpoint: 127.0.0.1:4318
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+
+exporters:
+  prometheus:
+    endpoint: "127.0.0.1:8889"
+    namespace: "movement"
+    const_labels:
+      label1: value1
+  logging:
+    loglevel: debug
+
+extensions:
+  health_check:
+    endpoint: 127.0.0.1:13133
+
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [logging]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [prometheus, logging]

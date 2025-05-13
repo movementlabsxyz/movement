@@ -1,6 +1,5 @@
 pub mod aptos;
 
-pub use movement_da_light_node_proto::*;
 use thiserror::Error;
 
 /// Domain error for the transaction pipe task
@@ -12,11 +11,9 @@ pub enum Error {
 	Validation(String),
 }
 
-/// thiserror for validation and internal errors
-#[derive(thiserror::Error, Debug)]
-
+#[derive(Debug)]
 /// A prevalidated outcome. Indicates that input of A (from the trait [PrevalidatorOperations]) is prevalidated as an instance of B, or else invalid instance.
-pub struct Prevalidated<B>(B);
+pub struct Prevalidated<B>(pub B);
 
 impl<B> Prevalidated<B> {
 	pub fn new(blob: B) -> Self {
@@ -30,13 +27,4 @@ impl<B> Prevalidated<B> {
 	pub fn into_inner(self) -> B {
 		self.0
 	}
-}
-
-#[tonic::async_trait]
-pub trait PrevalidatorOperations<A, B>
-where
-	A: Send + Sync + 'static,
-	B: Send + Sync + 'static,
-{
-	async fn prevalidate(&self, blob: A) -> Result<Prevalidated<B>, Error>;
 }
