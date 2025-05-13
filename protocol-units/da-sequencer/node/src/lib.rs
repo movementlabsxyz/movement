@@ -9,10 +9,8 @@ use crate::storage::DaSequencerStorage;
 use crate::storage::Storage;
 use crate::whitelist::Whitelist;
 use anyhow::Context;
-use ed25519_dalek::VerifyingKey;
 use futures::stream::FuturesUnordered;
 use godfig::{backend::config_file::ConfigFile, Godfig};
-use hex::FromHex;
 use movement_da_sequencer_config::DaSequencerConfig;
 use tokio::signal::unix::signal;
 use tokio::signal::unix::SignalKind;
@@ -53,18 +51,7 @@ pub async fn start(mut dot_movement: dot_movement::DotMovement) -> Result<(), an
 	let (request_tx, request_rx) = mpsc::channel(GRPC_REQUEST_CHANNEL_SIZE);
 	// Start gprc server
 	let grpc_address = da_sequencer_config.grpc_listen_address;
-	let verifying_key = da_sequencer_config
-		.main_node_verifying_key
-		.clone()
-		.map(|str| {
-			<[u8; 32]>::from_hex(str)
-				.map_err(|_| anyhow::anyhow!("Invalid main_node_verifying_key hex"))
-				.and_then(|hex| {
-					VerifyingKey::from_bytes(&hex)
-						.map_err(|_| anyhow::anyhow!("Invalid main_node_verifying_key key"))
-				})
-		})
-		.transpose()?;
+	let verifying_key = da_sequencer_config.get_main_node_verifying_key()?;
 
 	let grpc_jh = tokio::spawn(async move {
 		run_server(grpc_address, request_tx, whitelist, verifying_key).await

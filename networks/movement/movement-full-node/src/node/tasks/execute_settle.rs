@@ -130,7 +130,7 @@ where
 									Ok(signer) => signer,
 									Err(err) => {
 										tracing::error!("Failed to load DA batch signer: {err}");
-										return;
+										break;
 									}
 								};
 								let state = movement_da_sequencer_proto::MainNodeState {

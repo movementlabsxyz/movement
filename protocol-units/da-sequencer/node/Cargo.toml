@@ -51,4 +51,4 @@ movement-types = { workspace = true, features = ["testing"] }
 movement-signer = { workspace = true}
 
 [lints]
-#workspace = true
+workspace = true

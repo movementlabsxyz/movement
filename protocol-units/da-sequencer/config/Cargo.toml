@@ -19,6 +19,7 @@ rand = { workspace = true }
 tracing = { workspace = true }
 hex = { workspace = true }
 dot-movement = { workspace = true }
+anyhow = { workspace = true }
 
 [lints]
 workspace = true
