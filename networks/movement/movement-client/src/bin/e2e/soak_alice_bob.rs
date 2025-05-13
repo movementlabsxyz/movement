@@ -1,6 +1,5 @@
 use anyhow::Result;
 use aptos_sdk::{
-	coin_client::CoinClient,
 	rest_client::{Client, FaucetClient},
 	types::LocalAccount,
 };

@@ -22,6 +22,9 @@ use std::sync::{Arc, RwLock};
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::info;
 
+// Store the ledger state after the block at the given height has been executed.
+// This differs from `BlockCommitment`, which only indicates that a block with a specific ID was executed.
+// `ExecutionState` is used to compare ledger states at the same height.
 #[derive(Debug, Clone)]
 pub struct ExecutionState {
 	pub block_height: u64,

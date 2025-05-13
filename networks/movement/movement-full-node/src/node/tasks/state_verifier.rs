@@ -1,8 +1,23 @@
+/// We’ve seen edge cases that cause node state divergence.
+/// Without on-chain consensus, we need a “source of truth” node to decide which state is correct.
+/// We call this the main node (to avoid confusion with the leader node, which has a different role); it broadcasts its state to all other nodes.
+/// Each node verifies the state received from the DA-Sequencer against its own computed state after execution.
+/// If the states diverge, the node stops processing and must restore its state to recover.
+/// The structs in this module are used for state verification.
+/// Both the locally computed state and the main node’s published state are verified.
+/// Each comparison (local vs. main and main vs. local) uses a `StateVerifier`; the last `MAX_STATE_ENTRY` states (both received and computed) are stored.
+/// When a new state is published or computed, verification occurs for that state’s height.
+/// States at the same height must have the same ledger timestamp and version.
 use maptos_opt_executor::executor::ExecutionState;
 use movement_da_sequencer_proto::MainNodeState;
 use std::collections::BTreeMap;
 
-const MAX_STATE_ENTRY: usize = 100;
+// We produce at most 2 blocks per second.
+// With a `MAX_HISTORY_SIZE` of 120, a node that falls more than 60 s behind
+// will not detect state divergence.
+// We chose 120 (60 seconds) because any node lagging by more than 60 s
+// likely has other issues and cannot be considered in sync.
+const MAX_STATE_ENTRY: usize = 120;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NodeState {
@@ -70,35 +85,75 @@ mod test {
 
 	use super::*;
 
+	// Verify with no state stored. Validate true.
 	#[test]
-	fn test_validate_state() {
-		let mut state_verifier = StateVerifier::new();
+	fn test_state_validate_empty() {
+		let state_verifier = StateVerifier::new();
 
-		// Verify with no state stored. Validation true.
+		// Verify with no state stored. Validation true any state.
 		let state1 = ExecutionState { block_height: 1, ledger_timestamp: 2, ledger_version: 3 };
 		assert!(
 			state_verifier.validate(&(&state1).into()),
 			"Empty state verifier validate a state"
 		);
+	}
 
+	// Add the same state and validate it
+	#[test]
+	fn test_state_validate_same_state() {
+		let mut state_verifier = StateVerifier::new();
 		// Add the same state and validate it
 		let new_state = MainNodeState { block_height: 1, ledger_timestamp: 2, ledger_version: 3 };
 		state_verifier.add_state((&new_state).into());
+		let state1 = ExecutionState { block_height: 1, ledger_timestamp: 2, ledger_version: 3 };
 		assert!(state_verifier.validate(&(&state1).into()), "Same state added doesn't valid.");
+	}
+	// Add a different state for same height and validate it
+	#[test]
+	fn test_state_validate_diff_state() {
+		let mut state_verifier = StateVerifier::new();
+		// Add initial state
+		let new_state = MainNodeState { block_height: 1, ledger_timestamp: 2, ledger_version: 3 };
+		state_verifier.add_state((&new_state).into());
 
 		// Add a different state for same height and validate it
 		let state2 = ExecutionState { block_height: 1, ledger_timestamp: 3, ledger_version: 3 };
-		assert!(!state_verifier.validate(&(&state2).into()), "Diff ts state valid");
+		assert!(!state_verifier.validate(&(&state2).into()), "Diff ts and state valid");
 		let state3 = ExecutionState { block_height: 1, ledger_timestamp: 2, ledger_version: 4 };
-		assert!(!state_verifier.validate(&(&state3).into()), "Diff version state valid");
+		assert!(!state_verifier.validate(&(&state3).into()), "Diff version and state valid");
+	}
 
-		// Add a different state with same key
+	// Add a different state with same height. First added still valid.
+	#[test]
+	fn test_state_validate_old_state_after_update() {
+		let mut state_verifier = StateVerifier::new();
+		let new_state = MainNodeState { block_height: 1, ledger_timestamp: 2, ledger_version: 3 };
+		state_verifier.add_state((&new_state).into());
+
+		// Add a different state with same height
 		let new_state = MainNodeState { block_height: 1, ledger_timestamp: 3, ledger_version: 3 };
 		state_verifier.add_state((&new_state).into());
+		// Old state still validate.
+		let state1 = ExecutionState { block_height: 1, ledger_timestamp: 2, ledger_version: 3 };
 		assert!(
 			state_verifier.validate(&(&state1).into()),
 			"State updated, old one doesn't validate"
 		);
+		//New one invalid.
+		let state2 = ExecutionState { block_height: 1, ledger_timestamp: 3, ledger_version: 3 };
+		assert!(!state_verifier.validate(&(&state2).into()), "State updated, new one is valid");
+	}
+
+	// Fill the state, oldest height should be removed.
+	#[test]
+	fn test_state_validate_fill_state() {
+		let mut state_verifier = StateVerifier::new();
+		// Add the first state that should be removed with nely added state.
+		let new_state = MainNodeState { block_height: 1, ledger_timestamp: 2, ledger_version: 3 };
+		state_verifier.add_state((&new_state).into());
+
+		//State change detection works before adding new state.
+		let state2 = ExecutionState { block_height: 1, ledger_timestamp: 3, ledger_version: 3 };
 		assert!(!state_verifier.validate(&(&state2).into()), "State updated, new one is valid");
 
 		// Fill the state, oldest height should be removed.
@@ -110,8 +165,8 @@ mod test {
 			};
 			state_verifier.add_state((&state).into());
 		}
-		// Previous diff state should validate on height 1 that has been removed
-		assert!(state_verifier.validate(&(&state2).into()), "Previous state2 not valid");
+		// Any state should validate at height 1 now because the first state has been removed
+		let state1 = ExecutionState { block_height: 1, ledger_timestamp: 3, ledger_version: 4 };
 		assert!(state_verifier.validate(&(&state1).into()), "Previous state3 not valid");
 	}
 }

@@ -16,8 +16,8 @@ We recommend that you run a movement node using containers to leverage the porta
 
 1. Clone the movement repo.
 
-_The paths below are not mandatory, they are presented for a better understanding 
-of the setup. If you would like to follow the steps below you will need to use them._
+> [!NOTE]
+> The paths below are not mandatory, they are presented for a better understanding...
 
 ```bash
 # From /home/${USER}

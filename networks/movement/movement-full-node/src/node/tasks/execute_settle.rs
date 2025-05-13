@@ -173,6 +173,12 @@ where
 			);
 		}
 
+		// Block execution is a synchronous task.
+		// Group all synchronous actions of block execution into a single `spawn_blocking` task.
+		// This avoids calling `spawn_blocking` multiple times for short-lived operations.
+		// Since only one block can be executed at a time (DA is pulled one block after another),
+		// the executor is moved into the `spawn_blocking` task.
+		// We use `Option::take` to transfer the executor from the DA loop to the execution processing.
 		let (exec_result, executor) = tokio::task::spawn_blocking({
 			let da_db = self.da_db.clone();
 			let block_retry_count = self.execution_extension.block_retry_count;

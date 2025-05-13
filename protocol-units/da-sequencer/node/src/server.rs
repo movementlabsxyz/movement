@@ -251,11 +251,15 @@ impl DaSequencerNodeService for DaSequencerNode {
 			return Ok(tonic::Response::new(BatchWriteResponse { answer: false }));
 		}
 		let state_data = request.into_inner();
-		if state_data.state.is_none() {
-			tracing::warn!("Bad node state data, no state in it.");
-			return Ok(tonic::Response::new(BatchWriteResponse { answer: false }));
-		}
-		let state = state_data.state.unwrap(); //unwrap tested before.
+
+		let state = match state_data.state {
+			Some(state) => state,
+			None => {
+				tracing::warn!("Bad node state data, no state in it.");
+				return Ok(tonic::Response::new(BatchWriteResponse { answer: false }));
+			}
+		};
+
 		let data = serialize_node_state(&state);
 		let signature = ed25519_dalek::Signature::try_from(state_data.signature.as_slice())
 			.map_err(|err| {
