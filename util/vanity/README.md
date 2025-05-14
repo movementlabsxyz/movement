@@ -2,7 +2,7 @@
 
 Vanity is a CLI for mining vanity move addresses.
 
-Vanity is heavely inspired by [Create2Crunch](https://github.com/0age/create2crunch).
+Vanity is heavily inspired by [Create2Crunch](https://github.com/0age/create2crunch).
 
 ## Installation
 
