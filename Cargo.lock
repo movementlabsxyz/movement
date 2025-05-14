@@ -10026,9 +10026,11 @@ version = "0.3.4"
 dependencies = [
  "anyhow",
  "aptos-cached-packages",
+ "aptos-db",
  "aptos-framework",
  "aptos-release-builder",
  "aptos-sdk",
+ "aptos-storage-interface",
  "aptos-types",
  "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
  "move-package",

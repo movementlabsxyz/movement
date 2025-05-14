@@ -26,3 +26,9 @@ tempfile = { workspace = true }
 toml = { workspace = true }
 aptos-types = { workspace = true }
 tracing = { workspace = true }
+aptos-db = { workspace = true }
+aptos-storage-interface = { workspace = true }
+
+[[bin]]
+name = "onchain_execution_config"
+path = "src/onchain_execution_config.rs"
