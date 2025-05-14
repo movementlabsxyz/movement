@@ -29,12 +29,6 @@ jobs:
         echo "${GITHUB_CONTEXT}"
 
   build-push-checked-containers:
-    if: >
-      github.event.label.name == 'cicd:movement-containers'
-      || github.ref == 'refs/heads/main'
-      || github.event.label.name == 'cicd:movement-containers'
-      || startsWith(github.ref, 'refs/tags/')
-
     uses: ./.github/workflows/build-push-container.yml
     name: Build Push Checked Containers
     secrets: inherit
