@@ -52,10 +52,11 @@ Define the da-sequencer connection url depending on the network:
  * Testnet: export MAPTOS_DA_SEQUENCER_CONNECTION_URL=https://m1-da-light-node.testnet.bardock.movementnetwork.xyz
  * Mainnet: export MAPTOS_DA_SEQUENCER_CONNECTION_URL=https://m1-da-light-node.mainnet.movementnetwork.xyz
 
-To set/migrate run the script: `$HOME/movement/docs/movement-node/run-fullnode/scripts/setup_migrate.sh`
+To setup/migrate run the script: `$HOME/movement/docs/movement-node/run-fullnode/scripts/setup_migrate.sh`
 
-After execution save the batch signing public key generated during the setup and printed during execution.
-It must be sent to Movement team so that they can add the new node to the da-sequencer fullnode whitelist.
+If you want to use the fullnode to send Tx, the node must be registered to the movement da-sequencer.
+After execution setup/migration script execution, the batch signing public key generated during the setup is printed.
+Send it to Movement team so that they can add it to the da-sequencer fullnode whitelist.
 
 2) Sync the node
 By default, syncing from height zero is not allowed to prevent inadvertently streaming all blocks from the origin. The easiest method is to restore the most recent snapshot of the node DB using the appropriate script for the network. Before running the script, update it with the access key and secret key provided by Movement.
