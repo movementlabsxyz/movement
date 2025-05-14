@@ -11,3 +11,5 @@ hex = { workspace = true }
 clap = { workspace = true }
 thiserror = { workspace = true }
 num_cpus = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }

@@ -7,6 +7,7 @@ use std::sync::{
     Arc, Mutex,
 };
 use std::time::Instant;
+use tracing;
 
 fn matches_pattern(addr: &AccountAddress, start: &[u8], end: &[u8]) -> bool {
     let addr_bytes = addr.to_vec();
@@ -48,7 +49,7 @@ pub fn mine_move_address(
             });
     });
 
-    println!("✅ Mining completed in {:?}", start_time.elapsed());
+    tracing::info!("Mining completed in {:?}", start_time.elapsed());
 
     let final_result = std::mem::take(&mut *result.lock().unwrap());
     final_result.expect("No matching account found")
