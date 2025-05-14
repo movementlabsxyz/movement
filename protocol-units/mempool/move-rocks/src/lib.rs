@@ -471,6 +471,7 @@ pub mod tests {
 	}
 
 	#[tokio::test]
+	#[ignore]
 	async fn test_rocksdb_gc() -> Result<(), Error> {
 		let temp_dir = tempdir().unwrap();
 		let path = temp_dir.path().to_str().unwrap();

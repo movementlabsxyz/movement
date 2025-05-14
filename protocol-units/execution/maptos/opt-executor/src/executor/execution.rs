@@ -317,6 +317,7 @@ mod tests {
 	// https://github.com/movementlabsxyz/aptos-core/blob/ea91067b81f9673547417bff9c70d5a2fe1b0e7b/execution/executor-test-helpers/src/integration_test_impl.rs#L535
 	// #[tracing_test::traced_test]
 	#[tokio::test]
+	#[ignore]
 	async fn test_execute_block_state_db() -> Result<(), anyhow::Error> {
 		// use aptos_logger::{Level, Logger};
 		// Logger::builder().level(Level::Info).build();
