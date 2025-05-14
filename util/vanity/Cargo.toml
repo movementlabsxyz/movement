@@ -6,8 +6,8 @@ edition = "2021"
 [dependencies]
 aptos-sdk = { workspace = true }
 rand = { workspace = true }
-rayon = "1.7"
-hex = "0.4"
-clap = { version = "4.5", features = ["derive"] }
-thiserror = "1.0"
-num_cpus = "1.13"
+rayon = { workspace = true }
+hex = { workspace = true }
+clap = { workspace = true }
+thiserror = { workspace = true }
+num_cpus = { workspace = true }
