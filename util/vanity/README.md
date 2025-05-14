@@ -16,5 +16,3 @@ cd util/vanity
 # Add it to your path
 cargo install --path .
 ```
-
-*Currently requires ignoring all instances of "-C", "link-arg=-fuse-ld=lld" flags in .cargo/config.toml*
