@@ -9,12 +9,12 @@ use movement_da_sequencer_client::serialize_node_state;
 use movement_da_sequencer_proto::da_sequencer_node_service_server::{
 	DaSequencerNodeService, DaSequencerNodeServiceServer,
 };
-use movement_da_sequencer_proto::{MainNodeState, MainNodeStateRequest};
 use movement_da_sequencer_proto::{
 	block_response::BlockType, BatchWriteRequest, BatchWriteResponse, BlockResponse, BlockV1,
 	ReadAtHeightRequest, ReadAtHeightResponse, StreamReadFromHeightRequest,
 	StreamReadFromHeightResponse,
 };
+use movement_da_sequencer_proto::{MainNodeState, MainNodeStateRequest};
 use std::net::SocketAddr;
 use tokio::sync::{mpsc, oneshot};
 use tokio_stream::Stream;
@@ -28,13 +28,13 @@ pub async fn run_server(
 	main_node_verifying_key: Option<VerifyingKey>,
 ) -> Result<(), anyhow::Error> {
 	tracing::info!("Server listening on: {}", address);
-// Enables gRPC introspection, a feature that allows gRPC clients 
-// (like grpcurl, Postman, or IDEs) to query the server for:
-// - Available services and RPC methods
-// - Input/output message types
-// - Field types, enums, and nested structures 
-// - Metadata like documentation or options (if included)
-let reflection = tonic_reflection::server::Builder::configure()
+	// Enables gRPC introspection, a feature that allows gRPC clients
+	// (like grpcurl, Postman, or IDEs) to query the server for:
+	// - Available services and RPC methods
+	// - Input/output message types
+	// - Field types, enums, and nested structures
+	// - Metadata like documentation or options (if included)
+	let reflection = tonic_reflection::server::Builder::configure()
 		.register_encoded_file_descriptor_set(movement_da_sequencer_proto::FILE_DESCRIPTOR_SET)
 		.build_v1()?;
 
@@ -88,18 +88,25 @@ impl DaSequencerNodeService for DaSequencerNode {
 
 		// Register the new produced block channel to get lastest block.
 		// Use `unbounded_channel` to avoid filling the channel during the fetching of an old block.
-		let (produced_tx, mut produced_rx) = mpsc::unbounded_channel();
-		let (current_height_tx, current_height_rx) = oneshot::channel();
+		let (current_produced_block_tx, mut current_produced_block_rx) = mpsc::unbounded_channel();
+		let (first_produced_block_height_tx, first_produced_block_height_rx) = oneshot::channel();
 		if let Err(err) = self
 			.request_tx
-			.send(GrpcRequests::StartBlockStream(produced_tx, current_height_tx))
+			.send(GrpcRequests::StartBlockStream(
+				current_produced_block_tx,
+				first_produced_block_height_tx,
+			))
 			.await
 		{
 			tracing::warn!(error = %err, "Internal grpc request channel closed, can't stream blocks");
 			return Err(tonic::Status::internal("Internal error. Retry later"));
 		}
 
-		let mut current_produced_height = match current_height_rx.await {
+		// Wait from the supervisor main loop the height of the first produced block that will be sent in the `current_produced_block_rx` channel.
+		// Until this block height, block are fetch from the DB and after from the channel.
+		// This way blocks are fetch in order from start height until the last produced block.
+		// New procured block will arrive from the channel.
+		let mut first_produced_block_height = match first_produced_block_height_rx.await {
 			Ok(h) => h,
 			Err(err) => {
 				tracing::warn!("start stream channel closed: {err}");
@@ -114,7 +121,8 @@ impl DaSequencerNodeService for DaSequencerNode {
 		let request_tx = self.request_tx.clone();
 		let output = async_stream::try_stream! {
 			loop {
-				let response_content = if current_block_height <= current_produced_height.0 {
+				// Needed block height is before the first produced block in the produced block channel.
+				let response_content = if current_block_height <= first_produced_block_height.0 {
 					//get all block until the current produced height
 					let (get_height_tx, get_height_rx) = oneshot::channel();
 					if let Err(err) = request_tx.send(GrpcRequests::GetBlockHeight(
@@ -131,10 +139,12 @@ impl DaSequencerNodeService for DaSequencerNode {
 							return;
 						}
 					};
-					current_block_height +=1;
 
-					let blockv1 = match block.map(|block| block.try_into()) {
-						None => continue,
+					let block_v1 = match block.map(|block| block.try_into()) {
+						None => {
+							tracing::error!("Streamed block, get block: {} from DB is missing. Close the stream.",current_block_height);
+							return;
+						}
 						Some(Ok(block)) => block,
 						Some(Err(err)) => {
 							tracing::warn!(error = %err, "Streamed block serialization failed.");
@@ -142,14 +152,16 @@ impl DaSequencerNodeService for DaSequencerNode {
 
 						}
 					};
-					BlockResponse { block_type: Some(BlockType::BlockV1(blockv1)) }
+					current_block_height +=1;
+					BlockResponse { block_type: Some(BlockType::BlockV1(block_v1)) }
 
+				// Fetch new produced block.
 				} else {
 					//send block in produced channel
-					let received_content = match produced_rx.recv().await {
+					let received_content = match current_produced_block_rx.recv().await {
 						Some(block) => block,
 						None => {
-							tracing::warn!("Stream block: produced block channel closed.");
+							tracing::warn!("Streamed block: produced block channel closed.");
 							return;
 						}
 
@@ -162,15 +174,20 @@ impl DaSequencerNodeService for DaSequencerNode {
 						}
 
 						Some((new_block, state)) => {
-							// send newly produced block.
+							// If the new produced height is not the next one it means that someway we miss blocks.
+							// Use the DB fetching mechanism to request them.
+							// Set the first_produced_block_height the to missing block height.
 							if current_block_height + 1 < new_block.height().0 {
-								// we missed a block request.
-								current_produced_height = new_block.height();
+								// we missed a block request it.
+								first_produced_block_height = new_block.height();
+								tracing::warn!("Streamed block: Produced block fetching miss some blocks");
+								tracing::warn!("current_block_height:{current_block_height} produced block height:{}.", new_block.height().0);
+								tracing::warn!("Fetch them from the DB.");
 								continue;
 							}
 							current_block_height = new_block.height().0;
 
-							let mut blockv1: BlockV1 = match new_block.try_into() {
+							let mut block_v1: BlockV1 = match new_block.try_into() {
 								Ok(b) => b,
 								Err(err) => {
 									tracing::warn!(error = %err, "Stream block: block serialization failed.");
@@ -178,8 +195,9 @@ impl DaSequencerNodeService for DaSequencerNode {
 
 								}
 							};
-							blockv1.node_state = state.map(|s| s.into());
-							BlockResponse { block_type: Some(BlockType::BlockV1(blockv1)) }
+							// send newly produced block.
+							block_v1.node_state = state.map(|s| s.into());
+							BlockResponse { block_type: Some(BlockType::BlockV1(block_v1)) }
 						}
 					}
 				};

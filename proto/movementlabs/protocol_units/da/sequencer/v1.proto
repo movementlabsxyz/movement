@@ -8,7 +8,7 @@ service DaSequencerNodeService {
   // Read blocks at a specified height.
   rpc ReadAtHeight (ReadAtHeightRequest) returns (ReadAtHeightResponse);
 
-  // Write a bacth. Return true if it's accepted.
+  // Write a batch. Return true if it's accepted.
   rpc BatchWrite (BatchWriteRequest) returns (BatchWriteResponse);
 
   // Send a new state to propagate it to all other nodes.

@@ -1878,6 +1878,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "aptos-framework-biarritz-rc1-to-pre-l1-merge-migration"
+version = "0.3.4"
+dependencies = [
+ "aptos-framework-biarritz-rc1-release",
+ "aptos-framework-pre-l1-merge-release",
+ "aptos-sdk",
+ "dot-movement",
+ "maptos-framework-release-util",
+ "movement-config",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "aptos-framework-elsa-release"
 version = "0.3.4"
 dependencies = [
@@ -1936,6 +1949,33 @@ dependencies = [
  "maptos-framework-release-util",
  "thiserror 1.0.69",
  "tokio",
+]
+
+[[package]]
+name = "aptos-framework-pre-l1-merge-release"
+version = "0.3.4"
+dependencies = [
+ "anyhow",
+ "aptos-framework",
+ "aptos-framework-release-script-release",
+ "aptos-framework-set-feature-flags-release",
+ "aptos-framework-upgrade-gas-release",
+ "aptos-gas-schedule",
+ "aptos-release-builder",
+ "aptos-sdk",
+ "aptos-types",
+ "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
+ "dot-movement",
+ "hex",
+ "maptos-framework-release-util",
+ "movement-client",
+ "movement-config",
+ "once_cell",
+ "tempfile",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "url",
 ]
 
 [[package]]
@@ -11442,15 +11482,14 @@ name = "movement-da-light-node-prevalidator"
 version = "0.3.4"
 dependencies = [
  "anyhow",
+ "aptos-crypto",
+ "aptos-sdk",
  "aptos-types",
  "async-stream",
  "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
- "dot-movement",
  "ecdsa 0.16.9",
  "hex",
- "k256",
  "movement-da-light-node-proto",
- "movement-da-light-node-setup",
  "movement-da-util",
  "movement-types",
  "prost 0.13.3",
@@ -11721,6 +11760,7 @@ dependencies = [
  "aptos-api",
  "aptos-api-types",
  "aptos-crypto",
+ "aptos-framework-biarritz-rc1-to-pre-l1-merge-migration",
  "aptos-framework-elsa-to-biarritz-rc1-migration",
  "aptos-sdk",
  "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",

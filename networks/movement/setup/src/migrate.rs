@@ -2,23 +2,34 @@ use dot_movement::DotMovement;
 use serde_json::Value;
 
 pub async fn migrate_v0_4_0(dot_movement: DotMovement) -> Result<(), anyhow::Error> {
-	let mut value = dot_movement.try_load_value().await?;
-
-	//verify the da-sequencer conf exist.
-	let da_conf = value.get("maptos_config").and_then(|conf| conf.get("da_sequencer"));
-	//add default values
-	if da_conf.is_none() {
-		tracing::info!("No Da-sequencer config, create a new one.");
-		let da_config = maptos_execution_util::config::da_sequencer::Config::default();
-		if let Some(maptos_conf) =
-			value.get_mut("maptos_config").and_then(|val| val.as_object_mut())
-		{
-			maptos_conf.insert(
-				"da_sequencer".to_string(),
-				serde_json::to_value(da_config).unwrap_or_default(),
-			);
+	let mut value = match dot_movement.try_load_value().await {
+		// Update existing config
+		Ok(mut value) => {
+			//verify the da-sequencer conf exist.
+			let da_conf = value.get("maptos_config").and_then(|conf| conf.get("da_sequencer"));
+			//add default values
+			if da_conf.is_none() {
+				tracing::info!("No Da-sequencer config, create a new one.");
+				let da_config = maptos_execution_util::config::da_sequencer::Config::default();
+				if let Some(maptos_conf) =
+					value.get_mut("maptos_config").and_then(|val| val.as_object_mut())
+				{
+					maptos_conf.insert(
+						"da_sequencer".to_string(),
+						serde_json::to_value(da_config).unwrap_or_default(),
+					);
+				}
+			}
+			value
 		}
-	}
+		// Create a new one.
+		Err(_) => {
+			tracing::info!("Config file not found, recreate it.");
+			let config = movement_config::Config::default();
+			dot_movement.try_overwrite_config_to_json(&config)?;
+			dot_movement.try_load_value().await?
+		}
+	};
 
 	let da_conf = value
 		.get_mut("maptos_config")

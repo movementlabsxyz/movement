@@ -50,7 +50,7 @@ processes:
 
   movement-faucet: 
     command : |
-      movement-faucet-service run-simple
+      movement-faucet-service run-simple --do-not-delegate
     depends_on:
       movement-full-node:
         condition: process_healthy

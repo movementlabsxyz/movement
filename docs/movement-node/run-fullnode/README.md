@@ -11,7 +11,7 @@ By running the a Follower Node locally, you will be able to gauge the performanc
 
 The current container rev for installation is:
 
-CONTAINER_REV=289c0b8
+CONTAINER_REV=ff302aa
 
 ## Running a Movement Node on Follower Node
 You can join any network as a Full Node by running a Movement Node with container tags specified to latest commit hash on this branch, the [`fullnode`](../../../../../docker/compose/movement-full-node/docker-compose.fullnode.yml) overlay.
@@ -42,15 +42,17 @@ The Ansible script has successfully installed the software into the instance. Th
 
 #### Configure Fullnode
 
-Stop the node using the command: `systemctl stop movement-fullnode.service`
+Stop the node using the command: `sudo systemctl stop movement-fullnode.service`
 
 1) Update config
 The first step is to setup the node config file or update it if you start from an existing installation.
 
 Define the da-sequencer connection url depending on the network:
- * Devnet: export MAPTOS_DA_SEQUENCER_CONNECTION_URL=https://da-sequencer.devnet.movementinfra.xyz
- * Testnet: export MAPTOS_DA_SEQUENCER_CONNECTION_URL=https://m1-da-light-node.testnet.bardock.movementnetwork.xyz
- * Mainnet: export MAPTOS_DA_SEQUENCER_CONNECTION_URL=https://m1-da-light-node.mainnet.movementnetwork.xyz
+ * Devnet: `export MAPTOS_DA_SEQUENCER_CONNECTION_URL=https://da-sequencer.devnet.movementinfra.xyz`
+ * Testnet: `export MAPTOS_DA_SEQUENCER_CONNECTION_URL=https://m1-da-light-node.testnet.bardock.movementnetwork.xyz`
+ * Mainnet: `export MAPTOS_DA_SEQUENCER_CONNECTION_URL=https://m1-da-light-node.mainnet.movementnetwork.xyz`
+
+Update the `$HOME/movement/docs/movement-node/run-fullnode/scripts/setup_migrate.sh` script with last container rev if not done.
 
 To setup/migrate run the script: `$HOME/movement/docs/movement-node/run-fullnode/scripts/setup_migrate.sh`
 
