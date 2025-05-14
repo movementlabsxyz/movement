@@ -188,6 +188,7 @@ macro_rules! generate_feature_upgrade_module {
 			use aptos_release_builder::aptos_framework_path;
 			use aptos_release_builder::components::feature_flags::Features;
 			use aptos_sdk::move_types::gas_algebra::GasQuantity;
+			use aptos_types::on_chain_config::Features as AptosFeatures;
 			use maptos_framework_release_util::{Release, ReleaseBundleError};
 			use tracing::info;
 
@@ -210,6 +211,10 @@ macro_rules! generate_feature_upgrade_module {
 					self.with_features.release_bundle()
 				}
 
+				fn features(&self) -> Result<AptosFeatures, ReleaseBundleError> {
+					self.with_features.features().into()
+				}
+
 				async fn propose_release(
 					&self,
 					signer: &impl maptos_framework_release_util::ReleaseSigner,
@@ -217,7 +222,8 @@ macro_rules! generate_feature_upgrade_module {
 					gas_unit_price: u64,
 					expiration_timestamp_secs: u64,
 					client: &aptos_sdk::rest_client::Client,
-				) -> Result<Vec<aptos_types::transaction::SignedTransaction>, ReleaseBundleError> {
+				) -> Result<Vec<aptos_types::transaction::SignedTransaction>, ReleaseBundleError>
+				{
 					info!("Proposing release {} with feature flags", stringify!($struct_name));
 					self.with_features
 						.propose_release(

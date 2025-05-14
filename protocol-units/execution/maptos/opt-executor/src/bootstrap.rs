@@ -68,7 +68,7 @@ fn genesis_change_set_and_validators(
 			voting_power_increase_limit: 50,
 			employee_vesting_start: 1663456089,
 			employee_vesting_period_duration: 5 * 60, // 5 minutes
-			initial_features_override: None,
+			initial_features_override: Some(release.features()?),
 			randomness_config_override: None,
 			jwk_consensus_config_override: None,
 		},
