@@ -1,0 +1,14 @@
+[package]
+name = "vanity"
+version = "0.2.1"
+edition = "2021"
+
+[dependencies]
+aptos-sdk = { workspace = true }
+rand = { workspace = true }
+rayon = { workspace = true }
+hex = { workspace = true }
+clap = { workspace = true }
+thiserror = { workspace = true }
+num_cpus = { workspace = true }
+tracing = { workspace = true }
