@@ -1,0 +1,63 @@
+use aptos_framework_upgrade_gas_release::generate_gas_upgrade_module;
+use maptos_framework_release_util::mrb_release;
+
+mrb_release!(
+	PostL1Merge,
+	BIARRTIZ_RC1,
+	"867b1828618ad33bfb3b10c50665cb67113f60e2-post-l1-merge.mrb"
+);
+
+generate_gas_upgrade_module!(gas_upgrade, PostL1Merge, {
+	let mut gas_parameters = AptosGasParameters::initial();
+	gas_parameters.vm.txn.max_transaction_size_in_bytes = GasQuantity::new(100_000_000);
+	gas_parameters.vm.txn.max_execution_gas = GasQuantity::new(10_000_000_000);
+	gas_parameters.vm.txn.gas_unit_scaling_factor = GasQuantity::new(50_000);
+	aptos_types::on_chain_config::GasScheduleV2 {
+		feature_version: aptos_gas_schedule::LATEST_GAS_FEATURE_VERSION,
+		entries: gas_parameters
+			.to_on_chain_gas_schedule(aptos_gas_schedule::LATEST_GAS_FEATURE_VERSION),
+	}
+});
+
+pub mod script {
+	use super::gas_upgrade::PostL1Merge;
+	use aptos_framework_release_script_release::generate_script_module;
+
+	generate_script_module!(script, PostL1Merge, {
+		r#"
+script {
+    use aptos_framework::aptos_governance;
+    use aptos_framework::gas_schedule;
+    use aptos_framework::governed_gas_pool;
+    use aptos_framework::aptos_coin;
+    use aptos_framework::signer;
+    use aptos_framework::version;
+    use aptos_framework::account;
+
+    fun main(core_resources: &signer) {
+       
+    }
+}
+"#
+		.to_string()
+	});
+}
+
+pub mod full {
+
+	use super::script::script::PostL1Merge;
+	use aptos_framework_set_feature_flags_release::generate_feature_upgrade_module;
+
+	generate_feature_upgrade_module!(feature_upgrade, PostL1Merge, {
+		use aptos_release_builder::components::feature_flags::FeatureFlag;
+		use aptos_types::on_chain_config::FeatureFlag as AptosFeatureFlag;
+
+		let mut aptos_feature_flags = AptosFeatureFlag::default_features();
+		aptos_feature_flags.push(AptosFeatureFlag::DECOMMISSION_CORE_RESOURCES);
+
+		Features {
+			enabled: aptos_feature_flags.into_iter().map(FeatureFlag::from).collect(),
+			disabled: vec![],
+		}
+	});
+}
