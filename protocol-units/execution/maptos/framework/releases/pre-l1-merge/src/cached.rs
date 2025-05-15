@@ -61,7 +61,7 @@ pub mod full {
 		// Note: before the upgrade to the newest version to the Aptos framework
 		// we need to activate features that are currently active on the Aptos testnet
 		// See: https://github.com/movementlabsxyz/movement-migration/issues/30#issuecomment-2862738427
-		aptos_feature_flags.push(AptosFeatureFlag::PERIODICAL_REWARD_RATE_DECREASE);
+		// aptos_feature_flags.push(AptosFeatureFlag::PERIODICAL_REWARD_RATE_DECREASE);
 		aptos_feature_flags.push(AptosFeatureFlag::PARTIAL_GOVERNANCE_VOTING);
 		aptos_feature_flags.push(AptosFeatureFlag::DELEGATION_POOL_PARTIAL_GOVERNANCE_VOTING);
 		aptos_feature_flags.push(AptosFeatureFlag::VM_BINARY_FORMAT_V7);
