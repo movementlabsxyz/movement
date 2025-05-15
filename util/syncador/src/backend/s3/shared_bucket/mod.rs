@@ -35,7 +35,6 @@ pub async fn create_push_with_load_from_env(
 		Ok(region) => Some(Region::new(region)),
 		Err(_) => None,
 	};
-	info!("Region from env:{region:?}");
 	let config = aws_config::load_from_env().await.into_builder().region(region).build();
 	info!("Create client used region {:?}", config.region());
 	let client = aws_sdk_s3::Client::new(&config);

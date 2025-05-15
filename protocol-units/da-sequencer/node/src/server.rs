@@ -114,10 +114,13 @@ impl DaSequencerNodeService for DaSequencerNode {
 			}
 		};
 		let mut current_block_height = request.into_inner().height;
-		//The genesis block can't be retrieved.
+
+		//The genesis block can't be retrieved so set min height to 1.
+		//In the DB block height start as 1 and the genesis block is not present.
 		if current_block_height == 0 {
 			current_block_height = 1;
 		}
+
 		let request_tx = self.request_tx.clone();
 		let output = async_stream::try_stream! {
 			loop {

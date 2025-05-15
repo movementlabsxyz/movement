@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-# systemctl stop  movement-full-follower.service
+systemctl stop  movement-fullnode.service
 export DOT_MOVEMENT_PATH=$HOME/.movement
 export CONTAINER_REV=ff302aa
 export MAYBE_RUN_LOCAL="false"

@@ -8,9 +8,7 @@ services:
       - MOVEMENT_TIMING=info
       - SUZUKA_TIMING_LOG=/.movement/movement-timing.log
       - RUST_BACKTRACE=1
-      - AWS_REGION=us-west-1
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_REGION=${AWS_REGION}
       - SYNC_BUCKET=${SYNC_BUCKET}
       - SYNC_ARCHIVE=${SYNC_BUCKET}
     command: backup push $SYNC_BUCKET $SYNC_ARCHIVE
