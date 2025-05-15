@@ -9,8 +9,6 @@ use num_cpus;
 use tracing;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    use tracing_subscriber::EnvFilter;
-	tracing_subscriber::fmt().with_writer(std::io::stdout).init();
 
     match Vanity::parse() {
         Vanity::Move { starts_pattern, ends_pattern } => {
@@ -29,8 +27,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 num_cpus::get(),
             );
 
-            tracing::info!("Found Move address: {}", account.address());
-            tracing::info!("Private key (hex): {}", hex::encode(account.private_key().to_bytes()));
+            println!("Found Move address: {}", account.address());
+            println!("Private key (hex): {}", hex::encode(account.private_key().to_bytes()));
             return Ok(());
         }
     }

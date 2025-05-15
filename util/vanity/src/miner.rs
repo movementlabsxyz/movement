@@ -49,7 +49,7 @@ pub fn mine_move_address(
             });
     });
 
-    tracing::info!("Mining completed in {:?}", start_time.elapsed());
+    println!("Mining completed in {:?}", start_time.elapsed());
 
     let final_result = std::mem::take(&mut *result.lock().unwrap());
     final_result.expect("No matching account found")
