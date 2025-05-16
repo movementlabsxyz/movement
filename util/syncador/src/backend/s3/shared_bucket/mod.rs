@@ -1,5 +1,7 @@
 use super::bucket_connection;
+use aws_sdk_s3::config::Credentials;
 use aws_types::region::Region;
+use aws_types::sdk_config::SharedCredentialsProvider;
 use tracing::info;
 
 const UPLOAD_COMPLETE_MARKER_FILE_NAME: &str = "upload_complete.txt";
@@ -12,16 +14,39 @@ pub mod push;
 use movement_types::application;
 use std::path::PathBuf;
 
+async fn create_aws_config() -> aws_config::SdkConfig {
+	let region = match std::env::var("AWS_REGION") {
+		Ok(region) => Some(Region::new(region)),
+		Err(_) => None,
+	};
+
+	let timeout_config = aws_config::timeout::TimeoutConfig::disabled();
+	let mut config_builder = aws_config::load_from_env()
+		.await
+		.into_builder()
+		.region(region)
+		.timeout_config(timeout_config);
+
+	if let Ok(val) = std::env::var("AWS_BUCKET_ANONYMOUS_ACCESS") {
+		if val.trim().to_lowercase() == "true" {
+			info!("Bucket connection, use anonymous AWS access.");
+			let anonymous =
+				SharedCredentialsProvider::new(Credentials::new("", "", None, None, "anonymous"));
+			config_builder = config_builder.credentials_provider(anonymous);
+		}
+	}
+
+	let config = config_builder.build();
+	info!("Open AWS connection with region {:?}", config.region());
+	config
+}
+
 pub async fn create_with_load_from_env(
 	bucket: String,
 	pull_destination: PathBuf,
 	metadata: metadata::Metadata,
 ) -> Result<(push::Push, pull::Pull), anyhow::Error> {
-	let region = match std::env::var("AWS_REGION") {
-		Ok(region) => Some(Region::new(region)),
-		Err(_) => None,
-	};
-	let config = aws_config::load_from_env().await.into_builder().region(region).build();
+	let config = create_aws_config().await;
 	info!("Create client used region {:?}", config.region());
 	let client = aws_sdk_s3::Client::new(&config);
 	create(client, bucket, metadata, pull_destination).await
@@ -31,12 +56,7 @@ pub async fn create_push_with_load_from_env(
 	bucket: String,
 	metadata: metadata::Metadata,
 ) -> Result<push::Push, anyhow::Error> {
-	let region = match std::env::var("AWS_REGION") {
-		Ok(region) => Some(Region::new(region)),
-		Err(_) => None,
-	};
-	let config = aws_config::load_from_env().await.into_builder().region(region).build();
-	info!("Create client used region {:?}", config.region());
+	let config = create_aws_config().await;
 	let client = aws_sdk_s3::Client::new(&config);
 	let bucket_connection = bucket_connection::BucketConnection::create(client, bucket).await?;
 	let push = push::Push::new(bucket_connection, metadata);
@@ -48,12 +68,7 @@ pub async fn create_pull_with_load_from_env(
 	metadata: metadata::Metadata,
 	pull_destination: PathBuf,
 ) -> Result<pull::Pull, anyhow::Error> {
-	let region = match std::env::var("AWS_REGION") {
-		Ok(region) => Some(Region::new(region)),
-		Err(_) => None,
-	};
-	let config = aws_config::load_from_env().await.into_builder().region(region).build();
-	info!("Create client used region {:?}", config.region());
+	let config = create_aws_config().await;
 	let client = aws_sdk_s3::Client::new(&config);
 	let bucket_connection = bucket_connection::BucketConnection::create(client, bucket).await?;
 	let pull = pull::Pull::new(bucket_connection, metadata, pull_destination);
@@ -61,12 +76,7 @@ pub async fn create_pull_with_load_from_env(
 }
 
 pub async fn destroy_with_load_from_env(bucket: String) -> Result<(), anyhow::Error> {
-	let region = match std::env::var("AWS_REGION") {
-		Ok(region) => Some(Region::new(region)),
-		Err(_) => None,
-	};
-	let config = aws_config::load_from_env().await.into_builder().region(region).build();
-	info!("Destroy client used region {:?}", config.region());
+	let config = create_aws_config().await;
 	let client = aws_sdk_s3::Client::new(&config);
 	let bucket_connection = bucket_connection::BucketConnection::new(client, bucket);
 	bucket_connection.destroy(true).await
