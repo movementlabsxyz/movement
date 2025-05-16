@@ -12,7 +12,7 @@ Running a follower node locally allows you to evaluate performance on a given ne
 
 ## Container Revision
 
-The current container revision for installation is: `CONTAINER_REV=ff302aa\
+The current container revision for installation is: `CONTAINER_REV=e5b696e` githut commit:`e5b696edaf153148b0cc6b29a8a512fe20fba554`
 
 ## Running a Movement Full Node
 
@@ -87,6 +87,13 @@ Depending on your target network, replace the service file content with the appr
  * Devnet: `$HOME/movement/docs/movement-node/run-fullnode/ansible/devnet/movement-fullnode.service.j2`
  * Testnet: `$HOME/movement/docs/movement-node/run-fullnode/ansible/testnet/movement-fullnode.service.j2`
  * Mainnet: `$HOME/movement/docs/movement-node/run-fullnode/ansible/mainnet/movement-fullnode.service.j2`
+
+ The `$HOME/movement` github checkout commit must be updated with the container revision commit (see above).
+
+ ```bash
+ cd $HOME/movement
+ git checkout <Last container commit rev>
+ ```
 
 ##### 3) Sync the node
 

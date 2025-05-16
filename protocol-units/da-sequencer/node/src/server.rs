@@ -248,7 +248,10 @@ impl DaSequencerNodeService for DaSequencerNode {
 			let raw_batch = DaBatch::<RawData>::now(public_key, signature, bytes);
 			match validate_batch(raw_batch, &self.whitelist).map_or_else(
 				|err| {
-					tracing::warn!("Invalid batch send: validation failed: {err}");
+					tracing::warn!(
+						"Invalid batch send from sender:0x{}.  validation failed: {err}",
+						hex::encode(&public_key.to_bytes())
+					);
 					None
 				},
 				|validated| Some(validated),

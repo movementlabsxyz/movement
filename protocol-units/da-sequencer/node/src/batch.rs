@@ -1,6 +1,7 @@
 use crate::error::DaSequencerError;
 use crate::whitelist::Whitelist;
 use aptos_crypto_derive::{BCSCryptoHash, CryptoHasher};
+use aptos_types::transaction::SignedTransaction as AptosTransaction;
 use bcs;
 use ed25519_dalek::{Signature, Verifier, VerifyingKey};
 use movement_types::transaction::Transaction;
@@ -18,6 +19,21 @@ pub struct FullNodeTxs(pub Vec<Transaction>);
 impl FullNodeTxs {
 	pub fn new(txs: Vec<Transaction>) -> Self {
 		FullNodeTxs(txs)
+	}
+
+	// Validate all batch Txs signatures.
+	// Return an error if any signature is invalid.
+	// If any Tx is wrong, the whole batch is rejected.
+	fn validate_txs(&self) -> Result<(), DaSequencerError> {
+		self.0.iter().try_for_each(|tx| {
+			//Validate batch Tx signature
+			let aptos_transaction: AptosTransaction = bcs::from_bytes(&tx.data())
+				.map_err(|_| DaSequencerError::DeserializationFailure)?;
+
+			aptos_transaction
+				.verify_signature()
+				.map_err(|_| DaSequencerError::InvalidSignature)
+		})
 	}
 }
 
@@ -63,6 +79,11 @@ pub fn validate_batch(
 
 	let data = bcs::from_bytes::<FullNodeTxs>(&new_batch.data.data)
 		.map_err(|_| DaSequencerError::DeserializationFailure)?;
+
+	//Validate batch Txs
+	// If any Tx is wrong, the whole batch is rejected.
+	// Authenticated batch sender should never send bad Tx.
+	data.validate_txs()?;
 
 	Ok(DaBatch {
 		data,

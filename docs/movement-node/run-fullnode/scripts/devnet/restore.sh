@@ -7,6 +7,6 @@ export AWS_DEFAULT_REGION=us-west-2
 export AWS_REGION=us-west-2
 export MAPTOS_CHAIN_ID=27
 export SYNC_PATTERN="{default_signer_address_whitelist,maptos,maptos-storage,movement-da-db}/**"
-export SYNC_BUCKET="fork-mtnet-l-sync-bucket-sync"
+export SYNC_BUCKET="movement-sync-devnet"
 
 /usr/bin/docker compose --env-file movement/.env -f ./movement/docker/compose/movement-full-node/snapshot/docker-compose.restore.yml up --force-recreate

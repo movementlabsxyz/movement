@@ -1,5 +1,5 @@
 [Unit]
-Description=Movement Full Follower
+Description=Movement Full Node
 After=network.target
 
 [Service]
@@ -13,7 +13,7 @@ Environment="MAPTOS_PRIVATE_KEY=random"
 
 Environment="MAPTOS_DA_SEQUENCER_CONNECTION_URL=https://da-sequencer.devnet.movementinfra.xyz"
 
-ExecStart=/usr/bin/docker compose --env-file .env -f /home/{{ user }}/movement/docker/compose/movement-full-node/docker-compose.fullnode.yml -f /home/{{ user }}/movement/docker/compose/movement-full-node/docker-compose.faucet.yml up --force-recreate --remove-orphans
+ExecStart=/usr/bin/docker compose --env-file .env -f /home/{{ user }}/movement/docker/compose/movement-full-node/docker-compose.fullnode.yml up --force-recreate --remove-orphans
 Restart=on-failure
 
 [Install]
