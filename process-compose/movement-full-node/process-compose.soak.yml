@@ -4,7 +4,7 @@ environment:
 
 processes:
 
-  movement-tests-load-tests:
+  movement-tests-soak-tests:
     command: |
       cargo run --bin movement-tests-e2e-soak-alice-bob 
     depends_on:

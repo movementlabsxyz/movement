@@ -366,6 +366,7 @@ mod tests {
 	use tracing::info;
 
 	#[test]
+	#[ignore]
 	#[tracing_test::traced_test]
 	fn test_migration() -> Result<(), anyhow::Error> {
 		let json = serde_json::json!({

@@ -1,0 +1,72 @@
+syntax = "proto3";
+package movementlabs.protocol_units.da.sequencer.v1;
+
+
+service DaSequencerNodeService {
+  rpc StreamReadFromHeight (StreamReadFromHeightRequest) returns (stream StreamReadFromHeightResponse);
+
+  // Read blocks at a specified height.
+  rpc ReadAtHeight (ReadAtHeightRequest) returns (ReadAtHeightResponse);
+
+  // Write a batch. Return true if it's accepted.
+  rpc BatchWrite (BatchWriteRequest) returns (BatchWriteResponse);
+
+  // Send a new state to propagate it to all other nodes.
+  // Restricted to one node that must sign the request.
+  // Return true if it's accepted.
+  rpc SendState (MainNodeStateRequest) returns (BatchWriteResponse);
+
+}
+
+// Request and response messages
+message BlockV1 {
+    bytes block_id = 1;
+    bytes data = 2;
+    uint64 height = 3;
+    MainNodeState node_state = 4;
+}
+
+message BlockResponse {
+    oneof block_type {
+      bool heartbeat = 1;
+      BlockV1 block_v1 = 2;
+    }
+}
+
+// StreamReadAtHeight
+message StreamReadFromHeightRequest {
+    uint64 height = 1;
+}
+
+message StreamReadFromHeightResponse {
+    BlockResponse response = 1;
+}
+
+// ReadAtHeight
+message ReadAtHeightRequest {
+    uint64 height = 1;
+}
+
+message ReadAtHeightResponse {
+    BlockResponse response = 1;
+}
+
+message BatchWriteRequest {
+    bytes data = 1;
+}
+
+message BatchWriteResponse {
+    bool answer = 1;
+}
+
+message MainNodeStateRequest {
+    MainNodeState state = 1;
+    bytes signature = 2;
+}
+
+message MainNodeState {
+    uint64 block_height = 1;
+    uint64 ledger_timestamp = 2;
+    uint64 ledger_version = 3;
+}
+
