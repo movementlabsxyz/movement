@@ -9,6 +9,7 @@ services:
       - SUZUKA_TIMING_LOG=/.movement/movement-timing.log
       - RUST_BACKTRACE=1
       - AWS_REGION=${AWS_REGION}
+      - AWS_BUCKET_ANONYMOUS_ACCESS=${AWS_BUCKET_ANONYMOUS_ACCESS}
       - SYNC_BUCKET=${SYNC_BUCKET}
       - SYNC_PATTERN=${SYNC_PATTERN}
     command: backup restore $SYNC_BUCKET $SYNC_PATTERN

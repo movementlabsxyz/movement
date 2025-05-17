@@ -1,7 +1,6 @@
 use super::bucket_connection;
-use aws_sdk_s3::config::Credentials;
+use aws_config::BehaviorVersion;
 use aws_types::region::Region;
-use aws_types::sdk_config::SharedCredentialsProvider;
 use tracing::info;
 
 const UPLOAD_COMPLETE_MARKER_FILE_NAME: &str = "upload_complete.txt";
@@ -21,22 +20,18 @@ async fn create_aws_config() -> aws_config::SdkConfig {
 	};
 
 	let timeout_config = aws_config::timeout::TimeoutConfig::disabled();
-	let mut config_builder = aws_config::load_from_env()
-		.await
-		.into_builder()
+	let mut config_builder = aws_config::defaults(BehaviorVersion::latest())
 		.region(region)
 		.timeout_config(timeout_config);
 
 	if let Ok(val) = std::env::var("AWS_BUCKET_ANONYMOUS_ACCESS") {
 		if val.trim().to_lowercase() == "true" {
 			info!("Bucket connection, use anonymous AWS access.");
-			let anonymous =
-				SharedCredentialsProvider::new(Credentials::new("", "", None, None, "anonymous"));
-			config_builder = config_builder.credentials_provider(anonymous);
+			config_builder = config_builder.no_credentials()
 		}
 	}
 
-	let config = config_builder.build();
+	let config = config_builder.load().await;
 	info!("Open AWS connection with region {:?}", config.region());
 	config
 }
