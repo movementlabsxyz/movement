@@ -36,9 +36,9 @@ pub async fn migrate_v0_4_0(dot_movement: DotMovement) -> Result<(), anyhow::Err
 		.and_then(|conf| conf.get_mut("da_sequencer"))
 		.and_then(|val| val.as_object_mut());
 
-	// Set DA sequencer connection url if not local
 	let local = std::env::var_os("MAYBE_RUN_LOCAL").unwrap_or("false".into());
 	if local == "false" {
+		// Set DA sequencer connection url.
 		let new_url = match std::env::var_os("MAPTOS_DA_SEQUENCER_CONNECTION_URL") {
 			Some(url) => url.to_string_lossy().into_owned(),
 			None => "http://movement-da-sequencer:30730/".to_string(),
@@ -46,6 +46,14 @@ pub async fn migrate_v0_4_0(dot_movement: DotMovement) -> Result<(), anyhow::Err
 		tracing::info!("Updating da-sequencer connection url with:{new_url} .");
 		if let Some(conn) = value.pointer_mut("/maptos_config/da_sequencer/connection_url") {
 			*conn = Value::String(new_url);
+		}
+		//Set Maptos db path
+		let chain_id = value["maptos_config"]["chain"]["maptos_chain_id"]
+			.as_u64()
+			.expect("maptos_chain_id missing or not a u64");
+
+		if let Some(conn) = value.pointer_mut("/maptos_config/chain/maptos_db_path") {
+			*conn = Value::String(format!("/.movement/maptos/{}/.maptos", chain_id));
 		}
 	}
 

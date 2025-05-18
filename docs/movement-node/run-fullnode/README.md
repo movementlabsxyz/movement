@@ -118,7 +118,7 @@ To check that the Full Node is syncing properly:
 
 1. get local state: `curl 127.0.0.1:30731/v1`
 2. get the network state:
- * Devnet:
+ * Devnet: `curl https://full.devnet.movementinfra.xyz/v1`
  * Testnet: `curl https://testnet.bardock.movementnetwork.xyz/v1`
  * Mainnet: `curl https://mainnet.movementnetwork.xyz/v1`
 
