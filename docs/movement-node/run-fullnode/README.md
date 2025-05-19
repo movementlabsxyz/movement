@@ -16,7 +16,7 @@ The current container revision for installation is: `CONTAINER_REV=332e152` gith
 
 ## Running a Movement Full Node
 
-You can join any network as a Full Node by running a Movement Node using container tags that point to the latest commit hash, along with the [`fullnode`](../../../../docker/compose/movement-full-node/docker-compose.fullnode.yml) overlay.
+You can join any network as a Full Node by running a Movement Node using container tags that point to the latest commit hash, along with the [`fullnode`](../../../docker/compose/movement-full-node/docker-compose.fullnode.yml) overlay.
 
 You can install the node software using the automated Docker procedure or by installing it manually.
 
