@@ -59,3 +59,76 @@ pub(super) enum Vanity {
 		ends_pattern: Option<String>,
 	},
 }
+
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use std::str::FromStr;
+	use clap::Parser; // <- THIS is what you're missing!
+	use assert_cmd::Command;
+	use predicates::prelude::*;
+
+	#[test]
+    fn test_valid_pattern() {
+        let p = Pattern::from_str("abcd").unwrap();
+        assert_eq!(&*p, "abcd");
+    }
+
+    #[test]
+	fn test_cli_parsing_starts_pattern() {
+		let cli = Vanity::parse_from([
+			"vanity",
+			"move",
+			"--starts-pattern",
+			"abcd",
+		]);
+		match cli {
+			Vanity::Move { starts_pattern, ends_pattern } => {
+				assert_eq!(starts_pattern, Some("abcd".to_string()));
+				assert_eq!(ends_pattern, None);
+			}
+		}
+	}
+
+    #[test]
+fn test_cli_runs_with_starts() {
+	let mut cmd = Command::cargo_bin("vanity").unwrap();
+	let assert = cmd.args(&["move", "--starts-pattern", "de"]).assert().success();
+
+	let output = String::from_utf8(assert.get_output().stdout.clone()).unwrap();
+	let address_line = output.lines().find(|l| l.contains("Found Move address:")).unwrap();
+	let address = address_line.split(':').nth(1).unwrap().trim().trim_start_matches("0x");
+
+	assert!(address.starts_with("de"), "Address does not start with 'de': {}", address);
+}
+
+#[test]
+fn test_cli_runs_with_ends() {
+	let mut cmd = Command::cargo_bin("vanity").unwrap();
+	let assert = cmd.args(&["move", "--ends-pattern", "f0"]).assert().success();
+
+	let output = String::from_utf8(assert.get_output().stdout.clone()).unwrap();
+	let address_line = output.lines().find(|l| l.contains("Found Move address:")).unwrap();
+	let address = address_line.split(':').nth(1).unwrap().trim().trim_start_matches("0x");
+
+	assert!(address.ends_with("f0"), "Address does not end with 'f0': {}", address);
+}
+
+#[test]
+fn test_cli_runs_with_starts_and_ends() {
+	let mut cmd = Command::cargo_bin("vanity").unwrap();
+	let assert = cmd
+		.args(&["move", "--starts-pattern", "de", "--ends-pattern", "f0"])
+		.assert()
+		.success();
+
+	let output = String::from_utf8(assert.get_output().stdout.clone()).unwrap();
+	let address_line = output.lines().find(|l| l.contains("Found Move address:")).unwrap();
+	let address = address_line.split(':').nth(1).unwrap().trim().trim_start_matches("0x");
+
+	assert!(address.starts_with("de"), "Address does not start with 'de': {}", address);
+	assert!(address.ends_with("f0"), "Address does not end with 'f0': {}", address);
+}
+
+}

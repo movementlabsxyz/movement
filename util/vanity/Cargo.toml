@@ -12,3 +12,11 @@ clap = { workspace = true }
 thiserror = { workspace = true }
 num_cpus = { workspace = true }
 tracing = { workspace = true }
+
+[dev-dependencies]
+assert_cmd = "2"
+predicates = "3"
+
+[[bin]]
+name = "vanity"
+path = "src/main.rs"

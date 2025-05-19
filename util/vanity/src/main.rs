@@ -6,7 +6,6 @@ use clap::Parser;
 use cli::{Pattern, Vanity};
 use miner::mine_move_address;
 use num_cpus;
-use tracing;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 
