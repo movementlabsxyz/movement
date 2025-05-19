@@ -55,6 +55,10 @@ pub async fn migrate_v0_4_0(dot_movement: DotMovement) -> Result<(), anyhow::Err
 		if let Some(conn) = value.pointer_mut("/maptos_config/chain/maptos_db_path") {
 			*conn = Value::String(format!("/.movement/maptos/{}/.maptos", chain_id));
 		}
+		//Set da db path
+		if let Some(conn) = value.pointer_mut("/da_db/da_db_path") {
+			*conn = Value::String("/.movement/movement-da-db".to_string());
+		}
 	}
 
 	// write the migrated value
