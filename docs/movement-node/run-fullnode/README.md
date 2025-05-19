@@ -16,22 +16,22 @@ The current container revision for installation is: `CONTAINER_REV=332e152` gith
 
 ## Running a Movement Full Node
 
-You can join any network as a Full Node by running a Movement Node using container tags that point to the latest commit hash on this branch, along with the [`fullnode`](../../../../../docker/compose/movement-full-node/docker-compose.fullnode.yml) overlay.
+You can join any network as a Full Node by running a Movement Node using container tags that point to the latest commit hash, along with the [`fullnode`](../../../../docker/compose/movement-full-node/docker-compose.fullnode.yml) overlay.
 
 You can install the node software using the automated Docker procedure or by installing it manually.
 
-### Docker Installation
+## Docker Installation
 
 Docker installation is done in two steps:
 
-1. Install the software on an instance.  
+1. Install the Full Node software on an instance.  
 2. Configure the node to sync with a specific network.
 
 Three networks are available, and you can run a node for any of them.
 
 The installation process is the same for all networks—the only differences are the configuration parameters. Be sure to use the correct ones.
 
-#### Install Full Node
+### Full Node instance installation
 
 An Ansible script is provided to deploy the required software to an instance. Use the appropriate command depending on your target network:
 
@@ -44,7 +44,7 @@ All software will be installed under this user.
 
 Once the Ansible script has completed, the software will be installed on the instance. You must then configure the node to begin syncing.
 
-#### Configure Full Node
+### Configure Full Node
 
 Connect to the instance then Stop the node before configuring it:
 
@@ -52,7 +52,7 @@ Connect to the instance then Stop the node before configuring it:
 sudo systemctl stop movement-fullnode.service
 ```
 
-##### 1) Specific update for follower node
+#### Specific update for follower node
 
 If you were previously running a follower node (e.g., version 0.3.4), you need to update the systemd service definition.
 
@@ -64,9 +64,9 @@ sudo mv /etc/systemd/system/movement-full-follower.service /etc/systemd/system/m
 
 2. Depending on your target network, replace the service file content with the appropriate template:
 
- * Devnet: `$HOME/movement/docs/movement-node/run-fullnode/ansible/devnet/movement-fullnode.service.j2`
- * Testnet: `$HOME/movement/docs/movement-node/run-fullnode/ansible/testnet/movement-fullnode.service.j2`
- * Mainnet: `$HOME/movement/docs/movement-node/run-fullnode/ansible/mainnet/movement-fullnode.service.j2`
+ * [Devnet](ansible/devnet/movement-fullnode.service.j2)
+ * [Testnet](ansible/testnet/movement-fullnode.service.j2)
+ * [Mainnet](ansible/mainnet/movement-fullnode.service.j2)
 
 3. Update the `$HOME/movement` github checkout commit the container revision commit (see above).
 
@@ -75,7 +75,7 @@ sudo mv /etc/systemd/system/movement-full-follower.service /etc/systemd/system/m
  git checkout <Last container commit rev>
  ```
 
-##### 2) Update config
+#### Update config
 
 To set up the node configuration file, or update it (if you're starting from an existing installation), you need to run the migration script.
 
@@ -95,7 +95,7 @@ If you want the full node to send transactions, it must be registered with the M
 After executing the setup/migration script, a batch signing public key will be printed.
 Note the key and send it to the Movement team so it can be added to the DA-Sequencer full node whitelist.
 
-##### 3) Sync the node
+#### Sync the node
 
 By default, syncing from height zero is disabled to prevent unintentionally streaming the entire blockchain from genesis.
 The recommended method is to restore the node from the most recent snapshot using the appropriate script:
@@ -104,7 +104,7 @@ The recommended method is to restore the node from the most recent snapshot usin
   * Testnet: `$HOME/movement/docs/movement-node/run-fullnode/scripts/testnet/restore.sh`
   * Mainnet: `$HOME/movement/docs/movement-node/run-fullnode/scripts/mainnet/restore.sh`
 
-##### 4) Start the node
+#### Start the node
 
 After restoring the database, restart the node:
 
@@ -114,7 +114,7 @@ systemctl restart movement-fullnode.service
 
 The node should now start and begin syncing.
 
-## Verify the node is working
+### Verify the node is working
 
 To check that the Full Node is syncing properly:
 
