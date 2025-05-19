@@ -6,6 +6,7 @@ services:
       DOT_MOVEMENT_PATH: /.movement
       MAYBE_RUN_LOCAL: "false"
       RUST_LOG: info,aws_sdk_s3=debug
+      MAPTOS_DA_SEQUENCER_CONNECTION_URL: ${MAPTOS_DA_SEQUENCER_CONNECTION_URL}
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement
       # mount if exists
