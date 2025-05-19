@@ -6,9 +6,14 @@ ffi = true
 gas_limit = 9223372036854775807  # this is only needed for the multiround settlement test
 build_info = true
 extra_output = ["storageLayout"]
+via_ir = true
 
 solc = "0.8.26"
 evm_version = "cancun"
+
+[profile.default.optimizer]
+enabled = true
+runs = 200
 
 fs_permissions = [{ access = "read-write", path = "./script/"}]
 
