@@ -12,7 +12,7 @@ Running a follower node locally allows you to evaluate performance on a given ne
 
 ## Container Revision
 
-The current container revision for installation is: `CONTAINER_REV=e5b696e` githut commit:`e5b696edaf153148b0cc6b29a8a512fe20fba554`
+The current container revision for installation is: `CONTAINER_REV=332e152` githut commit:`332e152cb5f8da4b2b58537beb83bc79dfd7ff7a`
 
 ## Running a Movement Full Node
 
@@ -52,17 +52,40 @@ Connect to the instance then Stop the node before configuring it:
 sudo systemctl stop movement-fullnode.service
 ```
 
-##### 1) Update config
+##### 1) Specific update for follower node
 
-The first step is to set up the node configuration file, or update it if you're starting from an existing installation.
+If you were previously running a follower node (e.g., version 0.3.4), you need to update the systemd service definition.
 
-Set the DA-Sequencer connection URL depending on the network:
+1. Rename the service file:
+
+```bash
+sudo mv /etc/systemd/system/movement-full-follower.service /etc/systemd/system/movement-fullnode.service
+```
+
+2. Depending on your target network, replace the service file content with the appropriate template:
+
+ * Devnet: `$HOME/movement/docs/movement-node/run-fullnode/ansible/devnet/movement-fullnode.service.j2`
+ * Testnet: `$HOME/movement/docs/movement-node/run-fullnode/ansible/testnet/movement-fullnode.service.j2`
+ * Mainnet: `$HOME/movement/docs/movement-node/run-fullnode/ansible/mainnet/movement-fullnode.service.j2`
+
+3. Update the `$HOME/movement` github checkout commit the container revision commit (see above).
+
+ ```bash
+ cd $HOME/movement
+ git checkout <Last container commit rev>
+ ```
+
+##### 2) Update config
+
+To set up the node configuration file, or update it (if you're starting from an existing installation), you need to run the migration script.
+
+First set the DA-Sequencer connection URL depending on the network:
 
  * Devnet: `export MAPTOS_DA_SEQUENCER_CONNECTION_URL=https://da-sequencer.devnet.movementinfra.xyz`
  * Testnet: `export MAPTOS_DA_SEQUENCER_CONNECTION_URL=https://m1-da-light-node.testnet.bardock.movementnetwork.xyz`
  * Mainnet: `export MAPTOS_DA_SEQUENCER_CONNECTION_URL=https://m1-da-light-node.mainnet.movementnetwork.xyz`
 
-Run the setup/migration script:
+Then run the setup/migration script:
 
 ```bash
 $HOME/movement/docs/movement-node/run-fullnode/scripts/setup_migrate.sh
@@ -70,30 +93,7 @@ $HOME/movement/docs/movement-node/run-fullnode/scripts/setup_migrate.sh
 
 If you want the full node to send transactions, it must be registered with the Movement DA-Sequencer.
 After executing the setup/migration script, a batch signing public key will be printed.
-Send this key to the Movement team so it can be added to the DA-Sequencer full node whitelist.
-
-##### 2) Specific update for follower node
-
-If you were previously running a follower node (e.g., version 0.3.4), you need to update the systemd service definition.
-
-Rename the service file:
-
-```bash
-sudo mv /etc/systemd/system/movement-full-follower.service /etc/systemd/system/movement-fullnode.service
-```
-
-Depending on your target network, replace the service file content with the appropriate template:
-
- * Devnet: `$HOME/movement/docs/movement-node/run-fullnode/ansible/devnet/movement-fullnode.service.j2`
- * Testnet: `$HOME/movement/docs/movement-node/run-fullnode/ansible/testnet/movement-fullnode.service.j2`
- * Mainnet: `$HOME/movement/docs/movement-node/run-fullnode/ansible/mainnet/movement-fullnode.service.j2`
-
- The `$HOME/movement` github checkout commit must be updated with the container revision commit (see above).
-
- ```bash
- cd $HOME/movement
- git checkout <Last container commit rev>
- ```
+Note the key and send it to the Movement team so it can be added to the DA-Sequencer full node whitelist.
 
 ##### 3) Sync the node
 
@@ -103,6 +103,8 @@ The recommended method is to restore the node from the most recent snapshot usin
   * Devnet: `$HOME/movement/docs/movement-node/run-fullnode/scripts/devnet/restore.sh`
   * Testnet: `$HOME/movement/docs/movement-node/run-fullnode/scripts/testnet/restore.sh`
   * Mainnet: `$HOME/movement/docs/movement-node/run-fullnode/scripts/mainnet/restore.sh`
+
+##### 4) Start the node
 
 After restoring the database, restart the node:
 
