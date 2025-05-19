@@ -26,9 +26,6 @@ fn main() {
 		number_cycle: 1,
 	};
 
-	// 2 Clients and 10 Requests per client
-	config.scenarios_per_client = 40;
-
 	// Init the Test before execution
 	if let Err(err) = init_test(&config) {
 		println!("Test init fail ; {err}",);

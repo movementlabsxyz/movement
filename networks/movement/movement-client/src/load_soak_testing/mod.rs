@@ -86,7 +86,7 @@ impl ExecutionConfig {
 				assert!(max_scenarios >= min_scenarios, "max scenarios less than min scenarios");
 				assert!(
 					min_scenarios >= self.scenarios_per_client,
-					"Number of min running scenario less than the number of scenario per client."
+					"Number of min running scenario:{min_scenarios} less than the number of scenario per client:{}.", self.scenarios_per_client
 				);
 			}
 		}

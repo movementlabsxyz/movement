@@ -2,7 +2,7 @@
 
 systemctl stop  movement-fullnode.service
 export DOT_MOVEMENT_PATH=$HOME/.movement
-export CONTAINER_REV="a529186"
+export CONTAINER_REV="0e8ae41"
 export AWS_REGION=us-west-2
 export AWS_BUCKET_ANONYMOUS_ACCESS=true
 export MAPTOS_CHAIN_ID=250
