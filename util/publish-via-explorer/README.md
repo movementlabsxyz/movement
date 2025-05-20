@@ -55,3 +55,8 @@ entry fun publish_package_txn(
    arg0: [5,104,101,108,108,111,...]
    arg1: [[161,28,235,11,...]]
    ```
+   > [!TIP] Be sure to connect to the explorer with the same wallet that you used in your local Movement config.
+
+   After successful publishing via explorer, you will see a successful message as follows:
+  
+   <img width="1205" alt="image" src="https://github.com/user-attachments/assets/312c2c17-e164-45d8-a7ca-c379ef0f21ed" />
