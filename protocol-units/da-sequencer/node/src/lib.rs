@@ -125,6 +125,8 @@ where
 	let mut produce_block_jh = get_pending_future();
 	let mut connected_grpc_sender = vec![];
 	let mut current_node_state = None;
+	// Batch timestamp should always be greater strict to the last one.
+	let mut last_batch_timestamp = chrono::Utc::now().timestamp_micros() as u64;
 
 	loop {
 		tokio::select! {
@@ -169,6 +171,10 @@ where
 						});
 					},
 					GrpcRequests::WriteBatch(batch) => {
+						// Create an unique batch data
+						let batch = batch.unique(last_batch_timestamp);
+						last_batch_timestamp = batch.data().timestamp;
+
 						//send batch to the storage.
 						let write_batch_jh = tokio::task::spawn_blocking({
 							let storage = storage.clone();

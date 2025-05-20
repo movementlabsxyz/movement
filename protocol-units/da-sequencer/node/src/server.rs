@@ -245,7 +245,7 @@ impl DaSequencerNodeService for DaSequencerNode {
 
 		// Validate the batch
 		let validated = {
-			let raw_batch = DaBatch::<RawData>::now(public_key, signature, bytes);
+			let raw_batch = DaBatch::<RawData>::new(public_key, signature, bytes);
 			match validate_batch(raw_batch, &self.whitelist).map_or_else(
 				|err| {
 					tracing::warn!(

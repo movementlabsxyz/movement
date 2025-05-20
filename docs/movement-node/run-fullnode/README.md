@@ -68,6 +68,8 @@ sudo mv /etc/systemd/system/movement-full-follower.service /etc/systemd/system/m
  * [Testnet](ansible/testnet/movement-fullnode.service.j2)
  * [Mainnet](ansible/mainnet/movement-fullnode.service.j2)
 
+Replace `{{ user }}` with your user and the `{{ rev }}` with the container rev above.
+
 3. Update the `$HOME/movement` github checkout commit the container revision commit (see above).
 
  ```bash

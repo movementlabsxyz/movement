@@ -3,7 +3,7 @@ use crate::{
 	run,
 	server::run_server,
 	tests::{
-		generate_signing_key, make_test_whitelist,
+		create_aptos_transaction, generate_signing_key, make_test_whitelist,
 		mock::{mock_wait_and_get_next_block, mock_write_new_batch, CelestiaMock, StorageMock},
 	},
 };
@@ -267,8 +267,9 @@ async fn test_grpc_client_should_write_one_batch_with_a_correct_whitelist() {
 	let mut client = GrpcDaSequencerClient::try_connect(&connection_url.clone(), 10)
 		.await
 		.expect("Failed to connect");
-
-	let tx = Transaction::test_only_new(b"abc".to_vec(), 1, 123);
+	let aptos_tx = create_aptos_transaction();
+	let tx_data = bcs::to_bytes(&aptos_tx).unwrap();
+	let tx = Transaction::test_only_new(tx_data, 1, 123);
 	let txs = FullNodeTxs::new(vec![tx]);
 	let batch_bytes = bcs::to_bytes(&txs).unwrap();
 	let signature = signing_key.sign(&batch_bytes);

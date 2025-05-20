@@ -45,6 +45,32 @@ impl Deref for FullNodeTxs {
 	}
 }
 
+#[derive(Deserialize, CryptoHasher, BCSCryptoHash, Serialize, PartialEq, Debug, Clone)]
+pub struct UniqueFullNodeTxs {
+	pub txs: Vec<Transaction>,
+	// timestamp is created unique from the current Ts and some increment if there's some collision.
+	pub timestamp: u64,
+}
+
+impl UniqueFullNodeTxs {
+	pub fn unique(data: FullNodeTxs, last_timestamp: u64) -> Self {
+		let mut timestamp = chrono::Utc::now().timestamp_micros() as u64;
+		// If Ts is equals take the next one.
+		if timestamp <= last_timestamp {
+			timestamp = last_timestamp + 1;
+		}
+		UniqueFullNodeTxs { txs: data.0, timestamp }
+	}
+}
+
+impl Deref for UniqueFullNodeTxs {
+	type Target = Vec<Transaction>;
+
+	fn deref(&self) -> &Self::Target {
+		&self.txs
+	}
+}
+
 impl<T> DaBatch<T> {
 	pub fn data(&self) -> &T {
 		&self.data
@@ -56,13 +82,18 @@ pub struct DaBatch<T> {
 	pub data: T,
 	pub signature: Signature,
 	pub signer: VerifyingKey,
-	pub timestamp: u64,
 }
 
 impl DaBatch<RawData> {
-	pub fn now(signer: VerifyingKey, signature: Signature, data: Vec<u8>) -> Self {
-		let timestamp = chrono::Utc::now().timestamp_micros() as u64;
-		DaBatch { data: RawData { data }, signature, signer, timestamp }
+	pub fn new(signer: VerifyingKey, signature: Signature, data: Vec<u8>) -> Self {
+		DaBatch { data: RawData { data }, signature, signer }
+	}
+}
+
+impl DaBatch<FullNodeTxs> {
+	pub fn unique(self, last_timestamp: u64) -> DaBatch<UniqueFullNodeTxs> {
+		let data = UniqueFullNodeTxs::unique(self.data, last_timestamp);
+		DaBatch { data, signature: self.signature, signer: self.signer }
 	}
 }
 
@@ -70,11 +101,11 @@ pub fn validate_batch(
 	new_batch: DaBatch<RawData>,
 	whitelist: &Whitelist,
 ) -> Result<DaBatch<FullNodeTxs>, DaSequencerError> {
-	if !new_batch.signer.verify(&new_batch.data().data, &new_batch.signature).is_ok() {
-		return Err(DaSequencerError::InvalidSignature);
-	}
 	if !whitelist.contains(&new_batch.signer) {
 		return Err(DaSequencerError::UnauthorizedSigner);
+	}
+	if !new_batch.signer.verify(&new_batch.data().data, &new_batch.signature).is_ok() {
+		return Err(DaSequencerError::InvalidSignature);
 	}
 
 	let data = bcs::from_bytes::<FullNodeTxs>(&new_batch.data.data)
@@ -85,10 +116,5 @@ pub fn validate_batch(
 	// Authenticated batch sender should never send bad Tx.
 	data.validate_txs()?;
 
-	Ok(DaBatch {
-		data,
-		signature: new_batch.signature,
-		signer: new_batch.signer,
-		timestamp: new_batch.timestamp,
-	})
+	Ok(DaBatch { data, signature: new_batch.signature, signer: new_batch.signer })
 }
