@@ -11649,6 +11649,7 @@ dependencies = [
  "movement-signer",
  "movement-types",
  "once_cell",
+ "poem",
  "prost 0.13.3",
  "rand 0.7.3",
  "rand_core 0.9.0",

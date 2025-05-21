@@ -14,7 +14,7 @@ use godfig::{backend::config_file::ConfigFile, Godfig};
 use movement_da_sequencer_config::DaSequencerConfig;
 use tokio::signal::unix::signal;
 use tokio::signal::unix::SignalKind;
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, oneshot};
 use tokio::task::JoinHandle;
 use tokio_stream::StreamExt;
 
@@ -22,6 +22,7 @@ pub mod batch;
 pub mod block;
 pub mod celestia;
 pub mod error;
+mod healthcheck;
 pub mod server;
 pub mod storage;
 #[cfg(test)]
@@ -57,6 +58,17 @@ pub async fn start(mut dot_movement: dot_movement::DotMovement) -> Result<(), an
 		run_server(grpc_address, request_tx, whitelist, verifying_key).await
 	});
 
+	// Start healthcheck entry point
+	let healthcheck_url = format!(
+		"{}:{}",
+		healthcheck::DEFAULT_REST_LISTENER_HOSTNAME,
+		da_sequencer_config.healthcheck_bind_port
+	);
+	let (rest_health_tx, rest_health_rx) = tokio::sync::mpsc::channel(10);
+	let rest_service = healthcheck::HealthCheckRest::new(healthcheck_url, rest_health_tx)?;
+	let rest_service_future = rest_service.run_service();
+	let rest_jh = tokio::spawn(rest_service_future);
+
 	//Start the main loop
 	let db_storage_path = dotmovement_path.join(&da_sequencer_config.db_storage_relative_path);
 
@@ -64,7 +76,8 @@ pub async fn start(mut dot_movement: dot_movement::DotMovement) -> Result<(), an
 
 	// TODO Use Celestia Mock for now
 	let celestia_mock = CelestiaMock::new();
-	let loop_jh = tokio::spawn(run(da_sequencer_config, request_rx, storage, celestia_mock));
+	let loop_jh =
+		tokio::spawn(run(da_sequencer_config, request_rx, rest_health_rx, storage, celestia_mock));
 
 	let (stop_tx, mut stop_rx) = tokio::sync::watch::channel(());
 	tokio::spawn({
@@ -92,6 +105,9 @@ pub async fn start(mut dot_movement: dot_movement::DotMovement) -> Result<(), an
 		res = grpc_jh => {
 			tracing::error!("Grpc server exit because :{res:?}");
 		}
+		res = rest_jh => {
+			tracing::error!("Da Sequencer Rest entry point stops because :{res:?}");
+		}
 		res = loop_jh => {
 			tracing::error!("Da Sequencer main process exit because :{res:?}");
 		}
@@ -107,6 +123,7 @@ pub async fn start(mut dot_movement: dot_movement::DotMovement) -> Result<(), an
 pub async fn run<D, S>(
 	config: DaSequencerConfig,
 	mut request_rx: mpsc::Receiver<GrpcRequests>,
+	mut check_request_rx: mpsc::Receiver<oneshot::Sender<bool>>,
 	storage: S,
 	celestia: D,
 ) -> Result<(), DaSequencerError>
@@ -130,6 +147,14 @@ where
 
 	loop {
 		tokio::select! {
+			// Manage health check request.
+			Some(oneshot_tx) = check_request_rx.recv() => {
+				//Basic monitoring, always true if the loop run.
+				if let Err(err) = oneshot_tx.send(true){
+					tracing::warn!("Heal check oneshot channel closed abnormally :{err:?}");
+				}
+			}
+
 			// Manage grpc request.
 			Some(grpc_request) = request_rx.recv() => {
 				match grpc_request {

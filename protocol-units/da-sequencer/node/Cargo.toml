@@ -38,6 +38,7 @@ url = { workspace = true }
 futures = { workspace = true }
 dot-movement = { workspace = true }
 godfig = { workspace = true }
+poem = { workspace = true }
 
 movement-da-sequencer-client = { workspace = true }
 movement-da-sequencer-config = { workspace = true }

@@ -38,9 +38,11 @@ async fn test_should_write_batch() {
 		tokio::spawn(async move { run_server(grpc_address, request_tx, whitelist, None).await });
 
 	//start main loop
+	let (_rest_health_tx, rest_health_rx) = tokio::sync::mpsc::channel(10);
 	let storage_mock = StorageMock::new();
 	let celestia_mock = CelestiaMock::new();
-	let loop_jh = tokio::spawn(run(config, request_rx, storage_mock, celestia_mock));
+	let loop_jh =
+		tokio::spawn(run(config, request_rx, rest_health_rx, storage_mock, celestia_mock));
 
 	//need to wait the server is started before connecting
 	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
@@ -89,9 +91,11 @@ async fn test_write_batch_gprc_main_loop_failed_validate_batch() {
 		tokio::spawn(async move { run_server(grpc_address, request_tx, whitelist, None).await });
 
 	//start main loop
+	let (_rest_health_tx, rest_health_rx) = tokio::sync::mpsc::channel(10);
 	let storage_mock = StorageMock::new();
 	let celestia_mock = CelestiaMock::new();
-	let loop_jh = tokio::spawn(run(config, request_rx, storage_mock, celestia_mock));
+	let loop_jh =
+		tokio::spawn(run(config, request_rx, rest_health_rx, storage_mock, celestia_mock));
 
 	//need to wait the server is started before connecting
 	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
@@ -165,9 +169,11 @@ async fn test_produce_block_and_stream() {
 		tokio::spawn(async move { run_server(grpc_address, request_tx, whitelist, None).await });
 
 	//start main loop
+	let (_rest_health_tx, rest_health_rx) = tokio::sync::mpsc::channel(10);
 	let storage_mock = StorageMock::new();
 	let celestia_mock = CelestiaMock::new();
-	let loop_jh = tokio::spawn(run(config, request_rx, storage_mock, celestia_mock));
+	let loop_jh =
+		tokio::spawn(run(config, request_rx, rest_health_rx, storage_mock, celestia_mock));
 
 	//need to wait the server is started before connecting
 	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
@@ -256,9 +262,10 @@ async fn test_grpc_client_should_write_one_batch_with_a_correct_whitelist() {
 		.expect("Bad da sequencer listener address.");
 	let grpc_task = tokio::spawn(run_server(grpc_address, request_tx, whitelist, None));
 	let main_loop = tokio::spawn(async move {
+		let (_rest_health_tx, rest_health_rx) = tokio::sync::mpsc::channel(10);
 		let storage = StorageMock::new();
 		let da = CelestiaMock::new();
-		run(config, request_rx, storage, da).await.unwrap();
+		run(config, request_rx, rest_health_rx, storage, da).await.unwrap();
 	});
 
 	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
@@ -306,9 +313,11 @@ async fn test_grpc_client_should_write_one_batch_with_an_empty_whitelist() {
 	let _grpc_jh =
 		tokio::spawn(async move { run_server(grpc_address, request_tx, whitelist, None).await });
 
+	let (_rest_health_tx, rest_health_rx) = tokio::sync::mpsc::channel(10);
 	let storage_mock = StorageMock::new();
 	let celestia_mock = CelestiaMock::new();
-	let _loop_jh = tokio::spawn(run(config, request_rx, storage_mock, celestia_mock));
+	let _loop_jh =
+		tokio::spawn(run(config, request_rx, rest_health_rx, storage_mock, celestia_mock));
 
 	tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
 
@@ -355,9 +364,11 @@ async fn test_grpc_client_should_write_one_batch_with_a_wrong_verifying_key_in_w
 	let _grpc_jh =
 		tokio::spawn(async move { run_server(grpc_address, request_tx, whitelist, None).await });
 
+	let (_rest_health_tx, rest_health_rx) = tokio::sync::mpsc::channel(10);
 	let storage_mock = StorageMock::new();
 	let celestia_mock = CelestiaMock::new();
-	let _loop_jh = tokio::spawn(run(config, request_rx, storage_mock, celestia_mock));
+	let _loop_jh =
+		tokio::spawn(run(config, request_rx, rest_health_rx, storage_mock, celestia_mock));
 
 	tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
 
@@ -398,9 +409,11 @@ async fn test_write_batch_grpc_main_loop_bad_signature() {
 	let _grpc_jh =
 		tokio::spawn(async move { run_server(grpc_address, request_tx, whitelist, None).await });
 
+	let (_rest_health_tx, rest_health_rx) = tokio::sync::mpsc::channel(10);
 	let storage_mock = StorageMock::new();
 	let celestia_mock = CelestiaMock::new();
-	let _loop_jh = tokio::spawn(run(config, request_rx, storage_mock, celestia_mock));
+	let _loop_jh =
+		tokio::spawn(run(config, request_rx, rest_health_rx, storage_mock, celestia_mock));
 
 	tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
 
@@ -440,10 +453,12 @@ async fn test_missed_grpc_heartbeat_twice_triggers_alert() {
 	let grpc_address = "0.0.0.0:30799".parse::<SocketAddr>().expect("Bad address");
 	let grpc_task = tokio::spawn(run_server(grpc_address, request_tx, whitelist, None));
 
+	let (_rest_health_tx, rest_health_rx) = tokio::sync::mpsc::channel(10);
 	let storage_mock = StorageMock::new();
 	let celestia_mock = CelestiaMock::new();
 	config.stream_heartbeat_interval_sec = 1; // short interval for test
-	let loop_task = tokio::spawn(run(config, request_rx, storage_mock, celestia_mock));
+	let loop_task =
+		tokio::spawn(run(config, request_rx, rest_health_rx, storage_mock, celestia_mock));
 
 	tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
 	let connection_url = Url::parse(&format!("http://{}", grpc_address)).unwrap();
@@ -481,10 +496,12 @@ async fn test_missed_grpc_heartbeat_once_does_not_trigger_alert() {
 	let grpc_address = "0.0.0.0:30800".parse::<SocketAddr>().expect("Bad address");
 	let grpc_task = tokio::spawn(run_server(grpc_address, request_tx, whitelist, None));
 
+	let (_rest_health_tx, rest_health_rx) = tokio::sync::mpsc::channel(10);
 	let storage_mock = StorageMock::new();
 	let celestia_mock = CelestiaMock::new();
 	config.stream_heartbeat_interval_sec = 1; // short interval for test
-	let loop_task = tokio::spawn(run(config, request_rx, storage_mock, celestia_mock));
+	let loop_task =
+		tokio::spawn(run(config, request_rx, rest_health_rx, storage_mock, celestia_mock));
 
 	tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
 
