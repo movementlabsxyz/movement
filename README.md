@@ -2,7 +2,7 @@
   <h1 align="center">
       <img alt="Movement" src="./img/movement-labs-logo-yellow.png">
   </h1>
-</a>
+</a> 
 
 [![Discord badge][]](https://discord.gg/movementlabsxyz)
 [![Twitter handle][]][Twitter badge]

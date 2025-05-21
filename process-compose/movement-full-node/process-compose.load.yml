@@ -6,7 +6,7 @@ processes:
 
   movement-tests-load-tests:
     command: |
-      LOADTEST_NUMBER_SCENARIO=10 LOADTEST_NUMBER_SCENARIO_PER_CLIENT=5 cargo run --bin movement-tests-e2e-load-alice-bob 
+      LOADTEST_NUMBER_SCENARIOS=10 LOADTEST_SCENARIOS_PER_CLIENT=5 movement-tests-e2e-load-alice-bob 
     depends_on:
       movement-full-node:
         condition: process_healthy

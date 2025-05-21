@@ -14,38 +14,34 @@ processes:
       build:
         condition: process_completed_successfully
 
-  celestia-light-node:
+  da-setup:
     command: |
-      exit 1
+      # sleep forever
+      sleep 999999999d
     depends_on:
+      build:
+        condition: process_completed_successfully
       setup:
-        condition: process_healthy
+        condition: process_completed_successfully
 
-  celestia-light-node-synced:
+  da-sequencer:
     command: |
-      wait-for-celestia-light-node
+      RUST_BACKTRACE=1 movement-full-node da run
     depends_on:
-      celestia-light-node:
-        condition: process_healthy
-
-  movement-celestia-da-light-node:
-    command: |
-      movement-celestia-da-light-node
-    depends_on:
-      celestia-light-node:
-        condition: process_healthy
-      celestia-light-node-synced:
+      da-setup:
         condition: process_completed_successfully
     readiness_probe:
-      initial_delay_seconds: 5
+      initial_delay_seconds: 30
       exec:
-        command: grpcurl -plaintext 0.0.0.0:30730 list
+        command: echo "true"
     
   movement-full-node:
     command: |
       RUST_BACKTRACE=1 movement-full-node run
     depends_on:
-      movement-celestia-da-light-node:
+      setup:
+        condition: process_completed_successfully
+      da-sequencer:
         condition: process_healthy
     readiness_probe:
       initial_delay_seconds: 10

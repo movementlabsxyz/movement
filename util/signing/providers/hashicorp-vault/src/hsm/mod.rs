@@ -2,6 +2,7 @@ pub mod key;
 
 use crate::cryptography::HashiCorpVaultCryptographySpec;
 use anyhow::Context;
+use base64::Engine;
 use movement_signer::cryptography::TryFromBytes;
 use movement_signer::{cryptography::Curve, SignerError, Signing};
 use vaultrs::api::transit::{requests::CreateKeyRequest, responses::ReadKeyData};
@@ -86,7 +87,7 @@ where
 			&self.client,
 			self.mount_name.as_str(),
 			self.key_name.replace("/", "_").as_str(),
-			base64::encode(message).as_str(),
+			base64::engine::general_purpose::STANDARD.encode(message).as_str(),
 			None,
 		)
 		.await
@@ -112,7 +113,8 @@ where
 		// Split and decode the signature
 		let signature_str = &res.signature[split_index..];
 
-		let signature = base64::decode(signature_str)
+		let signature = base64::engine::general_purpose::STANDARD
+			.decode(signature_str)
 			.context("Failed to decode base64 signature from Vault")
 			.map_err(|e| SignerError::Internal(e.to_string()))?;
 
@@ -165,7 +167,7 @@ where
 						SignerError::KeyNotFound
 					})?;
 
-				base64::decode(&key.public_key).map_err(|e| {
+				base64::engine::general_purpose::STANDARD.decode(&key.public_key).map_err(|e| {
 					println!("Failed to decode public key: {:?}", e);
 					SignerError::Internal(e.to_string())
 				})?

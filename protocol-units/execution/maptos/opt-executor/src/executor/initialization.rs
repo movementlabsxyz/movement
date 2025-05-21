@@ -3,10 +3,7 @@ use crate::background::BackgroundTask;
 use crate::executor::TxExecutionResult;
 use crate::executor::EXECUTOR_CHANNEL_SIZE;
 use crate::{bootstrap, Context};
-use movement_signer::cryptography::ed25519::Ed25519;
-use movement_signer::Signing;
-use movement_signer_loader::{Load, LoadedSigner};
-
+use anyhow::Context as _;
 use aptos_config::config::NodeConfig;
 #[cfg(test)]
 use aptos_crypto::ed25519::Ed25519PrivateKey;
@@ -15,27 +12,25 @@ use aptos_crypto::ed25519::Ed25519PublicKey;
 use aptos_crypto::ValidCryptoMaterialStringExt;
 use aptos_executor::block_executor::BlockExecutor;
 use aptos_mempool::MempoolClientRequest;
-use aptos_types::transaction::SignedTransaction;
 use dot_movement::DotMovement;
+use futures::channel::mpsc as futures_mpsc;
 use maptos_execution_util::config::Config;
+use movement_collections::garbage::{counted::GcCounter, Duration};
+use movement_signer::cryptography::ed25519::Ed25519;
+use movement_signer::Signing;
 #[cfg(test)]
 use movement_signer_loader::identifiers::{local::Local, SignerIdentifier};
-
-use anyhow::Context as _;
-use futures::channel::mpsc as futures_mpsc;
-use movement_collections::garbage::{counted::GcCounter, Duration};
-use tokio::sync::mpsc;
-
-use tempfile::TempDir;
-
+use movement_signer_loader::{Load, LoadedSigner};
 use std::net::ToSocketAddrs;
 use std::sync::{Arc, RwLock};
+use tempfile::TempDir;
+use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
 impl Executor {
 	pub fn bootstrap_with_public_key(
 		maptos_config: &Config,
 		public_key: Ed25519PublicKey,
-		mempool_tx_exec_result_sender: futures::channel::mpsc::Sender<Vec<TxExecutionResult>>,
+		mempool_tx_exec_result_sender: UnboundedSender<Vec<TxExecutionResult>>,
 	) -> Result<Self, anyhow::Error> {
 		// get dot movement
 		// todo: this is a slight anti-pattern, but it's fine for now
@@ -134,13 +129,8 @@ impl Executor {
 
 	pub async fn bootstrap(
 		maptos_config: &Config,
-		mempool_tx_exec_result_sender: futures::channel::mpsc::Sender<Vec<TxExecutionResult>>,
+		mempool_tx_exec_result_sender: UnboundedSender<Vec<TxExecutionResult>>,
 	) -> Result<Self, anyhow::Error> {
-		// let raw_private_key =
-		// 	maptos_config.chain.maptos_private_key_signer_identifier.try_raw_private_key()?;
-		// let private_key = Ed25519PrivateKey::try_from(raw_private_key.as_slice())?;
-		// let public_key = private_key.public_key();
-
 		let loader: LoadedSigner<Ed25519> =
 			maptos_config.chain.maptos_private_key_signer_identifier.load().await?;
 		let public_key = Ed25519PublicKey::try_from(loader.public_key().await?.as_bytes())?;
@@ -150,7 +140,7 @@ impl Executor {
 
 	pub async fn try_from_config(
 		maptos_config: Config,
-		mempool_tx_exec_result_sender: futures::channel::mpsc::Sender<Vec<TxExecutionResult>>,
+		mempool_tx_exec_result_sender: UnboundedSender<Vec<TxExecutionResult>>,
 	) -> Result<Self, anyhow::Error> {
 		Self::bootstrap(&maptos_config, mempool_tx_exec_result_sender).await
 	}
@@ -158,7 +148,7 @@ impl Executor {
 	#[cfg(test)]
 	pub fn try_test_default_with_public_key_bytes(
 		public_key_bytes: &[u8],
-		mempool_tx_exec_result_sender: futures::channel::mpsc::Sender<Vec<TxExecutionResult>>,
+		mempool_tx_exec_result_sender: UnboundedSender<Vec<TxExecutionResult>>,
 	) -> Result<(Self, TempDir), anyhow::Error> {
 		use aptos_crypto::ValidCryptoMaterialStringExt;
 
@@ -169,7 +159,7 @@ impl Executor {
 
 	pub fn try_test_default_with_public_key(
 		public_key: Ed25519PublicKey,
-		mempool_tx_exec_result_sender: futures::channel::mpsc::Sender<Vec<TxExecutionResult>>,
+		mempool_tx_exec_result_sender: UnboundedSender<Vec<TxExecutionResult>>,
 	) -> Result<(Self, TempDir), anyhow::Error> {
 		let tempdir = tempfile::tempdir()?;
 
@@ -186,7 +176,7 @@ impl Executor {
 	#[cfg(test)]
 	pub async fn try_test_default(
 		private_key: Ed25519PrivateKey,
-		mempool_tx_exec_result_sender: futures::channel::mpsc::Sender<Vec<TxExecutionResult>>,
+		mempool_tx_exec_result_sender: UnboundedSender<Vec<TxExecutionResult>>,
 	) -> Result<(Self, TempDir), anyhow::Error> {
 		let tempdir = tempfile::tempdir()?;
 
@@ -210,33 +200,35 @@ impl Executor {
 	/// task needs to be running.
 	pub fn background(
 		&self,
-		transaction_sender: mpsc::Sender<(u64, SignedTransaction)>,
-		mempool_commit_tx_receiver: futures_mpsc::Receiver<Vec<TxExecutionResult>>,
+		mempool_commit_tx_receiver: UnboundedReceiver<Vec<TxExecutionResult>>,
+		mempool_request_sender: futures_mpsc::Sender<MempoolClientRequest>,
 	) -> anyhow::Result<(Context, BackgroundTask)> {
 		let node_config = self.node_config.clone();
 		let maptos_config = self.config.clone();
 
-		// use the default signer, block executor, and mempool
-		let (mempool_client_sender, mempool_client_receiver) =
-			futures_mpsc::channel::<MempoolClientRequest>(EXECUTOR_CHANNEL_SIZE);
+		let da_batch_signer = maptos_config.da_sequencer.batch_signer_identifier.clone();
 
 		let background_task = if maptos_config.chain.maptos_read_only {
+			// use the default signer, block executor, and mempool
+			//TODO correct the mempool_client_sender not used.
+			let (_mempool_client_sender, mempool_client_receiver) =
+				futures_mpsc::channel::<MempoolClientRequest>(EXECUTOR_CHANNEL_SIZE);
 			BackgroundTask::read_only(mempool_client_receiver)
 		} else {
 			BackgroundTask::transaction_pipe(
 				mempool_commit_tx_receiver,
-				mempool_client_receiver,
-				transaction_sender,
 				self.db().reader.clone(),
 				&node_config,
 				&self.config.mempool,
 				&self.config.access_control,
 				self.transactions_in_flight.clone(),
 				maptos_config.load_shedding.max_transactions_in_flight,
+				da_batch_signer,
 			)?
 		};
 
-		let cx = Context::new(self.db().clone(), mempool_client_sender, maptos_config, node_config);
+		let cx =
+			Context::new(self.db().clone(), mempool_request_sender, maptos_config, node_config);
 
 		Ok((cx, background_task))
 	}
