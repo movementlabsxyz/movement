@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
 
   setup:
@@ -8,12 +6,69 @@ services:
       KNOWN_FRAMEWORK_RELEASE: biarritz-rc1
       APTOS_ACCOUNT_WHITELIST: ${DOT_MOVEMENT_PATH}/default_signer_address_whitelist
       MAPTOS_PRIVATE_KEY: random
+      DOT_MOVEMENT_PATH: /.movement
     entrypoint: ["sh", "-c", "echo Setup complete"]
     # Run once and exit
     restart: "no"
 
+  celestia-light-node:
+    image: busybox
+    container_name: celestia-light-node
+    command: sh -c 'echo "No setup type specified."'
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+      - CELESTIA_RPC_ADDRESS=celestia-light-node:26657
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+    depends_on:
+      setup:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "echo 'health check'" ]
+      retries: 3
+      start_period: 3s
+    restart: on-failure:3
+
+  celestia-light-node-synced:
+    image: ghcr.io/movementlabsxyz/wait-for-celestia-light-node:792549936429c7cf75d655023aedba254633a5ad
+    container_name: celestia-light-node-synced
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+    depends_on:
+      celestia-light-node:
+        condition: service_healthy
+
+  movement-celestia-da-light-node:
+    image: ghcr.io/movementlabsxyz/movement-celestia-da-light-node:792549936429c7cf75d655023aedba254633a5ad
+    container_name: movement-celestia-da-light-node
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+      - MOVEMENT_TIMING=info
+      - MOVEMENT_DA_LIGHT_NODE_TIMING_LOG=/.movement/movement-celestia-da-light-node-timing.log
+      - RUST_BACKTRACE=1
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+    depends_on:
+      celestia-light-node-synced:
+        condition: service_completed_successfully
+    ports:
+      - "30730:30730"
+    healthcheck:
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 30730" ]
+      retries: 10
+      interval: 10s
+      timeout: 5s
+    restart: on-failure:3
+
   movement-full-node:
-    image: ghcr.io/movementlabsxyz/movement-full-node:0.3.4-andygolay.migrate-docker-compose-overlay
+    image: ghcr.io/movementlabsxyz/movement-full-node:792549936429c7cf75d655023aedba254633a5ad
+    command: run
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8080/-/healthy || exit 1"]
       interval: 5s
@@ -21,7 +76,11 @@ services:
       retries: 10
 
   movement-faucet-service:
-    image: ghcr.io/movementlabsxyz/movement-faucet-service:0.3.4-andygolay.migrate-docker-compose-overlay
+    image: ghcr.io/movementlabsxyz/movement-faucet-service:792549936429c7cf75d655023aedba254633a5ad
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
     depends_on:
       movement-full-node:
         condition: service_healthy
@@ -32,10 +91,14 @@ services:
       retries: 10
 
   test-migrate-biarritz-rc1-to-pre-l1-merge:
-    build:
-      context: .
-      dockerfile: Dockerfile.migration
-    command: cargo run --bin aptos-framework-pre-l1-merge-release-tool
+    image: nixos/nix:2.19.2
+    volumes:
+      - .:/workspace
+      - ${DOT_MOVEMENT_PATH}:/.movement
+    working_dir: /workspace
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+    command: nix develop --extra-experimental-features nix-command --command cargo run --bin aptos-framework-pre-l1-merge-release-tool
     depends_on:
       movement-full-node:
         condition: service_healthy
