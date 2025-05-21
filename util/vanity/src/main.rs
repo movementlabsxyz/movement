@@ -1,34 +1,72 @@
 mod cli;
 mod miner;
 
+use aptos_sdk::types::account_address::AccountAddress;
 use std::str::FromStr;
 use clap::Parser;
-use cli::{Pattern, Vanity};
-use miner::mine_move_address;
+
+use cli::{Cli, Vanity, Pattern};
+
+use miner::{mine_move_address, mine_resource_address};
 use num_cpus;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let cli = Cli::parse();
 
-    match Vanity::parse() {
-        Vanity::Move { starts_pattern, ends_pattern } => {
-            let starts_pattern_bytes = match starts_pattern {
-                Some(p) => Pattern::from_str(&p)?.into_bytes()?,
-                None => vec![],
+    match cli.command {
+        Vanity::Move { starts, ends } => {
+            let starts_str = if let Some(s) = starts {
+                Pattern::from_str(&s)?;
+                s
+            } else {
+                String::new()
             };
-            let ends_pattern_bytes = match ends_pattern {
-                Some(p) => Pattern::from_str(&p)?.into_bytes()?,
-                None => vec![],
+            let ends_str = if let Some(s) = ends {
+                Pattern::from_str(&s)?;
+                s
+            } else {
+                String::new()
             };
 
             let account = mine_move_address(
-                &starts_pattern_bytes,
-                &ends_pattern_bytes,
+                &starts_str,
+                &ends_str,
                 num_cpus::get(),
             );
 
             println!("Found Move address: {}", account.address());
             println!("Private key (hex): {}", hex::encode(account.private_key().to_bytes()));
-            return Ok(());
+        },
+        Vanity::Resource { address, starts, ends } => {
+            let address = match address {
+                Some(ref a) => AccountAddress::from_str(a)?,
+                None => return Err("Move address is required".into()),
+            };
+
+            let starts_str = if let Some(s) = starts {
+                Pattern::from_str(&s)?;
+                s
+            } else {
+                String::new()
+            };
+            let ends_str = if let Some(s) = ends {
+                Pattern::from_str(&s)?;
+                s
+            } else {
+                String::new()
+            };
+
+            let (resource_address, seed) = mine_resource_address(
+                &address,
+                &starts_str,
+                &ends_str,
+                num_cpus::get(),
+            );
+
+            println!("Found Resource Address: {}", resource_address);
+            println!("Seed: {}", hex::encode(seed));
         }
     }
+
+    Ok(())
 }

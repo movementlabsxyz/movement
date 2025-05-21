@@ -17,6 +17,7 @@ tracing = { workspace = true }
 assert_cmd = "2"
 predicates = "3"
 
+
 [[bin]]
 name = "vanity"
 path = "src/main.rs"
