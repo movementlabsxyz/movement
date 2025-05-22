@@ -1,39 +1,65 @@
 services:
 
   setup:
-    image: ghcr.io/movementlabsxyz/movement-full-node-setup:${CONTAINER_REV}
+    image: busybox
     container_name: setup
+    command: sh -c 'echo "No setup type specified."'
     environment:
       DOT_MOVEMENT_PATH: /.movement
-      # By default, all the listener hostnames and ports are reasonable.
-      # However, for container networking, we need to specify the hostnames on the connection.
-      # You can also use host.docker.internal for the host machine as all of these ports should be exposed.
-      CELESTIA_RPC_CONNECTION_HOSTNAME: movement-celestia-appd
-      CELESTIA_WEBSOCKET_CONNECTION_HOSTNAME: movement-celestia-bridge
-      MOVEMENT_DA_LIGHT_NODE_CONNECTION_HOSTNAME: movement-celestia-da-light-node
-      MAPTOS_API_CONNECTION_HOSTNAME: movement-full-node
-      FAUCET_API_CONNECTION_HOSTNAME: movement-faucet-service
-      ETH_RPC_CONNECTION_HOSTNAME: setup
-      ETH_RPC_CONNECTION_PROTOCOL: http
-      ETH_RPC_CONNECTION_PORT: 8090
-      ETH_WS_CONNECTION_HOSTNAME: setup
-      ETH_WS_CONNECTION_PROTOCOL: ws
-      ETH_WS_CONNECTION_PORT: 8090
-      MAYBE_RUN_LOCAL: "true"
-      MAYBE_DEPLOY_MCR: "true"
-      INDEXER_PROCESSOR_POSTGRES_CONNECTION_STRING: postgres://postgres:password@postgres:5432/postgres
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-      AWS_REGION: ${AWS_DEFAULT_REGION}
+      MAPTOS_CHAIN_ID: ${MAPTOS_CHAIN_ID:-27}
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement
-    ports:
-      - "8090:8090" # port for anvil, this should be moved out into runner
+
+  celestia-light-node:
+    image: busybox
+    container_name: celestia-light-node
+    command: sh -c 'echo "No setup type specified."'
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+      - CELESTIA_RPC_ADDRESS=celestia-light-node:26657
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+    depends_on:
+      setup:
+        condition: service_healthy
     healthcheck:
-      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 8090" ]
-      retries: 30
+      test: [ "CMD-SHELL", "echo 'health check'" ]
+      retries: 3
+      start_period: 3s
+    restart: on-failure:3
+
+  celestia-light-node-synced:
+    image: ghcr.io/movementlabsxyz/wait-for-celestia-light-node:${CONTAINER_REV}
+    container_name: celestia-light-node-synced
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+    depends_on:
+      celestia-light-node:
+        condition: service_healthy
+
+  movement-celestia-da-light-node:
+    image: ghcr.io/movementlabsxyz/movement-celestia-da-light-node:${CONTAINER_REV}
+    container_name: movement-celestia-da-light-node
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+      - MOVEMENT_TIMING=info
+      - MOVEMENT_DA_LIGHT_NODE_TIMING_LOG=/.movement/movement-celestia-da-light-node-timing.log
+      - RUST_BACKTRACE=1
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+    depends_on:
+      celestia-light-node-synced:
+        condition: service_completed_successfully
+    ports:
+      - "30730:30730"
+    healthcheck:
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 30730" ]
+      retries: 10
       interval: 10s
       timeout: 5s
+    restart: on-failure:3
 
   movement-full-node:
     image: ghcr.io/movementlabsxyz/movement-full-node:${CONTAINER_REV}
@@ -81,5 +107,3 @@ services:
 
 volumes:
   dot-movement:
-
-
