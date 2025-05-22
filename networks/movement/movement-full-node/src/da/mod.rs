@@ -1,3 +1,4 @@
+mod read_block;
 mod run;
 pub mod stream_blocks;
 
@@ -8,6 +9,7 @@ use clap::Subcommand;
 pub enum Da {
 	StreamBlocks(stream_blocks::StreamBlocks),
 	Run(run::DaRun),
+	ReadBlock(read_block::ReadBlock),
 }
 
 impl Da {
@@ -15,6 +17,7 @@ impl Da {
 		match self {
 			Da::StreamBlocks(stream_blocks) => stream_blocks.execute().await,
 			Da::Run(da) => da.execute().await,
+			Da::ReadBlock(da) => da.execute().await,
 		}
 	}
 }

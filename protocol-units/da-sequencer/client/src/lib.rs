@@ -3,7 +3,9 @@ use futures::stream;
 use movement_da_sequencer_proto::block_response;
 use movement_da_sequencer_proto::da_sequencer_node_service_client::DaSequencerNodeServiceClient;
 use movement_da_sequencer_proto::BatchWriteResponse;
+use movement_da_sequencer_proto::BlockResponse;
 use movement_da_sequencer_proto::BlockV1;
+use movement_da_sequencer_proto::ReadAtHeightResponse;
 use movement_da_sequencer_proto::StreamReadFromHeightRequest;
 use movement_signer::cryptography::ed25519::PUBLIC_KEY_SIZE;
 use movement_signer::cryptography::ed25519::SIGNATURE_SIZE;
@@ -46,14 +48,17 @@ pub trait DaSequencerClient: Clone + Send {
 	fn batch_write(
 		&mut self,
 		request: movement_da_sequencer_proto::BatchWriteRequest,
-	) -> impl Future<Output = Result<movement_da_sequencer_proto::BatchWriteResponse, tonic::Status>>
-	       + Send;
+	) -> impl Future<Output = Result<BatchWriteResponse, tonic::Status>> + Send;
 	fn send_state(
 		&mut self,
 		signer: &LoadedSigner<Ed25519>,
 		state: movement_da_sequencer_proto::MainNodeState,
-	) -> impl Future<Output = Result<movement_da_sequencer_proto::BatchWriteResponse, tonic::Status>>
-	       + Send;
+	) -> impl Future<Output = Result<BatchWriteResponse, tonic::Status>> + Send;
+
+	fn read_at_height(
+		&mut self,
+		height: u64,
+	) -> impl Future<Output = Result<ReadAtHeightResponse, tonic::Status>> + Send;
 }
 
 /// Grpc implementation of the DA Sequencer client
@@ -204,7 +209,7 @@ impl DaSequencerClient for GrpcDaSequencerClient {
 	async fn batch_write(
 		&mut self,
 		request: movement_da_sequencer_proto::BatchWriteRequest,
-	) -> Result<movement_da_sequencer_proto::BatchWriteResponse, tonic::Status> {
+	) -> Result<BatchWriteResponse, tonic::Status> {
 		let response = self.client.batch_write(request).await?;
 		Ok(response.into_inner())
 	}
@@ -213,7 +218,7 @@ impl DaSequencerClient for GrpcDaSequencerClient {
 		&mut self,
 		signer: &LoadedSigner<Ed25519>,
 		state: movement_da_sequencer_proto::MainNodeState,
-	) -> Result<movement_da_sequencer_proto::BatchWriteResponse, tonic::Status> {
+	) -> Result<BatchWriteResponse, tonic::Status> {
 		let serialized = serialize_node_state(&state);
 		let signature = signer.sign(&serialized).await.map_err(|err| {
 			tonic::Status::new(tonic::Code::Unauthenticated, format!("State signgin failed: {err}"))
@@ -224,6 +229,12 @@ impl DaSequencerClient for GrpcDaSequencerClient {
 			signature: signature.as_bytes().to_vec(),
 		};
 		let response = self.client.send_state(request).await?;
+		Ok(response.into_inner())
+	}
+
+	async fn read_at_height(&mut self, height: u64) -> Result<ReadAtHeightResponse, tonic::Status> {
+		let request = movement_da_sequencer_proto::ReadAtHeightRequest { height };
+		let response = self.client.read_at_height(request).await?;
 		Ok(response.into_inner())
 	}
 }
@@ -310,14 +321,21 @@ impl DaSequencerClient for EmptyDaSequencerClient {
 	async fn batch_write(
 		&mut self,
 		_request: movement_da_sequencer_proto::BatchWriteRequest,
-	) -> Result<movement_da_sequencer_proto::BatchWriteResponse, tonic::Status> {
+	) -> Result<BatchWriteResponse, tonic::Status> {
 		Ok(BatchWriteResponse { answer: true })
 	}
 	async fn send_state(
 		&mut self,
 		_signer: &LoadedSigner<Ed25519>,
 		_state: movement_da_sequencer_proto::MainNodeState,
-	) -> Result<movement_da_sequencer_proto::BatchWriteResponse, tonic::Status> {
+	) -> Result<BatchWriteResponse, tonic::Status> {
 		Ok(BatchWriteResponse { answer: true })
+	}
+
+	async fn read_at_height(
+		&mut self,
+		_height: u64,
+	) -> Result<ReadAtHeightResponse, tonic::Status> {
+		Ok(ReadAtHeightResponse { response: Some(BlockResponse { block_type: None }) })
 	}
 }

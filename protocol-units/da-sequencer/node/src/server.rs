@@ -127,32 +127,15 @@ impl DaSequencerNodeService for DaSequencerNode {
 				// Needed block height is before the first produced block in the produced block channel.
 				let response_content = if current_block_height <= first_produced_block_height.0 {
 					//get all block until the current produced height
-					let (get_height_tx, get_height_rx) = oneshot::channel();
-					if let Err(err) = request_tx.send(GrpcRequests::GetBlockHeight(
-						current_block_height.into(),
-						get_height_tx,
-					)).await {
-						tracing::warn!(error = %err, "Request channel closed while requesting GetBlockHeight.");
-						return;
-					}
-					let block = match get_height_rx.await {
-						Ok(b) => b,
-						Err(err) => {
-							tracing::warn!(error = %err, "Stream block: oneshot channel closed");
-							return;
-						}
-					};
-
-					let block_v1 = match block.map(|block| block.try_into()) {
-						None => {
+					let block_v1 = match get_block_at_height(current_block_height.into(), &request_tx).await {
+						Ok(None) => {
 							tracing::error!("Streamed block, get block: {} from DB is missing. Close the stream.",current_block_height);
 							return;
 						}
-						Some(Ok(block)) => block,
-						Some(Err(err)) => {
+						Ok(Some(block)) => block,
+						Err(err) => {
 							tracing::warn!(error = %err, "Streamed block serialization failed.");
 							return;
-
 						}
 					};
 					current_block_height +=1;
@@ -219,9 +202,20 @@ impl DaSequencerNodeService for DaSequencerNode {
 	/// Read one block at a specified height.
 	async fn read_at_height(
 		&self,
-		_request: tonic::Request<ReadAtHeightRequest>,
+		request: tonic::Request<ReadAtHeightRequest>,
 	) -> Result<tonic::Response<ReadAtHeightResponse>, tonic::Status> {
-		Err(tonic::Status::unimplemented(""))
+		let height = request.into_inner().height;
+		let block_v1 = match get_block_at_height(height, &self.request_tx).await {
+			Ok(None) => None,
+			Ok(Some(block_v1)) => Some(BlockType::BlockV1(block_v1)),
+			Err(err) => {
+				tracing::warn!(error = %err, "read_at_height get block failed because:{err}.");
+				None
+			}
+		};
+		Ok(tonic::Response::new(ReadAtHeightResponse {
+			response: Some(BlockResponse { block_type: block_v1 }),
+		}))
 	}
 
 	async fn batch_write(
@@ -337,4 +331,19 @@ impl From<NodeState> for MainNodeState {
 			ledger_version: state.ledger_version,
 		}
 	}
+}
+
+async fn get_block_at_height(
+	height: u64,
+	request_tx: &mpsc::Sender<GrpcRequests>,
+) -> Result<Option<BlockV1>, DaSequencerError> {
+	let (get_height_tx, get_height_rx) = oneshot::channel();
+	request_tx
+		.send(GrpcRequests::GetBlockHeight(height.into(), get_height_tx))
+		.await
+		.map_err(|err| DaSequencerError::ChannelError(err.to_string()))?;
+	let block = get_height_rx
+		.await
+		.map_err(|err| DaSequencerError::ChannelError(err.to_string()))?;
+	block.map(|block| block.try_into()).transpose()
 }
