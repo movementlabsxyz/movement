@@ -30,6 +30,7 @@ members = [
   "util/tracing",
   "util/syncador",
   "util/collections",
+  "util/format-module-bytes",
   "util/whitelist",
   "networks/movement/*",
   "benches/*",
