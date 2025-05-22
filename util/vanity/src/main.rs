@@ -1,5 +1,4 @@
-mod cli;
-mod miner;
+use vanity::{cli, miner};
 
 use aptos_sdk::types::account_address::AccountAddress;
 use clap::Parser;
