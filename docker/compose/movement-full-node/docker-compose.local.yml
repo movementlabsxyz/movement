@@ -44,7 +44,7 @@ services:
       - ${DOT_MOVEMENT_PATH}:/.movement
     depends_on:
       setup:
-        condition: service_healthy
+        condition: service_completed_successfully
     ports:
       - "26657:26657"
       - "9090:9090"
@@ -66,7 +66,7 @@ services:
       - "26658:26658"
     depends_on:
       setup:
-        condition: service_healthy
+        condition: service_completed_successfully
       movement-celestia-appd:
         condition: service_healthy
     healthcheck:

@@ -30,7 +30,7 @@ services:
     restart: on-failure:3
 
   celestia-light-node-synced:
-    image: ghcr.io/movementlabsxyz/wait-for-celestia-light-node:792549936429c7cf75d655023aedba254633a5ad
+    image: ghcr.io/movementlabsxyz/wait-for-celestia-light-node:${CONTAINER_REV}
     container_name: celestia-light-node-synced
     environment:
       - DOT_MOVEMENT_PATH=/.movement
@@ -41,8 +41,7 @@ services:
         condition: service_healthy
 
   movement-celestia-da-light-node:
-    image: ghcr.io/movementlabsxyz/movement-celestia-da-light-node:792549936429c7cf75d655023aedba254633a5ad
-    container_name: movement-celestia-da-light-node
+    image: ghcr.io/movementlabsxyz/movement-celestia-da-light-node:${CONTAINER_REV}
     environment:
       - DOT_MOVEMENT_PATH=/.movement
       - MOVEMENT_TIMING=info
@@ -63,7 +62,7 @@ services:
     restart: on-failure:3
 
   movement-full-node:
-    image: ghcr.io/movementlabsxyz/movement-full-node:792549936429c7cf75d655023aedba254633a5ad
+    image: ghcr.io/movementlabsxyz/movement-full-node:${CONTAINER_REV}
     command: run
     environment:
       - DOT_MOVEMENT_PATH=/.movement
@@ -76,7 +75,7 @@ services:
       retries: 10
 
   movement-faucet-service:
-    image: ghcr.io/movementlabsxyz/movement-faucet-service:792549936429c7cf75d655023aedba254633a5ad
+    image: ghcr.io/movementlabsxyz/movement-faucet-service:${CONTAINER_REV}
     environment:
       - DOT_MOVEMENT_PATH=/.movement
     volumes:
