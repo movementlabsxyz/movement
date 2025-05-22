@@ -12,7 +12,7 @@ Running a follower node locally allows you to evaluate performance on a given ne
 
 ## Container Revision
 
-The current container revision for installation is: `CONTAINER_REV=b96f0fa` githut commit:`b96f0fad2c59ad59dc5c7aa03cb45c167267fcf8`
+The current container revision for installation is: `CONTAINER_REV=714740f` githut commit:`714740fcbaa89a870ec8a756369ad570860d7266`
 
 ## Running a Movement Full Node
 
