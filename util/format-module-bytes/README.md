@@ -1,8 +1,8 @@
-# publish-via-explorer
+# format-module-bytes
 
-This tool prepares a Move package for publishing using the Movement Explorer UI.
+This tool prepares a Move package for publishing using the Movement Explorer UI or via Movement CLI with `movement multisig create-transaction`
 
-It compiles the embedded Move package and outputs the required `arg0` and `arg1` values for the `publish_package_txn` function:
+It compiles the embedded Move package and outputs the required `arg0` and `arg1` values for the `code::publish_package_txn` function:
 
 [https://explorer.movementlabs.xyz/account/0x0000000000000000000000000000000000000000000000000000000000000001/modules/run/code/publish\_package\_txn?network=mainnet](https://explorer.movementlabs.xyz/account/0x0000000000000000000000000000000000000000000000000000000000000001/modules/run/code/publish_package_txn?network=mainnet)
 
@@ -18,12 +18,14 @@ entry fun publish_package_txn(
 
 ## Usage
 
-1. Ensure the `movement` CLI is installed and available in your `PATH`.
+The easiest way to use the formatted module bytes is via Movement explorer.
+
+1. Ensure the `movement` CLI is installed and available in your `PATH`. You also need to run `movement init` or directly add a `.movement/config.yaml` in the `util/format-module-bytes` dir.
 
 2. Run from the workspace root:
 
    ```bash
-   cargo run -p publish-via-explorer
+   cargo run -p format-module-bytes
    ```
 
 3. The tool will compile the embedded Move package and output two formatted arguments:
@@ -34,7 +36,7 @@ entry fun publish_package_txn(
    It will also write these to:
 
    ```
-   publish-via-explorer/build/hello/explorer_payload.log
+   format-module-bytes/build/hello/explorer_payload.log
    ```
 
 ## Submitting via the Explorer UI

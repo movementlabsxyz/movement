@@ -2,6 +2,7 @@
 proc-compose.temp.log
 methods/guest/Cargo.lock
 networks/movement/movement-client/src/move-modules/build/*
+util/format-module-bytes/build/*
 .idea/
 target/
 ledger_db/
