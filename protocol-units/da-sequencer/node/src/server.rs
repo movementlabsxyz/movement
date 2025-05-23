@@ -4,17 +4,18 @@ use crate::block::NodeState;
 use crate::block::{BlockHeight, SequencerBlock};
 use crate::whitelist::Whitelist;
 use crate::DaSequencerError;
+use anyhow::Context;
 use ed25519_dalek::{Verifier, VerifyingKey};
 use movement_da_sequencer_client::serialize_node_state;
 use movement_da_sequencer_proto::da_sequencer_node_service_server::{
 	DaSequencerNodeService, DaSequencerNodeServiceServer,
 };
-use movement_da_sequencer_proto::{MainNodeState, MainNodeStateRequest};
 use movement_da_sequencer_proto::{
 	block_response::BlockType, BatchWriteRequest, BatchWriteResponse, BlockResponse, BlockV1,
 	ReadAtHeightRequest, ReadAtHeightResponse, StreamReadFromHeightRequest,
 	StreamReadFromHeightResponse,
 };
+use movement_da_sequencer_proto::{MainNodeState, MainNodeStateRequest};
 use std::net::SocketAddr;
 use tokio::sync::{mpsc, oneshot};
 use tokio_stream::Stream;
@@ -28,13 +29,13 @@ pub async fn run_server(
 	main_node_verifying_key: Option<VerifyingKey>,
 ) -> Result<(), anyhow::Error> {
 	tracing::info!("Server listening on: {}", address);
-// Enables gRPC introspection, a feature that allows gRPC clients 
-// (like grpcurl, Postman, or IDEs) to query the server for:
-// - Available services and RPC methods
-// - Input/output message types
-// - Field types, enums, and nested structures 
-// - Metadata like documentation or options (if included)
-let reflection = tonic_reflection::server::Builder::configure()
+	// Enables gRPC introspection, a feature that allows gRPC clients
+	// (like grpcurl, Postman, or IDEs) to query the server for:
+	// - Available services and RPC methods
+	// - Input/output message types
+	// - Field types, enums, and nested structures
+	// - Metadata like documentation or options (if included)
+	let reflection = tonic_reflection::server::Builder::configure()
 		.register_encoded_file_descriptor_set(movement_da_sequencer_proto::FILE_DESCRIPTOR_SET)
 		.build_v1()?;
 
@@ -55,10 +56,7 @@ let reflection = tonic_reflection::server::Builder::configure()
 
 #[derive(Debug)]
 pub enum GrpcRequests {
-	StartBlockStream(
-		mpsc::UnboundedSender<Option<(SequencerBlock, Option<NodeState>)>>,
-		oneshot::Sender<BlockHeight>,
-	),
+	StartBlockStream(mpsc::UnboundedSender<Option<(SequencerBlock, Option<NodeState>)>>),
 	GetBlockHeight(BlockHeight, oneshot::Sender<Option<SequencerBlock>>),
 	WriteBatch(DaBatch<FullNodeTxs>),
 	SendState(NodeState),
@@ -89,36 +87,44 @@ impl DaSequencerNodeService for DaSequencerNode {
 		// Register the new produced block channel to get lastest block.
 		// Use `unbounded_channel` to avoid filling the channel during the fetching of an old block.
 		let (produced_tx, mut produced_rx) = mpsc::unbounded_channel();
-		let (current_height_tx, current_height_rx) = oneshot::channel();
-		if let Err(err) = self
-			.request_tx
-			.send(GrpcRequests::StartBlockStream(produced_tx, current_height_tx))
-			.await
-		{
+		if let Err(err) = self.request_tx.send(GrpcRequests::StartBlockStream(produced_tx)).await {
 			tracing::warn!(error = %err, "Internal grpc request channel closed, can't stream blocks");
 			return Err(tonic::Status::internal("Internal error. Retry later"));
 		}
 
-		let mut current_produced_height = match current_height_rx.await {
-			Ok(h) => h,
-			Err(err) => {
-				tracing::warn!("start stream channel closed: {err}");
-				return Err(tonic::Status::internal("Internal error. Retry later"));
-			}
-		};
-		let mut current_block_height = request.into_inner().height;
+		let (first_produced_block, _current_node_state) = produced_rx
+			.recv()
+			.await
+			.context("Produced channel closed")
+			.map_err(|err| {
+				tracing::warn!(error = %err, "Produced channel closed while streaming blocks");
+				tonic::Status::internal("Internal error. Retry later")
+			})?
+			.context("Produced channel closed while streaming blocks")
+			.map_err(|err| {
+				tracing::warn!(error = %err, "Produced channel closed while streaming blocks");
+				tonic::Status::internal("Internal error. Retry later")
+			})?;
+		let mut current_produced_height = first_produced_block.height();
+
 		//The genesis block can't be retrieved.
-		if current_block_height == 0 {
-			current_block_height = 1;
+		let mut current_requested_height = request.into_inner().height;
+		if current_requested_height == 0 {
+			current_requested_height = 1;
 		}
+
+		// track whether the first produced block has been sent.
+		let mut first_produced_block_sent = false;
+
+		// Stream the blocks.
 		let request_tx = self.request_tx.clone();
 		let output = async_stream::try_stream! {
 			loop {
-				let response_content = if current_block_height <= current_produced_height.0 {
+				let response_content = if current_requested_height <= current_produced_height.0 {
 					//get all block until the current produced height
 					let (get_height_tx, get_height_rx) = oneshot::channel();
 					if let Err(err) = request_tx.send(GrpcRequests::GetBlockHeight(
-						current_block_height.into(),
+						current_requested_height.into(),
 						get_height_tx,
 					)).await {
 						tracing::warn!(error = %err, "Request channel closed while requesting GetBlockHeight.");
@@ -131,7 +137,7 @@ impl DaSequencerNodeService for DaSequencerNode {
 							return;
 						}
 					};
-					current_block_height +=1;
+					current_requested_height +=1;
 
 					let blockv1 = match block.map(|block| block.try_into()) {
 						None => continue,
@@ -144,6 +150,19 @@ impl DaSequencerNodeService for DaSequencerNode {
 					};
 					BlockResponse { block_type: Some(BlockType::BlockV1(blockv1)) }
 
+				} else if !first_produced_block_sent {
+					// send the first produced block.
+					first_produced_block_sent = true;
+					let blockv1 = match first_produced_block.clone().try_into() {
+						Ok(b) => b,
+						Err(err) => {
+							tracing::warn!(error = %err, "Stream block: block serialization failed.");
+							return;
+
+						}
+					};
+
+					BlockResponse { block_type: Some(BlockType::BlockV1(blockv1)) }
 				} else {
 					//send block in produced channel
 					let received_content = match produced_rx.recv().await {
@@ -163,12 +182,12 @@ impl DaSequencerNodeService for DaSequencerNode {
 
 						Some((new_block, state)) => {
 							// send newly produced block.
-							if current_block_height + 1 < new_block.height().0 {
+							if current_requested_height + 1 < new_block.height().0 {
 								// we missed a block request.
 								current_produced_height = new_block.height();
 								continue;
 							}
-							current_block_height = new_block.height().0;
+							current_requested_height = new_block.height().0;
 
 							let mut blockv1: BlockV1 = match new_block.try_into() {
 								Ok(b) => b,

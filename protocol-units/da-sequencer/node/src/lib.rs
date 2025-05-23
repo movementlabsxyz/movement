@@ -131,18 +131,8 @@ where
 			// Manage grpc request.
 			Some(grpc_request) = request_rx.recv() => {
 				match grpc_request {
-					GrpcRequests::StartBlockStream(produced_tx, curent_height_callback) => {
+					GrpcRequests::StartBlockStream(produced_tx) => {
 						connected_grpc_sender.push(produced_tx);
-
-						// Send back the current height.
-						let start_jh = tokio::task::spawn_blocking({
-							let storage = storage.clone();
-							move || {
-								let current_height = storage.get_current_block_height()?;
-								let _ = curent_height_callback.send(current_height);
-								Ok::<(), DaSequencerError>(())
-						}});
-						spawn_result_futures.push(start_jh);
 					},
 					GrpcRequests::GetBlockHeight(block_height, callback) => {
 						let get_block_jh = tokio::task::spawn_blocking({
