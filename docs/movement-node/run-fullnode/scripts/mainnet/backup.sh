@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
 export DOT_MOVEMENT_PATH=$HOME/.movement
-export CONTAINER_REV="714740f"
+export CONTAINER_REV="fa0f19b"
 export AWS_DEFAULT_REGION=us-west-2
 export AWS_REGION=us-west-2
 export MAPTOS_CHAIN_ID=126

@@ -12,7 +12,7 @@ Running a follower node locally allows you to evaluate performance on a given ne
 
 ## Container Revision
 
-The current container revision for installation is: `CONTAINER_REV=714740f` githut commit:`714740fcbaa89a870ec8a756369ad570860d7266`
+The current container revision for installation is: `CONTAINER_REV=fa0f19b` githut commit:`fa0f19b48326f77c6b6bdda1e701aa92f89dd5c8`
 
 ## Running a Movement Full Node
 
@@ -144,3 +144,7 @@ If your node cannot reach the same state as the main node, it means it did not e
 
 Perform a restoration using the appropriate snapshot. If the issue persists after restoration, contact Movement support.
 
+### state from Da verification failed
+When there's a divergence between the main node state and the full node state, it is detected on the full node, and the node stops with an error containing the sentence: `state from Da verification failed`.
+
+To recover, try restarting the node. If you get the same error, perform a restoration to restart from a correct state. After restoration, restart the node; it should then sync correctly.
