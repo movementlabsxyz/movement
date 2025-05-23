@@ -8,7 +8,6 @@ use movement_signer::{
 };
 use std::sync::Arc;
 use tracing::debug;
-use tracing::info;
 
 /// A signer loaded dynamically.
 #[derive(Clone)]
@@ -78,7 +77,6 @@ where
 #[async_trait::async_trait]
 impl Load<Secp256k1> for SignerIdentifier {
 	async fn load(&self) -> Result<LoadedSigner<Secp256k1>, LoaderError> {
-		info!("loading a secp256k1 signer {:?}", self);
 		match self {
 			SignerIdentifier::Local(local) => {
 				let signer = movement_signer_local::signer::LocalSigner::from_signing_key_hex(
@@ -109,7 +107,6 @@ impl Load<Secp256k1> for SignerIdentifier {
 #[async_trait::async_trait]
 impl Load<Ed25519> for SignerIdentifier {
 	async fn load(&self) -> Result<LoadedSigner<Ed25519>, LoaderError> {
-		info!("loading an ed25519 signer {:?}", self);
 		match self {
 			SignerIdentifier::Local(local) => {
 				let signer = movement_signer_local::signer::NoSpecLocalSigner::<

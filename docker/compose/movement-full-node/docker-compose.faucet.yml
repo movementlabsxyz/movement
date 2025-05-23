@@ -1,0 +1,21 @@
+services:    
+  movement-faucet-service:
+    image: ghcr.io/movementlabsxyz/movement-faucet-service:${CONTAINER_REV}
+    container_name: movement-faucet-service
+    command: run-simple
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+      - RUST_BACKTRACE=1
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+    ports:
+      - "30732:30732"
+    depends_on:
+      movement-full-node:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 30732" ]
+      retries: 10
+      interval: 10s
+      timeout: 5s
+    restart: on-failure:10

@@ -9,6 +9,10 @@ macro_rules! fixed_size {
 			pub fn as_bytes(&self) -> &[u8] {
 				&self.0
 			}
+
+			pub fn to_bytes(self) -> [u8; Self::BYTES_LEN] {
+				self.0
+			}
 		}
 
 		impl TryFrom<&[u8]> for $Name {

@@ -121,7 +121,7 @@ impl McrSettlementClientOperations for McrSettlementClient {
 
 	async fn get_posted_commitment_at_height(
 		&self,
-		height: u64,
+		_height: u64,
 	) -> Result<Option<BlockCommitment>, anyhow::Error> {
 		unimplemented!();
 	}

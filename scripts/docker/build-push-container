@@ -114,6 +114,7 @@ if [ "$debug" = true ]; then
 fi
 
 docker buildx build \
+  --network=host \
   --platform "linux/$platform_shorthand" \
   --file "$dockerfile_path" \
   $(for tag in "${container_tags[@]}"; do echo -n " -t $tag "; done) \

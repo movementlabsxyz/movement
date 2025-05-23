@@ -16,7 +16,7 @@ Environment="MOVEMENT_DA_LIGHT_NODE_CONNECTION_HOSTNAME=m1-da-light-node.mainnet
 Environment="MOVEMENT_DA_LIGHT_NODE_CONNECTION_PORT=443"
 
 Environment="AWS_REGION=us-west-1"
-ExecStart=/usr/bin/docker compose --env-file .env -f /home/{{ user }}/movement/docker/compose/movement-full-node/docker-compose.yml -f /home/{{ user }}/movement/docker/compose/movement-full-node/docker-compose.follower.yml up --force-recreate --remove-orphans
+ExecStart=/usr/bin/docker compose --env-file .env -f /home/{{ user }}/movement/docker/compose/movement-full-node/docker-compose.fullnode.yml up --force-recreate --remove-orphans
 Restart=on-failure
 
 [Install]

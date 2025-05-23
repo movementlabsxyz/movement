@@ -1,0 +1,56 @@
+[package]
+name = "movement-da-sequencer-node"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+aptos-crypto = { workspace = true }
+aptos-crypto-derive = { workspace = true }
+aptos-types = { workspace = true }
+hex = { workspace = true }
+ed25519-dalek = { workspace = true }
+once_cell = { workspace = true }
+prost = { workspace = true }
+aptos-sdk = { workspace = true }
+bcs = { workspace = true }
+chrono = { workspace = true }
+celestia-rpc = { workspace = true }
+celestia-types = { workspace = true }
+rand = { workspace = true }
+rocksdb = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tokio-stream = { workspace = true }
+async-stream = { workspace = true }
+tonic = { workspace = true }
+tonic-reflection = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+url = { workspace = true }
+futures = { workspace = true }
+dot-movement = { workspace = true }
+godfig = { workspace = true }
+poem = { workspace = true }
+
+movement-da-sequencer-client = { workspace = true }
+movement-da-sequencer-config = { workspace = true }
+movement-da-sequencer-proto = { workspace = true, features = ["server"] }
+movement-types = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+rand = { workspace = true }
+rand_core = { workspace = true }
+movement-types = { workspace = true, features = ["testing"] }
+movement-signer = { workspace = true}
+
+[lints]
+workspace = true

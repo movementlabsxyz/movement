@@ -1,4 +1,6 @@
 pub mod local;
+pub mod migrate;
+
 use std::future::Future;
 
 pub trait MovementFullNodeSetupOperations {
