@@ -175,6 +175,7 @@ impl DaSequencerClient for GrpcDaSequencerClient {
 										break;
 									} else {
 										expected_height +=1;
+										*last_heartbeat_time.lock().await = Instant::now();
 										yield block;
 
 									}
