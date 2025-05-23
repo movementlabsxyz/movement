@@ -84,8 +84,8 @@ To set up the node configuration file, or update it (if you're starting from an 
 First set the DA-Sequencer connection URL depending on the network:
 
  * Devnet: `export MAPTOS_DA_SEQUENCER_CONNECTION_URL=https://da-sequencer.devnet.movementinfra.xyz`
- * Testnet: `export MAPTOS_DA_SEQUENCER_CONNECTION_URL=https://m1-da-light-node.testnet.bardock.movementnetwork.xyz`
- * Mainnet: `export MAPTOS_DA_SEQUENCER_CONNECTION_URL=https://m1-da-light-node.mainnet.movementnetwork.xyz`
+ * Testnet: `export MAPTOS_DA_SEQUENCER_CONNECTION_URL=https://da-sequencer.testnet.movementinfra.xyz`
+ * Mainnet: `export MAPTOS_DA_SEQUENCER_CONNECTION_URL=https://da-sequencer.mainnet.movementinfra.xyz`
 
 Then run the setup/migration script:
 

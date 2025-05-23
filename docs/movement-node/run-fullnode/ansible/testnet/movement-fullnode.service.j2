@@ -11,9 +11,9 @@ Environment="CONTAINER_REV={{ rev }}"
 Environment="MAPTOS_CHAIN_ID=250"
 Environment="MAPTOS_PRIVATE_KEY=random"
 
-Environment="MAPTOS_DA_SEQUENCER_CONNECTION_URL=https://m1-da-light-node.testnet.bardock.movementnetwork.xyz"
+Environment="MAPTOS_DA_SEQUENCER_CONNECTION_URL=https://da-sequencer.testnet.movementinfra.xyz"
 
-ExecStart=/usr/bin/docker compose --env-file .env -f /home/{{ user }}/movement/docker/compose/movement-full-node/docker-compose.fullnode.yml up --force-recreate --remove-orphans
+ExecStart=/usr/bin/docker compose --env-file .env -f /home/{{ user }}/movement/docker/compose/movement-full-node/docker-compose.fullnode.yml -f /home/ssm-user/movement/docker/compose/movement-full-node/docker-compose.faucet.yml up --force-recreate --remove-orphans
 Restart=on-failure
 
 [Install]
