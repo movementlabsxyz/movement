@@ -53,12 +53,15 @@ pub async fn run_server(
 	Ok(())
 }
 
+#[derive(Debug, Clone)]
+pub enum ProducedData {
+	Block(SequencerBlock, Option<NodeState>),
+	HeartBeat,
+}
+
 #[derive(Debug)]
 pub enum GrpcRequests {
-	StartBlockStream(
-		mpsc::UnboundedSender<Option<(SequencerBlock, Option<NodeState>)>>,
-		oneshot::Sender<BlockHeight>,
-	),
+	StartBlockStream(mpsc::UnboundedSender<ProducedData>, oneshot::Sender<BlockHeight>),
 	GetBlockHeight(BlockHeight, oneshot::Sender<Option<SequencerBlock>>),
 	WriteBatch(DaBatch<FullNodeTxs>),
 	SendState(NodeState),
@@ -154,12 +157,12 @@ impl DaSequencerNodeService for DaSequencerNode {
 					};
 
 					match received_content {
-						None => {
+						ProducedData::HeartBeat => {
 							// send heartbeat.
 							BlockResponse { block_type: Some(BlockType::Heartbeat(true)) }
 						}
 
-						Some((new_block, state)) => {
+						ProducedData::Block(new_block, state) => {
 							// If the new produced height is not the next one it means that someway we miss blocks.
 							// Use the DB fetching mechanism to request them.
 							// Set the first_produced_block_height the to missing block height.
