@@ -144,7 +144,7 @@ If your node cannot reach the same state as the main node, it means it did not e
 
 Perform a restoration using the appropriate snapshot. If the issue persists after restoration, contact Movement support.
 
-### state from Da verification failed
+### Error "State from Da verification failed"
 When there's a divergence between the main node state and the full node state, it is detected on the full node, and the node stops with an error containing the sentence: `state from Da verification failed`.
 
 To recover, try restarting the node. If you get the same error, perform a restoration to restart from a correct state. After restoration, restart the node; it should then sync correctly.
