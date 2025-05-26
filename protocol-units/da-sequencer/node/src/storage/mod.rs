@@ -1,5 +1,5 @@
 use crate::{
-	batch::{DaBatch, FullNodeTxs},
+	batch::{DaBatch, UniqueFullNodeTxs},
 	block::{BlockHeight, SequencerBlock, MAX_SEQUENCER_BLOCK_SIZE},
 	celestia::CelestiaHeight,
 	error::DaSequencerError,
@@ -67,7 +67,7 @@ pub struct Storage {
 
 pub trait DaSequencerStorage {
 	/// Save all batch's Tx in the pending Tx table. The batch's Tx has been verified and validated.
-	fn write_batch(&self, batch: DaBatch<FullNodeTxs>) -> Result<(), DaSequencerError>;
+	fn write_batch(&self, batch: DaBatch<UniqueFullNodeTxs>) -> Result<(), DaSequencerError>;
 
 	/// Return, if exists, the Block at the given height.
 	fn get_block_at_height(
@@ -131,16 +131,17 @@ impl Storage {
 }
 
 impl DaSequencerStorage for Storage {
-	fn write_batch(&self, batch: DaBatch<FullNodeTxs>) -> Result<(), DaSequencerError> {
+	fn write_batch(&self, batch: DaBatch<UniqueFullNodeTxs>) -> Result<(), DaSequencerError> {
 		let cf = self.db.cf_handle(cf::PENDING_TRANSACTIONS).ok_or_else(|| {
 			DaSequencerError::StorageAccess("Missing column family: pending_transactions".into())
 		})?;
-
-		let txs = batch.data();
+		let data = batch.data();
+		let txs = &data.txs;
+		let timestamp = data.timestamp;
 		let mut write_batch = WriteBatch::default();
 
 		for (i, tx) in txs.iter().enumerate() {
-			let key = TxCompositeKey::from_batch(i, tx, batch.timestamp).encode();
+			let key = TxCompositeKey::from_batch(i, tx, timestamp).encode();
 			let value =
 				bcs::to_bytes(tx).map_err(|e| DaSequencerError::Deserialization(e.to_string()))?;
 			write_batch.put_cf(&cf, key, value);
@@ -379,8 +380,8 @@ mod tests {
 		let tx_id = tx.id();
 
 		let txs = FullNodeTxs::new(vec![tx.clone()]);
-		let batch = DaBatch::test_only_new(txs);
-		let batch_ts = batch.timestamp;
+		let batch = DaBatch::test_only_new(txs).unique(0);
+		let batch_ts = batch.data().timestamp;
 
 		storage.write_batch(batch).expect("write_batch failed");
 
@@ -438,9 +439,10 @@ mod tests {
 		let tx3 = Transaction::test_only_new(b"tx3".to_vec(), 1, 3);
 
 		// Create the OLDER batch first
-		let older_batch = DaBatch::test_only_new(FullNodeTxs::new(vec![tx1.clone(), tx2.clone()]));
+		let older_batch =
+			DaBatch::test_only_new(FullNodeTxs::new(vec![tx1.clone(), tx2.clone()])).unique(0);
 		std::thread::sleep(std::time::Duration::from_millis(1)); // ensure newer timestamp
-		let newer_batch = DaBatch::test_only_new(FullNodeTxs::new(vec![tx3.clone()]));
+		let newer_batch = DaBatch::test_only_new(FullNodeTxs::new(vec![tx3.clone()])).unique(0);
 
 		// Write batches to DB
 		storage.write_batch(older_batch).expect("write_batch (older) failed");
@@ -486,10 +488,10 @@ mod tests {
 		// Create a transaction and write it as pending
 		let tx = Transaction::test_only_new(b"save test".to_vec(), 0, 1);
 		let tx_id = tx.id();
-		let batch = DaBatch::test_only_new(FullNodeTxs::new(vec![tx.clone()]));
+		let batch = DaBatch::test_only_new(FullNodeTxs::new(vec![tx.clone()])).unique(0);
 		let composite_key = {
 			let mut key = Vec::with_capacity(44);
-			key.extend_from_slice(&batch.timestamp.to_be_bytes());
+			key.extend_from_slice(&batch.data().timestamp.to_be_bytes());
 			key.extend_from_slice(&0u32.to_be_bytes()); // index = 0
 			key.extend_from_slice(tx_id.as_bytes());
 			key
@@ -628,7 +630,7 @@ mod tests {
 		let tx_id = tx.id();
 
 		let txs = FullNodeTxs::new(vec![tx]);
-		let batch = DaBatch::test_only_new(txs);
+		let batch = DaBatch::test_only_new(txs).unique(0);
 		storage.write_batch(batch).expect("failed to write batch");
 		let maybe_block = storage.produce_next_block().expect("produce_next_block failed");
 
@@ -672,7 +674,7 @@ mod tests {
 		let txs: Vec<_> = (0..10)
 			.map(|i| Transaction::test_only_new(format!("data-{i}").into_bytes(), 1, i))
 			.collect();
-		let batch = DaBatch::test_only_new(FullNodeTxs::new(txs.clone()));
+		let batch = DaBatch::test_only_new(FullNodeTxs::new(txs.clone())).unique(0);
 		storage.write_batch(batch).expect("failed to write batch");
 
 		// Produce the block

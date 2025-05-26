@@ -2,7 +2,7 @@ use crate::common_args::MovementArgs;
 use clap::Parser;
 
 #[derive(Debug, Parser, Clone)]
-#[clap(rename_all = "kebab-case", about = "Runs the Suzuka Full Node")]
+#[clap(rename_all = "kebab-case", about = "Runs Da Sequencer.")]
 pub struct DaRun {
 	#[clap(flatten)]
 	pub movement_args: MovementArgs,

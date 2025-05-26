@@ -1,17 +1,8 @@
-use movement_da_light_node_da::DaOperations;
-use movement_da_light_node_prevalidator::{aptos::whitelist::Validator, PrevalidatorOperations};
-use movement_signer::cryptography::secp256k1::Secp256k1;
-use movement_signer_loader::LoadedSigner;
-use std::boxed::Box;
-use std::fmt::Debug;
-use std::path::PathBuf;
-use std::pin::Pin;
-use std::sync::{atomic::AtomicU64, Arc};
-use std::time::Duration;
-
 use memseq::{Sequencer, Transaction};
 use movement_da_light_node_celestia::da::Da as CelestiaDa;
+use movement_da_light_node_da::DaOperations;
 use movement_da_light_node_digest_store::da::Da as DigestStoreDa;
+use movement_da_light_node_prevalidator::{aptos::Validator, Prevalidated};
 use movement_da_light_node_proto as grpc;
 use movement_da_light_node_proto::blob_response::BlobType;
 use movement_da_light_node_proto::light_node_service_server::LightNodeService;
@@ -20,8 +11,11 @@ use movement_da_util::{
 	blob::ir::{blob::DaBlob, data::InnerSignedBlobV1Data},
 	config::Config,
 };
+use movement_signer::cryptography::secp256k1::Secp256k1;
 use movement_signer::{cryptography::Curve, Digester, Signing, Verify};
+use movement_signer_loader::LoadedSigner;
 use movement_types::block::Block;
+
 use serde::{Deserialize, Serialize};
 use tokio::{
 	sync::mpsc::{Receiver, Sender},
@@ -30,9 +24,17 @@ use tokio::{
 use tokio_stream::Stream;
 use tracing::{debug, info};
 
+use std::boxed::Box;
+use std::fmt::Debug;
+use std::path::PathBuf;
+use std::pin::Pin;
+use std::sync::{atomic::AtomicU64, Arc};
+use std::time::Duration;
+
 use crate::{passthrough::LightNode as LightNodePassThrough, LightNodeRuntime};
 
 const LOGGING_UID: AtomicU64 = AtomicU64::new(0);
+const BLOCK_PROPOSER_CHANNEL_BUFFER_SIZE: usize = 2usize.pow(10);
 
 #[derive(Clone)]
 pub struct LightNode<O, C, Da, V>
@@ -53,7 +55,7 @@ where
 {
 	pub pass_through: LightNodePassThrough<O, C, Da, V>,
 	pub memseq: Arc<memseq::Memseq<memseq::RocksdbMempool>>,
-	pub prevalidator: Option<Arc<Validator>>,
+	pub prevalidator: Arc<Validator>,
 }
 
 impl<O, C, Da, V> Debug for LightNode<O, C, Da, V>
@@ -104,10 +106,10 @@ impl LightNodeRuntime
 
 		// prevalidator
 		let whitelisted_accounts = config.whitelisted_accounts()?;
-		let prevalidator = match whitelisted_accounts {
-			Some(whitelisted_accounts) => Some(Arc::new(Validator::new(whitelisted_accounts))),
-			None => None,
-		};
+		let prevalidator = Arc::new(match whitelisted_accounts {
+			Some(whitelisted_accounts) => Validator::with_whitelist(whitelisted_accounts),
+			None => Validator::new(),
+		});
 
 		Ok(Self { pass_through, memseq, prevalidator })
 	}
@@ -278,10 +280,10 @@ where
 	}
 
 	pub async fn run_block_proposer(&self) -> Result<(), anyhow::Error> {
-		let (sender, mut receiver) = tokio::sync::mpsc::channel(2 ^ 10);
+		let (sender, mut receiver) = tokio::sync::mpsc::channel(BLOCK_PROPOSER_CHANNEL_BUFFER_SIZE);
 
 		loop {
-			info!(target: "movement_timing", "START: run_block_propoer iteration");
+			info!(target: "movement_timing", "START: run_block_proposer iteration");
 			match futures::try_join!(
 				self.run_block_builder(sender.clone()),
 				self.run_block_publisher(&mut receiver),
@@ -401,6 +403,8 @@ where
 		&self,
 		request: tonic::Request<grpc::BatchWriteRequest>,
 	) -> std::result::Result<tonic::Response<grpc::BatchWriteResponse>, tonic::Status> {
+		use movement_da_light_node_prevalidator::Error;
+
 		let blobs_for_submission = request.into_inner().blobs;
 
 		// make transactions from the blobs
@@ -409,30 +413,18 @@ where
 			let transaction: Transaction = serde_json::from_slice(&blob.data)
 				.map_err(|e| tonic::Status::internal(e.to_string()))?;
 
-			match &self.prevalidator {
-				Some(prevalidator) => {
-					// match the prevalidated status, if validation error discard if internal error raise internal error
-					match prevalidator.prevalidate(transaction).await {
-						Ok(prevalidated) => {
-							transactions.push(prevalidated.into_inner());
-						}
-						Err(e) => {
-							match e {
-								movement_da_light_node_prevalidator::Error::Validation(_) => {
-									// discard the transaction
-									info!(
-										"discarding transaction due to prevalidation error {:?}",
-										e
-									);
-								}
-								movement_da_light_node_prevalidator::Error::Internal(e) => {
-									return Err(tonic::Status::internal(e.to_string()));
-								}
-							}
-						}
-					}
+			// match the prevalidated status, if validation error discard if internal error raise internal error
+			match self.prevalidator.prevalidate(transaction) {
+				Ok(Prevalidated(transaction)) => {
+					transactions.push(transaction);
 				}
-				None => transactions.push(transaction),
+				Err(Error::Validation(e)) => {
+					// discard the transaction
+					info!("discarding transaction due to prevalidation error: {}", e);
+				}
+				Err(Error::Internal(e)) => {
+					return Err(tonic::Status::internal(e.to_string()));
+				}
 			}
 		}
 

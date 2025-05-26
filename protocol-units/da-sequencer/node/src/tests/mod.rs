@@ -1,8 +1,18 @@
 use crate::batch::DaBatch;
 use crate::tests::whitelist::make_test_whitelist;
 use aptos_crypto::hash::CryptoHash;
+use aptos_crypto::SigningKey;
+use aptos_crypto::Uniform;
+use aptos_sdk::crypto::ed25519::Ed25519PrivateKey;
+use aptos_sdk::crypto::ed25519::Ed25519PublicKey;
+use aptos_sdk::types::account_address::AccountAddress;
+use aptos_sdk::types::chain_id::ChainId;
+use aptos_sdk::types::transaction::RawTransaction;
+use aptos_sdk::types::transaction::Script;
+use aptos_sdk::types::transaction::SignedTransaction;
+use aptos_sdk::types::transaction::TransactionPayload;
 use ed25519_dalek::Signer;
-use ed25519_dalek::SigningKey;
+use ed25519_dalek::SigningKey as DalekSigningKey;
 use rand::rngs::OsRng;
 use rand::RngCore;
 use serde::Serialize;
@@ -26,15 +36,33 @@ where
 
 		let serialized = bcs::to_bytes(&data).unwrap(); // only fails if serialization is broken
 		let signature = private_key.sign(&serialized);
-		let timestamp = chrono::Utc::now().timestamp_micros() as u64;
 
-		Self { data, signature, signer: public_key, timestamp }
+		Self { data, signature, signer: public_key }
 	}
 }
 
-pub fn generate_signing_key() -> SigningKey {
+pub fn generate_signing_key() -> DalekSigningKey {
 	let mut bytes = [0u8; 32];
 	OsRng.fill_bytes(&mut bytes);
-	let signing_key = SigningKey::from_bytes(&bytes);
+	let signing_key = DalekSigningKey::from_bytes(&bytes);
 	signing_key
+}
+
+pub fn create_aptos_transaction() -> SignedTransaction {
+	let transaction_payload = TransactionPayload::Script(Script::new(vec![0], vec![], vec![]));
+	let raw_transaction = RawTransaction::new(
+		AccountAddress::random(),
+		0,
+		transaction_payload,
+		0,
+		0,
+		0,
+		ChainId::test(), // This is the value used in aptos testing code.
+	);
+
+	let private_key = Ed25519PrivateKey::generate_for_testing();
+	let public_key = Ed25519PublicKey::from(&private_key);
+
+	let signature = private_key.sign(&raw_transaction).unwrap();
+	SignedTransaction::new(raw_transaction, public_key, signature)
 }

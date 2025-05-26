@@ -1,10 +1,10 @@
-use crate::block::NodeState;
 use crate::block::SequencerBlock;
 use crate::celestia::mock::CelestiaMock;
 use crate::celestia::DaSequencerExternalDa;
 use crate::error::DaSequencerError;
 use crate::server::run_server;
 use crate::server::GrpcRequests;
+use crate::server::ProducedData;
 use crate::storage::DaSequencerStorage;
 use crate::storage::Storage;
 use crate::whitelist::Whitelist;
@@ -14,7 +14,7 @@ use godfig::{backend::config_file::ConfigFile, Godfig};
 use movement_da_sequencer_config::DaSequencerConfig;
 use tokio::signal::unix::signal;
 use tokio::signal::unix::SignalKind;
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, oneshot};
 use tokio::task::JoinHandle;
 use tokio_stream::StreamExt;
 
@@ -22,6 +22,7 @@ pub mod batch;
 pub mod block;
 pub mod celestia;
 pub mod error;
+mod healthcheck;
 pub mod server;
 pub mod storage;
 #[cfg(test)]
@@ -57,6 +58,17 @@ pub async fn start(mut dot_movement: dot_movement::DotMovement) -> Result<(), an
 		run_server(grpc_address, request_tx, whitelist, verifying_key).await
 	});
 
+	// Start healthcheck entry point
+	let healthcheck_url = format!(
+		"{}:{}",
+		healthcheck::DEFAULT_REST_LISTENER_HOSTNAME,
+		da_sequencer_config.healthcheck_bind_port
+	);
+	let (rest_health_tx, rest_health_rx) = tokio::sync::mpsc::channel(10);
+	let rest_service = healthcheck::HealthCheckRest::new(healthcheck_url, rest_health_tx)?;
+	let rest_service_future = rest_service.run_service();
+	let rest_jh = tokio::spawn(rest_service_future);
+
 	//Start the main loop
 	let db_storage_path = dotmovement_path.join(&da_sequencer_config.db_storage_relative_path);
 
@@ -64,7 +76,8 @@ pub async fn start(mut dot_movement: dot_movement::DotMovement) -> Result<(), an
 
 	// TODO Use Celestia Mock for now
 	let celestia_mock = CelestiaMock::new();
-	let loop_jh = tokio::spawn(run(da_sequencer_config, request_rx, storage, celestia_mock));
+	let loop_jh =
+		tokio::spawn(run(da_sequencer_config, request_rx, rest_health_rx, storage, celestia_mock));
 
 	let (stop_tx, mut stop_rx) = tokio::sync::watch::channel(());
 	tokio::spawn({
@@ -92,6 +105,9 @@ pub async fn start(mut dot_movement: dot_movement::DotMovement) -> Result<(), an
 		res = grpc_jh => {
 			tracing::error!("Grpc server exit because :{res:?}");
 		}
+		res = rest_jh => {
+			tracing::error!("Da Sequencer Rest entry point stops because :{res:?}");
+		}
 		res = loop_jh => {
 			tracing::error!("Da Sequencer main process exit because :{res:?}");
 		}
@@ -107,6 +123,7 @@ pub async fn start(mut dot_movement: dot_movement::DotMovement) -> Result<(), an
 pub async fn run<D, S>(
 	config: DaSequencerConfig,
 	mut request_rx: mpsc::Receiver<GrpcRequests>,
+	mut check_request_rx: mpsc::Receiver<oneshot::Sender<bool>>,
 	storage: S,
 	celestia: D,
 ) -> Result<(), DaSequencerError>
@@ -125,9 +142,19 @@ where
 	let mut produce_block_jh = get_pending_future();
 	let mut connected_grpc_sender = vec![];
 	let mut current_node_state = None;
+	// Batch timestamp should always be greater strict to the last one.
+	let mut last_batch_timestamp = chrono::Utc::now().timestamp_micros() as u64;
 
 	loop {
 		tokio::select! {
+			// Manage health check request.
+			Some(oneshot_tx) = check_request_rx.recv() => {
+				//Basic monitoring, always true if the loop run.
+				if let Err(err) = oneshot_tx.send(true){
+					tracing::warn!("Heal check oneshot channel closed abnormally :{err:?}");
+				}
+			}
+
 			// Manage grpc request.
 			Some(grpc_request) = request_rx.recv() => {
 				match grpc_request {
@@ -159,6 +186,10 @@ where
 						});
 					},
 					GrpcRequests::WriteBatch(batch) => {
+						// Create an unique batch data
+						let batch = batch.unique(last_batch_timestamp);
+						last_batch_timestamp = batch.data().timestamp;
+
 						//send batch to the storage.
 						let write_batch_jh = tokio::task::spawn_blocking({
 							let storage = storage.clone();
@@ -193,8 +224,8 @@ where
 						let block_id = block.id();
 						// Send the block to all registered follower
 						// For now send to the main loop because there are very few followers (<100).
-						tracing::info!(sender_len = %connected_grpc_sender.len(), block_height= %block.height().0, "New block produced, send to fullnodes.");
-						stream_block_to_sender(&mut connected_grpc_sender, Some((block, current_node_state.clone()))).await;
+						tracing::info!(sender_len = %connected_grpc_sender.len(), block_height= %block.height().0, "New block produced, sent to fullnodes.");
+						stream_block_to_sender(&mut connected_grpc_sender, ProducedData::Block(block, current_node_state.clone())).await;
 
 						//send the block to Celestia.
 						let celestia_send_jh = tokio::spawn({
@@ -218,7 +249,7 @@ where
 			// Every tick will produce a heartbeat.
 			_ = da_stream_heartbeat_interval.tick() => {
 				tracing::info!(sender_len = %connected_grpc_sender.len(), "Produced a heartbeat, sent to fullnodes");
-				stream_block_to_sender(&mut connected_grpc_sender, None).await;
+				stream_block_to_sender(&mut connected_grpc_sender, ProducedData::HeartBeat).await;
 
 			}
 
@@ -234,8 +265,8 @@ where
 }
 
 async fn stream_block_to_sender(
-	senders: &mut Vec<mpsc::UnboundedSender<Option<(SequencerBlock, Option<NodeState>)>>>,
-	data: Option<(SequencerBlock, Option<NodeState>)>,
+	senders: &mut Vec<mpsc::UnboundedSender<ProducedData>>,
+	data: ProducedData,
 ) {
 	let mut new_sender = vec![];
 	for sender in senders.drain(..) {
