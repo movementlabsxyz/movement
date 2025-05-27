@@ -1,9 +1,9 @@
 use super::metadata::Metadata;
 use crate::backend::s3::bucket_connection::BucketConnection;
+use crate::backend::s3::shared_bucket::execute_with_concurrency_limit;
 use crate::backend::s3::shared_bucket::BUFFER_SIZE;
 use crate::backend::PullOperations;
 use crate::files::package::{Package, PackageElement};
-use futures::{stream, StreamExt};
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::fs::File;
 use std::fs::OpenOptions;
@@ -153,10 +153,14 @@ impl Pull {
 			manifest.add_sync_file(full_path);
 		}
 
-		// try to join all the manifest_futures
-		//futures::future::try_join_all(manifest_futures).await?;
-		//Execute file download with max 50 download started at a time.
-		let results = Pull::execute_with_concurrency_limit(manifest_futures, 50).await;
+		// Try to execute all the manifest_futures.
+		// Execute file download with max 100 downloads started at a time.
+		let results = execute_with_concurrency_limit(manifest_futures, 100).await;
+		// Validate all files download correctly
+		results.into_iter().try_for_each(|res| {
+			let _ = res?;
+			Ok::<(), anyhow::Error>(())
+		})?;
 
 		//recreate splited archive if needed.
 		let mut unsplit_manifest =
@@ -174,20 +178,6 @@ impl Pull {
 
 		// should downloaded into the locations specified in the manifest
 		Ok(unsplit_manifest)
-	}
-
-	async fn execute_with_concurrency_limit<F, T>(
-		futures: Vec<F>,
-		max_concurrent: usize,
-	) -> Vec<Result<T, anyhow::Error>>
-	where
-		F: std::future::Future<Output = T> + Send + 'static,
-	{
-		stream::iter(futures)
-			.buffer_unordered(max_concurrent)
-			.map(|res| Ok(res))
-			.collect()
-			.await
 	}
 
 	async fn find_candidates(&self, package: &Package) -> Result<Vec<Candidate>, anyhow::Error> {

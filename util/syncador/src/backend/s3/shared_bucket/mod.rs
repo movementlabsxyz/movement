@@ -2,6 +2,7 @@ use super::bucket_connection;
 use aws_config::retry::RetryConfig;
 use aws_config::BehaviorVersion;
 use aws_types::region::Region;
+use futures::{stream, StreamExt};
 use tracing::info;
 
 const UPLOAD_COMPLETE_MARKER_FILE_NAME: &str = "upload_complete.txt";
@@ -113,6 +114,20 @@ pub async fn create(
 	let pull = pull::Pull::new(bucket_connection, metadata, pull_destination);
 
 	Ok((push, pull))
+}
+
+pub async fn execute_with_concurrency_limit<F, T>(
+	futures: Vec<F>,
+	max_concurrent: usize,
+) -> Vec<Result<T, anyhow::Error>>
+where
+	F: std::future::Future<Output = T> + Send + 'static,
+{
+	stream::iter(futures)
+		.buffer_unordered(max_concurrent)
+		.map(|res| Ok(res))
+		.collect()
+		.await
 }
 
 #[cfg(test)]
