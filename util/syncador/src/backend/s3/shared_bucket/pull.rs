@@ -3,6 +3,7 @@ use crate::backend::s3::bucket_connection::BucketConnection;
 use crate::backend::s3::shared_bucket::BUFFER_SIZE;
 use crate::backend::PullOperations;
 use crate::files::package::{Package, PackageElement};
+use futures::{stream, StreamExt};
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::fs::File;
 use std::fs::OpenOptions;
@@ -34,22 +35,16 @@ impl Pull {
 	}
 
 	pub(crate) async fn download_path(
-		&self,
-		candidate_selected: &Candidate,
+		bucket_connection: BucketConnection,
+		candidate_selected: Candidate,
 		relative_path: std::path::PathBuf,
 		full_path: std::path::PathBuf,
 	) -> Result<PathBuf, anyhow::Error> {
-		let bucket = self.bucket_connection.bucket.clone();
+		let bucket = bucket_connection.bucket.clone();
 		let key = format!("{}/{}", candidate_selected.key, relative_path.to_string_lossy());
 		tracing::info!("Pulling file from S3 on bucket:{bucket} with key: {key}");
-		let mut output = self
-			.bucket_connection
-			.client
-			.get_object()
-			.bucket(bucket)
-			.key(&key)
-			.send()
-			.await?;
+		let mut output =
+			bucket_connection.client.get_object().bucket(bucket).key(&key).send().await?;
 		// make any of the parent directories that don't exist
 		tokio::fs::create_dir_all(
 			full_path
@@ -148,13 +143,20 @@ impl Pull {
 					.ok_or(anyhow::anyhow!("could not strip prefix"))?,
 			);
 			let full_path = self.pull_destination.join(&relative_path);
-			let future = self.download_path(candidate, relative_path.clone(), full_path.clone());
+			let future = Pull::download_path(
+				self.bucket_connection.clone(),
+				candidate.clone(),
+				relative_path.clone(),
+				full_path.clone(),
+			);
 			manifest_futures.push(future);
 			manifest.add_sync_file(full_path);
 		}
 
 		// try to join all the manifest_futures
-		futures::future::try_join_all(manifest_futures).await?;
+		//futures::future::try_join_all(manifest_futures).await?;
+		//Execute file download with max 50 download started at a time.
+		let results = Pull::execute_with_concurrency_limit(manifest_futures, 50).await;
 
 		//recreate splited archive if needed.
 		let mut unsplit_manifest =
@@ -172,6 +174,20 @@ impl Pull {
 
 		// should downloaded into the locations specified in the manifest
 		Ok(unsplit_manifest)
+	}
+
+	async fn execute_with_concurrency_limit<F, T>(
+		futures: Vec<F>,
+		max_concurrent: usize,
+	) -> Vec<Result<T, anyhow::Error>>
+	where
+		F: std::future::Future<Output = T> + Send + 'static,
+	{
+		stream::iter(futures)
+			.buffer_unordered(max_concurrent)
+			.map(|res| Ok(res))
+			.collect()
+			.await
 	}
 
 	async fn find_candidates(&self, package: &Package) -> Result<Vec<Candidate>, anyhow::Error> {
