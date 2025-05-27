@@ -1,0 +1,43 @@
+---
+compiled_package_info:
+  package_name: hello
+  address_alias_instantiation:
+    hello: ea3dea8b6390b119fc52d3c81b5d40a870594da21cdcc041dbb55e6c8968e886
+  source_digest: 843423D0AA3AE7EBF0A9477185725D9368E9D0AB66D5394245EE020E56EBEB2A
+  build_flags:
+    dev_mode: false
+    test_mode: false
+    override_std: ~
+    generate_docs: false
+    generate_abis: false
+    generate_move_model: true
+    full_model_generation: false
+    install_dir: ~
+    force_recompilation: false
+    additional_named_addresses:
+      hello: ea3dea8b6390b119fc52d3c81b5d40a870594da21cdcc041dbb55e6c8968e886
+    architecture: ~
+    fetch_deps_only: false
+    skip_fetch_latest_git_deps: false
+    compiler_config:
+      bytecode_version: ~
+      known_attributes:
+        - bytecode_instruction
+        - deprecated
+        - event
+        - expected_failure
+        - "fmt::skip"
+        - legacy_entry_fun
+        - "lint::allow_unsafe_randomness"
+        - native_interface
+        - randomness
+        - resource_group
+        - resource_group_member
+        - test
+        - test_only
+        - verify_only
+        - view
+      skip_attribute_checks: false
+      compiler_version: ~
+      language_version: ~
+dependencies: []
