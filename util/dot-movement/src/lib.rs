@@ -60,7 +60,7 @@ impl DotMovement {
 
 		match res {
 			Ok(file) => Ok(file),
-			Err(_e) => {
+			Err(original_error) => {
 				// create parent directories
 				tokio::fs::DirBuilder::new()
 					.recursive(true)
@@ -68,15 +68,18 @@ impl DotMovement {
 						config_path
 							.parent()
 							.ok_or(anyhow::anyhow!("failed to get parent directory of config path"))
+							.context(format!("original error: {}", original_error))
 							.map_err(|e| Error::Internal(e.into()))?,
 					)
 					.await
+					.context(format!("original error: {}", original_error))
 					.context("failed to create parent directories")
 					.map_err(|e| Error::Internal(e.into()))?;
 
 				// create the file
 				let file = tokio::fs::File::create_new(config_path)
 					.await
+					.context(format!("original error: {}", original_error))
 					.context("failed to create config file")
 					.map_err(|e| Error::Internal(e.into()))?;
 
