@@ -20,6 +20,8 @@ path = "src/bin/release.rs"
 maptos-framework-release-util = { workspace = true }
 movement-config = { workspace = true }
 movement-client = { workspace = true }
+move-model = { workspace = true }
+move-command-line-common = { workspace = true }
 e2e-move-tests = { workspace = true }
 once_cell = { workspace = true }
 aptos-framework = { workspace = true }
@@ -44,6 +46,7 @@ tracing-subscriber = { workspace = true }
 maptos-framework-release-util = { workspace = true }
 movement-config = { workspace = true }
 movement-client = { workspace = true }
+move-model = { workspace = true }
 once_cell = { workspace = true }
 aptos-framework = { workspace = true }
 tokio = { workspace = true }
