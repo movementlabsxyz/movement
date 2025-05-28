@@ -1,4 +1,5 @@
 use aptos_framework_post_l1_merge_release::cached::full::feature_upgrade::PostL1Merge;
+use aptos_framework_post_l1_merge_release::vote::test_vote;
 use maptos_framework_release_util::{LocalAccountReleaseSigner, Release};
 use movement_client::types::{account_config::aptos_test_root_address, LocalAccount};
 use once_cell::sync::Lazy;
@@ -62,10 +63,12 @@ async fn main() -> Result<(), anyhow::Error> {
 	// form the rest client
 	let rest_client = movement_client::rest_client::Client::new(NODE_URL.clone());
 
+	test_vote();
+
 	// release the elsa release
-	post_l1_release
-		.release(&local_account_release_signer, 2_000_000, 100, 60, &rest_client)
-		.await?;
+	// post_l1_release
+	// 	.release(&local_account_release_signer, 2_000_000, 100, 60, &rest_client)
+	// 	.await?;
 
 	Ok(())
 }

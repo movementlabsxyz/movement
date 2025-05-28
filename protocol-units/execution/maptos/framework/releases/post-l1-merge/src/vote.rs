@@ -47,7 +47,7 @@ fn test_dir_path(s: &str) -> PathBuf {
 	PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src").join("tests").join(s)
 }
 
-fn test_vote() {
+pub fn test_vote() {
 	// Genesis starts with one validator with index 0
 	let mut harness = MoveHarness::new();
 	let validator_1 = harness.new_account_at(AccountAddress::from_hex_literal("0x123").unwrap());

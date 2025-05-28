@@ -1,5 +1,5 @@
 pub mod cached;
-mod vote;
+pub mod vote;
 
 use aptos_framework_upgrade_gas_release::generate_gas_upgrade_module;
 use maptos_framework_release_util::commit_hash_with_script;
