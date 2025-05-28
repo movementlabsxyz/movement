@@ -488,24 +488,12 @@ impl TransactionPipe {
 
 #[cfg(test)]
 mod tests {
-	use aptos_sdk::types::vm_status::DiscardedVMStatus;
-	use aptos_storage_interface::state_view::LatestDbStateCheckpointView;
-	use aptos_vm_validator::vm_validator;
-	use futures::stream;
-	use futures::SinkExt;
-	use movement_da_sequencer_client::ClientDaSequencerError;
-	use movement_da_sequencer_client::StreamReadBlockFromHeight;
-	use movement_da_sequencer_proto::BatchWriteResponse;
-	use movement_da_sequencer_proto::BlockV1;
-	use std::collections::BTreeSet;
-	use std::sync::Mutex;
-	use tokio::sync::mpsc::unbounded_channel;
-	use tokio::sync::mpsc::UnboundedReceiver;
-
 	use super::*;
 	use crate::{Context, Executor, Service};
 	use aptos_api::{accept_type::AcceptType, transactions::SubmitTransactionPost};
 	use aptos_crypto::HashValue;
+	use aptos_sdk::types::vm_status::DiscardedVMStatus;
+	use aptos_storage_interface::state_view::LatestDbStateCheckpointView;
 	use aptos_types::{
 		account_config,
 		block_executor::partitioner::{ExecutableBlock, ExecutableTransactions},
@@ -517,10 +505,20 @@ mod tests {
 		},
 	};
 	use aptos_vm_genesis::GENESIS_KEYPAIR;
+	use aptos_vm_validator::vm_validator;
 	use futures::channel::oneshot;
+	use futures::stream;
+	use futures::SinkExt;
 	use maptos_execution_util::config::chain::Config;
+	use movement_da_sequencer_client::{ClientDaSequencerError, StreamReadBlockFromHeight};
+	use movement_da_sequencer_proto::{
+		BatchWriteResponse, BlockResponse, BlockV1, ReadAtHeightResponse,
+	};
 	use movement_types::transaction::Transaction as MvTransaction;
+	use std::collections::BTreeSet;
+	use std::sync::Mutex;
 	use tempfile::TempDir;
+	use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver};
 
 	async fn setup(
 	) -> (Context, TransactionPipe, TempDir, futures::channel::mpsc::Receiver<MempoolClientRequest>)
@@ -586,10 +584,16 @@ mod tests {
 		}
 		async fn send_state(
 			&mut self,
-			signer: &LoadedSigner<Ed25519>,
-			state: movement_da_sequencer_proto::MainNodeState,
+			_signer: &LoadedSigner<Ed25519>,
+			_state: movement_da_sequencer_proto::MainNodeState,
 		) -> Result<movement_da_sequencer_proto::BatchWriteResponse, tonic::Status> {
 			Ok(BatchWriteResponse { answer: true })
+		}
+		async fn read_at_height(
+			&mut self,
+			_height: u64,
+		) -> Result<ReadAtHeightResponse, tonic::Status> {
+			Ok(ReadAtHeightResponse { response: Some(BlockResponse { block_type: None }) })
 		}
 	}
 

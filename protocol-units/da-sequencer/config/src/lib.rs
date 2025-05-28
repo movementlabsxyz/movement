@@ -31,6 +31,9 @@ pub struct DaSequencerConfig {
 
 	#[serde(default)]
 	pub main_node_verifying_key: Option<String>,
+
+	#[serde(default = "default_healthcheck_bind_port")]
+	pub healthcheck_bind_port: u16,
 }
 
 impl DaSequencerConfig {
@@ -72,6 +75,7 @@ env_default!(
 	u64,
 	10
 );
+env_default!(default_healthcheck_bind_port, "MOVEMENT_DA_HEALTHCHECK_PORT", u16, 30931);
 
 env_default!(
 	default_whitelist_relative_path,
@@ -95,6 +99,7 @@ impl Default for DaSequencerConfig {
 			whitelist_relative_path: default_whitelist_relative_path(),
 			db_storage_relative_path: default_db_storage_relative_path(),
 			main_node_verifying_key: None,
+			healthcheck_bind_port: default_healthcheck_bind_port(),
 		}
 	}
 }

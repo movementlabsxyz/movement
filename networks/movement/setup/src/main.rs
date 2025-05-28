@@ -39,7 +39,6 @@ async fn main() -> Result<(), anyhow::Error> {
 			.try_transaction_with_result(|config| async move {
 				let config = config.unwrap_or_default();
 
-				// set up anvil
 				let config = Local::default().setup_da_sequencer(dot_movement, config).await?;
 
 				Ok((Some(config), ()))

@@ -1,5 +1,5 @@
 use crate::batch::*;
-use crate::tests::generate_signing_key;
+use crate::tests::{create_aptos_transaction, generate_signing_key};
 use crate::whitelist::Whitelist;
 use ed25519_dalek::Signer;
 use ed25519_dalek::VerifyingKey;
@@ -42,8 +42,8 @@ async fn test_sign_and_validate_batch_passes_with_whitelisted_signer() {
 	let whitelist = make_test_whitelist(vec![verifying_key]);
 
 	let txs = FullNodeTxs(vec![
-		Transaction::new(b"hello".to_vec(), 0, 1),
-		Transaction::new(b"world".to_vec(), 0, 2),
+		Transaction::new(bcs::to_bytes(&create_aptos_transaction()).unwrap(), 0, 1),
+		Transaction::new(bcs::to_bytes(&create_aptos_transaction()).unwrap(), 0, 2),
 	]);
 
 	let batch_bytes = bcs::to_bytes(&txs).expect("Serialization failed");
@@ -59,7 +59,6 @@ async fn test_sign_and_validate_batch_passes_with_whitelisted_signer() {
 		data: RawData { data: deserialized_data },
 		signature: deserialized_sig,
 		signer: deserialized_key,
-		timestamp: chrono::Utc::now().timestamp_micros() as u64,
 	};
 
 	let validated = validate_batch(raw_batch, &whitelist).expect("Batch should validate");
@@ -98,7 +97,6 @@ async fn test_sign_and_validate_batch_fails_with_non_whitelisted_signer() {
 		data: RawData { data: deserialized_data },
 		signature: deserialized_sig,
 		signer: deserialized_key,
-		timestamp: chrono::Utc::now().timestamp_micros() as u64,
 	};
 
 	let result = validate_batch(raw_batch, &whitelist);

@@ -4,6 +4,8 @@ use crate::executor::TxExecutionResult;
 use aptos_crypto::HashValue;
 use aptos_executor_types::{BlockExecutorTrait, StateComputeResult};
 use aptos_sdk::types::account_address::AccountAddress;
+use aptos_sdk::types::AccountKey;
+use aptos_types::account_config::aptos_test_root_address;
 use aptos_types::{
 	aggregate_signature::AggregateSignature,
 	block_executor::{
@@ -91,6 +93,8 @@ impl Executor {
 			state_compute.root_hash(),
 			version,
 		);
+		let block_executor_clone = self.block_executor.clone();
+		block_executor_clone.commit_blocks(vec![block_id], ledger_info_with_sigs.clone())?;
 
 		// Context has a reach-around to the db so the block height should
 		// have been updated to the most recently committed block.
@@ -98,9 +102,6 @@ impl Executor {
 		let block_height = self.get_block_head_height()?;
 
 		let new_execution_state = ExecutionState::build(&ledger_info_with_sigs, block_height);
-
-		let block_executor_clone = self.block_executor.clone();
-		block_executor_clone.commit_blocks(vec![block_id], ledger_info_with_sigs)?;
 
 		// commit mempool transactions
 		self.mempool_tx_exec_result_sender.send(tx_execution_results)?;
@@ -119,6 +120,7 @@ impl Executor {
 
 	pub fn get_block_head_height(&self) -> Result<u64, anyhow::Error> {
 		let ledger_info = self.db().reader.get_latest_ledger_info()?;
+		info!("get_block_head_height lastest ledger_info :{ledger_info:?}");
 		let (_, _, new_block_event) = self
 			.db()
 			.reader
@@ -313,11 +315,12 @@ mod tests {
 	}
 
 	// https://github.com/movementlabsxyz/aptos-core/blob/ea91067b81f9673547417bff9c70d5a2fe1b0e7b/execution/executor-test-helpers/src/integration_test_impl.rs#L535
-	// #[tracing_test::traced_test]
+	//	#[tracing_test::traced_test]
 	#[tokio::test]
+	//	#[ignore]
 	async fn test_execute_block_state_db() -> Result<(), anyhow::Error> {
 		// use aptos_logger::{Level, Logger};
-		// Logger::builder().level(Level::Info).build();
+		// Logger::builder().level(Level::Debug).build();
 
 		// Create an executor instance from the environment configuration.
 		let private_key = Ed25519PrivateKey::generate_for_testing();
@@ -405,7 +408,8 @@ mod tests {
 				]));
 			debug!("Number of transactions: {}", transactions.num_transactions());
 			let block = ExecutableBlock::new(block_id.clone(), transactions);
-			let (block_commitment, _) = executor.execute_block(block)?;
+			let (block_commitment, state) = executor.execute_block(block)?;
+			info!("execution state:{state:?}");
 
 			// Access the database reader to verify state after execution.
 			let db_reader = executor.db_reader();

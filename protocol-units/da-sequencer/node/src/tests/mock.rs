@@ -14,10 +14,11 @@ use movement_types::block::{self, Block, BlockMetadata};
 use movement_types::transaction::Transaction;
 
 use crate::{
-	batch::{DaBatch, FullNodeTxs},
+	batch::{DaBatch, FullNodeTxs, UniqueFullNodeTxs},
 	block::BlockHeight,
 	celestia::blob::CelestiaBlob,
 	celestia::CelestiaHeight,
+	tests::create_aptos_transaction,
 	DaSequencerError, DaSequencerExternalDa, DaSequencerStorage, SequencerBlock,
 };
 
@@ -26,7 +27,8 @@ pub async fn mock_write_new_batch(
 	signing_key: &SigningKey,
 	verifying_key: VerifyingKey,
 ) {
-	let tx = Transaction::test_only_new(b"test data".to_vec(), 1, 123);
+	let tx =
+		Transaction::test_only_new(bcs::to_bytes(&create_aptos_transaction()).unwrap(), 1, 123);
 	let txs = FullNodeTxs::new(vec![tx]);
 
 	//sign batch
@@ -64,7 +66,7 @@ pub async fn mock_wait_and_get_next_block(
 
 #[derive(Debug, Clone)]
 pub struct StorageMockInternal {
-	pub batches: Vec<DaBatch<FullNodeTxs>>,
+	pub batches: Vec<DaBatch<UniqueFullNodeTxs>>,
 	pub produced_blocks: Vec<SequencerBlock>,
 	pub current_height: u64,
 	pub parent_block_id: block::Id,
@@ -88,8 +90,7 @@ impl StorageMock {
 }
 
 impl DaSequencerStorage for StorageMock {
-	fn write_batch(&self, batch: DaBatch<FullNodeTxs>) -> Result<(), DaSequencerError> {
-		tracing::info!("Mock: Storage, call write_batch");
+	fn write_batch(&self, batch: DaBatch<UniqueFullNodeTxs>) -> Result<(), DaSequencerError> {
 		let mut inner = self.inner.lock().unwrap();
 		inner.batches.push(batch);
 		Ok(())
@@ -114,7 +115,7 @@ impl DaSequencerStorage for StorageMock {
 			return Ok(None);
 		}
 		let tx_list: BTreeSet<Transaction> =
-			inner.batches.drain(..).flat_map(|b| b.data.0).collect();
+			inner.batches.drain(..).flat_map(|b| b.data.txs).collect();
 		let block = Block::new(BlockMetadata::default(), inner.parent_block_id, tx_list);
 		inner.parent_block_id = block.id();
 		inner.current_height += 1;

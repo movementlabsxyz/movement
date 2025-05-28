@@ -219,7 +219,8 @@ macro_rules! generate_gas_upgrade_module {
 					gas_unit_price: u64,
 					expiration_timestamp_secs: u64,
 					client: &aptos_sdk::rest_client::Client,
-				) -> Result<Vec<aptos_types::transaction::SignedTransaction>, ReleaseBundleError> {
+				) -> Result<Vec<aptos_types::transaction::SignedTransaction>, ReleaseBundleError>
+				{
 					info!("Proposing release {} with gas upgrade", stringify!($struct_name));
 					self.with_gas_upgrade
 						.propose_release(

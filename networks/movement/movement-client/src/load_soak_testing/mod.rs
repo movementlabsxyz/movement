@@ -1,6 +1,7 @@
 use itertools::Itertools;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 use std::time::Duration;
 use std::{fs::File, sync::Arc};
 use tracing_subscriber::{filter, prelude::*};
@@ -29,11 +30,18 @@ pub fn init_test(config: &ExecutionConfig) -> Result<(), std::io::Error> {
 	let exec_file = File::create(&config.execfile)?;
 	let execution_log = tracing_subscriber::fmt::layer().json().with_writer(Arc::new(exec_file));
 
+	//get log level from RUST_LOG env var.
+	let log_level = std::env::var("RUST_LOG")
+		.as_ref()
+		.ok()
+		.and_then(|level_str| filter::LevelFilter::from_str(level_str).ok())
+		.unwrap_or(filter::LevelFilter::INFO);
+
 	tracing_subscriber::registry()
 		.with(
 			stdout_log
-				.with_filter(filter::LevelFilter::WARN)
-				.and_then(file_log.with_filter(filter::LevelFilter::WARN))
+				.with_filter(log_level)
+				.and_then(file_log.with_filter(log_level))
 				// Add a filter that rejects spans and
 				// events whose targets start with `exec`.
 				.with_filter(filter::filter_fn(|metadata| {
@@ -78,9 +86,23 @@ impl ExecutionConfig {
 				assert!(max_scenarios >= min_scenarios, "max scenarios less than min scenarios");
 				assert!(
 					min_scenarios >= self.scenarios_per_client,
-					"Number of min running scenario less than the number of scenario per client."
+					"Number of min running scenario:{min_scenarios} less than the number of scenario per client:{}.", self.scenarios_per_client
 				);
 			}
+		}
+	}
+
+	pub fn get_max_number_of_scenarios(&self) -> usize {
+		match self.kind {
+			TestKind::Load { number_scenarios } => number_scenarios,
+			TestKind::Soak { max_scenarios, .. } => max_scenarios,
+		}
+	}
+
+	pub fn get_min_number_of_scenarios(&self) -> usize {
+		match self.kind {
+			TestKind::Load { number_scenarios } => number_scenarios,
+			TestKind::Soak { min_scenarios, .. } => min_scenarios,
 		}
 	}
 }
@@ -137,7 +159,7 @@ impl TestKind {
 /// All clients are executed in a different thread in parallel.
 /// Clients execute scenarios in a Tokio runtime concurrently.
 pub fn execute_test(config: ExecutionConfig, create_scenario: Arc<scenario::CreateScenarioFn>) {
-	tracing::info!("Start test scenario execution.");
+	tracing::info!("Start test scenario execution with config: {config:?}");
 
 	let number_scenarios = match config.kind {
 		TestKind::Load { number_scenarios } => number_scenarios,

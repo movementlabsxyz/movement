@@ -99,53 +99,61 @@ where
 
 		loop {
 			select! {
-				Some(res) = blocks_from_da.next() => {
-					let response = res.context("failed to get next block from DA")?;
-					let span = info_span!(target: "movement_timing", "process_block_from_da", block_id = %hex::encode(response.block_id.clone()));
-					tracing::info!("Receive state from DA: {:?}",response.node_state);
-					if let Some(main_state) = response.node_state {
-						// validate received state with local node executed state
-						if !node_main_state_verifier.validate(&(&main_state).into()) {
-							let main_node_state = node_main_state_verifier.get_state(main_state.block_height.into());
-							tracing::error!("Main State from Da verification failed, local node state: {main_state:?} main_node_state:{main_node_state:?}");
+				next_block = blocks_from_da.next() => {
+					match next_block {
+						None => {
+							tracing::error!("Da stream return none, stream broken");
 							break;
 						}
-						node_local_state_verifier.add_state((&main_state).into());
-					}
-					let new_state = self.process_block_from_da(response).instrument(span).await?;
-					tracing::info!("New state after execution: {new_state:?}");
-					if let Some(new_state) = new_state {
-						if !node_local_state_verifier.validate(&(&new_state).into()) {
-							let main_node_state = node_local_state_verifier.get_state(new_state.block_height.into());
-							tracing::error!("Local state from Da verification failed, local node state: {new_state:?} main_node_state:{main_node_state:?}");
-							break;
-						}
-						node_main_state_verifier.add_state((&new_state).into());
-
-						// If main node send new execution result state
-						if propagate_execution_state {
-							tokio::spawn({
-								let mut client = da_client.clone();
-								let signer: LoadedSigner<Ed25519> = match da_batch_signer.load().await {
-									Ok(signer) => signer,
-									Err(err) => {
-										tracing::error!("Failed to load DA batch signer: {err}");
-										break;
-									}
-								};
-								let state = movement_da_sequencer_proto::MainNodeState {
-									block_height: new_state.block_height,
-									ledger_timestamp:  new_state.ledger_timestamp,
-									ledger_version: new_state.ledger_version,
-
-								};
-								async move {
-									if let Err(err) = client.send_state(&signer, state).await {
-										tracing::error!("Send execution state to da sequencer failed : {err}");
-									}
+						Some(res) => {
+							let response = res.context("failed to get next block from DA")?;
+							let span = info_span!(target: "movement_timing", "process_block_from_da", block_id = %hex::encode(response.block_id.clone()));
+							tracing::info!("Receive state from DA: {:?}",response.node_state);
+							if let Some(main_state) = response.node_state {
+								// validate received state with local node executed state
+								if !node_main_state_verifier.validate(&(&main_state).into()) {
+									let main_node_state = node_main_state_verifier.get_state(main_state.block_height.into());
+									tracing::error!("Main State from Da verification failed, local node state: {main_state:?} main_node_state:{main_node_state:?}");
+									break;
 								}
-							});
+								node_local_state_verifier.add_state((&main_state).into());
+							}
+							let new_state = self.process_block_from_da(response).instrument(span).await?;
+							tracing::info!("New state after execution: {new_state:?}");
+							if let Some(new_state) = new_state {
+								if !node_local_state_verifier.validate(&(&new_state).into()) {
+									let main_node_state = node_local_state_verifier.get_state(new_state.block_height.into());
+									tracing::error!("Local state from Da verification failed, local node state: {new_state:?} main_node_state:{main_node_state:?}");
+									break;
+								}
+								node_main_state_verifier.add_state((&new_state).into());
 
+								// If main node send new execution result state
+								if propagate_execution_state {
+									tokio::spawn({
+										let mut client = da_client.clone();
+										let signer: LoadedSigner<Ed25519> = match da_batch_signer.load().await {
+											Ok(signer) => signer,
+											Err(err) => {
+												tracing::error!("Failed to load DA batch signer: {err}");
+												break;
+											}
+										};
+										let state = movement_da_sequencer_proto::MainNodeState {
+											block_height: new_state.block_height,
+											ledger_timestamp:  new_state.ledger_timestamp,
+											ledger_version: new_state.ledger_version,
+
+										};
+										async move {
+											if let Err(err) = client.send_state(&signer, state).await {
+												tracing::error!("Send execution state to da sequencer failed : {err}");
+											}
+										}
+									});
+
+								}
+							}
 						}
 					}
 				}
@@ -158,9 +166,10 @@ where
 					tracing::error!("Da client stream channel timeout because it's idle. Exit");
 					break;
 				}
+				else => break,
 			}
 		}
-		Ok(())
+		Err(anyhow::anyhow!("Block execution loop break. Node need to be restarted."))
 	}
 
 	async fn process_block_from_da(

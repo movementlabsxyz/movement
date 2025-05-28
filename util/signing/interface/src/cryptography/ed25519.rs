@@ -5,13 +5,17 @@ use ed25519_dalek::Verifier as _;
 use serde::{Deserialize, Serialize};
 use sha2::Digest as _;
 
+pub const PUBLIC_KEY_SIZE: usize = 32;
+pub const SIGNATURE_SIZE: usize = 64;
+pub const DIGEST_SIZE: usize = 64;
+
 /// The Ed25519 curve.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Ed25519;
 
-fixed_size!(pub struct PublicKey([u8; 32]));
-fixed_size!(pub struct Signature([u8; 64]));
-fixed_size!(pub struct Digest([u8; 64]));
+fixed_size!(pub struct PublicKey([u8; PUBLIC_KEY_SIZE]));
+fixed_size!(pub struct Signature([u8; SIGNATURE_SIZE]));
+fixed_size!(pub struct Digest([u8; DIGEST_SIZE]));
 
 impl Curve for Ed25519 {
 	type PublicKey = PublicKey;
@@ -40,7 +44,7 @@ impl Verify<Ed25519> for Ed25519 {
 impl Digester<Ed25519> for Ed25519 {
 	fn digest(message: &[u8]) -> Result<Digest, DigestError> {
 		let digest = sha2::Sha512::digest(message);
-		let mut result = [0u8; 64];
+		let mut result = [0u8; DIGEST_SIZE];
 		result.copy_from_slice(&digest);
 		Ok(Digest(result))
 	}
