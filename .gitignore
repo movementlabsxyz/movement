@@ -2,6 +2,7 @@
 proc-compose.temp.log
 methods/guest/Cargo.lock
 networks/movement/movement-client/src/move-modules/build/*
+protocol-units/execution/maptos/framework/releases/post-l1-merge/src/tests/vote.data/enable_partial_governance_voting/build/*
 .idea/
 target/
 ledger_db/
