@@ -47,7 +47,8 @@ fn test_dir_path(s: &str) -> PathBuf {
 	PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src").join("tests").join(s)
 }
 
-pub fn test_vote() {
+/// Partial Vote Assumes core_resources signer and is used for testing
+pub fn test_partial_vote() {
 	// Genesis starts with one validator with index 0
 	let mut harness = MoveHarness::new();
 	let validator_1 = harness.new_account_at(AccountAddress::from_hex_literal("0x123").unwrap());
@@ -161,4 +162,48 @@ pub fn test_vote() {
 		true
 	));
 	assert_eq!(get_remaining_voting_power(&mut harness, validator_1_address, proposal_id), 0);
+}
+
+pub fn test_full_governance_vote() {
+	// Set up harness and two validators
+	let mut harness = MoveHarness::new();
+	let validator_1 = harness.new_account_at(AccountAddress::from_hex_literal("0x123").unwrap());
+	let validator_2 = harness.new_account_at(AccountAddress::from_hex_literal("0x234").unwrap());
+	let validator_1_address = *validator_1.address();
+	let validator_2_address = *validator_2.address();
+
+	// Stake and lock up for both validators
+	let stake_amount = 25_000_000;
+	assert_success!(setup_staking(&mut harness, &validator_1, stake_amount));
+	assert_success!(increase_lockup(&mut harness, &validator_1));
+	assert_success!(setup_staking(&mut harness, &validator_2, stake_amount));
+	assert_success!(increase_lockup(&mut harness, &validator_2));
+
+	// Validator 1 creates a full governance proposal
+	let mut proposal_id = 0;
+	assert_success!(create_proposal_v2(
+		&mut harness,
+		&validator_1,
+		validator_1_address,
+		vec![1], // Dummy execution hash
+		vec![],
+		vec![],
+		false // Not a multi-step proposal
+	));
+
+	// Validator 2 votes YES on the proposal using full voting power
+	assert_success!(vote(&mut harness, &validator_2, validator_2_address, proposal_id, true));
+
+	// Trying to vote again with the same validator should fail (double voting not allowed)
+	assert_abort!(
+		vote(&mut harness, &validator_2, validator_2_address, proposal_id, true),
+		0x10004 // EALREADY_VOTED or equivalent error code
+	);
+
+	// Validator 1 votes NO on the same proposal
+	assert_success!(vote(&mut harness, &validator_1, validator_1_address, proposal_id, false));
+
+	// Check remaining voting power: both should now be zero
+	assert_eq!(get_remaining_voting_power(&mut harness, validator_1_address, proposal_id), 0);
+	assert_eq!(get_remaining_voting_power(&mut harness, validator_2_address, proposal_id), 0);
 }
