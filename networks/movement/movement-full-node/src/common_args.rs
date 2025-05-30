@@ -1,3 +1,4 @@
+use anyhow::Context;
 use clap::Parser;
 use dot_movement::DotMovement;
 use godfig::{backend::config_file::ConfigFile, Godfig};
@@ -30,7 +31,10 @@ impl MovementArgs {
 	/// Get the config
 	pub async fn config(&self) -> Result<Config, anyhow::Error> {
 		let dot_movement = self.dot_movement()?;
-		let config_file = dot_movement.try_get_or_create_config_file().await?;
+		let config_file = dot_movement
+			.try_get_or_create_config_file()
+			.await
+			.context("Failed to get or create config file")?;
 		let godfig: Godfig<Config, ConfigFile> = Godfig::new(ConfigFile::new(config_file), vec![]);
 
 		godfig.try_wait_for_ready().await.map_err(|e| e.into())

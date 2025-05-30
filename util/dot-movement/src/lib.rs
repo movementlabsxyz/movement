@@ -1,6 +1,13 @@
 use std::io::Write;
 pub mod path;
 pub mod sync;
+use anyhow::Context;
+
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+	#[error("DotMovement error: internal error: {0}")]
+	Internal(#[source] Box<dyn std::error::Error + Send + Sync>),
+}
 
 #[derive(Debug, Clone)]
 pub struct DotMovement(std::path::PathBuf);
@@ -29,41 +36,50 @@ impl DotMovement {
 	}
 
 	/// Tries to get the config file as a string.
-	pub async fn try_get_config_file_str(&self) -> Result<String, anyhow::Error> {
+	pub async fn try_get_config_file_str(&self) -> Result<String, Error> {
 		let config_path = self.get_config_json_path();
 		let res = tokio::fs::read_to_string(&config_path).await;
 		match res {
 			Ok(contents) => Ok(contents),
-			Err(e) => Err(anyhow::anyhow!("failed to read file: {:?} {}", config_path, e)),
+			Err(e) => {
+				Err(Error::Internal(format!("failed to read file: {:?} {}", config_path, e).into()))
+			}
 		}
 	}
 
 	/// Tries to get or create the config file.
-	pub async fn try_get_or_create_config_file(&self) -> Result<tokio::fs::File, anyhow::Error> {
+	pub async fn try_get_or_create_config_file(&self) -> Result<tokio::fs::File, Error> {
 		let config_path = self.get_config_json_path();
 
-		// get res for opening in read-write mode
-		let res = tokio::fs::OpenOptions::new()
-			.read(true)
-			.write(true)
-			.open(config_path.clone())
-			.await;
+		// create parent directories
+		tokio::fs::DirBuilder::new()
+			.recursive(true)
+			.create(
+				config_path
+					.parent()
+					.ok_or(anyhow::anyhow!("failed to get parent directory of config path"))
+					.map_err(|e| Error::Internal(e.into()))?,
+			)
+			.await
+			.context("failed to create parent directories")
+			.map_err(|e| Error::Internal(e.into()))?;
 
-		match res {
+		match tokio::fs::File::create_new(config_path.clone())
+			.await
+			.context("failed to create config file")
+			.map_err(|e| Error::Internal(e.into()))
+		{
 			Ok(file) => Ok(file),
-			Err(_e) => {
-				// create parent directories
-				tokio::fs::DirBuilder::new()
-					.recursive(true)
-					.create(
-						config_path.parent().ok_or(anyhow::anyhow!(
-							"failed to get parent directory of config path"
-						))?,
-					)
-					.await?;
-
-				// create the file
-				let file = tokio::fs::File::create_new(config_path).await?;
+			Err(original_error) => {
+				// get res for opening in read-write mode
+				let file = tokio::fs::OpenOptions::new()
+					.read(true)
+					.write(true)
+					.open(config_path)
+					.await
+					.context(format!("original error: {}", original_error))
+					.context("failed to open config file after failing to create it")
+					.map_err(|e| Error::Internal(e.into()))?;
 
 				Ok(file)
 			}
