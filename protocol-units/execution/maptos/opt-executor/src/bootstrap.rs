@@ -109,7 +109,7 @@ pub fn maybe_bootstrap_empty_db(
 	match db_rw.reader.get_latest_ledger_info_option()? {
 		Some(ledger_info) => {
 			// context exists
-			tracing::warn!("Ledger info found, not bootstrapping DB: {:?}", ledger_info);
+			tracing::info!("Ledger info found, not bootstrapping DB: {:?}", ledger_info);
 		}
 		None => {
 			// context does not exist
@@ -118,7 +118,10 @@ pub fn maybe_bootstrap_empty_db(
 			let waypoint = db_bootstrapper::generate_waypoint::<AptosVM>(&db_rw, &genesis_txn)?;
 			db_bootstrapper::maybe_bootstrap::<AptosVM>(&db_rw, &genesis_txn, waypoint)?
 				.ok_or(anyhow::anyhow!("Failed to bootstrap DB"))?;
-			assert!(db_rw.reader.get_latest_ledger_info_option()?.is_some());
+			assert!(
+				db_rw.reader.get_latest_ledger_info_option()?.is_some(),
+				"Ledger db init, Get latest ledger info assert failed."
+			);
 		}
 	}
 
