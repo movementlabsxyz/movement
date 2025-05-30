@@ -58,6 +58,22 @@ pub mod full {
 		// Or, I suppose you can keep and GOVERNED_GAS_POOL feature flag and a GOVERNED_GAS_POOL_V2 feature flag and just make sure you're disabling the former and enabling the latter. Thereafter, it won't matter what happens to the GOVERNED_GAS_POOL feature flag, i.e., it can be replaced.
 		aptos_feature_flags.push(AptosFeatureFlag::GOVERNED_GAS_POOL);
 
+		// Note: before the upgrade to the newest version to the Aptos framework
+		// we need to activate features that are currently active on the Aptos testnet
+		// See: https://github.com/movementlabsxyz/movement-migration/issues/30#issuecomment-2862738427
+		// aptos_feature_flags.push(AptosFeatureFlag::PERIODICAL_REWARD_RATE_DECREASE);
+		aptos_feature_flags.push(AptosFeatureFlag::PARTIAL_GOVERNANCE_VOTING);
+		aptos_feature_flags.push(AptosFeatureFlag::DELEGATION_POOL_PARTIAL_GOVERNANCE_VOTING);
+		aptos_feature_flags.push(AptosFeatureFlag::VM_BINARY_FORMAT_V7);
+
+		aptos_feature_flags.push(AptosFeatureFlag::ALLOW_SERIALIZED_SCRIPT_ARGS);
+		aptos_feature_flags.push(AptosFeatureFlag::ENABLE_ENUM_TYPES);
+		aptos_feature_flags.push(AptosFeatureFlag::FEDERATED_KEYLESS);
+		aptos_feature_flags.push(AptosFeatureFlag::TRANSACTION_SIMULATION_ENHANCEMENT);
+		aptos_feature_flags.push(AptosFeatureFlag::COLLECTION_OWNER);
+		aptos_feature_flags.push(AptosFeatureFlag::NATIVE_MEMORY_OPERATIONS);
+		aptos_feature_flags.push(AptosFeatureFlag::ACCOUNT_ABSTRACTION);
+
 		Features {
 			enabled: aptos_feature_flags.into_iter().map(FeatureFlag::from).collect(),
 			disabled: vec![],
