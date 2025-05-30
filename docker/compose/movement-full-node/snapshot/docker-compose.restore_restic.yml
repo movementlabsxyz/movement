@@ -1,0 +1,15 @@
+services:
+
+  movement-backup-db:
+    image: restic/restic
+    container_name: movement-backup-db
+    environment:
+      - AWS_REGION=${AWS_REGION}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - RESTIC_PASSWORD=${RESTIC_PASSWORD}
+      - SYNC_BUCKET=${SYNC_BUCKET}
+
+    command: -r s3:s3.${AWS_REGION}.amazonaws.com/${SYNC_BUCKET}/restic_node_backup restore latest --target . --include /.movement/maptos --include /.movement/maptos-storage --include /.movement/movement-da-db --include /.movement/default_signer_address_whitelist
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement

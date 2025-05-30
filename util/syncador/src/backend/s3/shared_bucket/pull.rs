@@ -293,8 +293,8 @@ fn recreate_archive(archive_chunk: PathBuf) -> Result<PathBuf, anyhow::Error> {
 	let file_size = file_metadata.len() as usize;
 
 	//remove the chunk that is useless.
-	std::fs::remove_file(&archive_chunk)?;
-	tracing::debug!("PULL {archive_path:?} archive_chunk size: {file_size}",);
+	//std::fs::remove_file(&archive_chunk)?;
+	tracing::info!("PULL {archive_path:?} archive_chunk size: {file_size}",);
 
 	Ok(archive_path)
 }

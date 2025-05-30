@@ -128,7 +128,10 @@ impl Push {
 		let put_object_outputs = execute_with_concurrency_limit(manifest_futures, 100).await;
 		let mut new_manifest = PackageElement::new(self.bucket_connection.bucket.clone().into());
 		for res in put_object_outputs {
-			let Ok((_, s3_path)) = res? else { todo!() };
+			let s3_path = match res? {
+				Ok((_, s3_path)) => s3_path,
+				Err(err) => anyhow::bail!(err),
+			};
 			new_manifest.add_sync_file(s3_path);
 		}
 
