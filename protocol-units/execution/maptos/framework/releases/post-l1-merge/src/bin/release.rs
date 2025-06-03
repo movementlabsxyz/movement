@@ -1,4 +1,4 @@
-use aptos_framework_post_l1_merge_release::vote::test_vote;
+use aptos_framework_post_l1_merge_release::vote::full_governance_vote;
 use aptos_framework_post_l1_merge_release::{
 	cached::full::feature_upgrade::PostL1Merge, vote::test_partial_vote,
 };
@@ -65,12 +65,11 @@ async fn main() -> Result<(), anyhow::Error> {
 	// form the rest client
 	let rest_client = movement_client::rest_client::Client::new(NODE_URL.clone());
 
-	test_partial_vote();
+	full_governance_vote();
 
-	// release the elsa release
-	// post_l1_release
-	// 	.release(&local_account_release_signer, 2_000_000, 100, 60, &rest_client)
-	// 	.await?;
+	post_l1_release
+		.release(&local_account_release_signer, 2_000_000, 100, 60, &rest_client)
+		.await?;
 
 	Ok(())
 }
