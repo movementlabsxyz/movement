@@ -1,17 +1,26 @@
+use crate::cached::PostL1Merge;
 use aptos_framework::{BuildOptions, BuiltPackage};
-use aptos_framework_post_l1_merge_release::{
-	cached::full::feature_upgrade::PostL1Merge, vote::test_partial_vote,
+use aptos_sdk::{
+	move_types::{identifier::Identifier, language_storage::ModuleId},
+	rest_client::Client,
+	transaction_builder::TransactionBuilder,
+	types::{account_address::AccountAddress, LocalAccount},
 };
-use aptos_sdk::types::account_address::AccountAddress;
+use aptos_types::{
+	chain_id::ChainId,
+	transaction::{EntryFunction, TransactionPayload},
+};
 use e2e_move_tests::{
 	aptos_governance::{create_proposal_v2, get_remaining_voting_power, partial_vote, vote},
 	assert_abort, assert_success, increase_lockup, setup_staking, MoveHarness,
 };
+use maptos_framework_release_util::Release;
 use move_command_line_common::env::get_move_compiler_v2_from_env;
 use move_model::metadata::CompilerVersion;
 use once_cell::sync::Lazy;
 use std::collections::BTreeMap;
 use std::path::PathBuf;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 pub static PROPOSAL_SCRIPTS: Lazy<BTreeMap<String, Vec<u8>>> = Lazy::new(build_scripts);
 
@@ -51,24 +60,17 @@ fn test_dir_path(s: &str) -> PathBuf {
 	PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src").join("tests").join(s)
 }
 
-pub fn propose_post_l1_merge_with_full_governance() {
-	let mut harness = MoveHarness::new();
-	let validator_1 = harness.new_account_at(AccountAddress::from_hex_literal("0x123").unwrap());
-	let validator_2 = harness.new_account_at(AccountAddress::from_hex_literal("0x234").unwrap());
-	let validator_1_address = *validator_1.address();
-	let validator_2_address = *validator_2.address();
-
-	let stake_amount = 25_000_000;
-	assert_success!(setup_staking(&mut harness, &validator_1, stake_amount));
-	assert_success!(increase_lockup(&mut harness, &validator_1));
-	assert_success!(setup_staking(&mut harness, &validator_2, stake_amount));
-	assert_success!(increase_lockup(&mut harness, &validator_2));
-
-	// === Construct the actual release upgrade ===
+pub async fn propose_post_l1_merge_with_full_governance(
+	validator_account: &mut LocalAccount,
+	rest_client: &Client,
+	chain_id: u8,
+) -> Result<(), anyhow::Error> {
 	use aptos_framework_set_feature_flags_release::SetFeatureFlags;
 	use aptos_release_builder::components::feature_flags::{FeatureFlag, Features};
 	use aptos_types::on_chain_config::FeatureFlag as AptosFeatureFlag;
 
+	// === Build Release Bundle ===
+	let post_l1_release = PostL1Merge::new();
 	let mut aptos_feature_flags = AptosFeatureFlag::default_features();
 	aptos_feature_flags.push(AptosFeatureFlag::DECOMMISSION_CORE_RESOURCES);
 
@@ -77,29 +79,52 @@ pub fn propose_post_l1_merge_with_full_governance() {
 		disabled: vec![],
 	};
 
-	// feature logic here
-	let base_release = PostL1Merge::new();
-	let with_features = SetFeatureFlags::new(base_release, features);
-	let release_bundle = with_features.release_bundle().unwrap();
-	let execution_hash = release_bundle.execution_hash.clone();
+	let with_features = SetFeatureFlags::new(post_l1_release, features);
+	let release_bundle = with_features.release_bundle()?;
+	let execution_hash = release_bundle.execution_hash;
 
-	// === Create a governance proposal with the release's execution hash ===
-	let mut proposal_id = 0;
-	assert_success!(create_proposal_v2(
-		&mut harness,
-		&validator_1,
-		validator_1_address,
-		execution_hash,
-		vec![], // metadata_location
-		vec![], // metadata_hash
-		false   // not multi-step
-	));
+	// === Encode Arguments ===
+	let stake_pool = validator_account.address();
+	let metadata_location = vec![];
+	let metadata_hash = vec![];
+	let is_multi_step = false;
 
-	// === Vote using full governance logic ===
-	assert_success!(vote(&mut harness, &validator_2, validator_2_address, proposal_id, true));
-	assert_success!(vote(&mut harness, &validator_1, validator_1_address, proposal_id, true));
+	let args = vec![
+		bcs::to_bytes(&stake_pool)?,
+		bcs::to_bytes(&execution_hash)?,
+		bcs::to_bytes(&metadata_location)?,
+		bcs::to_bytes(&metadata_hash)?,
+		bcs::to_bytes(&is_multi_step)?,
+	];
 
-	// assert_success!(resolve(&mut harness, proposal_id, validator_1_address));
+	// === Construct Transaction ===
+	let expiration_ts = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60;
+
+	let entry_function = EntryFunction::new(
+		ModuleId::new(
+			AccountAddress::ONE, // Governance module lives at 0x1
+			Identifier::new("aptos_governance")?,
+		),
+		Identifier::new("create_proposal_v2")?,
+		vec![], // type args
+		args,
+	);
+
+	let transaction_builder = TransactionBuilder::new(
+		TransactionPayload::EntryFunction(entry_function),
+		expiration_ts,
+		ChainId::new(chain_id),
+	)
+	.sender(validator_account.address())
+	.sequence_number(validator_account.sequence_number());
+
+	let signed_txn = validator_account.sign_with_transaction_builder(transaction_builder);
+
+	// === Submit Transaction ===
+	let response = rest_client.submit_and_wait(&signed_txn).await?;
+	println!("submited OK!");
+
+	Ok(())
 }
 
 /// Partial Vote Assumes core_resources signer and is used for testing
