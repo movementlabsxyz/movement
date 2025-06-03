@@ -12,7 +12,7 @@ use tracing_subscriber::{
 	prelude::*,
 	Layer,
 };
-// The default metrics address hostname
+// The default metrics address hostname. Default 0.0.0.0 fo docker containers.
 env_default!(default_metrics_hostname, "MOVEMENT_METRICS_HOSTNAME", String, "0.0.0.0".to_string());
 
 // The default metrics address port
