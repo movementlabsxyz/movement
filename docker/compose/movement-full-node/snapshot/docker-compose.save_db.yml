@@ -2,7 +2,7 @@ services:
 
   movement-backup-db:
     image: ghcr.io/movementlabsxyz/movement-full-node:${CONTAINER_REV}
-    container_name: movement-backup-db
+    container_name: movement-save-db
     environment:
       - DOT_MOVEMENT_PATH=/.movement
       - MOVEMENT_TIMING=info
