@@ -1,4 +1,7 @@
 use aptos_framework::{BuildOptions, BuiltPackage};
+use aptos_framework_post_l1_merge_release::{
+	cached::full::feature_upgrade::PostL1Merge, vote::test_partial_vote,
+};
 use aptos_sdk::types::account_address::AccountAddress;
 use e2e_move_tests::{
 	aptos_governance::{create_proposal_v2, get_remaining_voting_power, partial_vote, vote},
@@ -74,7 +77,8 @@ pub fn propose_post_l1_merge_with_full_governance() {
 		disabled: vec![],
 	};
 
-	let base_release = PostL1Merge::new(); // your feature logic here
+	// feature logic here
+	let base_release = PostL1Merge::new();
 	let with_features = SetFeatureFlags::new(base_release, features);
 	let release_bundle = with_features.release_bundle().unwrap();
 	let execution_hash = release_bundle.execution_hash.clone();
