@@ -12,6 +12,7 @@ services:
     ports:
       - "30731:30731"
       - "30734:30734"
+      - "9464:9464"
     healthcheck:
       test: [ "CMD-SHELL", "echo true" ]
       retries: 10
