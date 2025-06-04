@@ -71,6 +71,7 @@ where
 		allow_sync_from_zero: bool,
 		propagate_execution_state: bool,
 		da_batch_signer: &SignerIdentifier,
+		mut stop_rx: tokio::sync::watch::Receiver<()>,
 	) -> anyhow::Result<()> {
 		let synced_height = self.da_db.get_synced_height()?;
 		// Sync Da from 0 is rejected by default. Only if forced it's allowed.
@@ -163,6 +164,8 @@ where
 					tracing::error!("Da client stream channel timeout because it's idle. Exit");
 					break;
 				}
+				// Stop the node. No block are executing at this point.
+				_ = stop_rx.changed() => break,
 				else => break,
 			}
 		}
