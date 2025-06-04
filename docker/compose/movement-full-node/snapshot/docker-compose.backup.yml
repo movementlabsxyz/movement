@@ -5,8 +5,6 @@ services:
     container_name: movement-backup-db
     environment:
       - AWS_REGION=${AWS_REGION}
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - RESTIC_PASSWORD=${RESTIC_PASSWORD}
       - RESTIC_HOST=${RESTIC_HOST}
       - SYNC_BUCKET=${SYNC_BUCKET}
