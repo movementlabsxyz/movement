@@ -1,4 +1,6 @@
-use aptos_framework_post_l1_merge_release::vote::full_governance_vote;
+use aptos_framework_post_l1_merge_release::vote::{
+	full_governance_vote, propose_post_l1_merge_with_full_governance,
+};
 use aptos_framework_post_l1_merge_release::{
 	cached::full::feature_upgrade::PostL1Merge, vote::test_partial_vote,
 };
@@ -55,21 +57,24 @@ async fn main() -> Result<(), anyhow::Error> {
 		.chain
 		.maptos_private_key_signer_identifier
 		.try_raw_private_key()?;
+
 	let private_key_hex = hex::encode(raw_private_key);
-	let root_account = LocalAccount::from_private_key(private_key_hex.as_str(), 0)?;
+	let mut root_account = LocalAccount::from_private_key(private_key_hex.as_str(), 0)?;
 
 	// form the local account release signer
-	let local_account_release_signer =
-		LocalAccountReleaseSigner::new(root_account, Some(aptos_test_root_address()));
+	// let local_account_release_signer =
+	// 	LocalAccountReleaseSigner::new(root_account, Some(aptos_test_root_address()));
 
 	// form the rest client
 	let rest_client = movement_client::rest_client::Client::new(NODE_URL.clone());
 
-	full_governance_vote();
+	let chain_id = rest_client.get_index().await?.inner().chain_id;
 
-	post_l1_release
-		.release(&local_account_release_signer, 2_000_000, 100, 60, &rest_client)
-		.await?;
+	propose_post_l1_merge_with_full_governance(&mut root_account, &rest_client, chain_id).await?;
+
+	// post_l1_release
+	// 	.release(&local_account_release_signer, 2_000_000, 100, 60, &rest_client)
+	// 	.await?;
 
 	Ok(())
 }

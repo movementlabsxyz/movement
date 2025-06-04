@@ -97,7 +97,7 @@ pub async fn propose_post_l1_merge_with_full_governance(
 	];
 
 	// === Construct Transaction ===
-	let expiration_ts = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 60;
+	let expiration_ts = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 120;
 
 	let entry_function = EntryFunction::new(
 		ModuleId::new(
@@ -121,7 +121,7 @@ pub async fn propose_post_l1_merge_with_full_governance(
 
 	// === Submit Transaction ===
 	let response = rest_client.submit_and_wait(&signed_txn).await?;
-	println!("submited OK!");
+	println!("Response {:?}", response);
 
 	Ok(())
 }
@@ -130,7 +130,6 @@ pub async fn propose_post_l1_merge_with_full_governance(
 pub fn test_partial_vote() {
 	// Genesis starts with one validator with index 0
 
-	//TODO: Eventually remove MoveHarness and use the local running network
 	let mut harness = MoveHarness::new();
 	let validator_1 = harness.new_account_at(AccountAddress::from_hex_literal("0x123").unwrap());
 	let validator_2 = harness.new_account_at(AccountAddress::from_hex_literal("0x234").unwrap());
