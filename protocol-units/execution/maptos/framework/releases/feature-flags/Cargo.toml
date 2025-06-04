@@ -13,22 +13,24 @@ version = { workspace = true }
 path = "src/lib.rs"
 
 [dependencies]
-aptos-release-builder = { workspace = true }
-aptos-gas-schedule = { workspace = true }
-maptos-framework-release-util = { workspace = true }
-movement-config = { workspace = true }
-movement-client = { workspace = true }
-once_cell = { workspace = true }
+anyhow = { workspace = true }
 aptos-framework = { workspace = true }
-tokio = { workspace = true }
-anyhow = { workspace = true}
-url = { workspace = true }
-dot-movement = { workspace = true }
-tempfile = { workspace = true }
-bcs = { workspace = true }
-aptos-types = { workspace = true }
+aptos-gas-schedule = { workspace = true }
+aptos-release-builder = { workspace = true }
 aptos-sdk = { workspace = true }
+aptos-types = { workspace = true }
+bcs = { workspace = true }
+dot-movement = { workspace = true }
+maptos-framework-release-util = { workspace = true }
 move-package = { workspace = true }
 movement = { workspace = true }
+movement-client = { workspace = true }
+movement-config = { workspace = true }
+once_cell = { workspace = true }
+sha2 = { workspace = true }
+tempfile = { workspace = true }
+tokio = { workspace = true }
 toml = { workspace = true }
 tracing = { workspace = true }
+url = { workspace = true }
+

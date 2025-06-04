@@ -2051,6 +2051,7 @@ dependencies = [
  "movement-client",
  "movement-config",
  "once_cell",
+ "sha2 0.10.8",
  "tempfile",
  "tokio",
  "toml 0.8.19",

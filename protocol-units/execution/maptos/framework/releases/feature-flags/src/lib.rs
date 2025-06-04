@@ -7,6 +7,7 @@ use core::fmt::Debug;
 use maptos_framework_release_util::{
 	compiler::Compiler, Release, ReleaseBundleError, ReleaseSigner,
 };
+use sha2::{Digest, Sha256};
 use std::fs;
 use tempfile::tempdir;
 use tracing::info;
@@ -123,6 +124,14 @@ where
 		info!("Feature flags set");
 
 		Ok(vec![signed_transaction])
+	}
+
+	pub async fn execution_hash(&self) -> Result<Vec<u8>, ReleaseBundleError> {
+		let bytecode = self.set_feature_flags_proposal_bytecode()?;
+		let mut hasher = Sha256::new();
+		hasher.update(&bytecode);
+		let hash = hasher.finalize();
+		Ok(hash.to_vec())
 	}
 }
 
