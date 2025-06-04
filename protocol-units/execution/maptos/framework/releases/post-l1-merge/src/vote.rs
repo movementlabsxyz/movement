@@ -55,6 +55,33 @@ fn test_dir_path(s: &str) -> PathBuf {
 	PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src").join("tests").join(s)
 }
 
+/// Submits a governance proposal to enable specific feature flags (e.g., DECOMMISSION_CORE_RESOURCES)
+/// using the full on-chain governance flow.
+///
+/// This function:
+/// - Builds a `SetFeatureFlags` release bundle with the desired feature flags.
+/// - Computes the execution hash from the release bundle.
+/// - Submits a `create_proposal_v2` transaction through the validator's stake pool account.
+/// - Uses a real validator signer and Aptos REST client to broadcast the transaction to the chain.
+///
+/// This is a production-grade governance interaction and **not a test**.
+///
+/// # Arguments
+/// - `validator_account`: The validator's `LocalAccount` representing the proposer and stake pool.
+/// - `rest_client`: Aptos REST client used to submit and confirm the transaction.
+/// - `chain_id`: The Chain ID of the network (e.g., testnet = 2, mainnet = 1).
+///
+/// # Errors
+/// Returns an `anyhow::Error` if any step in the proposal construction, signing, or submission fails.
+///
+/// # Example
+/// ```rust
+/// propose_post_l1_merge_with_full_governance(
+///     &mut validator_account,
+///     &rest_client,
+///     4  // for devnet or testnet
+/// ).await?;
+/// ```
 pub async fn propose_post_l1_merge_with_full_governance(
 	validator_account: &mut LocalAccount,
 	rest_client: &Client,
