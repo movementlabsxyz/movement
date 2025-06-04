@@ -246,6 +246,7 @@ where
 						// Send the block to all registered follower
 						// For now send to the main loop because there are very few followers (<100).
 						tracing::info!(sender_len = %connected_grpc_sender.len(), block_height= %block.height().0, "New block produced, sent to fullnodes.");
+
 						stream_block_to_sender(&mut connected_grpc_sender, ProducedData::Block(block, current_node_state.clone())).await;
 
 						//send the block to Celestia.

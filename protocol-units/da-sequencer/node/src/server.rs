@@ -161,7 +161,6 @@ impl DaSequencerNodeService for DaSequencerNode {
 							// send heartbeat.
 							BlockResponse { block_type: Some(BlockType::Heartbeat(true)) }
 						}
-
 						ProducedData::Block(new_block, state) => {
 							// If the new produced height is not the next one it means that someway we miss blocks.
 							// Use the DB fetching mechanism to request them.
