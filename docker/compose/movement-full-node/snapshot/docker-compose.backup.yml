@@ -4,6 +4,7 @@ services:
     image: restic/restic
     container_name: movement-backup-db
     environment:
+      - AWS_REGION=${AWS_REGION}
       - RESTIC_PASSWORD=${RESTIC_PASSWORD}
       - RESTIC_HOST=${RESTIC_HOST}
       - SYNC_BUCKET=${SYNC_BUCKET}

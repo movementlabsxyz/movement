@@ -1,6 +1,8 @@
 use super::bucket_connection;
+use aws_config::retry::RetryConfig;
 use aws_config::BehaviorVersion;
 use aws_types::region::Region;
+use futures::{stream, StreamExt};
 use tracing::info;
 
 const UPLOAD_COMPLETE_MARKER_FILE_NAME: &str = "upload_complete.txt";
@@ -20,9 +22,15 @@ async fn create_aws_config() -> aws_config::SdkConfig {
 	};
 
 	let timeout_config = aws_config::timeout::TimeoutConfig::disabled();
+
+	let retry_config = RetryConfig::standard()
+		.with_max_attempts(5) // Increase retry attempts
+		.with_initial_backoff(std::time::Duration::from_secs(1)); // Add delay between retries
+
 	let mut config_builder = aws_config::defaults(BehaviorVersion::latest())
 		.region(region)
-		.timeout_config(timeout_config);
+		.timeout_config(timeout_config)
+		.retry_config(retry_config);
 
 	if let Ok(val) = std::env::var("AWS_BUCKET_ANONYMOUS_ACCESS") {
 		if val.trim().to_lowercase() == "true" {
@@ -106,6 +114,20 @@ pub async fn create(
 	let pull = pull::Pull::new(bucket_connection, metadata, pull_destination);
 
 	Ok((push, pull))
+}
+
+pub async fn execute_with_concurrency_limit<F, T>(
+	futures: Vec<F>,
+	max_concurrent: usize,
+) -> Vec<Result<T, anyhow::Error>>
+where
+	F: std::future::Future<Output = T> + Send + 'static,
+{
+	stream::iter(futures)
+		.buffer_unordered(max_concurrent)
+		.map(|res| Ok(res))
+		.collect()
+		.await
 }
 
 #[cfg(test)]

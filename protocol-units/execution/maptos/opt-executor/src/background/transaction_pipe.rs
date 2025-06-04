@@ -63,11 +63,6 @@ pub struct TransactionPipe {
 	mempool_config: MempoolConfig,
 }
 
-enum SequenceNumberValidity {
-	Valid(u64),
-	Invalid(SubmissionStatus),
-}
-
 impl TransactionPipe {
 	pub fn core_mempool(&self) -> Arc<RwLock<CoreMempool>> {
 		self.core_mempool.clone()
@@ -110,24 +105,13 @@ impl TransactionPipe {
 		})
 	}
 
-	pub fn is_whitelisted(&self, address: &AccountAddress) -> Result<bool, Error> {
-		match &self.whitelisted_accounts {
-			Some(whitelisted_accounts) => {
-				let whitelisted = whitelisted_accounts.contains(address);
-				info!("Checking if account {:?} is whitelisted: {:?}", address, whitelisted);
-				Ok(whitelisted)
-			}
-			None => Ok(true),
-		}
-	}
-
 	pub async fn run(
 		mut self,
 		da_client: (impl DaSequencerClient + 'static + std::marker::Sync),
 		mut mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
 	) -> Result<(), Error> {
 		let mut build_batch_deadline = tokio::time::Instant::now() + MEMPOOL_INTERVAL;
-		let mut mempool_gc_interval = tokio::time::interval(tokio::time::Duration::from_secs(10));
+		let mut mempool_gc_interval = tokio::time::interval(GC_INTERVAL);
 		let mut sent_batch_futures = FuturesUnordered::new();
 
 		// Start 2 loops because we manage 2 differentes process.
@@ -327,6 +311,15 @@ impl TransactionPipe {
 					let priority = u64::MAX - ranking_score;
 					let sender = transaction.sender();
 					let seq = transaction.sequence_number();
+					// `commit_transaction` indicate that the Tx has been stored
+					// so it doesn't return in each `get_batch_with_ranking_score` call.
+					// The Tx storage is the DA.
+					// We commit here (before the DA call) because
+					// if the DA call fails, the node is stopped so
+					// in both case the Tx will be lost if the Da is not available.
+					// To be able to manage this case, we need first to be able to recover
+					// from a DA connection break.
+					// When done the `commit_transaction` can be called after the DA call.
 					core_mempool.commit_transaction(&sender, seq);
 					debug!(
 						target: "movement_timing",
