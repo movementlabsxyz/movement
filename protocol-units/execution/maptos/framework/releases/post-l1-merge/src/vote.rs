@@ -80,13 +80,12 @@ pub async fn propose_post_l1_merge_with_full_governance(
 	};
 
 	let with_features = SetFeatureFlags::new(post_l1_release, features);
-	let release_bundle = with_features.release_bundle()?;
-	let execution_hash = release_bundle.execution_hash;
+	let execution_hash = with_features.execution_hash()?;
 
 	// === Encode Arguments ===
 	let stake_pool = validator_account.address();
-	let metadata_location = vec![];
-	let metadata_hash = vec![];
+	let metadata_location = Vec::<u8>::new();
+	let metadata_hash = Vec::<u8>::new();
 	let is_multi_step = false;
 
 	let args = vec![

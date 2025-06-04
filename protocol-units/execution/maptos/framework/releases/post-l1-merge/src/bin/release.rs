@@ -14,8 +14,6 @@ static MOVEMENT_CONFIG: Lazy<movement_config::Config> = Lazy::new(|| {
 	config
 });
 
-mod governance;
-
 // :!:>section_1c
 static NODE_URL: Lazy<Url> = Lazy::new(|| {
 	let node_connection_address = MOVEMENT_CONFIG

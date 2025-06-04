@@ -126,7 +126,7 @@ where
 		Ok(vec![signed_transaction])
 	}
 
-	pub async fn execution_hash(&self) -> Result<Vec<u8>, ReleaseBundleError> {
+	pub fn execution_hash(&self) -> Result<Vec<u8>, ReleaseBundleError> {
 		let bytecode = self.set_feature_flags_proposal_bytecode()?;
 		let mut hasher = Sha256::new();
 		hasher.update(&bytecode);
