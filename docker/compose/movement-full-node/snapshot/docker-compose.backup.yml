@@ -23,7 +23,6 @@ services:
       - RESTIC_PASSWORD=${RESTIC_PASSWORD}
       - RESTIC_HOST=${RESTIC_HOST}
       - SYNC_BUCKET=${SYNC_BUCKET}
-      - AWS_REGION=${AWS_REGION}
     command: -r s3:s3.${AWS_REGION}.amazonaws.com/${SYNC_BUCKET}/restic_node_backup --host ${RESTIC_HOST} backup .movement/maptos .movement/maptos-storage .movement/movement-da-db .movement/default_signer_address_whitelist  
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement
