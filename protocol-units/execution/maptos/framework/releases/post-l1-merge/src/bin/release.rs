@@ -44,8 +44,6 @@ async fn main() -> Result<(), anyhow::Error> {
 		)
 		.init();
 
-	let post_l1_release = PostL1Merge::new();
-
 	// get the root account
 	let raw_private_key = MOVEMENT_CONFIG
 		.execution_config

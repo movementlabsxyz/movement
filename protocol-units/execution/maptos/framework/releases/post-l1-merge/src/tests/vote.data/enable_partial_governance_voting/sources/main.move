@@ -1,3 +1,4 @@
+//Only used for partial voting tests (with core_resources signer enabled)
 script {
     use aptos_framework::aptos_governance;
     use std::features;
