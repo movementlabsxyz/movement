@@ -1,11 +1,7 @@
-use aptos_framework_post_l1_merge_release::vote::{
-	full_governance_vote, propose_post_l1_merge_with_full_governance,
-};
 use aptos_framework_post_l1_merge_release::{
-	cached::full::feature_upgrade::PostL1Merge, vote::test_partial_vote,
+	cached::script::script::PostL1Merge, vote::propose_post_l1_merge_with_full_governance,
 };
-use maptos_framework_release_util::{LocalAccountReleaseSigner, Release};
-use movement_client::types::{account_config::aptos_test_root_address, LocalAccount};
+use movement_client::types::LocalAccount;
 use once_cell::sync::Lazy;
 use std::str::FromStr;
 use url::Url;

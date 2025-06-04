@@ -10,11 +10,6 @@ use aptos_types::{
 	chain_id::ChainId,
 	transaction::{EntryFunction, TransactionPayload},
 };
-use e2e_move_tests::{
-	aptos_governance::{create_proposal_v2, get_remaining_voting_power, partial_vote, vote},
-	assert_abort, assert_success, increase_lockup, setup_staking, MoveHarness,
-};
-use maptos_framework_release_util::Release;
 use move_command_line_common::env::get_move_compiler_v2_from_env;
 use move_model::metadata::CompilerVersion;
 use once_cell::sync::Lazy;
@@ -127,163 +122,184 @@ pub async fn propose_post_l1_merge_with_full_governance(
 }
 
 /// Partial Vote Assumes core_resources signer and is used for testing
-pub fn test_partial_vote() {
-	// Genesis starts with one validator with index 0
+mod tests {
+	use crate::vote::{AccountAddress, PROPOSAL_SCRIPTS};
+	use e2e_move_tests::{
+		aptos_governance::{create_proposal_v2, get_remaining_voting_power, partial_vote, vote},
+		assert_abort, assert_success, increase_lockup, setup_staking, MoveHarness,
+	};
 
-	let mut harness = MoveHarness::new();
-	let validator_1 = harness.new_account_at(AccountAddress::from_hex_literal("0x123").unwrap());
-	let validator_2 = harness.new_account_at(AccountAddress::from_hex_literal("0x234").unwrap());
-	let validator_1_address = *validator_1.address();
-	let validator_2_address = *validator_2.address();
+	#[test]
+	pub fn test_partial_vote() {
+		// Genesis starts with one validator with index 0
 
-	let stake_amount_1 = 25_000_000;
-	assert_success!(setup_staking(&mut harness, &validator_1, stake_amount_1));
-	assert_success!(increase_lockup(&mut harness, &validator_1));
-	let stake_amount_2 = 25_000_000;
-	assert_success!(setup_staking(&mut harness, &validator_2, stake_amount_2));
-	assert_success!(increase_lockup(&mut harness, &validator_2));
+		let mut harness = MoveHarness::new();
+		let validator_1 =
+			harness.new_account_at(AccountAddress::from_hex_literal("0x123").unwrap());
+		let validator_2 =
+			harness.new_account_at(AccountAddress::from_hex_literal("0x234").unwrap());
+		let validator_1_address = *validator_1.address();
+		let validator_2_address = *validator_2.address();
 
-	let mut proposal_id: u64 = 0;
-	assert_success!(create_proposal_v2(
-		&mut harness,
-		&validator_2,
-		validator_2_address,
-		vec![1],
-		vec![],
-		vec![],
-		true
-	));
-	// Voters can vote on a partial voting proposal but argument voting_power will be ignored.
-	assert_success!(partial_vote(
-		&mut harness,
-		&validator_1,
-		validator_1_address,
-		proposal_id,
-		100,
-		true
-	));
-	// No remaining voting power.
-	assert_eq!(get_remaining_voting_power(&mut harness, validator_1_address, proposal_id), 0);
+		let stake_amount_1 = 25_000_000;
+		assert_success!(setup_staking(&mut harness, &validator_1, stake_amount_1));
+		assert_success!(increase_lockup(&mut harness, &validator_1));
+		let stake_amount_2 = 25_000_000;
+		assert_success!(setup_staking(&mut harness, &validator_2, stake_amount_2));
+		assert_success!(increase_lockup(&mut harness, &validator_2));
 
-	// Enable partial governance voting. In production it requires governance.
-	let core_resources =
-		harness.new_account_at(AccountAddress::from_hex_literal("0xA550C18").unwrap());
-	let script_code = PROPOSAL_SCRIPTS
-		.get("enable_partial_governance_voting")
-		.expect("proposal script should be built");
-	let txn = harness.create_script(&core_resources, script_code.clone(), vec![], vec![]);
-	assert_success!(harness.run(txn));
+		let mut proposal_id: u64 = 0;
+		assert_success!(create_proposal_v2(
+			&mut harness,
+			&validator_2,
+			validator_2_address,
+			vec![1],
+			vec![],
+			vec![],
+			true
+		));
+		// Voters can vote on a partial voting proposal but argument voting_power will be ignored.
+		assert_success!(partial_vote(
+			&mut harness,
+			&validator_1,
+			validator_1_address,
+			proposal_id,
+			100,
+			true
+		));
+		// No remaining voting power.
+		assert_eq!(get_remaining_voting_power(&mut harness, validator_1_address, proposal_id), 0);
 
-	// If a voter has already voted on a proposal before partial voting is enabled, the voter cannot vote on the proposal again.
-	assert_abort!(
-		partial_vote(&mut harness, &validator_1, validator_1_address, proposal_id, 100, true),
-		0x10005
-	);
+		// Enable partial governance voting. In production it requires governance.
+		let core_resources =
+			harness.new_account_at(AccountAddress::from_hex_literal("0xA550C18").unwrap());
+		let script_code = PROPOSAL_SCRIPTS
+			.get("enable_partial_governance_voting")
+			.expect("proposal script should be built");
+		let txn = harness.create_script(&core_resources, script_code.clone(), vec![], vec![]);
+		assert_success!(harness.run(txn));
 
-	assert_success!(create_proposal_v2(
-		&mut harness,
-		&validator_1,
-		validator_1_address,
-		vec![1],
-		vec![],
-		vec![],
-		true
-	));
+		// If a voter has already voted on a proposal before partial voting is enabled, the voter cannot vote on the proposal again.
+		assert_abort!(
+			partial_vote(&mut harness, &validator_1, validator_1_address, proposal_id, 100, true),
+			0x10005
+		);
 
-	// Cannot vote on a non-exist proposal.
-	let wrong_proposal_id: u64 = 2;
-	assert_abort!(
-		partial_vote(&mut harness, &validator_1, validator_1_address, wrong_proposal_id, 100, true),
-		25863
-	);
+		assert_success!(create_proposal_v2(
+			&mut harness,
+			&validator_1,
+			validator_1_address,
+			vec![1],
+			vec![],
+			vec![],
+			true
+		));
 
-	proposal_id = 1;
-	assert_eq!(
-		get_remaining_voting_power(&mut harness, validator_1_address, proposal_id),
-		stake_amount_1
-	);
-	assert_eq!(
-		get_remaining_voting_power(&mut harness, validator_2_address, proposal_id),
-		stake_amount_1
-	);
+		// Cannot vote on a non-exist proposal.
+		let wrong_proposal_id: u64 = 2;
+		assert_abort!(
+			partial_vote(
+				&mut harness,
+				&validator_1,
+				validator_1_address,
+				wrong_proposal_id,
+				100,
+				true
+			),
+			25863
+		);
 
-	// A voter can vote on a proposal multiple times with both Yes/No.
-	assert_success!(partial_vote(
-		&mut harness,
-		&validator_1,
-		validator_1_address,
-		proposal_id,
-		100,
-		true
-	));
-	assert_eq!(
-		get_remaining_voting_power(&mut harness, validator_1_address, proposal_id),
-		stake_amount_1 - 100
-	);
-	assert_success!(partial_vote(
-		&mut harness,
-		&validator_1,
-		validator_1_address,
-		proposal_id,
-		1000,
-		false
-	));
-	assert_eq!(
-		get_remaining_voting_power(&mut harness, validator_1_address, proposal_id),
-		stake_amount_1 - 1100
-	);
-	// A voter cannot use voting power more than it has.
-	assert_success!(partial_vote(
-		&mut harness,
-		&validator_1,
-		validator_1_address,
-		proposal_id,
-		stake_amount_1,
-		true
-	));
-	assert_eq!(get_remaining_voting_power(&mut harness, validator_1_address, proposal_id), 0);
-}
+		proposal_id = 1;
+		assert_eq!(
+			get_remaining_voting_power(&mut harness, validator_1_address, proposal_id),
+			stake_amount_1
+		);
+		assert_eq!(
+			get_remaining_voting_power(&mut harness, validator_2_address, proposal_id),
+			stake_amount_1
+		);
 
-pub fn full_governance_vote() {
-	// Set up harness and two validators
-	let mut harness = MoveHarness::new();
-	let validator_1 = harness.new_account_at(AccountAddress::from_hex_literal("0x123").unwrap());
-	let validator_2 = harness.new_account_at(AccountAddress::from_hex_literal("0x234").unwrap());
-	let validator_1_address = *validator_1.address();
-	let validator_2_address = *validator_2.address();
+		// A voter can vote on a proposal multiple times with both Yes/No.
+		assert_success!(partial_vote(
+			&mut harness,
+			&validator_1,
+			validator_1_address,
+			proposal_id,
+			100,
+			true
+		));
+		assert_eq!(
+			get_remaining_voting_power(&mut harness, validator_1_address, proposal_id),
+			stake_amount_1 - 100
+		);
+		assert_success!(partial_vote(
+			&mut harness,
+			&validator_1,
+			validator_1_address,
+			proposal_id,
+			1000,
+			false
+		));
+		assert_eq!(
+			get_remaining_voting_power(&mut harness, validator_1_address, proposal_id),
+			stake_amount_1 - 1100
+		);
+		// A voter cannot use voting power more than it has.
+		assert_success!(partial_vote(
+			&mut harness,
+			&validator_1,
+			validator_1_address,
+			proposal_id,
+			stake_amount_1,
+			true
+		));
+		assert_eq!(get_remaining_voting_power(&mut harness, validator_1_address, proposal_id), 0);
+	}
 
-	// Stake and lock up for both validators
-	let stake_amount = 25_000_000;
-	assert_success!(setup_staking(&mut harness, &validator_1, stake_amount));
-	assert_success!(increase_lockup(&mut harness, &validator_1));
-	assert_success!(setup_staking(&mut harness, &validator_2, stake_amount));
-	assert_success!(increase_lockup(&mut harness, &validator_2));
+	#[test]
+	pub fn full_governance_vote() {
+		// Set up harness and two validators
+		let mut harness = MoveHarness::new();
+		let validator_1 =
+			harness.new_account_at(AccountAddress::from_hex_literal("0x123").unwrap());
+		let validator_2 =
+			harness.new_account_at(AccountAddress::from_hex_literal("0x234").unwrap());
+		let validator_1_address = *validator_1.address();
+		let validator_2_address = *validator_2.address();
 
-	// Validator 1 creates a full governance proposal
-	let mut proposal_id = 0;
-	assert_success!(create_proposal_v2(
-		&mut harness,
-		&validator_1,
-		validator_1_address,
-		vec![1], // Dummy execution hash
-		vec![],
-		vec![],
-		false // Not a multi-step proposal
-	));
+		// Stake and lock up for both validators
+		let stake_amount = 25_000_000;
+		assert_success!(setup_staking(&mut harness, &validator_1, stake_amount));
+		assert_success!(increase_lockup(&mut harness, &validator_1));
+		assert_success!(setup_staking(&mut harness, &validator_2, stake_amount));
+		assert_success!(increase_lockup(&mut harness, &validator_2));
 
-	// Validator 2 votes YES on the proposal using full voting power
-	assert_success!(vote(&mut harness, &validator_2, validator_2_address, proposal_id, true));
+		// Validator 1 creates a full governance proposal
+		let proposal_id = 0;
+		assert_success!(create_proposal_v2(
+			&mut harness,
+			&validator_1,
+			validator_1_address,
+			vec![1], // Dummy execution hash
+			vec![],
+			vec![],
+			false // Not a multi-step proposal
+		));
 
-	// Trying to vote again with the same validator should fail (double voting not allowed)
-	assert_abort!(
-		vote(&mut harness, &validator_2, validator_2_address, proposal_id, true),
-		0x10004 // EALREADY_VOTED or equivalent error code
-	);
+		// Validator 2 votes YES on the proposal using full voting power
+		assert_success!(vote(&mut harness, &validator_2, validator_2_address, proposal_id, true));
 
-	// Validator 1 votes NO on the same proposal
-	assert_success!(vote(&mut harness, &validator_1, validator_1_address, proposal_id, false));
+		// Trying to vote again with the same validator should fail (double voting not allowed)
+		assert_abort!(
+			vote(&mut harness, &validator_2, validator_2_address, proposal_id, true),
+			0x10004 // EALREADY_VOTED or equivalent error code
+		);
 
-	// Check remaining voting power: both should now be zero
-	assert_eq!(get_remaining_voting_power(&mut harness, validator_1_address, proposal_id), 0);
-	assert_eq!(get_remaining_voting_power(&mut harness, validator_2_address, proposal_id), 0);
+		// Validator 1 votes NO on the same proposal
+		assert_success!(vote(&mut harness, &validator_1, validator_1_address, proposal_id, false));
+
+		// Check remaining voting power: both should now be zero
+		assert_eq!(get_remaining_voting_power(&mut harness, validator_1_address, proposal_id), 0);
+		assert_eq!(get_remaining_voting_power(&mut harness, validator_2_address, proposal_id), 0);
+	}
 }
