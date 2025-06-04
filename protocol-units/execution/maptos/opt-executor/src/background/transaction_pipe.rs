@@ -63,11 +63,6 @@ pub struct TransactionPipe {
 	mempool_config: MempoolConfig,
 }
 
-enum SequenceNumberValidity {
-	Valid(u64),
-	Invalid(SubmissionStatus),
-}
-
 impl TransactionPipe {
 	pub fn core_mempool(&self) -> Arc<RwLock<CoreMempool>> {
 		self.core_mempool.clone()
@@ -110,24 +105,13 @@ impl TransactionPipe {
 		})
 	}
 
-	pub fn is_whitelisted(&self, address: &AccountAddress) -> Result<bool, Error> {
-		match &self.whitelisted_accounts {
-			Some(whitelisted_accounts) => {
-				let whitelisted = whitelisted_accounts.contains(address);
-				info!("Checking if account {:?} is whitelisted: {:?}", address, whitelisted);
-				Ok(whitelisted)
-			}
-			None => Ok(true),
-		}
-	}
-
 	pub async fn run(
 		mut self,
 		da_client: (impl DaSequencerClient + 'static + std::marker::Sync),
 		mut mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
 	) -> Result<(), Error> {
 		let mut build_batch_deadline = tokio::time::Instant::now() + MEMPOOL_INTERVAL;
-		let mut mempool_gc_interval = tokio::time::interval(tokio::time::Duration::from_secs(10));
+		let mut mempool_gc_interval = tokio::time::interval(GC_INTERVAL);
 		let mut sent_batch_futures = FuturesUnordered::new();
 
 		// Start 2 loops because we manage 2 differentes process.
