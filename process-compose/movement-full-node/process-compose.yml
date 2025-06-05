@@ -51,6 +51,8 @@ processes:
       initial_delay_seconds: 10
       exec:
         command: curl http://0.0.0.0:30731
+    ports:
+      - "9464:9464" # Expose metrics endpoint
 
   movement-faucet: 
     command : |
