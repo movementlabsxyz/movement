@@ -39,6 +39,7 @@ where
 	pub async fn run(
 		self,
 		mempool_commit_tx_receiver: UnboundedReceiver<Vec<TxExecutionResult>>,
+		stop_rx: tokio::sync::watch::Receiver<()>,
 	) -> Result<(), anyhow::Error> {
 		let (context, exec_background) = self
 			.executor
@@ -89,6 +90,7 @@ where
 							self.config.da_db.allow_sync_from_zero,
 							propagate_execution_state,
 							&da_signer,
+							stop_rx,
 						)
 						.await
 				}

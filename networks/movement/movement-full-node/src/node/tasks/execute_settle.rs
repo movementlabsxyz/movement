@@ -10,13 +10,10 @@ use maptos_dof_execution::{
 use maptos_opt_executor::executor::ExecutionState;
 use mcr_settlement_manager::{CommitmentEventStream, McrSettlementManagerOperations};
 use movement_config::execution_extension;
-use movement_da_sequencer_client::DaSequencerClient;
-use movement_da_sequencer_client::GrpcDaSequencerClient;
-use movement_da_sequencer_proto::BlockV1;
-use movement_da_sequencer_proto::StreamReadFromHeightRequest;
+use movement_da_sequencer_client::{DaSequencerClient, GrpcDaSequencerClient};
+use movement_da_sequencer_proto::{BlockV1, StreamReadFromHeightRequest};
 use movement_signer::cryptography::ed25519::Ed25519;
-use movement_signer_loader::identifiers::SignerIdentifier;
-use movement_signer_loader::{Load, LoadedSigner};
+use movement_signer_loader::{identifiers::SignerIdentifier, Load, LoadedSigner};
 use movement_types::block::{Block, BlockCommitment, BlockCommitmentEvent};
 use tokio::select;
 use tokio_stream::{Stream, StreamExt};
@@ -74,6 +71,7 @@ where
 		allow_sync_from_zero: bool,
 		propagate_execution_state: bool,
 		da_batch_signer: &SignerIdentifier,
+		mut stop_rx: tokio::sync::watch::Receiver<()>,
 	) -> anyhow::Result<()> {
 		let synced_height = self.da_db.get_synced_height()?;
 		// Sync Da from 0 is rejected by default. Only if forced it's allowed.
@@ -166,6 +164,8 @@ where
 					tracing::error!("Da client stream channel timeout because it's idle. Exit");
 					break;
 				}
+				// Stop the node. No block are executing at this point.
+				_ = stop_rx.changed() => break,
 				else => break,
 			}
 		}
@@ -213,6 +213,19 @@ where
 				}
 
 				let block: Block = bcs::from_bytes(&da_block.data[..])?;
+
+				// Verify block Tx's signatures.
+				if let Err(err) = block.transactions().try_for_each(|tx| {
+					//Validate batch Tx signature
+					let aptos_transaction: SignedTransaction = bcs::from_bytes(&tx.data())
+						.map_err(|err| anyhow::anyhow!("Tx deserialization failed:{err}"))?;
+
+					aptos_transaction
+						.verify_signature()
+						.map_err(|err| anyhow::anyhow!("Tx signature verification failed:{err}"))
+				}) {
+					anyhow::bail!("Bad Tx signature, the block at da height:{} contains a badly signed Tx: {err}", da_block.height);
+				}
 
 				info!(
 					block_id = %hex::encode(&block.id()),
@@ -304,7 +317,7 @@ where
 			}
 		}
 
-		anyhow::bail!("Failed to execute block after 5 retries")
+		anyhow::bail!("Failed to execute block after {block_retry_count} retries")
 	}
 
 	fn execute_block(

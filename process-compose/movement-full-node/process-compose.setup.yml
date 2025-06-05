@@ -3,6 +3,8 @@ version: "3"
 processes:
 
   setup:
+    environment:
+      - "MAYBE_RUN_LOCAL=true"
     command: |
       RUST_BACKTRACE=1 movement-full-node-setup
     depends_on:

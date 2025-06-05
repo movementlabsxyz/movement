@@ -52,16 +52,16 @@ impl Manager {
 			.await
 			.context("Failed to create the executor")?;
 
-		let join_handle = tokio::spawn(node.run(mempool_commit_tx_receiver));
-
-		// Use tokio::select! to wait for either the handle or a cancellation signal
-		tokio::select! {
-			_ = stop_rx.changed() =>(),
-			// manage Movement node execution return.
-			res = join_handle => {
-				res??;
-			},
-		};
+		let join_handle = tokio::spawn(node.run(mempool_commit_tx_receiver, stop_rx));
+		join_handle.await??;
+		// // Use tokio::select! to wait for either the handle or a cancellation signal
+		// tokio::select! {
+		// 	_ = stop_rx.changed() =>(),
+		// 	// manage Movement node execution return.
+		// 	res = join_handle => {
+		// 		res??;
+		// 	},
+		// };
 
 		Ok(())
 	}

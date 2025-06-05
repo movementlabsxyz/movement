@@ -1,14 +1,15 @@
-use crate::block::NodeState;
 use crate::block::SequencerBlock;
 use crate::celestia::mock::CelestiaMock;
 use crate::celestia::DaSequencerExternalDa;
 use crate::error::DaSequencerError;
 use crate::server::run_server;
 use crate::server::GrpcRequests;
+use crate::server::ProducedData;
 use crate::storage::DaSequencerStorage;
 use crate::storage::Storage;
 use crate::whitelist::Whitelist;
 use anyhow::Context;
+use futures::future::Either;
 use futures::stream::FuturesUnordered;
 use godfig::{backend::config_file::ConfigFile, Godfig};
 use movement_da_sequencer_config::DaSequencerConfig;
@@ -139,13 +140,23 @@ where
 	));
 	let mut spawn_result_futures = FuturesUnordered::new();
 	let mut produce_block = false;
-	let mut produce_block_jh = get_pending_future();
+	let mut produce_block_jh: Option<JoinHandle<Result<Option<SequencerBlock>, DaSequencerError>>> =
+		None; //get_pending_future();
 	let mut connected_grpc_sender = vec![];
 	let mut current_node_state = None;
 	// Batch timestamp should always be greater strict to the last one.
 	let mut last_batch_timestamp = chrono::Utc::now().timestamp_micros() as u64;
 
+	let pending = futures::future::pending();
+	tokio::pin!(pending);
+
 	loop {
+		// Construct a future of for optional block production type using `Either`
+		let mut produce_block_fut = match &mut produce_block_jh {
+			Some(produce) => Either::Left(produce),
+			None => Either::Right(&mut pending),
+		};
+
 		tokio::select! {
 			// Manage health check request.
 			Some(oneshot_tx) = check_request_rx.recv() => {
@@ -220,14 +231,14 @@ where
 						let storage = storage.clone();
 						move || {storage.produce_next_block()}
 					});
-					produce_block_jh = produce_block_batch_jh;
+					produce_block_jh = Some(produce_block_batch_jh);
 					produce_block = true;
 				}
 			}
 
 			//propagate the new block.
-			res = &mut produce_block_jh => {
-				produce_block_jh = get_pending_future();
+			res = &mut produce_block_fut => {
+				produce_block_jh = None;
 				produce_block = false;
 				match res {
 					Ok(Ok(Some(block))) => {
@@ -235,7 +246,8 @@ where
 						// Send the block to all registered follower
 						// For now send to the main loop because there are very few followers (<100).
 						tracing::info!(sender_len = %connected_grpc_sender.len(), block_height= %block.height().0, "New block produced, sent to fullnodes.");
-						stream_block_to_sender(&mut connected_grpc_sender, Some((block, current_node_state.clone()))).await;
+
+						stream_block_to_sender(&mut connected_grpc_sender, ProducedData::Block(block, current_node_state.clone())).await;
 
 						//send the block to Celestia.
 						let celestia_send_jh = tokio::spawn({
@@ -259,7 +271,7 @@ where
 			// Every tick will produce a heartbeat.
 			_ = da_stream_heartbeat_interval.tick() => {
 				tracing::info!(sender_len = %connected_grpc_sender.len(), "Produced a heartbeat, sent to fullnodes");
-				stream_block_to_sender(&mut connected_grpc_sender, None).await;
+				stream_block_to_sender(&mut connected_grpc_sender, ProducedData::HeartBeat).await;
 
 			}
 
@@ -275,8 +287,8 @@ where
 }
 
 async fn stream_block_to_sender(
-	senders: &mut Vec<mpsc::UnboundedSender<Option<(SequencerBlock, Option<NodeState>)>>>,
-	data: Option<(SequencerBlock, Option<NodeState>)>,
+	senders: &mut Vec<mpsc::UnboundedSender<ProducedData>>,
+	data: ProducedData,
 ) {
 	let mut new_sender = vec![];
 	for sender in senders.drain(..) {
@@ -288,8 +300,4 @@ async fn stream_block_to_sender(
 		}
 	}
 	*senders = new_sender;
-}
-
-fn get_pending_future() -> JoinHandle<Result<Option<SequencerBlock>, DaSequencerError>> {
-	tokio::spawn(futures::future::pending())
 }
