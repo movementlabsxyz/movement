@@ -20,6 +20,5 @@ aptos-crypto = { git = "https://github.com/movementlabsxyz/aptos-core.git", bran
 tokio = { workspace = true }
 once_cell = "1.17.1"
 hex = { workspace = true }
-
 [lints]
 workspace = true
