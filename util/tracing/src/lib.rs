@@ -3,11 +3,18 @@
 use aptos_telemetry;
 use aptos_config::config::NodeConfig;
 use aptos_types::chain_id::ChainId;
-use aptos_crypto::traits::ValidCryptoMaterial;
 use std::collections::BTreeMap;
 use once_cell::sync::Lazy;
 use aptos_logger::{info, warn};
 use hex;
+use rand::Rng;
+
+// Load config the same way as ggp_gas_fee.rs
+static SUZUKA_CONFIG: Lazy<movement_config::Config> = Lazy::new(|| {
+    let dot_movement = dot_movement::DotMovement::try_from_env().unwrap();
+    let config = dot_movement.try_get_config_from_json::<movement_config::Config>().unwrap();
+    config
+});
 
 fn init_telemetry_env() {
     // Making sure to remove vars that might disable metrics
@@ -18,13 +25,18 @@ fn init_telemetry_env() {
     std::env::set_var("APTOS_FORCE_ENABLE_TELEMETRY", "1");
     std::env::set_var("PROMETHEUS_METRICS_ENABLED", "1");
     
-    // Enable metrics pushing if APTOS_TELEMETRY_NODE_ID_KEY is set - this is for debugging the priv key problem
-    if std::env::var("APTOS_TELEMETRY_NODE_ID_KEY").is_ok() {
-        std::env::set_var("APTOS_DISABLE_TELEMETRY_PUSH_METRICS", "0");
-    } else {
-        std::env::set_var("APTOS_DISABLE_TELEMETRY_PUSH_METRICS", "1");
-        warn!("APTOS_TELEMETRY_NODE_ID_KEY not set, metrics pushing will be disabled");
+    // Generate a random node ID for telemetry
+    let mut rng = rand::thread_rng();
+    let mut node_id = [0u8; 32];
+    for byte in node_id.iter_mut() {
+        *byte = rng.gen();
     }
+    let node_id_str = hex::encode(node_id);
+    
+    // Set the node ID for telemetry
+    std::env::set_var("APTOS_TELEMETRY_NODE_ID_KEY", node_id_str);
+    std::env::set_var("APTOS_DISABLE_TELEMETRY_PUSH_METRICS", "0");
+    info!("Using random node ID for telemetry authentication");
     
     std::env::set_var("APTOS_METRICS_PORT", "9464");
 }
@@ -32,28 +44,21 @@ fn init_telemetry_env() {
 // Create a default NodeConfig and ChainId for telemetry
 static DEFAULT_NODE_CONFIG: Lazy<NodeConfig> = Lazy::new(|| {
     init_telemetry_env();
-    let mut config = NodeConfig::default();
-    
-    if let Some(identity_key) = config.get_identity_key() {
-        let key_bytes = identity_key.to_bytes();
-        std::env::set_var("APTOS_TELEMETRY_NODE_ID_KEY", hex::encode(&key_bytes));
-        info!("Using node identity key for telemetry authentication");
-    } else {
-        warn!("No node identity key found, telemetry metrics pushing will be disabled");
-        std::env::set_var("APTOS_DISABLE_TELEMETRY_PUSH_METRICS", "1");
-    }
-    
-    config
+    NodeConfig::default()
 });
 
-static DEFAULT_CHAIN_ID: Lazy<ChainId> = Lazy::new(|| ChainId::new(1));
+static DEFAULT_CHAIN_ID: Lazy<ChainId> = Lazy::new(|| {
+    // Get chain ID from movement config
+    let chain_id_value = SUZUKA_CONFIG.execution_config.maptos_config.chain.maptos_chain_id.id();
+    ChainId::new(chain_id_value)
+});
+
 static DEFAULT_BUILD_INFO: Lazy<BTreeMap<String, String>> = Lazy::new(BTreeMap::new);
 
 // This will automatically start the telemetry service when the crate is used
 static TELEMETRY_RUNTIME: Lazy<Option<tokio::runtime::Runtime>> = Lazy::new(|| {
     info!("Initializing telemetry service...");
     
-
     init_telemetry_env();
     
     let result = aptos_telemetry::service::start_telemetry_service(
@@ -81,7 +86,7 @@ pub fn ensure_telemetry_initialized() {
     Lazy::force(&TELEMETRY_RUNTIME);
 }
 
-/// Returns the metrics endpoint URL that Prometheus should scrape (which is then added to grafana sources)
+/// Returns the metrics endpoint URL that Prometheus should scrape
 pub fn get_metrics_endpoint() -> String {
     info!("Forcing telemetry runtime initialization...");
     ensure_telemetry_initialized();

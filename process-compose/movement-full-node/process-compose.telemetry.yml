@@ -28,7 +28,6 @@ processes:
     environment:
       - MOVEMENT_METRICS_ADDR=0.0.0.0:9464
       - APTOS_FORCE_ENABLE_TELEMETRY=1
-      - APTOS_DISABLE_TELEMETRY_PUSH_METRICS=0
       - RUST_LOG=debug,aptos_telemetry=debug
 
   movement-full-node:

@@ -16,9 +16,12 @@ aptos-telemetry = { git = "https://github.com/movementlabsxyz/aptos-core.git", b
 aptos-types = { git = "https://github.com/movementlabsxyz/aptos-core.git", branch = "icarus131/prometheus-setup" }
 aptos-config = { git = "https://github.com/movementlabsxyz/aptos-core.git", branch = "icarus131/prometheus-setup" }
 aptos-crypto = { git = "https://github.com/movementlabsxyz/aptos-core.git", branch = "icarus131/prometheus-setup" }
-
+movement-config = { workspace = true }
+dot-movement = { workspace = true }
+once_cell = { workspace = true }
 tokio = { workspace = true }
-once_cell = "1.17.1"
 hex = { workspace = true }
+rand = { workspace = true }
+
 [lints]
 workspace = true

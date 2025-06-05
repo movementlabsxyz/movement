@@ -14530,8 +14530,11 @@ dependencies = [
  "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core.git?branch=icarus131/prometheus-setup)",
  "aptos-telemetry 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core.git?branch=icarus131/prometheus-setup)",
  "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core.git?branch=icarus131/prometheus-setup)",
+ "dot-movement",
  "hex",
+ "movement-config",
  "once_cell",
+ "rand 0.7.3",
  "tokio",
 ]
 
