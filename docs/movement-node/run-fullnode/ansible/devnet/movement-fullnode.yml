@@ -7,8 +7,8 @@
   vars:
     repo_url: "https://github.com/movementlabsxyz/movement"
     destination_path: "/home/{{ user }}/movement"
-    chain_id: "250"
-    aws_region: "us-west-1"
+    chain_id: "27"
+    aws_region: "us-west-2"
     rev: "{{ movement_container_version }}"
 
   tasks:
