@@ -1,5 +1,3 @@
-//! Telemetry crate for collecting metrics from aptos-core components.
-
 use aptos_telemetry;
 use aptos_config::config::NodeConfig;
 use aptos_types::chain_id::ChainId;
@@ -7,9 +5,9 @@ use std::collections::BTreeMap;
 use once_cell::sync::Lazy;
 use aptos_logger::{info, warn};
 use hex;
-use rand::Rng;
+use aptos_config::config::RoleType;
 
-// Load config the same way as ggp_gas_fee.rs
+// Load config
 static SUZUKA_CONFIG: Lazy<movement_config::Config> = Lazy::new(|| {
     let dot_movement = dot_movement::DotMovement::try_from_env().unwrap();
     let config = dot_movement.try_get_config_from_json::<movement_config::Config>().unwrap();
@@ -25,18 +23,39 @@ fn init_telemetry_env() {
     std::env::set_var("APTOS_FORCE_ENABLE_TELEMETRY", "1");
     std::env::set_var("PROMETHEUS_METRICS_ENABLED", "1");
     
-    // Generate a random node ID for telemetry
-    let mut rng = rand::thread_rng();
-    let mut node_id = [0u8; 32];
-    for byte in node_id.iter_mut() {
-        *byte = rng.gen();
-    }
-    let node_id_str = hex::encode(node_id);
+    // Get node configuration from SUZUKA_CONFIG
+    let node_connection_address = SUZUKA_CONFIG
+        .execution_config
+        .maptos_config
+        .client
+        .maptos_rest_connection_hostname
+        .clone();
+    let node_connection_port = SUZUKA_CONFIG
+        .execution_config
+        .maptos_config
+        .client
+        .maptos_rest_connection_port
+        .clone();
+
+    // Set up node URL for telemetry
+    let node_url = format!("http://{}:{}", node_connection_address, node_connection_port);
+    std::env::set_var("APTOS_NODE_URL", node_url);
+    
+    // Get chain ID from config
+    let chain_id = SUZUKA_CONFIG.execution_config.maptos_config.chain.maptos_chain_id.id();
+    std::env::set_var("APTOS_CHAIN_ID", chain_id.to_string());
+
+    // Generate a node ID based on config values
+    let node_id_input = format!("{}:{}:{}", node_connection_address, node_connection_port, chain_id);
+    let node_id = hex::encode(ring::digest::digest(
+        &ring::digest::SHA256,
+        node_id_input.as_bytes(),
+    ).as_ref());
     
     // Set the node ID for telemetry
-    std::env::set_var("APTOS_TELEMETRY_NODE_ID_KEY", node_id_str);
+    std::env::set_var("APTOS_TELEMETRY_NODE_ID_KEY", node_id.clone());
     std::env::set_var("APTOS_DISABLE_TELEMETRY_PUSH_METRICS", "0");
-    info!("Using random node ID for telemetry authentication");
+    info!("Using deterministic node ID for telemetry authentication: {}", node_id);
     
     std::env::set_var("APTOS_METRICS_PORT", "9464");
 }
@@ -44,7 +63,13 @@ fn init_telemetry_env() {
 // Create a default NodeConfig and ChainId for telemetry
 static DEFAULT_NODE_CONFIG: Lazy<NodeConfig> = Lazy::new(|| {
     init_telemetry_env();
-    NodeConfig::default()
+    let mut config = NodeConfig::default();
+    
+    // Configure the node using SUZUKA_CONFIG values
+    config.base.role = RoleType::FullNode;
+    config.base.data_dir = "/tmp/aptos".into();
+    
+    config
 });
 
 static DEFAULT_CHAIN_ID: Lazy<ChainId> = Lazy::new(|| {

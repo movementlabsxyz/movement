@@ -22,6 +22,7 @@ once_cell = { workspace = true }
 tokio = { workspace = true }
 hex = { workspace = true }
 rand = { workspace = true }
+ring = "0.17.7"
 
 [lints]
 workspace = true

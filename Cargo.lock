@@ -14535,6 +14535,7 @@ dependencies = [
  "movement-config",
  "once_cell",
  "rand 0.7.3",
+ "ring 0.17.8",
  "tokio",
 ]
 
