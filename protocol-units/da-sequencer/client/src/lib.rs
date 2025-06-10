@@ -81,7 +81,7 @@ impl GrpcDaSequencerClient {
 				}
 				Err(err) => {
 					tracing::warn!(
-						"DA sequencer Http2 connection failed: {}. Retrying in 10s...",
+						"DA sequencer Http2 connection url:{connection_url} failed: {}. Retrying in 10s...",
 						err
 					);
 					let _ = tokio::time::sleep(Duration::from_secs(10)).await;

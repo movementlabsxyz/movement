@@ -1,6 +1,5 @@
 #!/bin/bash -e
 
-systemctl stop  movement-fullnode.service
 export DOT_MOVEMENT_PATH=$HOME/.movement
 export CONTAINER_REV="fa0f19b"
 export MAYBE_RUN_LOCAL="false"
