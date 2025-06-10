@@ -18,6 +18,10 @@ on:
 jobs:
   container-build:
     name: Build ${{ inputs.container_name }} ${{ matrix.architecture }}
+    if: >
+      (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'cicd:movement-containers')
+      || github.ref == 'refs/heads/main'
+      || startsWith(github.ref, 'refs/tags/')
     strategy:
       matrix:
         architecture: [x86_64, arm64]        
@@ -36,7 +40,6 @@ jobs:
               exit 0
             fi
           fi
-
       - name: Checkout repository
         uses: actions/checkout@v4
         with: 
