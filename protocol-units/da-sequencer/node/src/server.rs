@@ -273,7 +273,8 @@ impl DaSequencerNodeService for DaSequencerNode {
 	) -> Result<tonic::Response<BatchWriteResponse>, tonic::Status> {
 		if self.main_node_verifying_key.is_none() {
 			tracing::warn!("Receive a node state and no verifying key is defined.");
-			return Ok(tonic::Response::new(BatchWriteResponse { answer: false }));
+			//return Ok(tonic::Response::new(BatchWriteResponse { answer: false }));
+			return Err(tonic::Status::internal("Send state No verification"));
 		}
 		let state_data = request.into_inner();
 
@@ -296,7 +297,8 @@ impl DaSequencerNodeService for DaSequencerNode {
 		//unwrap tested just before
 		if let Err(err) = self.main_node_verifying_key.as_ref().unwrap().verify(&data, &signature) {
 			tracing::warn!("Grpc send_state called with a wrong signature : {err}");
-			return Ok(tonic::Response::new(BatchWriteResponse { answer: false }));
+			//return Ok(tonic::Response::new(BatchWriteResponse { answer: false }));
+			return Err(tonic::Status::internal("Send state: Bad state"));
 		}
 
 		let state =
