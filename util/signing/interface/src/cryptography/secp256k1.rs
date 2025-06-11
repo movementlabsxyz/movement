@@ -7,13 +7,17 @@ use serde::{Deserialize, Serialize};
 use sha2::Digest as _;
 use tracing::info;
 
+pub const PUBLIC_KEY_SIZE: usize = 65;
+pub const SIGNATURE_SIZE: usize = 64;
+pub const DIGEST_SIZE: usize = 32;
+
 /// The secp256k1 elliptic curve.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Secp256k1;
 
-fixed_size!(pub struct PublicKey([u8; 65])); // Compressed public key
-fixed_size!(pub struct Signature([u8; 64]));
-fixed_size!(pub struct Digest([u8; 32]));
+fixed_size!(pub struct PublicKey([u8; PUBLIC_KEY_SIZE])); // Compressed public key
+fixed_size!(pub struct Signature([u8; SIGNATURE_SIZE]));
+fixed_size!(pub struct Digest([u8; DIGEST_SIZE]));
 
 impl Curve for Secp256k1 {
 	type PublicKey = PublicKey;
@@ -51,7 +55,7 @@ impl Verify<Secp256k1> for Secp256k1 {
 impl Digester<Secp256k1> for Secp256k1 {
 	fn digest(message: &[u8]) -> Result<Digest, DigestError> {
 		let digest = sha2::Sha256::digest(message);
-		let mut result = [0u8; 32];
+		let mut result = [0u8; DIGEST_SIZE];
 		result.copy_from_slice(&digest);
 		Ok(Digest(result))
 	}

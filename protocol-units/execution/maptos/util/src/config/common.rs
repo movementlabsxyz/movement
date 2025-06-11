@@ -1,5 +1,4 @@
-use std::str::FromStr;
-
+use aptos_crypto::SigningKey;
 use aptos_crypto::{
 	ed25519::Ed25519PrivateKey, Genesis, HashValue, Uniform, ValidCryptoMaterialStringExt,
 };
@@ -7,6 +6,8 @@ use aptos_types::chain_id::ChainId;
 use godfig::env_default;
 use movement_signer::key::TryFromCanonicalString;
 use movement_signer_loader::identifiers::{local::Local, SignerIdentifier};
+use std::str::FromStr;
+use url::Url;
 
 // The default Maptos API listen hostname
 env_default!(
@@ -70,6 +71,50 @@ env_default!(
 	String,
 	"0.0.0.0".to_string()
 );
+
+// The default Da Sequencer connection url
+env_default!(
+	default_da_sequencer_connection_url,
+	"MAPTOS_DA_SEQUENCER_CONNECTION_URL",
+	Url,
+	"http://0.0.0.0:30730".parse().expect("Bad da sequencer connection url.")
+);
+
+env_default!(
+	default_stream_heartbeat_interval_sec,
+	"MOVEMENT_DA_STREAM_HEARTBEAT_INTERVAL_MILLISEC",
+	u64,
+	10
+);
+
+env_default!(
+	default_propagate_execution_state,
+	"MOVEMENT_DA_PROPAGATE_EXECUTION_STATE",
+	bool,
+	false
+);
+
+pub fn default_batch_signer_identifier() -> SignerIdentifier {
+	match std::env::var("MAPTOS_DA_SEQUENCER_SIGNER_IDENTIFIER") {
+		Ok(val) => SignerIdentifier::try_from_canonical_string(&val).unwrap(),
+		Err(_) => {
+			// encoded key string
+			let key = Ed25519PrivateKey::generate(&mut rand::rngs::OsRng);
+
+			let verifying_key = key.verifying_key();
+			tracing::info!(
+				"Using batch signing public key: {}",
+				verifying_key.to_encoded_string().unwrap()
+			);
+
+			// remove the 0x prefix
+			let key = key.to_encoded_string().unwrap();
+			let key = key.trim_start_matches("0x");
+
+			SignerIdentifier::Local(Local { private_key_hex_bytes: key.to_string() })
+		}
+	}
+}
 
 // The default chain id
 env_default!(default_maptos_chain_id, "MAPTOS_CHAIN_ID", ChainId, ChainId::from_str("27").unwrap());
@@ -210,3 +255,12 @@ env_default!(default_sequence_number_ttl_ms, "MAPTOS_SEQUENCE_NUMBER_TTL_MS", u6
 env_default!(default_gc_slot_duration_ms, "MAPTOS_GC_SLOT_DURATION_MS", u64, 1000 * 2);
 
 env_default!(default_ingress_account_whitelist, "MAPTOS_INGRESS_ACCOUNT_WHITELIST", String);
+
+env_default!(default_max_tx_per_batch, "MAPTOS_MAX_TX_PER_BATCH", u64, 1024 * 8);
+
+env_default!(
+	default_max_batch_size,
+	"MAPTOS_MAX_BATCH_SIZE",
+	u64,
+	1024 * 1024 //1Mo
+);

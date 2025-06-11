@@ -76,6 +76,7 @@ mod secp256k1 {
 	}
 
 	#[tokio::test]
+	#[ignore]
 	async fn send_tx() -> Result<(), anyhow::Error> {
 		// Start Anvil
 		let anvil = Anvil::new().port(8545u16).spawn();

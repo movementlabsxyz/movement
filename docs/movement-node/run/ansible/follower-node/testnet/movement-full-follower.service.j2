@@ -16,7 +16,7 @@ Environment="MOVEMENT_DA_LIGHT_NODE_CONNECTION_HOSTNAME={{ movement_da_light_nod
 Environment="MOVEMENT_DA_LIGHT_NODE_CONNECTION_PORT={{ movement_da_light_node_connection_port }}"
 
 Environment="AWS_REGION={{ aws_region }}"
-ExecStart=/usr/bin/docker compose --env-file .env -f /home/{{ user }}/movement/docker/compose/movement-full-node/docker-compose.yml -f /home/{{ user }}/movement/docker/compose/movement-full-node/docker-compose.follower.yml up --force-recreate --remove-orphans
+ExecStart=/usr/bin/docker compose --env-file .env -f /home/{{ user }}/movement/docker/compose/movement-full-node/docker-compose.fullnode.yml -f /home/{{ user }}/movement/docker/compose/movement-full-node/docker-compose.faucet.yml up --force-recreate --remove-orphans
 Restart=on-failure
 
 [Install]

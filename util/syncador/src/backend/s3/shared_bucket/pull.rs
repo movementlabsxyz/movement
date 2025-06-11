@@ -1,5 +1,6 @@
 use super::metadata::Metadata;
 use crate::backend::s3::bucket_connection::BucketConnection;
+use crate::backend::s3::shared_bucket::execute_with_concurrency_limit;
 use crate::backend::s3::shared_bucket::BUFFER_SIZE;
 use crate::backend::PullOperations;
 use crate::files::package::{Package, PackageElement};
@@ -34,22 +35,16 @@ impl Pull {
 	}
 
 	pub(crate) async fn download_path(
-		&self,
-		candidate_selected: &Candidate,
+		bucket_connection: BucketConnection,
+		candidate_selected: Candidate,
 		relative_path: std::path::PathBuf,
 		full_path: std::path::PathBuf,
 	) -> Result<PathBuf, anyhow::Error> {
-		let bucket = self.bucket_connection.bucket.clone();
+		let bucket = bucket_connection.bucket.clone();
 		let key = format!("{}/{}", candidate_selected.key, relative_path.to_string_lossy());
 		tracing::info!("Pulling file from S3 on bucket:{bucket} with key: {key}");
-		let mut output = self
-			.bucket_connection
-			.client
-			.get_object()
-			.bucket(bucket)
-			.key(&key)
-			.send()
-			.await?;
+		let mut output =
+			bucket_connection.client.get_object().bucket(bucket).key(&key).send().await?;
 		// make any of the parent directories that don't exist
 		tokio::fs::create_dir_all(
 			full_path
@@ -148,13 +143,24 @@ impl Pull {
 					.ok_or(anyhow::anyhow!("could not strip prefix"))?,
 			);
 			let full_path = self.pull_destination.join(&relative_path);
-			let future = self.download_path(candidate, relative_path.clone(), full_path.clone());
+			let future = Pull::download_path(
+				self.bucket_connection.clone(),
+				candidate.clone(),
+				relative_path.clone(),
+				full_path.clone(),
+			);
 			manifest_futures.push(future);
 			manifest.add_sync_file(full_path);
 		}
 
-		// try to join all the manifest_futures
-		futures::future::try_join_all(manifest_futures).await?;
+		// Try to execute all the manifest_futures.
+		// Execute file download with max 100 downloads started at a time.
+		let results = execute_with_concurrency_limit(manifest_futures, 100).await;
+		// Validate all files download correctly
+		results.into_iter().try_for_each(|res| {
+			let _ = res?;
+			Ok::<(), anyhow::Error>(())
+		})?;
 
 		//recreate splited archive if needed.
 		let mut unsplit_manifest =
@@ -287,8 +293,8 @@ fn recreate_archive(archive_chunk: PathBuf) -> Result<PathBuf, anyhow::Error> {
 	let file_size = file_metadata.len() as usize;
 
 	//remove the chunk that is useless.
-	std::fs::remove_file(&archive_chunk)?;
-	tracing::debug!("PULL {archive_path:?} archive_chunk size: {file_size}",);
+	//std::fs::remove_file(&archive_chunk)?;
+	tracing::info!("PULL {archive_path:?} archive_chunk size: {file_size}",);
 
 	Ok(archive_path)
 }
