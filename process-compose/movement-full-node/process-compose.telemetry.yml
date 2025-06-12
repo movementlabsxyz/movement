@@ -4,35 +4,13 @@ environment:
   - RUST_LOG=info
 
 processes:
-  prometheus:
-    is_daemon: true
-    command: |
-      mkdir -p ${PWD}/tmp/prometheus
-      cp ${PWD}/docker/compose/movement-full-node/prometheus.yml ${PWD}/tmp/prometheus/prometheus.yml
-      sed -i.bak 's/movement-full-node:9464/127.0.0.1:9464/g' ${PWD}/tmp/prometheus/prometheus.yml
-      prometheus --config.file=${PWD}/tmp/prometheus/prometheus.yml --storage.tsdb.path=${PWD}/tmp/prometheus/data --web.listen-address=0.0.0.0:9091 --web.enable-lifecycle
-    shutdown:
-      command: |
-        pkill -f "prometheus --config.file"
-    readiness_probe:
-      initial_delay_seconds: 3
-      exec:
-        command: curl -s http://127.0.0.1:9091/-/healthy || exit 1
-
   movement-telemetry:
     command: |
       cargo run -p movement-tracing
-    depends_on:
-      prometheus:
-        condition: process_started
     environment:
       - MOVEMENT_METRICS_ADDR=0.0.0.0:9464
       - APTOS_FORCE_ENABLE_TELEMETRY=1
       - RUST_LOG=debug,aptos_telemetry=debug
-
-  movement-full-node:
-    depends_on:
-      movement-telemetry:
-        condition: process_started
-    environment:
-      - MOVEMENT_METRICS_ADDR=127.0.0.1:9464
+      - APTOS_METRICS_PORT=9464
+      - APTOS_DISABLE_TELEMETRY_PUSH_METRICS=1
+      - PROMETHEUS_METRICS_ENABLED=1

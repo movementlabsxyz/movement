@@ -9,6 +9,7 @@ repository.workspace = true
 homepage.workspace = true
 publish.workspace = true
 rust-version.workspace = true
+default-run = "movement-tracing"
 
 [dependencies]
 aptos-logger = { git = "https://github.com/movementlabsxyz/aptos-core.git", branch = "icarus131/prometheus-setup" }
@@ -23,6 +24,9 @@ tokio = { workspace = true }
 hex = { workspace = true }
 rand = { workspace = true }
 ring = "0.17.7"
+warp = "0.3"
+prometheus = "0.13"
+clap = { workspace = true }
 
 [lints]
 workspace = true

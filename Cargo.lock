@@ -14530,13 +14530,16 @@ dependencies = [
  "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core.git?branch=icarus131/prometheus-setup)",
  "aptos-telemetry 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core.git?branch=icarus131/prometheus-setup)",
  "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core.git?branch=icarus131/prometheus-setup)",
+ "clap 4.5.21",
  "dot-movement",
  "hex",
  "movement-config",
  "once_cell",
+ "prometheus",
  "rand 0.7.3",
  "ring 0.17.8",
  "tokio",
+ "warp",
 ]
 
 [[package]]
@@ -16251,6 +16254,7 @@ dependencies = [
  "lazy_static",
  "memchr",
  "parking_lot 0.12.3",
+ "protobuf",
  "thiserror 1.0.69",
 ]
 
