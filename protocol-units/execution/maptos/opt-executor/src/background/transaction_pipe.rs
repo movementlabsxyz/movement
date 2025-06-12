@@ -177,8 +177,7 @@ impl TransactionPipe {
 								Ok(Ok(response)) => {
 									debug!("After sent batch.");
 									if !response.answer {
-										tracing::error!("DA Sequencer reject batch, can't send batch, exit process");
-										return Err(Error::InternalError(format!("DA Sequencer reject batch, can't send batch, exit process")));
+										tracing::warn!("DA Sequencer reject batch, can't send the batch.");
 									}
 								}
 								Ok(Err(err)) => {
