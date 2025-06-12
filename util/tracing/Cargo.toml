@@ -27,6 +27,7 @@ ring = "0.17.7"
 warp = "0.3"
 prometheus = "0.13"
 clap = { workspace = true }
+lazy_static = "1.4.0"
 
 [lints]
 workspace = true
