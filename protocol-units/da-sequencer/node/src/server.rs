@@ -70,6 +70,10 @@ pub enum GrpcRequests {
 pub struct DaSequencerNode {
 	request_tx: mpsc::Sender<GrpcRequests>,
 	whitelist: Whitelist,
+	// State propagation is not a main functionality of the da-sequencer. It's used to detect instabilities.
+	// `main_node_verifying_key` contains the main node signing public key for state propagation.
+	// It's optional because issue on the mainnode can stop the network.
+	// To be able to recover fast, disabling it can be useful.
 	main_node_verifying_key: Option<VerifyingKey>,
 }
 
