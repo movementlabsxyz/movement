@@ -4,10 +4,10 @@ services:
     image: restic/restic
     container_name: movement-restore-db
     environment:
-      - AWS_REGION=${AWS_REGION}
-      - RESTIC_PASSWORD=${RESTIC_PASSWORD}
-      - RESTIC_HOST=${RESTIC_HOST}
-      - SYNC_BUCKET=${SYNC_BUCKET}
+      - AWS_REGION=${AWS_REGION:?AWS_REGION is not set}
+      - RESTIC_PASSWORD=${RESTIC_PASSWORD:?RESTIC_PASSWORD is not set}
+      - RESTIC_HOST=${RESTIC_HOST:?RESTIC_HOST is not set}
+      - SYNC_BUCKET=${SYNC_BUCKET:?SYNC_BUCKET is not set}
     entrypoint: ["/bin/sh", "-c"]
     command: >
       "restic --no-lock -r s3:s3.${AWS_REGION}.amazonaws.com/${SYNC_BUCKET}/restic_node_backup 

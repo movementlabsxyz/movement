@@ -27,7 +27,7 @@
       git:
         repo: "{{ repo_url }}"
         dest: "{{ destination_path }}"
-        version: "{{ movement_container_version }}"
+        version: "{{ movement_repo_commit }}"
         clone: yes
         update: yes
         force: true
