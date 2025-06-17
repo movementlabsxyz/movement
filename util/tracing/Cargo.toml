@@ -12,11 +12,11 @@ rust-version.workspace = true
 default-run = "movement-tracing"
 
 [dependencies]
-aptos-logger = { git = "https://github.com/movementlabsxyz/aptos-core.git", branch = "icarus131/prometheus-setup" }
-aptos-telemetry = { git = "https://github.com/movementlabsxyz/aptos-core.git", branch = "icarus131/prometheus-setup" }
-aptos-types = { git = "https://github.com/movementlabsxyz/aptos-core.git", branch = "icarus131/prometheus-setup" }
-aptos-config = { git = "https://github.com/movementlabsxyz/aptos-core.git", branch = "icarus131/prometheus-setup" }
-aptos-crypto = { git = "https://github.com/movementlabsxyz/aptos-core.git", branch = "icarus131/prometheus-setup" }
+aptos-logger = { git = "https://github.com/movementlabsxyz/aptos-core.git", branch = "movement" }
+aptos-telemetry = { git = "https://github.com/movementlabsxyz/aptos-core.git", branch = "movement" }
+aptos-types = { git = "https://github.com/movementlabsxyz/aptos-core.git", branch = "movement" }
+aptos-config = { git = "https://github.com/movementlabsxyz/aptos-core.git", branch = "movement" }
+aptos-crypto = { git = "https://github.com/movementlabsxyz/aptos-core.git", branch = "movement" }
 movement-config = { workspace = true }
 dot-movement = { workspace = true }
 once_cell = { workspace = true }
