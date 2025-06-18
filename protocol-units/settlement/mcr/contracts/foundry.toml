@@ -1,4 +1,6 @@
 [profile.default]
+via_ir = true
+optimizer = true
 src = "src"
 out = "out"
 libs = ["lib"]
