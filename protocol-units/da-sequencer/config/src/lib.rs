@@ -1,16 +1,11 @@
 use ed25519_dalek::VerifyingKey;
-use godfig::env_default;
+use godfig::backend::config_file::ConfigFile;
+use godfig::{env_default, Godfig};
 use hex::FromHex;
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 
 pub const DA_SEQUENCER_DIR: &str = "da-sequencer";
-
-pub fn get_config_path(dot_movement: &dot_movement::DotMovement) -> std::path::PathBuf {
-	let mut pathbuff = std::path::PathBuf::from(dot_movement.get_path());
-	pathbuff.push(DA_SEQUENCER_DIR);
-	pathbuff
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct DaSequencerConfig {
@@ -52,6 +47,28 @@ impl DaSequencerConfig {
 			})
 			.transpose()
 	}
+}
+
+pub fn get_config_path(dot_movement: &dot_movement::DotMovement) -> std::path::PathBuf {
+	let mut pathbuff = std::path::PathBuf::from(dot_movement.get_path());
+	pathbuff.push(DA_SEQUENCER_DIR);
+	pathbuff
+}
+
+pub async fn read_da_sequencer_config(
+	dot_movement: &mut dot_movement::DotMovement,
+) -> Result<DaSequencerConfig, anyhow::Error> {
+	let pathbuff = get_config_path(&dot_movement);
+	tracing::info!("Start Da Sequencer with config file in {pathbuff:?}.");
+	dot_movement.set_path(pathbuff);
+
+	let config_file = dot_movement.try_get_or_create_config_file().await?;
+
+	// Get a matching godfig object
+	let godfig: Godfig<DaSequencerConfig, ConfigFile> =
+		Godfig::new(ConfigFile::new(config_file), vec![]);
+	let config: DaSequencerConfig = godfig.try_wait_for_ready().await?;
+	Ok(config)
 }
 
 env_default!(

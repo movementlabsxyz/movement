@@ -33,16 +33,8 @@ pub mod whitelist;
 pub const GRPC_REQUEST_CHANNEL_SIZE: usize = 1000;
 
 pub async fn start(mut dot_movement: dot_movement::DotMovement) -> Result<(), anyhow::Error> {
-	let pathbuff = movement_da_sequencer_config::get_config_path(&dot_movement);
-	tracing::info!("Start Da Sequencer with config file in {pathbuff:?}.");
-	dot_movement.set_path(pathbuff);
-
-	let config_file = dot_movement.try_get_or_create_config_file().await?;
-
-	// Get a matching godfig object
-	let godfig: Godfig<DaSequencerConfig, ConfigFile> =
-		Godfig::new(ConfigFile::new(config_file), vec![]);
-	let da_sequencer_config: DaSequencerConfig = godfig.try_wait_for_ready().await?;
+	let da_sequencer_config =
+		movement_da_sequencer_config::read_da_sequencer_config(&mut dot_movement).await?;
 
 	let dotmovement_path = dot_movement.get_path().to_path_buf();
 
