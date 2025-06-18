@@ -8,20 +8,18 @@ use movement_signer::Signing;
 use movement_signer_loader::{Load, LoadedSigner};
 
 use aptos_config::config::NodeConfig;
-#[cfg(test)]
 use aptos_crypto::ed25519::Ed25519PrivateKey;
 use aptos_crypto::ed25519::Ed25519PublicKey;
-#[cfg(test)]
 use aptos_crypto::ValidCryptoMaterialStringExt;
 use aptos_executor::block_executor::BlockExecutor;
 use aptos_mempool::MempoolClientRequest;
 use aptos_types::transaction::SignedTransaction;
-use dot_movement::DotMovement;
 use maptos_execution_util::config::Config;
-#[cfg(test)]
+
 use movement_signer_loader::identifiers::{local::Local, SignerIdentifier};
 
 use anyhow::Context as _;
+use aptos_crypto::Uniform;
 use futures::channel::mpsc as futures_mpsc;
 use movement_collections::garbage::{counted::GcCounter, Duration};
 use tokio::sync::mpsc;
@@ -37,10 +35,6 @@ impl Executor {
 		public_key: Ed25519PublicKey,
 		mempool_tx_exec_result_sender: futures::channel::mpsc::Sender<Vec<TxExecutionResult>>,
 	) -> Result<Self, anyhow::Error> {
-		// get dot movement
-		// todo: this is a slight anti-pattern, but it's fine for now
-		let dot_movement = DotMovement::try_from_env()?;
-
 		// set up the node config
 		let mut node_config = NodeConfig::default();
 
@@ -105,7 +99,8 @@ impl Executor {
 
 		// indexer table info config
 		node_config.indexer_table_info.enabled = true;
-		node_config.storage.dir = dot_movement.get_path().join("maptos-storage");
+		let db_dir = maptos_config.chain.maptos_db_path.as_ref().context("No db path provided.")?;
+		node_config.storage.dir = db_dir.join("maptos-storage");
 		node_config.storage.set_data_dir(node_config.storage.dir.clone());
 
 		let known_release = aptos_framework_known_release::KnownRelease::try_new(
@@ -136,11 +131,6 @@ impl Executor {
 		maptos_config: &Config,
 		mempool_tx_exec_result_sender: futures::channel::mpsc::Sender<Vec<TxExecutionResult>>,
 	) -> Result<Self, anyhow::Error> {
-		// let raw_private_key =
-		// 	maptos_config.chain.maptos_private_key_signer_identifier.try_raw_private_key()?;
-		// let private_key = Ed25519PrivateKey::try_from(raw_private_key.as_slice())?;
-		// let public_key = private_key.public_key();
-
 		let loader: LoadedSigner<Ed25519> =
 			maptos_config.chain.maptos_private_key_signer_identifier.load().await?;
 		let public_key = Ed25519PublicKey::try_from(loader.public_key().await?.as_bytes())?;
@@ -201,6 +191,36 @@ impl Executor {
 		maptos_config.chain.maptos_db_path.replace(tempdir.path().to_path_buf());
 		let executor = Self::try_from_config(maptos_config, mempool_tx_exec_result_sender).await?;
 		Ok((executor, tempdir))
+	}
+
+	pub async fn try_generated() -> Result<
+		(
+			Self,
+			TempDir,
+			Ed25519PrivateKey,
+			futures::channel::mpsc::Receiver<Vec<TxExecutionResult>>,
+		),
+		anyhow::Error,
+	> {
+		// generate a random private key
+		let private_key = Ed25519PrivateKey::generate_for_testing();
+
+		// generate a sender
+		let (mempool_tx_exec_result_sender, receiver) =
+			futures_mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+		let tempdir = tempfile::tempdir()?;
+
+		let mut maptos_config = Config::default();
+		let raw_private_key_hex = private_key.to_encoded_string()?.to_string();
+		let prefix_stripped =
+			raw_private_key_hex.strip_prefix("0x").unwrap_or(&raw_private_key_hex);
+		maptos_config.chain.maptos_private_key_signer_identifier =
+			SignerIdentifier::Local(Local { private_key_hex_bytes: prefix_stripped.to_string() });
+
+		// replace the db path with the temporary directory
+		maptos_config.chain.maptos_db_path.replace(tempdir.path().to_path_buf());
+		let executor = Self::try_from_config(maptos_config, mempool_tx_exec_result_sender).await?;
+		Ok((executor, tempdir, private_key, receiver))
 	}
 
 	/// Creates an instance of [`Context`] and the background [`TransactionPipe`]
