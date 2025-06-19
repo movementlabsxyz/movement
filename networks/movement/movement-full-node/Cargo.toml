@@ -9,10 +9,6 @@ homepage = { workspace = true }
 publish = { workspace = true }
 rust-version = { workspace = true }
 
-[[bin]]
-name = "replicat-node"
-path = "bin/replicat_node.rs"
-
 [dependencies]
 maptos-dof-execution = { workspace = true }
 prost = { workspace = true }
@@ -35,7 +31,6 @@ dot-movement = { workspace = true }
 godfig = { workspace = true }
 tracing-subscriber = { workspace = true }
 console-subscriber = { workspace = true }
-rocksdb = { workspace = true }
 tracing = { workspace = true }
 bcs = { workspace = true }
 zstd = { workspace = true }

@@ -9,6 +9,10 @@ homepage.workspace = true
 publish.workspace = true
 rust-version.workspace = true
 
+[[bin]]
+name = "replica-da-node"
+path = "bin/replica_node.rs"
+
 [dependencies]
 anyhow = { workspace = true }
 aptos-crypto = { workspace = true }
@@ -44,6 +48,8 @@ movement-da-sequencer-client = { workspace = true }
 movement-da-sequencer-config = { workspace = true }
 movement-da-sequencer-proto = { workspace = true, features = ["server"] }
 movement-types = { workspace = true }
+maptos-execution-util = { workspace = true }
+
 
 [dev-dependencies]
 tempfile = { workspace = true }
@@ -53,4 +59,4 @@ movement-types = { workspace = true, features = ["testing"] }
 movement-signer = { workspace = true}
 
 [lints]
-workspace = true
+#workspace = true
