@@ -39,6 +39,7 @@ jobs:
           - movement-celestia-appd
           - movement-celestia-bridge
           - movement-full-node-setup
+          - movement-da-sequencer-setup
           - wait-for-celestia-light-node
           - movement-full-node
           - movement-faucet-service
@@ -63,6 +64,7 @@ jobs:
           - movement-celestia-appd
           - movement-celestia-bridge
           - movement-full-node-setup
+          - movement-da-sequencer-setup
           - wait-for-celestia-light-node
           - movement-full-node
           - movement-faucet-service
