@@ -35,17 +35,11 @@ jobs:
     strategy:
       matrix:
         container_name:
-          - movement-celestia-da-light-node
-          - movement-celestia-appd
-          - movement-celestia-bridge
           - movement-full-node-setup
           - movement-da-sequencer-setup
-          - wait-for-celestia-light-node
           - movement-full-node
           - movement-faucet-service
-          - movement-tests-e2e-simple-interaction
           - movement-indexer
-          - movement-tests-e2e-followers-consistent
           - movement-util
     with:
       container_name: ${{ matrix.container_name }}
@@ -60,17 +54,11 @@ jobs:
     strategy:
       matrix:
         container_name:
-          - movement-celestia-da-light-node
-          - movement-celestia-appd
-          - movement-celestia-bridge
           - movement-full-node-setup
           - movement-da-sequencer-setup
-          - wait-for-celestia-light-node
           - movement-full-node
           - movement-faucet-service
-          - movement-tests-e2e-simple-interaction
           - movement-indexer
-          - movement-tests-e2e-followers-consistent
           - movement-util
     with:
       container_name: ${{ matrix.container_name }}
@@ -123,35 +111,3 @@ jobs:
           nix develop --command bash  -c "just container-tests"  
           # run again to test restarts
           # nix develop --command bash  -c "just container-tests"  
-
-### Unchecked containers
-
-  build-push-unchecked-containers:
-    if: contains(github.event.pull_request.labels.*.name, 'cicd:bridge-containers') ||  github.ref == 'refs/heads/main' || github.event.label.name == 'cicd:bridge-containers'
-
-    uses: ./.github/workflows/build-push-container.yml
-    name: Build Push Unchecked Containers
-    secrets: inherit
-    strategy:
-      matrix:
-        container_name:
-          - bridge-service
-          - bridge-setup
-          - helios
-    with:
-      container_name: ${{ matrix.container_name }}
-
-  build-push-unchecked-manifest:
-    uses: ./.github/workflows/build-push-manifest.yml
-    name: Build Push Unchecked Manifest
-    needs: 
-      - build-push-unchecked-containers
-    secrets: inherit
-    strategy:
-      matrix:
-        container_name:
-          - bridge-service
-          - bridge-setup
-          - helios
-    with:
-      container_name: ${{ matrix.container_name }}
