@@ -23,20 +23,6 @@ echo "Building movement-faucet-service..."
 cargo build $CARGO_PROFILE_FLAGS -p movement-faucet-service
 echo "Built movement-faucet-service!"
 
-echo "Building movement-full-node-setup..."
-cargo build $CARGO_PROFILE_FLAGS -p movement-full-node-setup
-echo "Built movement-full-node-setup!"
-
-echo "Bulding movement-util..."
-cargo build $CARGO_PROFILE_FLAGS -p movement-util
-echo "Built movement-util!"
-cargo build $CARGO_PROFILE_FLAGS -p movement-da-util --bin wait-for-celestia-light-node
-echo "Built wait-for-celestia-light-node!"
-
-echo "Building movement-da-sequencer-setup..."
-cargo build $CARGO_PROFILE_FLAGS -p movement-da-sequencer-setup
-echo "Built movement-da-sequencer-setup"
-
 echo "Building da-sequencer-node..."
 cargo build $CARGO_PROFILE_FLAGS -p movement-da-sequencer-node
 echo "Built da-sequencer-node"
