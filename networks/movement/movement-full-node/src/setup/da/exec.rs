@@ -1,16 +1,8 @@
+use super::local;
 use godfig::{backend::config_file::ConfigFile, Godfig};
 use movement_da_sequencer_config::DaSequencerConfig;
 
-#[tokio::main]
-async fn main() -> Result<(), anyhow::Error> {
-	use tracing_subscriber::EnvFilter;
-
-	tracing_subscriber::fmt()
-		.with_env_filter(
-			EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
-		)
-		.init();
-
+pub async fn exec() -> Result<(), anyhow::Error> {
 	// get the config file
 	let mut dot_movement = dot_movement::DotMovement::try_from_env()?;
 
@@ -34,12 +26,7 @@ async fn main() -> Result<(), anyhow::Error> {
 	godfig
 		.try_transaction(|config| async move {
 			let config = config.unwrap_or(DaSequencerConfig::default());
-			let config = movement_da_sequencer_setup::local::setup_movement_node(
-				&dot_movement,
-				config,
-				&maptos_config,
-			)
-			.await?;
+			let config = local::setup_movement_node(&dot_movement, config, &maptos_config).await?;
 			tracing::info!("Da Sequencer Config after local setup: {:?}", config);
 
 			Ok(Some(config))

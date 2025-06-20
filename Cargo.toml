@@ -42,7 +42,6 @@ members = [
   "protocol-units/execution/maptos/framework/releases/*",
   "protocol-units/execution/maptos/framework/migrations/*",
   "protocol-units/da-sequencer/config",
-  "protocol-units/da-sequencer/setup",
   "protocol-units/da-sequencer/client",
   "protocol-units/da-sequencer/node"
 ]
