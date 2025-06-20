@@ -1,16 +1,6 @@
 version: "3"
 
-processes:
-
-  da-setup:
-    command: |
-      exit 0
-    depends_on:
-      setup:
-        condition: process_completed_successfully
-    readiness_probe:
-      exec:
-        command: echo "true"    
+processes: 
 
   da-sequencer:
     command: |

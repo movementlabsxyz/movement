@@ -1,8 +1,9 @@
 services:
   # setup the full node
   setup:
-    image: ghcr.io/movementlabsxyz/movement-full-node-setup:${CONTAINER_REV}
+    image: ghcr.io/movementlabsxyz/movement-full-node:${CONTAINER_REV}
     container_name: setup
+    command: setup all
     environment:
       DOT_MOVEMENT_PATH: /.movement
       # By default, all the listener hostnames and ports are reasonable.
@@ -36,22 +37,6 @@ services:
       interval: 10s
       timeout: 5s
 
-  # setup the da
-  da-setup:
-    image: ghcr.io/movementlabsxyz/movement-da-sequencer-setup:${CONTAINER_REV}
-    container_name: setup
-    volumes:
-      - ${DOT_MOVEMENT_PATH}:/.movement
-    ports:
-      - "8090:8090" # port for anvil, this should be moved out into runner
-    healthcheck:
-      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 8090" ]
-      retries: 30
-      interval: 10s
-      timeout: 5s
-    depends_on:
-      setup:
-        condition: service_completed_successfully
 
   # add dependencies to the full node
   movement-full-node:
@@ -59,8 +44,6 @@ services:
       MAPTOS_DA_SEQUENCER_CONNECTION_URL: http://movement-da-sequencer:30730
     depends_on:
       setup:
-        condition: service_completed_successfully
-      da-setup:
         condition: service_completed_successfully
       movement-da-sequencer:
         condition: service_healthy
