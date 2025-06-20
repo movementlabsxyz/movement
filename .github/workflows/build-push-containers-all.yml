@@ -42,7 +42,6 @@ jobs:
       container_name: ${{ matrix.container_name }}
 
   build-push-checked-manifest:
-    if: github.event.label.name == 'cicd:movement-containers' ||  github.ref == 'refs/heads/main' || github.event.label.name == 'cicd:movement-containers'
     uses: ./.github/workflows/build-push-manifest.yml
     name: Build Push Checked Manifest
     needs: 
