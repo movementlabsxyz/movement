@@ -6,6 +6,7 @@ pub mod node;
 pub mod run;
 pub mod setup;
 pub mod state;
+pub mod util;
 
 #[cfg(test)]
 pub mod tests;
@@ -26,6 +27,8 @@ pub enum MovementFullNode {
 	Backup(backup::Backup),
 	#[clap(subcommand)]
 	Setup(setup::Setup),
+	#[clap(subcommand)]
+	Util(util::Util),
 }
 
 impl MovementFullNode {
@@ -37,6 +40,7 @@ impl MovementFullNode {
 			Self::Da(da) => da.execute().await,
 			Self::Backup(backup) => backup.execute().await,
 			Self::Setup(setup) => setup.execute().await,
+			Self::Util(util) => util.execute().await,
 		}
 	}
 }
