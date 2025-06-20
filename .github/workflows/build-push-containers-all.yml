@@ -38,7 +38,6 @@ jobs:
           - movement-full-node
           - movement-faucet-service
           - movement-indexer
-          - movement-util
     with:
       container_name: ${{ matrix.container_name }}
 
@@ -55,6 +54,5 @@ jobs:
           - movement-full-node
           - movement-faucet-service
           - movement-indexer
-          - movement-util
     with:
       container_name: ${{ matrix.container_name }}
