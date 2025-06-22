@@ -54,11 +54,6 @@ pub struct TransactionPipe {
 	whitelisted_accounts: Option<HashSet<AccountAddress>>,
 }
 
-enum SequenceNumberValidity {
-	Valid(u64),
-	Invalid(SubmissionStatus),
-}
-
 impl TransactionPipe {
 	pub(crate) fn new(
 		mempool_commit_tx_receiver: futures_mpsc::Receiver<Vec<TxExecutionResult>>, // Sender, seq number)
@@ -379,21 +374,33 @@ mod tests {
 	use futures::channel::oneshot;
 	use maptos_execution_util::config::chain::Config;
 	use tempfile::TempDir;
+	use tokio::time::sleep;
 
-	async fn setup() -> (Context, TransactionPipe, mpsc::Receiver<(u64, SignedTransaction)>, TempDir)
-	{
-		let (tx_sender, tx_receiver) = mpsc::channel(16);
-		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
-			futures_mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+	struct TestHarness {
+		context: Context,
+		executor: Executor,
+		transaction_pipe: TransactionPipe,
+		tx_receiver: mpsc::Receiver<(u64, SignedTransaction)>,
+		tempdir: TempDir,
+	}
 
-		let (executor, tempdir) =
-			Executor::try_test_default(GENESIS_KEYPAIR.0.clone(), mempool_tx_exec_result_sender)
-				.await
-				.unwrap();
-		let (context, background) =
-			executor.background(tx_sender, mempool_commit_tx_receiver).unwrap();
-		let transaction_pipe = background.into_transaction_pipe();
-		(context, transaction_pipe, tx_receiver, tempdir)
+	impl TestHarness {
+		async fn setup() -> Self {
+			let (tx_sender, tx_receiver) = mpsc::channel(16);
+			let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
+				futures_mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+
+			let (executor, tempdir) = Executor::try_test_default(
+				GENESIS_KEYPAIR.0.clone(),
+				mempool_tx_exec_result_sender,
+			)
+			.await
+			.unwrap();
+			let (context, background) =
+				executor.background(tx_sender, mempool_commit_tx_receiver).unwrap();
+			let transaction_pipe = background.into_transaction_pipe();
+			Self { context, executor, transaction_pipe, tx_receiver, tempdir }
+		}
 	}
 
 	fn create_signed_transaction(sequence_number: u64, chain_config: &Config) -> SignedTransaction {
@@ -411,7 +418,13 @@ mod tests {
 	async fn test_pipe_mempool() -> Result<(), anyhow::Error> {
 		// set up
 		let maptos_config = Config::default();
-		let (context, mut transaction_pipe, mut tx_receiver, _tempdir) = setup().await;
+		let TestHarness {
+			context,
+			mut transaction_pipe,
+			mut tx_receiver,
+			executor: _executor,
+			tempdir: _tempdir,
+		} = TestHarness::setup().await;
 		let user_transaction = create_signed_transaction(1, &maptos_config);
 
 		// send transaction to mempool
@@ -428,6 +441,12 @@ mod tests {
 		let (status, _vm_status_code) = callback.await??;
 		assert_eq!(status.code, MempoolStatusCode::Accepted);
 
+		// Wait for mempool interval to elapse
+		sleep(MEMPOOL_INTERVAL + Duration::from_millis(100)).await;
+
+		// tick the transaction pipe
+		transaction_pipe.tick().await?;
+
 		// receive the transaction
 		let received_transaction = tx_receiver.recv().await.unwrap();
 		assert_eq!(received_transaction.1, user_transaction);
@@ -439,7 +458,13 @@ mod tests {
 	async fn test_pipe_mempool_cancellation() -> Result<(), anyhow::Error> {
 		// set up
 		let maptos_config = Config::default();
-		let (context, mut transaction_pipe, _tx_receiver, _tempdir) = setup().await;
+		let TestHarness {
+			context,
+			mut transaction_pipe,
+			tx_receiver: _tx_receiver,
+			executor: _executor,
+			tempdir: _tempdir,
+		} = TestHarness::setup().await;
 		let user_transaction = create_signed_transaction(1, &maptos_config);
 
 		// send transaction to mempool
@@ -462,7 +487,13 @@ mod tests {
 	async fn test_pipe_mempool_with_duplicate_transaction() -> Result<(), anyhow::Error> {
 		// set up
 		let maptos_config = Config::default();
-		let (context, mut transaction_pipe, mut tx_receiver, _tempdir) = setup().await;
+		let TestHarness {
+			context,
+			mut transaction_pipe,
+			mut tx_receiver,
+			executor: _executor,
+			tempdir: _tempdir,
+		} = TestHarness::setup().await;
 		let mut mempool_client_sender = context.mempool_client_sender();
 		let user_transaction = create_signed_transaction(1, &maptos_config);
 
@@ -503,7 +534,13 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_pipe_mempool_from_api() -> Result<(), anyhow::Error> {
-		let (context, mut transaction_pipe, mut tx_receiver, _tempdir) = setup().await;
+		let TestHarness {
+			context,
+			mut transaction_pipe,
+			mut tx_receiver,
+			executor: _executor,
+			tempdir: _tempdir,
+		} = TestHarness::setup().await;
 		let service = Service::new(&context);
 
 		#[allow(unreachable_code)]
@@ -530,7 +567,13 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_repeated_pipe_mempool_from_api() -> Result<(), anyhow::Error> {
-		let (context, mut transaction_pipe, mut tx_receiver, _tempdir) = setup().await;
+		let TestHarness {
+			context,
+			mut transaction_pipe,
+			mut tx_receiver,
+			executor: _executor,
+			tempdir: _tempdir,
+		} = TestHarness::setup().await;
 		let service = Service::new(&context);
 
 		#[allow(unreachable_code)]
@@ -570,7 +613,13 @@ mod tests {
 	async fn test_cannot_submit_too_new() -> Result<(), anyhow::Error> {
 		// set up
 		let maptos_config = Config::default();
-		let (_context, mut transaction_pipe, _tx_receiver, _tempdir) = setup().await;
+		let TestHarness {
+			context: _context,
+			mut transaction_pipe,
+			tx_receiver: _tx_receiver,
+			executor: _executor,
+			tempdir: _tempdir,
+		} = TestHarness::setup().await;
 
 		// submit a transaction with a valid sequence number
 		let user_transaction = create_signed_transaction(0, &maptos_config);

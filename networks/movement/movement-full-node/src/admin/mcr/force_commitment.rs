@@ -34,7 +34,7 @@ impl ForceCommitment {
 			futures::channel::mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
 
 		let executor =
-			MovementPartialNode::try_executor_from_config(config, mempool_tx_exec_result_sender)
+			MovementPartialNode::try_executor_from_config(&config, mempool_tx_exec_result_sender)
 				.await
 				.context("Failed to create the executor")?;
 
