@@ -8,6 +8,5 @@ async fn main() -> Result<(), anyhow::Error> {
     let suzuka_util = MovementFullNode::parse();
     let result = suzuka_util.execute().await;
 
-    result
+	result
 }
-
