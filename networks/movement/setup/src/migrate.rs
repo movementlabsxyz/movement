@@ -31,11 +31,6 @@ pub async fn migrate_v0_4_0(dot_movement: DotMovement) -> Result<(), anyhow::Err
 		}
 	};
 
-	let da_conf = value
-		.get_mut("maptos_config")
-		.and_then(|conf| conf.get_mut("da_sequencer"))
-		.and_then(|val| val.as_object_mut());
-
 	let local = std::env::var_os("MAYBE_RUN_LOCAL").unwrap_or("false".into());
 	if local == "false" {
 		// Set DA sequencer connection url.
