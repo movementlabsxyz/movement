@@ -103,6 +103,21 @@ impl TransactionPipe {
 		}
 	}
 
+	pub fn whitelist(&mut self, account: AccountAddress) -> Result<(), Error> {
+		match &mut self.whitelisted_accounts {
+			Some(set) => {
+				set.insert(account);
+				Ok(())
+			}
+			None => {
+				let mut set = HashSet::new();
+				set.insert(account);
+				self.whitelisted_accounts = Some(set);
+				Ok(())
+			}
+		}
+	}
+
 	pub async fn run(mut self) -> Result<(), Error> {
 		loop {
 			self.tick().await?;
