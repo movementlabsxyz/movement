@@ -14,7 +14,7 @@
 The Movement SDK is a collection of tools and libraries for building, deploying, and working with Movement Labs infrastructure. The SDK is designed to be modular and extensible, allowing developers to build custom tools and libraries on top of the core components as well as to interact with Movement Labs' own networks.
 
 ## Important
-Unless otherwise specified assume all commands below are run after entering a nix shell with `nix develop`.  Development is made possible Within the Nix environment with all needed tooling being available.  If you are wishing to run the network then this can also be achieved without the need to install `nix` with having docker and [just](https://github.com/casey/just) installed only. 
+Unless otherwise specified assume all commands below are run after entering a nix shell with `nix develop`.  Development is made possible Within the Nix environment with all needed tooling being available.  If you wish to run the network then this can also be achieved without the need to install `nix` with having docker and [just](https://github.com/casey/just) installed only. 
 
 ## Organization
 - [`scripts`](./scripts): Scripts for running Movement Labs software. See the [scripts README](./scripts/README.md) for more information about the organization of scripts.
