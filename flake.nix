@@ -124,6 +124,8 @@
             ROCKSDB = pkgs.rocksdb;
             SNAPPY = if pkgs.stdenv.isLinux then pkgs.snappy else null;
             OPENSSL_DEV = pkgs.openssl.dev;
+
+            hardeningDisable = ["fortify"];
          
             buildInputs = with pkgs; [
               # rust toolchain
