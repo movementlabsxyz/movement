@@ -11106,7 +11106,7 @@ dependencies = [
 [[package]]
 name = "move-vm-runtime"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1d1cdbbd7fabb80dcb95ba5e23213faa072fab67#1d1cdbbd7fabb80dcb95ba5e23213faa072fab6
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1d1cdbbd7fabb80dcb95ba5e23213faa072fab67#1d1cdbbd7fabb80dcb95ba5e23213faa072fab67"
 dependencies = [
  "better_any",
  "bytes 1.8.0",
