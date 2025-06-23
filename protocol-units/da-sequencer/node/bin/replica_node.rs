@@ -39,9 +39,11 @@ async fn main() -> Result<(), anyhow::Error> {
 	let storage = Storage::try_new(&db_storage_path)?;
 
 	// Create da sequencer client to stream block
+	let da_connection_url = std::env::var("MOVEMENT_DA_SEQUENCER_CONNECTION_URL")
+		.map_err(|_| anyhow::anyhow!("MOVEMENT_DA_SEQUENCER_CONNECTION_URL var not defined."))?;
+
 	let da_client =
-		GrpcDaSequencerClient::try_connect(&da_connection_url, stream_heartbeat_interval_sec)
-			.await?;
+		GrpcDaSequencerClient::try_connect(&url::Url::parse(&da_connection_url)?, 10).await?;
 
 	let (mut blocks_from_da, mut alert_channel) = da_client
 		.stream_read_from_height(StreamReadFromHeightRequest { height: synced_height })
