@@ -1,6 +1,8 @@
 pub mod cached;
 
 use aptos_framework_upgrade_gas_release::generate_gas_upgrade_module;
+/// Expose the `maptos_framework_release_util` crate for use in the `pre-l1-merge` release.
+pub use maptos_framework_release_util;
 use maptos_framework_release_util::commit_hash_with_script;
 
 // Example usage of the macro to generate a build script for PreL1Merge.
