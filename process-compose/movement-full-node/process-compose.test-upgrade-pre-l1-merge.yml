@@ -2,11 +2,11 @@ version: "3"
 
 environment:
 
-  # setup:
-  #     environment:
-  #       - "KNOWN_FRAMEWORK_RELEASE=biarritz-rc1"
-  #       - APTOS_ACCOUNT_WHITELIST=$DOT_MOVEMENT_PATH/default_signer_address_whitelist
-  #       - MAPTOS_PRIVATE_KEY=random
+  setup:
+      environment:
+        - "KNOWN_FRAMEWORK_RELEASE=biarritz-rc1"
+        - APTOS_ACCOUNT_WHITELIST=$DOT_MOVEMENT_PATH/default_signer_address_whitelist
+        - MAPTOS_PRIVATE_KEY=random
 
 
 processes:
