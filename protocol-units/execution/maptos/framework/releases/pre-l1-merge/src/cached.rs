@@ -66,14 +66,6 @@ pub mod full {
 		aptos_feature_flags.push(AptosFeatureFlag::DELEGATION_POOL_PARTIAL_GOVERNANCE_VOTING);
 		aptos_feature_flags.push(AptosFeatureFlag::VM_BINARY_FORMAT_V7);
 
-		aptos_feature_flags.push(AptosFeatureFlag::ALLOW_SERIALIZED_SCRIPT_ARGS);
-		aptos_feature_flags.push(AptosFeatureFlag::ENABLE_ENUM_TYPES);
-		aptos_feature_flags.push(AptosFeatureFlag::FEDERATED_KEYLESS);
-		aptos_feature_flags.push(AptosFeatureFlag::TRANSACTION_SIMULATION_ENHANCEMENT);
-		aptos_feature_flags.push(AptosFeatureFlag::COLLECTION_OWNER);
-		aptos_feature_flags.push(AptosFeatureFlag::NATIVE_MEMORY_OPERATIONS);
-		aptos_feature_flags.push(AptosFeatureFlag::ACCOUNT_ABSTRACTION);
-
 		Features {
 			enabled: aptos_feature_flags.into_iter().map(FeatureFlag::from).collect(),
 			disabled: vec![],

@@ -8,6 +8,7 @@ use aptos_crypto::HashValue;
 use aptos_executor::block_executor::BlockExecutor;
 use aptos_executor_types::StateComputeResult;
 use aptos_sdk::types::account_address::AccountAddress;
+use aptos_sdk::types::ledger_info::LedgerInfoWithSignatures;
 use aptos_storage_interface::state_view::{DbStateView, DbStateViewAtVersion};
 use aptos_storage_interface::{DbReader, DbReaderWriter};
 use aptos_types::state_store::StateView;
@@ -20,7 +21,29 @@ use std::cmp::Ordering;
 use std::hash::Hash;
 use std::hash::Hasher;
 use std::sync::{Arc, RwLock};
+use tokio::sync::mpsc::UnboundedSender;
 use tracing::info;
+
+// Store the ledger state after the block at the given height has been executed.
+// This differs from `BlockCommitment`, which only indicates that a block with a specific ID was executed.
+// `ExecutionState` is used to compare ledger states at the same height.
+#[derive(Debug, Clone)]
+pub struct ExecutionState {
+	pub block_height: u64,
+	pub ledger_timestamp: u64,
+	pub ledger_version: u64,
+}
+
+impl ExecutionState {
+	pub fn build(ledger_info: &LedgerInfoWithSignatures, block_height: u64) -> Self {
+		let ledger_info = ledger_info.ledger_info();
+		ExecutionState {
+			block_height,
+			ledger_timestamp: ledger_info.timestamp_usecs().into(),
+			ledger_version: ledger_info.version().into(),
+		}
+	}
+}
 
 #[derive(Debug, Clone)]
 pub struct TxExecutionResult {
@@ -112,7 +135,7 @@ pub const EXECUTOR_CHANNEL_SIZE: usize = 2_usize.pow(16);
 /// against the `AptosVM`.
 pub struct Executor {
 	/// Send commited Tx
-	pub mempool_tx_exec_result_sender: futures::channel::mpsc::Sender<Vec<TxExecutionResult>>, // Sender, seq number)
+	pub mempool_tx_exec_result_sender: UnboundedSender<Vec<TxExecutionResult>>,
 	/// The executing type.
 	pub block_executor: Arc<BlockExecutor<AptosVM>>,
 	/// The signer of the executor's transactions.

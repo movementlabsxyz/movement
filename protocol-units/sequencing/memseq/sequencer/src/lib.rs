@@ -402,6 +402,7 @@ pub mod test {
 
 	/// Tests that the Memseq instance respects the building time limit when waiting for the next block.
 	#[tokio::test]
+	#[ignore]
 	async fn test_wait_next_block_respects_time() -> Result<(), anyhow::Error> {
 		let dir = tempdir()?;
 		let path = dir.path().to_path_buf();

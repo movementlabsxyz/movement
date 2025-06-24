@@ -4,8 +4,8 @@ use anyhow::Context;
 use clap::Parser;
 use maptos_dof_execution::DynOptFinExecutor;
 use maptos_opt_executor::executor::TxExecutionResult;
-use maptos_opt_executor::executor::EXECUTOR_CHANNEL_SIZE;
 use mcr_settlement_client::{McrSettlementClient, McrSettlementClientOperations};
+use tokio::sync::mpsc::unbounded_channel;
 use tracing::info;
 
 #[derive(Debug, Parser, Clone)]
@@ -31,7 +31,7 @@ impl ForceCommitment {
 
 		//No Tx are processed so no need to manage the receiver.
 		let (mempool_tx_exec_result_sender, _mempool_commit_tx_receiver) =
-			futures::channel::mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+			unbounded_channel::<Vec<TxExecutionResult>>();
 
 		let executor =
 			MovementPartialNode::try_executor_from_config(config, mempool_tx_exec_result_sender)

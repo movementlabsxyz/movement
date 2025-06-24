@@ -1,0 +1,31 @@
+services:
+
+  movement-init-repo:
+    image: restic/restic
+    container_name: movement-init-repo
+    environment:
+      - RESTIC_PASSWORD=${RESTIC_PASSWORD}
+      - AWS_REGION=${AWS_REGION}
+      - SYNC_BUCKET=${SYNC_BUCKET}
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      "if restic -r s3:s3.${AWS_REGION}.amazonaws.com/${SYNC_BUCKET}/restic_node_backup init 2>/dev/null; then
+        echo 'Repository initialized successfully';
+      else
+        echo 'Repository already exists';
+      fi"
+
+  movement-backup-db:
+    image: restic/restic
+    container_name: movement-backup-db
+    environment:
+      - AWS_REGION=${AWS_REGION}
+      - RESTIC_PASSWORD=${RESTIC_PASSWORD}
+      - RESTIC_HOST=${RESTIC_HOST}
+      - SYNC_BUCKET=${SYNC_BUCKET}
+    command: -r s3:s3.${AWS_REGION}.amazonaws.com/${SYNC_BUCKET}/restic_node_backup --host ${RESTIC_HOST} backup .movement/maptos .movement/maptos-storage .movement/movement-da-db .movement/default_signer_address_whitelist  
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+    depends_on:
+      movement-init-repo:
+        condition: service_completed_successfully

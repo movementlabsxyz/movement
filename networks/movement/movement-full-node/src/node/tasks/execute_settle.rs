@@ -1,30 +1,29 @@
 //! Task module to execute blocks from the DA and process settlement.
-
 use crate::node::da_db::DaDB;
-
+use crate::node::tasks::state_verifier::StateVerifier;
+use anyhow::Context;
+use futures::{future::Either, stream};
 use maptos_dof_execution::{
 	DynOptFinExecutor, ExecutableBlock, ExecutableTransactions, HashValue,
 	SignatureVerifiedTransaction, SignedTransaction, Transaction,
 };
+use maptos_opt_executor::executor::ExecutionState;
 use mcr_settlement_manager::{CommitmentEventStream, McrSettlementManagerOperations};
-use movement_da_light_node_client::MovementDaLightNodeClient;
-use movement_da_light_node_proto::{
-	blob_response, StreamReadFromHeightRequest, StreamReadFromHeightResponse,
-};
-use movement_types::block::{Block, BlockCommitment, BlockCommitmentEvent};
-
-use anyhow::Context;
-use futures::{future::Either, stream};
 use movement_config::execution_extension;
+use movement_da_sequencer_client::{DaSequencerClient, GrpcDaSequencerClient};
+use movement_da_sequencer_proto::{BlockV1, StreamReadFromHeightRequest};
+use movement_signer::cryptography::ed25519::Ed25519;
+use movement_signer_loader::{identifiers::SignerIdentifier, Load, LoadedSigner};
+use movement_types::block::{Block, BlockCommitment, BlockCommitmentEvent};
 use tokio::select;
 use tokio_stream::{Stream, StreamExt};
 use tracing::{debug, error, info, info_span, Instrument};
+use url::Url;
 
 pub struct Task<E, S> {
-	executor: E,
+	executor: Option<E>,
 	settlement_manager: Option<S>,
 	da_db: DaDB,
-	da_light_node_client: MovementDaLightNodeClient,
 	// Stream receiving commitment events, conditionally enabled
 	commitment_events:
 		Either<CommitmentEventStream, stream::Pending<<CommitmentEventStream as Stream>::Item>>,
@@ -37,7 +36,6 @@ impl<E, S> Task<E, S> {
 		executor: E,
 		settlement_manager: Option<S>,
 		da_db: DaDB,
-		da_light_node_client: MovementDaLightNodeClient,
 		commitment_events: Option<CommitmentEventStream>,
 		execution_extension: execution_extension::Config,
 		settlement_config: mcr_settlement_config::Config,
@@ -47,10 +45,9 @@ impl<E, S> Task<E, S> {
 			None => Either::Right(stream::pending()),
 		};
 		Task {
-			executor,
+			executor: Some(executor),
 			settlement_manager,
 			da_db,
-			da_light_node_client,
 			commitment_events,
 			execution_extension,
 			settlement_config,
@@ -64,14 +61,33 @@ impl<E, S> Task<E, S> {
 
 impl<E, S> Task<E, S>
 where
-	E: DynOptFinExecutor,
-	S: McrSettlementManagerOperations,
+	E: DynOptFinExecutor + std::marker::Send + 'static,
+	S: McrSettlementManagerOperations + std::marker::Send,
 {
-	pub async fn run(mut self) -> anyhow::Result<()> {
-		let synced_height = self.da_db.get_synced_height().await?;
+	pub async fn run(
+		mut self,
+		da_connection_url: Url,
+		stream_heartbeat_interval_sec: u64,
+		allow_sync_from_zero: bool,
+		propagate_execution_state: bool,
+		da_batch_signer: &SignerIdentifier,
+		mut stop_rx: tokio::sync::watch::Receiver<()>,
+	) -> anyhow::Result<()> {
+		let synced_height = self.da_db.get_synced_height()?;
+		// Sync Da from 0 is rejected by default. Only if forced it's allowed.
+		if !allow_sync_from_zero && synced_height == 0 {
+			return Err(anyhow::anyhow!("Da Sync from height zero is not allowed."));
+		}
+
+		let mut node_local_state_verifier = StateVerifier::new();
+		let mut node_main_state_verifier = StateVerifier::new();
+
 		info!("DA synced height: {:?}", synced_height);
-		let mut blocks_from_da = self
-			.da_light_node_client
+		let mut da_client =
+			GrpcDaSequencerClient::try_connect(&da_connection_url, stream_heartbeat_interval_sec)
+				.await?;
+		// TODO manage alert_channel in the issue #1169
+		let (mut blocks_from_da, mut alert_channel) = da_client
 			.stream_read_from_height(StreamReadFromHeightRequest { height: synced_height })
 			.await
 			.map_err(|e| {
@@ -81,91 +97,183 @@ where
 
 		loop {
 			select! {
-				Some(res) = blocks_from_da.next() => {
-					let response = res.context("failed to get next block from DA")?;
-					debug!("Received block from DA");
-					self.process_block_from_da(response).await?;
+				next_block = blocks_from_da.next() => {
+					match next_block {
+						None => {
+							tracing::error!("Da stream return none, stream broken");
+							break;
+						}
+						Some(res) => {
+							let response = res.context("failed to get next block from DA")?;
+							let span = info_span!(target: "movement_timing", "process_block_from_da", block_id = %hex::encode(response.block_id.clone()));
+							tracing::info!("Receive state from DA: {:?}",response.node_state);
+							if let Some(main_state) = response.node_state {
+								// validate received state with local node executed state
+								if !node_main_state_verifier.validate(&(&main_state).into()) {
+									let main_node_state = node_main_state_verifier.get_state(main_state.block_height.into());
+									tracing::error!("Main State from Da verification failed, local node state: {main_state:?} main_node_state:{main_node_state:?}");
+									break;
+								}
+								node_local_state_verifier.add_state((&main_state).into());
+							}
+							let new_state = self.process_block_from_da(response).instrument(span).await?;
+							tracing::info!("New state after execution: {new_state:?}");
+							if let Some(new_state) = new_state {
+								if !node_local_state_verifier.validate(&(&new_state).into()) {
+									let main_node_state = node_local_state_verifier.get_state(new_state.block_height.into());
+									tracing::error!("Local state from Da verification failed, local node state: {new_state:?} main_node_state:{main_node_state:?}");
+									break;
+								}
+								node_main_state_verifier.add_state((&new_state).into());
+
+								// If main node send new execution result state
+								if propagate_execution_state {
+									tokio::spawn({
+										let mut client = da_client.clone();
+										let signer: LoadedSigner<Ed25519> = match da_batch_signer.load().await {
+											Ok(signer) => signer,
+											Err(err) => {
+												tracing::error!("Failed to load DA batch signer: {err}");
+												break;
+											}
+										};
+										let state = movement_da_sequencer_proto::MainNodeState {
+											block_height: new_state.block_height,
+											ledger_timestamp:  new_state.ledger_timestamp,
+											ledger_version: new_state.ledger_version,
+
+										};
+										async move {
+											if let Err(err) = client.send_state(&signer, state).await {
+												tracing::error!("Send execution state to da sequencer failed : {err}");
+											}
+										}
+									});
+
+								}
+							}
+						}
+					}
 				}
 				Some(res) = self.commitment_events.next() => {
 					let event = res.context("failed to get commitment event")?;
-					debug!("Received commitment event");
+					info!("Received commitment event");
 					self.process_commitment_event(event).await?;
 				}
+				_ = alert_channel.recv() => {
+					tracing::error!("Da client stream channel timeout because it's idle. Exit");
+					break;
+				}
+				// Stop the node. No block are executing at this point.
+				_ = stop_rx.changed() => break,
 				else => break,
 			}
 		}
-		Ok(())
+		Err(anyhow::anyhow!("Block execution loop break. Node need to be restarted."))
 	}
 
 	async fn process_block_from_da(
 		&mut self,
-		response: StreamReadFromHeightResponse,
-	) -> anyhow::Result<()> {
-		// get the block
-		let (block_bytes, block_timestamp, block_id, da_height) = match response
-			.blob
-			.ok_or(anyhow::anyhow!("No blob in response"))?
-			.blob_type
-			.ok_or(anyhow::anyhow!("No blob type in response"))?
-		{
-			// To allow for DA migrations we accept both sequenced and passed through blobs
-			blob_response::BlobType::SequencedBlobBlock(blob) => {
-				(blob.data, blob.timestamp, blob.blob_id, blob.height)
+		da_block: BlockV1,
+	) -> anyhow::Result<Option<ExecutionState>> {
+		let da_block_height = da_block.height;
+		let block_id = da_block.block_id.clone();
+
+		//only on execution at a time
+		// Break if we try to do several.
+		if self.executor.is_none() {
+			anyhow::bail!(
+				"Block execution failed, executor already in use. Block {:?} failed.",
+				block_id
+			);
+		}
+
+		// Block execution is a synchronous task.
+		// Group all synchronous actions of block execution into a single `spawn_blocking` task.
+		// This avoids calling `spawn_blocking` multiple times for short-lived operations.
+		// Since only one block can be executed at a time (DA is pulled one block after another),
+		// the executor is moved into the `spawn_blocking` task.
+		// We use `Option::take` to transfer the executor from the DA loop to the execution processing.
+		let (exec_result, executor) = tokio::task::spawn_blocking({
+			let da_db = self.da_db.clone();
+			let block_retry_count = self.execution_extension.block_retry_count;
+			let block_retry_increment_microseconds =
+				self.execution_extension.block_retry_increment_microseconds;
+			let mut executor = self.executor.take().unwrap(); // unwrap tested just before.
+			move || {
+				// check if the block has already been executed
+				if da_db.has_executed_block(da_block.block_id.clone())? {
+					info!("Block already executed: {:#?}. It will be skipped", da_block.block_id);
+					return Ok((None, executor));
+				}
+
+				// the da height must be greater than 1
+				if da_block.height < 1 {
+					anyhow::bail!("Invalid DA height: {:?}", da_block.height);
+				}
+
+				let block: Block = bcs::from_bytes(&da_block.data[..])?;
+
+				// Verify block Tx's signatures.
+				if let Err(err) = block.transactions().try_for_each(|tx| {
+					//Validate batch Tx signature
+					let aptos_transaction: SignedTransaction = bcs::from_bytes(&tx.data())
+						.map_err(|err| anyhow::anyhow!("Tx deserialization failed:{err}"))?;
+
+					aptos_transaction
+						.verify_signature()
+						.map_err(|err| anyhow::anyhow!("Tx signature verification failed:{err}"))
+				}) {
+					anyhow::bail!("Bad Tx signature, the block at da height:{} contains a badly signed Tx: {err}", da_block.height);
+				}
+
+				info!(
+					block_id = %hex::encode(&block.id()),
+					da_height = da_block_height,
+					time = block.timestamp(),
+					"Processing block from DA"
+				);
+
+				// get the transactions
+				let transactions_count = block.transactions().len();
+
+				let block_timestamp = block.timestamp();
+
+				let exec_result = Self::execute_block_with_retries(
+					&mut executor,
+					block,
+					block_timestamp,
+					block_retry_count,
+					block_retry_increment_microseconds,
+				);
+
+				// Block must be added to da_db after execution otherwise if an error occurs,
+				// the block will be reexecuted. Generating the error:
+				// `Unexpected error from known Move function, 'block_prologue'. Error: ABORTED
+				da_db
+					.set_synced_height(da_block.height)
+					.and_then(|_| da_db.add_executed_block(da_block.block_id.clone()))?;
+				// Forward execution error after.
+				let exec_result = exec_result?;
+
+				// decrement the number of transactions in flight on the executor
+				executor.decrement_transactions_in_flight(transactions_count as u64);
+
+				Ok((Some(exec_result), executor))
 			}
-			// To allow for DA migrations we accept both sequenced and passed through blobs
-			blob_response::BlobType::PassedThroughBlob(blob) => {
-				(blob.data, blob.timestamp, blob.blob_id, blob.height)
-			}
-			blob_response::BlobType::Heartbeat(_) => {
-				tracing::info!("Receive DA heartbeat");
-				// Do nothing.
-				return Ok(());
-			}
-			_ => anyhow::bail!("Invalid blob type"),
+		})
+		.await??;
+		self.executor.replace(executor);
+
+		let (commitment, new_ledger_state) = match exec_result {
+			Some(exec_result) => exec_result,
+			None => return Ok(None),
 		};
-
-		info!(
-			block_id = %hex::encode(block_id.clone()),
-			da_height = da_height,
-			time = block_timestamp,
-			"Processing block from DA"
-		);
-
-		// check if the block has already been executed
-		if self.da_db.has_executed_block(block_id.clone()).await? {
-			info!("Block already executed: {:#?}. It will be skipped", block_id);
-			return Ok(());
-		}
-
-		// the da height must be greater than 1
-		if da_height < 2 {
-			anyhow::bail!("Invalid DA height: {:?}", da_height);
-		}
-
-		let block: Block = bcs::from_bytes(&block_bytes[..])?;
-
-		// get the transactions
-		let transactions_count = block.transactions().len();
-		let span = info_span!(target: "movement_timing", "execute_block", block_id = %block.id());
-		let commitment =
-			self.execute_block_with_retries(block, block_timestamp).instrument(span).await?;
-
-		// decrement the number of transactions in flight on the executor
-		self.executor.decrement_transactions_in_flight(transactions_count as u64);
-
-		// mark the da_height - 1 as synced
-		// we can't mark this height as synced because we must allow for the possibility of multiple blocks at the same height according to the m1 da specifications (which currently is built on celestia which itself allows more than one block at the same height)
-		self.da_db.set_synced_height(da_height - 1).await?;
-
-		// set the block as executed
-		self.da_db.add_executed_block(block_id.clone()).await?;
 
 		if self.settlement_enabled()
 			// only settle every super_block_size_heights 
-			// todo: replace with timeslot tolerance
-			&& da_height % self.settlement_config.settle.settlement_super_block_size == 0
+			&& da_block_height % self.settlement_config.settle.settlement_super_block_size == 0
 		{
-			info!("Posting block commitment via settlement manager");
 			match &self.settlement_manager {
 				Some(settlement_manager) => {
 					match settlement_manager.post_block_commitment(commitment).await {
@@ -183,7 +291,7 @@ where
 			info!(block_id = ?block_id, "Skipping settlement");
 		}
 
-		Ok(())
+		Ok(Some(new_ledger_state))
 	}
 }
 
@@ -194,40 +302,46 @@ where
 	/// Retries executing a block several times.
 	/// This can be valid behavior if the block timestamps are too tightly clustered for the full node execution.
 	/// However, this has to be deterministic, otherwise nodes will not be able to agree on the block commitment.
-	async fn execute_block_with_retries(
-		&mut self,
+	fn execute_block_with_retries(
+		executor: &mut E,
 		block: Block,
 		mut block_timestamp: u64,
-	) -> anyhow::Result<BlockCommitment> {
-		for _ in 0..self.execution_extension.block_retry_count {
+		block_retry_count: u64,
+		block_retry_increment_microseconds: u64,
+	) -> anyhow::Result<(BlockCommitment, ExecutionState)> {
+		for _ in 0..block_retry_count {
 			// we have to clone here because the block is supposed to be consumed by the executor
-			match self.execute_block(block.clone(), block_timestamp).await {
+			match Self::execute_block(executor, block.clone(), block_timestamp) {
 				Ok(commitment) => return Ok(commitment),
 				Err(e) => {
 					info!("Failed to execute block: {:?}. Retrying", e);
-					block_timestamp += self.execution_extension.block_retry_increment_microseconds;
+					block_timestamp += block_retry_increment_microseconds;
 					// increase the timestamp by 5 ms (5000 microseconds)
 				}
 			}
 		}
 
-		anyhow::bail!("Failed to execute block after 5 retries")
+		anyhow::bail!("Failed to execute block after {block_retry_count} retries")
 	}
 
-	async fn execute_block(
-		&mut self,
+	fn execute_block(
+		executor: &mut E,
 		block: Block,
 		block_timestamp: u64,
-	) -> anyhow::Result<BlockCommitment> {
+	) -> anyhow::Result<(BlockCommitment, ExecutionState)> {
 		let block_id = block.id();
+
+		let _span = info_span!("execute_block", %block_id).entered();
+
 		let block_hash = HashValue::from_slice(block_id)?;
 
 		// get the transactions
 		let mut block_transactions = Vec::new();
-		let block_metadata = self.executor.build_block_metadata(
+		let block_metadata = executor.build_block_metadata(
 			HashValue::sha3_256_of(block_id.as_bytes().as_slice()),
 			block_timestamp,
 		)?;
+
 		let block_metadata_transaction =
 			SignatureVerifiedTransaction::Valid(Transaction::BlockMetadata(block_metadata));
 		block_transactions.push(block_metadata_transaction);
@@ -236,18 +350,16 @@ where
 			let signed_transaction: SignedTransaction = bcs::from_bytes(transaction.data())?;
 
 			// check if the transaction has already been executed to prevent replays
-			if self
-				.executor
-				.has_executed_transaction_opt(signed_transaction.committed_hash())?
-			{
+			if executor.has_executed_transaction_opt(signed_transaction.committed_hash())? {
 				continue;
 			}
 
-			info!(
+			debug!(
 				target: "movement_timing",
 				tx_hash = %signed_transaction.committed_hash(),
 				sender = %signed_transaction.sender(),
 				sequence_number = signed_transaction.sequence_number(),
+				timestamp_secs = signed_transaction.expiration_timestamp_secs(),
 				"execute_transaction",
 			);
 
@@ -263,27 +375,31 @@ where
 		// form the executable block and execute it
 		let executable_block = ExecutableBlock::new(block_hash, block);
 		let block_id = executable_block.block_id;
-		let commitment = self.executor.execute_block_opt(executable_block).await?;
+		let exec_result = executor.execute_block_opt(executable_block)?;
 
-		info!("Executed block: {}", block_id);
+		debug!("Executed block: {}", block_id);
 
-		Ok(commitment)
+		Ok(exec_result)
 	}
 
 	async fn process_commitment_event(
 		&mut self,
 		event: BlockCommitmentEvent,
 	) -> anyhow::Result<()> {
+		let executor = match self.executor {
+			Some(ref executor) => executor,
+			None => anyhow::bail!("Bock commitment failed, executor not present.",),
+		};
 		match event {
 			BlockCommitmentEvent::Accepted(commitment) => {
 				debug!("Commitment accepted: {:?}", commitment);
-				self.executor
+				executor
 					.set_finalized_block_height(commitment.height())
 					.context("failed to set finalized block height")
 			}
 			BlockCommitmentEvent::Rejected { height, reason } => {
 				debug!("Commitment rejected: {:?} {:?}", height, reason);
-				let current_head_height = self.executor.get_block_head_height()?;
+				let current_head_height = executor.get_block_head_height()?;
 				if height > current_head_height {
 					// Nothing to revert
 					Ok(())
@@ -293,7 +409,7 @@ where
 					// Nor does it try to recompute its ledger.
 					Ok(())
 				} else {
-					self.executor
+					executor
 						.revert_block_head_to(height - 1)
 						.await
 						.context(format!("failed to revert to block height {}", height - 1))

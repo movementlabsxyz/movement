@@ -2,10 +2,10 @@ use super::partial::MovementPartialNode;
 use anyhow::Context;
 use godfig::{backend::config_file::ConfigFile, Godfig};
 use maptos_opt_executor::executor::TxExecutionResult;
-use maptos_opt_executor::executor::EXECUTOR_CHANNEL_SIZE;
 use movement_config::Config;
 use tokio::signal::unix::signal;
 use tokio::signal::unix::SignalKind;
+use tokio::sync::mpsc::unbounded_channel;
 
 #[derive(Clone)]
 pub struct Manager {
@@ -20,7 +20,7 @@ impl Manager {
 	}
 
 	pub async fn try_run(&self) -> Result<(), anyhow::Error> {
-		let (stop_tx, mut stop_rx) = tokio::sync::watch::channel(());
+		let (stop_tx, stop_rx) = tokio::sync::watch::channel(());
 		tokio::spawn({
 			let mut sigterm =
 				signal(SignalKind::terminate()).context("can't register to SIGTERM.")?;
@@ -46,22 +46,14 @@ impl Manager {
 		let config = self.godfig.try_wait_for_ready().await?;
 
 		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
-			futures::channel::mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+			unbounded_channel::<Vec<TxExecutionResult>>();
 
 		let node = MovementPartialNode::try_from_config(config, mempool_tx_exec_result_sender)
 			.await
 			.context("Failed to create the executor")?;
 
-		let join_handle = tokio::spawn(node.run(mempool_commit_tx_receiver));
-
-		// Use tokio::select! to wait for either the handle or a cancellation signal
-		tokio::select! {
-			_ = stop_rx.changed() =>(),
-			// manage Movement node execution return.
-			res = join_handle => {
-				res??;
-			},
-		};
+		let join_handle = tokio::spawn(node.run(mempool_commit_tx_receiver, stop_rx));
+		join_handle.await??;
 
 		Ok(())
 	}
