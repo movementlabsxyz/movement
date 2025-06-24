@@ -231,7 +231,7 @@ impl RestoreParam {
 		]);
 
 		match push_pipe.pull(Some(syncador::Package::null())).await {
-			Ok(package) => {
+			Ok(_) => {
 				tracing::info!("Files restored");
 			}
 			Err(err) => {

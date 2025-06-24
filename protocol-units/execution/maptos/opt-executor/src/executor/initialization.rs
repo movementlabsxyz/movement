@@ -7,10 +7,10 @@ use anyhow::Context as _;
 use aptos_config::config::NodeConfig;
 use aptos_crypto::ed25519::Ed25519PrivateKey;
 use aptos_crypto::ed25519::Ed25519PublicKey;
+use aptos_crypto::Uniform;
 use aptos_crypto::ValidCryptoMaterialStringExt;
 use aptos_executor::block_executor::BlockExecutor;
 use aptos_mempool::MempoolClientRequest;
-use aptos_types::transaction::SignedTransaction;
 use dot_movement::DotMovement;
 use futures::channel::mpsc as futures_mpsc;
 use maptos_execution_util::config::Config;
@@ -20,14 +20,9 @@ use movement_signer::Signing;
 use movement_signer_loader::identifiers::{local::Local, SignerIdentifier};
 use movement_signer_loader::{Load, LoadedSigner};
 
-use anyhow::Context as _;
-use aptos_crypto::Uniform;
-use tokio::sync::mpsc;
-
-use tempfile::TempDir;
-
 use std::net::ToSocketAddrs;
 use std::sync::{Arc, RwLock};
+use tempfile::TempDir;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
 impl Executor {
@@ -36,6 +31,10 @@ impl Executor {
 		public_key: Ed25519PublicKey,
 		mempool_tx_exec_result_sender: UnboundedSender<Vec<TxExecutionResult>>,
 	) -> Result<Self, anyhow::Error> {
+		// get dot movement
+		// todo: this is a slight anti-pattern, but it's fine for now
+		let dot_movement = DotMovement::try_from_env()?;
+
 		// set up the node config
 		let mut node_config = NodeConfig::default();
 
@@ -100,8 +99,7 @@ impl Executor {
 
 		// indexer table info config
 		node_config.indexer_table_info.enabled = true;
-		let db_dir = maptos_config.chain.maptos_db_path.as_ref().context("No db path provided.")?;
-		node_config.storage.dir = db_dir.join("maptos-storage");
+		node_config.storage.dir = dot_movement.get_path().join("maptos-storage");
 		node_config.storage.set_data_dir(node_config.storage.dir.clone());
 
 		let known_release = aptos_framework_known_release::KnownRelease::try_new(
