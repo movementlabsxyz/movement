@@ -4,9 +4,9 @@ environment:
 
 processes:
 
-  movement-tests-load-tests:
+  movement-tests-soak-tests:
     command: |
-      cargo run --bin movement-tests-e2e-soak-alice-bob 
+      LOADTEST_NUMBER_SCENARIOS=10 LOADTEST_SCENARIOS_PER_CLIENT=5 cargo run --bin movement-tests-e2e-soak-alice-bob 
     depends_on:
       movement-full-node:
         condition: process_healthy

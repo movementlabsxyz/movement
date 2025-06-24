@@ -1,11 +1,13 @@
 use itertools::Itertools;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 use std::time::Duration;
 use std::{fs::File, sync::Arc};
 use tracing_subscriber::{filter, prelude::*};
 
 mod scenario;
+pub mod util;
 pub use scenario::Scenario;
 
 const EXEC_LOG_FILTER: &str = "exec";
@@ -28,11 +30,18 @@ pub fn init_test(config: &ExecutionConfig) -> Result<(), std::io::Error> {
 	let exec_file = File::create(&config.execfile)?;
 	let execution_log = tracing_subscriber::fmt::layer().json().with_writer(Arc::new(exec_file));
 
+	//get log level from RUST_LOG env var.
+	let log_level = std::env::var("RUST_LOG")
+		.as_ref()
+		.ok()
+		.and_then(|level_str| filter::LevelFilter::from_str(level_str).ok())
+		.unwrap_or(filter::LevelFilter::INFO);
+
 	tracing_subscriber::registry()
 		.with(
 			stdout_log
-				.with_filter(filter::LevelFilter::INFO)
-				.and_then(file_log.with_filter(filter::LevelFilter::WARN))
+				.with_filter(log_level)
+				.and_then(file_log.with_filter(log_level))
 				// Add a filter that rejects spans and
 				// events whose targets start with `exec`.
 				.with_filter(filter::filter_fn(|metadata| {
@@ -61,7 +70,7 @@ pub struct ExecutionConfig {
 	/// The path to the file where execution data are written to be processed later.
 	pub execfile: String,
 	/// The number of started scenarios per client. number_scenarios / number_scenario_per_client defines the number of clients.
-	pub number_scenario_per_client: usize,
+	pub scenarios_per_client: usize,
 }
 
 impl ExecutionConfig {
@@ -69,37 +78,50 @@ impl ExecutionConfig {
 		match self.kind {
 			TestKind::Load { number_scenarios } => {
 				assert!(
-					number_scenarios >= self.number_scenario_per_client,
+					number_scenarios >= self.scenarios_per_client,
 					"Number of running scenario less than the number of scenario per client."
 				);
 			}
 			TestKind::Soak { min_scenarios, max_scenarios, .. } => {
 				assert!(max_scenarios >= min_scenarios, "max scenarios less than min scenarios");
 				assert!(
-					min_scenarios >= self.number_scenario_per_client,
-					"Number of min running scenario less than the number of scenario per client."
+					min_scenarios >= self.scenarios_per_client,
+					"Number of min running scenario:{min_scenarios} less than the number of scenario per client:{}.", self.scenarios_per_client
 				);
 			}
+		}
+	}
+
+	pub fn get_max_number_of_scenarios(&self) -> usize {
+		match self.kind {
+			TestKind::Load { number_scenarios } => number_scenarios,
+			TestKind::Soak { max_scenarios, .. } => max_scenarios,
+		}
+	}
+
+	pub fn get_min_number_of_scenarios(&self) -> usize {
+		match self.kind {
+			TestKind::Load { number_scenarios } => number_scenarios,
+			TestKind::Soak { min_scenarios, .. } => min_scenarios,
 		}
 	}
 }
 
 impl Default for ExecutionConfig {
 	fn default() -> Self {
-		let number_scenarios: usize = std::env::var("LOADTEST_NUMBER_SCENARIO")
+		let number_scenarios: usize = std::env::var("LOADTEST_NUMBER_SCENARIOS")
 			.map_err(|err| err.to_string())
 			.and_then(|val| val.parse().map_err(|err: std::num::ParseIntError| err.to_string()))
 			.unwrap_or(10);
-		let number_scenario_per_client: usize =
-			std::env::var("LOADTEST_NUMBER_SCENARIO_PER_CLIENT")
-				.unwrap_or("2".to_string())
-				.parse()
-				.unwrap_or(2);
+		let number_scenario_per_client: usize = std::env::var("LOADTEST_SCENARIOS_PER_CLIENT")
+			.unwrap_or("2".to_string())
+			.parse()
+			.unwrap_or(2);
 		ExecutionConfig {
 			kind: TestKind::build_load_test(number_scenarios),
-			logfile: "log_file.txt".to_string(),
+			logfile: "test_log.txt".to_string(),
 			execfile: "test_result.txt".to_string(),
-			number_scenario_per_client,
+			scenarios_per_client: number_scenario_per_client,
 		}
 	}
 }
@@ -137,7 +159,7 @@ impl TestKind {
 /// All clients are executed in a different thread in parallel.
 /// Clients execute scenarios in a Tokio runtime concurrently.
 pub fn execute_test(config: ExecutionConfig, create_scenario: Arc<scenario::CreateScenarioFn>) {
-	tracing::info!("Start test scenario execution.");
+	tracing::info!("Start test scenario execution with config: {config:?}");
 
 	let number_scenarios = match config.kind {
 		TestKind::Load { number_scenarios } => number_scenarios,
@@ -148,7 +170,7 @@ pub fn execute_test(config: ExecutionConfig, create_scenario: Arc<scenario::Crea
 	let ids: Vec<_> = (1..=number_scenarios).collect();
 	let chunks: Vec<_> = ids
 		.into_iter()
-		.chunks(config.number_scenario_per_client)
+		.chunks(config.scenarios_per_client)
 		.into_iter()
 		.map(|chunk| {
 			(config.kind.clone(), chunk.into_iter().collect::<Vec<_>>(), create_scenario.clone())

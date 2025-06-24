@@ -1,3 +1,4 @@
+use aptos_crypto_derive::{BCSCryptoHash, CryptoHasher};
 use core::fmt;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
@@ -5,7 +6,7 @@ use std::cmp::Ordering;
 #[derive(
 	Serialize, Deserialize, Clone, Copy, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord,
 )]
-pub struct Id([u8; 32]);
+pub struct Id(pub [u8; 32]);
 
 impl Id {
 	pub fn new(data: [u8; 32]) -> Self {
@@ -40,7 +41,9 @@ impl fmt::Display for Id {
 	}
 }
 
-#[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash)]
+#[derive(
+	Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, CryptoHasher, BCSCryptoHash,
+)]
 pub struct Transaction {
 	data: Vec<u8>,
 	// Application priority is stored low to high, i.e., 0 is the highest priority.
@@ -104,6 +107,22 @@ impl Ord for Transaction {
 impl PartialOrd for Transaction {
 	fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
 		Some(self.cmp(other))
+	}
+}
+
+#[cfg(any(test, feature = "testing"))]
+impl Transaction {
+	pub fn test_only_new(data: Vec<u8>, application_priority: u64, sequence_number: u64) -> Self {
+		use aptos_crypto::hash::TestOnlyHash;
+
+		let temp = Transaction {
+			data: data.clone(),
+			application_priority,
+			sequence_number,
+			id: Id([0; 32]),
+		};
+		let id = Id(temp.test_only_hash().to_vec().try_into().unwrap());
+		Self { data, application_priority, sequence_number, id }
 	}
 }
 

@@ -61,6 +61,7 @@ impl FinalityView {
 mod tests {
 	use super::*;
 	use aptos_api::accept_type::AcceptType;
+	use aptos_mempool::MempoolClientRequest;
 	use aptos_sdk::crypto::ed25519::Ed25519PrivateKey;
 	use aptos_sdk::crypto::HashValue;
 	use aptos_sdk::crypto::ValidCryptoMaterialStringExt;
@@ -71,7 +72,7 @@ mod tests {
 	use aptos_types::transaction::signature_verified_transaction::SignatureVerifiedTransaction;
 	use aptos_types::transaction::Transaction;
 	use maptos_opt_executor::executor::TxExecutionResult;
-	use maptos_opt_executor::executor::EXECUTOR_CHANNEL_SIZE;
+
 	use maptos_opt_executor::Executor;
 	use rand::prelude::*;
 	use tokio::sync::mpsc;
@@ -80,14 +81,14 @@ mod tests {
 	async fn test_set_finalized_block_height_get_api() -> Result<(), anyhow::Error> {
 		// Create an Executor and a FinalityView instance from the environment configuration.
 		let config = Config::default();
-		let (tx_sender, _tx_receiver) = mpsc::channel(16);
 
+		let (tx_sender, tx_receiver) = futures::channel::mpsc::channel::<MempoolClientRequest>(10);
 		let (mempool_tx_exec_result_sender, mempool_commit_tx_receiver) =
-			futures::channel::mpsc::channel::<Vec<TxExecutionResult>>(EXECUTOR_CHANNEL_SIZE);
+			mpsc::unbounded_channel::<Vec<TxExecutionResult>>();
 
 		let mut executor = Executor::try_from_config(config, mempool_tx_exec_result_sender).await?;
 		let (context, _transaction_pipe) =
-			executor.background(tx_sender, mempool_commit_tx_receiver)?;
+			executor.background(mempool_commit_tx_receiver, tx_sender)?;
 
 		let finality_view = FinalityView::new(context.db_reader());
 		let service = finality_view.service(
@@ -155,7 +156,7 @@ mod tests {
 				transactions.into_iter().map(SignatureVerifiedTransaction::Valid).collect(),
 			);
 			let block = ExecutableBlock::new(block_id.clone(), executable_transactions);
-			executor.execute_block(block).await?;
+			executor.execute_block(block)?;
 		}
 
 		finality_view.set_finalized_block_height(2)?;

@@ -13,6 +13,17 @@ impl Local {
 		Self { mcr_settlement_strategy: Default::default() }
 	}
 
+	pub async fn setup_da_sequencer(
+		&self,
+		dot_movement: DotMovement,
+		config: movement_config::Config,
+	) -> Result<movement_config::Config, anyhow::Error> {
+		// run the maptos execution config setup
+		let config = self.setup_maptos_execution_config(dot_movement.clone(), config).await?;
+		// run the da_db config setup
+		self.setup_da_db_config(dot_movement.clone(), config).await
+	}
+
 	async fn run_da_light_node_setup(
 		&self,
 		dot_movement: DotMovement,
@@ -52,6 +63,14 @@ impl Local {
 			.join(".maptos");
 		config.execution_config.maptos_config.chain.maptos_db_path.replace(db_path);
 
+		// Set as main node that send state.
+		let local = std::env::var_os("MAYBE_RUN_LOCAL").unwrap_or("false".into());
+		if local == "false" {
+			config.execution_config.maptos_config.da_sequencer.propagate_execution_state = false;
+		} else {
+			config.execution_config.maptos_config.da_sequencer.propagate_execution_state = true;
+		}
+
 		// write the maptos signer address to the default signer address whitelist
 		let default_signer_address_whitelist_path =
 			dot_movement.get_path().join("default_signer_address_whitelist");
@@ -69,6 +88,13 @@ impl Local {
 		dot_movement: DotMovement,
 		mut config: movement_config::Config,
 	) -> Result<movement_config::Config, anyhow::Error> {
+		// Allow Da sync from Height zero
+		let local = std::env::var_os("MAYBE_RUN_LOCAL").unwrap_or("false".into());
+		if local == "false" {
+			config.da_db.allow_sync_from_zero = false;
+		} else {
+			config.da_db.allow_sync_from_zero = true;
+		}
 		// update the db path
 		let db_path = dot_movement.get_path().join(config.da_db.da_db_path.clone());
 		config.da_db.da_db_path = db_path
