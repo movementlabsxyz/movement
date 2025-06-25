@@ -34,26 +34,22 @@ services:
 
   movement-full-node:
     environment:
-      - MOVEMENT_METRICS_ADDR=127.0.0.1:9464
-      - MOVEMENT_OTLP=http://otel-collector:4317
+      - MOVEMENT_METRICS_ADDR=0.0.0.0:9464
+      - APTOS_TELEMETRY_SERVICE_ENDPOINT=/metrics
     ports:
       - "9464:9464"
     depends_on:
       - prometheus:
           condition: service_healthy
-      - otel-collector:
-          condition: service_healthy
 
   movement-celestia-da-light-node:
     environment:
-      - MOVEMENT_METRICS_ADDR=127.0.0.1:9464
-      - MOVEMENT_OTLP=http://otel-collector:4317
+      - MOVEMENT_METRICS_ADDR=0.0.0.0:9464
+      - APTOS_TELEMETRY_SERVICE_ENDPOINT=/metrics
     ports:
       - "9465:9464"
     depends_on:
       - prometheus:
-          condition: service_healthy
-      - otel-collector:
           condition: service_healthy
 
   otel-collector:

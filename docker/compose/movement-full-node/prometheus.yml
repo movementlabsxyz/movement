@@ -3,8 +3,14 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-  - job_name: "movement-full-node"
+  - job_name: "movement-metrics"
     static_configs:
-      - targets: ["127.0.0.1:9464"]
+      - targets: ["movement-full-node:9464"]
+    metrics_path: /metrics
+    scheme: http
+
+  - job_name: "movement-celestia-da-light-node"
+    static_configs:
+      - targets: ["movement-celestia-da-light-node:9464"]
     metrics_path: /metrics
     scheme: http

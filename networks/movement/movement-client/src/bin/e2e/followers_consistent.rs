@@ -393,9 +393,7 @@ pub async fn basic_coin_transfers(
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
 	let dot_movement = DotMovement::try_from_env().context("Failed to get .movement path")?;
-	let _config = get_movement_config(&dot_movement)?;
-	let tracing_config = movement_tracing::Config::default();
-	let _guard = movement_tracing::init_tracing_subscriber(tracing_config);
+	let config = get_movement_config(&dot_movement)?;
 
 	// Get the follower count from the first argument.
 	let follower_count = std::env::args()
