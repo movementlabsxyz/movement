@@ -67,8 +67,8 @@ pub mod full {
 		enable_feature_flags.push(AptosFeatureFlag::VM_BINARY_FORMAT_V7);
 
 		Features {
-			enabled: aptos_feature_flags.into_iter().map(FeatureFlag::from).collect(),
-			disabled: vec![AptosFeatureFlag::REMOVE_DETAILED_ERROR_FROM_HASH],
+			enabled: enable_feature_flags.into_iter().map(FeatureFlag::from).collect(),
+			disabled: vec![AptosFeatureFlag::REMOVE_DETAILED_ERROR_FROM_HASH.into()],
 		}
 	});
 }
