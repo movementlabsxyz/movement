@@ -1,6 +1,8 @@
+pub mod exec;
 pub mod local;
 pub mod migrate;
 
+use clap::Parser;
 use std::future::Future;
 
 pub trait MovementFullNodeSetupOperations {
@@ -14,4 +16,13 @@ pub trait MovementFullNodeSetupOperations {
 			anyhow::Error,
 		>,
 	>;
+}
+
+#[derive(Parser, Debug)]
+pub struct FullNode;
+
+impl FullNode {
+	pub async fn execute(&self) -> Result<(), anyhow::Error> {
+		exec::exec().await
+	}
 }

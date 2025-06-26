@@ -1,7 +1,8 @@
 services:
   setup:
-    image: ghcr.io/movementlabsxyz/movement-full-node-setup:${CONTAINER_REV}
+    image: ghcr.io/movementlabsxyz/movement-full-node:${CONTAINER_REV}
     container_name: setup
+    command: setup full-node
     environment:
       DOT_MOVEMENT_PATH: /.movement
       MAYBE_RUN_LOCAL: "false"
@@ -11,8 +12,6 @@ services:
       MAPTOS_PRIVATE_KEY: ${MAPTOS_PRIVATE_KEY}
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement
-      # mount if exists
-      - ~/.aws/:/root/.aws:ro
 
     healthcheck:
       test: [ "CMD-SHELL", "echo 'health check'" ]

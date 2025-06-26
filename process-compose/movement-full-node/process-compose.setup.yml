@@ -6,16 +6,8 @@ processes:
     environment:
       - "MAYBE_RUN_LOCAL=true"
     command: |
-      RUST_BACKTRACE=1 movement-full-node-setup
+      RUST_BACKTRACE=1 movement-full-node setup all
     depends_on:
       build:
-        condition: process_completed_successfully
-  da-setup:
-    command: |
-      movement-da-sequencer-setup
-    depends_on:
-      build:
-        condition: process_completed_successfull
-      setup:
         condition: process_completed_successfully
         

@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/8dedccea6cea1e65bf74fc6c7f35e0aadf832a14";
+    nixpkgs.url = "github:NixOS/nixpkgs/a7abebc31a8f60011277437e000eebcc01702b9f";
     rust-overlay.url = "github:oxalica/rust-overlay/47beae969336c05e892e1e4a9dbaac9593de34ab";
     flake-utils.url = "github:numtide/flake-utils";
     foundry.url = "github:shazow/foundry.nix/36a5c5e448b4cdc85813e3b8205a8846a428d528"; 
@@ -124,6 +124,8 @@
             ROCKSDB = pkgs.rocksdb;
             SNAPPY = if pkgs.stdenv.isLinux then pkgs.snappy else null;
             OPENSSL_DEV = pkgs.openssl.dev;
+
+            hardeningDisable = ["fortify"];
          
             buildInputs = with pkgs; [
               # rust toolchain

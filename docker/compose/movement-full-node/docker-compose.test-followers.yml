@@ -144,9 +144,9 @@ services:
       - movement-full-follower-2
 
   delete-syncing-bucket:
-    image: ghcr.io/movementlabsxyz/movement-util:${CONTAINER_REV}
+    image: ghcr.io/movementlabsxyz/movement-full-node:${CONTAINER_REV}
     container_name: movement-util
-    entrypoint: /app/movement-util syncing delete-reource
+    command: util syncing delete-reource
     environment:
       - DOT_MOVEMENT_PATH=/.movement
     volumes:

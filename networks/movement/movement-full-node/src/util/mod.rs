@@ -1,18 +1,18 @@
 pub mod common_args;
 pub mod syncing;
-use clap::Parser;
+use clap::Subcommand;
 
-#[derive(Parser)]
+#[derive(Subcommand)]
 #[clap(rename_all = "kebab-case")]
-pub enum MovementOpts {
+pub enum Util {
 	#[clap(subcommand)]
 	Syncing(syncing::Syncing),
 }
 
-impl MovementOpts {
+impl Util {
 	pub async fn execute(&self) -> Result<(), anyhow::Error> {
 		match self {
-			MovementOpts::Syncing(syncing) => syncing.execute().await,
+			Util::Syncing(syncing) => syncing.execute().await,
 		}
 	}
 }

@@ -14351,25 +14351,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "movement-da-sequencer-setup"
-version = "0.3.4"
-dependencies = [
- "anyhow",
- "dot-movement",
- "ed25519-dalek 2.1.1",
- "godfig",
- "hex",
- "maptos-execution-util",
- "movement-da-sequencer-config",
- "movement-da-sequencer-node",
- "movement-signer",
- "movement-signer-loader",
- "tokio",
- "tracing",
- "tracing-subscriber 0.3.18",
-]
-
-[[package]]
 name = "movement-da-util"
 version = "0.3.4"
 dependencies = [
@@ -14443,6 +14424,7 @@ dependencies = [
  "clap 4.5.21",
  "console-subscriber",
  "dot-movement",
+ "ed25519-dalek 2.1.1",
  "futures",
  "godfig",
  "hex",
@@ -14454,9 +14436,12 @@ dependencies = [
  "mcr-settlement-client",
  "mcr-settlement-config",
  "mcr-settlement-manager",
+ "mcr-settlement-setup",
  "movement-config",
  "movement-da-light-node-client",
+ "movement-da-light-node-setup",
  "movement-da-sequencer-client",
+ "movement-da-sequencer-config",
  "movement-da-sequencer-node",
  "movement-da-sequencer-proto",
  "movement-da-util",
@@ -14478,38 +14463,6 @@ dependencies = [
  "tracing-subscriber 0.3.18",
  "url",
  "zstd 0.13.2",
-]
-
-[[package]]
-name = "movement-full-node-setup"
-version = "0.3.4"
-dependencies = [
- "anyhow",
- "aptos-sdk 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=1d1cdbbd7fabb80dcb95ba5e23213faa072fab67)",
- "async-recursion",
- "celestia-rpc",
- "celestia-types",
- "commander",
- "dot-movement",
- "futures",
- "godfig",
- "hex",
- "maptos-execution-util",
- "mcr-settlement-config",
- "mcr-settlement-setup",
- "movement-config",
- "movement-da-light-node-setup",
- "movement-da-util",
- "movement-types",
- "rand 0.7.3",
- "serde",
- "serde_json",
- "syncup",
- "tempfile",
- "tokio",
- "tokio-stream",
- "tracing",
- "tracing-subscriber 0.3.18",
 ]
 
 [[package]]
@@ -14740,39 +14693,6 @@ dependencies = [
  "sha2 0.10.8",
  "thiserror 1.0.69",
  "tokio",
-]
-
-[[package]]
-name = "movement-util"
-version = "0.3.4"
-dependencies = [
- "anyhow",
- "aptos-sdk 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=1d1cdbbd7fabb80dcb95ba5e23213faa072fab67)",
- "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
- "clap 4.5.21",
- "console-subscriber",
- "dot-movement",
- "futures",
- "godfig",
- "maptos-dof-execution",
- "mcr-settlement-client",
- "mcr-settlement-manager",
- "movement-config",
- "movement-da-light-node-proto",
- "movement-da-util",
- "movement-rest",
- "movement-tracing",
- "movement-types",
- "rocksdb",
- "serde_json",
- "sha2 0.10.8",
- "syncup",
- "tokio",
- "tokio-stream",
- "tonic 0.12.3",
- "tracing",
- "tracing-subscriber 0.3.18",
- "zstd 0.13.2",
 ]
 
 [[package]]

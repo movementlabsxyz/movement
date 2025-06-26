@@ -1,20 +1,11 @@
+use super::local::Local;
+use super::migrate::migrate_v0_4_0;
 use godfig::{backend::config_file::ConfigFile, Godfig};
 use movement_config::Config;
-use movement_full_node_setup::local::Local;
-use movement_full_node_setup::migrate::migrate_v0_4_0;
 use std::path::Path;
 use tracing::info;
 
-#[tokio::main]
-async fn main() -> Result<(), anyhow::Error> {
-	use tracing_subscriber::EnvFilter;
-
-	tracing_subscriber::fmt()
-		.with_env_filter(
-			EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
-		)
-		.init();
-
+pub async fn exec() -> Result<(), anyhow::Error> {
 	info!("Starting Movement Full Node Setup");
 
 	// get the config file
