@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::Parser;
-use movement_indexer_v2::service::MovementIndexerV2;
+mod service;
 
 #[cfg(unix)]
 #[global_allocator]
@@ -16,7 +16,7 @@ struct Args {
 	config: Option<String>,
 }
 
-fn main() -> Result<()> {
+fn main() -> Result<(), anyhow::Error> {
 	use tracing_subscriber::EnvFilter;
 
 	tracing_subscriber::fmt()
@@ -37,5 +37,5 @@ fn main() -> Result<()> {
 		.worker_threads(worker_threads)
 		.build()
 		.unwrap()
-		.block_on(async { MovementIndexerV2::run().await })
+		.block_on(async { service::MovementIndexerV2::run().await })
 }

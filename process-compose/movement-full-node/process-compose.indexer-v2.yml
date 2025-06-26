@@ -1,0 +1,35 @@
+version: "3"
+
+processes:
+
+  build_indexer_v2:
+    command: |
+      ./scripts/services/indexer/build
+    availability:
+      restart: exit_on_failure
+    depends_on:
+      build:
+        condition: process_completed_successfully
+
+  postgres:
+    command: |
+      ./scripts/postgres/start-dev
+    readiness_probe:
+      initial_delay_seconds: 5
+      exec:
+        command: echo "true"
+
+  indexer-v2:
+    command: |
+      movement-indexer-v2
+    readiness_probe:
+      initial_delay_seconds: 10
+      exec:
+        command: curl http://0.0.0.0:8084
+    depends_on:
+      build_indexer_v2:
+        condition: process_completed_successfully
+      postgres:
+        condition: process_healthy
+      movement-full-node:
+        condition: process_healthy 

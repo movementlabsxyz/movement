@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -e
+
+cat ./.data/logfile
+echo "after cat db"
+
+echo "Building Indexer V2..."
+cargo build $CARGO_PROFILE_FLAGS -p movement-indexer-v2
+echo "Built Indexer V2!"

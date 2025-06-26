@@ -1,5 +1,6 @@
 use anyhow::Result;
 use aptos_indexer_processor_sdk::server_framework::ServerArgs;
+use clap::Parser;
 use processor::config::indexer_processor_config::IndexerProcessorConfig;
 use std::io::Write;
 use tempfile::NamedTempFile;
