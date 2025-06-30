@@ -12360,41 +12360,22 @@ name = "movement-indexer-service"
 version = "0.3.4"
 dependencies = [
  "anyhow",
+ "aptos-indexer-processor-sdk",
  "clap 4.5.40",
  "dot-movement",
  "futures",
  "maptos-execution-util",
  "num_cpus",
  "poem",
- "processor 1.0.0",
+ "processor 0.1.0",
  "reqwest 0.12.20",
  "serde_json",
  "serde_yaml 0.9.34+deprecated",
- "server-framework",
  "tempfile",
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.19",
-]
-
-[[package]]
-name = "movement-indexer-v2"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "aptos-indexer-processor-sdk",
- "clap 4.5.40",
- "dot-movement",
- "jemallocator",
- "maptos-execution-util",
- "num_cpus",
- "processor 0.1.0",
- "serde",
- "serde_yaml 0.8.26",
- "tempfile",
- "tokio",
- "tracing",
- "tracing-subscriber 0.3.19",
+ "url",
 ]
 
 [[package]]
@@ -14309,7 +14290,7 @@ dependencies = [
 [[package]]
 name = "processor"
 version = "0.1.0"
-source = "git+https://github.com/aptos-labs/aptos-indexer-processors-v2?tag=aptos-indexer-processors-v2.1.4#768c3433275cc4a4d191b8e97442c78408642849"
+source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors-v2?rev=7fb086b8c6961f2449461a9cdafdfafe517be281#7fb086b8c6961f2449461a9cdafdfafe517be281"
 dependencies = [
  "ahash 0.8.12",
  "allocative",

@@ -4,7 +4,8 @@ processes:
 
   build_indexer_v2:
     command: |
-      ./scripts/services/indexer/build
+      chmod +x ./scripts/services/indexer-v2/build
+      ./scripts/services/indexer-v2/build
     availability:
       restart: exit_on_failure
     depends_on:
@@ -21,7 +22,7 @@ processes:
 
   indexer-v2:
     command: |
-      movement-indexer-v2
+      movement-indexer-v2 --config-path networks/movement/indexer-v2/config.yaml
     readiness_probe:
       initial_delay_seconds: 10
       exec:

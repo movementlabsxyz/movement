@@ -203,8 +203,7 @@ move-package = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "0
 movement = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "00d34512f570e71c05186fbdf5474f9d21de7cc2" }
 
 # Indexer
-processor = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors", rev = "467589826baae23dd26aed8bfb3e33ef84b0bf2b" }
-server-framework = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors", rev = "467589826baae23dd26aed8bfb3e33ef84b0bf2b" }
+processor = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors-v2", rev = "7fb086b8c6961f2449461a9cdafdfafe517be281" }
 
 bcs = { git = "https://github.com/movementlabsxyz/bcs.git", rev = "bc16d2d39cabafaabd76173dd1b04b2aa170cf0c" }
 
