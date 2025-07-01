@@ -248,7 +248,7 @@ impl DaSequencerStorage for Storage {
 
 		let tx_set: BTreeSet<_> = selected_txs.into_iter().collect();
 		let block = Block::new(BlockMetadata::default(), parent_id, tx_set);
-		let sequencer_block = SequencerBlock::try_new(height, block)?;
+		let sequencer_block = SequencerBlock::new(height, block);
 		tracing::info!(
 			"Producing new block: id:{} height:{} nb Tx:{}",
 			sequencer_block.id(),
@@ -502,7 +502,7 @@ mod tests {
 		// Construct a dummy block to save
 		let height = BlockHeight(1);
 		let block = Block::new(BlockMetadata::default(), block::Id::default(), [tx.clone()].into());
-		let sequencer_block = SequencerBlock::try_new(height, block).expect("valid block");
+		let sequencer_block = SequencerBlock::new(height, block);
 
 		// Save the block and remove the pending tx
 		storage
@@ -541,7 +541,7 @@ mod tests {
 
 		let block_height = BlockHeight(42);
 		let dummy_block = Block::default();
-		let sequencer_block = SequencerBlock::try_new(block_height, dummy_block.clone()).unwrap();
+		let sequencer_block = SequencerBlock::new(block_height, dummy_block.clone());
 
 		let encoded_block =
 			bcs::to_bytes(&sequencer_block).expect("failed to serialize SequencerBlock");
@@ -569,7 +569,7 @@ mod tests {
 
 		let block_height = BlockHeight(99);
 		let dummy_block = Block::default();
-		let sequencer_block = SequencerBlock::try_new(block_height, dummy_block.clone()).unwrap();
+		let sequencer_block = SequencerBlock::new(block_height, dummy_block.clone());
 		let id = sequencer_block.id();
 
 		let encoded_block =
