@@ -2,7 +2,7 @@ version: "3"
 
 processes:
 
-  build_indexer:
+  build-indexer:
     command: |
       ./scripts/services/indexer/build
     availability:
@@ -20,6 +20,21 @@ processes:
       exec:
         command: echo "true"
     
+  migrate-indexer:
+    command: |
+      MIGRATE_ONLY=1 movement-indexer-service
+    environment:
+      - RUST_LOG=trace
+    availability:
+      restart: exit_on_failure
+    depends_on:
+      build-indexer:
+        condition: process_completed_successfully
+      postgres:
+        condition: process_healthy
+      movement-full-node:
+        condition: process_healthy
+
   indexer:
     command: |
       movement-indexer-service
@@ -28,9 +43,11 @@ processes:
       exec:
         command: curl http://0.0.0.0:8084
     depends_on:
-      build_indexer:
+      build-indexer:
         condition: process_completed_successfully
       postgres:
         condition: process_healthy
       movement-full-node:
         condition: process_healthy
+      migrate-indexer:
+        condition: process_completed_successfully

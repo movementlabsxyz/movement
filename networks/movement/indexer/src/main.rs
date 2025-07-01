@@ -6,6 +6,9 @@ use processor::config::processor_config::{DefaultProcessorConfig, ProcessorConfi
 use processor::config::processor_mode::{BootStrapConfig, ProcessorMode};
 use processor::processors::ans::ans_processor::AnsProcessorConfig;
 use processor::processors::token_v2::token_v2_processor::TokenV2ProcessorConfig;
+use std::env;
+use std::fs;
+use std::path::Path;
 use tokio::task::JoinSet;
 //use tokio::time::Duration;
 use url::Url;
@@ -14,6 +17,28 @@ mod service;
 
 // const RUNTIME_WORKER_MULTIPLIER: usize = 2;
 
+async fn ensure_migrations_run() -> Result<(), anyhow::Error> {
+	let lock_file = "/tmp/movement_indexer_migrations.lock";
+
+	// Check if migrations have already been run
+	if Path::new(lock_file).exists() {
+		tracing::info!("Migrations already completed, skipping...");
+		return Ok(());
+	}
+
+	// Create lock file to indicate migrations are running
+	fs::write(lock_file, "migrations_in_progress")?;
+
+	// Wait a bit to ensure any other processes see the lock
+	tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+
+	// Update lock file to indicate completion
+	fs::write(lock_file, "migrations_completed")?;
+
+	tracing::info!("Migration lock file created");
+	Ok(())
+}
+
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
@@ -21,6 +46,17 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	let maptos_config =
 		dot_movement.try_get_config_from_json::<maptos_execution_util::config::Config>()?;
+
+	// MIGRATE_ONLY mode: run only one processor for migrations, then exit
+	if env::var("MIGRATE_ONLY").ok().as_deref() == Some("1") {
+		let migration_config = build_processor_conf("default_processor", &maptos_config)?;
+		migration_config.run().await?;
+		println!("Migrations completed.");
+		return Ok(());
+	}
+
+	// Ensure migrations are handled properly
+	ensure_migrations_run().await?;
 
 	let mut set = JoinSet::new();
 
