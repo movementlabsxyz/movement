@@ -8,7 +8,7 @@ export SYNC_BUCKET="movement-sync-testnet"
 export RESTIC_REPOSITORY="s3:s3.${AWS_REGION}.amazonaws.com/${SYNC_BUCKET}/restic_node_backup"
 
 # Remove old DB files
-echo "Remove Maptos DB files"
+echo "Removing Maptos DB files"
 if [ -d "$DOT_MOVEMENT_PATH/maptos" ]; then
   rm -rf "$DOT_MOVEMENT_PATH/maptos"
 fi
