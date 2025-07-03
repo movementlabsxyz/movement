@@ -1,4 +1,5 @@
 //! Task module to execute blocks from the DA and process settlement.
+use crate::node::da_db::DaDB;
 use crate::node::tasks::state_verifier::StateVerifier;
 use anyhow::Context;
 use futures::{future::Either, stream};
@@ -6,7 +7,6 @@ use maptos_dof_execution::{
 	DynOptFinExecutor, ExecutableBlock, ExecutableTransactions, HashValue,
 	SignatureVerifiedTransaction, SignedTransaction, Transaction,
 };
-use maptos_execution_util::da_db::DaDB;
 use maptos_opt_executor::executor::ExecutionState;
 use mcr_settlement_manager::{CommitmentEventStream, McrSettlementManagerOperations};
 use movement_config::execution_extension;

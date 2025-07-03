@@ -1,0 +1,20 @@
+version: "3"
+
+processes:
+  da-replicat-setup:
+    environment:
+      - "MOVEMENT_DA_SEQUENCER_GRPC_LISTEN_ADDRESS=0.0.0.0:30830"
+    command: |
+      movement-da-replica-setup
+    depends_on:
+      da-setup:
+        condition: process_completed_successfully    
+
+  replicat-node:
+    environment:
+      - "MOVEMENT_DA_SEQUENCER_CONNECTION_URL=http://0.0.0.0:30730"
+    command: |
+      movement-da-replica-node
+    depends_on:
+      da-sequencer:
+        condition: process_healthy

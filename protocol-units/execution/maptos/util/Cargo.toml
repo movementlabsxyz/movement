@@ -29,7 +29,6 @@ hex = { workspace = true }
 tokio = { workspace =  true }
 url = { workspace =  true }
 tracing = { workspace =  true }
-rocksdb = { workspace = true }
 
 aptos-sdk = { workspace = true }
 movement-signer-loader = { workspace = true }

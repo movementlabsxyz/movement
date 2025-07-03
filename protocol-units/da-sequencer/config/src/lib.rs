@@ -49,6 +49,38 @@ impl DaSequencerConfig {
 	}
 }
 
+impl Default for DaSequencerConfig {
+	fn default() -> Self {
+		Self {
+			grpc_listen_address: default_grpc_listen_address(),
+			block_production_interval_millisec: default_block_production_interval_millisec(),
+			stream_heartbeat_interval_sec: default_stream_heartbeat_interval_sec(),
+			whitelist_relative_path: default_whitelist_relative_path(),
+			db_storage_relative_path: default_db_storage_relative_path(),
+			main_node_verifying_key: None,
+			healthcheck_bind_port: default_healthcheck_bind_port(),
+		}
+	}
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct DaReplicatConfig {
+	#[serde(default)]
+	pub da_sequencer: DaSequencerConfig,
+
+	#[serde(default = "default_da_sequencer_connection_url")]
+	pub connection_url: Url,
+}
+
+impl Default for DaReplicatConfig {
+	fn default() -> Self {
+		Self {
+			da_sequencer: DaSequencerConfig::default(),
+			connection_url: default_da_sequencer_connection_url(),
+		}
+	}
+}
+
 pub fn get_config_path(dot_movement: &dot_movement::DotMovement) -> std::path::PathBuf {
 	let mut pathbuff = std::path::PathBuf::from(dot_movement.get_path());
 	pathbuff.push(DA_SEQUENCER_DIR);
@@ -107,16 +139,10 @@ env_default!(
 	"da-store".to_string()
 );
 
-impl Default for DaSequencerConfig {
-	fn default() -> Self {
-		Self {
-			grpc_listen_address: default_grpc_listen_address(),
-			block_production_interval_millisec: default_block_production_interval_millisec(),
-			stream_heartbeat_interval_sec: default_stream_heartbeat_interval_sec(),
-			whitelist_relative_path: default_whitelist_relative_path(),
-			db_storage_relative_path: default_db_storage_relative_path(),
-			main_node_verifying_key: None,
-			healthcheck_bind_port: default_healthcheck_bind_port(),
-		}
-	}
-}
+// The default Da Sequencer connection url
+env_default!(
+	default_da_sequencer_connection_url,
+	"MAPTOS_DA_SEQUENCER_CONNECTION_URL",
+	Url,
+	"http://0.0.0.0:30730".parse().expect("Bad da sequencer connection url.")
+);

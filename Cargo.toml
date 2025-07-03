@@ -45,7 +45,7 @@ members = [
   "protocol-units/da-sequencer/setup",
   "protocol-units/da-sequencer/client",
   "protocol-units/da-sequencer/node"
-]
+, "protocol-units/da-sequencer/replica"]
 
 [workspace.package]
 version = "0.3.4"

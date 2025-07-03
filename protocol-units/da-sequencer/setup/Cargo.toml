@@ -9,6 +9,10 @@ homepage.workspace = true
 publish.workspace = true
 rust-version.workspace = true
 
+[[bin]]
+name = "movement-da-replica-setup"
+path = "bin/replicat_setup.rs"
+
 [dependencies]
 dot-movement = { workspace = true }
 godfig = { workspace = true }

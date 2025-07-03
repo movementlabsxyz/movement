@@ -10,6 +10,7 @@ pub enum Da {
 	StreamBlocks(stream_blocks::StreamBlocks),
 	Run(run::DaRun),
 	ReadBlock(read_block::ReadBlock),
+	Replicat(),
 }
 
 impl Da {

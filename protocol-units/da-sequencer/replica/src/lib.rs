@@ -22,23 +22,11 @@ use tokio::signal::unix::{signal, SignalKind};
 use tokio::sync::mpsc;
 use tokio_stream::StreamExt;
 
-#[tokio::main]
-async fn main() -> Result<(), anyhow::Error> {
-	use tracing_subscriber::EnvFilter;
-
-	tracing_subscriber::fmt()
-		.with_env_filter(
-			EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
-		)
-		.init();
-
+async fn start(mut dot_movement: dot_movement::DotMovement) -> Result<(), anyhow::Error> {
 	// Signal management
 	let mut sigterm = signal(SignalKind::terminate()).context("can't register to SIGTERM.")?;
 	let mut sigint = signal(SignalKind::interrupt()).context("can't register to SIGKILL.")?;
 	let mut sigquit = signal(SignalKind::quit()).context("can't register to SIGKILL.")?;
-
-	// Define da-sequencer config path
-	let mut dot_movement = dot_movement::DotMovement::try_from_env()?;
 
 	let da_sequencer_config = read_da_replicat_config(&mut dot_movement).await?;
 
