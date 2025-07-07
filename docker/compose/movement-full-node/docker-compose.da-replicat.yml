@@ -1,5 +1,5 @@
 services:
-  movement-full-node:
+  movement-da-replicat:
     image: ghcr.io/movementlabsxyz/movement-full-node:${CONTAINER_REV}
     container_name: movement-da-replicat
     command: da replicat
