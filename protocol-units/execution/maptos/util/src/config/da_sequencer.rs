@@ -8,7 +8,7 @@ use url::Url;
 /// Configuration for the DA Sequencer.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Config {
-	/// The number of milliseconds a sequence number is valid for.
+	/// Url to connect ot the da-sequencer.
 	#[serde(default = "default_da_sequencer_connection_url")]
 	pub connection_url: Url,
 

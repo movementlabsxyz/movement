@@ -1,8 +1,8 @@
+use crate::error::DaSequencerError;
+use movement_da_sequencer_proto::MainNodeState;
 use movement_types::block::{self, Block, Transactions};
 use serde::{Deserialize, Serialize};
 use std::ops::Add;
-
-use crate::error::DaSequencerError;
 
 // TODO: use a sensible value for the max sequencer block size
 pub const MAX_SEQUENCER_BLOCK_SIZE: u64 = 100_000_000; // 100 MB
@@ -17,6 +17,16 @@ pub struct NodeState {
 impl NodeState {
 	pub fn new(block_height: u64, ledger_timestamp: u64, ledger_version: u64) -> Self {
 		NodeState { block_height, ledger_timestamp, ledger_version }
+	}
+}
+
+impl From<&MainNodeState> for NodeState {
+	fn from(main_node_state: &MainNodeState) -> Self {
+		NodeState {
+			block_height: main_node_state.block_height,
+			ledger_timestamp: main_node_state.ledger_timestamp,
+			ledger_version: main_node_state.ledger_version,
+		}
 	}
 }
 
@@ -64,10 +74,8 @@ pub struct SequencerBlock {
 }
 
 impl SequencerBlock {
-	/// Try to construct a SequencerBlock, but fail if it exceeds the max encoded size.
-	pub fn try_new(height: BlockHeight, block: Block) -> Result<Self, DaSequencerError> {
-		let sb = SequencerBlock { height, block };
-		Ok(sb)
+	pub fn new(height: BlockHeight, block: Block) -> Self {
+		SequencerBlock { height, block }
 	}
 
 	pub fn id(&self) -> block::Id {

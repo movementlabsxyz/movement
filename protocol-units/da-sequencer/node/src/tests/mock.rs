@@ -119,7 +119,7 @@ impl DaSequencerStorage for StorageMock {
 		let block = Block::new(BlockMetadata::default(), inner.parent_block_id, tx_list);
 		inner.parent_block_id = block.id();
 		inner.current_height += 1;
-		let sequencer_block = SequencerBlock::try_new(BlockHeight(inner.current_height), block)?;
+		let sequencer_block = SequencerBlock::new(BlockHeight(inner.current_height), block);
 		inner.produced_blocks.push(sequencer_block.clone());
 		tracing::info!("Mock Storage produce block at height:{}", inner.current_height);
 		Ok(Some(sequencer_block))

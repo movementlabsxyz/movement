@@ -5,16 +5,13 @@ use crate::error::DaSequencerError;
 use crate::server::run_server;
 use crate::server::GrpcRequests;
 use crate::server::ProducedData;
-use crate::storage::DaSequencerStorage;
-use crate::storage::Storage;
+use crate::storage::{DaSequencerStorage, Storage};
 use crate::whitelist::Whitelist;
 use anyhow::Context;
 use futures::future::Either;
 use futures::stream::FuturesUnordered;
-use godfig::{backend::config_file::ConfigFile, Godfig};
 use movement_da_sequencer_config::DaSequencerConfig;
-use tokio::signal::unix::signal;
-use tokio::signal::unix::SignalKind;
+use tokio::signal::unix::{signal, SignalKind};
 use tokio::sync::{mpsc, oneshot};
 use tokio::task::JoinHandle;
 use tokio_stream::StreamExt;
@@ -23,7 +20,7 @@ pub mod batch;
 pub mod block;
 pub mod celestia;
 pub mod error;
-mod healthcheck;
+pub mod healthcheck;
 pub mod server;
 pub mod storage;
 #[cfg(test)]
@@ -33,16 +30,7 @@ pub mod whitelist;
 pub const GRPC_REQUEST_CHANNEL_SIZE: usize = 1000;
 
 pub async fn start(mut dot_movement: dot_movement::DotMovement) -> Result<(), anyhow::Error> {
-	let pathbuff = movement_da_sequencer_config::get_config_path(&dot_movement);
-	tracing::info!("Start Da Sequencer with config file in {pathbuff:?}.");
-	dot_movement.set_path(pathbuff);
-
-	let config_file = dot_movement.try_get_or_create_config_file().await?;
-
-	// Get a matching godfig object
-	let godfig: Godfig<DaSequencerConfig, ConfigFile> =
-		Godfig::new(ConfigFile::new(config_file), vec![]);
-	let da_sequencer_config: DaSequencerConfig = godfig.try_wait_for_ready().await?;
+	let da_sequencer_config = DaSequencerConfig::try_from_env(&mut dot_movement).await?;
 
 	let dotmovement_path = dot_movement.get_path().to_path_buf();
 
