@@ -1,20 +1,53 @@
 version: "3"
 
 processes:
-  da-replicat-setup:
+  setup:
     environment:
+      - "MAYBE_RUN_LOCAL=true"
       - "MOVEMENT_DA_SEQUENCER_GRPC_LISTEN_ADDRESS=0.0.0.0:30830"
     command: |
-      movement-da-replica-setup
+      RUST_BACKTRACE=1 movement-full-node setup all
     depends_on:
-      da-setup:
+      build:
+        condition: process_completed_successfully
+
+  da-replicat-setup:
+    environment:
+      - "MAYBE_RUN_LOCAL=true"
+      - "MAPTOS_DA_SEQUENCER_CONNECTION_URL=http://0.0.0.0:30830"
+      - "MOVEMENT_DA_HEALTHCHECK_PORT=30932"
+    command: |
+      RUST_BACKTRACE=1 movement-full-node setup replicat
+    depends_on:
+      setup:
         condition: process_completed_successfully    
 
   replicat-node:
-    environment:
-      - "MOVEMENT_DA_SEQUENCER_CONNECTION_URL=http://0.0.0.0:30730"
     command: |
-      movement-da-replica-node
+      RUST_BACKTRACE=1 movement-full-node da replicat
     depends_on:
       da-sequencer:
         condition: process_healthy
+      da-replicat-setup:
+        condition: process_completed_successfully
+    readiness_probe:
+      initial_delay_seconds: 30
+      exec:
+        command: curl http://0.0.0.0:30932/health
+
+  movement-full-node:
+    command: |
+      RUST_BACKTRACE=1 movement-full-node run
+    depends_on:
+      setup:
+        condition: process_completed_successfully
+      da-sequencer:
+        condition: process_healthy
+      replicat-node:
+        condition: process_healthy
+    readiness_probe:
+      initial_delay_seconds: 10
+      exec:
+        command: curl http://0.0.0.0:30731
+    ports:
+      - "9464:9464" # Expose metrics endpoint

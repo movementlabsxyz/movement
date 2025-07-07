@@ -7,10 +7,7 @@ macro_rules! env_default {
 	// Case with default value
 	($name:ident, $env:expr, $ty:ty, $default:expr) => {
 		pub fn $name() -> $ty {
-			println!("default env:{:?} for {:?}", std::env::var($env), $env);
-			let val = std::env::var($env).ok().and_then(|v| v.parse().ok()).unwrap_or($default);
-			println!("Val:{val:?}");
-			val
+			std::env::var($env).ok().and_then(|v| v.parse().ok()).unwrap_or($default)
 		}
 	};
 	// Case without default value

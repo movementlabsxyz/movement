@@ -1,4 +1,5 @@
 mod read_block;
+mod replicat;
 mod run;
 pub mod stream_blocks;
 
@@ -10,7 +11,7 @@ pub enum Da {
 	StreamBlocks(stream_blocks::StreamBlocks),
 	Run(run::DaRun),
 	ReadBlock(read_block::ReadBlock),
-	Replicat(),
+	Replicat(replicat::DaReplicatRun),
 }
 
 impl Da {
@@ -19,6 +20,7 @@ impl Da {
 			Da::StreamBlocks(stream_blocks) => stream_blocks.execute().await,
 			Da::Run(da) => da.execute().await,
 			Da::ReadBlock(da) => da.execute().await,
+			Da::Replicat(replicat) => replicat.execute().await,
 		}
 	}
 }

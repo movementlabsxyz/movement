@@ -20,6 +20,9 @@ tracing = { workspace = true }
 hex = { workspace = true }
 dot-movement = { workspace = true }
 anyhow = { workspace = true }
+url = { workspace =  true , features = ["serde"]  }
+
+maptos-execution-util = { workspace = true }
 
 [lints]
 workspace = true

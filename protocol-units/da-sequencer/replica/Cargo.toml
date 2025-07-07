@@ -30,6 +30,8 @@ movement-da-sequencer-node = { workspace = true }
 movement-da-sequencer-config = { workspace = true }
 movement-da-sequencer-proto = { workspace = true, features = ["server"] }
 movement-types = { workspace = true }
+movement-signer-loader = { workspace = true }
+movement-signer = { workspace = true }
 maptos-execution-util = { workspace = true }
 
 [lints]

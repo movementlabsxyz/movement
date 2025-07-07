@@ -118,7 +118,7 @@ processes:
       cargo run --bin movement-tests-e2e-followers-consistent -- 2
 
       # delete the resources
-      movement-util syncing delete-resource
+      movement-full-node util syncing delete-resource
 
       # output the transactions for each follower for debugging
       curl http://0.0.0.0:30731/v1/transactions > $DOT_MOVEMENT_PATH/transactions-leader.json

@@ -1,10 +1,8 @@
 use anyhow::Context;
 use futures::stream::FuturesUnordered;
-use godfig::backend::config_file::ConfigFile;
-use godfig::Godfig;
 use movement_da_sequencer_client::DaSequencerClient;
 use movement_da_sequencer_client::GrpcDaSequencerClient;
-use movement_da_sequencer_config::DaSequencerConfig;
+use movement_da_sequencer_config::DaReplicatConfig;
 use movement_da_sequencer_node::block::BlockHeight;
 use movement_da_sequencer_node::block::NodeState;
 use movement_da_sequencer_node::block::SequencerBlock;
@@ -15,33 +13,36 @@ use movement_da_sequencer_node::server::ProducedData;
 use movement_da_sequencer_node::storage::{DaSequencerStorage, Storage};
 use movement_da_sequencer_node::whitelist::Whitelist;
 use movement_da_sequencer_node::GRPC_REQUEST_CHANNEL_SIZE;
+use movement_da_sequencer_proto::BatchWriteRequest;
 use movement_da_sequencer_proto::StreamReadFromHeightRequest;
+use movement_signer::cryptography::ed25519::Ed25519;
+use movement_signer_loader::{Load, LoadedSigner};
 use movement_types::block::Block;
 use tokio::select;
 use tokio::signal::unix::{signal, SignalKind};
 use tokio::sync::mpsc;
 use tokio_stream::StreamExt;
 
-async fn start(mut dot_movement: dot_movement::DotMovement) -> Result<(), anyhow::Error> {
+pub async fn start(mut dot_movement: dot_movement::DotMovement) -> Result<(), anyhow::Error> {
 	// Signal management
 	let mut sigterm = signal(SignalKind::terminate()).context("can't register to SIGTERM.")?;
 	let mut sigint = signal(SignalKind::interrupt()).context("can't register to SIGKILL.")?;
 	let mut sigquit = signal(SignalKind::quit()).context("can't register to SIGKILL.")?;
 
-	let da_sequencer_config = read_da_replicat_config(&mut dot_movement).await?;
+	let da_sequencer_config = DaReplicatConfig::try_from_env(&mut dot_movement).await?;
 
 	// Init block storage
 	let dotmovement_path = dot_movement.get_path().to_path_buf();
-	let db_storage_path = dotmovement_path.join(&da_sequencer_config.db_storage_relative_path);
+	let db_storage_path =
+		dotmovement_path.join(&da_sequencer_config.da_sequencer.db_storage_relative_path);
 	let storage = Storage::try_new(&db_storage_path)?;
 
 	// Create da sequencer client to stream block
-	let da_connection_url = std::env::var("MOVEMENT_DA_SEQUENCER_CONNECTION_URL")
-		.map_err(|_| anyhow::anyhow!("MOVEMENT_DA_SEQUENCER_CONNECTION_URL var not defined."))?;
 
 	//Connect to the main DA sequencer to get all missing block and produced one.
 	let mut da_client =
-		GrpcDaSequencerClient::try_connect(&url::Url::parse(&da_connection_url)?, 10).await?;
+		GrpcDaSequencerClient::try_connect(&da_sequencer_config.da_client.connection_url, 10)
+			.await?;
 
 	let last_synced_height = storage.get_current_block_height()? + 1;
 	let (mut blocks_from_da, mut alert_channel) = da_client
@@ -54,23 +55,38 @@ async fn start(mut dot_movement: dot_movement::DotMovement) -> Result<(), anyhow
 
 	//start grpc entry point
 	// Initialize whitelist
-	let whitelist_path = dotmovement_path.join(&da_sequencer_config.whitelist_relative_path);
+	let whitelist_path =
+		dotmovement_path.join(&da_sequencer_config.da_sequencer.whitelist_relative_path);
 	let whitelist = Whitelist::from_file_and_spawn_reload_thread(whitelist_path)?;
 
 	let (request_tx, mut request_rx) = mpsc::channel(GRPC_REQUEST_CHANNEL_SIZE);
 	// Start gprc server
-	let grpc_address = da_sequencer_config.grpc_listen_address;
-	let verifying_key = da_sequencer_config.get_main_node_verifying_key()?;
+	let grpc_address = da_sequencer_config.da_sequencer.grpc_listen_address;
+	let verifying_key = da_sequencer_config.da_sequencer.get_main_node_verifying_key()?;
 
 	let mut grpc_jh = tokio::spawn(async move {
 		run_server(grpc_address, request_tx, whitelist, verifying_key).await
 	});
 
+	// Load batch signer
+	let da_batch_signer = da_sequencer_config.da_client.batch_signer_identifier.clone();
+
+	// Start healthcheck entry point
+	let healthcheck_url =
+		format!("0.0.0.0:{}", da_sequencer_config.da_sequencer.healthcheck_bind_port);
+	let (rest_health_tx, mut rest_health_rx) = tokio::sync::mpsc::channel(10);
+	let rest_service = movement_da_sequencer_node::healthcheck::HealthCheckRest::new(
+		healthcheck_url,
+		rest_health_tx,
+	)?;
+	let rest_service_future = rest_service.run_service();
+	let mut rest_jh = tokio::spawn(rest_service_future);
+
 	// Some processing vars
 	let mut spawn_result_futures = FuturesUnordered::new();
 	let mut connected_grpc_sender = vec![];
 	let mut da_stream_heartbeat_interval = tokio::time::interval(tokio::time::Duration::from_secs(
-		da_sequencer_config.stream_heartbeat_interval_sec,
+		da_sequencer_config.da_sequencer.stream_heartbeat_interval_sec,
 	));
 
 	loop {
@@ -146,8 +162,32 @@ async fn start(mut dot_movement: dot_movement::DotMovement) -> Result<(), anyhow
 							let _ = callback.send(to_send);
 						});
 					},
-					GrpcRequests::WriteBatch(_batch) => {
-						//can't send batch for now with replicat.
+					GrpcRequests::WriteBatch(batch) => {
+						// All batch verification has been done, propagate the batch to the da-sequencer with replicat key
+						if !batch.data().0.is_empty() {
+							// Build batch and submit request.
+							tracing::info!("Propagate new batch with {} txs.", batch.data().0.len());
+							let loader: LoadedSigner<Ed25519> = da_batch_signer.load().await?;
+
+							//send the batch in a separate task to avoid to slow the loop.
+							let handle = tokio::spawn({
+								let mut client = da_client.clone();
+								async move {
+									let batch_bytes = bcs::to_bytes(&batch.data().0).expect("Serialization failed");
+									let encoded =
+										movement_da_sequencer_client::sign_and_encode_batch(batch_bytes, &loader)
+											.await
+											.unwrap();
+									client.batch_write(BatchWriteRequest { data: encoded }).await.map_err(|status| {
+										tracing::warn!("Send Batch to Da failed because: {status:?}");
+										DaSequencerError::SendFailure}
+									)?;
+									Ok(())
+								}
+							});
+							spawn_result_futures.push(handle);
+						}
+
 					},
 					GrpcRequests::SendState(_state) => (), // can't send node state with replicat.
 
@@ -158,6 +198,13 @@ async fn start(mut dot_movement: dot_movement::DotMovement) -> Result<(), anyhow
 				tracing::info!(sender_len = %connected_grpc_sender.len(), "Produced a heartbeat, sent to fullnodes");
 				stream_block_to_sender(&mut connected_grpc_sender, ProducedData::HeartBeat).await;
 
+			}
+			// Manage health check request.
+			Some(oneshot_tx) = rest_health_rx.recv() => {
+				//Basic monitoring, always true if the loop run.
+				if let Err(err) = oneshot_tx.send(true){
+					tracing::warn!("Heal check oneshot channel closed abnormally :{err:?}");
+				}
 			}
 			_ = alert_channel.recv() => {
 				tracing::error!("Da client stream channel timeout because it's idle. Exit");
@@ -186,6 +233,11 @@ async fn start(mut dot_movement: dot_movement::DotMovement) -> Result<(), anyhow
 				tracing::error!("Grpc server exit because :{res:?}");
 				break;
 			}
+			res = &mut rest_jh => {
+				tracing::error!("Health check server exit because :{res:?}");
+				break;
+			}
+
 			else => break,
 		}
 	}
@@ -206,27 +258,4 @@ async fn stream_block_to_sender(
 		}
 	}
 	*senders = new_sender;
-}
-
-pub const DA_REPLICAT_DIR: &str = "da-replicat";
-pub fn get_config_path(dot_movement: &dot_movement::DotMovement) -> std::path::PathBuf {
-	let mut pathbuff = std::path::PathBuf::from(dot_movement.get_path());
-	pathbuff.push(DA_REPLICAT_DIR);
-	pathbuff
-}
-
-pub async fn read_da_replicat_config(
-	dot_movement: &mut dot_movement::DotMovement,
-) -> Result<DaSequencerConfig, anyhow::Error> {
-	let pathbuff = get_config_path(&dot_movement);
-	tracing::info!("Start Da Sequencer with config file in {pathbuff:?}.");
-	dot_movement.set_path(pathbuff);
-
-	let config_file = dot_movement.try_get_or_create_config_file().await?;
-
-	// Get a matching godfig object
-	let godfig: Godfig<DaSequencerConfig, ConfigFile> =
-		Godfig::new(ConfigFile::new(config_file), vec![]);
-	let config: DaSequencerConfig = godfig.try_wait_for_ready().await?;
-	Ok(config)
 }

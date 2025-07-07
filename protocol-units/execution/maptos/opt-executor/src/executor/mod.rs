@@ -9,7 +9,9 @@ use aptos_executor::block_executor::BlockExecutor;
 use aptos_executor_types::StateComputeResult;
 use aptos_sdk::types::account_address::AccountAddress;
 use aptos_sdk::types::ledger_info::LedgerInfoWithSignatures;
+use aptos_storage_interface::state_view::{DbStateView, DbStateViewAtVersion};
 use aptos_storage_interface::{DbReader, DbReaderWriter};
+use aptos_types::state_store::StateView;
 use aptos_types::transaction::TransactionStatus;
 use aptos_types::validator_signer::ValidatorSigner;
 use aptos_vm::AptosVM;
@@ -141,9 +143,9 @@ pub struct Executor {
 	// Shared reference on the counter of transactions in flight.
 	transactions_in_flight: Arc<RwLock<GcCounter>>,
 	// The config for the executor.
-	pub(crate) config: Config,
+	pub config: Config,
 	/// The node config derived from the maptos config.
-	pub(crate) node_config: NodeConfig,
+	pub node_config: NodeConfig,
 }
 
 impl Executor {
@@ -153,6 +155,15 @@ impl Executor {
 
 	pub fn db_reader(&self) -> Arc<dyn DbReader> {
 		Arc::clone(&self.db().reader)
+	}
+
+	pub fn state_view_at_version(
+		&self,
+		version: Option<u64>,
+	) -> Result<DbStateView, anyhow::Error> {
+		let reader = self.db_reader();
+		let state_view = reader.state_view_at_version(version)?;
+		Ok(state_view)
 	}
 
 	pub fn decrement_transactions_in_flight(&self, count: u64) {

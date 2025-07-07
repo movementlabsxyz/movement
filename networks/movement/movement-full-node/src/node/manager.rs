@@ -20,7 +20,7 @@ impl Manager {
 	}
 
 	pub async fn try_run(&self) -> Result<(), anyhow::Error> {
-		let (stop_tx, mut stop_rx) = tokio::sync::watch::channel(());
+		let (stop_tx, stop_rx) = tokio::sync::watch::channel(());
 		tokio::spawn({
 			let mut sigterm =
 				signal(SignalKind::terminate()).context("can't register to SIGTERM.")?;
@@ -54,14 +54,6 @@ impl Manager {
 
 		let join_handle = tokio::spawn(node.run(mempool_commit_tx_receiver, stop_rx));
 		join_handle.await??;
-		// // Use tokio::select! to wait for either the handle or a cancellation signal
-		// tokio::select! {
-		// 	_ = stop_rx.changed() =>(),
-		// 	// manage Movement node execution return.
-		// 	res = join_handle => {
-		// 		res??;
-		// 	},
-		// };
 
 		Ok(())
 	}

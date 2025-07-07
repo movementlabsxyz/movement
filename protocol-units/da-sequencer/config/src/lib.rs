@@ -2,10 +2,9 @@ use ed25519_dalek::VerifyingKey;
 use godfig::backend::config_file::ConfigFile;
 use godfig::{env_default, Godfig};
 use hex::FromHex;
+use maptos_execution_util::config::da_sequencer::Config as ClientDaSequencerConfig;
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
-
-pub const DA_SEQUENCER_DIR: &str = "da-sequencer";
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct DaSequencerConfig {
@@ -32,6 +31,29 @@ pub struct DaSequencerConfig {
 }
 
 impl DaSequencerConfig {
+	pub const DA_SEQUENCER_DIR: &str = "da-sequencer";
+
+	pub fn get_config_path(dot_movement: &dot_movement::DotMovement) -> std::path::PathBuf {
+		let mut pathbuff = std::path::PathBuf::from(dot_movement.get_path());
+		pathbuff.push(DaSequencerConfig::DA_SEQUENCER_DIR);
+		pathbuff
+	}
+	pub async fn try_from_env(
+		dot_movement: &mut dot_movement::DotMovement,
+	) -> Result<DaSequencerConfig, anyhow::Error> {
+		let pathbuff = DaSequencerConfig::get_config_path(&dot_movement);
+		tracing::info!("Start Da Sequencer with config file in {pathbuff:?}.");
+		dot_movement.set_path(pathbuff);
+
+		let config_file = dot_movement.try_get_or_create_config_file().await?;
+
+		// Get a matching godfig object
+		let godfig: Godfig<DaSequencerConfig, ConfigFile> =
+			Godfig::new(ConfigFile::new(config_file), vec![]);
+		let config: DaSequencerConfig = godfig.try_wait_for_ready().await?;
+		Ok(config)
+	}
+
 	pub fn get_main_node_verifying_key(&self) -> Result<Option<VerifyingKey>, anyhow::Error> {
 		self.main_node_verifying_key
 			.clone()
@@ -63,44 +85,47 @@ impl Default for DaSequencerConfig {
 	}
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DaReplicatConfig {
 	#[serde(default)]
 	pub da_sequencer: DaSequencerConfig,
 
-	#[serde(default = "default_da_sequencer_connection_url")]
-	pub connection_url: Url,
+	#[serde(default)]
+	pub da_client: ClientDaSequencerConfig,
+}
+
+impl DaReplicatConfig {
+	pub const DA_REPLICAT_DIR: &str = "da-replicat";
+	pub fn get_config_path(dot_movement: &dot_movement::DotMovement) -> std::path::PathBuf {
+		let mut pathbuff = std::path::PathBuf::from(dot_movement.get_path());
+		pathbuff.push(DaReplicatConfig::DA_REPLICAT_DIR);
+		pathbuff
+	}
+
+	pub async fn try_from_env(
+		dot_movement: &mut dot_movement::DotMovement,
+	) -> Result<DaReplicatConfig, anyhow::Error> {
+		let pathbuff = DaReplicatConfig::get_config_path(&dot_movement);
+		tracing::info!("Start Da Sequencer with config file in {pathbuff:?}.");
+		dot_movement.set_path(pathbuff);
+
+		let config_file = dot_movement.try_get_or_create_config_file().await?;
+
+		// Get a matching godfig object
+		let godfig: Godfig<DaReplicatConfig, ConfigFile> =
+			Godfig::new(ConfigFile::new(config_file), vec![]);
+		let config: DaReplicatConfig = godfig.try_wait_for_ready().await?;
+		Ok(config)
+	}
 }
 
 impl Default for DaReplicatConfig {
 	fn default() -> Self {
 		Self {
 			da_sequencer: DaSequencerConfig::default(),
-			connection_url: default_da_sequencer_connection_url(),
+			da_client: ClientDaSequencerConfig::default(),
 		}
 	}
-}
-
-pub fn get_config_path(dot_movement: &dot_movement::DotMovement) -> std::path::PathBuf {
-	let mut pathbuff = std::path::PathBuf::from(dot_movement.get_path());
-	pathbuff.push(DA_SEQUENCER_DIR);
-	pathbuff
-}
-
-pub async fn read_da_sequencer_config(
-	dot_movement: &mut dot_movement::DotMovement,
-) -> Result<DaSequencerConfig, anyhow::Error> {
-	let pathbuff = get_config_path(&dot_movement);
-	tracing::info!("Start Da Sequencer with config file in {pathbuff:?}.");
-	dot_movement.set_path(pathbuff);
-
-	let config_file = dot_movement.try_get_or_create_config_file().await?;
-
-	// Get a matching godfig object
-	let godfig: Godfig<DaSequencerConfig, ConfigFile> =
-		Godfig::new(ConfigFile::new(config_file), vec![]);
-	let config: DaSequencerConfig = godfig.try_wait_for_ready().await?;
-	Ok(config)
 }
 
 env_default!(
@@ -140,9 +165,11 @@ env_default!(
 );
 
 // The default Da Sequencer connection url
-env_default!(
-	default_da_sequencer_connection_url,
-	"MAPTOS_DA_SEQUENCER_CONNECTION_URL",
-	Url,
-	"http://0.0.0.0:30730".parse().expect("Bad da sequencer connection url.")
-);
+// env_default!(
+// 	default_da_sequencer_connection_url,
+// 	"MAPTOS_REPLICAT_DA_SEQUENCER_CONNECTION_URL",
+// 	Url,
+// 	"https://da-sequencer.mainnet.movementinfra.xyz"
+// 		.parse()
+// 		.expect("Bad da sequencer connection url.")
+// );

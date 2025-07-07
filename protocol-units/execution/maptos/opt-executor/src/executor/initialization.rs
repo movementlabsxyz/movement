@@ -5,10 +5,9 @@ use crate::executor::EXECUTOR_CHANNEL_SIZE;
 use crate::{bootstrap, Context};
 use anyhow::Context as _;
 use aptos_config::config::NodeConfig;
-#[cfg(test)]
 use aptos_crypto::ed25519::Ed25519PrivateKey;
 use aptos_crypto::ed25519::Ed25519PublicKey;
-#[cfg(test)]
+use aptos_crypto::Uniform;
 use aptos_crypto::ValidCryptoMaterialStringExt;
 use aptos_executor::block_executor::BlockExecutor;
 use aptos_mempool::MempoolClientRequest;
@@ -18,9 +17,9 @@ use maptos_execution_util::config::Config;
 use movement_collections::garbage::{counted::GcCounter, Duration};
 use movement_signer::cryptography::ed25519::Ed25519;
 use movement_signer::Signing;
-#[cfg(test)]
 use movement_signer_loader::identifiers::{local::Local, SignerIdentifier};
 use movement_signer_loader::{Load, LoadedSigner};
+
 use std::net::ToSocketAddrs;
 use std::sync::{Arc, RwLock};
 use tempfile::TempDir;
@@ -191,6 +190,36 @@ impl Executor {
 		maptos_config.chain.maptos_db_path.replace(tempdir.path().to_path_buf());
 		let executor = Self::try_from_config(maptos_config, mempool_tx_exec_result_sender).await?;
 		Ok((executor, tempdir))
+	}
+
+	pub async fn try_generated() -> Result<
+		(
+			Self,
+			TempDir,
+			Ed25519PrivateKey,
+			tokio::sync::mpsc::UnboundedReceiver<Vec<TxExecutionResult>>,
+		),
+		anyhow::Error,
+	> {
+		// generate a random private key
+		let private_key = Ed25519PrivateKey::generate_for_testing();
+
+		// generate a sender
+		let (mempool_tx_exec_result_sender, receiver) =
+			tokio::sync::mpsc::unbounded_channel::<Vec<TxExecutionResult>>();
+		let tempdir = tempfile::tempdir()?;
+
+		let mut maptos_config = Config::default();
+		let raw_private_key_hex = private_key.to_encoded_string()?.to_string();
+		let prefix_stripped =
+			raw_private_key_hex.strip_prefix("0x").unwrap_or(&raw_private_key_hex);
+		maptos_config.chain.maptos_private_key_signer_identifier =
+			SignerIdentifier::Local(Local { private_key_hex_bytes: prefix_stripped.to_string() });
+
+		// replace the db path with the temporary directory
+		maptos_config.chain.maptos_db_path.replace(tempdir.path().to_path_buf());
+		let executor = Self::try_from_config(maptos_config, mempool_tx_exec_result_sender).await?;
+		Ok((executor, tempdir, private_key, receiver))
 	}
 
 	/// Creates an instance of [`Context`] and the background [`TransactionPipe`]

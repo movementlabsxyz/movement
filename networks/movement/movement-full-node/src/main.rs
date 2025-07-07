@@ -1,18 +1,16 @@
 #![forbid(unsafe_code)]
-
 use clap::*;
 use movement_full_node::MovementFullNode;
-use std::time::Duration;
-
+use tracing_subscriber::EnvFilter;
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
-	let tracing_config = movement_tracing::Config::default();
-	let _guard = movement_tracing::init_telemetry(tracing_config).await;
-
-	tokio::time::sleep(Duration::from_secs(1)).await;
-
+	// Initialize default tracing
+	tracing_subscriber::fmt()
+		.with_env_filter(
+			EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
+		)
+		.init();
 	let suzuka_util = MovementFullNode::parse();
 	let result = suzuka_util.execute().await;
-
 	result
 }

@@ -245,15 +245,19 @@ where
 					block_timestamp,
 					block_retry_count,
 					block_retry_increment_microseconds,
-				)?;
+				);
+
+				// Block must be added to da_db after execution otherwise if an error occurs,
+				// the block will be reexecuted. Generating the error:
+				// `Unexpected error from known Move function, 'block_prologue'. Error: ABORTED
+				da_db
+					.set_synced_height(da_block.height)
+					.and_then(|_| da_db.add_executed_block(da_block.block_id.clone()))?;
+				// Forward execution error after.
+				let exec_result = exec_result?;
 
 				// decrement the number of transactions in flight on the executor
 				executor.decrement_transactions_in_flight(transactions_count as u64);
-
-				da_db.set_synced_height(da_block.height)?;
-
-				// set the block as executed
-				da_db.add_executed_block(da_block.block_id.clone())?;
 
 				Ok((Some(exec_result), executor))
 			}

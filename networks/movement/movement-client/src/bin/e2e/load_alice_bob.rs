@@ -49,9 +49,16 @@ impl BasicScenario {
 impl Scenario for BasicScenario {
 	#[tracing::instrument(skip(self), fields(scenario = self.id))]
 	async fn prepare(&mut self) -> Result<(), anyhow::Error> {
+		info!(
+			"Scenario:{} prepare start. NODE_URL:{} FAUCET_URL:{}",
+			self.id,
+			&NODE_URL.to_string(),
+			&FAUCET_URL.to_string()
+		);
+
 		let rest_client = Client::new(NODE_URL.clone());
 		let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
-		let faucet_client = faucet_client.with_auth_token("notreal".to_string());
+		//let faucet_client = faucet_client.with_auth_token("notreal".to_string());
 
 		if std::env::var_os("TEST_ALICE_BOB_ACCOUNT_READ_FROM_FILE").is_some() {
 			//bob always 0. Only use to receive transfer.
@@ -59,18 +66,23 @@ impl Scenario for BasicScenario {
 			let sequence_number = match rest_client.get_account(address).await {
 				Ok(response) => response.into_inner().sequence_number,
 				Err(_) => {
-					tracing::warn!("File private_key:{priv_key} not created, create it.");
+					tracing::warn!("Bod account:{address} not created, create it.");
 					faucet_client.fund(address, 100_000_000_000).await.unwrap();
+					tracing::warn!("Bod account:{address} funded.");
 					0
 				}
 			};
+			info!(
+				"Scenario:{} prepare. Bob Account:{address} sequence_number:{sequence_number}",
+				self.id,
+			);
 			self.bob = Some(LocalAccount::new(address, priv_key, sequence_number));
 			// Alice account is the scenario id   + 1 (because bob is 0)
 			let (priv_key, address) = get_account_from_list(self.id + 1)?;
 			let sequence_number = match rest_client.get_account(address).await {
 				Ok(response) => response.into_inner().sequence_number,
 				Err(_) => {
-					tracing::warn!("File private_key:{priv_key} not created, create it.");
+					tracing::warn!("Alice account:{address} not created, create it.");
 					faucet_client.fund(address, 100_000_000_000).await.unwrap();
 					0
 				}
@@ -127,6 +139,8 @@ impl Scenario for BasicScenario {
 
 		let mut sequence_number = alice.sequence_number();
 
+		info!("Scenario:{} Start sending transactions.", self.id,);
+
 		for index in 0..2 {
 			//			let _ = tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
 			// Have Alice send Bob some more coins.
@@ -147,7 +161,7 @@ impl Scenario for BasicScenario {
 
 			sequence_number += 1;
 
-			//			info!(scenario = %self.id, tx_hash = ?tx_hash, index = %index, "waiting for Alice -> Bod transfer to complete");
+			info!(scenario = %self.id, tx_hash = ?tx_hash, index = %index, "waiting for Alice -> Bod transfer to complete");
 
 			rest_client
 				.wait_for_transaction(&tx_hash)
@@ -156,6 +170,7 @@ impl Scenario for BasicScenario {
 					anyhow::anyhow!("Alice Tx failed:{pending_tx:?} index:{index} because {err}")
 				})
 				.unwrap();
+			info!("Scenario:{} Transaction executed.", self.id,);
 		}
 
 		// Print final balances.

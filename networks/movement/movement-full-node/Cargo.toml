@@ -59,6 +59,7 @@ movement-da-sequencer-node = { workspace = true }
 movement-da-light-node-setup = { workspace = true }
 movement-da-sequencer-config = { workspace = true }
 movement-da-replica-node = { workspace = true }
+
 ed25519-dalek = { workspace = true }
 mcr-settlement-setup = { workspace = true }
 

@@ -20,7 +20,7 @@ pub mod batch;
 pub mod block;
 pub mod celestia;
 pub mod error;
-mod healthcheck;
+pub mod healthcheck;
 pub mod server;
 pub mod storage;
 #[cfg(test)]
@@ -30,8 +30,7 @@ pub mod whitelist;
 pub const GRPC_REQUEST_CHANNEL_SIZE: usize = 1000;
 
 pub async fn start(mut dot_movement: dot_movement::DotMovement) -> Result<(), anyhow::Error> {
-	let da_sequencer_config =
-		movement_da_sequencer_config::read_da_sequencer_config(&mut dot_movement).await?;
+	let da_sequencer_config = DaSequencerConfig::try_from_env(&mut dot_movement).await?;
 
 	let dotmovement_path = dot_movement.get_path().to_path_buf();
 
