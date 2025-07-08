@@ -158,7 +158,7 @@
               # export PKG_CONFIG_PATH=$PKG_CONFIG_PATH_FOR_TARGET
 
               # Export linker flags if on Darwin (macOS)
-              if [[ "$(${pkgs.stdenv.hostPlatform.system})" =~ "darwin" ]]; then
+              if [[ "${pkgs.stdenv.hostPlatform.system}" =~ "darwin" ]]; then
                 export LDFLAGS="-L/opt/homebrew/opt/zlib/lib"
                 export CPPFLAGS="-I/opt/homebrew/opt/zlib/include"
               fi
