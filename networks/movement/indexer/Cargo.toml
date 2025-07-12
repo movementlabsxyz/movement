@@ -21,6 +21,7 @@ futures = { workspace = true }
 num_cpus = { workspace = true }
 poem = { workspace = true }
 processor = { workspace = true }
+aptos-indexer-processor-sdk = { workspace = true }
 server-framework = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
