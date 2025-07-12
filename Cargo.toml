@@ -202,7 +202,8 @@ move-package = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1
 movement = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d1cdbbd7fabb80dcb95ba5e23213faa072fab67" }
 
 # Indexer
-processor = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors", rev = "20be1190105908fd4fea4e78c330997658e9428e" }
+processor = { git = "https://github.com/larryl3u/aptos-indexer-processors-v2", rev = "2e5dd83639886fe9e44af97726d79895a3b4f650" }
+aptos-indexer-processor-sdk = { git = "https://github.com/larryl3u/aptos-indexer-processor-sdk", rev = "bbcc42d5a03cffe861b89c080ef7de918f37b4d0" }
 server-framework = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors", rev = "20be1190105908fd4fea4e78c330997658e9428e" }
 
 bcs = { git = "https://github.com/movementlabsxyz/bcs.git", rev = "bc16d2d39cabafaabd76173dd1b04b2aa170cf0c" }
@@ -261,7 +262,7 @@ alloy-transport-http = { git = "https://github.com/alloy-rs/alloy.git", rev = "8
 ] }
 alloy-transport-ws = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
 
-anyhow = "1.0"
+anyhow = "^1.0.98"
 async-stream = "0.3.0"
 async-trait = "0.1.71"
 async-recursion = "1.1.1"

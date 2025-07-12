@@ -1,8 +1,8 @@
-use processor::IndexerGrpcProcessorConfig;
-use server_framework::RunnableConfig;
-use std::io::Write;
+use processor::config::indexer_processor_config::IndexerProcessorConfig;
 use tokio::task::JoinSet;
 use tokio::time::Duration;
+use processor::processors::default::default_processor::DefaultProcessor;
+use aptos_indexer_processor_sdk::traits::processor_trait::ProcessorTrait;
 
 mod service;
 
@@ -27,46 +27,8 @@ fn main() -> Result<(), anyhow::Error> {
 		maptos_config.indexer.maptos_indexer_grpc_healthcheck_port
 	);
 
-	let default_indexer_config = build_processor_conf("default_processor", &maptos_config)?;
-	let usertx_indexer_config = build_processor_conf("user_transaction_processor", &maptos_config)?;
-	let accounttx_indexer_config =
-		build_processor_conf("account_transactions_processor", &maptos_config)?;
-	let coin_indexer_config = build_processor_conf("coin_processor", &maptos_config)?;
-	let event_indexer_config = build_processor_conf("events_processor", &maptos_config)?;
-	let fungible_indexer_config = build_processor_conf("fungible_asset_processor", &maptos_config)?;
-	let txmeta_indexer_config =
-		build_processor_conf("transaction_metadata_processor", &maptos_config)?;
-
-	// Token processor
-	let activate_tokes: bool = std::env::var("ACTIVATE_TOKEN_INDEXING")
-		.map(|t| t.parse().unwrap_or(true))
-		.unwrap_or(true);
-	let token_configs = if activate_tokes {
-		let token_indexer_config = build_processor_conf(
-			"token_processor
-  nft_points_contract: null",
-			&maptos_config,
-		)?;
-
-		let tokenv2_indexer_config = build_processor_conf(
-			"token_v2_processor
-  query_retries: 5",
-			&maptos_config,
-		)?;
-		Some((token_indexer_config, tokenv2_indexer_config))
-	} else {
-		None
-	};
-
-	// ANS processor.
-	let ans_indexer_config = build_processor_conf(
-		"ans_processor
-  ans_v1_primary_names_table_handle: temp
-  ans_v1_name_records_table_handle: temp
-  ans_v2_contract_address: 0x67bf15b3eed0fc62deea9630bbbd1d48842550655140f913699a1ca7e6f727d8",
-		&maptos_config,
-	)?;
-
+	// let default_indexer_config = build_processor_conf("default_processor", &maptos_config)?;
+	let default_indexer_config_v2 = build_processor_conf_v2("default_processor", &maptos_config)?;
 	let num_cpus = num_cpus::get();
 	let worker_threads = (num_cpus * RUNTIME_WORKER_MULTIPLIER).max(16);
 	println!(
@@ -90,21 +52,12 @@ fn main() -> Result<(), anyhow::Error> {
 
 				let mut set = JoinSet::new();
 				set.spawn(async move { crate::service::run_service(health_check_url).await });
-				set.spawn(async move { default_indexer_config.run().await });
+				let default_processor = DefaultProcessor::new(default_indexer_config_v2).await?;
+				set.spawn(async move { default_processor.run_processor().await });
 				//wait all the migration is done.
 				tokio::time::sleep(Duration::from_secs(12)).await;
-				set.spawn(async move { usertx_indexer_config.run().await });
-				set.spawn(async move { accounttx_indexer_config.run().await });
-				set.spawn(async move { coin_indexer_config.run().await });
-				set.spawn(async move { event_indexer_config.run().await });
-				set.spawn(async move { fungible_indexer_config.run().await });
-				set.spawn(async move { txmeta_indexer_config.run().await });
-				if let Some((token_indexer_config, tokenv2_indexer_config)) = token_configs {
-					set.spawn(async move { token_indexer_config.run().await });
-					set.spawn(async move { tokenv2_indexer_config.run().await });
-				}
-				set.spawn(async move { ans_indexer_config.run().await });
-
+				// set.spawn(async move { usertx_indexer_config.run().await });
+				
 				while let Some(res) = set.join_next().await {
 					tracing::error!("An Error occurs during indexer execution: {res:?}");
 					// If a processor break to avoid data inconsistency between processor
@@ -122,62 +75,93 @@ fn main() -> Result<(), anyhow::Error> {
 	}
 }
 
-fn build_processor_conf(
+fn build_processor_conf_v2(
 	processor_name: &str,
 	maptos_config: &maptos_execution_util::config::Config,
-) -> Result<IndexerGrpcProcessorConfig, anyhow::Error> {
-	let indexer_grpc_data_service_address = build_grpc_url(maptos_config);
-
-	let default_sleep_time_between_request: u64 = std::env::var("SLEEP_TIME_BETWEEN_REQUEST_MS")
-		.map(|t| t.parse().unwrap_or(10))
-		.unwrap_or(10);
-
-	//create config file
-	let mut indexer_config_content = format!(
-		"processor_config:
-  type: {}
-postgres_connection_string: {}
-indexer_grpc_data_service_address: {}
-indexer_grpc_http2_ping_interval_in_secs: {}
-indexer_grpc_http2_ping_timeout_in_secs: {}
-auth_token: \"{}\"
-default_sleep_time_between_request: {}",
+) -> Result<IndexerProcessorConfig, anyhow::Error> {
+	let indexer_processor_raw = format!(r#"
+health_check_port: 8085
+server_config:
+  processor_config:
+    type: {}
+    channel_size: 100
+  transaction_stream_config:
+    indexer_grpc_data_service_address: "{}"
+    auth_token: "{}"
+    request_name_header: "{}"
+  processor_mode:
+    type: "default"
+  db_config:
+    type: postgres_config
+    connection_string: {}
+	"#,	
 		processor_name,
-		maptos_config.indexer_processor.postgres_connection_string,
-		indexer_grpc_data_service_address,
-		maptos_config.indexer.maptos_indexer_grpc_inactivity_timeout,
-		maptos_config.indexer.maptos_indexer_grpc_inactivity_ping_interval,
+		build_grpc_url(maptos_config),
 		maptos_config.indexer_processor.indexer_processor_auth_token,
-		default_sleep_time_between_request,
+		"".to_string(),
+		maptos_config.indexer_processor.postgres_connection_string,
 	);
-
-	// If the starting version is not defined, don't put a default value in the conf.
-	if let Ok(start_version) = std::env::var("INDEXER_STARTING_VERSION") {
-		if let Ok(start_version) = start_version.parse::<u64>() {
-			indexer_config_content.push('\n');
-			indexer_config_content.push_str(&format!("starting_version: {}", start_version));
-		}
-	}
-
-	//let indexer_config_path = dot_movement.get_path().join("indexer_config.yaml");
-	let mut output_file = tempfile::NamedTempFile::new()?;
-	write!(output_file, "{}", indexer_config_content)?;
-
-	let indexer_config =
-		server_framework::load::<IndexerGrpcProcessorConfig>(&output_file.path().to_path_buf())?;
-
-	// Leave here for debug purpose. Will be removed later.
-	// Use to print the generated config, to have an example when activating a new processor.
-	// indexer_config.processor_config = ProcessorConfig::TokenV2Processor(TokenV2ProcessorConfig {
-	// 	query_retries: 5,
-	// 	query_retry_delay_ms: 100,
-	// });
-
-	// let yaml = serde_yaml::to_string(&indexer_config)?;
-	// println!("{yaml}",);
-
-	Ok(indexer_config)
+	let config = serde_yaml::from_str::<IndexerProcessorConfig>(&indexer_processor_raw)?;
+	// TODO: Fix the starting version.
+	Ok(config)
 }
+
+// fn build_processor_conf(
+// 	processor_name: &str,
+// 	maptos_config: &maptos_execution_util::config::Config,
+// ) -> Result<IndexerGrpcProcessorConfig, anyhow::Error> {
+// 	let indexer_grpc_data_service_address = build_grpc_url(maptos_config);
+
+// 	let default_sleep_time_between_request: u64 = std::env::var("SLEEP_TIME_BETWEEN_REQUEST_MS")
+// 		.map(|t| t.parse().unwrap_or(10))
+// 		.unwrap_or(10);
+
+// 	//create config file
+// 	let mut indexer_config_content = format!(
+// 		"processor_config:
+//   type: {}
+// postgres_connection_string: {}
+// indexer_grpc_data_service_address: {}
+// indexer_grpc_http2_ping_interval_in_secs: {}
+// indexer_grpc_http2_ping_timeout_in_secs: {}
+// auth_token: \"{}\"
+// default_sleep_time_between_request: {}",
+// 		processor_name,
+// 		maptos_config.indexer_processor.postgres_connection_string,
+// 		indexer_grpc_data_service_address,
+// 		maptos_config.indexer.maptos_indexer_grpc_inactivity_timeout,
+// 		maptos_config.indexer.maptos_indexer_grpc_inactivity_ping_interval,
+// 		maptos_config.indexer_processor.indexer_processor_auth_token,
+// 		default_sleep_time_between_request,
+// 	);
+
+// 	// If the starting version is not defined, don't put a default value in the conf.
+// 	if let Ok(start_version) = std::env::var("INDEXER_STARTING_VERSION") {
+// 		if let Ok(start_version) = start_version.parse::<u64>() {
+// 			indexer_config_content.push('\n');
+// 			indexer_config_content.push_str(&format!("starting_version: {}", start_version));
+// 		}
+// 	}
+
+// 	//let indexer_config_path = dot_movement.get_path().join("indexer_config.yaml");
+// 	let mut output_file = tempfile::NamedTempFile::new()?;
+// 	write!(output_file, "{}", indexer_config_content)?;
+
+// 	let indexer_config =
+// 		server_framework::load::<IndexerGrpcProcessorConfig>(&output_file.path().to_path_buf())?;
+
+// 	// Leave here for debug purpose. Will be removed later.
+// 	// Use to print the generated config, to have an example when activating a new processor.
+// 	// indexer_config.processor_config = ProcessorConfig::TokenV2Processor(TokenV2ProcessorConfig {
+// 	// 	query_retries: 5,
+// 	// 	query_retry_delay_ms: 100,
+// 	// });
+
+// 	// let yaml = serde_yaml::to_string(&indexer_config)?;
+// 	// println!("{yaml}",);
+
+// 	Ok(indexer_config)
+// }
 
 use reqwest::Client as HttpClient;
 
