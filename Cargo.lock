@@ -9682,6 +9682,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "format-module-bytes"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "serde",
+ "serde_json",
+ "serde_yaml 0.9.34+deprecated",
+]
+
+[[package]]
 name = "funty"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
