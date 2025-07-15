@@ -1,4 +1,5 @@
-use crate::node::{da_db::DaDB, tasks};
+use crate::node::da_db::DaDB;
+use crate::node::tasks;
 use maptos_dof_execution::MakeOptFinServices;
 use maptos_dof_execution::{v1::Executor, DynOptFinExecutor};
 use maptos_opt_executor::executor::TxExecutionResult;

@@ -1,0 +1,21 @@
+services:
+  movement-da-replicat:
+    image: ghcr.io/movementlabsxyz/movement-full-node:${CONTAINER_REV}
+    container_name: movement-da-replicat
+    command: da replicat
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+      - MOVEMENT_TIMING=info
+      - RUST_BACKTRACE=1
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+    ports:
+      - "30730:30730"
+      - "30931:30931"
+    healthcheck:
+      test: [ "CMD-SHELL", "echo true" ]
+      retries: 10
+      interval: 10s
+      timeout: 5s
+    restart: on-failure:5
+
