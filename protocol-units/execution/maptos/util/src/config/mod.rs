@@ -4,10 +4,12 @@ pub mod common;
 pub mod da_sequencer;
 pub mod faucet;
 pub mod fin;
+pub mod health_check;
 pub mod indexer;
 pub mod indexer_processor;
 pub mod load_shedding;
 pub mod mempool;
+pub mod metrics;
 
 use serde::{Deserialize, Serialize};
 

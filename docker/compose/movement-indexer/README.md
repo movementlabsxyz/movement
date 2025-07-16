@@ -7,8 +7,6 @@ rm -rf  ~/.movement/*  \
       && docker compose    \
             --env-file docker/compose/movement-indexer/.env  \
             -f docker/compose/movement-full-node/docker-compose.yml       \
-            -f docker/compose/movement-full-node/docker-compose.setup-local.yml      \
-            -f docker/compose/movement-full-node/docker-compose.celestia-local.yml  \
             -f docker/compose/movement-indexer/docker-compose.local-development.indexer.yml  \
            up
 ```
