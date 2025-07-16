@@ -264,3 +264,31 @@ env_default!(
 	u64,
 	1024 * 1024 //1Mo
 );
+
+// Monitoring metrics.
+env_default!(
+	default_ecosystem_metrics_listen_hostname,
+	"MAPTOS_ECOSYSTEM_METRICS_LISTEN_HOSTNAME",
+	String,
+	"0.0.0.0".to_string()
+);
+env_default!(
+	default_ecosystem_metrics_listen_port,
+	"MAPTOS_ECOSYSTEM_METRICS_LISTEN_PORT",
+	u16,
+	13122
+);
+
+// Health check.
+env_default!(
+	default_ecosystem_health_check_listen_hostname,
+	"MAPTOS_ECOSYSTEM_HEALTH_CHECK_LISTEN_HOSTNAME",
+	String,
+	"0.0.0.0".to_string()
+);
+env_default!(
+	default_ecosystem_health_check_listen_port,
+	"MAPTOS_ECOSYSTEM_HEALTH_CHECK_LISTEN_PORT",
+	u16,
+	13222
+);

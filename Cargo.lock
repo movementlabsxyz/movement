@@ -12366,6 +12366,8 @@ dependencies = [
  "movement-da-util",
  "movement-signer",
  "movement-signer-loader",
+ "poem",
+ "prometheus",
  "rand 0.7.3",
  "serde",
  "serde_derive",

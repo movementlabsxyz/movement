@@ -8,6 +8,12 @@ pub struct Config {
 
 	#[serde(default = "default_indexer_processor_auth_token")]
 	pub indexer_processor_auth_token: String,
+
+	/// The list of the processor names.
+	/// If not provided, all processors will run for backward compatibility.
+	/// The list of processors is defined in the indexer side.
+	#[serde(default)]
+	pub processor_names: Vec<String>,
 }
 
 impl Default for Config {
@@ -15,6 +21,7 @@ impl Default for Config {
 		Self {
 			postgres_connection_string: default_postgres_connection_string(),
 			indexer_processor_auth_token: default_indexer_processor_auth_token(),
+			processor_names: vec![],
 		}
 	}
 }
