@@ -14,6 +14,8 @@ use tokio::runtime::Runtime;
 use tokio::time;
 use warp::Filter;
 
+pub mod simple_metrics;
+
 // Create a default NodeConfig for telemetry
 static DEFAULT_NODE_CONFIG: Lazy<NodeConfig> = Lazy::new(|| {
 	let mut config = NodeConfig::default();

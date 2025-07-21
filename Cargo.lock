@@ -14660,6 +14660,7 @@ dependencies = [
 name = "movement-tracing"
 version = "0.3.4"
 dependencies = [
+ "anyhow",
  "aptos-config 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core.git?branch=movement)",
  "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core.git?branch=movement)",
  "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core.git?branch=movement)",
@@ -14671,6 +14672,7 @@ dependencies = [
  "lazy_static",
  "movement-config",
  "once_cell",
+ "poem",
  "prometheus 0.13.4",
  "rand 0.7.3",
  "ring 0.17.8",
