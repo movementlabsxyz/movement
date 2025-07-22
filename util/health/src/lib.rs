@@ -1,12 +1,17 @@
-use anyhow::Error;
+use anyhow::Context;
 use poem::listener::TcpListener;
 use poem::{get, handler, IntoResponse, Response, Route, Server};
 
-pub async fn run_service(hostname: String, port: u16) -> Result<(), Error> {
+/// Run a health server on the given hostname and port.
+/// It's considered fatal if the health server fails.
+pub async fn run_service(hostname: String, port: u16) -> anyhow::Result<()> {
 	let route = Route::new().at("/health", get(health));
 	let url = format!("{}:{}", hostname, port);
 	tracing::info!("Start health check access on :{url} .");
-	Server::new(TcpListener::bind(url)).run(route).await.map_err(Into::into)
+	Server::new(TcpListener::bind(url))
+		.run(route)
+		.await
+		.context("Failed to start health server")
 }
 
 #[handler]

@@ -202,6 +202,8 @@ env_default!(
 
 env_default!(default_enable_pruning, "MAPTOS_ENABLE_PRUNING", bool, false);
 
+env_default!(default_enable_table_info_service, "MAPTOS_ENABLE_TABLE_INFO_SERVICE", bool, false);
+
 env_default!(default_maptos_ledger_prune_window, "MAPTOS_LEDGER_PRUNING_WINDOW", u64, 50_000_000);
 
 env_default!(
@@ -233,6 +235,13 @@ env_default!(
 );
 
 env_default!(
+	default_indexer_processor_name,
+	"INDEXER_PROCESSOR_NAME",
+	String,
+	"default_processor".to_string()
+);
+
+env_default!(
 	default_genesis_timestamp_microseconds,
 	"MAPTOS_GENESIS_TIMESTAMP_MICROSECONDS",
 	u64,
@@ -261,7 +270,7 @@ env_default!(
 	String,
 	"0.0.0.0".to_string()
 );
-env_default!(default_metrics_server_port, "METRICS_SERVER_PORT", u16, 18185);
+env_default!(default_metrics_server_port, "METRICS_SERVER_PORT", u16, 18186);
 
 env_default!(default_batch_production_time, "MAPTOS_BATCH_PRODUCTION_TIME_MS", u64, 2000);
 
