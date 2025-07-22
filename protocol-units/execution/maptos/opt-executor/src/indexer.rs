@@ -2,6 +2,7 @@ use super::Context;
 use aptos_indexer_grpc_fullnode::runtime::bootstrap as bootstrap_indexer_grpc;
 use aptos_indexer_grpc_table_info::runtime::bootstrap as bootstrap_table_info;
 
+
 use tokio::runtime::Runtime;
 
 /// Runtime handle for indexer services. This object should be kept alive
@@ -27,8 +28,9 @@ impl Context {
 		)
 		.ok_or(anyhow::anyhow!("Failed to bootstrap table info runtime"))?;
 
-		// Bootstrap indexer grpc.
-		// this one actually serves the gRPC service
+		// Bootstrap indexer grpc, aka, transaction stream service.
+		// TSS requires the table info service and internal indexer db.
+		// TODO: add mempool client receiver to the bootstrap function.
 		let _indexer_grpc = bootstrap_indexer_grpc(
 			&self.node_config,
 			self.maptos_config.chain.maptos_chain_id.clone(),
@@ -37,19 +39,6 @@ impl Context {
 			None,
 		)
 		.ok_or(anyhow::anyhow!("Failed to bootstrap indexer grpc runtime"))?;
-
-		// Grpc stream works without the indexer.
-		// By default indexer is not started on Movement node.
-		// bootstrap indexer stream
-		// Commented because not needed. Done the external indexer.
-		// let _indexer_stream = bootstrap_indexer_stream(
-		// 	&self.node_config,
-		// 	self.maptos_config.chain.maptos_chain_id.clone(),
-		// 	self.db.reader.clone(),
-		// 	self.mempool_client_sender.clone(),
-		// ).ok_or(
-		// 	anyhow::anyhow!("Failed to bootstrap indexer stream runtime"),
-		// )?;
 
 		Ok(IndexerRuntime { _table_info_runtime, _indexer_grpc }) //, _indexer_stream
 	}

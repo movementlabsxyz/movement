@@ -85,6 +85,10 @@ impl Executor {
 		node_config.indexer_grpc.enabled = true;
 
 		// indexer_grpc config
+		if maptos_config.chain.enable_table_info_service {
+			node_config.indexer_table_info.enabled = true;
+			node_config.storage.enable_indexer = true;
+		}
 		node_config.indexer_grpc.processor_batch_size = 4;
 		node_config.indexer_grpc.processor_task_count = 4;
 		node_config.indexer_grpc.output_batch_size = 4;
