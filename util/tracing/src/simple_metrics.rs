@@ -4,21 +4,27 @@ use prometheus::{gather, Encoder, TextEncoder};
 use tokio::task::JoinHandle;
 
 /// Start a simple metrics server on the given hostname and port. This is for the usage other than the node.
-pub async fn start_metrics_server(listen_hostname: String, listen_port: u16) -> Result<JoinHandle<()>, anyhow::Error> {
-    let bind_address = format!("{}:{}", listen_hostname, listen_port);
+pub async fn start_metrics_server(
+	listen_hostname: String,
+	listen_port: u16,
+) -> Result<JoinHandle<()>, anyhow::Error> {
+	let bind_address = format!("{}:{}", listen_hostname, listen_port);
 
-    let metrics_route = Route::new().at("/metrics", get(metrics_handler));
+	let metrics_route = Route::new().at("/metrics", get(metrics_handler));
 
-    let server_handle = tokio::spawn(async move {
-        let listener = TcpListener::bind(&bind_address);
-        aptos_logger::info!("Starting Prometheus metrics server on http://{}/metrics", bind_address);
+	let server_handle = tokio::spawn(async move {
+		let listener = TcpListener::bind(&bind_address);
+		aptos_logger::info!(
+			"Starting Prometheus metrics server on http://{}/metrics",
+			bind_address
+		);
 
-        if let Err(e) = Server::new(listener).run(metrics_route).await {
-            aptos_logger::error!("Metrics server error: {}", e);
-        }
-    });
+		if let Err(e) = Server::new(listener).run(metrics_route).await {
+			aptos_logger::error!("Metrics server error: {}", e);
+		}
+	});
 
-    Ok(server_handle)
+	Ok(server_handle)
 }
 
 #[handler]
