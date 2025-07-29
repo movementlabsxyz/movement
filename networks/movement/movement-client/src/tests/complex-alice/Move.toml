@@ -1,0 +1,16 @@
+[package]
+name = "complex-alice"
+version = "1.0.0"
+authors = []
+
+[addresses]
+resource_roulette = '_'
+
+[dev-addresses]
+
+[dependencies.AptosFramework]
+git = "https://github.com/movementlabsxyz/aptos-core.git"
+rev = "movement"
+subdir = "aptos-move/framework/aptos-framework"
+
+[dev-dependencies]

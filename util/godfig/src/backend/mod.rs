@@ -2,12 +2,13 @@ pub mod config_file;
 
 use flocks::tfrwlock::FileRwLockError;
 use futures::Stream;
+use std::future::Future;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum GodfigBackendError {
-	#[error("Type Contract Mismatch")]
-	TypeContractMismatch(String),
+	#[error("An error occurs during config deserialization: {0}")]
+	ConfigDeserializationError(String),
 	#[error("Backend Error: {0}")]
 	BackendError(#[from] anyhow::Error),
 	#[error("IO Error: {0}")]
@@ -30,45 +31,54 @@ impl From<FileRwLockError> for GodfigBackendError {
 }
 
 pub trait BackendOperations {
-	async fn try_get<K, T>(&self, key: K) -> Result<Option<T>, GodfigBackendError>
+	fn try_get<K, T>(&self, key: K) -> impl Future<Output = Result<Option<T>, GodfigBackendError>>
 	where
 		K: Into<Vec<String>> + Send,
 		T: serde::de::DeserializeOwned;
 
-	async fn try_set<K, T>(&self, key: K, value: Option<T>) -> Result<(), GodfigBackendError>
+	fn try_set<K, T>(
+		&self,
+		key: K,
+		value: Option<T>,
+	) -> impl Future<Output = Result<(), GodfigBackendError>>
 	where
 		K: Into<Vec<String>> + Send,
 		T: serde::Serialize;
 
-	async fn try_wait_for<K, T>(&self, key: K) -> Result<T, GodfigBackendError>
+	fn try_wait_for<K, T>(&self, key: K) -> impl Future<Output = Result<T, GodfigBackendError>>
 	where
 		K: Into<Vec<String>> + Send,
 		T: serde::de::DeserializeOwned;
 
-	async fn try_stream<K, T>(
+	fn try_stream<K, T>(
 		&self,
 		key: K,
-	) -> Result<impl Stream<Item = Result<Option<T>, GodfigBackendError>>, GodfigBackendError>
+	) -> impl Future<
+		Output = Result<
+			impl Stream<Item = Result<Option<T>, GodfigBackendError>>,
+			GodfigBackendError,
+		>,
+	>
 	where
 		K: Into<Vec<String>> + Send,
 		T: serde::de::DeserializeOwned + serde::Serialize;
 
-	async fn try_transaction<K, T, F, Fut>(
+	fn try_transaction<K, T, F, Fut>(
 		&self,
 		key: K,
 		callback: F,
-	) -> Result<(), GodfigBackendError>
+	) -> impl Future<Output = Result<(), GodfigBackendError>>
 	where
 		K: Into<Vec<String>> + Send,
 		T: serde::de::DeserializeOwned + serde::Serialize + Send,
 		F: FnOnce(Option<T>) -> Fut + Send,
 		Fut: std::future::Future<Output = Result<Option<T>, GodfigBackendError>> + Send;
 
-	async fn try_transaction_with_result<K, T, R, F, Fut>(
+	fn try_transaction_with_result<K, T, R, F, Fut>(
 		&self,
 		key: K,
 		callback: F,
-	) -> Result<R, GodfigBackendError>
+	) -> impl Future<Output = Result<R, GodfigBackendError>>
 	where
 		K: Into<Vec<String>> + Send,
 		T: serde::de::DeserializeOwned + serde::Serialize + Send,

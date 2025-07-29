@@ -4,9 +4,9 @@ environment:
 
 processes:
 
-  build-m1-da-light-node:
+  build-movement-celestia-da-light-node:
     command: |
-      ./scripts/services/m1-da-light-node/build
+      ./scripts/services/movement-celestia-da-light-node/build
 
   build-wait-for-celestia-light-node:
     command: |
@@ -16,7 +16,7 @@ processes:
     command: |
       exit 0
     depends_on: 
-      build-m1-da-light-node:
+      build-movement-celestia-da-light-node:
         condition: process_completed_successfully
       build-wait-for-celestia-light-node:
         condition: process_completed_successfully

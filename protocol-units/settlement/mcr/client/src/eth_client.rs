@@ -11,7 +11,7 @@ use alloy::providers::fillers::NonceFiller;
 use alloy::providers::fillers::WalletFiller;
 use alloy::providers::{Provider, ProviderBuilder, RootProvider};
 use alloy::pubsub::PubSubFrontend;
-use alloy::signers::local::PrivateKeySigner;
+use alloy::signers::Signer;
 use alloy_network::Ethereum;
 use alloy_network::EthereumWallet;
 use alloy_primitives::Address;
@@ -21,6 +21,9 @@ use alloy_transport::BoxTransport;
 use alloy_transport_ws::WsConnect;
 use anyhow::Context;
 use mcr_settlement_config::Config;
+use movement_signer::cryptography::secp256k1::Secp256k1;
+use movement_signer_loader::Load;
+use movement_signing_eth::HsmSigner;
 use movement_types::block::{BlockCommitment, Commitment, Id};
 use serde_json::Value as JsonValue;
 use std::array::TryFromSliceError;
@@ -28,6 +31,7 @@ use std::fs;
 use std::path::Path;
 use thiserror::Error;
 use tokio_stream::StreamExt;
+use tracing::info;
 
 #[derive(Error, Debug)]
 pub enum McrEthConnectorError {
@@ -71,7 +75,8 @@ sol!(
 	"abis/MOVEToken.json"
 );
 
-pub struct Client<P> {
+pub struct McrSettlementClient<P> {
+	run_commitment_admin_mode: bool,
 	rpc_provider: P,
 	ws_provider: RootProvider<PubSubFrontend>,
 	pub signer_address: Address,
@@ -82,7 +87,7 @@ pub struct Client<P> {
 }
 
 impl
-	Client<
+	McrSettlementClient<
 		FillProvider<
 			JoinFill<
 				JoinFill<
@@ -98,10 +103,19 @@ impl
 	>
 {
 	pub async fn build_with_config(config: &Config) -> Result<Self, anyhow::Error> {
-		let signer_private_key = config.settle.signer_private_key.clone();
-		let signer = signer_private_key.parse::<PrivateKeySigner>()?;
+		let signer_identifier: Box<dyn Load<Secp256k1> + Send> =
+			Box::new(config.settle.signer_identifier.clone());
+		let signer_provider = signer_identifier.load().await?;
+		let signer =
+			HsmSigner::try_new(signer_provider, Some(config.eth_connection.eth_chain_id)).await?;
+
 		let signer_address = signer.address();
-		let contract_address = config.settle.mcr_contract_address.parse()?;
+		info!("Signer address: {}", signer_address);
+		let contract_address = config
+			.settle
+			.mcr_contract_address
+			.parse()
+			.context("Failed to parse the contract address for the MCR settlement client")?;
 		let rpc_url = config.eth_rpc_connection_url();
 		let ws_url = config.eth_ws_connection_url();
 		let rpc_provider = ProviderBuilder::new()
@@ -111,7 +125,8 @@ impl
 			.await
 			.context("Failed to create the RPC provider for the MCR settlement client")?;
 
-		let client = Client::build_with_provider(
+		let client = McrSettlementClient::build_with_provider(
+			config.settle.settlement_admin_mode,
 			rpc_provider,
 			ws_url,
 			signer_address,
@@ -119,13 +134,17 @@ impl
 			config.transactions.gas_limit,
 			config.transactions.transaction_send_retries,
 		)
-		.await?;
+		.await
+		.context(
+			"Failed to create the MCR settlement client with the RPC provider and contract address",
+		)?;
 		Ok(client)
 	}
 }
 
-impl<P> Client<P> {
+impl<P> McrSettlementClient<P> {
 	async fn build_with_provider<S>(
+		run_commitment_admin_mode: bool,
 		rpc_provider: P,
 		ws_url: S,
 		signer_address: Address,
@@ -139,14 +158,18 @@ impl<P> Client<P> {
 	{
 		let ws = WsConnect::new(ws_url);
 
-		let ws_provider = ProviderBuilder::new().on_ws(ws).await?;
+		let ws_provider = ProviderBuilder::new()
+			.on_ws(ws)
+			.await
+			.context("Failed to create the WebSocket provider for the MCR settlement client")?;
 
 		let rule1: Box<dyn VerifyRule> = Box::new(SendTransactionErrorRule::<UnderPriced>::new());
 		let rule2: Box<dyn VerifyRule> =
 			Box::new(SendTransactionErrorRule::<InsufficentFunds>::new());
 		let send_transaction_error_rules = vec![rule1, rule2];
 
-		Ok(Client {
+		Ok(McrSettlementClient {
+			run_commitment_admin_mode,
 			rpc_provider,
 			ws_provider,
 			signer_address,
@@ -159,7 +182,7 @@ impl<P> Client<P> {
 }
 
 #[async_trait::async_trait]
-impl<P> McrSettlementClientOperations for Client<P>
+impl<P> McrSettlementClientOperations for McrSettlementClient<P>
 where
 	P: Provider + Clone,
 {
@@ -178,15 +201,25 @@ where
 			blockId: alloy_primitives::FixedBytes(block_commitment.block_id().as_bytes().clone()),
 		};
 
-		let call_builder = contract.submitBlockCommitment(eth_block_commitment);
-
-		crate::send_eth_transaction::send_transaction(
-			call_builder,
-			&self.send_transaction_error_rules,
-			self.send_transaction_retries,
-			self.gas_limit as u128,
-		)
-		.await
+		if self.run_commitment_admin_mode {
+			let call_builder = contract.forceLatestCommitment(eth_block_commitment);
+			crate::send_eth_transaction::send_transaction(
+				call_builder,
+				&self.send_transaction_error_rules,
+				self.send_transaction_retries,
+				self.gas_limit as u128,
+			)
+			.await
+		} else {
+			let call_builder = contract.submitBlockCommitment(eth_block_commitment);
+			crate::send_eth_transaction::send_transaction(
+				call_builder,
+				&self.send_transaction_error_rules,
+				self.send_transaction_retries,
+				self.gas_limit as u128,
+			)
+			.await
+		}
 	}
 
 	async fn post_block_commitment_batch(
@@ -213,6 +246,31 @@ where
 
 		let call_builder = contract.submitBatchBlockCommitment(eth_block_commitment);
 
+		crate::send_eth_transaction::send_transaction(
+			call_builder,
+			&self.send_transaction_error_rules,
+			self.send_transaction_retries,
+			self.gas_limit as u128,
+		)
+		.await
+	}
+
+	async fn force_block_commitment(
+		&self,
+		block_commitment: BlockCommitment,
+	) -> Result<(), anyhow::Error> {
+		let contract = MCR::new(self.contract_address, &self.rpc_provider);
+
+		let eth_block_commitment = MCR::BlockCommitment {
+			// Currently, to simplify the API, we'll say 0 is uncommitted all other numbers are legitimate heights
+			height: U256::from(block_commitment.height()),
+			commitment: alloy_primitives::FixedBytes(
+				block_commitment.commitment().as_bytes().clone(),
+			),
+			blockId: alloy_primitives::FixedBytes(block_commitment.block_id().as_bytes().clone()),
+		};
+
+		let call_builder = contract.forceLatestCommitment(eth_block_commitment);
 		crate::send_eth_transaction::send_transaction(
 			call_builder,
 			&self.send_transaction_error_rules,
@@ -260,6 +318,31 @@ where
 			.try_into()
 			.context("Failed to convert the commitment height from U256 to u64")?;
 		// Commitment with height 0 mean not found
+		Ok((return_height != 0).then_some(BlockCommitment::new(
+			commitment
+				.height
+				.try_into()
+				.context("Failed to convert the commitment height from U256 to u64")?,
+			Id::new(commitment.blockId.into()),
+			Commitment::new(commitment.commitment.into()),
+		)))
+	}
+
+	async fn get_posted_commitment_at_height(
+		&self,
+		height: u64,
+	) -> Result<Option<BlockCommitment>, anyhow::Error> {
+		let contract = MCR::new(self.contract_address, &self.ws_provider);
+		let MCR::getValidatorCommitmentAtBlockHeightReturn { _0: commitment } = contract
+			.getValidatorCommitmentAtBlockHeight(U256::from(height), self.signer_address)
+			.call()
+			.await?;
+
+		let return_height: u64 = commitment
+			.height
+			.try_into()
+			.context("Failed to convert the commitment height from U256 to u64")?;
+
 		Ok((return_height != 0).then_some(BlockCommitment::new(
 			commitment
 				.height

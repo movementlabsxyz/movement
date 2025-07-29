@@ -1,0 +1,30 @@
+[package]
+name = "movement-signer-aws-kms"
+version = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+authors = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
+publish = { workspace = true }
+rust-version = { workspace = true }
+
+[dependencies]
+anyhow = { workspace = true }
+aws-sdk-kms = { workspace = true }
+aws-types = { workspace = true }
+aws-config = { workspace = true }
+movement-signer = { workspace = true }
+secp256k1 = "0.24"
+async-trait = { workspace = true }
+
+alloy-signer = { workspace = true }
+k256 = "0.13.4"
+spki = "0.7.3"
+simple_asn1 = { workspace = true}
+
+[dev-dependencies]
+tokio = { workspace = true }
+
+[lints]
+workspace = true

@@ -81,7 +81,7 @@ pub fn proto_build_main(input: TokenStream) -> TokenStream {
 
 
 			// Compile the proto files based on the configuration
-			config.compile(proto_files, proto_include_dirs)?;
+			config.compile_protos(proto_files, proto_include_dirs)?;
 
 			Ok(())
 		}

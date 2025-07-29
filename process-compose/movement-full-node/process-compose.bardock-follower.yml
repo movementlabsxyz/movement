@@ -1,0 +1,72 @@
+version: "3"
+
+processes:
+
+  setup:
+    environment:
+      - "MOVEMENT_DA_LIGHT_NODE_CONNECTION_PROTOCOL=https"
+      - "MOVEMENT_DA_LIGHT_NODE_CONNECTION_HOSTNAME=m1-da-light-node.testnet.bardock.movementlabs.xyz"
+      - "MOVEMENT_DA_LIGHT_NODE_CONNECTION_PORT=443"
+      - "INDEXER_PROCESSOR_POSTGRES_CONNECTION_STRING=postgres://postgres:password@postgres:5432/postgres"
+      - "MOVEMENT_SYNC=follower::mtnet-l-sync-bucket-sync<=>{maptos,maptos-storage,suzuka-da-db}/**"
+      - "MAYBE_RUN_LOCAL=false"
+      - "MATPOS_CHAIN_ID=250"
+
+  celestia-light-node:
+    command: |
+      sleep 999999999
+    depends_on:
+      setup:
+        condition: process_healthy
+    readiness_probe:
+      exec:
+        command: echo "true"
+
+  celestia-light-node-synced:
+    command: |
+      exit 0
+    depends_on:
+      celestia-light-node:
+        condition: process_healthy
+
+  movement-celestia-da-light-node:
+    command: |
+      sleep 999999999
+    depends_on:
+      celestia-light-node:
+        condition: process_healthy
+      celestia-light-node-synced:
+        condition: process_completed_successfully
+    readiness_probe:
+      exec:
+        command: echo "true"
+    
+  movement-full-node:
+    environment:
+      - "MOVEMENT_DA_LIGHT_NODE_CONNECTION_PROTOCOL=https"
+      - "MOVEMENT_DA_LIGHT_NODE_CONNECTION_HOSTNAME=m1-da-light-node.testnet.bardock.movementlabs.xyz"
+      - "MOVEMENT_DA_LIGHT_NODE_CONNECTION_PORT=443"
+      - "INDEXER_PROCESSOR_POSTGRES_CONNECTION_STRING=postgres://postgres:password@postgres:5432/postgres"
+      - "MOVEMENT_SYNC=follower::mtnet-l-sync-bucket-sync<=>{maptos,maptos-storage,suzuka-da-db}/**"
+      - "MAYBE_RUN_LOCAL=false"
+      - "MATPOS_CHAIN_ID=250"
+    command: |
+      movement-full-node run
+    depends_on:
+      movement-celestia-da-light-node:
+        condition: process_healthy
+    readiness_probe:
+      initial_delay_seconds: 10
+      exec:
+        command: curl http://0.0.0.0:30731
+
+  movement-faucet: 
+    command : |
+      sleep 999999999
+    depends_on:
+      movement-full-node:
+        condition: process_healthy
+    readiness_probe:
+      initial_delay_seconds: 30
+      exec:
+        command: echo "true"

@@ -1,3 +1,4 @@
+use aptos_crypto_derive::{BCSCryptoHash, CryptoHasher};
 use core::fmt;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
@@ -5,7 +6,7 @@ use std::cmp::Ordering;
 #[derive(
 	Serialize, Deserialize, Clone, Copy, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord,
 )]
-pub struct Id([u8; 32]);
+pub struct Id(pub [u8; 32]);
 
 impl Id {
 	pub fn new(data: [u8; 32]) -> Self {
@@ -40,20 +41,24 @@ impl fmt::Display for Id {
 	}
 }
 
-#[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash)]
+#[derive(
+	Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, CryptoHasher, BCSCryptoHash,
+)]
 pub struct Transaction {
 	data: Vec<u8>,
+	// Application priority is stored low to high, i.e., 0 is the highest priority.
+	application_priority: u64,
 	sequence_number: u64,
 	id: Id,
 }
 
 impl Transaction {
-	pub fn new(data: Vec<u8>, sequence_number: u64) -> Self {
+	pub fn new(data: Vec<u8>, application_priority: u64, sequence_number: u64) -> Self {
 		let mut hasher = blake3::Hasher::new();
 		hasher.update(&data);
 		hasher.update(&sequence_number.to_le_bytes());
 		let id = Id(hasher.finalize().into());
-		Self { data, sequence_number, id }
+		Self { data, sequence_number, application_priority, id }
 	}
 
 	pub fn id(&self) -> Id {
@@ -64,18 +69,31 @@ impl Transaction {
 		&self.data
 	}
 
+	/// Returns the application priority of the transaction.
+	/// The lower the value, the higher the priority.
+	/// If you are using a high value, high priority scheme, simply subtract the priority from the maximum value.
+	pub fn application_priority(&self) -> u64 {
+		self.application_priority
+	}
+
 	pub fn sequence_number(&self) -> u64 {
 		self.sequence_number
 	}
 
 	pub fn test() -> Self {
-		Self::new(vec![0], 0)
+		Self::new(vec![0], 0, 0)
 	}
 }
 
 impl Ord for Transaction {
 	fn cmp(&self, other: &Self) -> Ordering {
-		// First, compare by sequence_number
+		// First, compare by application_priority
+		match self.application_priority.cmp(&other.application_priority) {
+			Ordering::Equal => {}
+			non_equal => return non_equal,
+		}
+
+		// Then compare by sequence number
 		match self.sequence_number().cmp(&other.sequence_number()) {
 			Ordering::Equal => {}
 			non_equal => return non_equal,
@@ -92,15 +110,40 @@ impl PartialOrd for Transaction {
 	}
 }
 
+#[cfg(any(test, feature = "testing"))]
+impl Transaction {
+	pub fn test_only_new(data: Vec<u8>, application_priority: u64, sequence_number: u64) -> Self {
+		use aptos_crypto::hash::TestOnlyHash;
+
+		let temp = Transaction {
+			data: data.clone(),
+			application_priority,
+			sequence_number,
+			id: Id([0; 32]),
+		};
+		let id = Id(temp.test_only_hash().to_vec().try_into().unwrap());
+		Self { data, application_priority, sequence_number, id }
+	}
+}
+
 #[cfg(test)]
 mod test {
 	use super::*;
 
 	#[test]
 	fn test_transaction_ordering() {
+		// priority based ordering
+		let transaction = Transaction::new(vec![1], 0, 0);
+		let transaction2 = Transaction::new(vec![1], 1, 0);
+		let transaction3 = Transaction::new(vec![1], 2, 0);
+
+		assert!(transaction < transaction2);
+		assert!(transaction2 < transaction3);
+
+		// sequencer number based ordering
 		let transaction = Transaction::test();
-		let transaction2 = Transaction::new(vec![1], 1);
-		let transaction3 = Transaction::new(vec![1], 2);
+		let transaction2 = Transaction::new(vec![1], 0, 1);
+		let transaction3 = Transaction::new(vec![1], 0, 2);
 
 		assert!(transaction < transaction2);
 		assert!(transaction2 < transaction3);

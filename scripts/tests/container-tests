@@ -1,31 +1,37 @@
 #!/bin/bash
-# Run the command and capture the output
-STATUS=$(timeout 4m just suzuka-full-node docker-compose local.faucet-replicas.test --abort-on-container-failure)
+
+# Run the first test and capture the exit code
+STATUS=$(timeout 2m just movement-full-node docker-compose local.faucet-replicas.test --abort-on-container-failure)
 EXIT_CODE=$?
 
+# Clean up before checking the status
 rm -rf .movement
 
 # Check the exit code and act accordingly
 if [ $EXIT_CODE -eq 0 ]; then
-  # continue as passed
+  # Test passed, continue
+  echo "First test passed"
 elif [ $EXIT_CODE -eq 124 ]; then
-  # continue as passed on timeout
+  # Test timed out, continue
+  echo "First test passed on timeout"
 else
-  echo "Test failed"
+  # Test failed, exit with error
+  echo "First test failed"
   exit 1
 fi
 
-STATUS=$(timeout 4m just suzuka-full-node docker-compose local.test-followers --abort-on-container-failure)
+# Run the second test and capture the exit code
+STATUS=$(timeout 2m just movement-full-node docker-compose local.test-followers --abort-on-container-failure)
 EXIT_CODE=$?
 
 # Check the exit code and act accordingly
 if [ $EXIT_CODE -eq 0 ]; then
-  echo "Test passed"
+  echo "Second test passed"
   exit 0
 elif [ $EXIT_CODE -eq 124 ]; then
-  echo "Test passed on timeout"
+  echo "Second test passed on timeout"
   exit 0
 else
-  echo "Test failed"
+  echo "Second test failed"
   exit 1
 fi

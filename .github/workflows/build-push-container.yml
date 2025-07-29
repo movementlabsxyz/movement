@@ -1,0 +1,65 @@
+name: Build/Push Container
+
+on:
+  workflow_call:
+    inputs:
+      container_name:
+        type: string
+        description: The name of the container to build
+        required: true
+    secrets:
+      INFRA_GH_TOKEN:
+        required: true
+      DOCKER_HUB_USERNAME:
+        required: true
+      DOCKER_HUB_TOKEN:
+        required: true
+
+jobs:
+  container-build:
+    name: Build ${{ inputs.container_name }} ${{ matrix.architecture }}
+    strategy:
+      matrix:
+        architecture: [x86_64, arm64]        
+    runs-on: ${{ matrix.architecture == 'x86_64' && 'buildjet-16vcpu-ubuntu-2204' || 'buildjet-16vcpu-ubuntu-2204-arm' }}
+    steps:
+      - name: Check label match
+        if: >
+          github.event_name == 'pull_request' && github.event.action == 'labeled'
+          || github.ref == 'refs/heads/main'
+          || startsWith(github.ref, 'refs/tags/')
+        run: |
+          echo "Label added: ${{ github.event.label.name }}"
+          if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.event.action }}" == "labeled" ]]; then
+            if [[ "${{ github.event.label.name }}" != "cicd:movement-containers" ]]; then
+              echo "Skipping container build as label does not match"
+              exit 0
+            fi
+          fi
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with: 
+          submodules: true
+          ref: ${{ github.event.pull_request.head.ref || github.ref }}
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.INFRA_GH_TOKEN }}
+      - name: Login to Docker Hub for rate limiting
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Build and push container tags
+        run: |
+          ./scripts/docker/build-push-container -n ${{ inputs.container_name }}

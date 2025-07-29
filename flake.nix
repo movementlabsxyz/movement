@@ -1,9 +1,9 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/2ac40064487f7dfae54f188705e8ed9173993e79";
-    rust-overlay.url = "github:oxalica/rust-overlay/db12d0c6ef002f16998723b5dd619fa7b8997086";
+    nixpkgs.url = "github:NixOS/nixpkgs/a7abebc31a8f60011277437e000eebcc01702b9f";
+    rust-overlay.url = "github:oxalica/rust-overlay/47beae969336c05e892e1e4a9dbaac9593de34ab";
     flake-utils.url = "github:numtide/flake-utils";
-    foundry.url = "github:shazow/foundry.nix/monthly"; 
+    foundry.url = "github:shazow/foundry.nix/36a5c5e448b4cdc85813e3b8205a8846a428d528"; 
     crane.url = "github:ipetkov/crane";
     crane.inputs.nixpkgs.follows = "nixpkgs";
     
@@ -42,7 +42,10 @@
           gcc
           rust
           postgresql
+          tesseract4
           ansible
+          zlib
+          fixDarwinDylibNames
         ];
         
         sysDependencies = with pkgs; [] 
@@ -85,29 +88,29 @@
 
         celestia-app = pkgs.buildGoModule {
           pname = "celestia-app";
-          version = "1.8.0";
+          version = "2.3.1";
 
           src = pkgs.fetchgit {
             url = "https://github.com/celestiaorg/celestia-app";
-            rev = "e75a1fdc8f2386d9f389cb596c88ca7cc19563af";
-            hash = "sha256-EE9r1sybbm4Hyh57/nC8utMx/uFdMsIdPecxBtDqAbk=";
+            rev = "v2.3.1";
+            hash = "sha256-ui67KRaabQyZiV5QD4Qyaqobky++rAe9ppJ2yveoXOs=";
           };
 
-          vendorHash = "sha256-2vU1liAm0us7Nk1eawgMvarhq77+IUS0VE61FuvQbuQ=";
+          vendorHash = "sha256-zL3G+ml2bIcQlthHY6rovr2ykCGHqV51rQBkS3J9tGo=";
           subPackages = [ "cmd/celestia-appd" ];
         };
 
         celestia-node = pkgs.buildGoModule {
           pname = "celestia-node";
-          version = "0.13.3";
+          version = "0.20.4";
 
           src = pkgs.fetchgit {
             url = "https://github.com/celestiaorg/celestia-node";
-            rev = "05238b3e087eb9ecd3b9684cd0125f2400f6f0c7";
-            hash = "sha256-bmFcJrC4ocbCw1pew2HKEdLj6+1D/0VuWtdoTs1S2sU=";
+            rev = "v0.20.4";
+            hash = "sha256-DWOKdbeRIlQycV0yvkfN/9eTlYt+qhwb9Ur7Y2SixFU=";
           };
 
-          vendorHash = "sha256-8RC/9KiFOsEJDpt7d8WtzRLn0HzYrZ1LIHo6lOKSQxU=";
+          vendorHash = "sha256-yTN36N02fl9zf+YvliTREfEW1fnUnoRFdsLssx0xikk=";
           subPackages = [ "cmd/celestia" "cmd/cel-key" ];
         };
     
@@ -121,6 +124,8 @@
             ROCKSDB = pkgs.rocksdb;
             SNAPPY = if pkgs.stdenv.isLinux then pkgs.snappy else null;
             OPENSSL_DEV = pkgs.openssl.dev;
+
+            hardeningDisable = ["fortify"];
          
             buildInputs = with pkgs; [
               # rust toolchain
@@ -147,10 +152,16 @@
             shellHook = ''
               #!/usr/bin/env ${pkgs.bash}
 
-              DOT_MOVEMENT_PATH=$(pwd).movement
+              export DOT_MOVEMENT_PATH=$(pwd)/.movement
               mkdir -p $DOT_MOVEMENT_PATH
 
               # export PKG_CONFIG_PATH=$PKG_CONFIG_PATH_FOR_TARGET
+
+              # Export linker flags if on Darwin (macOS)
+              if [[ "${pkgs.stdenv.hostPlatform.system}" =~ "darwin" ]]; then
+                export LDFLAGS="-L/opt/homebrew/opt/zlib/lib"
+                export CPPFLAGS="-I/opt/homebrew/opt/zlib/include"
+              fi
 
               echo "Monza Aptos path: $MONZA_APTOS_PATH"
               cat <<'EOF'

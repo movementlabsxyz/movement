@@ -1,0 +1,2 @@
+# `last-aptos-framework-migration`
+Elsa was launched under commit hash [`9dfc8e7a3d622597dfd81cc4ba480a5377f87a41`](https://github.com/movementlabsxyz/aptos-core/commit/9dfc8e7a3d622597dfd81cc4ba480a5377f87a41) of the `movement` fork of the `aptos-framework`. 

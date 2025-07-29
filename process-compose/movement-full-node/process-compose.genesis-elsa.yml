@@ -1,0 +1,4 @@
+version: "3"
+
+environment:
+  - "KNOWN_FRAMEWORK_RELEASE=elsa"

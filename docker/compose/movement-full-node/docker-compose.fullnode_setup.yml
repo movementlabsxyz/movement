@@ -1,0 +1,21 @@
+services:
+  setup:
+    image: ghcr.io/movementlabsxyz/movement-full-node:${CONTAINER_REV}
+    container_name: setup
+    command: setup full-node
+    environment:
+      DOT_MOVEMENT_PATH: /.movement
+      MAYBE_RUN_LOCAL: "false"
+      RUST_LOG: info,aws_sdk_s3=debug
+      MAPTOS_DA_SEQUENCER_CONNECTION_URL: ${MAPTOS_DA_SEQUENCER_CONNECTION_URL}
+      MAPTOS_CHAIN_ID: ${MAPTOS_CHAIN_ID}
+      MAPTOS_PRIVATE_KEY: ${MAPTOS_PRIVATE_KEY}
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+
+    healthcheck:
+      test: [ "CMD-SHELL", "echo 'health check'" ]
+      retries: 10
+      interval: 10s
+      timeout: 5s
+

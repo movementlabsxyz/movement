@@ -1,0 +1,16 @@
+version: "3"
+
+environment:
+
+processes:
+
+  movement-tests-load-tests:
+    command: |
+      LOADTEST_NUMBER_SCENARIOS=10 LOADTEST_SCENARIOS_PER_CLIENT=5 movement-tests-e2e-load-alice-bob 
+    depends_on:
+      movement-full-node:
+        condition: process_healthy
+      movement-faucet:
+        condition: process_healthy
+    availability:
+      exit_on_end: true

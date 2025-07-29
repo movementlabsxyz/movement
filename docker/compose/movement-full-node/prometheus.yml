@@ -1,0 +1,16 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: "movement-metrics"
+    static_configs:
+      - targets: ["movement-full-node:9464"]
+    metrics_path: /metrics
+    scheme: http
+
+  - job_name: "movement-celestia-da-light-node"
+    static_configs:
+      - targets: ["movement-celestia-da-light-node:9464"]
+    metrics_path: /metrics
+    scheme: http

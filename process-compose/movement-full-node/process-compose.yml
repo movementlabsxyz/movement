@@ -1,0 +1,54 @@
+version: "3"
+
+processes:
+
+  build:
+    command: |
+      exit 0
+
+  setup:
+    command: |
+      # sleep forever
+      sleep 999999999d
+    depends_on:
+      build:
+        condition: process_completed_successfully
+
+  da-sequencer:
+    command: |
+      RUST_BACKTRACE=1 movement-full-node da run
+    depends_on:
+      setup:
+        condition: process_completed_successfully
+    readiness_probe:
+      initial_delay_seconds: 30
+      exec:
+        command: curl http://0.0.0.0:30931/health
+    
+  movement-full-node:
+    command: |
+      RUST_BACKTRACE=1 movement-full-node run
+    depends_on:
+      setup:
+        condition: process_completed_successfully
+      da-sequencer:
+        condition: process_healthy
+    readiness_probe:
+      initial_delay_seconds: 10
+      exec:
+        command: curl http://0.0.0.0:30731
+    ports:
+      - "9464:9464" # Expose metrics endpoint
+
+  movement-faucet: 
+    command : |
+      movement-faucet-service run-simple --do-not-delegate
+    depends_on:
+      movement-full-node:
+        condition: process_healthy
+    readiness_probe:
+      initial_delay_seconds: 30
+      failure_threshold: 12
+      exec:
+        command: curl http://0.0.0.0:30732
+

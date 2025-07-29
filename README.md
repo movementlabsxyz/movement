@@ -13,7 +13,8 @@
 
 The Movement SDK is a collection of tools and libraries for building, deploying, and working with Movement Labs infrastructure. The SDK is designed to be modular and extensible, allowing developers to build custom tools and libraries on top of the core components as well as to interact with Movement Labs' own networks.
 
-**Note:** unless otherwise specified assume all commands below are run after entering a nix shell with `nix develop`.
+## Important
+Unless otherwise specified assume all commands below are run after entering a nix shell with `nix develop`.  Development is made possible Within the Nix environment with all needed tooling being available.  If you wish to run the network then this can also be achieved without the need to install `nix` with having docker and [just](https://github.com/casey/just) installed only. 
 
 ## Organization
 - [`scripts`](./scripts): Scripts for running Movement Labs software. See the [scripts README](./scripts/README.md) for more information about the organization of scripts.
@@ -24,37 +25,45 @@ The Movement SDK is a collection of tools and libraries for building, deploying,
 - [`util`](./util): Utility crates for the Movement SDK. These crates provide useful functions, macros, and types for use in Movement SDK projects. See the [util README](./util/README.md) for more information about the organization of utility crates.
 - [`proto`](./proto): Protocol buffer definitions for the Movement Network. These definitions are used to generate code for interacting with the Movement Network. See the [proto README](./proto/README.md) for more information about the organization of protocol buffer definitions.
 
-### Prerequisites - Nix : the package manager
+## Prerequisites (Development)
+- Nix package manager. Use nix to run and build Movement developer environments.  https://nix.dev/install-nix or https://determinate.systems/posts/determinate-nix-installer/.
 
-https://nix.dev/install-nix
+## Prerequisites (Running Node)
+- Docker and Docker Compose
+- just https://github.com/casey/just
 
+## Running Natively (Nix required)
 
-## Running Natively
-### `m1-da-light-node`
+### `movement-celestia-da-light-node`
 
 - **Features**:
-    - `build`: Build the `m1-da-light-node` binaries.
-    - `setup`: Run setup for new `m1-da-light-node` network with single node.
+    - `build`: Build the `movement-celestia-da-light-node` binaries.
+    - `setup`: Run setup for new `movement-celestia-da-light-node` network with single node.
     - `local`: Run a local Celestia Data Availability service. (Default.)
     - `arabica`: Run an Arabica Celestia Data Availability service. (Overrides local.)
-    - `test`: Run the test suite for the `m1-da-light-node`. (Can be combined with `local` or `arabica`. Exits on completion by default.)
+    - `test`: Run the test suite for the `movement-celestia-da-light-node`. (Can be combined with `local` or `arabica`. Exits on completion by default.)
 
 ```bash
 # example test with local  Celestia Data Availability service
-just m1-da-light-node native build.setup.test.local
+just movement-celestia-da-light-node native build.setup.test.local
 ```
 
-### `suzuka-full-node`
+### `movement-full-node`
 
 - **Features**:
-    - `build`: Build the `suzuka-full-node` binaries.
-    - `setup`: Run setup for new `suzuka-full-node` network with single node.
-    - `local`: Run a local Celesta Data Availability service. 
-    - `test`: run the test suite for `suzuka-full-node`. (Can be combined with `local`. Exits on completion by default.)
+    - `build`: Build the `movement-full-node` binaries.
+    - `celestia-arabica`: DA on Celestia's Arabica network
+    - `celestia-local`: Run a local Celesta Data Availability service.
+    - `celestia-mocha`: DA on Celestia's Mocha network
+    - `eth-local`: Settlement on a local Ethereum network
+    - `eth-holesky`: Settlement on a Holesky Ethereum network
+    - `setup`: Run setup for new `movement-full-node` network with single node.
+    - `indexer`: Run a local indexer
+    - `test`: run the test suite for `movement-full-node`. (Can be combined with `local`. Exits on completion by default.)
 
 ```bash
-# example test with local
-just monza-full-node native build.setup.test.local
+# example test with local celestia and local ethereum
+just movement-full-node native build.setup.celestia-local.eth-local
 ```
 
 ## Run a Movement Node with Docker Compose
@@ -77,41 +86,39 @@ MOVEMENT_ENV_FILE="${GIT_ROOT}/.env"
 echo "INFO: movement version is $(cat ${MOVEMENT_ENV_FILE})"
 ```
 
-### `suzuka-full-node`
+### `movement-full-node`
 
 - **Features**:
-    - `setup`: Run setup for new `suzuka-full-node` network with single node.
     - `local`: Run a local Celesta Data Availability service.
 
-**Note:** Currently, both `setup` and `local` must be used. 
-We only support running the `suzuka-full-node` with a local Celesta Data Availability 
+We only support running the `movement-full-node` with a local Celestia Data Availability 
 service via Docker Compose.
 
 ```bash
-# example setup with local
-just suzuka-full-node docker-compose setup.local
+# A local Movement network
+just movement-full-node docker-compose local
 ```
 Under the hood, `just` runs
 ```bash
 # working directory = GIT_ROOT
 GIT_ROOT=$(git rev-parse --show-toplevel)
 docker compose --env-file .env \
-               --file docker/compose/suzuka-full-node/docker-compose.yml \
-               --file docker/compose/suzuka-full-node/docker-compose.setup-local.yml \
-               --file docker/compose/suzuka-full-node/docker-compose.celestia-local.yml \
+               --file docker/compose/movement-full-node/docker-compose.yml \
+               --file docker/compose/movement-full-node/docker-compose.local.yml \
                up
 ```
 
 **Note:** if you want to recreate the network, but not rely on the just target above, please read through the scripts to identify the correct `docker-compose` files to run.
 
+**Note:** If you are experiencing any issues starting the local network please remove the local `./.movement` folder
+
 **Note** For attesters in order to receive rewards you need to launch the node in 
 `Attester` mode. To do this you will need to provide a private key at runtime.
 This feature is not implemented yet, at this moment.
 
-
 ## Services
 
-### `suzuka-full-node`
+### `movement-full-node`
 
 Both `native` and `docker-compose` runners will serve the following services listening on the specified default addresses:
 

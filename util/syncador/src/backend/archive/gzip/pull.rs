@@ -51,7 +51,7 @@ impl Pull {
 		// Create the destination directory if it doesn't exist
 		fs::create_dir_all(&destination).await?;
 
-		// Unpack each archive in the manifest
+		// Unpack each archive in the unsplit_manifest
 		for (_relative_path, absolute_path) in manifest.try_path_tuples()? {
 			let tar_gz = File::open(&absolute_path)?;
 			let decoder = GzDecoder::new(tar_gz);
@@ -68,7 +68,6 @@ impl Pull {
 		// Recursively add every file (not directory) in the destination directory to the new manifest
 		let mut entries = Vec::new();
 		Self::collect_files(&destination, &mut entries).await?;
-		info!("Unarchived files: {:?}", entries.len());
 		for file_path in entries {
 			new_manifest.add_sync_file(file_path);
 		}

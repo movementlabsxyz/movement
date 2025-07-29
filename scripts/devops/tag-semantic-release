@@ -1,0 +1,57 @@
+#!/bin/bash
+
+# parse bump type from args
+BUMP_TYPE=${1:-auto}
+if [ "$BUMP_TYPE" != "auto" ] && [ "$BUMP_TYPE" != "major" ] && [ "$BUMP_TYPE" != "minor" ] && [ "$BUMP_TYPE" != "patch" ]; then
+    echo "Invalid bump type: $BUMP_TYPE"
+    exit 1
+fi
+
+# parse dry run from args
+DRY_RUN=${2:-true}
+
+# format dry run
+if [ "$DRY_RUN" == "true" ]; then
+    DRY_RUN="--dry-run"
+else
+    DRY_RUN=""
+fi
+
+# check if git is installed
+if ! command -v git &> /dev/null; then
+    echo "git is not installed"
+    exit 1
+fi
+
+# check if cog is installed
+if ! command -v cog &> /dev/null; then
+    echo "cocogitto (cog) is not installed"
+    exit 1
+fi
+
+# check if cargo-edit is installed
+if ! cargo install --list | grep -q "cargo-edit"; then
+    echo "cargo-edit is not installed"
+    exit 1
+fi
+
+echo "Creating semantic release"
+
+# check for conventional commits
+CONVENTIONAL_COMMITS=$(cog check)
+
+if echo "$CONVENTIONAL_COMMITS" | grep -qi "Error:"; then
+    echo "Failures found in conventional commit"
+    exit 1
+fi
+
+# bump version
+echo "Bumping version"
+cog bump --$BUMP_TYPE $DRY_RUN
+
+# output the new version
+NEW_VERSION=$(cog get-version)
+NEW_VERSION="${NEW_VERSION#New version: }"
+echo "$NEW_VERSION"
+
+exit 0
