@@ -119,7 +119,6 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	// Generate recipient account
 	let recipient = LocalAccount::generate(&mut rand::rngs::OsRng);
-
 	faucet_client.fund(recipient.address(), 100_000_000_000).await?;
 
 	let recipient_bal = coin_client
