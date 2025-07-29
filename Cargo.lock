@@ -2550,7 +2550,7 @@ dependencies = [
  "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=1d1cdbbd7fabb80dcb95ba5e23213faa072fab67)",
  "once_cell",
  "poem",
- "prometheus",
+ "prometheus 0.13.4",
  "serde",
 ]
 
@@ -3160,7 +3160,7 @@ dependencies = [
  "async-trait",
  "backtrace",
  "clap 4.5.21",
- "prometheus",
+ "prometheus 0.13.4",
  "serde",
  "serde_yaml 0.8.26",
  "tempfile",
@@ -3219,7 +3219,7 @@ dependencies = [
  "itertools 0.12.1",
  "lz4",
  "once_cell",
- "prometheus",
+ "prometheus 0.13.4",
  "prost 0.12.6",
  "redis",
  "redis-test",
@@ -3263,7 +3263,7 @@ dependencies = [
  "futures",
  "hyper 0.14.31",
  "once_cell",
- "prometheus",
+ "prometheus 0.13.4",
  "reqwest 0.11.27",
  "serde_json",
  "tokio",
@@ -3542,7 +3542,7 @@ dependencies = [
  "futures",
  "hostname",
  "once_cell",
- "prometheus",
+ "prometheus 0.13.4",
  "serde",
  "serde_json",
  "strum 0.24.1",
@@ -3566,7 +3566,7 @@ dependencies = [
  "futures",
  "hostname",
  "once_cell",
- "prometheus",
+ "prometheus 0.13.4",
  "serde",
  "serde_json",
  "strum 0.24.1",
@@ -3736,7 +3736,7 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core.git?branch=movement#31d9876e563698049a1ea0b7f1d88b48b921c3e9"
 dependencies = [
  "anyhow",
- "prometheus",
+ "prometheus 0.13.4",
 ]
 
 [[package]]
@@ -3745,7 +3745,7 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1d1cdbbd7fabb80dcb95ba5e23213faa072fab67#1d1cdbbd7fabb80dcb95ba5e23213faa072fab67"
 dependencies = [
  "anyhow",
- "prometheus",
+ "prometheus 0.13.4",
 ]
 
 [[package]]
@@ -4213,7 +4213,7 @@ dependencies = [
  "cfg-if",
  "once_cell",
  "procfs",
- "prometheus",
+ "prometheus 0.13.4",
  "sysinfo",
 ]
 
@@ -4229,7 +4229,7 @@ dependencies = [
  "cfg-if",
  "once_cell",
  "procfs",
- "prometheus",
+ "prometheus 0.13.4",
  "sysinfo",
 ]
 
@@ -5344,7 +5344,7 @@ dependencies = [
  "flate2",
  "futures",
  "once_cell",
- "prometheus",
+ "prometheus 0.13.4",
  "rand 0.7.3",
  "rand_core 0.5.1",
  "reqwest 0.11.27",
@@ -5383,7 +5383,7 @@ dependencies = [
  "flate2",
  "futures",
  "once_cell",
- "prometheus",
+ "prometheus 0.13.4",
  "rand 0.7.3",
  "rand_core 0.5.1",
  "reqwest 0.11.27",
@@ -5421,7 +5421,7 @@ dependencies = [
  "gcp-bigquery-client",
  "jsonwebtoken 8.3.0",
  "once_cell",
- "prometheus",
+ "prometheus 0.13.4",
  "rand 0.7.3",
  "rand_core 0.5.1",
  "reqwest 0.11.27",
@@ -5461,7 +5461,7 @@ dependencies = [
  "gcp-bigquery-client",
  "jsonwebtoken 8.3.0",
  "once_cell",
- "prometheus",
+ "prometheus 0.13.4",
  "rand 0.7.3",
  "rand_core 0.5.1",
  "reqwest 0.11.27",
@@ -12048,6 +12048,8 @@ dependencies = [
  "movement-da-util",
  "movement-signer",
  "movement-signer-loader",
+ "poem",
+ "prometheus 0.14.0",
  "rand 0.7.3",
  "serde",
  "serde_derive",
@@ -14658,6 +14660,7 @@ dependencies = [
 name = "movement-tracing"
 version = "0.3.4"
 dependencies = [
+ "anyhow",
  "aptos-config 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core.git?branch=movement)",
  "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core.git?branch=movement)",
  "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core.git?branch=movement)",
@@ -14669,7 +14672,8 @@ dependencies = [
  "lazy_static",
  "movement-config",
  "once_cell",
- "prometheus",
+ "poem",
+ "prometheus 0.13.4",
  "rand 0.7.3",
  "ring 0.17.8",
  "tokio",
@@ -16055,7 +16059,7 @@ dependencies = [
  "nix 0.26.4",
  "once_cell",
  "parking_lot 0.12.3",
- "protobuf",
+ "protobuf 2.28.0",
  "protobuf-codegen-pure",
  "smallvec",
  "symbolic-demangle",
@@ -16256,7 +16260,7 @@ dependencies = [
  "parquet",
  "parquet_derive",
  "postgres-native-tls",
- "prometheus",
+ "prometheus 0.13.4",
  "prost 0.12.6",
  "regex",
  "serde",
@@ -16315,7 +16319,7 @@ dependencies = [
  "parquet",
  "parquet_derive",
  "postgres-native-tls",
- "prometheus",
+ "prometheus 0.13.4",
  "prost 0.12.6",
  "regex",
  "serde",
@@ -16359,8 +16363,23 @@ dependencies = [
  "lazy_static",
  "memchr",
  "parking_lot 0.12.3",
- "protobuf",
+ "protobuf 2.28.0",
  "thiserror 1.0.69",
+]
+
+[[package]]
+name = "prometheus"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3ca5326d8d0b950a9acd87e6a3f94745394f62e4dae1b1ee22b2bc0c394af43a"
+dependencies = [
+ "cfg-if",
+ "fnv",
+ "lazy_static",
+ "memchr",
+ "parking_lot 0.12.3",
+ "protobuf 3.7.2",
+ "thiserror 2.0.7",
 ]
 
 [[package]]
@@ -16531,12 +16550,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "106dd99e98437432fed6519dedecfade6a06a73bb7b2a1e019fdd2bee5778d94"
 
 [[package]]
+name = "protobuf"
+version = "3.7.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d65a1d4ddae7d8b5de68153b48f6aa3bba8cb002b243dbdbc55a5afbc98f99f4"
+dependencies = [
+ "once_cell",
+ "protobuf-support",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "protobuf-codegen"
 version = "2.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "033460afb75cf755fcfc16dfaed20b86468082a2ea24e05ac35ab4a099a017d6"
 dependencies = [
- "protobuf",
+ "protobuf 2.28.0",
 ]
 
 [[package]]
@@ -16545,8 +16575,17 @@ version = "2.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "95a29399fc94bcd3eeaa951c715f7bea69409b2445356b00519740bcd6ddd865"
 dependencies = [
- "protobuf",
+ "protobuf 2.28.0",
  "protobuf-codegen",
+]
+
+[[package]]
+name = "protobuf-support"
+version = "3.7.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3e36c2f31e0a47f9280fb347ef5e461ffcd2c52dd520d8e216b52f93b0b0d7d6"
+dependencies = [
+ "thiserror 1.0.69",
 ]
 
 [[package]]
@@ -18138,7 +18177,7 @@ dependencies = [
  "async-trait",
  "backtrace",
  "clap 4.5.21",
- "prometheus",
+ "prometheus 0.13.4",
  "serde",
  "serde_yaml 0.8.26",
  "tempfile",
@@ -18159,7 +18198,7 @@ dependencies = [
  "async-trait",
  "backtrace",
  "clap 4.5.21",
- "prometheus",
+ "prometheus 0.13.4",
  "serde",
  "serde_yaml 0.8.26",
  "tempfile",
