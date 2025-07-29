@@ -40,6 +40,13 @@ contract MCRStorage {
     // map block height to accepted block hash 
     mapping(uint256 blockHeight => BlockCommitment) public acceptedBlocks;
 
-    uint256[50] internal __gap;
+    // whether we allow open attestation
+    bool public openAttestationEnabled;
+
+    // versioned scheme for accepted blocks
+    mapping(uint256 => mapping(uint256 blockHeight => BlockCommitment)) public versionedAcceptedBlocks;
+    uint256 public acceptedBlocksVersion;
+
+    uint256[47] internal __gap;
 
 }
