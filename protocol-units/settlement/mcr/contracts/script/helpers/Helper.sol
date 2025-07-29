@@ -204,9 +204,14 @@ contract Helper is Script {
 
     function _deployTimelock() internal {
         if (deployment.timelock == ZERO) {
-            timelock = new TimelockController(config.minDelay, config.signersLabs, config.signersFoundation, ZERO);
+            timelock = new TimelockController(config.minDelay, _arrayfy(deployment.movementLabsSafe), _arrayfy(deployment.movementFoundationSafe), ZERO);
             deployment.timelock = address(timelock);
         }
+    }
+
+    function _arrayfy(address addr) internal pure returns (address[] memory arr) {
+        arr = new address[](1);
+        arr[0] = addr;
     }
 
     function _deployCreate3() internal {

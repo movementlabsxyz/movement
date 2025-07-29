@@ -6,6 +6,8 @@ ffi = true
 gas_limit = 9223372036854775807  # this is only needed for the multiround settlement test
 build_info = true
 extra_output = ["storageLayout"]
+optimizer = true
+optimizer_runs = 200
 
 solc = "0.8.26"
 evm_version = "cancun"

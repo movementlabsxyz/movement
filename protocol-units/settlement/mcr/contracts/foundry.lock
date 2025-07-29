@@ -1,0 +1,38 @@
+{
+  "../../../bridge/contracts/lib/forge-std": {
+    "rev": "5a802d7c10abb4bbfb3e7214c75052ef9e6a06f8"
+  },
+  "lib/murky": {
+    "rev": "5feccd1253d7da820f7cccccdedf64471025455d"
+  },
+  "../../../tokens/mock/testnet/imola/mevm/lib/openzeppelin-contracts": {
+    "rev": "dbb6104ce834628e473d2173bbc9d47f81a9eec3"
+  },
+  "lib/openzeppelin-contracts-upgradeable": {
+    "rev": "723f8cab09cdae1aca9ec9cc1cfa040c2d4b06c1"
+  },
+  "../../../bridge/contracts/lib/openzeppelin-contracts": {
+    "rev": "530179a71f435e85ae9df9b9f12b5637cf229e5c"
+  },
+  "lib/forge-std": {
+    "rev": "1714bee72e286e73f76e320d110e0eaf5c4e649d"
+  },
+  "lib/openzeppelin-foundry-upgrades": {
+    "rev": "4cd15fc50b141c77d8cc9ff8efb44d00e841a299"
+  },
+  "../../../bridge/contracts/lib/openzeppelin-contracts-upgradeable": {
+    "rev": "f231c5cb86c0c045dc0b23d8f3beeaf0d68dccc7"
+  },
+  "lib/solmate": {
+    "rev": "97bdb2003b70382996a79a406813f76417b1cf90"
+  },
+  "lib/openzeppelin-contracts": {
+    "rev": "dbb6104ce834628e473d2173bbc9d47f81a9eec3"
+  },
+  "lib/safe-smart-account": {
+    "rev": "bf943f80fec5ac647159d26161446ac5d716a294"
+  },
+  "../../../tokens/mock/testnet/holesky/lib/openzeppelin-contracts": {
+    "rev": "dbb6104ce834628e473d2173bbc9d47f81a9eec3"
+  }
+}

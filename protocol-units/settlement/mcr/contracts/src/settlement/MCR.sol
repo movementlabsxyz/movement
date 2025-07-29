@@ -176,10 +176,9 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
         // iterate over the attester set
         for (uint256 i = 0; i < attesters.length; i++) {
-            address attester = attesters[i];
 
             // get a commitment for the attester at the block height
-            BlockCommitment memory blockCommitment = commitments[blockHeight][attester];
+            BlockCommitment memory blockCommitment = commitments[blockHeight][attesters[i]];
 
             // check the total stake on the commitment
             uint256 totalStakeOnCommitment = commitmentStakes[blockCommitment.height][blockCommitment.commitment];
