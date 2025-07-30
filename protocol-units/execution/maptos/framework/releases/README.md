@@ -19,30 +19,34 @@ We use this directory to track framework releases and migrations. The path of mi
 
 The feature comparission between MVT Network and Aptos Network gives these features that are different.
 
-|                                             | MVT        | APTOS          | MIGATED Network |
-| APTOS_STD_CHAIN_ID_NATIVES                  | ENABLE    | DISABLE|  |
-| PERIODICAL_REWARD_RATE_DECREASE             | DISABLE  | ENABLE   |          
-| PARTIAL_GOVERNANCE_VOTING                   | DISABLE  | ENABLE|  |
-| DELEGATION_POOL_PARTIAL_GOVERNANCE_VOTING   | DISABLE  | ENABLE|  |
-| VM_BINARY_FORMAT_V7                         | DISABLE  | ENABLE         |   DISABLE |
-| KEYLESS_BUT_ZKLESS_ACCOUNTS                 | ENABLE    | DISABLE
-| REMOVE_DETAILED_ERROR_FROM_HASH             | ENABLE    | DISABLE         |   DISABLE |
-| KEYLESS_ACCOUNTS_WITH_PASSKEYS              | ENABLE    | DISABLE          |  DISABLE |
-| NEW_ACCOUNTS_DEFAULT_TO_FA_APT_STORE        | DISABLE  | ENABLE|  |
-| CONCURRENT_FUNGIBLE_BALANCE                 | ENABLE    | DISABLE|  |
-| DISALLOW_USER_NATIVES                       | DISABLE  | ENABLE |  |
-| ALLOW_SERIALIZED_SCRIPT_ARGS                | DISABLE  | ENABLE |  |
-| ENABLE_ENUM_TYPES                           | DISABLE  | ENABLE |  |
-| REJECT_UNSTABLE_BYTECODE_FOR_SCRIPT         | DISABLE  | ENABLE |  |
-| FEDERATED_KEYLESS                           | DISABLE  | ENABLE |  |
-| TRANSACTION_SIMULATION_ENHANCEMENT          | DISABLE  | ENABLE |  |
-| COLLECTION_OWNER                            | DISABLE  | ENABLE | |
-| NATIVE_MEMORY_OPERATIONS                    | DISABLE  | ENABLE | |
-| ENABLE_LOADER_V2                            | DISABLE  | ENABLE | |
-| DISALLOW_INIT_MODULE_TO_PUBLISH_MODULES     | DISABLE  | ENABLE | |
-| NEW_ACCOUNTS_DEFAULT_TO_FA_STORE            | DISABLE  | ENABLE | |
-| DEFAULT_ACCOUNT_RESOURCE                    | DISABLE  | ENABLE | |
+| Title                                      | MVT     | APTOS   | MIGRATED Network |
+|--------------------------------------------|---------|---------|------------------|
+| APTOS_STD_CHAIN_ID_NATIVES                 | ENABLE  | DISABLE |                  |
+| PERIODICAL_REWARD_RATE_DECREASE            | DISABLE | ENABLE  |                  |
+| PARTIAL_GOVERNANCE_VOTING                  | DISABLE | ENABLE  |                  |
+| DELEGATION_POOL_PARTIAL_GOVERNANCE_VOTING  | DISABLE | ENABLE  |                  |
+| VM_BINARY_FORMAT_V7                        | DISABLE | ENABLE  | DISABLE          |
+| KEYLESS_BUT_ZKLESS_ACCOUNTS                | ENABLE  | DISABLE |                  |
+| REMOVE_DETAILED_ERROR_FROM_HASH            | ENABLE  | DISABLE | DISABLE          |
+| KEYLESS_ACCOUNTS_WITH_PASSKEYS             | ENABLE  | DISABLE | DISABLE          |
+| NEW_ACCOUNTS_DEFAULT_TO_FA_APT_STORE       | DISABLE | ENABLE  |                  |
+| CONCURRENT_FUNGIBLE_BALANCE                | ENABLE  | DISABLE |                  |
+| DISALLOW_USER_NATIVES                      | DISABLE | ENABLE  |                  |
+| ALLOW_SERIALIZED_SCRIPT_ARGS               | DISABLE | ENABLE  |                  |
+| ENABLE_ENUM_TYPES                          | DISABLE | ENABLE  |                  |
+| REJECT_UNSTABLE_BYTECODE_FOR_SCRIPT        | DISABLE | ENABLE  |                  |
+| FEDERATED_KEYLESS                          | DISABLE | ENABLE  |                  |
+| TRANSACTION_SIMULATION_ENHANCEMENT         | DISABLE | ENABLE  |                  |
+| COLLECTION_OWNER                           | DISABLE | ENABLE  |                  |
+| NATIVE_MEMORY_OPERATIONS                   | DISABLE | ENABLE  |                  |
+| ENABLE_LOADER_V2                           | DISABLE | ENABLE  |                  |
+| DISALLOW_INIT_MODULE_TO_PUBLISH_MODULES    | DISABLE | ENABLE  |                  |
+| NEW_ACCOUNTS_DEFAULT_TO_FA_STORE           | DISABLE | ENABLE  |                  |
+| DEFAULT_ACCOUNT_RESOURCE                   | DISABLE | ENABLE  |                  |
+
 
 The feature that are the same but must be changed are:
-|                                             | MVT        | APTOS          | MIGATED Network |
-| KEYLESS_ACCOUNTS                            | ENABLE   | ENABLE              | DISABLE |
+
+| Feature              | MVT    | APTOS  | MIGRATED Network |
+|----------------------|--------|--------|------------------|
+| KEYLESS_ACCOUNTS     | ENABLE | ENABLE | DISABLE          |
