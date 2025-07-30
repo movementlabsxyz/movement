@@ -1,7 +1,7 @@
 use aptos_framework_upgrade_gas_release::generate_gas_upgrade_module;
 use maptos_framework_release_util::mrb_release;
 
-mrb_release!(PreL1Merge, BIARRTIZ_RC1, "edafe2e5ed6ce462fa81d08faf5d5008fa836ca2-pre-l1-merge.mrb");
+mrb_release!(PreL1Merge, BIARRTIZ_RC1, "c5d8d936b7775436ff6c256e10049b4de497c220-pre-l1-merge.mrb");
 
 generate_gas_upgrade_module!(gas_upgrade, PreL1Merge, {
 	let mut gas_parameters = AptosGasParameters::initial();
@@ -24,7 +24,7 @@ pub mod script {
 script {
     use aptos_framework::aptos_governance;
     use aptos_framework::gas_schedule;
-    use aptos_framework::governed_gas_pool;
+    use aptos_framework::transaction_fee;
     use aptos_framework::aptos_coin;
     use aptos_framework::signer;
     use aptos_framework::version;
@@ -34,8 +34,15 @@ script {
 
         let core_address: address = signer::address_of(core_resources);
 
-        // this initialize function is idempotent, already initialized GGP will not error.
-        governed_gas_pool::initialize(&core_signer, b"aptos_framework::governed_gas_pool");
+        		// First, disable the COLLECT_AND_DISTRIBUTE_GAS_FEES feature flag to reset the state
+		// Then re-enable it and initialize the transaction fee collection
+		// This approach ensures clean initialization without conflicts
+		
+		// Step 1: Temporarily disable the feature flag
+		// (This will be handled by the feature flags section below)
+		
+		// Step 2: Initialize transaction fee collection
+		transaction_fee::initialize_fee_collection_and_distribution(&core_signer, 0);
     }
 }
 "#
@@ -52,11 +59,11 @@ pub mod full {
 		use aptos_release_builder::components::feature_flags::FeatureFlag;
 		use aptos_types::on_chain_config::FeatureFlag as AptosFeatureFlag;
 
-		// start with the default features and append the Governed Gas Pool feature
+		// start with the default features and disable the Governed Gas Pool feature
 		let mut enable_feature_flags = AptosFeatureFlag::default_features();
-		// Note: when testing into the future, you may have to use a different revision of [aptos_types] in this crate's Cargo.toml
-		// Or, I suppose you can keep and GOVERNED_GAS_POOL feature flag and a GOVERNED_GAS_POOL_V2 feature flag and just make sure you're disabling the former and enabling the latter. Thereafter, it won't matter what happens to the GOVERNED_GAS_POOL feature flag, i.e., it can be replaced.
-		enable_feature_flags.push(AptosFeatureFlag::GOVERNED_GAS_POOL);
+		
+		// Disable the GOVERNED_GAS_POOL feature flag to deprecate it
+		// enable_feature_flags.push(AptosFeatureFlag::GOVERNED_GAS_POOL);
 
 		// Note: before the upgrade to the newest version to the Aptos framework
 		// we need to activate features that are currently active on the Aptos testnet
@@ -65,10 +72,18 @@ pub mod full {
 		enable_feature_flags.push(AptosFeatureFlag::PARTIAL_GOVERNANCE_VOTING);
 		enable_feature_flags.push(AptosFeatureFlag::DELEGATION_POOL_PARTIAL_GOVERNANCE_VOTING);
 		enable_feature_flags.push(AptosFeatureFlag::VM_BINARY_FORMAT_V7);
+		
+		// Temporarily disable COLLECT_AND_DISTRIBUTE_GAS_FEES to reset the state
+		// This will allow the initialization to work properly
+		// enable_feature_flags.push(AptosFeatureFlag::COLLECT_AND_DISTRIBUTE_GAS_FEES);
 
 		Features {
 			enabled: enable_feature_flags.into_iter().map(FeatureFlag::from).collect(),
-			disabled: vec![AptosFeatureFlag::REMOVE_DETAILED_ERROR_FROM_HASH.into()],
+			disabled: vec![
+				AptosFeatureFlag::REMOVE_DETAILED_ERROR_FROM_HASH.into(),
+				AptosFeatureFlag::GOVERNED_GAS_POOL.into(), // Explicitly disable GOVERNED_GAS_POOL
+				AptosFeatureFlag::COLLECT_AND_DISTRIBUTE_GAS_FEES.into(), // Temporarily disable to reset state
+			],
 		}
 	});
 }
