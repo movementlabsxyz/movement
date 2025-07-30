@@ -43,10 +43,7 @@ The feature comparission between MVT Network and Aptos Network gives these featu
 | DISALLOW_INIT_MODULE_TO_PUBLISH_MODULES    | DISABLE | ENABLE  |                  |
 | NEW_ACCOUNTS_DEFAULT_TO_FA_STORE           | DISABLE | ENABLE  |                  |
 | DEFAULT_ACCOUNT_RESOURCE                   | DISABLE | ENABLE  |                  |
+| COLLECT_AND_DISTRIBUTE_GAS_FEES            | DISABLE | DISABLE | ENABLE           |
+| GOVERNED_GAS_POOL                          | NONE    | ENABLE  | REMOVED          |
+| KEYLESS_ACCOUNTS                           | ENABLE  | ENABLE  | DISABLE          |
 
-
-The feature that are the same but must be changed are:
-
-| Feature              | MVT    | APTOS  | MIGRATED Network |
-|----------------------|--------|--------|------------------|
-| KEYLESS_ACCOUNTS     | ENABLE | ENABLE | DISABLE          |
