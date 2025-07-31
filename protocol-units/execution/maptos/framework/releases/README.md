@@ -23,7 +23,7 @@ The feature comparission between MVT Network and Aptos Network gives these featu
 |----|--------------------------------------------|---------|---------|------------------|
 |  4 | APTOS_STD_CHAIN_ID_NATIVES                 | ENABLE  | DISABLE |                  |
 |  6 | COLLECT_AND_DISTRIBUTE_GAS_FEES            | DISABLE | DISABLE | ENABLE           |
-| 16 | PERIODICAL_REWARD_RATE_DECREASE            | DISABLE | ENABLE  |                  |
+| 16 | PERIODICAL_REWARD_RATE_DECREASE            | DISABLE | ENABLE  |   ? [see](https://github.com/movementlabsxyz/movement-migration/issues/30#issuecomment-2979045602)              |  
 | 17 | PARTIAL_GOVERNANCE_VOTING                  | DISABLE | ENABLE  |                  |
 | 21 | DELEGATION_POOL_PARTIAL_GOVERNANCE_VOTING  | DISABLE | ENABLE  |                  |
 | 40 | VM_BINARY_FORMAT_V7                        | DISABLE | ENABLE  | DISABLE          |
