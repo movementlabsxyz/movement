@@ -226,6 +226,55 @@ async fn main() -> Result<(), anyhow::Error> {
 		send_aptos_transaction(&rest_client, &mut core_resources_account, rotate_payload).await?;
 	info!("Rotate transaction response: {:?}", rotate_response);
 
+	// Try to transfer with the old private key it should fail
+	let transfer_result = coin_client
+		.transfer(&mut core_resources_account, recipient.address(), 42, None)
+		.await;
+
+	match transfer_result {
+		Ok(resp) => {
+			panic!(
+				"Expected transfer to fail due to INVALID_AUTH_KEY, but got success: {:#?}",
+				resp
+			);
+		}
+		Err(err) => {
+			// Convert error to string or inspect its downcasted type
+			let err_str = format!("{:?}", err);
+			assert!(
+				err_str.contains("INVALID_AUTH_KEY"),
+				"Expected INVALID_AUTH_KEY error, but got: {}",
+				err_str
+			);
+			println!("✅ Transfer failed as expected with INVALID_AUTH_KEY error.");
+		}
+	}
+
+	// Reconstruct LocalAccount using the recipient's private key (new key post-rotation)
+	let mut rotated_core_account = LocalAccount::new(
+		core_resources_account.address(), // Must match the old account's address
+		recipient.private_key().clone(),  // New private key
+		core_resources_account.sequence_number(), // Continue with correct sequence number
+	);
+
+	// Check that the address is unchanged
+	assert_eq!(
+		rotated_core_account.address(),
+		core_resources_account.address(),
+		"Rotated key should control the same account address"
+	);
+
+	// Test signing: send a small transfer or dummy txn
+	let transfer_check = coin_client
+		.transfer(&mut rotated_core_account, recipient.address(), 1, None)
+		.await?;
+
+	println!(
+		"✅ New private key successfully signed transaction for same account {}: {:#?}",
+		rotated_core_account.address(),
+		transfer_check
+	);
+
 	Ok(())
 }
 
