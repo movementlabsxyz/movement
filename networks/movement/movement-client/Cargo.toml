@@ -57,6 +57,9 @@ path = "src/bin/e2e/key_rotation.rs"
 [[bin]]
 name = "movement-tests-sequence-number-ooo"
 path = "src/bin/e2e/sequence_number_ooo.rs"
+[[bin]]
+name = "movement-tests-core-resources-rotation"
+path = "src/bin/e2e/core_resources_key_rotation.rs"
 
 [dependencies]
 aptos-language-e2e-tests = { workspace = true }
