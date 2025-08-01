@@ -13,7 +13,7 @@ processes:
     command : |
       movement-faucet-service run-simple --do-not-delegate
 
-  test-key-rotation: 
+  test-core-resources-rotation: 
     command : |
       cargo run --bin movement-tests-e2e-key-rotation 
     depends_on:
