@@ -131,10 +131,30 @@ async fn main() -> Result<(), anyhow::Error> {
 	// form the rest client
 	let rest_client = movement_client::rest_client::Client::new(NODE_URL.clone());
 
-	// release the elsa release
+	// After completing key rotation and confirming it's successful:
+
+	// Fetch the latest sequence number for the core resources account post-rotation
+	let account_info =
+		rest_client.get_account(&core_resources_account.address()).await?.into_inner();
+
+	// Reconstruct LocalAccount using the rotated private key (recipient.private_key)
+	let rotated_core_account = LocalAccount::new(
+		core_resources_account.address(),
+		recipient.private_key().clone(), // Rotated private key
+		account_info.sequence_number,
+	);
+
+	let rotated_release_signer =
+		LocalAccountReleaseSigner::new(rotated_core_account, Some(aptos_test_root_address()));
+
+	// Finally, invoke the release flow using the rotated signer
 	biarritz_rc1
-		.release(&local_account_release_signer, 2_000_000, 100, 60, &rest_client)
+		.release(&rotated_release_signer, 2_000_000, 100, 60, &rest_client)
 		.await?;
+
+	info!(
+		"✅ Governance release successfully signed and executed using rotated Core Resources key."
+	);
 
 	Ok(())
 }
