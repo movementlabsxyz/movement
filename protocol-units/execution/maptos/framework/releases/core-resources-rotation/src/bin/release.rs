@@ -1,9 +1,32 @@
+use anyhow::Context;
 use aptos_framework_pre_l1_merge_release::cached::full::feature_upgrade::PreL1Merge;
+use aptos_sdk::{
+	coin_client::CoinClient,
+	crypto::SigningKey,
+	move_types::{
+		identifier::Identifier,
+		language_storage::{ModuleId, TypeTag},
+	},
+	rest_client::{Client, FaucetClient, Transaction},
+	transaction_builder::TransactionFactory,
+	types::{account_address::AccountAddress, transaction::TransactionPayload},
+};
+use aptos_types::{
+	account_config::{RotationProofChallenge, CORE_CODE_ADDRESS},
+	chain_id::ChainId,
+	transaction::EntryFunction,
+};
 use maptos_framework_release_util::{LocalAccountReleaseSigner, Release};
 use movement_client::types::{account_config::aptos_test_root_address, LocalAccount};
 use once_cell::sync::Lazy;
+use serde::{Deserialize, Serialize};
 use std::str::FromStr;
+//use tokio::process::Command;
+use tracing::info;
 use url::Url;
+
+/// limit of gas unit
+const GAS_UNIT_LIMIT: u64 = 100000;
 
 static MOVEMENT_CONFIG: Lazy<movement_config::Config> = Lazy::new(|| {
 	let dot_movement = dot_movement::DotMovement::try_from_env().unwrap();
@@ -32,6 +55,35 @@ static NODE_URL: Lazy<Url> = Lazy::new(|| {
 	Url::from_str(node_connection_url.as_str()).unwrap()
 });
 
+static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
+	let faucet_listen_address = MOVEMENT_CONFIG
+		.execution_config
+		.maptos_config
+		.client
+		.maptos_faucet_rest_connection_hostname
+		.clone();
+	let faucet_listen_port = MOVEMENT_CONFIG
+		.execution_config
+		.maptos_config
+		.client
+		.maptos_faucet_rest_connection_port;
+
+	let faucet_listen_url = format!("http://{}:{}", faucet_listen_address, faucet_listen_port);
+
+	Url::from_str(faucet_listen_url.as_str()).unwrap()
+});
+
+#[derive(Serialize, Deserialize)]
+struct RotationCapabilityOfferProofChallengeV2 {
+	account_address: AccountAddress,
+	module_name: String,
+	struct_name: String,
+	chain_id: u8,
+	sequence_number: u64,
+	source_address: AccountAddress,
+	recipient_address: AccountAddress,
+}
+
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
 	// setup the logger
@@ -42,6 +94,11 @@ async fn main() -> Result<(), anyhow::Error> {
 			EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
 		)
 		.init();
+
+	// Initialize clients
+	let rest_client = Client::new(NODE_URL.clone());
+	let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
+	let coin_client = CoinClient::new(&rest_client);
 
 	// form the elsa release
 	let biarritz_rc1 = PreL1Merge::new();
@@ -54,11 +111,7 @@ async fn main() -> Result<(), anyhow::Error> {
 		.maptos_private_key_signer_identifier
 		.try_raw_private_key()?;
 	let private_key_hex = hex::encode(raw_private_key);
-	let root_account = LocalAccount::from_private_key(private_key_hex.as_str(), 0)?;
-
-	// form the local account release signer
-	let core_resources_account =
-		LocalAccountReleaseSigner::new(root_account, Some(aptos_test_root_address()));
+	let core_resources_account = LocalAccount::from_private_key(private_key_hex.as_str(), 0)?;
 
 	// Now, let's rotate the key and see if the rotated account
 	// can still sign off on governance proposals
@@ -68,18 +121,15 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	faucet_client.fund(recipient.address(), 100_000_000_000).await?;
 
-	let recipient_bal = coin_client
-		.get_account_balance(&recipient.address())
-		.await
-		.context("Failed to get recipient's account balance")?;
+	let recipient_bal = coin_client.get_account_balance(&recipient.address()).await?;
 
-	let core_resource_bal = coin_client
-		.get_account_balance(&core_resources_account.address())
-		.await
-		.context("Failed to get core resources account balance")?;
+	let core_resource_bal =
+		coin_client.get_account_balance(&core_resources_account.address()).await?;
 
 	info!("Recipient's balance: {:?}", recipient_bal);
 	info!("Core Resources Account balance: {:?}", core_resource_bal);
+
+	let state = rest_client.get_ledger_information().await?.into_inner();
 
 	// --- Offer Rotation Capability ---
 	let rotation_capability_proof = RotationCapabilityOfferProofChallengeV2 {
@@ -92,8 +142,7 @@ async fn main() -> Result<(), anyhow::Error> {
 		recipient_address: recipient.address(),
 	};
 
-	let rotation_capability_proof_msg = bcs::to_bytes(&rotation_capability_proof)
-		.context("Failed to serialize rotation capability proof challenge")?;
+	let rotation_capability_proof_msg = bcs::to_bytes(&rotation_capability_proof)?;
 	let rotation_proof_signed = core_resources_account
 		.private_key()
 		.sign_arbitrary_message(&rotation_capability_proof_msg);
@@ -157,4 +206,64 @@ async fn main() -> Result<(), anyhow::Error> {
 	);
 
 	Ok(())
+}
+
+fn make_entry_function_payload(
+	package_address: AccountAddress,
+	module_name: &'static str,
+	function_name: &'static str,
+	ty_args: Vec<TypeTag>,
+	args: Vec<Vec<u8>>,
+) -> Result<TransactionPayload, anyhow::Error> {
+	tracing::info!("Creating entry function payload for package address: {:?}", package_address);
+
+	let module_id = ModuleId::new(
+		package_address,
+		Identifier::new(module_name).context("Invalid module name")?,
+	);
+
+	let function_id = Identifier::new(function_name).context("Invalid function name")?;
+
+	Ok(TransactionPayload::EntryFunction(EntryFunction::new(module_id, function_id, ty_args, args)))
+}
+
+fn verify_signature(
+	public_key_bytes: &[u8; 32],
+	message: &[u8],
+	signature_bytes: &[u8; 64],
+) -> Result<bool, anyhow::Error> {
+	use ed25519_dalek::{Signature, Verifier, VerifyingKey};
+
+	let verifying_key =
+		VerifyingKey::from_bytes(public_key_bytes).context("Failed to parse public key bytes")?;
+
+	let signature = Signature::from_bytes(signature_bytes);
+
+	Ok(verifying_key.verify(message, &signature).is_ok())
+}
+
+async fn send_aptos_transaction(
+	client: &Client,
+	signer: &mut LocalAccount,
+	payload: TransactionPayload,
+) -> anyhow::Result<Transaction> {
+	let state = client
+		.get_ledger_information()
+		.await
+		.context("Failed to retrieve ledger information")?
+		.into_inner();
+
+	let transaction_factory = TransactionFactory::new(ChainId::new(state.chain_id))
+		.with_gas_unit_price(100)
+		.with_max_gas_amount(GAS_UNIT_LIMIT);
+
+	let signed_tx = signer.sign_with_transaction_builder(transaction_factory.payload(payload));
+
+	let response = client
+		.submit_and_wait(&signed_tx)
+		.await
+		.context("Failed to submit and wait for transaction")?
+		.into_inner();
+
+	Ok(response)
 }
