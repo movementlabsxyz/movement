@@ -11,6 +11,8 @@ processes:
   test-migrate-biarritz-rc1-to-pre-l1-merge:
     command: |
       cargo run --bin aptos-framework-core-resources-rotation depends_on:
+
+    depends_on:
       movement-full-node:
         condition: process_healthy
       movement-faucet:
