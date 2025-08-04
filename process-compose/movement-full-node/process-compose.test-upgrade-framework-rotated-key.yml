@@ -1,5 +1,7 @@
 version: "3"
 
+environment:
+
 processes:
 
   setup:
@@ -8,10 +10,13 @@ processes:
       - APTOS_ACCOUNT_WHITELIST=$DOT_MOVEMENT_PATH/default_signer_address_whitelist
       - MAPTOS_PRIVATE_KEY=random
 
+  movement-faucet: 
+    command : |
+      movement-faucet-service run-simple --do-not-delegate
+
   test-migrate-biarritz-rc1-to-pre-l1-merge:
     command: |
-      cargo run --bin aptos-framework-core-resources-rotation depends_on:
-
+      cargo run --bin aptos-framework-core-resources-rotation     
     depends_on:
       movement-full-node:
         condition: process_healthy
