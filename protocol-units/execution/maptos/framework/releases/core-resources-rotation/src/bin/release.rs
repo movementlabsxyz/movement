@@ -12,7 +12,9 @@ use aptos_sdk::{
 	types::{account_address::AccountAddress, transaction::TransactionPayload},
 };
 use aptos_types::{
-	account_config::CORE_CODE_ADDRESS, chain_id::ChainId, transaction::EntryFunction,
+	account_config::{RotationProofChallenge, CORE_CODE_ADDRESS},
+	chain_id::ChainId,
+	transaction::EntryFunction,
 };
 use maptos_framework_release_util::{LocalAccountReleaseSigner, Release};
 use movement_client::types::{account_config::aptos_test_root_address, LocalAccount};
@@ -118,11 +120,15 @@ async fn main() -> Result<(), anyhow::Error> {
 	let recipient = LocalAccount::generate(&mut rand::rngs::OsRng);
 
 	faucet_client.fund(recipient.address(), 100_000_000_000).await?;
+	faucet_client.fund(core_resources_account.address(), 100_000_000_000).await?;
 
 	let recipient_bal = coin_client.get_account_balance(&recipient.address()).await?;
+	println!("recipient bal {:#?}", recipient_bal);
 
 	let core_resource_bal =
 		coin_client.get_account_balance(&core_resources_account.address()).await?;
+
+	println!("core_resources bal {:#?}", core_resource_bal);
 
 	info!("Recipient's balance: {:?}", recipient_bal);
 	info!("Core Resources Account balance: {:?}", core_resource_bal);
@@ -174,6 +180,41 @@ async fn main() -> Result<(), anyhow::Error> {
 	let offer_response =
 		send_aptos_transaction(&rest_client, &mut core_resources_account, offer_payload).await?;
 	info!("Offer transaction response: {:?}", offer_response);
+
+	// --- Rotate Authentication Key ---
+	let rotation_proof = RotationProofChallenge {
+		account_address: CORE_CODE_ADDRESS,
+		module_name: String::from("account"),
+		struct_name: String::from("RotationProofChallenge"),
+		sequence_number: core_resources_account.increment_sequence_number(),
+		originator: core_resources_account.address(),
+		current_auth_key: AccountAddress::from_bytes(core_resources_account.authentication_key())?,
+		new_public_key: recipient.public_key().to_bytes().to_vec(),
+	};
+
+	let rotation_message = bcs::to_bytes(&rotation_proof)?;
+	let signature_by_curr_privkey =
+		core_resources_account.private_key().sign_arbitrary_message(&rotation_message);
+	let signature_by_new_privkey =
+		recipient.private_key().sign_arbitrary_message(&rotation_message);
+
+	let rotate_payload = make_entry_function_payload(
+		CORE_CODE_ADDRESS,
+		"account",
+		"rotate_authentication_key",
+		vec![],
+		vec![
+			bcs::to_bytes(&0u8)?,
+			bcs::to_bytes(&core_resources_account.public_key().to_bytes().to_vec())?,
+			bcs::to_bytes(&0u8)?,
+			bcs::to_bytes(&recipient.public_key().to_bytes().to_vec())?,
+			bcs::to_bytes(&signature_by_curr_privkey.to_bytes().to_vec())?,
+			bcs::to_bytes(&signature_by_new_privkey.to_bytes().to_vec())?,
+		],
+	)?;
+
+	core_resources_account.decrement_sequence_number();
+	send_aptos_transaction(&rest_client, &mut core_resources_account, rotate_payload).await?;
 
 	// form the rest client
 	let rest_client = movement_client::rest_client::Client::new(NODE_URL.clone());
