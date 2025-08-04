@@ -1,6 +1,6 @@
 [package]
 name = "aptos-framework-pre-l1-merge-release"
-description = "Executor for the AptosVM"
+description = "Pre L1 Merge Release"
 authors = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }
@@ -23,7 +23,7 @@ movement-client = { workspace = true }
 once_cell = { workspace = true }
 aptos-framework = { workspace = true }
 tokio = { workspace = true }
-anyhow = { workspace = true}
+anyhow = { workspace = true }
 url = { workspace = true }
 dot-movement = { workspace = true }
 tempfile = { workspace = true }
@@ -46,9 +46,8 @@ movement-client = { workspace = true }
 once_cell = { workspace = true }
 aptos-framework = { workspace = true }
 tokio = { workspace = true }
-anyhow = { workspace = true}
+anyhow = { workspace = true }
 url = { workspace = true }
 dot-movement = { workspace = true }
 tempfile = { workspace = true }
 bcs = { workspace = true }
-
