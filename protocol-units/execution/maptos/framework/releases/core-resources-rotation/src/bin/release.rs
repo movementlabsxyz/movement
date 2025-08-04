@@ -1,5 +1,5 @@
 use anyhow::Context;
-use aptos_framework_pre_l1_merge_release::cached::full::feature_upgrade::PreL1Merge;
+use aptos_framework_core_resources_rotation_test::cached::PreL1Merge;
 use aptos_sdk::{
 	coin_client::CoinClient,
 	crypto::SigningKey,
@@ -12,9 +12,7 @@ use aptos_sdk::{
 	types::{account_address::AccountAddress, transaction::TransactionPayload},
 };
 use aptos_types::{
-	account_config::{RotationProofChallenge, CORE_CODE_ADDRESS},
-	chain_id::ChainId,
-	transaction::EntryFunction,
+	account_config::CORE_CODE_ADDRESS, chain_id::ChainId, transaction::EntryFunction,
 };
 use maptos_framework_release_util::{LocalAccountReleaseSigner, Release};
 use movement_client::types::{account_config::aptos_test_root_address, LocalAccount};
@@ -111,7 +109,7 @@ async fn main() -> Result<(), anyhow::Error> {
 		.maptos_private_key_signer_identifier
 		.try_raw_private_key()?;
 	let private_key_hex = hex::encode(raw_private_key);
-	let core_resources_account = LocalAccount::from_private_key(private_key_hex.as_str(), 0)?;
+	let mut core_resources_account = LocalAccount::from_private_key(private_key_hex.as_str(), 0)?;
 
 	// Now, let's rotate the key and see if the rotated account
 	// can still sign off on governance proposals
@@ -184,7 +182,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	// Fetch the latest sequence number for the core resources account post-rotation
 	let account_info =
-		rest_client.get_account(&core_resources_account.address()).await?.into_inner();
+		rest_client.get_account(core_resources_account.address()).await?.into_inner();
 
 	// Reconstruct LocalAccount using the rotated private key (recipient.private_key)
 	let rotated_core_account = LocalAccount::new(
