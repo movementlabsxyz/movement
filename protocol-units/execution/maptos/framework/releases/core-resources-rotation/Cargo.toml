@@ -17,6 +17,7 @@ name = "aptos-framework-core-resources-rotation"
 path = "src/bin/release.rs"
 
 [dependencies]
+aptos-crypto = { workspace = true }
 serde = { workspace = true }
 maptos-framework-release-util = { workspace = true }
 movement-config = { workspace = true }

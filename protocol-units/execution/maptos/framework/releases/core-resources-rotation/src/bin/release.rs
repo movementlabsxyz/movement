@@ -1,12 +1,8 @@
-use anyhow::Context;
 use aptos_framework_core_resources_rotation_test::cached::PreL1Merge;
+
+use aptos_sdk::crypto::SigningKey;
 use aptos_sdk::{
 	coin_client::CoinClient,
-	crypto::SigningKey,
-	move_types::{
-		identifier::Identifier,
-		language_storage::{ModuleId, TypeTag},
-	},
 	rest_client::{Client, FaucetClient, Transaction},
 	transaction_builder::TransactionFactory,
 	types::{account_address::AccountAddress, transaction::TransactionPayload},
@@ -21,56 +17,45 @@ use movement_client::types::{account_config::aptos_test_root_address, LocalAccou
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
-//use tokio::process::Command;
 use tracing::info;
 use url::Url;
 
-/// limit of gas unit
-const GAS_UNIT_LIMIT: u64 = 100000;
+const GAS_UNIT_LIMIT: u64 = 100_000;
 
 static MOVEMENT_CONFIG: Lazy<movement_config::Config> = Lazy::new(|| {
 	let dot_movement = dot_movement::DotMovement::try_from_env().unwrap();
-	let config = dot_movement.try_get_config_from_json::<movement_config::Config>().unwrap();
-	config
+	dot_movement.try_get_config_from_json::<movement_config::Config>().unwrap()
 });
 
-// :!:>section_1c
 static NODE_URL: Lazy<Url> = Lazy::new(|| {
-	let node_connection_address = MOVEMENT_CONFIG
+	let addr = MOVEMENT_CONFIG
 		.execution_config
 		.maptos_config
 		.client
 		.maptos_rest_connection_hostname
 		.clone();
-	let node_connection_port = MOVEMENT_CONFIG
+	let port = MOVEMENT_CONFIG
 		.execution_config
 		.maptos_config
 		.client
 		.maptos_rest_connection_port
 		.clone();
-
-	let node_connection_url =
-		format!("http://{}:{}", node_connection_address, node_connection_port);
-
-	Url::from_str(node_connection_url.as_str()).unwrap()
+	Url::from_str(&format!("http://{}:{}", addr, port)).unwrap()
 });
 
 static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
-	let faucet_listen_address = MOVEMENT_CONFIG
+	let addr = MOVEMENT_CONFIG
 		.execution_config
 		.maptos_config
 		.client
 		.maptos_faucet_rest_connection_hostname
 		.clone();
-	let faucet_listen_port = MOVEMENT_CONFIG
+	let port = MOVEMENT_CONFIG
 		.execution_config
 		.maptos_config
 		.client
 		.maptos_faucet_rest_connection_port;
-
-	let faucet_listen_url = format!("http://{}:{}", faucet_listen_address, faucet_listen_port);
-
-	Url::from_str(faucet_listen_url.as_str()).unwrap()
+	Url::from_str(&format!("http://{}:{}", addr, port)).unwrap()
 });
 
 #[derive(Serialize, Deserialize)]
@@ -86,24 +71,22 @@ struct RotationCapabilityOfferProofChallengeV2 {
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
-	// setup the logger
-	use tracing_subscriber::EnvFilter;
+	use aptos_crypto::{ed25519::Ed25519PublicKey, ValidCryptoMaterial};
+	use aptos_types::transaction::authenticator::AuthenticationKey;
 
-	tracing_subscriber::fmt()
-		.with_env_filter(
-			EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
-		)
-		.init();
+	tracing_subscriber::fmt().with_env_filter("info").init();
 
-	// Initialize clients
 	let rest_client = Client::new(NODE_URL.clone());
 	let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
 	let coin_client = CoinClient::new(&rest_client);
 
-	// form the elsa release
-	let biarritz_rc1 = PreL1Merge::new();
+	// Governance release object
+	let pre_l1_merge = PreL1Merge::new();
 
-	// get the root account
+	// ✅ Governance root (constant) and signer loaded from config
+	let gov_root_address = aptos_test_root_address();
+	info!("aptos_test_root_address() (constant): {}", gov_root_address);
+
 	let raw_private_key = MOVEMENT_CONFIG
 		.execution_config
 		.maptos_config
@@ -111,54 +94,38 @@ async fn main() -> Result<(), anyhow::Error> {
 		.maptos_private_key_signer_identifier
 		.try_raw_private_key()?;
 	let private_key_hex = hex::encode(raw_private_key);
-	let mut core_resources_account = LocalAccount::from_private_key(private_key_hex.as_str(), 0)?;
+	let mut gov_root_account = LocalAccount::from_private_key(private_key_hex.as_str(), 0)?;
+	info!("Signer (gov_root_account) address: {}", gov_root_account.address());
 
-	// Now, let's rotate the key and see if the rotated account
-	// can still sign off on governance proposals
+	// Ensure the config key indeed controls aptos_test_root_address()
+	assert_eq!(
+		gov_root_account.address(),
+		gov_root_address,
+		"Signer key is not for aptos_test_root_address()"
+	);
 
-	// Generate recipient account
+	// Fund signer and recipient
+	faucet_client.fund(gov_root_account.address(), 100_000_000_000).await?;
+
 	let recipient = LocalAccount::generate(&mut rand::rngs::OsRng);
-
 	faucet_client.fund(recipient.address(), 100_000_000_000).await?;
-	faucet_client.fund(core_resources_account.address(), 100_000_000_000).await?;
-
-	let recipient_bal = coin_client.get_account_balance(&recipient.address()).await?;
-	println!("recipient bal {:#?}", recipient_bal);
-
-	let core_resource_bal =
-		coin_client.get_account_balance(&core_resources_account.address()).await?;
-
-	println!("core_resources bal {:#?}", core_resource_bal);
-
-	info!("Recipient's balance: {:?}", recipient_bal);
-	info!("Core Resources Account balance: {:?}", core_resource_bal);
-
-	let state = rest_client.get_ledger_information().await?.into_inner();
 
 	// --- Offer Rotation Capability ---
+	let ledger_info = rest_client.get_ledger_information().await?.into_inner();
+
 	let rotation_capability_proof = RotationCapabilityOfferProofChallengeV2 {
 		account_address: CORE_CODE_ADDRESS,
-		module_name: String::from("account"),
-		struct_name: String::from("RotationCapabilityOfferProofChallengeV2"),
-		chain_id: state.chain_id,
-		sequence_number: core_resources_account.increment_sequence_number(),
-		source_address: core_resources_account.address(),
+		module_name: "account".to_string(),
+		struct_name: "RotationCapabilityOfferProofChallengeV2".to_string(),
+		chain_id: ledger_info.chain_id,
+		// Keep your existing seq dance; this mirrors your working test style
+		sequence_number: gov_root_account.increment_sequence_number(),
+		source_address: gov_root_account.address(),
 		recipient_address: recipient.address(),
 	};
 
-	let rotation_capability_proof_msg = bcs::to_bytes(&rotation_capability_proof)?;
-	let rotation_proof_signed = core_resources_account
-		.private_key()
-		.sign_arbitrary_message(&rotation_capability_proof_msg);
-
-	let is_valid = verify_signature(
-		&core_resources_account.public_key().to_bytes(),
-		&rotation_capability_proof_msg,
-		&rotation_proof_signed.to_bytes(),
-	)?;
-
-	assert!(is_valid, "Signature verification failed!");
-	info!("Signature successfully verified!");
+	let proof_msg = bcs::to_bytes(&rotation_capability_proof)?;
+	let proof_signed = gov_root_account.private_key().sign_arbitrary_message(&proof_msg);
 
 	let offer_payload = make_entry_function_payload(
 		CORE_CODE_ADDRESS,
@@ -166,37 +133,32 @@ async fn main() -> Result<(), anyhow::Error> {
 		"offer_rotation_capability",
 		vec![],
 		vec![
-			bcs::to_bytes(&rotation_proof_signed.to_bytes().to_vec())
-				.context("Failed to serialize rotation capability signature")?,
-			bcs::to_bytes(&0u8).context("Failed to serialize account scheme")?,
-			bcs::to_bytes(&core_resources_account.public_key().to_bytes().to_vec())
-				.context("Failed to serialize public key bytes")?,
-			bcs::to_bytes(&recipient.address()).context("Failed to serialize recipient address")?,
+			bcs::to_bytes(&proof_signed.to_bytes().to_vec())?,
+			bcs::to_bytes(&0u8)?, // from_scheme = Ed25519
+			bcs::to_bytes(&gov_root_account.public_key().to_bytes().to_vec())?,
+			bcs::to_bytes(&recipient.address())?,
 		],
 	)?;
 
-	core_resources_account.decrement_sequence_number();
-
-	let offer_response =
-		send_aptos_transaction(&rest_client, &mut core_resources_account, offer_payload).await?;
-	info!("Offer transaction response: {:?}", offer_response);
+	// Reset the local seq you just bumped for the proof
+	gov_root_account.decrement_sequence_number();
+	send_aptos_transaction(&rest_client, &mut gov_root_account, offer_payload).await?;
+	info!(" Offer rotation capability submitted.");
 
 	// --- Rotate Authentication Key ---
 	let rotation_proof = RotationProofChallenge {
 		account_address: CORE_CODE_ADDRESS,
-		module_name: String::from("account"),
-		struct_name: String::from("RotationProofChallenge"),
-		sequence_number: core_resources_account.increment_sequence_number(),
-		originator: core_resources_account.address(),
-		current_auth_key: AccountAddress::from_bytes(core_resources_account.authentication_key())?,
+		module_name: "account".to_string(),
+		struct_name: "RotationProofChallenge".to_string(),
+		sequence_number: gov_root_account.increment_sequence_number(),
+		originator: gov_root_account.address(),
+		current_auth_key: AccountAddress::from_bytes(gov_root_account.authentication_key())?,
 		new_public_key: recipient.public_key().to_bytes().to_vec(),
 	};
 
-	let rotation_message = bcs::to_bytes(&rotation_proof)?;
-	let signature_by_curr_privkey =
-		core_resources_account.private_key().sign_arbitrary_message(&rotation_message);
-	let signature_by_new_privkey =
-		recipient.private_key().sign_arbitrary_message(&rotation_message);
+	let rotation_msg = bcs::to_bytes(&rotation_proof)?;
+	let sig_curr = gov_root_account.private_key().sign_arbitrary_message(&rotation_msg);
+	let sig_new = recipient.private_key().sign_arbitrary_message(&rotation_msg);
 
 	let rotate_payload = make_entry_function_payload(
 		CORE_CODE_ADDRESS,
@@ -204,81 +166,70 @@ async fn main() -> Result<(), anyhow::Error> {
 		"rotate_authentication_key",
 		vec![],
 		vec![
-			bcs::to_bytes(&0u8)?,
-			bcs::to_bytes(&core_resources_account.public_key().to_bytes().to_vec())?,
-			bcs::to_bytes(&0u8)?,
+			bcs::to_bytes(&0u8)?, // from_scheme = Ed25519
+			bcs::to_bytes(&gov_root_account.public_key().to_bytes().to_vec())?,
+			bcs::to_bytes(&0u8)?, // to_scheme = Ed25519
 			bcs::to_bytes(&recipient.public_key().to_bytes().to_vec())?,
-			bcs::to_bytes(&signature_by_curr_privkey.to_bytes().to_vec())?,
-			bcs::to_bytes(&signature_by_new_privkey.to_bytes().to_vec())?,
+			bcs::to_bytes(&sig_curr.to_bytes().to_vec())?,
+			bcs::to_bytes(&sig_new.to_bytes().to_vec())?,
 		],
 	)?;
 
-	core_resources_account.decrement_sequence_number();
-	send_aptos_transaction(&rest_client, &mut core_resources_account, rotate_payload).await?;
+	// Reset the local seq you just bumped for the proof
+	gov_root_account.decrement_sequence_number();
+	send_aptos_transaction(&rest_client, &mut gov_root_account, rotate_payload).await?;
+	info!("✅ Authentication key rotated successfully.");
 
-	// form the rest client
-	let rest_client = movement_client::rest_client::Client::new(NODE_URL.clone());
+	// --- Verify Rotation (read back the account you actually rotated = the signer) ---
+	let updated_info = rest_client.get_account(gov_root_account.address()).await?.into_inner();
 
-	// After completing key rotation and confirming it's successful:
+	// Compute expected auth key exactly like the framework: ed25519(pubkey || 0x00)
+	let recip_pub = Ed25519PublicKey::try_from(recipient.public_key().to_bytes().as_slice())
+		.expect("recipient pubkey parse");
+	let expected_auth_key = AuthenticationKey::ed25519(&recip_pub);
 
-	// Fetch the latest sequence number for the core resources account post-rotation
-	let account_info =
-		rest_client.get_account(core_resources_account.address()).await?.into_inner();
+	info!("on-chain auth_key:   {:?}", updated_info.authentication_key);
+	info!("expected auth_key:   {:?}", expected_auth_key);
+	info!("helper  auth_key(?): {:?}", recipient.authentication_key());
 
-	// Reconstruct LocalAccount using the rotated private key (recipient.private_key)
-	let rotated_core_account = LocalAccount::new(
-		core_resources_account.address(),
-		recipient.private_key().clone(), // Rotated private key
-		account_info.sequence_number,
+	assert_eq!(
+		updated_info.authentication_key, expected_auth_key,
+		"On-chain authentication key must match expected ed25519 recipient key"
 	);
 
+	// --- Build Rotated Governance Signer for subsequent governance actions ---
+	let rotated_gov_account = LocalAccount::new(
+		gov_root_account.address(),
+		recipient.private_key().clone(),
+		updated_info.sequence_number,
+	);
 	let rotated_release_signer =
-		LocalAccountReleaseSigner::new(rotated_core_account, Some(aptos_test_root_address()));
+		LocalAccountReleaseSigner::new(rotated_gov_account, Some(aptos_test_root_address()));
 
-	// Finally, invoke the release flow using the rotated signer
-	biarritz_rc1
-		.release(&rotated_release_signer, 2_000_000, 100, 60, &rest_client)
+	// --- Submit Governance Proposal with rotated signer ---
+	let move_rest_client = movement_client::rest_client::Client::new(NODE_URL.clone());
+	pre_l1_merge
+		.release(&rotated_release_signer, 2_000_000, 100, 60, &move_rest_client)
 		.await?;
 
-	info!(
-		"✅ Governance release successfully signed and executed using rotated Core Resources key."
-	);
-
+	info!("✅ Governance release successfully signed using rotated aptos_test_root_address!");
 	Ok(())
 }
 
+// --- Helpers ---
 fn make_entry_function_payload(
 	package_address: AccountAddress,
 	module_name: &'static str,
 	function_name: &'static str,
-	ty_args: Vec<TypeTag>,
+	ty_args: Vec<aptos_sdk::move_types::language_storage::TypeTag>,
 	args: Vec<Vec<u8>>,
 ) -> Result<TransactionPayload, anyhow::Error> {
-	tracing::info!("Creating entry function payload for package address: {:?}", package_address);
-
-	let module_id = ModuleId::new(
+	let module_id = aptos_sdk::move_types::language_storage::ModuleId::new(
 		package_address,
-		Identifier::new(module_name).context("Invalid module name")?,
+		aptos_sdk::move_types::identifier::Identifier::new(module_name)?,
 	);
-
-	let function_id = Identifier::new(function_name).context("Invalid function name")?;
-
+	let function_id = aptos_sdk::move_types::identifier::Identifier::new(function_name)?;
 	Ok(TransactionPayload::EntryFunction(EntryFunction::new(module_id, function_id, ty_args, args)))
-}
-
-fn verify_signature(
-	public_key_bytes: &[u8; 32],
-	message: &[u8],
-	signature_bytes: &[u8; 64],
-) -> Result<bool, anyhow::Error> {
-	use ed25519_dalek::{Signature, Verifier, VerifyingKey};
-
-	let verifying_key =
-		VerifyingKey::from_bytes(public_key_bytes).context("Failed to parse public key bytes")?;
-
-	let signature = Signature::from_bytes(signature_bytes);
-
-	Ok(verifying_key.verify(message, &signature).is_ok())
 }
 
 async fn send_aptos_transaction(
@@ -286,23 +237,10 @@ async fn send_aptos_transaction(
 	signer: &mut LocalAccount,
 	payload: TransactionPayload,
 ) -> anyhow::Result<Transaction> {
-	let state = client
-		.get_ledger_information()
-		.await
-		.context("Failed to retrieve ledger information")?
-		.into_inner();
-
-	let transaction_factory = TransactionFactory::new(ChainId::new(state.chain_id))
+	let state = client.get_ledger_information().await?.into_inner();
+	let factory = TransactionFactory::new(ChainId::new(state.chain_id))
 		.with_gas_unit_price(100)
 		.with_max_gas_amount(GAS_UNIT_LIMIT);
-
-	let signed_tx = signer.sign_with_transaction_builder(transaction_factory.payload(payload));
-
-	let response = client
-		.submit_and_wait(&signed_tx)
-		.await
-		.context("Failed to submit and wait for transaction")?
-		.into_inner();
-
-	Ok(response)
+	let signed_tx = signer.sign_with_transaction_builder(factory.payload(payload));
+	Ok(client.submit_and_wait(&signed_tx).await?.into_inner())
 }
