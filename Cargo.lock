@@ -3236,7 +3236,7 @@ dependencies = [
 [[package]]
 name = "aptos-indexer-processor-sdk"
 version = "0.1.0"
-source = "git+https://github.com/larryl3u/aptos-indexer-processor-sdk?rev=bbcc42d5a03cffe861b89c080ef7de918f37b4d0#bbcc42d5a03cffe861b89c080ef7de918f37b4d0"
+source = "git+https://github.com/movementlabsxyz/aptos-indexer-processor-sdk?rev=a596af7bfdabeb4fc94c19bbbccbd0574d7c15a1#a596af7bfdabeb4fc94c19bbbccbd0574d7c15a1"
 dependencies = [
  "ahash 0.8.11",
  "anyhow",
@@ -3288,10 +3288,10 @@ dependencies = [
 [[package]]
 name = "aptos-indexer-transaction-stream"
 version = "0.1.0"
-source = "git+https://github.com/larryl3u/aptos-indexer-processor-sdk?rev=bbcc42d5a03cffe861b89c080ef7de918f37b4d0#bbcc42d5a03cffe861b89c080ef7de918f37b4d0"
+source = "git+https://github.com/movementlabsxyz/aptos-indexer-processor-sdk?rev=a596af7bfdabeb4fc94c19bbbccbd0574d7c15a1#a596af7bfdabeb4fc94c19bbbccbd0574d7c15a1"
 dependencies = [
  "anyhow",
- "aptos-moving-average 0.1.0 (git+https://github.com/larryl3u/aptos-indexer-processor-sdk?rev=bbcc42d5a03cffe861b89c080ef7de918f37b4d0)",
+ "aptos-moving-average 0.1.0 (git+https://github.com/movementlabsxyz/aptos-indexer-processor-sdk?rev=a596af7bfdabeb4fc94c19bbbccbd0574d7c15a1)",
  "aptos-protos 1.3.1",
  "aptos-transaction-filter",
  "chrono",
@@ -3897,7 +3897,7 @@ dependencies = [
 [[package]]
 name = "aptos-moving-average"
 version = "0.1.0"
-source = "git+https://github.com/larryl3u/aptos-indexer-processor-sdk?rev=bbcc42d5a03cffe861b89c080ef7de918f37b4d0#bbcc42d5a03cffe861b89c080ef7de918f37b4d0"
+source = "git+https://github.com/movementlabsxyz/aptos-indexer-processor-sdk?rev=a596af7bfdabeb4fc94c19bbbccbd0574d7c15a1#a596af7bfdabeb4fc94c19bbbccbd0574d7c15a1"
 dependencies = [
  "chrono",
 ]
@@ -11488,7 +11488,7 @@ dependencies = [
 [[package]]
 name = "instrumented-channel"
 version = "0.1.0"
-source = "git+https://github.com/larryl3u/aptos-indexer-processor-sdk?rev=bbcc42d5a03cffe861b89c080ef7de918f37b4d0#bbcc42d5a03cffe861b89c080ef7de918f37b4d0"
+source = "git+https://github.com/movementlabsxyz/aptos-indexer-processor-sdk?rev=a596af7bfdabeb4fc94c19bbbccbd0574d7c15a1#a596af7bfdabeb4fc94c19bbbccbd0574d7c15a1"
 dependencies = [
  "delegate",
  "derive_builder 0.20.2",
@@ -12444,6 +12444,7 @@ dependencies = [
  "aptos-consensus-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=1d1cdbbd7fabb80dcb95ba5e23213faa072fab67)",
  "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=1d1cdbbd7fabb80dcb95ba5e23213faa072fab67)",
  "aptos-db 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=1d1cdbbd7fabb80dcb95ba5e23213faa072fab67)",
+ "aptos-db-indexer 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=1d1cdbbd7fabb80dcb95ba5e23213faa072fab67)",
  "aptos-executor 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=1d1cdbbd7fabb80dcb95ba5e23213faa072fab67)",
  "aptos-executor-test-helpers",
  "aptos-executor-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=1d1cdbbd7fabb80dcb95ba5e23213faa072fab67)",
@@ -14914,6 +14915,7 @@ dependencies = [
  "clap 4.5.21",
  "dot-movement",
  "futures",
+ "godfig",
  "maptos-execution-util",
  "movement-health",
  "movement-tracing",
@@ -16745,7 +16747,7 @@ dependencies = [
 [[package]]
 name = "processor"
 version = "0.1.0"
-source = "git+https://github.com/larryl3u/aptos-indexer-processors-v2?rev=2e5dd83639886fe9e44af97726d79895a3b4f650#2e5dd83639886fe9e44af97726d79895a3b4f650"
+source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors-v2?rev=3fa850e7ea7770fec7967ce5b9a857dabace6aa3#3fa850e7ea7770fec7967ce5b9a857dabace6aa3"
 dependencies = [
  "ahash 0.8.11",
  "allocative",
@@ -18365,7 +18367,7 @@ dependencies = [
 [[package]]
 name = "sample"
 version = "0.1.0"
-source = "git+https://github.com/larryl3u/aptos-indexer-processor-sdk?rev=bbcc42d5a03cffe861b89c080ef7de918f37b4d0#bbcc42d5a03cffe861b89c080ef7de918f37b4d0"
+source = "git+https://github.com/movementlabsxyz/aptos-indexer-processor-sdk?rev=a596af7bfdabeb4fc94c19bbbccbd0574d7c15a1#a596af7bfdabeb4fc94c19bbbccbd0574d7c15a1"
 dependencies = [
  "tracing",
 ]

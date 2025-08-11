@@ -1,5 +1,5 @@
 use super::common::{
-	default_enable_pruning, default_enable_table_info_service, default_genesis_block_hash_hex,
+	default_enable_indexer_grpc, default_enable_pruning, default_genesis_block_hash_hex,
 	default_genesis_timestamp_microseconds, default_maptos_chain_id,
 	default_maptos_epoch_snapshot_prune_window, default_maptos_ledger_prune_window,
 	default_maptos_private_key_signer_identifier, default_maptos_read_only,
@@ -82,9 +82,9 @@ pub struct Config {
 	#[serde(default = "default_dont_increase_epoch_until_version")]
 	pub dont_increase_epoch_until_version: u64,
 
-	/// Enable the table info service for indexer.
-	#[serde(default = "default_enable_table_info_service")]
-	pub enable_table_info_service: bool,
+	/// Enable the indexer grpc service.
+	#[serde(default = "default_enable_indexer_grpc")]
+	pub enable_indexer_grpc: bool,
 }
 
 impl Default for Config {
@@ -104,7 +104,7 @@ impl Default for Config {
 			maptos_db_path: None,
 			known_framework_release_str: default_known_framework_release_str(),
 			dont_increase_epoch_until_version: default_dont_increase_epoch_until_version(),
-			enable_table_info_service: default_enable_table_info_service(),
+			enable_indexer_grpc: default_enable_indexer_grpc(),
 		}
 	}
 }
