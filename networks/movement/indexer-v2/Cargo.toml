@@ -34,7 +34,7 @@ processor-v2 = { workspace = true }
 aptos-indexer-processor-sdk = { workspace = true }
 movement-tracing = { workspace = true }
 movement-health = { workspace = true }
-
+godfig = { workspace = true }
 serde_yaml = "0.9.34"
 
 [lints]
