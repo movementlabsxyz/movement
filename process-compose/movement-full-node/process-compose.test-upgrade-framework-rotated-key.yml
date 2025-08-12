@@ -14,7 +14,7 @@ processes:
     command : |
       movement-faucet-service run-simple --do-not-delegate
 
-  test-migrate-biarritz-rc1-to-pre-l1-merge:
+  test-framework-upgrade-with-rotated-key:
     command: |
       cargo run --bin aptos-framework-core-resources-rotation     
     depends_on:

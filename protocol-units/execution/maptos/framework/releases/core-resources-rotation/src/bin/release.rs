@@ -1,12 +1,12 @@
+use aptos_crypto::ed25519::Ed25519PublicKey;
 use aptos_framework_core_resources_rotation_test::cached::PreL1Merge;
-
 use aptos_sdk::crypto::SigningKey;
 use aptos_sdk::{
-	coin_client::CoinClient,
 	rest_client::{Client, FaucetClient, Transaction},
 	transaction_builder::TransactionFactory,
 	types::{account_address::AccountAddress, transaction::TransactionPayload},
 };
+use aptos_types::transaction::authenticator::AuthenticationKey;
 use aptos_types::{
 	account_config::{RotationProofChallenge, CORE_CODE_ADDRESS},
 	chain_id::ChainId,
@@ -71,11 +71,6 @@ struct RotationCapabilityOfferProofChallengeV2 {
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
-	use aptos_crypto::{ed25519::Ed25519PublicKey, ValidCryptoMaterial};
-	use aptos_types::account_address::AccountAddress;
-	use aptos_types::transaction::authenticator::AuthenticationKey;
-	use tracing::info;
-
 	tracing_subscriber::fmt().with_env_filter("info").init();
 
 	let rest_client = Client::new(NODE_URL.clone());
@@ -218,9 +213,9 @@ async fn main() -> Result<(), anyhow::Error> {
 		LocalAccountReleaseSigner::new(rotated_gov_account, Some(aptos_test_root_address()));
 
 	// --- Submit governance proposal with rotated signer ---
-	let move_rest_client = movement_client::rest_client::Client::new(NODE_URL.clone());
+	let rest_client = movement_client::rest_client::Client::new(NODE_URL.clone());
 	pre_l1_merge
-		.release(&rotated_release_signer, 2_000_000, 100, 60, &move_rest_client)
+		.release(&rotated_release_signer, 2_000_000, 100, 60, &rest_client)
 		.await?;
 
 	info!("✅ Governance release successfully signed using rotated aptos_test_root_address!");
