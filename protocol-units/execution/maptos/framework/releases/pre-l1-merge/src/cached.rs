@@ -61,11 +61,11 @@ pub mod full {
 		enable_feature_flags.push(AptosFeatureFlag::DELEGATION_POOL_PARTIAL_GOVERNANCE_VOTING);
 
 		// To Disable
-		disable_feature_flags.push(AptosFeatureFlag::REMOVE_DETAILED_ERROR_FROM_HASH);
-		disable_feature_flags.push(AptosFeatureFlag::PERIODICAL_REWARD_RATE_DECREASE);
-		disable_feature_flags.push(AptosFeatureFlag::VM_BINARY_FORMAT_V7);
-		disable_feature_flags.push(AptosFeatureFlag::KEYLESS_ACCOUNTS);
-		disable_feature_flags.push(AptosFeatureFlag::KEYLESS_BUT_ZKLESS_ACCOUNTS);
+		// disable_feature_flags.push(AptosFeatureFlag::REMOVE_DETAILED_ERROR_FROM_HASH);
+		// disable_feature_flags.push(AptosFeatureFlag::PERIODICAL_REWARD_RATE_DECREASE);
+		// disable_feature_flags.push(AptosFeatureFlag::VM_BINARY_FORMAT_V7);
+		// disable_feature_flags.push(AptosFeatureFlag::KEYLESS_ACCOUNTS);
+		// disable_feature_flags.push(AptosFeatureFlag::KEYLESS_BUT_ZKLESS_ACCOUNTS);
 		//@ TODO: Check this one, not sure about it
 		//disable_feature_flags.push(AptosFeatureFlag::KEYLESS_ACCOUNTS_WITH_PASSKEYS);
 

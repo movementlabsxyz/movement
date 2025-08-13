@@ -2731,6 +2731,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "aptos-framework-disable-features-upgrade"
+version = "0.3.4"
+dependencies = [
+ "anyhow",
+ "aptos-framework 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=1d1cdbbd7fabb80dcb95ba5e23213faa072fab67)",
+ "aptos-framework-upgrade-gas-release",
+ "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=1d1cdbbd7fabb80dcb95ba5e23213faa072fab67)",
+ "aptos-release-builder",
+ "aptos-sdk 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=1d1cdbbd7fabb80dcb95ba5e23213faa072fab67)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=1d1cdbbd7fabb80dcb95ba5e23213faa072fab67)",
+ "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
+ "dot-movement",
+ "hex",
+ "maptos-framework-release-util",
+ "movement-client",
+ "movement-config",
+ "once_cell",
+ "tempfile",
+ "tokio",
+ "tracing",
+ "url",
+]
+
+[[package]]
 name = "aptos-framework-elsa-release"
 version = "0.3.4"
 dependencies = [
