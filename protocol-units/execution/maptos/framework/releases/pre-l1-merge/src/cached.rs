@@ -42,7 +42,10 @@ script {
 		// (This will be handled by the feature flags section below)
 		
 		// Step 2: Initialize transaction fee collection
-		transaction_fee::initialize_fee_collection_and_distribution(&core_signer, 0);
+		// Note: This is commented out because transaction_fee is already initialized
+		// If we try to initialize it again, we get EALREADY_COLLECTING_FEES error
+		// Since the feature flag is already enabled, the module is working correctly
+		// transaction_fee::initialize_fee_collection_and_distribution(&core_signer, 0);
     }
 }
 "#
@@ -73,16 +76,15 @@ pub mod full {
 		enable_feature_flags.push(AptosFeatureFlag::DELEGATION_POOL_PARTIAL_GOVERNANCE_VOTING);
 		enable_feature_flags.push(AptosFeatureFlag::VM_BINARY_FORMAT_V7);
 		
-		// Temporarily disable COLLECT_AND_DISTRIBUTE_GAS_FEES to reset the state
-		// This will allow the initialization to work properly
-		// enable_feature_flags.push(AptosFeatureFlag::COLLECT_AND_DISTRIBUTE_GAS_FEES);
+		// Enable COLLECT_AND_DISTRIBUTE_GAS_FEES
+		enable_feature_flags.push(AptosFeatureFlag::COLLECT_AND_DISTRIBUTE_GAS_FEES);
 
 		Features {
 			enabled: enable_feature_flags.into_iter().map(FeatureFlag::from).collect(),
 			disabled: vec![
 				AptosFeatureFlag::REMOVE_DETAILED_ERROR_FROM_HASH.into(),
 				AptosFeatureFlag::GOVERNED_GAS_POOL.into(), // Explicitly disable GOVERNED_GAS_POOL
-				AptosFeatureFlag::COLLECT_AND_DISTRIBUTE_GAS_FEES.into(), // Temporarily disable to reset state
+				// AptosFeatureFlag::COLLECT_AND_DISTRIBUTE_GAS_FEES.into(), // <-- Removed from disabled
 			],
 		}
 	});
