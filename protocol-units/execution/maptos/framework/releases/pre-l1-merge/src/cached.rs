@@ -71,7 +71,7 @@ pub mod full {
 
 		Features {
 			enabled: enable_feature_flags.into_iter().map(FeatureFlag::from).collect(),
-			disabled: disable_feature_flags.into_iter().map(FeatureFlag::from).collect(),
+			disabled: vec![],
 		}
 	});
 }
