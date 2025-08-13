@@ -21,30 +21,30 @@ The feature comparission between MVT Network and Aptos Network gives these featu
 
 | ID | Title                                      | MVT     | APTOS   | MIGRATED Network |
 |----|--------------------------------------------|---------|---------|------------------|
-|  4 | APTOS_STD_CHAIN_ID_NATIVES                 | ENABLE  | DISABLE |                  |
+|  4 | APTOS_STD_CHAIN_ID_NATIVES                 | ENABLE  | DISABLE | DISABLE          |
 |  6 | COLLECT_AND_DISTRIBUTE_GAS_FEES            | DISABLE | DISABLE | ENABLE           |
-| 16 | PERIODICAL_REWARD_RATE_DECREASE            | DISABLE | ENABLE  |   ? [see](https://github.com/movementlabsxyz/movement-migration/issues/30#issuecomment-2979045602)              |  
-| 17 | PARTIAL_GOVERNANCE_VOTING                  | DISABLE | ENABLE  |                  |
-| 21 | DELEGATION_POOL_PARTIAL_GOVERNANCE_VOTING  | DISABLE | ENABLE  |                  |
+| 16 | PERIODICAL_REWARD_RATE_DECREASE            | DISABLE | ENABLE  | DISABLE          |  
+| 17 | PARTIAL_GOVERNANCE_VOTING                  | DISABLE | ENABLE  | ENABLE           |
+| 21 | DELEGATION_POOL_PARTIAL_GOVERNANCE_VOTING  | DISABLE | ENABLE  | ENABLE           |
 | 40 | VM_BINARY_FORMAT_V7                        | DISABLE | ENABLE  | DISABLE          |
 | 46 | KEYLESS_ACCOUNTS                           | ENABLE  | ENABLE  | DISABLE          |
 | 47 | KEYLESS_BUT_ZKLESS_ACCOUNTS                | ENABLE  | DISABLE | DISABLE          |
 | 48 | REMOVE_DETAILED_ERROR_FROM_HASH            | ENABLE  | DISABLE | DISABLE          |
 | 54 | KEYLESS_ACCOUNTS_WITH_PASSKEYS             | ENABLE  | DISABLE | DISABLE          |
-| 64 | NEW_ACCOUNTS_DEFAULT_TO_FA_APT_STORE       | DISABLE | ENABLE  |                  |
-| 67 | CONCURRENT_FUNGIBLE_BALANCE                | ENABLE  | DISABLE |                  |
-| 71 | DISALLOW_USER_NATIVES                      | DISABLE | ENABLE  |                  |
-| 72 | ALLOW_SERIALIZED_SCRIPT_ARGS               | DISABLE | ENABLE  |                  |
-| 74 | ENABLE_ENUM_TYPES                          | DISABLE | ENABLE  |                  |
-| 76 | REJECT_UNSTABLE_BYTECODE_FOR_SCRIPT        | DISABLE | ENABLE  |                  |
-| 77 | FEDERATED_KEYLESS                          | DISABLE | ENABLE  |                  |
-| 78 | TRANSACTION_SIMULATION_ENHANCEMENT         | DISABLE | ENABLE  |                  |
-| 79 | COLLECTION_OWNER                           | DISABLE | ENABLE  |                  |
-| 80 | NATIVE_MEMORY_OPERATIONS                   | DISABLE | ENABLE  |                  |
-| 81 | ENABLE_LOADER_V2                           | DISABLE | ENABLE  |                  |
-| 82 | DISALLOW_INIT_MODULE_TO_PUBLISH_MODULES    | DISABLE | ENABLE  |                  |
-| 90 | NEW_ACCOUNTS_DEFAULT_TO_FA_STORE           | DISABLE | ENABLE  |                  |
-| 91 | DEFAULT_ACCOUNT_RESOURCE                   | DISABLE | ENABLE  |                  |
+| 64 | NEW_ACCOUNTS_DEFAULT_TO_FA_APT_STORE       | DISABLE | ENABLE  | ENABLE           |
+| 67 | CONCURRENT_FUNGIBLE_BALANCE                | ENABLE  | DISABLE | DISABLE          |
+| 71 | DISALLOW_USER_NATIVES                      | DISABLE | ENABLE  | ENABLE           |
+| 72 | ALLOW_SERIALIZED_SCRIPT_ARGS               | DISABLE | ENABLE  | ENABLE           |
+| 74 | ENABLE_ENUM_TYPES                          | DISABLE | ENABLE  | ENABLE           |
+| 76 | REJECT_UNSTABLE_BYTECODE_FOR_SCRIPT        | DISABLE | ENABLE  | ENABLE           |
+| 77 | FEDERATED_KEYLESS                          | DISABLE | ENABLE  | ENABLE           |
+| 78 | TRANSACTION_SIMULATION_ENHANCEMENT         | DISABLE | ENABLE  | ENABLE           |
+| 79 | COLLECTION_OWNER                           | DISABLE | ENABLE  | ENABLE           |
+| 80 | NATIVE_MEMORY_OPERATIONS                   | DISABLE | ENABLE  | ENABLE           |
+| 81 | ENABLE_LOADER_V2                           | DISABLE | ENABLE  | ENABLE           |
+| 82 | DISALLOW_INIT_MODULE_TO_PUBLISH_MODULES    | DISABLE | ENABLE  | ENABLE           |
+| 90 | NEW_ACCOUNTS_DEFAULT_TO_FA_STORE           | DISABLE | ENABLE  | ENABLE           |
+| 91 | DEFAULT_ACCOUNT_RESOURCE                   | DISABLE | ENABLE  | ENABLE           |
 | XX | GOVERNED_GAS_POOL                          | NONE    | ENABLE  | REMOVED          |
 
 ## Feature description
