@@ -1,4 +1,4 @@
-use aptos_framework_disable_features_upgrade::cached::gas_uprade::PreL1Merge;
+use aptos_framework_disable_features_upgrade::cached::full::feature_upgrade::PreL1Merge;
 use maptos_framework_release_util::{LocalAccountReleaseSigner, Release};
 use movement_client::types::{account_config::aptos_test_root_address, LocalAccount};
 use once_cell::sync::Lazy;
@@ -35,7 +35,7 @@ static NODE_URL: Lazy<Url> = Lazy::new(|| {
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
 	// form the elsa release
-	let elsa = Elsa::new();
+	let elsa = PreL1Merge::new();
 
 	// get the root account
 	let raw_private_key = MOVEMENT_CONFIG
