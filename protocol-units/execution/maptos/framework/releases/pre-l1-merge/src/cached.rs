@@ -59,7 +59,6 @@ pub mod full {
 		enable_feature_flags.push(AptosFeatureFlag::GOVERNED_GAS_POOL);
 		enable_feature_flags.push(AptosFeatureFlag::PARTIAL_GOVERNANCE_VOTING);
 		enable_feature_flags.push(AptosFeatureFlag::DELEGATION_POOL_PARTIAL_GOVERNANCE_VOTING);
-		enable_feature_flags.push(AptosFeatureFlag::VM_BINARY_FORMAT_V7);
 
 		// To Disable
 		disable_feature_flags.push(AptosFeatureFlag::REMOVE_DETAILED_ERROR_FROM_HASH);
