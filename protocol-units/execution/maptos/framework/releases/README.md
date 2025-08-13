@@ -41,7 +41,7 @@ The feature comparission between MVT Network and Aptos Network gives these featu
 | 78 | TRANSACTION_SIMULATION_ENHANCEMENT         | DISABLE | ENABLE  | ENABLE           |
 | 79 | COLLECTION_OWNER                           | DISABLE | ENABLE  | ENABLE           |
 | 80 | NATIVE_MEMORY_OPERATIONS                   | DISABLE | ENABLE  | ENABLE           |
-| 81 | _ENABLE_LOADER_V2                           | DISABLE | ENABLE  | ENABLE           |
+| 81 | ENABLE_LOADER_V2                           | DISABLE | ENABLE  | ENABLE           |
 | 82 | DISALLOW_INIT_MODULE_TO_PUBLISH_MODULES    | DISABLE | ENABLE  | ENABLE           |
 | 90 | NEW_ACCOUNTS_DEFAULT_TO_FA_STORE           | DISABLE | ENABLE  | ENABLE           |
 | 91 | DEFAULT_ACCOUNT_RESOURCE                   | DISABLE | ENABLE  | ENABLE           |
