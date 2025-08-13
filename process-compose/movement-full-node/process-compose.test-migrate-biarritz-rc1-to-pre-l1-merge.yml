@@ -16,3 +16,12 @@ processes:
         condition: process_healthy
       movement-faucet:
         condition: process_healthy
+
+  movement-tests-load-tests:
+    command: |
+      LOADTEST_NUMBER_SCENARIOS=10 LOADTEST_SCENARIOS_PER_CLIENT=5 movement-tests-e2e-load-alice-bob
+    depends_on:
+      test-migrate-biarritz-rc1-to-pre-l1-merge:
+        condition: process_completed_successfully
+    availability:
+      exit_on_end: true
