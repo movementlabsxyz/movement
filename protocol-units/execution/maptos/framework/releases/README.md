@@ -150,8 +150,6 @@ It enable these functions:
 native public fun memcpy(dst: &mut vector<u8>, src: &vector<u8>, len: u64);
 native public fun memcmp(a: &vector<u8>, b: &vector<u8>): bool;
 ```
-
-<<<<<<< HEAD
 ### ENABLE_LOADER_V2
 Activates Loader v2, a new Move module loading engine with improved design and performance
 
