@@ -165,10 +165,12 @@ Movement feature removed.
 ## Proposition
 From my understanding of the feature I propose theses changes:
 
-### Features that can be enable without risk
+### Features that can be enabled without risk
 
-CONCURRENT_FUNGIBLE_BALANCE
-ALLOW_SERIALIZED_SCRIPT_ARGS
+Note Features that have not been enabled are not
+
+[x] CONCURRENT_FUNGIBLE_BALANCE
+ALLOW_SERIALIZED_SCRIPT_ARGS 
 REJECT_UNSTABLE_BYTECODE_FOR_SCRIPT
 TRANSACTION_SIMULATION_ENHANCEMENT
 COLLECTION_OWNER
