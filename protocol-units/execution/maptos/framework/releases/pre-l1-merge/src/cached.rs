@@ -54,6 +54,9 @@ pub mod full {
 
 		let mut enable_feature_flags = AptosFeatureFlag::default_features();
 
+		//Todo update aptos core deps to be on l1-migration branch.
+		//Add in the latest features that are not present here
+
 		// To Enable
 		enable_feature_flags.push(AptosFeatureFlag::GOVERNED_GAS_POOL);
 		enable_feature_flags.push(AptosFeatureFlag::PARTIAL_GOVERNANCE_VOTING);
