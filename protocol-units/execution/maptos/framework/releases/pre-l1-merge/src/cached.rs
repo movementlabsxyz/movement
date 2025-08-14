@@ -53,25 +53,24 @@ pub mod full {
 		use aptos_types::on_chain_config::FeatureFlag as AptosFeatureFlag;
 
 		let mut enable_feature_flags = AptosFeatureFlag::default_features();
-		let mut disable_feature_flags = AptosFeatureFlag::default_features();
 
 		// To Enable
 		enable_feature_flags.push(AptosFeatureFlag::GOVERNED_GAS_POOL);
 		enable_feature_flags.push(AptosFeatureFlag::PARTIAL_GOVERNANCE_VOTING);
 		enable_feature_flags.push(AptosFeatureFlag::DELEGATION_POOL_PARTIAL_GOVERNANCE_VOTING);
-
-		// To Disable
-		// disable_feature_flags.push(AptosFeatureFlag::REMOVE_DETAILED_ERROR_FROM_HASH);
-		// disable_feature_flags.push(AptosFeatureFlag::PERIODICAL_REWARD_RATE_DECREASE);
-		// disable_feature_flags.push(AptosFeatureFlag::VM_BINARY_FORMAT_V7);
-		// disable_feature_flags.push(AptosFeatureFlag::KEYLESS_ACCOUNTS);
-		// disable_feature_flags.push(AptosFeatureFlag::KEYLESS_BUT_ZKLESS_ACCOUNTS);
-		//@ TODO: Check this one, not sure about it
-		//disable_feature_flags.push(AptosFeatureFlag::KEYLESS_ACCOUNTS_WITH_PASSKEYS);
+		enable_feature_flags.push(AptosFeatureFlag::CONCURRENT_FUNGIBLE_BALANCE);
+		enable_feature_flags.push(AptosFeatureFlag::REJECT_UNSTABLE_BYTECODE);
 
 		Features {
 			enabled: enable_feature_flags.into_iter().map(FeatureFlag::from).collect(),
-			disabled: vec![],
+			disabled: vec![
+				FeatureFlag::RemoveDetailedError,
+				FeatureFlag::PeriodicalRewardRateReduction,
+				FeatureFlag::VMBinaryFormatV7,
+				FeatureFlag::KeylessAccounts,
+				FeatureFlag::KeylessButZklessAccounts,
+				FeatureFlag::KeylessAccountsWithPasskeys,
+			],
 		}
 	});
 }
