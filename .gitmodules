@@ -38,3 +38,9 @@
 [submodule "protocol-units/settlement/mcr/contracts/lib/v2-periphery"]
   path = protocol-units/settlement/mcr/contracts/lib/v2-periphery
   url = https://github.com/Uniswap/v2-periphery
+[submodule "protocol-units/settlement/mcr/contracts/lib/devtools"]
+	path = protocol-units/settlement/mcr/contracts/lib/devtools
+	url = https://github.com/layerzero-labs/devtools
+[submodule "protocol-units/settlement/mcr/contracts/lib/LayerZero-v2"]
+	path = protocol-units/settlement/mcr/contracts/lib/LayerZero-v2
+	url = https://github.com/layerzero-labs/LayerZero-v2
