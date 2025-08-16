@@ -86,7 +86,7 @@ where
 		let mut da_client =
 			GrpcDaSequencerClient::try_connect(&da_connection_url, stream_heartbeat_interval_sec)
 				.await?;
-		// TODO manage alert_channel in the issue #1169
+
 		let (mut blocks_from_da, mut alert_channel) = da_client
 			.stream_read_from_height(StreamReadFromHeightRequest { height: synced_height })
 			.await

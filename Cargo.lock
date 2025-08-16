@@ -14666,6 +14666,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "movement-da-replica-node"
+version = "0.3.4"
+dependencies = [
+ "anyhow",
+ "async-stream",
+ "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
+ "dot-movement",
+ "futures",
+ "godfig",
+ "hex",
+ "maptos-execution-util",
+ "movement-da-sequencer-client",
+ "movement-da-sequencer-config",
+ "movement-da-sequencer-node",
+ "movement-da-sequencer-proto",
+ "movement-signer",
+ "movement-signer-loader",
+ "movement-types",
+ "poem",
+ "prost 0.13.3",
+ "thiserror 1.0.69",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "url",
+]
+
+[[package]]
 name = "movement-da-sequencer-client"
 version = "0.3.4"
 dependencies = [
@@ -14699,11 +14727,13 @@ dependencies = [
  "ed25519-dalek 2.1.1",
  "godfig",
  "hex",
+ "maptos-execution-util",
  "rand 0.7.3",
  "serde",
  "serde_derive",
  "serde_json",
  "tracing",
+ "url",
 ]
 
 [[package]]
@@ -14725,6 +14755,7 @@ dependencies = [
  "futures",
  "godfig",
  "hex",
+ "maptos-execution-util",
  "movement-da-sequencer-client",
  "movement-da-sequencer-config",
  "movement-da-sequencer-proto",
@@ -14848,6 +14879,7 @@ dependencies = [
  "movement-config",
  "movement-da-light-node-client",
  "movement-da-light-node-setup",
+ "movement-da-replica-node",
  "movement-da-sequencer-client",
  "movement-da-sequencer-config",
  "movement-da-sequencer-node",

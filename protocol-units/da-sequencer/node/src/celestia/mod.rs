@@ -447,7 +447,7 @@ mod tests {
 			let mut state = self.0.write().await;
 			state.add_call(BlockProviderCalls::RequestBlockAtHeight(height));
 			let block = state.get_at_height(height.into()).unwrap();
-			Ok(SequencerBlock::try_new(height, block)?)
+			Ok(SequencerBlock::new(height, block))
 		}
 
 		async fn request_block_with_id(
@@ -457,7 +457,7 @@ mod tests {
 			let mut state = self.0.write().await;
 			state.add_call(BlockProviderCalls::RequestBlockForId(id));
 			let (height, block) = state.get_for_id(&id).unwrap();
-			Ok(SequencerBlock::try_new(BlockHeight::from(height), block)?)
+			Ok(SequencerBlock::new(BlockHeight::from(height), block))
 		}
 	}
 

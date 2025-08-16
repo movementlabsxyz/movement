@@ -15,7 +15,7 @@ pub async fn exec() -> Result<(), anyhow::Error> {
 	}?;
 
 	//Define da-sequencer config path.
-	let pathbuff = movement_da_sequencer_config::get_config_path(&dot_movement);
+	let pathbuff = DaSequencerConfig::get_config_path(&dot_movement);
 	dot_movement.set_path(pathbuff);
 	// get a matching godfig object
 	let config_file = dot_movement.try_get_or_create_config_file().await?;

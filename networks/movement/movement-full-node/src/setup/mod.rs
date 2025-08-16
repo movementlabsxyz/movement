@@ -1,6 +1,7 @@
 pub mod all;
 pub mod da;
 pub mod full_node;
+pub mod replicat;
 
 use clap::Subcommand;
 
@@ -10,6 +11,7 @@ pub enum Setup {
 	All(all::All),
 	FullNode(full_node::FullNode),
 	Da(da::Da),
+	Replicat(replicat::Replicat),
 }
 
 impl Setup {
@@ -18,6 +20,7 @@ impl Setup {
 			Setup::All(all) => all.execute().await,
 			Setup::FullNode(full_node) => full_node.execute().await,
 			Setup::Da(da) => da.execute().await,
+			Setup::Replicat(replicat) => replicat.execute().await,
 		}
 	}
 }

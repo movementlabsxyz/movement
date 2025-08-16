@@ -45,7 +45,7 @@ members = [
   "protocol-units/da-sequencer/config",
   "protocol-units/da-sequencer/client",
   "protocol-units/da-sequencer/node"
-]
+, "protocol-units/da-sequencer/replica"]
 
 [workspace.package]
 version = "0.3.4"
@@ -86,6 +86,7 @@ movement-da-sequencer-client = { path = "protocol-units/da-sequencer/client" }
 movement-da-sequencer-config = { path = "protocol-units/da-sequencer/config" }
 movement-da-sequencer-node = { path = "protocol-units/da-sequencer/node" }
 movement-da-sequencer-proto = { path = "protocol-units/da-sequencer/proto" }
+movement-da-replica-node = { path = "protocol-units/da-sequencer/replica" }
 
 # framework releases
 maptos-framework-release-util = { path = "protocol-units/execution/maptos/framework/releases/util" }
