@@ -1,4 +1,5 @@
 use aptos_indexer_processor_sdk::server_framework::RunnableConfig;
+use godfig::{backend::config_file::ConfigFile, Godfig};
 use maptos_execution_util::config::Config;
 use movement_health::run_service;
 use movement_tracing::simple_metrics::start_metrics_server;
@@ -10,27 +11,37 @@ fn main() -> Result<(), anyhow::Error> {
 	init_logger();
 
 	let runtime = get_maptos_runtime();
-	let maptos_config = load_maptos_config()?;
-	let runnable_processor_config: IndexerProcessorConfig =
-		maptos_config.indexer_processor_v2.clone().into();
 
 	runtime.block_on(async move {
+		let maptos_config = load_maptos_config().await.expect("Failed to load maptos config");
+		let runnable_processor_config: IndexerProcessorConfig =
+			maptos_config.indexer_processor_v2.clone().into();
+
 		let metrics_handle = tokio::spawn(async move {
-			start_metrics_server(
+			let res = start_metrics_server(
 				maptos_config.indexer_processor_v2.metrics_config.listen_hostname,
 				maptos_config.indexer_processor_v2.metrics_config.listen_port,
 			)
-			.await
+			.await;
+			tracing::info!("Metrics server started: {:?}", res);
+			res
 		});
 		let health_handle = tokio::spawn(async move {
-			run_service(
+			let res = run_service(
 				maptos_config.indexer_processor_v2.health_config.hostname,
 				maptos_config.indexer_processor_v2.health_config.port,
 			)
-			.await
+			.await;
+			tracing::info!("Health server started: {:?}", res);
+			res
 		});
 
-		let processor_handle = tokio::spawn(async move { runnable_processor_config.run().await });
+		let processor_handle = tokio::spawn(async move {
+			let res = runnable_processor_config.run().await;
+			tracing::info!("Indexer processor started: {:?}", res);
+			res
+		});
+		tracing::info!("Indexer v2 stack started.");
 
 		tokio::select! {
 			metrics_handle = metrics_handle => {
@@ -43,6 +54,7 @@ fn main() -> Result<(), anyhow::Error> {
 				tracing::error!("Indexer processor exited abnormally: {:?}", processor_handle);
 			}
 		}
+		tracing::info!("Indexer v2 stack exited normally.");
 	});
 	panic!("Indexer v2 stack exited abnormally.");
 }
@@ -78,8 +90,17 @@ fn get_maptos_runtime() -> tokio::runtime::Runtime {
 	runtime
 }
 
-fn load_maptos_config() -> anyhow::Result<Config> {
+async fn load_maptos_config() -> anyhow::Result<Config> {
+	// get the config file
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
-	let maptos_config = dot_movement.try_get_config_from_json::<Config>()?;
+
+	// Load Maptos config
+	let maptos_config = {
+		let config_file = dot_movement.try_get_or_create_config_file().await?;
+		let godfig: Godfig<maptos_execution_util::config::Config, ConfigFile> =
+			Godfig::new(ConfigFile::new(config_file), vec!["maptos_config".to_string()]);
+		godfig.try_wait_for_ready().await
+	}?;
+
 	Ok(maptos_config)
 }
