@@ -202,7 +202,7 @@ env_default!(
 
 env_default!(default_enable_pruning, "MAPTOS_ENABLE_PRUNING", bool, false);
 
-env_default!(default_enable_table_info_service, "MAPTOS_ENABLE_TABLE_INFO_SERVICE", bool, false);
+env_default!(default_enable_indexer_grpc, "MAPTOS_ENABLE_INDEXER_GRPC", bool, false);
 
 env_default!(default_maptos_ledger_prune_window, "MAPTOS_LEDGER_PRUNING_WINDOW", u64, 50_000_000);
 
