@@ -32,7 +32,7 @@ contract MOVEToken is ERC20PermitUpgradeable, AccessControlUpgradeable {
      * @dev Returns the number of decimals
      * @notice decimals is set to 8, following the Movement network standard decimals
      */
-    function decimals() public pure override returns (uint8) {
+    function decimals() public pure virtual override returns (uint8) {
         return 8;
     }
 }
