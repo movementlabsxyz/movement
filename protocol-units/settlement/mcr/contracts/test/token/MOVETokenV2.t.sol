@@ -43,6 +43,10 @@ import {OptionsBuilder} from "lib/LayerZero-v2/packages/layerzero-v2/evm/oapp/co
 // Safe contracts
 import {CompatibilityFallbackHandler} from "@safe-smart-account/contracts/handler/CompatibilityFallbackHandler.sol";
 
+interface IRetrieveDelegates {
+    function delegates(address account) external view returns (address);
+}
+
 contract MOVETokenV2Test is Test {
     // =============================================================================
     // STATE VARIABLES - CONTRACT INSTANCES
@@ -185,19 +189,16 @@ contract MOVETokenV2Test is Test {
     // =============================================================================
 
     /**
-     * @dev Tests the complete upgrade process from MOVEToken to MOVETokenV2 via timelock
+     * @dev Tests the schedule to upgrade process from MOVEToken to MOVETokenV2 via timelock
      *      This test simulates the real upgrade scenario including:
      *      1. Scheduling the upgrade through timelock with proper delay
      *      2. Pausing the existing bridge during the upgrade window
-     *      3. Executing the upgrade after timelock delay
-     *      4. Burning deprecated bridge balances during initialization
-     *      5. Transferring admin roles from oldFoundation to labs
-     *      6. Verifying all state transitions and access controls
      */
-    function testUpgradeFromTimelock() public {
+    function testScheduleAndSetPeer() public {
         assertEq(admin.owner(), address(timelock));
         assertEq(move.hasRole(DEFAULT_ADMIN_ROLE, oldFoundation), true);
         assertEq(move.hasRole(DEFAULT_ADMIN_ROLE, anchorage), false);
+        assertEq(move.hasRole(DEFAULT_ADMIN_ROLE, labs), false);
 
         // Define deprecated addresses whose balances will be burned during upgrade
         address[] memory deprecated = new address[](1);
@@ -219,6 +220,35 @@ contract MOVETokenV2Test is Test {
         // While upgrade is scheduled, labs pauses the existing bridge to prevent new transactions
         vm.startPrank(labs);
         OFTAdapter(payable(bridge)).setPeer(30325, 0x0);
+    }
+
+    /**
+     * @dev Tests the complete upgrade process from MOVEToken to MOVETokenV2 via timelock
+     *      This test simulates the real upgrade scenario including:
+     *      1. Scheduling the upgrade through timelock with proper delay
+     *      2. Pausing the existing bridge during the upgrade window
+     *      3. Executing the upgrade after timelock delay
+     *      4. Burning deprecated bridge balances during initialization
+     *      5. Transferring admin roles from oldFoundation to labs
+     *      6. Verifying all state transitions and access controls
+     */
+    function testUpgradeFromTimelock() public {
+        // Define deprecated addresses whose balances will be burned during upgrade
+        address[] memory deprecated = new address[](1);
+        deprecated[0] = bridge;
+
+        bytes memory initializeData =
+            abi.encodeWithSignature("initialize(address,address,address[])", labs, oldFoundation, deprecated);
+
+        bytes memory upgradeData = abi.encodeWithSignature(
+            "upgradeAndCall(address,address,bytes)",
+            address(moveProxy),
+            address(moveTokenImplementation2),
+            initializeData
+        );
+        
+        // Once transaction is scheduled comment out testScheduleAndSetPeer and RERUN TEST to verify that all arguments are correct
+        testScheduleAndSetPeer();
 
         // Verify that upgrade cannot be executed before timelock delay
         vm.expectRevert();
@@ -250,6 +280,10 @@ contract MOVETokenV2Test is Test {
         assertEq(move2.hasRole(DEFAULT_ADMIN_ROLE, anchorage), false);
         assertEq(move2.endpoint() == endpoint, true);
         assertEq(move2.owner(), labs);
+
+        // couldn't find exactly where delegates function is defined, so using IRetrieveDelegates interface
+        // asserts labs is the delegate for move2 being able to perform operational tasks
+        assertEq(IRetrieveDelegates(address(move2.endpoint())).delegates(address(move2)), labs);
 
         // Verify proxy implementation was updated correctly
         bytes32 implementation = vm.load(address(moveProxy), ERC1967Utils.IMPLEMENTATION_SLOT);
