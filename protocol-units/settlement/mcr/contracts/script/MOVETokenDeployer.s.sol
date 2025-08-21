@@ -2,6 +2,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
 import {MOVEToken} from "../src/token/MOVEToken.sol";
+import {MOVETokenV2} from "../src/token/MOVETokenV2.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { Helper, ProxyAdmin } from "./helpers/Helper.sol";
 import {ICREATE3Factory} from "./helpers/Create3/ICREATE3Factory.sol";
@@ -72,8 +73,14 @@ contract MOVETokenDeployer is Helper {
 
     function _upgradeMove() internal {
         console.log("MOVE: upgrading");
-        MOVEToken newMoveImplementation = new MOVEToken();
+        address layerzeroEndpoint = block.chainid == 1 ? 
+            0x1a44076050125825900e736c501f859c50fE728c : // Mainnet
+            0x6EDCE65403992e310A62460808c4b910D972f10f; // BSC Testnet
+        MOVEToken newMoveImplementation = new MOVETokenV2(layerzeroEndpoint);
         _checkBytecodeDifference(address(newMoveImplementation), deployment.move);
+
+        // bridge address
+        address[1] memory burn = [0xf1dF43A3053cd18E477233B59a25fC483C2cBe0f];
         // Prepare the data for the upgrade
         bytes memory data = abi.encodeWithSignature(
             "schedule(address,uint256,bytes,bytes32,bytes32,uint256)",
@@ -83,7 +90,12 @@ contract MOVETokenDeployer is Helper {
                 "upgradeAndCall(address,address,bytes)",
                 address(deployment.move),
                 address(newMoveImplementation),
-                ""
+                abi.encodeWithSignature(
+                    "initialize(address,address,address[])",
+                    deployment.movementLabsSafe,
+                    0x074C155f09cE5fC3B65b4a9Bbb01739459C7AD63, // remove old foundation
+                    burn
+                )
             ),
             bytes32(0),
             bytes32(0),
