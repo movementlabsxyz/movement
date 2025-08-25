@@ -86,13 +86,14 @@ pub fn maybe_bootstrap_empty_db(
 	chain_id: ChainId,
 	public_key: &Ed25519PublicKey,
 	release: &impl Release,
+	enable_indexer_db: bool,
 ) -> Result<(DbReaderWriter, ValidatorSigner), anyhow::Error> {
 	let aptos_db = AptosDB::open(
 		StorageDirPaths::from_path(db_dir.clone()),
 		false,
 		config.storage.storage_pruner_config.clone(),
 		config.storage.rocksdb_configs.clone(),
-		false,
+		enable_indexer_db,
 		config.storage.buffered_state_target_items,
 		config.storage.max_num_nodes_per_lru_cache_shard,
 	)?;
