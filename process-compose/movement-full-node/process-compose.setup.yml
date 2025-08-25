@@ -5,6 +5,8 @@ processes:
   setup:
     environment:
       - "MAYBE_RUN_LOCAL=true"
+      - APTOS_ACCOUNT_WHITELIST=$DOT_MOVEMENT_PATH/default_signer_address_whitelist
+      - MAPTOS_PRIVATE_KEY=random
     command: |
       RUST_BACKTRACE=1 movement-full-node setup all
     depends_on:
