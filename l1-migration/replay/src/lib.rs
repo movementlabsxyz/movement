@@ -1,6 +1,8 @@
+use crate::da_height::DaHeight;
 use crate::replay::DaReplayTransactions;
 use clap::Parser;
 
+mod da_height;
 mod replay;
 mod types;
 
@@ -8,14 +10,14 @@ mod types;
 #[clap(name = "Movement Da-Sequencer replay tool", author, disable_version_flag = true)]
 pub enum ApiReplayTool {
 	Replay(DaReplayTransactions),
-	// Validate,
+	ExtractDaHeight(DaHeight),
 }
 
 impl ApiReplayTool {
 	pub async fn run(self) -> anyhow::Result<()> {
 		match self {
 			ApiReplayTool::Replay(cmd) => cmd.run().await,
-			// ApiReplayTool::Validate => Err(anyhow::anyhow!("Validation tool is unimplemented")),
+			ApiReplayTool::ExtractDaHeight(cmd) => cmd.run(),
 		}
 	}
 }
