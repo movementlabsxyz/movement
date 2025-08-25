@@ -28,7 +28,7 @@ use url::Url;
 /// Errors thrown by `DaSequencer`.
 #[derive(Debug, thiserror::Error)]
 pub enum ClientDaSequencerError {
-	#[error("Fail to open block stream: {0}")]
+	#[error("Failed to open block stream: {0}")]
 	FailToOpenBlockStream(String),
 }
 
@@ -64,12 +64,12 @@ pub trait DaSequencerClient: Clone + Send {
 /// Grpc implementation of the DA Sequencer client
 #[derive(Debug, Clone)]
 pub struct GrpcDaSequencerClient {
-	client: DaSequencerNodeServiceClient<tonic::transport::Channel>,
+	client: DaSequencerNodeServiceClient<Channel>,
 	pub stream_heartbeat_interval_sec: u64,
 }
 
 impl GrpcDaSequencerClient {
-	/// Creates an http2 connection to the Da Sequencer node service.
+	/// Creates a http2 connection to the Da Sequencer node service.
 	pub async fn try_connect(
 		connection_url: &Url,
 		stream_heartbeat_interval_sec: u64,
@@ -97,8 +97,8 @@ impl GrpcDaSequencerClient {
 	/// Connects to a da sequencer node service using the given connection string.
 	async fn connect(
 		connection_url: Url,
-	) -> Result<DaSequencerNodeServiceClient<tonic::transport::Channel>, anyhow::Error> {
-		tracing::info!("Grpc client connect using :{connection_url}");
+	) -> Result<DaSequencerNodeServiceClient<Channel>, anyhow::Error> {
+		tracing::info!("Grpc client connect using: {connection_url}");
 		let endpoint = Channel::from_shared(connection_url.as_str().to_string())?;
 
 		// Dynamically configure TLS based on the scheme (http or https)
@@ -118,7 +118,7 @@ impl GrpcDaSequencerClient {
 }
 
 impl DaSequencerClient for GrpcDaSequencerClient {
-	/// Stream reads from a given hestreamight.
+	/// Stream reads from a given height.
 	async fn stream_read_from_height(
 		&mut self,
 		request: StreamReadFromHeightRequest,
@@ -169,7 +169,7 @@ impl DaSequencerClient for GrpcDaSequencerClient {
 								Some(block_response::BlockType::BlockV1(block)) => {
 									// Detect non consecutive height.
 									if block.height != expected_height {
-										tracing::error!("Not an expected block height from DA: expected:{expected_height} received:{}", block.height);
+										tracing::error!("Unexpected block height from DA: expected {expected_height} received {}", block.height);
 										// only break because we don't report error in the stream.
 										// The client re connection will detect end of heartbeat and reconnect.
 										break;
@@ -254,8 +254,7 @@ pub async fn sign_and_encode_batch(
 	signer: &LoadedSigner<Ed25519>,
 ) -> Result<Vec<u8>, anyhow::Error> {
 	let signature = signer.sign(&batch_data).await?;
-	let verifying_key =
-		ed25519_dalek::VerifyingKey::from_bytes(&signer.public_key().await?.to_bytes())?;
+	let verifying_key = VerifyingKey::from_bytes(&signer.public_key().await?.to_bytes())?;
 	Ok(serialize_full_node_batch(verifying_key, signature, batch_data))
 }
 
@@ -310,7 +309,7 @@ impl DaSequencerClient for EmptyDaSequencerClient {
 	/// Stream reads from a given height.
 	async fn stream_read_from_height(
 		&mut self,
-		_request: movement_da_sequencer_proto::StreamReadFromHeightRequest,
+		_request: StreamReadFromHeightRequest,
 	) -> Result<(StreamReadBlockFromHeight, UnboundedReceiver<()>), ClientDaSequencerError> {
 		let never_ending_stream = stream::pending::<Result<BlockV1, ClientDaSequencerError>>();
 		let (_alert_tx, alert_rx) = unbounded_channel();

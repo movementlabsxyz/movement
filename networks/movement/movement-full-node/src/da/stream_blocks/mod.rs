@@ -26,7 +26,7 @@ impl StreamBlocks {
 		.await
 		.expect("gRPC client connection failed.");
 
-		let (mut blocks_from_da, _aleert_channel) = client
+		let (mut blocks_from_da, _alert_channel) = client
 			.stream_read_from_height(StreamReadFromHeightRequest { height: self.from_height })
 			.await
 			.context("Failed to stream blocks from DA")?;
