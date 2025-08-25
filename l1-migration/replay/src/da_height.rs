@@ -5,7 +5,7 @@ use std::path::PathBuf;
 #[derive(Parser)]
 #[clap(name = "da-height", about = "Extract synced block height from the DA-sequencer database")]
 pub struct DaHeight {
-	#[arg(long, help = "Path to the DA-Sequencer database")]
+	#[arg(help = "Path to the DA-Sequencer database")]
 	path: PathBuf,
 }
 

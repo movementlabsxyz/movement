@@ -32,6 +32,7 @@ impl DaSequencerClient {
 }
 
 const SYNCED_HEIGHT: &str = "synced_height";
+pub const EXECUTED_BLOCKS: &str = "executed_blocks";
 
 pub struct DaSequencerDb(DB);
 
@@ -39,7 +40,9 @@ impl DaSequencerDb {
 	pub fn open(path: impl AsRef<Path>) -> anyhow::Result<Self> {
 		let options = rocksdb::Options::default();
 		let synced_height = ColumnFamilyDescriptor::new(SYNCED_HEIGHT, rocksdb::Options::default());
-		let db = DB::open_cf_descriptors(&options, path, vec![synced_height])
+		let executed_blocks =
+			ColumnFamilyDescriptor::new(EXECUTED_BLOCKS, rocksdb::Options::default());
+		let db = DB::open_cf_descriptors(&options, path, vec![synced_height, executed_blocks])
 			.map_err(|e| anyhow::anyhow!("Failed to open DA-Sequencer DB: {:?}", e))?;
 
 		Ok(Self(db))
