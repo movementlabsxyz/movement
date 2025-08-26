@@ -1,13 +1,15 @@
 use anyhow::Context;
+use aptos_sdk::rest_client::{
+	aptos_api_types::{Address, EntryFunctionId, IdentifierWrapper, MoveModuleId, ViewRequest},
+};
+use aptos_sdk::types::account_address::AccountAddress;
 use movement_client::{
 	coin_client::CoinClient,
 	rest_client::Client,
 	types::LocalAccount,
 };
-use aptos_sdk::rest_client::aptos_api_types::{ViewRequest, EntryFunctionId, MoveModuleId, Address, IdentifierWrapper};
-use movement_client::types::account_address::AccountAddress;
-use std::str::FromStr;
 use once_cell::sync::Lazy;
+use std::str::FromStr;
 use url::Url;
 use reqwest;
 
@@ -17,7 +19,11 @@ static SUZUKA_CONFIG: Lazy<movement_config::Config> = Lazy::new(|| {
 	config
 });
 
-static NODE_URL: Lazy<Url> = Lazy::new(|| {
+#[tokio::main]
+async fn main() -> Result<(), anyhow::Error> {
+	println!("Starting e2e_ggp_deprecation test...");
+	
+	// Connect to the node
 	let node_connection_address = SUZUKA_CONFIG
 		.execution_config
 		.maptos_config
@@ -30,19 +36,11 @@ static NODE_URL: Lazy<Url> = Lazy::new(|| {
 		.client
 		.maptos_rest_connection_port
 		.clone();
-
 	let node_connection_url = format!("http://{}:{}", node_connection_address, node_connection_port);
-	Url::parse(node_connection_url.as_str()).unwrap()
-});
-
-
-
-#[tokio::main]
-async fn main() -> Result<(), anyhow::Error> {
-	println!("Starting e2e_ggp_deprecation test...");
 	
-	println!("Connecting to node at: {}", NODE_URL.as_str());
-	let rest_client = Client::new(NODE_URL.clone());
+	println!("Connecting to node at: {}", node_connection_url);
+	
+	let rest_client = Client::new(Url::from_str(&node_connection_url)?);
 	let coin_client = CoinClient::new(&rest_client);
 
 	println!("Attempting to get chain info...");
@@ -54,73 +52,80 @@ async fn main() -> Result<(), anyhow::Error> {
 	println!("Created test accounts");
 	println!("Sender address: {}, Beneficiary address: {}", sender.address(), beneficiary.address());
 
-	// Fund the sender account using the faucet directly
-	println!("Funding sender account via faucet...");
+	// Fund the sender account using the testnet faucet
+	println!("Funding sender account via testnet faucet...");
 	
 	let faucet_url = if let Ok(override_url) = std::env::var("MOVEMENT_FAUCET_URL") {
 		override_url
 	} else {
-		"https://faucet.movementnetwork.xyz".to_string()
+		"https://faucet.testnet.movementinfra.xyz".to_string()
 	};
 	
 	// Try different approaches to match what the faucet expects
 	let client = reqwest::Client::new();
-	let pub_key_hex = hex::encode(sender.public_key().to_bytes());
 	
-	// First try POST with pub_key (preferred)
-	let mut funded = false;
+	// First try GET with address (some faucets prefer this)
 	let response = client
-		.post(&format!("{}/mint", faucet_url))
-		.form(&[
-			("pub_key", pub_key_hex.clone()),
+		.get(&format!("{}/mint", faucet_url))
+		.query(&[
+			("address", sender.address().to_string()),
 			("amount", "1000000".to_string()),
 			("return_txns", "true".to_string()),
 		])
 		.send()
 		.await
-		.context("Failed to send faucet POST request with pub_key")?;
+		.context("Failed to send faucet GET request")?;
+	
 	let status = response.status();
-	if status.is_success() {
-		funded = true;
-	} else {
-		let error_text = response.text().await.unwrap_or_default();
-		println!("[WARN] Faucet POST(pub_key) failed {}: {}", status, error_text);
-		// Try GET with address as fallback
+	println!("Faucet GET response status: {}", status);
+	
+	if !status.is_success() {
+		// If GET fails, try POST with form data
+		println!("GET request failed with status {}, trying POST with form data...", status);
 		let response = client
-			.get(&format!("{}/mint", faucet_url))
-			.query(&[
+			.post(&format!("{}/mint", faucet_url))
+			.form(&[
 				("address", sender.address().to_string()),
 				("amount", "1000000".to_string()),
 				("return_txns", "true".to_string()),
 			])
 			.send()
 			.await
-			.context("Failed to send faucet GET request with address")?;
+			.context("Failed to send faucet POST request")?;
 		let status = response.status();
-		if status.is_success() {
-			funded = true;
-		} else {
+		println!("Faucet POST response status: {}", status);
+		if !status.is_success() {
 			let error_text = response.text().await.unwrap_or_default();
 			return Err(anyhow::anyhow!("Faucet request failed with status {}: {}", status, error_text));
 		}
 	}
 	
-	if funded {
-		println!("Sender account funded request accepted by faucet");
-	}
+	// Get the response body to see what the faucet actually returned
+	let response_text = response.text().await.unwrap_or_default();
+	println!("Faucet response body: {}", response_text);
 	
-	// Wait until the account exists on-chain (poll a few times)
+	println!("Sender account funded request accepted by faucet");
+	
+	// Wait longer for account creation and add more debugging
+	println!("Waiting for account to appear on-chain...");
 	let mut created = false;
-	for attempt in 1..=10 {
+	for attempt in 1..=20 {  // Increased from 10 to 20 attempts
+		println!("Checking account existence... attempt {}/20", attempt);
 		match rest_client.get_account(sender.address()).await {
 			Ok(account_info) => {
-				println!("Account now exists on-chain with sequence {} (attempt {})", account_info.inner().sequence_number, attempt);
+				println!("✅ Account now exists on-chain!");
+				println!("  Sequence number: {}", account_info.inner().sequence_number);
+				println!("  Authentication key: {:?}", account_info.inner().authentication_key);
+				println!("  Created in attempt {}", attempt);
 				created = true;
 				break;
 			}
-			Err(_) => {
-				println!("Waiting for account creation on-chain... attempt {}", attempt);
-				tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+			Err(e) => {
+				println!("❌ Account not found yet (attempt {}/20): {}", attempt, e);
+				if attempt < 20 {
+					println!("Waiting 1 second before next check...");
+					tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;  // Increased from 500ms to 1s
+				}
 			}
 		}
 	}
@@ -129,11 +134,11 @@ async fn main() -> Result<(), anyhow::Error> {
 		return Err(anyhow::anyhow!("Sender account not found on-chain after faucet funding"));
 	}
 	
-	println!("Sender account funded successfully via faucet");
+	println!("Sender account funded successfully via testnet faucet");
 	
 	// Create the beneficiary account (just create, no funding needed for this test)
 	println!("Creating beneficiary account...");
-	// Created locally; on-chain creation occurs on first transfer
+	// For now, just create the account locally - it will be created when first transaction is sent to it
 
 	// Test 1: Verify new fee collection mechanism
 	println!("=== Test 1: Verifying new fee collection mechanism ===");
