@@ -47,12 +47,8 @@ name = "movement-tests-e2e-ggp-gas-fee"
 path = "src/bin/e2e/ggp_gas_fee.rs"
 
 [[bin]]
-name = "verify_collect_fee_deprecation"
-path = "src/bin/e2e/verify_collect_fee_deprecation.rs"
-
-[[bin]]
-name = "framework_upgrade_collect_gas_fees_test"
-path = "src/bin/e2e/framework_upgrade_collect_gas_fees_test.rs"
+name = "e2e_ggp_deprecation"
+path = "src/bin/e2e/e2e_ggp_deprecation.rs"
 
 [[bin]]
 name = "movement-tests-e2e-transfer"

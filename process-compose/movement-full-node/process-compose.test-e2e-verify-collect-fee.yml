@@ -8,32 +8,34 @@ processes:
       - APTOS_ACCOUNT_WHITELIST=$DOT_MOVEMENT_PATH/default_signer_address_whitelist
       - MAPTOS_PRIVATE_KEY=random
 
-  # First: Run the framework upgrade
   framework-upgrade:
     command: |
-      cargo run --bin aptos-framework-biarritz-rc1-release-tool
+      set -e
+      RUST_LOG=info RUST_BACKTRACE=1 cargo run --bin aptos-framework-pre-l1-merge-release-tool
     depends_on:
       movement-full-node:
         condition: process_healthy
       movement-faucet:
         condition: process_healthy
+    availability:
+      exit_on_end: false
     environment:
       - RUST_LOG=info
       - RUST_BACKTRACE=1
     tty: true
     stdin_open: true
 
-  # Then: Run the test that verifies the upgrade
   test-e2e-verify-collect-fee:
     command: |
-      cargo run --bin verify_collect_fee_deprecation
+      set -e
+      RUST_LOG=info RUST_BACKTRACE=1 cargo run --bin e2e_ggp_deprecation
     depends_on:
-      framework-upgrade:
-        condition: process_completed_successfully
       movement-full-node:
         condition: process_healthy
       movement-faucet:
         condition: process_healthy
+      framework-upgrade:
+        condition: process_completed_successfully
     availability:
       exit_on_end: false
     environment:
