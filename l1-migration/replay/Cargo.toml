@@ -11,10 +11,11 @@ rust-version.workspace = true
 
 [dependencies]
 aptos-types = { workspace = true }
+async-stream = { workspace = true }
 anyhow = { workspace = true }
 bcs = { workspace = true }
 clap = { workspace = true }
-hex = { workspace = true }
+futures = { workspace = true }
 movement-da-sequencer-client = { workspace = true }
 movement-da-sequencer-proto = { workspace = true }
 movement-types = { workspace = true }

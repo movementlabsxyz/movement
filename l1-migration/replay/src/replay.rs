@@ -3,8 +3,11 @@ use crate::types::da::{DaSequencerClient, DaSequencerDb};
 use anyhow::Context;
 use aptos_types::transaction::SignedTransaction;
 use clap::{Args, Parser};
-use movement_types::block::Block;
+use futures::pin_mut;
 use std::path::PathBuf;
+use std::time::Duration;
+use tokio::sync::mpsc;
+use tokio::task::JoinSet;
 use tokio_stream::StreamExt;
 use tracing::{error, info};
 
@@ -38,7 +41,7 @@ impl DaReplayTransactions {
 		};
 		let da_sequencer_client = DaSequencerClient::try_connect(&self.da_sequencer_url).await?;
 		let rest_client = AptosRestClient::new(&self.aptos_api_url)?;
-		stream_transactions(&rest_client, &da_sequencer_client, block_height + 1).await
+		stream_transactions(rest_client, da_sequencer_client, block_height + 1).await
 	}
 }
 
@@ -54,38 +57,64 @@ fn get_da_block_height(path_buf: &PathBuf) -> Result<u64, anyhow::Error> {
 }
 
 async fn stream_transactions(
-	rest_client: &AptosRestClient,
-	da_sequencer_client: &DaSequencerClient,
+	rest_client: AptosRestClient,
+	da_sequencer_client: DaSequencerClient,
 	block_height: u64,
 ) -> anyhow::Result<()> {
-	let mut blocks = da_sequencer_client
-		.stream_blocks_from_height(0)
-		.await
-		.context("Failed to stream blocks from DA")?;
+	let stream = da_sequencer_client
+		.stream_transactions_from_height(block_height)
+		.await?
+		.chunks_timeout(10, Duration::from_secs(1));
+	let (tx, mut rx) = mpsc::channel::<Vec<SignedTransaction>>(10);
+	let mut tasks = JoinSet::new();
 
-	info!("streaming blocks from DA, starting at block_height: {}", block_height);
+	// Spawn a task which fetches transaction batches ahead
+	tasks.spawn(async move {
+		pin_mut!(stream);
+		while let Some(txns) = stream.next().await {
+			let txns = txns
+				.into_iter()
+				.collect::<Result<Vec<_>, _>>()
+				.context("Failed to get the next batch of Aptos transactions");
 
-	if let Some(block_res) = blocks.next().await {
-		let block = block_res.context("Failed to get next block from DA")?;
-		info!("block at DA height {}: 0x{}", block.height, hex::encode(block.block_id));
-		let block = bcs::from_bytes::<'_, Block>(block.data.as_ref())
-			.context("Failed to deserialize Movement block")?;
-
-		for transaction in block.transactions() {
-			info!("processing transaction 0x{}", transaction.id());
-			let aptos_transaction = bcs::from_bytes::<'_, SignedTransaction>(transaction.data())
-				.context("Failed to deserialize Aptos transaction")?;
-
-			info!(
-				"Submitting Aptos transaction {}",
-				aptos_transaction.committed_hash().to_hex_literal()
-			);
-			rest_client
-				.submit_bcs(&aptos_transaction)
-				.await
-				.context("Failed to submit the Aptos transaction")?;
+			match txns {
+				Ok(txns) => {
+					if let Err(_) = tx.send(txns).await {
+						// channel is closed
+						break;
+					}
+				}
+				Err(err) => {
+					error!("{err}");
+					break;
+				}
+			}
 		}
-	}
+	});
+
+	// Spawn a task which submits transaction batches to the validator node
+	tasks.spawn(async move {
+		while let Some(txns) = rx.recv().await {
+			match rest_client.submit_batch_bcs(&txns).await {
+				Ok(result) => {
+					info!("Submitted {} Aptos transaction(s)", txns.len());
+					for failure in result.into_inner().transaction_failures {
+						let txn = &txns[failure.transaction_index];
+						let hash = txn.committed_hash().to_hex_literal();
+						error!("Failed to submit Aptos transaction {}: {}", hash, failure.error);
+					}
+				}
+				Err(e) => {
+					error!("Failed to submit {} transaction(s): {}", txns.len(), e);
+					break;
+				}
+			}
+		}
+	});
+
+	// If one of the tasks has finished then something went wrong
+	tasks.join_next().await;
+	tasks.shutdown().await;
 
 	error!("Broken DA stream");
 	Err(anyhow::anyhow!("Broken DA stream"))
