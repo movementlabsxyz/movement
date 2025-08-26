@@ -65,38 +65,68 @@ async fn main() -> Result<(), anyhow::Error> {
 	
 	// Try different approaches to match what the faucet expects
 	let client = reqwest::Client::new();
+	let pub_key_hex = hex::encode(sender.public_key().to_bytes());
 	
-	// First try GET with query parameters (some faucets prefer this)
+	// First try POST with pub_key (preferred)
+	let mut funded = false;
 	let response = client
-		.get(&format!("{}/mint", faucet_url))
-		.query(&[
-			("address", sender.address().to_string()),
+		.post(&format!("{}/mint", faucet_url))
+		.form(&[
+			("pub_key", pub_key_hex.clone()),
 			("amount", "1000000".to_string()),
+			("return_txns", "true".to_string()),
 		])
 		.send()
 		.await
-		.context("Failed to send faucet GET request")?;
-	
+		.context("Failed to send faucet POST request with pub_key")?;
 	let status = response.status();
-	if !status.is_success() {
-		// If GET fails, try POST with form data
-		println!("GET request failed with status {}, trying POST with form data...", status);
-		
+	if status.is_success() {
+		funded = true;
+	} else {
+		let error_text = response.text().await.unwrap_or_default();
+		println!("[WARN] Faucet POST(pub_key) failed {}: {}", status, error_text);
+		// Try GET with address as fallback
 		let response = client
-			.post(&format!("{}/mint", faucet_url))
-			.form(&[
+			.get(&format!("{}/mint", faucet_url))
+			.query(&[
 				("address", sender.address().to_string()),
 				("amount", "1000000".to_string()),
+				("return_txns", "true".to_string()),
 			])
 			.send()
 			.await
-			.context("Failed to send faucet POST request")?;
-		
+			.context("Failed to send faucet GET request with address")?;
 		let status = response.status();
-		if !status.is_success() {
+		if status.is_success() {
+			funded = true;
+		} else {
 			let error_text = response.text().await.unwrap_or_default();
 			return Err(anyhow::anyhow!("Faucet request failed with status {}: {}", status, error_text));
 		}
+	}
+	
+	if funded {
+		println!("Sender account funded request accepted by faucet");
+	}
+	
+	// Wait until the account exists on-chain (poll a few times)
+	let mut created = false;
+	for attempt in 1..=10 {
+		match rest_client.get_account(sender.address()).await {
+			Ok(account_info) => {
+				println!("Account now exists on-chain with sequence {} (attempt {})", account_info.inner().sequence_number, attempt);
+				created = true;
+				break;
+			}
+			Err(_) => {
+				println!("Waiting for account creation on-chain... attempt {}", attempt);
+				tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+			}
+		}
+	}
+	
+	if !created {
+		return Err(anyhow::anyhow!("Sender account not found on-chain after faucet funding"));
 	}
 	
 	println!("Sender account funded successfully via faucet");
@@ -241,10 +271,41 @@ async fn main() -> Result<(), anyhow::Error> {
 	// Execute test transaction
 	println!("Executing test transaction...");
 	
-	let test_txn = coin_client
-		.transfer(&mut sender, beneficiary.address(), 1_000, None)
-		.await
-		.context("Failed to submit test transaction")?;
+	// Debug: Check account sequence number and other details
+	println!("Sender account details:");
+	println!("  Address: {}", sender.address());
+	println!("  Sequence number: {}", sender.sequence_number());
+	println!("  Public key: {:?}", sender.public_key());
+	
+	// Try to get account info from the chain
+	match rest_client.get_account(sender.address()).await {
+		Ok(account_info) => {
+			println!("  On-chain sequence number: {}", account_info.inner().sequence_number);
+			println!("  On-chain authentication key: {:?}", account_info.inner().authentication_key);
+		}
+		Err(e) => {
+			println!("  [WARN] Could not get on-chain account info: {}", e);
+		}
+	}
+	
+	println!("Beneficiary address: {}", beneficiary.address());
+	
+	// Try the transaction with better error handling
+	let test_txn = match coin_client.transfer(&mut sender, beneficiary.address(), 1_000, None).await {
+		Ok(txn) => {
+			println!("Transaction submitted successfully with hash: {:?}", txn);
+			txn
+		}
+		Err(e) => {
+			println!("[ERROR] Transaction submission failed: {}", e);
+			println!("[DEBUG] This might be due to:");
+			println!("  - Account not properly funded");
+			println!("  - Sequence number mismatch");
+			println!("  - Network connectivity issues");
+			println!("  - Gas price/limit issues");
+			return Err(e.context("Failed to submit test transaction"));
+		}
+	};
 	
 	rest_client
 		.wait_for_transaction(&test_txn)
