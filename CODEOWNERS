@@ -1,57 +1,57 @@
 # global
-*   @andygolay @0xmovses @mzabaluev @musitdev
+* @0xmovses  @musitdev
 
 # maptos-executor
-protocol-units/execution/* @0xmovses @musitdev @mzabaluev
+protocol-units/execution/* @0xmovses @musitdev 
 
 # da
-protocol-units/da/* @andygolay @mzabaluev @musitdev @0xmovses
+protocol-units/da/*   @musitdev @0xmovses
 
 # mempool
-protocol-units/mempool/* @andygolay @mzabaluev @musitdev @0xmovses
+protocol-units/mempool/*   @musitdev @0xmovses
 
 # sequencing
-protocol-units/sequencing/* @andygolay @mzabaluev @musitdev @0xmovses
+protocol-units/sequencing/*   @musitdev @0xmovses
 
 # movement-rest
-protocol-units/movement-rest/* @0xmovses @mzabaluev 
+protocol-units/movement-rest/* @0xmovses  
 
 # mcr client
-protocol-units/settlement/mcr/client/* @musitdev @mzabaluev @andygolay
+protocol-units/settlement/mcr/client/* @musitdev  
 
 # mcr manager
-protocol-units/settlement/mcr/manager/* @musitdev @mzabaluev @andygolay
+protocol-units/settlement/mcr/manager/* @musitdev  
 
 # mcr contracts
-protocol-units/settlement/mcr/contracts/* @andygolay @0xPrimata 
+protocol-units/settlement/mcr/contracts/*  @0xPrimata 
 
 # networks
-networks/* @andygolay @mzabaluev @musitdev @0xmovses
+networks/*   @musitdev @0xmovses
 
 # docker
-docker/* @andygolay @radupopa369
+docker/*  @radupopa369
 
 # process-compose
-process-compose/* @andygolay @radupopa369 @musitdev @0xmovses
+process-compose/*  @radupopa369 @musitdev @0xmovses
 
 # docs
-docs/* @andygolay @mzabaluev @musitdev @0xmovses
+docs/*   @musitdev @0xmovses
 
 # nix
-nix/* @andygolay @musitdev  @0xmovses
+nix/*  @musitdev  @0xmovses
 
 # github actions
-.github/workflows/* @andygolay  @0xmovses @mzabaluev @musitdev 
+.github/workflows/*   @0xmovses  @musitdev 
 
 # buildtime 
-util/buildtime/* @andygolay @0xmovses @mzabaluev @musitdev 
+util/buildtime/*  @0xmovses  @musitdev 
 
 # flocks 
-util/flocks/* @andygolay @mzabaluev @0xmovses @mzabaluev 
+util/flocks/*   @0xmovses  
 
 # commander 
-util/commander/* @andygolay @musitdev @0xmovses @mzabaluev 
+util/commander/*  @musitdev @0xmovses  
 
 # godfig
-util/godfig/* @andygolay @mzabaluev @musitdev @0xmovses 
+util/godfig/*   @musitdev @0xmovses 
 
