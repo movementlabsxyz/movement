@@ -37,7 +37,11 @@ const GAS_UNIT_LIMIT: u64 = 100_000;
 const CHANGE_EPOCH_MV: &[u8] = include_bytes!("../move/build/change_epoch.mv");
 
 pub async fn set_epoch_duration(epoch_duration: u64) -> Result<(), anyhow::Error> {
-	let rest_client = Client::new(NODE_URL.clone());
+	let node_url = std::env::var("MVT_NODE_REST_URL")
+		.as_ref()
+		.map(|url| Url::from_str(url))
+		.unwrap_or(Ok(NODE_URL.clone()))?;
+	let rest_client = Client::new(node_url);
 
 	// Core resources (aptos_test_root) address
 	let gov_root_address = aptos_test_root_address();
