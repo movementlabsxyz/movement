@@ -67,12 +67,14 @@ pub async fn set_epoch_duration(epoch_duration: u64) -> Result<(), anyhow::Error
 	let payload = TransactionPayload::Script(Script::new(
 		CHANGE_EPOCH_MV.to_vec(),
 		vec![],                                         // no type args
-		vec![TransactionArgument::U64(epoch_duration)], // no value args; 7_200_000_000 is hardcoded inside
+		vec![TransactionArgument::U64(epoch_duration)], // New epoch duration.
 	));
 
 	// Sign & submit
 	let signed_txn = gov_root_account.sign_with_transaction_builder(factory.payload(payload));
-	let res = rest_client.submit_and_wait(&signed_txn).await?.into_inner();
+
+	let tx_hash = rest_client.submit(&signed_txn).await?.into_inner();
+	let res = rest_client.wait_for_transaction(&tx_hash).await?.into_inner();
 
 	// Verify the epoch has been changed
 	let block_res: Resource = rest_client

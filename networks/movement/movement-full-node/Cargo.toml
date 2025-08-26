@@ -65,7 +65,6 @@ mcr-settlement-setup = { workspace = true }
 
 mvt-aptos-l1-migration = { workspace = true }
 
-aptos-logger = { workspace = true }
 
 url = { workspace = true }
 
