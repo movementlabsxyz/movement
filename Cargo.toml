@@ -44,7 +44,6 @@ members = [
     "protocol-units/da-sequencer/config",
     "protocol-units/da-sequencer/client",
     "protocol-units/da-sequencer/node",
-    "l1-migration/replay"
 ]
 
 [workspace.package]

@@ -1,3 +1,4 @@
+use crate::node::da_db::DaDB;
 use anyhow::Context;
 use aptos_types::transaction::SignedTransaction;
 use futures::Stream;
@@ -5,7 +6,6 @@ use futures::TryStreamExt;
 use movement_da_sequencer_client::DaSequencerClient as _;
 use movement_da_sequencer_client::{GrpcDaSequencerClient, StreamReadBlockFromHeight};
 use movement_da_sequencer_proto::StreamReadFromHeightRequest;
-use rocksdb::{ColumnFamilyDescriptor, DB};
 use std::cell::Cell;
 use std::path::Path;
 use tracing::info;
@@ -65,42 +65,15 @@ impl DaSequencerClient {
 	}
 }
 
-const SYNCED_HEIGHT: &str = "synced_height";
-pub const EXECUTED_BLOCKS: &str = "executed_blocks";
-
-pub struct DaSequencerDb(DB);
+pub struct DaSequencerDb(DaDB);
 
 impl DaSequencerDb {
 	pub fn open(path: impl AsRef<Path>) -> anyhow::Result<Self> {
-		let options = rocksdb::Options::default();
-		let synced_height = ColumnFamilyDescriptor::new(SYNCED_HEIGHT, rocksdb::Options::default());
-		let executed_blocks =
-			ColumnFamilyDescriptor::new(EXECUTED_BLOCKS, rocksdb::Options::default());
-		let db = DB::open_cf_descriptors(&options, path, vec![synced_height, executed_blocks])
-			.map_err(|e| anyhow::anyhow!("Failed to open DA-Sequencer DB: {:?}", e))?;
-
-		Ok(Self(db))
+		let da_db = DaDB::open(path)?;
+		Ok(DaSequencerDb(da_db))
 	}
 
-	/// Get the synced height marker stored in the database.
 	pub fn get_synced_height(&self) -> Result<u64, anyhow::Error> {
-		// This is heavy for this purpose, but progressively the contents of the DA DB will be used for more things
-		let height = {
-			let cf = self
-				.0
-				.cf_handle(SYNCED_HEIGHT)
-				.ok_or(anyhow::anyhow!("No synced_height column family"))?;
-			let height = self
-				.0
-				.get_cf(&cf, "synced_height")
-				.map_err(|e| anyhow::anyhow!("Failed to get synced height: {:?}", e))?;
-			let height = match height {
-				Some(height) => serde_json::from_slice(&height)
-					.map_err(|e| anyhow::anyhow!("Failed to deserialize synced height: {:?}", e))?,
-				None => 0,
-			};
-			Ok::<u64, anyhow::Error>(height)
-		}?;
-		Ok(height)
+		self.0.get_synced_height()
 	}
 }

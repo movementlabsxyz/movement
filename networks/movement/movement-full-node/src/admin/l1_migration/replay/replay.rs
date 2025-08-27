@@ -1,5 +1,5 @@
-use crate::types::api::AptosRestClient;
-use crate::types::da::{DaSequencerClient, DaSequencerDb};
+use crate::admin::l1_migration::replay::types::api::AptosRestClient;
+use crate::admin::l1_migration::replay::types::da::{DaSequencerClient, DaSequencerDb};
 use anyhow::Context;
 use aptos_types::transaction::SignedTransaction;
 use clap::{Args, Parser};
@@ -11,7 +11,7 @@ use tokio::task::JoinSet;
 use tokio_stream::StreamExt;
 use tracing::{error, info};
 
-#[derive(Parser)]
+#[derive(Parser, Debug)]
 #[clap(name = "replay", about = "Stream transactions from DA-sequencer blocks")]
 pub struct DaReplayTransactions {
 	#[clap(value_parser)]
@@ -23,7 +23,7 @@ pub struct DaReplayTransactions {
 	da_sequencer_db: DaBlockHeight,
 }
 
-#[derive(Args)]
+#[derive(Args, Debug)]
 #[group(required = true, multiple = false)]
 pub struct DaBlockHeight {
 	#[arg(long = "da-db", help = "Path to the DA-Sequencer database")]
@@ -33,10 +33,10 @@ pub struct DaBlockHeight {
 }
 
 impl DaReplayTransactions {
-	pub async fn run(self) -> anyhow::Result<()> {
-		let block_height = match (self.da_sequencer_db.height, self.da_sequencer_db.path) {
+	pub async fn run(&self) -> anyhow::Result<()> {
+		let block_height = match (self.da_sequencer_db.height, &self.da_sequencer_db.path) {
 			(Some(height), _) => height,
-			(_, Some(ref path)) => get_da_block_height(path)?,
+			(_, Some(path)) => get_da_block_height(path)?,
 			_ => unreachable!(),
 		};
 		let da_sequencer_client = DaSequencerClient::try_connect(&self.da_sequencer_url).await?;
