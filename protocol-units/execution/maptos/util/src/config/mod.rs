@@ -4,10 +4,13 @@ pub mod common;
 pub mod da_sequencer;
 pub mod faucet;
 pub mod fin;
+pub mod health_server;
 pub mod indexer;
 pub mod indexer_processor;
+pub mod indexer_processor_v2;
 pub mod load_shedding;
 pub mod mempool;
+pub mod metrics_server;
 
 use serde::{Deserialize, Serialize};
 
@@ -24,6 +27,10 @@ pub struct Config {
 	/// The indexer processor configuration
 	#[serde(default)]
 	pub indexer_processor: indexer_processor::Config,
+
+	/// The indexer processor configuration
+	#[serde(default)]
+	pub indexer_processor_v2: indexer_processor_v2::Config,
 
 	/// The client configuration
 	#[serde(default)]
@@ -60,6 +67,7 @@ impl Default for Config {
 			chain: chain::Config::default(),
 			indexer: indexer::Config::default(),
 			indexer_processor: indexer_processor::Config::default(),
+			indexer_processor_v2: indexer_processor_v2::Config::default(),
 			client: client::Config::default(),
 			faucet: faucet::Config::default(),
 			fin: fin::Config::default(),

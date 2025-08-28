@@ -28,6 +28,7 @@ members = [
   "util/movement-algs",
   "util/movement-types",
   "util/tracing",
+  "util/health",
   "util/syncador",
   "util/collections",
   "util/whitelist",
@@ -43,7 +44,7 @@ members = [
   "protocol-units/execution/maptos/framework/migrations/*",
   "protocol-units/da-sequencer/config",
   "protocol-units/da-sequencer/client",
-  "protocol-units/da-sequencer/node"
+  "protocol-units/da-sequencer/node",
 ]
 
 [workspace.package]
@@ -127,6 +128,7 @@ movement-config = { path = "networks/movement/movement-config" }
 flocks = { path = "util/flocks" }
 godfig = { path = "util/godfig" }
 movement-tracing = { path = "util/tracing" }
+movement-health = { path = "util/health" }
 syncup = { path = "protocol-units/syncing/syncup" }
 syncador = { path = "util/syncador" }
 movement-collections = { path = "util/collections" }
@@ -168,11 +170,12 @@ aptos-cached-packages = { git = "https://github.com/movementlabsxyz/aptos-core",
 aptos-config = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d1cdbbd7fabb80dcb95ba5e23213faa072fab67" }
 aptos-consensus-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d1cdbbd7fabb80dcb95ba5e23213faa072fab67" }
 aptos-crypto = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d1cdbbd7fabb80dcb95ba5e23213faa072fab67", features = [
-    "cloneable-private-keys",
+  "cloneable-private-keys",
 ] }
 
 aptos-crypto-derive = { git = "https://github.com/movementlabsxyz/aptos-core.git", rev = "1d1cdbbd7fabb80dcb95ba5e23213faa072fab67" }
 aptos-db = { git = "https://github.com/movementlabsxyz/aptos-core.git", rev = "1d1cdbbd7fabb80dcb95ba5e23213faa072fab67" }
+aptos-db-indexer = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d1cdbbd7fabb80dcb95ba5e23213faa072fab67" }
 aptos-executor = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d1cdbbd7fabb80dcb95ba5e23213faa072fab67" }
 aptos-executor-test-helpers = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d1cdbbd7fabb80dcb95ba5e23213faa072fab67" }
 aptos-executor-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d1cdbbd7fabb80dcb95ba5e23213faa072fab67" }
@@ -204,6 +207,9 @@ movement = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d1cd
 # Indexer
 processor = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors", rev = "20be1190105908fd4fea4e78c330997658e9428e" }
 server-framework = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors", rev = "20be1190105908fd4fea4e78c330997658e9428e" }
+processor-v2 = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors-v2", rev = "3fa850e7ea7770fec7967ce5b9a857dabace6aa3", package = "processor" }
+aptos-indexer-processor-sdk = { git = "https://github.com/movementlabsxyz/aptos-indexer-processor-sdk", rev = "a596af7bfdabeb4fc94c19bbbccbd0574d7c15a1" }
+
 
 bcs = { git = "https://github.com/movementlabsxyz/bcs.git", rev = "bc16d2d39cabafaabd76173dd1b04b2aa170cf0c" }
 
@@ -220,9 +226,9 @@ move-table-extension = { git = "https://github.com/diem/move" }
 move-core-types = { git = "https://github.com/diem/move" }
 
 secp256k1 = { version = "0.27", default-features = false, features = [
-    "global-context",
-    "rand-std",
-    "recovery",
+  "global-context",
+  "rand-std",
+  "recovery",
 ] }
 
 ## Celestia Dependencies
@@ -232,15 +238,15 @@ celestia-types = { git = "https://github.com/eigerco/lumina", rev = "c6e5b7f5e3a
 # External Dependencies
 
 alloy = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2", features = [
-    "node-bindings",
-    "rpc-types-trace",
-    "json-rpc",
-    "json-abi",
-    "rpc-client",
-    "signers",
-    "signer-yubihsm",
-    "pubsub",
-    "providers",
+  "node-bindings",
+  "rpc-types-trace",
+  "json-rpc",
+  "json-abi",
+  "rpc-client",
+  "signers",
+  "signer-yubihsm",
+  "pubsub",
+  "providers",
 ] }
 alloy-rpc-types-eth = "0.1.3"
 alloy-eips = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
@@ -249,7 +255,7 @@ alloy-network = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b17
 alloy-primitives = { version = "0.7.2", default-features = false }
 alloy-consensus = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
 alloy-provider = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2", features = [
-    "ws",
+  "ws",
 ] }
 alloy-rlp = "0.3.5"
 alloy-rpc-types = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
@@ -257,11 +263,11 @@ alloy-sol-types = { version = "0.7.2", features = ["json"] }
 alloy-signer = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
 alloy-transport = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
 alloy-transport-http = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2", features = [
-    "reqwest-rustls-tls",
+  "reqwest-rustls-tls",
 ] }
 alloy-transport-ws = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
 
-anyhow = "1.0"
+anyhow = "1.0.98"
 async-stream = "0.3.0"
 async-trait = "0.1.71"
 async-recursion = "1.1.1"
@@ -282,8 +288,8 @@ fail = "0.5.1"
 futures = "0.3.17"
 hashbrown = "0.14.3"
 hex = { version = "0.4.3", default-features = false, features = [
-    "alloc",
-    "serde",
+  "alloc",
+  "serde",
 ] }
 ics23 = { version = "0.11.0" }
 k256 = { version = "0.13.3" }
@@ -310,10 +316,10 @@ reqwest = "0.12.4"
 risc0-build = "0.20"
 risc0-zkvm = { version = "0.21", features = ["std", "getrandom"] }
 rocksdb = { version = "0.22.0", features = [
-    "snappy",
-    "lz4",
-    "zstd",
-    "zlib",
+  "snappy",
+  "lz4",
+  "zstd",
+  "zlib",
 ], default-features = false }
 schemars = { version = "0.8.16", features = ["derive"] }
 serde_with = "3.7.0"
@@ -359,6 +365,7 @@ hyper-util = { version = "0.1.4" }
 tower = { version = "0.5" }
 http-body-util = "0.1"
 tap = "1.0.1"
+prometheus = "0.14.0"
 
 # trying to pin diesel
 diesel = { version = "2.2.7", features = ["postgres", "numeric", "r2d2"] }

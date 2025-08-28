@@ -82,26 +82,25 @@ impl Executor {
 		node_config.indexer.batch_size = Some(8);
 		node_config.indexer.gap_lookback_versions = Some(4);
 
-		node_config.indexer_grpc.enabled = true;
-
 		// indexer_grpc config
-		node_config.indexer_grpc.processor_batch_size = 4;
-		node_config.indexer_grpc.processor_task_count = 4;
-		node_config.indexer_grpc.output_batch_size = 4;
-		node_config.indexer_grpc.address = (
-			maptos_config.indexer.maptos_indexer_grpc_listen_hostname.as_str(),
-			maptos_config.indexer.maptos_indexer_grpc_listen_port,
-		)
-			.to_socket_addrs()?
-			.next()
-			.context("failed to resolve the value of maptos_indexer_grpc_listen_hostname")?;
-		node_config.indexer_grpc.use_data_service_interface = true;
+		if maptos_config.chain.enable_indexer_grpc {
+			node_config.indexer_table_info.enabled = true;
+			node_config.indexer_grpc.enabled = true;
+			node_config.indexer_grpc.processor_batch_size = 4;
+			node_config.indexer_grpc.processor_task_count = 4;
+			node_config.indexer_grpc.output_batch_size = 4;
+			node_config.indexer_grpc.address = (
+				maptos_config.indexer.maptos_indexer_grpc_listen_hostname.as_str(),
+				maptos_config.indexer.maptos_indexer_grpc_listen_port,
+			)
+				.to_socket_addrs()?
+				.next()
+				.context("failed to resolve the value of maptos_indexer_grpc_listen_hostname")?;
+			node_config.indexer_grpc.use_data_service_interface = true;
+		}
 
-		// indexer table info config
-		node_config.indexer_table_info.enabled = true;
 		node_config.storage.dir = dot_movement.get_path().join("maptos-storage");
 		node_config.storage.set_data_dir(node_config.storage.dir.clone());
-
 		let known_release = aptos_framework_known_release::KnownRelease::try_new(
 			maptos_config.chain.known_framework_release_str.as_str(),
 		)?;
@@ -111,6 +110,7 @@ impl Executor {
 			maptos_config.chain.maptos_chain_id.clone(),
 			&public_key,
 			&known_release,
+			maptos_config.chain.enable_indexer_grpc,
 		)?;
 
 		Ok(Self {

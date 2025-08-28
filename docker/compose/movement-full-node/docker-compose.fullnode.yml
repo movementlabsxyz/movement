@@ -7,6 +7,20 @@ services:
       - DOT_MOVEMENT_PATH=/.movement
       - MOVEMENT_TIMING=info
       - RUST_BACKTRACE=1
+      - MOVEMENT_METRICS_ADDR=0.0.0.0:9464
+      - APTOS_FORCE_ENABLE_TELEMETRY=1
+      - APTOS_METRICS_PORT=9464
+      - APTOS_METRICS_HOST=0.0.0.0
+      - APTOS_DISABLE_TELEMETRY_PUSH_METRICS=1
+      - PROMETHEUS_METRICS_ENABLED=1
+      - APTOS_ENABLE_CONSENSUS_METRICS=1
+      - APTOS_ENABLE_DB_METRICS=1
+      - APTOS_ENABLE_MEMPOOL_METRICS=1
+      - APTOS_ENABLE_NETWORK_METRICS=1
+      - APTOS_ENABLE_STORAGE_METRICS=1
+      - APTOS_ENABLE_VM_METRICS=1
+      # OTEL Configuration (optional - uncomment and set your endpoint)
+      # - MOVEMENT_OTEL_ENDPOINT=http://otel-collector:4317
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement
     ports:

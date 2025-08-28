@@ -44,6 +44,7 @@ aptos-db = { workspace = true }
 aptos-api = { workspace = true }
 aptos-api-types = { workspace = true }
 aptos-types = { workspace = true }
+aptos-db-indexer = { workspace = true }
 aptos-storage-interface = { workspace = true }
 aptos-block-executor = { workspace = true }
 aptos-vm-types = { workspace = true }

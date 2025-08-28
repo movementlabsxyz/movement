@@ -14,6 +14,8 @@ use tokio::runtime::Runtime;
 use tokio::time;
 use warp::Filter;
 
+pub mod simple_metrics;
+
 // Create a default NodeConfig for telemetry
 static DEFAULT_NODE_CONFIG: Lazy<NodeConfig> = Lazy::new(|| {
 	let mut config = NodeConfig::default();
@@ -340,6 +342,12 @@ pub fn start_telemetry_service() {
 	std::env::set_var("APTOS_ENABLE_NETWORK_METRICS", "1");
 	std::env::set_var("APTOS_ENABLE_STORAGE_METRICS", "1");
 	std::env::set_var("APTOS_ENABLE_VM_METRICS", "1");
+
+	// Configure OTEL if endpoint is provided
+	if let Ok(otel_endpoint) = std::env::var("MOVEMENT_OTEL_ENDPOINT") {
+		std::env::set_var("APTOS_OTEL_ENDPOINT", &otel_endpoint);
+		info!("Configured OTEL endpoint: {}", otel_endpoint);
+	}
 
 	// Register custom metrics
 	register_custom_metrics();

@@ -102,7 +102,10 @@ contract MOVETokenDeployer is Helper {
             config.minDelay
         );
 
+<<<<<<< HEAD
         // Data to be used to propose the upgrade
+=======
+>>>>>>> main
         _proposeUpgrade(data, "movetoken.json");
     }
 }

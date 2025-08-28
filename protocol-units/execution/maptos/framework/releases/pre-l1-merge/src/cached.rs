@@ -52,23 +52,28 @@ pub mod full {
 		use aptos_release_builder::components::feature_flags::FeatureFlag;
 		use aptos_types::on_chain_config::FeatureFlag as AptosFeatureFlag;
 
-		// start with the default features and append the Governed Gas Pool feature
 		let mut enable_feature_flags = AptosFeatureFlag::default_features();
-		// Note: when testing into the future, you may have to use a different revision of [aptos_types] in this crate's Cargo.toml
-		// Or, I suppose you can keep and GOVERNED_GAS_POOL feature flag and a GOVERNED_GAS_POOL_V2 feature flag and just make sure you're disabling the former and enabling the latter. Thereafter, it won't matter what happens to the GOVERNED_GAS_POOL feature flag, i.e., it can be replaced.
-		enable_feature_flags.push(AptosFeatureFlag::GOVERNED_GAS_POOL);
 
-		// Note: before the upgrade to the newest version to the Aptos framework
-		// we need to activate features that are currently active on the Aptos testnet
-		// See: https://github.com/movementlabsxyz/movement-migration/issues/30#issuecomment-2862738427
-		// aptos_feature_flags.push(AptosFeatureFlag::PERIODICAL_REWARD_RATE_DECREASE);
+		//Todo update aptos core deps to be on l1-migration branch.
+		//Add in the latest features that are not present here
+
+		// To Enable
+		enable_feature_flags.push(AptosFeatureFlag::GOVERNED_GAS_POOL);
 		enable_feature_flags.push(AptosFeatureFlag::PARTIAL_GOVERNANCE_VOTING);
 		enable_feature_flags.push(AptosFeatureFlag::DELEGATION_POOL_PARTIAL_GOVERNANCE_VOTING);
-		enable_feature_flags.push(AptosFeatureFlag::VM_BINARY_FORMAT_V7);
+		enable_feature_flags.push(AptosFeatureFlag::CONCURRENT_FUNGIBLE_BALANCE);
+		enable_feature_flags.push(AptosFeatureFlag::REJECT_UNSTABLE_BYTECODE);
 
 		Features {
 			enabled: enable_feature_flags.into_iter().map(FeatureFlag::from).collect(),
-			disabled: vec![AptosFeatureFlag::REMOVE_DETAILED_ERROR_FROM_HASH.into()],
+			disabled: vec![
+				FeatureFlag::RemoveDetailedError,
+				FeatureFlag::PeriodicalRewardRateReduction,
+				FeatureFlag::VMBinaryFormatV7,
+				FeatureFlag::KeylessAccounts,
+				FeatureFlag::KeylessButZklessAccounts,
+				FeatureFlag::KeylessAccountsWithPasskeys,
+			],
 		}
 	});
 }
