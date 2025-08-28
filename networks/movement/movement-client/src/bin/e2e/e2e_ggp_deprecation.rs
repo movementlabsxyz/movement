@@ -1,17 +1,16 @@
 use anyhow::Context;
-use aptos_sdk::rest_client::{
-	aptos_api_types::{Address, EntryFunctionId, IdentifierWrapper, MoveModuleId, ViewRequest},
-};
-use aptos_sdk::types::account_address::AccountAddress;
+use aptos_sdk::rest_client::aptos_api_types::{ViewRequest, EntryFunctionId, MoveModuleId, Address, IdentifierWrapper};
 use movement_client::{
 	coin_client::CoinClient,
-	rest_client::Client,
+	rest_client::{Client, FaucetClient},
 	types::LocalAccount,
+	crypto::ed25519::Ed25519PrivateKey,
+	types::account_config::aptos_test_root_address,
 };
+use movement_client::types::account_address::AccountAddress;
 use once_cell::sync::Lazy;
 use std::str::FromStr;
 use url::Url;
-use reqwest;
 
 static SUZUKA_CONFIG: Lazy<movement_config::Config> = Lazy::new(|| {
 	let dot_movement = dot_movement::DotMovement::try_from_env().unwrap();
@@ -19,11 +18,7 @@ static SUZUKA_CONFIG: Lazy<movement_config::Config> = Lazy::new(|| {
 	config
 });
 
-#[tokio::main]
-async fn main() -> Result<(), anyhow::Error> {
-	println!("Starting e2e_ggp_deprecation test...");
-	
-	// Connect to the node
+static NODE_URL: Lazy<Url> = Lazy::new(|| {
 	let node_connection_address = SUZUKA_CONFIG
 		.execution_config
 		.maptos_config
@@ -37,115 +32,88 @@ async fn main() -> Result<(), anyhow::Error> {
 		.maptos_rest_connection_port
 		.clone();
 	let node_connection_url = format!("http://{}:{}", node_connection_address, node_connection_port);
-	
-	println!("Connecting to node at: {}", node_connection_url);
-	
-	let rest_client = Client::new(Url::from_str(&node_connection_url)?);
+	Url::from_str(node_connection_url.as_str()).unwrap()
+});
+
+static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
+	let faucet_listen_address = SUZUKA_CONFIG
+		.execution_config
+		.maptos_config
+		.client
+		.maptos_faucet_rest_connection_hostname
+		.clone();
+	let faucet_listen_port = SUZUKA_CONFIG
+		.execution_config
+		.maptos_config
+		.client
+		.maptos_faucet_rest_connection_port
+		.clone();
+	let faucet_listen_url = format!("http://{}:{}", faucet_listen_address, faucet_listen_port);
+	Url::from_str(faucet_listen_url.as_str()).unwrap()
+});
+
+#[tokio::main]
+async fn main() -> Result<(), anyhow::Error> {
+	println!("Starting e2e_ggp_deprecation test...");
+	println!("Connecting to node at: {}", NODE_URL.as_str());
+	let rest_client = Client::new(NODE_URL.clone());
+	let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
 	let coin_client = CoinClient::new(&rest_client);
 
 	println!("Attempting to get chain info...");
-	
+
 	// Create test accounts
 	let mut sender = LocalAccount::generate(&mut rand::rngs::OsRng);
 	let beneficiary = LocalAccount::generate(&mut rand::rngs::OsRng);
-
 	println!("Created test accounts");
 	println!("Sender address: {}, Beneficiary address: {}", sender.address(), beneficiary.address());
 
-	// Fund the sender account using the testnet faucet
-	println!("Funding sender account via testnet faucet...");
-	
-	let faucet_url = if let Ok(override_url) = std::env::var("MOVEMENT_FAUCET_URL") {
-		override_url
+	// Fund via local faucet (same pattern as ggp_gas_fee)
+	println!("Funding sender account via faucet...");
+	let faucet_res = faucet_client.fund(sender.address(), 1_000_000).await;
+	if let Err(e) = faucet_res {
+		let msg = format!("{}", e);
+		if msg.contains("ENO_CAPABILITIES") || msg.contains("mint capability") {
+			println!("[WARN] Faucet mint failed due to missing capability. Falling back to genesis funding...");
+			// Fallback: fund via genesis transfer
+			let raw_private_key = SUZUKA_CONFIG
+				.execution_config
+				.maptos_config
+				.chain
+				.maptos_private_key_signer_identifier
+				.try_raw_private_key()?;
+			let private_key = Ed25519PrivateKey::try_from(raw_private_key.as_slice())?;
+			let mut genesis = LocalAccount::new(aptos_test_root_address(), private_key, 0);
+			if let Ok(acct) = rest_client.get_account(genesis.address()).await {
+				genesis.set_sequence_number(acct.inner().sequence_number);
+			}
+			let txh = coin_client
+				.transfer(&mut genesis, sender.address(), 1_000_000, None)
+				.await
+				.context("Fallback transfer from genesis failed")?;
+			rest_client
+				.wait_for_transaction(&txh)
+				.await
+				.context("Failed waiting for fallback transfer")?;
+			println!("Sender account funded via genesis fallback");
+		} else {
+			return Err(anyhow::anyhow!("Failed to fund sender account via faucet: {}", e));
+		}
 	} else {
-		"https://faucet.testnet.movementinfra.xyz".to_string()
-	};
-	
-	// Try different approaches to match what the faucet expects
-	let client = reqwest::Client::new();
-	
-	// First try GET with address (some faucets prefer this)
-	let response = client
-		.get(&format!("{}/mint", faucet_url))
-		.query(&[
-			("address", sender.address().to_string()),
-			("amount", "1000000".to_string()),
-			("return_txns", "true".to_string()),
-		])
-		.send()
-		.await
-		.context("Failed to send faucet GET request")?;
-	
-	let status = response.status();
-	println!("Faucet GET response status: {}", status);
-	
-	if !status.is_success() {
-		// If GET fails, try POST with form data
-		println!("GET request failed with status {}, trying POST with form data...", status);
-		let response = client
-			.post(&format!("{}/mint", faucet_url))
-			.form(&[
-				("address", sender.address().to_string()),
-				("amount", "1000000".to_string()),
-				("return_txns", "true".to_string()),
-			])
-			.send()
-			.await
-			.context("Failed to send faucet POST request")?;
-		let status = response.status();
-		println!("Faucet POST response status: {}", status);
-		if !status.is_success() {
-			let error_text = response.text().await.unwrap_or_default();
-			return Err(anyhow::anyhow!("Faucet request failed with status {}: {}", status, error_text));
-		}
+		println!("Sender account funded successfully via faucet");
 	}
-	
-	// Get the response body to see what the faucet actually returned
-	let response_text = response.text().await.unwrap_or_default();
-	println!("Faucet response body: {}", response_text);
-	
-	println!("Sender account funded request accepted by faucet");
-	
-	// Wait longer for account creation and add more debugging
-	println!("Waiting for account to appear on-chain...");
-	let mut created = false;
-	for attempt in 1..=20 {  // Increased from 10 to 20 attempts
-		println!("Checking account existence... attempt {}/20", attempt);
-		match rest_client.get_account(sender.address()).await {
-			Ok(account_info) => {
-				println!("✅ Account now exists on-chain!");
-				println!("  Sequence number: {}", account_info.inner().sequence_number);
-				println!("  Authentication key: {:?}", account_info.inner().authentication_key);
-				println!("  Created in attempt {}", attempt);
-				created = true;
-				break;
-			}
-			Err(e) => {
-				println!("❌ Account not found yet (attempt {}/20): {}", attempt, e);
-				if attempt < 20 {
-					println!("Waiting 1 second before next check...");
-					tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;  // Increased from 500ms to 1s
-				}
-			}
-		}
-	}
-	
-	if !created {
-		return Err(anyhow::anyhow!("Sender account not found on-chain after faucet funding"));
-	}
-	
-	println!("Sender account funded successfully via testnet faucet");
-	
-	// Create the beneficiary account (just create, no funding needed for this test)
-	println!("Creating beneficiary account...");
-	// For now, just create the account locally - it will be created when first transaction is sent to it
 
+	println!("Creating beneficiary account via faucet...");
+	faucet_client
+		.create_account(beneficiary.address())
+		.await
+		.context("Failed to create beneficiary account via faucet")?;
+	println!("Beneficiary account created successfully");
+
+	// === Existing verification logic follows ===
 	// Test 1: Verify new fee collection mechanism
 	println!("=== Test 1: Verifying new fee collection mechanism ===");
-	
-	// First, check if the COLLECT_AND_DISTRIBUTE_GAS_FEES feature flag is enabled
 	println!("Checking if COLLECT_AND_DISTRIBUTE_GAS_FEES feature flag is enabled...");
-	
 	let feature_flag_view_req = ViewRequest {
 		function: EntryFunctionId {
 			module: MoveModuleId {
@@ -157,7 +125,6 @@ async fn main() -> Result<(), anyhow::Error> {
 		type_arguments: vec![],
 		arguments: vec![],
 	};
-	
 	match rest_client.view(&feature_flag_view_req, None).await {
 		Ok(features_response) => {
 			println!("On-chain features response: {:?}", features_response.inner());
@@ -276,41 +243,10 @@ async fn main() -> Result<(), anyhow::Error> {
 	// Execute test transaction
 	println!("Executing test transaction...");
 	
-	// Debug: Check account sequence number and other details
-	println!("Sender account details:");
-	println!("  Address: {}", sender.address());
-	println!("  Sequence number: {}", sender.sequence_number());
-	println!("  Public key: {:?}", sender.public_key());
-	
-	// Try to get account info from the chain
-	match rest_client.get_account(sender.address()).await {
-		Ok(account_info) => {
-			println!("  On-chain sequence number: {}", account_info.inner().sequence_number);
-			println!("  On-chain authentication key: {:?}", account_info.inner().authentication_key);
-		}
-		Err(e) => {
-			println!("  [WARN] Could not get on-chain account info: {}", e);
-		}
-	}
-	
-	println!("Beneficiary address: {}", beneficiary.address());
-	
-	// Try the transaction with better error handling
-	let test_txn = match coin_client.transfer(&mut sender, beneficiary.address(), 1_000, None).await {
-		Ok(txn) => {
-			println!("Transaction submitted successfully with hash: {:?}", txn);
-			txn
-		}
-		Err(e) => {
-			println!("[ERROR] Transaction submission failed: {}", e);
-			println!("[DEBUG] This might be due to:");
-			println!("  - Account not properly funded");
-			println!("  - Sequence number mismatch");
-			println!("  - Network connectivity issues");
-			println!("  - Gas price/limit issues");
-			return Err(e.context("Failed to submit test transaction"));
-		}
-	};
+	let test_txn = coin_client
+		.transfer(&mut sender, beneficiary.address(), 1_000, None)
+		.await
+		.context("Failed to submit test transaction")?;
 	
 	rest_client
 		.wait_for_transaction(&test_txn)

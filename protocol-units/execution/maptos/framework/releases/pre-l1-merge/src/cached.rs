@@ -62,30 +62,13 @@ pub mod full {
 		use aptos_release_builder::components::feature_flags::FeatureFlag;
 		use aptos_types::on_chain_config::FeatureFlag as AptosFeatureFlag;
 
-		// start with the default features and disable the Governed Gas Pool feature
+		// Start from Aptos default features, then explicitly add COLLECT_AND_DISTRIBUTE_GAS_FEES
 		let mut enable_feature_flags = AptosFeatureFlag::default_features();
-		
-		// Disable the GOVERNED_GAS_POOL feature flag to deprecate it
-		// enable_feature_flags.push(AptosFeatureFlag::GOVERNED_GAS_POOL);
-
-		// Note: before the upgrade to the newest version to the Aptos framework
-		// we need to activate features that are currently active on the Aptos testnet
-		// See: https://github.com/movementlabsxyz/movement-migration/issues/30#issuecomment-2862738427
-		// aptos_feature_flags.push(AptosFeatureFlag::PERIODICAL_REWARD_RATE_DECREASE);
-		enable_feature_flags.push(AptosFeatureFlag::PARTIAL_GOVERNANCE_VOTING);
-		enable_feature_flags.push(AptosFeatureFlag::DELEGATION_POOL_PARTIAL_GOVERNANCE_VOTING);
-		enable_feature_flags.push(AptosFeatureFlag::VM_BINARY_FORMAT_V7);
-		
-		// Enable COLLECT_AND_DISTRIBUTE_GAS_FEES
 		enable_feature_flags.push(AptosFeatureFlag::COLLECT_AND_DISTRIBUTE_GAS_FEES);
 
 		Features {
 			enabled: enable_feature_flags.into_iter().map(FeatureFlag::from).collect(),
-			disabled: vec![
-				AptosFeatureFlag::REMOVE_DETAILED_ERROR_FROM_HASH.into(),
-				AptosFeatureFlag::GOVERNED_GAS_POOL.into(), // Explicitly disable GOVERNED_GAS_POOL
-				// AptosFeatureFlag::COLLECT_AND_DISTRIBUTE_GAS_FEES.into(), // <-- Removed from disabled
-			],
+			disabled: vec![],
 		}
 	});
 }
