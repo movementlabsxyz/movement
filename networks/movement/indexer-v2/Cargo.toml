@@ -28,6 +28,7 @@ tracing-subscriber = { workspace = true }
 maptos-execution-util = { workspace = true }
 clap = { workspace = true }
 reqwest = { workspace = true, features = ["json"] }
+movement-config = { workspace = true }
 serde_json = { workspace = true }
 tempfile = { workspace = true }
 processor-v2 = { workspace = true }

@@ -31,7 +31,7 @@ movement-tracing = { workspace = true }
 movement-config = { workspace = true }
 dot-movement = { workspace = true }
 godfig = { workspace = true }
-tracing-subscriber = { workspace = true }
+aptos-logger = { workspace = true }
 console-subscriber = { workspace = true }
 rocksdb = { workspace = true }
 tracing = { workspace = true }
