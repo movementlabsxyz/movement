@@ -1,5 +1,5 @@
 {
-    "minDelay": "172800",
+    "minDelay": 172800,
     "signersDeployer": [
         "0xB2105464215716e1445367BEA5668F581eF7d063",
         "0x3eB69Ef2DbEDD5d58AA5E074131Cd22D5e87Ff53"
