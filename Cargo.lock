@@ -14917,6 +14917,7 @@ dependencies = [
  "futures",
  "godfig",
  "maptos-execution-util",
+ "movement-config",
  "movement-health",
  "movement-tracing",
  "num_cpus",
