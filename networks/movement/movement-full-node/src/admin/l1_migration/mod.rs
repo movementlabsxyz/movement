@@ -1,4 +1,4 @@
-use crate::admin::l1_migration::replay::ApiReplayTool;
+use crate::admin::l1_migration::replay::ValidationTool;
 use clap::Subcommand;
 
 mod replay;
@@ -7,13 +7,13 @@ mod replay;
 #[clap(rename_all = "kebab-case", about = "Commands for rotating keys")]
 pub enum L1Migration {
 	#[clap(subcommand)]
-	Replay(ApiReplayTool),
+	Validate(ValidationTool),
 }
 
 impl L1Migration {
 	pub async fn execute(&self) -> Result<(), anyhow::Error> {
 		match self {
-			L1Migration::Replay(tool) => tool.execute().await,
+			L1Migration::Validate(tool) => tool.execute().await,
 		}
 	}
 }

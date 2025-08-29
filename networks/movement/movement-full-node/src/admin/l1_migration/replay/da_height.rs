@@ -1,4 +1,4 @@
-use crate::admin::l1_migration::replay::types::da::DaSequencerDb;
+use crate::admin::l1_migration::replay::types::da::get_da_block_height;
 use clap::Parser;
 use std::path::PathBuf;
 
@@ -11,8 +11,7 @@ pub struct DaHeight {
 
 impl DaHeight {
 	pub fn run(&self) -> anyhow::Result<()> {
-		let db = DaSequencerDb::open(&self.path)?;
-		let height = db.get_synced_height()?;
+		let height = get_da_block_height(&self.path)?;
 		println!("{}", height);
 		Ok(())
 	}

@@ -163,7 +163,7 @@ impl DaSequencerClient for GrpcDaSequencerClient {
 						match block_response.response {
 							Some(response) => match response.block_type {
 								Some(block_response::BlockType::Heartbeat(_)) => {
-									tracing::info!("Received heartbeat");
+									tracing::debug!("Received heartbeat");
 									*last_heartbeat_time.lock().await = Instant::now();
 								}
 								Some(block_response::BlockType::BlockV1(block)) => {

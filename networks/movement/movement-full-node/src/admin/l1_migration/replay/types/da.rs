@@ -6,11 +6,11 @@ use futures::TryStreamExt;
 use movement_da_sequencer_client::DaSequencerClient as _;
 use movement_da_sequencer_client::{GrpcDaSequencerClient, StreamReadBlockFromHeight};
 use movement_da_sequencer_proto::StreamReadFromHeightRequest;
-use std::cell::Cell;
 use std::path::Path;
-use tracing::info;
+use tokio::sync::RwLock;
+use tracing::debug;
 
-pub struct DaSequencerClient(Cell<Option<GrpcDaSequencerClient>>);
+pub struct DaSequencerClient(RwLock<GrpcDaSequencerClient>);
 
 impl DaSequencerClient {
 	pub async fn try_connect(url: &str) -> Result<Self, anyhow::Error> {
@@ -20,17 +20,16 @@ impl DaSequencerClient {
 			10,
 		)
 		.await?;
-		Ok(Self(Cell::new(Some(client))))
+		Ok(Self(RwLock::new(client)))
 	}
 
 	pub async fn stream_blocks_from_height(
 		&self,
 		block_height: u64,
 	) -> Result<StreamReadBlockFromHeight, anyhow::Error> {
-		let Some(mut client) = self.0.take() else { unreachable!() };
+		let mut client = self.0.write().await;
 		let request = StreamReadFromHeightRequest { height: block_height };
 		let result = client.stream_read_from_height(request).await;
-		self.0.set(Some(client));
 		let (blocks, _) = result?;
 		Ok(blocks)
 	}
@@ -51,7 +50,7 @@ impl DaSequencerClient {
 					.context("Failed to deserialize Movement block")?;
 				let txns = block.transactions();
 
-				info!("processing block at DA height {} with {} transaction(s)", da_block.height, txns.len());
+				debug!("processing block at DA height {} with {} transaction(s)", da_block.height, txns.len());
 
 				for txn in txns {
 					let aptos_transaction = bcs::from_bytes::<'_, SignedTransaction>(txn.data())
@@ -76,4 +75,9 @@ impl DaSequencerDb {
 	pub fn get_synced_height(&self) -> Result<u64, anyhow::Error> {
 		self.0.get_synced_height()
 	}
+}
+
+pub fn get_da_block_height(path: impl AsRef<Path>) -> Result<u64, anyhow::Error> {
+	let db = DaSequencerDb::open(path)?;
+	db.get_synced_height()
 }
