@@ -2,6 +2,7 @@ pub mod bring_up;
 pub mod config;
 pub mod framework;
 pub mod governed_gas_pool;
+pub mod l1_migration;
 pub mod mcr;
 pub mod ops;
 pub mod rotate_key;
@@ -28,6 +29,8 @@ pub enum Admin {
 	Config(config::Config),
 	#[clap(subcommand)]
 	TestKey(testkey::TestKey),
+	#[clap(subcommand)]
+	L1Migration(l1_migration::L1Migration),
 }
 
 impl Admin {
@@ -41,6 +44,7 @@ impl Admin {
 			Admin::Framework(framework) => framework.execute().await,
 			Admin::Config(config) => config.execute().await,
 			Admin::TestKey(key) => key.execute().await,
+			Admin::L1Migration(l1_migration) => l1_migration.execute().await,
 		}
 	}
 }

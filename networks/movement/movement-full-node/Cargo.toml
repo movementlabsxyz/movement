@@ -48,6 +48,8 @@ movement-signer = { workspace = true }
 movement-signer-loader = { workspace = true }
 syncador = { workspace = true }
 syncup = { workspace = true }
+aptos-rest-client = { workspace = true }
+aptos-types = { workspace = true }
 aptos-crypto = { workspace = true }
 aptos-sdk = { workspace = true }
 aptos-api = { workspace = true }
@@ -62,6 +64,7 @@ movement-da-light-node-setup = { workspace = true }
 movement-da-sequencer-config = { workspace = true }
 ed25519-dalek = { workspace = true }
 mcr-settlement-setup = { workspace = true }
+async-stream = { workspace = true }
 
 url = { workspace = true }
 
