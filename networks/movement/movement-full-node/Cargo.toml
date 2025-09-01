@@ -65,6 +65,8 @@ movement-da-sequencer-config = { workspace = true }
 ed25519-dalek = { workspace = true }
 mcr-settlement-setup = { workspace = true }
 async-stream = { workspace = true }
+console = { workspace = true }
+similar = { workspace = true }
 
 url = { workspace = true }
 

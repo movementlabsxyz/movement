@@ -1,9 +1,11 @@
 use crate::admin::l1_migration::replay::da_height::DaHeight;
+use crate::admin::l1_migration::replay::display::DisplayTransactionOutputs;
 use crate::admin::l1_migration::replay::replay::DaReplayTransactions;
 use clap::Parser;
 
 mod compare;
 mod da_height;
+mod display;
 mod replay;
 mod types;
 
@@ -12,6 +14,7 @@ mod types;
 pub enum ValidationTool {
 	Replay(DaReplayTransactions),
 	ExtractDaHeight(DaHeight),
+	Display(DisplayTransactionOutputs),
 }
 
 impl ValidationTool {
@@ -19,6 +22,7 @@ impl ValidationTool {
 		match self {
 			ValidationTool::Replay(cmd) => cmd.run().await,
 			ValidationTool::ExtractDaHeight(cmd) => cmd.run(),
+			ValidationTool::Display(cmd) => cmd.run().await,
 		}
 	}
 }

@@ -163,18 +163,29 @@ async fn validate_transactions(
 	movement_rest_client: MovementRestClient,
 	mut rx_hashes: mpsc::UnboundedReceiver<HashValue>,
 ) {
+	use aptos_api_types::transaction::Transaction;
+
 	while let Some(hash) = rx_hashes.recv().await {
 		let hash_str = hash.to_hex_literal();
 		let timeout = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() + 60;
 		let result = tokio::join!(
-			movement_rest_client.wait_for_transaction_by_hash_bcs(hash, timeout, None, None),
-			aptos_rest_client.wait_for_transaction_by_hash_bcs(hash, timeout, None, None)
+			movement_rest_client.wait_for_transaction_by_hash(hash, timeout, None, None),
+			aptos_rest_client.wait_for_transaction_by_hash(hash, timeout, None, None)
 		);
 
 		match result {
 			(Ok(txn_movement), Ok(txn_aptos)) => {
-				if compare_transaction_outputs(txn_movement.into_inner(), txn_aptos.into_inner()) {
-					info!("Validated transaction {}", hash_str);
+				let Transaction::UserTransaction(txn_movement) = txn_movement.into_inner() else {
+					unreachable!()
+				};
+				let Transaction::UserTransaction(txn_aptos) = txn_aptos.into_inner() else {
+					unreachable!()
+				};
+
+				match compare_transaction_outputs(*txn_movement, *txn_aptos) {
+					Ok(valid) if valid => info!("Validated transaction {}", hash_str),
+					Ok(_) => {} // invalid, errors logged elsewhere
+					Err(e) => error!("Failed to validate transaction {}: {}", hash_str, e),
 				}
 			}
 			(Ok(_), Err(error_aptos)) => {
