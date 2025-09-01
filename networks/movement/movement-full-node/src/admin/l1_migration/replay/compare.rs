@@ -71,7 +71,6 @@ struct EventCompare<'a>(&'a Event);
 impl<'a> EventCompare<'a> {
 	pub fn to_json(&self) -> anyhow::Result<serde_json::Value> {
 		let mut event = serde_json::Map::with_capacity(4);
-		event.insert("sequence_number".to_owned(), serde_json::to_value(&self.0.sequence_number)?);
 		event.insert("type".to_owned(), serde_json::to_value(&self.0.typ)?);
 		event.insert("data".to_owned(), self.0.data.to_owned());
 		Ok(serde_json::Value::Object(event))
