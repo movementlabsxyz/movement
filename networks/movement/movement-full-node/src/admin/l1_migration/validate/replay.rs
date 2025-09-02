@@ -11,7 +11,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::mpsc;
 use tokio::task::JoinSet;
 use tokio_stream::StreamExt;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, warn};
 
 #[derive(Parser, Debug)]
 #[clap(name = "replay", about = "Stream transactions from DA-sequencer blocks")]
@@ -187,7 +187,7 @@ async fn validate_transactions(
 				};
 
 				match compare_transaction_outputs(*txn_movement, *txn_aptos, show_diff) {
-					Ok(valid) if valid => info!("Validated transaction {}", hash_str),
+					Ok(valid) if valid => debug!("Validated transaction {}", hash_str),
 					Ok(_) => {} // invalid, errors logged elsewhere
 					Err(e) => error!("Failed to validate transaction {}: {}", hash_str, e),
 				}
