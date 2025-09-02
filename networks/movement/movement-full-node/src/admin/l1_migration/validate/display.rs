@@ -1,4 +1,4 @@
-use crate::admin::l1_migration::replay::types::api::AptosRestClient;
+use crate::admin::l1_migration::validate::types::api::AptosRestClient;
 use aptos_api_types::Transaction;
 use aptos_crypto::HashValue;
 use clap::Parser;

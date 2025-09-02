@@ -1,6 +1,6 @@
-use crate::admin::l1_migration::replay::compare::compare_transaction_outputs;
-use crate::admin::l1_migration::replay::types::api::{AptosRestClient, MovementRestClient};
-use crate::admin::l1_migration::replay::types::da::{get_da_block_height, DaSequencerClient};
+use crate::admin::l1_migration::validate::compare::compare_transaction_outputs;
+use crate::admin::l1_migration::validate::types::api::{AptosRestClient, MovementRestClient};
+use crate::admin::l1_migration::validate::types::da::{get_da_block_height, DaSequencerClient};
 use anyhow::Context;
 use aptos_crypto::HashValue;
 use aptos_types::transaction::SignedTransaction;

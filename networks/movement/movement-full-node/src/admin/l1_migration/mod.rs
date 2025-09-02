@@ -1,7 +1,7 @@
-use crate::admin::l1_migration::replay::ValidationTool;
+use crate::admin::l1_migration::validate::ValidationTool;
 use clap::Subcommand;
 
-mod replay;
+mod validate;
 
 #[derive(Subcommand, Debug)]
 #[clap(rename_all = "kebab-case", about = "Commands for rotating keys")]

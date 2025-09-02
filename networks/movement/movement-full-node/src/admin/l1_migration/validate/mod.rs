@@ -1,6 +1,6 @@
-use crate::admin::l1_migration::replay::da_height::DaHeight;
-use crate::admin::l1_migration::replay::display::DisplayTransactionOutputs;
-use crate::admin::l1_migration::replay::replay::DaReplayTransactions;
+use crate::admin::l1_migration::validate::da_height::DaHeight;
+use crate::admin::l1_migration::validate::display::DisplayTransactionOutputs;
+use crate::admin::l1_migration::validate::replay::DaReplayTransactions;
 use clap::Parser;
 
 mod compare;

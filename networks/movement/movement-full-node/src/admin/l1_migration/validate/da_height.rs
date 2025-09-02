@@ -1,4 +1,4 @@
-use crate::admin::l1_migration::replay::types::da::get_da_block_height;
+use crate::admin::l1_migration::validate::types::da::get_da_block_height;
 use clap::Parser;
 use std::path::PathBuf;
 
