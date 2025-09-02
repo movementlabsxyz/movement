@@ -18,6 +18,7 @@ movement-da-util = { workspace = true }
 maptos-execution-util = { workspace = true }
 mcr-settlement-client = { workspace = true, features = ["eth"] }
 mcr-settlement-manager = { workspace = true }
+serde = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
 futures = { workspace = true }

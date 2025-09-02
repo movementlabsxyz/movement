@@ -14884,6 +14884,7 @@ dependencies = [
  "movement-types",
  "prost 0.13.5",
  "rocksdb",
+ "serde",
  "serde_json",
  "sha2 0.10.8",
  "similar",

@@ -25,6 +25,8 @@ pub struct DaReplayTransactions {
 	pub da_sequencer_url: String,
 	#[command(flatten)]
 	da_sequencer_db: DaBlockHeight,
+	#[clap(long = "diff", help = "Show diff on transaction output mismatch")]
+	pub show_diff: bool,
 }
 
 #[derive(Args, Debug)]
@@ -56,6 +58,7 @@ impl DaReplayTransactions {
 				aptos_rest_client.clone(),
 				movement_rest_client,
 				rx_hashes,
+				self.show_diff,
 			));
 			Some(tx_hashes)
 		} else {
@@ -162,6 +165,7 @@ async fn validate_transactions(
 	aptos_rest_client: AptosRestClient,
 	movement_rest_client: MovementRestClient,
 	mut rx_hashes: mpsc::UnboundedReceiver<HashValue>,
+	show_diff: bool,
 ) {
 	use aptos_api_types::transaction::Transaction;
 
@@ -182,7 +186,7 @@ async fn validate_transactions(
 					unreachable!()
 				};
 
-				match compare_transaction_outputs(*txn_movement, *txn_aptos) {
+				match compare_transaction_outputs(*txn_movement, *txn_aptos, show_diff) {
 					Ok(valid) if valid => info!("Validated transaction {}", hash_str),
 					Ok(_) => {} // invalid, errors logged elsewhere
 					Err(e) => error!("Failed to validate transaction {}: {}", hash_str, e),

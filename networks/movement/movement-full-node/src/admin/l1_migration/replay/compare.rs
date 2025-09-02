@@ -1,11 +1,11 @@
-use anyhow::Context;
 use aptos_api_types::transaction::UserTransaction;
-use aptos_api_types::Event;
+use aptos_api_types::{Event, WriteSetChange};
 use tracing::error;
 
 pub fn compare_transaction_outputs(
 	movement_txn: UserTransaction,
 	aptos_txn: UserTransaction,
+	show_diff: bool,
 ) -> anyhow::Result<bool> {
 	let txn_hash = movement_txn.info.hash.0.to_hex_literal();
 
@@ -22,79 +22,52 @@ pub fn compare_transaction_outputs(
 		movement_txn.events.iter().map(Into::<EventCompare>::into).collect::<Vec<_>>();
 	let aptos_events = aptos_txn.events.iter().map(Into::<EventCompare>::into).collect::<Vec<_>>();
 	if movement_events != aptos_events {
-		let movement_values = movement_events
-			.iter()
-			.map(|event| event.to_json())
-			.collect::<Result<Vec<_>, _>>()
-			.context("Failed to serialize Movement events to json")?;
-		let aptos_values = aptos_events
-			.iter()
-			.map(|event| event.to_json())
-			.collect::<Result<Vec<_>, _>>()
-			.context("Failed to serialize Aptes events to json")?;
-		error!(
-			"Transaction events mismatch ({})\n{}",
-			txn_hash,
-			display_diff(movement_values, aptos_values)?
-		);
+		if show_diff {
+			error!(
+				"Transaction events mismatch ({})\n{}",
+				txn_hash,
+				display_diff(&movement_txn.events, &aptos_txn.events)?
+			);
+		} else {
+			error!("Transaction events mismatch ({})", txn_hash,);
+		}
 		return Ok(false);
 	}
 
-	if movement_txn.info.changes != aptos_txn.info.changes {
-		let movement_values = movement_txn
-			.info
-			.changes
-			.iter()
-			.map(|change| serde_json::to_value(change))
-			.collect::<Result<Vec<_>, _>>()
-			.context("Failed to serialize Movement write-set changes to json")?;
-		let aptos_values = aptos_txn
-			.info
-			.changes
-			.iter()
-			.map(|change| serde_json::to_value(change))
-			.collect::<Result<Vec<_>, _>>()
-			.context("Failed to serialize Aptos write-set changes to json")?;
-		error!(
-			"Transaction write-set mismatch ({})\n{}",
-			txn_hash,
-			display_diff(movement_values, aptos_values)?
-		);
+	let movement_changes = movement_txn
+		.info
+		.changes
+		.iter()
+		.map(Into::<WriteSetChangeCompare>::into)
+		.collect::<Vec<_>>();
+	let aptos_changes = aptos_txn
+		.info
+		.changes
+		.iter()
+		.map(Into::<WriteSetChangeCompare>::into)
+		.collect::<Vec<_>>();
+	if movement_changes != aptos_changes {
+		if show_diff {
+			error!(
+				"Transaction write-set mismatch ({})\n{}",
+				txn_hash,
+				display_diff(&movement_txn.info.changes, &aptos_txn.info.changes)?
+			);
+		} else {
+			error!("Transaction write-set mismatch ({})", txn_hash,);
+		}
 		return Ok(false);
 	}
 
 	Ok(true)
 }
 
-struct EventCompare<'a>(&'a Event);
-
-impl<'a> EventCompare<'a> {
-	pub fn to_json(&self) -> anyhow::Result<serde_json::Value> {
-		let mut event = serde_json::Map::with_capacity(4);
-		event.insert("type".to_owned(), serde_json::to_value(&self.0.typ)?);
-		event.insert("data".to_owned(), self.0.data.to_owned());
-		Ok(serde_json::Value::Object(event))
-	}
-}
-
-impl<'a> PartialEq for EventCompare<'a> {
-	fn eq(&self, other: &Self) -> bool {
-		self.0.typ == other.0.typ && self.0.data == other.0.data
-	}
-}
-
-impl<'a> From<&'a Event> for EventCompare<'a> {
-	fn from(value: &'a Event) -> Self {
-		Self(value)
-	}
-}
-
-fn display_diff(
-	movement_values: Vec<serde_json::Value>,
-	aptos_values: Vec<serde_json::Value>,
-) -> anyhow::Result<String> {
-	let movement_json = serde_json::to_string_pretty(&serde_json::Value::Array(movement_values))?;
-	let aptos_json = serde_json::to_string_pretty(&serde_json::Value::Array(aptos_values))?;
+fn display_diff<T>(movement_values: &[T], aptos_values: &[T]) -> anyhow::Result<String>
+where
+	T: serde::Serialize,
+{
+	let movement_json = serde_json::to_string_pretty(movement_values)?;
+	let aptos_json = serde_json::to_string_pretty(aptos_values)?;
 	Ok(create_diff(&movement_json, &aptos_json)?)
 }
 
@@ -131,4 +104,60 @@ fn create_diff(movement: &str, aptos: &str) -> anyhow::Result<String> {
 	}
 
 	Ok(out)
+}
+
+struct EventCompare<'a>(&'a Event);
+
+impl<'a> PartialEq for EventCompare<'a> {
+	fn eq(&self, other: &Self) -> bool {
+		self.0.typ == self.0.typ && self.0.guid == other.0.guid
+	}
+}
+
+impl<'a> From<&'a Event> for EventCompare<'a> {
+	fn from(value: &'a Event) -> Self {
+		Self(value)
+	}
+}
+
+struct WriteSetChangeCompare<'a>(&'a WriteSetChange);
+
+impl<'a> PartialEq for WriteSetChangeCompare<'a> {
+	fn eq(&self, other: &Self) -> bool {
+		match (self.0, other.0) {
+			(WriteSetChange::DeleteModule(value1), WriteSetChange::DeleteModule(value2)) => {
+				// Ignored fields: state_key_hash
+				value1.address == value2.address && value1.module == value2.module
+			}
+			(WriteSetChange::DeleteResource(value1), WriteSetChange::DeleteResource(value2)) => {
+				// Ignored fields: state_key_hash
+				value1.address == value2.address && value1.resource == value2.resource
+			}
+			(WriteSetChange::DeleteTableItem(value1), WriteSetChange::DeleteTableItem(value2)) => {
+				// Ignored fields: state_key_hash, data
+				value1.key == value2.key && value1.handle == value2.handle
+			}
+			(WriteSetChange::WriteModule(value1), WriteSetChange::WriteModule(value2)) => {
+				// Ignored fields: state_key_hash
+				value1.address == value2.address && value1.data == value2.data
+			}
+			(WriteSetChange::WriteResource(value1), WriteSetChange::WriteResource(value2)) => {
+				// Ignored fields: state_key_hash, data.data.0.values
+				value1.address == value2.address
+					&& value1.data.typ == value2.data.typ
+					&& value1.data.data.0.keys().eq(value2.data.data.0.keys())
+			}
+			(WriteSetChange::WriteTableItem(value1), WriteSetChange::WriteTableItem(value2)) => {
+				// Ignored fields: state_key_hash, value, data
+				value1.key == value2.key && value1.handle == value2.handle
+			}
+			_ => false,
+		}
+	}
+}
+
+impl<'a> From<&'a WriteSetChange> for WriteSetChangeCompare<'a> {
+	fn from(value: &'a WriteSetChange) -> Self {
+		Self(value)
+	}
 }
