@@ -11,7 +11,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::mpsc;
 use tokio::task::JoinSet;
 use tokio_stream::StreamExt;
-use tracing::{debug, error, warn};
+use tracing::{debug, error, info, warn};
 
 #[derive(Parser, Debug)]
 #[clap(name = "replay", about = "Stream transactions from DA-sequencer blocks")]
@@ -42,7 +42,11 @@ impl DaReplayTransactions {
 	pub async fn run(&self) -> anyhow::Result<()> {
 		let block_height = match (self.da_sequencer_db.height, &self.da_sequencer_db.path) {
 			(Some(height), _) => height,
-			(_, Some(path)) => get_da_block_height(path)?,
+			(_, Some(path)) => {
+				let da_block_height = get_da_block_height(path)?;
+				info!("Extracted DA-Sequencer block height: {}", da_block_height);
+				da_block_height
+			}
 			_ => unreachable!(),
 		};
 		let (tx_batches, rx_batches) = mpsc::channel::<Vec<SignedTransaction>>(10);
