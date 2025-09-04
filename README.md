@@ -125,7 +125,7 @@ Both `native` and `docker-compose` runners will serve the following services lis
 **Note:** Only APIs intended for the end-user are listed here. For a full list of services, please refer to respective `docker-compose` files.
 
 - **[Aptos REST API](https://api.devnet.aptoslabs.com/v1/spec#/)**: `0.0.0.0:30731`
-- **[Aptos Faucet API](https://aptos.dev/apis/#faucet-api-only-testnetdevnet)**: `0.0.0.0:30732`
+- **[Aptos Faucet API](https://aptos.dev/build/apis/faucet-api)**: `0.0.0.0:30732`
 
 ## Node Operation
 For node operation guides, please begin with the manual [node operation docs](./docs/movement-node/run/manual/README.md).
