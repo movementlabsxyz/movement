@@ -58,6 +58,14 @@ path = "src/bin/e2e/key_rotation.rs"
 name = "movement-tests-sequence-number-ooo"
 path = "src/bin/e2e/sequence_number_ooo.rs"
 
+[[bin]]
+name = "movement-tests-e2e-ggp-fund-fee"
+path = "src/bin/e2e/ggp_fund.rs"
+
+[[bin]]
+name = "movement-tests-e2e-complex-ggp-gas"
+path = "src/bin/e2e/complex_ggp_e2e.rs"
+
 [dependencies]
 aptos-language-e2e-tests = { workspace = true }
 aptos-sdk = { workspace = true }
