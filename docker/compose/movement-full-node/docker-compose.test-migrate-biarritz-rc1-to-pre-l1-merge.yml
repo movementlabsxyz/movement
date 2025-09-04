@@ -1,0 +1,43 @@
+version: "3.8"
+
+services:
+
+  setup:
+    image: alpine:3.18
+    environment:
+      KNOWN_FRAMEWORK_RELEASE: biarritz-rc1
+      APTOS_ACCOUNT_WHITELIST: ${DOT_MOVEMENT_PATH}/default_signer_address_whitelist
+      MAPTOS_PRIVATE_KEY: random
+    entrypoint: ["sh", "-c", "echo Setup complete"]
+    # Run once and exit
+    restart: "no"
+
+  movement-full-node:
+    image: ghcr.io/movementlabsxyz/movement-full-node:0.3.4-andygolay.migrate-docker-compose-overlay
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/-/healthy || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  movement-faucet-service:
+    image: ghcr.io/movementlabsxyz/movement-faucet-service:0.3.4-andygolay.migrate-docker-compose-overlay
+    depends_on:
+      movement-full-node:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  test-migrate-biarritz-rc1-to-pre-l1-merge:
+    build:
+      context: .
+      dockerfile: Dockerfile.migration
+    command: cargo run --bin aptos-framework-pre-l1-merge-release-tool
+    depends_on:
+      movement-full-node:
+        condition: service_healthy
+      movement-faucet-service:
+        condition: service_healthy
