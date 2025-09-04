@@ -1,24 +1,26 @@
 # Summary
-- **RFCs**: [Link to RFC](#./link/to/rfc), [Link to RFC](#./link/to/rfc), or $\emptyset$.
+
+- **MIPs**: [Link to MIP](#./link/to/mip), [Link to MIP](#./link/to/mip), or $\emptyset$.
 - **Categories**: any of `protocol-units`, `networks`, `scripts`, `util`, `cicd`, or `misc`.
 
 <!--
 Add your summary text here. 
  -->
 
-# Changelog
+## Changelog
 
 <!-- 
 Describe your changes. List roughly in order of importance.
 -->
 
-# Testing
+## Testing
 
 <!--
 Describe your Test Plan and explain added or modified test components.
 -->
 
-# Outstanding issues
+## Outstanding issues
+
 <!--
 List any outstanding issues that need to be addressed in future PRs, but which do not block merging this PR.
 -->
