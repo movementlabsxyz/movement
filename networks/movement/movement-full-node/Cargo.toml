@@ -63,6 +63,9 @@ movement-da-sequencer-config = { workspace = true }
 ed25519-dalek = { workspace = true }
 mcr-settlement-setup = { workspace = true }
 
+mvt-aptos-l1-migration = { workspace = true }
+
+
 url = { workspace = true }
 
 
