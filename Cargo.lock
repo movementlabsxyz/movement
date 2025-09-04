@@ -14828,6 +14828,7 @@ dependencies = [
  "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=1d1cdbbd7fabb80dcb95ba5e23213faa072fab67)",
  "aptos-framework-biarritz-rc1-to-pre-l1-merge-migration",
  "aptos-framework-elsa-to-biarritz-rc1-migration",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=1d1cdbbd7fabb80dcb95ba5e23213faa072fab67)",
  "aptos-sdk 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=1d1cdbbd7fabb80dcb95ba5e23213faa072fab67)",
  "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
  "clap 4.5.21",
@@ -14869,7 +14870,6 @@ dependencies = [
  "tokio-stream",
  "tonic 0.12.3",
  "tracing",
- "tracing-subscriber 0.3.18",
  "url",
  "zstd 0.13.2",
 ]
@@ -14917,6 +14917,7 @@ dependencies = [
  "futures",
  "godfig",
  "maptos-execution-util",
+ "movement-config",
  "movement-health",
  "movement-tracing",
  "num_cpus",

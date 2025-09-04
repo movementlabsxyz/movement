@@ -1,6 +1,6 @@
 use aptos_indexer_processor_sdk::server_framework::RunnableConfig;
 use godfig::{backend::config_file::ConfigFile, Godfig};
-use maptos_execution_util::config::Config;
+use movement_config::Config;
 use movement_health::run_service;
 use movement_tracing::simple_metrics::start_metrics_server;
 use processor_v2::config::indexer_processor_config::IndexerProcessorConfig;
@@ -13,25 +13,21 @@ fn main() -> Result<(), anyhow::Error> {
 	let runtime = get_maptos_runtime();
 
 	runtime.block_on(async move {
-		let maptos_config = load_maptos_config().await.expect("Failed to load maptos config");
-		let runnable_processor_config: IndexerProcessorConfig =
-			maptos_config.indexer_processor_v2.clone().into();
-
+		let config = load_maptos_config().await.expect("Failed to load maptos config");
+		let indexer_config = config.execution_config.maptos_config.indexer_processor_v2;
+		let runnable_processor_config: IndexerProcessorConfig = indexer_config.clone().into();
+		let metrics_config = indexer_config.metrics_config.clone();
 		let metrics_handle = tokio::spawn(async move {
-			let res = start_metrics_server(
-				maptos_config.indexer_processor_v2.metrics_config.listen_hostname,
-				maptos_config.indexer_processor_v2.metrics_config.listen_port,
-			)
-			.await;
+			let res =
+				start_metrics_server(metrics_config.listen_hostname, metrics_config.listen_port)
+					.await;
 			tracing::info!("Metrics server started: {:?}", res);
 			res
 		});
+
+		let health_config = indexer_config.health_config.clone();
 		let health_handle = tokio::spawn(async move {
-			let res = run_service(
-				maptos_config.indexer_processor_v2.health_config.hostname,
-				maptos_config.indexer_processor_v2.health_config.port,
-			)
-			.await;
+			let res = run_service(health_config.hostname, health_config.port).await;
 			tracing::info!("Health server started: {:?}", res);
 			res
 		});
@@ -94,13 +90,12 @@ async fn load_maptos_config() -> anyhow::Result<Config> {
 	// get the config file
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
 
-	// Load Maptos config
-	let maptos_config = {
+	// Load config
+	let config = {
 		let config_file = dot_movement.try_get_or_create_config_file().await?;
-		let godfig: Godfig<maptos_execution_util::config::Config, ConfigFile> =
-			Godfig::new(ConfigFile::new(config_file), vec!["maptos_config".to_string()]);
+		let godfig: Godfig<Config, ConfigFile> = Godfig::new(ConfigFile::new(config_file), vec![]);
 		godfig.try_wait_for_ready().await
 	}?;
 
-	Ok(maptos_config)
+	Ok(config)
 }
