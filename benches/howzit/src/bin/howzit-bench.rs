@@ -1,8 +1,62 @@
 use anyhow::Context;
-use aptos_sdk::rest_client::{AptosBaseUrl, Client};
 use howzit::Howzit;
+use once_cell::sync::Lazy;
 use std::io::Write;
-use std::{env, path::PathBuf};
+use std::{env, path::PathBuf, str::FromStr};
+use url::Url;
+
+static SUZUKA_CONFIG: Lazy<movement_config::Config> = Lazy::new(|| {
+	let dot_movement = dot_movement::DotMovement::try_from_env().unwrap();
+	let config = dot_movement.try_get_config_from_json::<movement_config::Config>().unwrap();
+	config
+});
+
+static NODE_URL: Lazy<Url> = Lazy::new(|| {
+	let mut node_connection_address = SUZUKA_CONFIG
+		.execution_config
+		.maptos_config
+		.client
+		.maptos_rest_connection_hostname
+		.clone();
+
+	if node_connection_address == "0.0.0.0" {
+		node_connection_address = "127.0.0.1".to_string();
+	}
+
+	let node_connection_port = SUZUKA_CONFIG
+		.execution_config
+		.maptos_config
+		.client
+		.maptos_rest_connection_port
+		.clone();
+
+	let node_connection_url =
+		format!("http://{}:{}", node_connection_address, node_connection_port);
+	Url::from_str(&node_connection_url).unwrap()
+});
+
+static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
+	let mut faucet_listen_address = SUZUKA_CONFIG
+		.execution_config
+		.maptos_config
+		.client
+		.maptos_faucet_rest_connection_hostname
+		.clone();
+
+	if faucet_listen_address == "0.0.0.0" {
+		faucet_listen_address = "127.0.0.1".to_string();
+	}
+
+	let faucet_listen_port = SUZUKA_CONFIG
+		.execution_config
+		.maptos_config
+		.client
+		.maptos_faucet_rest_connection_port
+		.clone();
+
+	let faucet_listen_url = format!("http://{}:{}", faucet_listen_address, faucet_listen_port);
+	Url::from_str(&faucet_listen_url).unwrap()
+});
 
 #[tokio::main]
 pub async fn main() -> Result<(), anyhow::Error> {
@@ -14,26 +68,21 @@ pub async fn main() -> Result<(), anyhow::Error> {
 		)
 		.init();
 
+	let token = std::env::var("AUTH_TOKEN").context("AUTH_TOKEN not set")?;
+
 	let crate_path = env!("CARGO_MANIFEST_DIR");
 	let crate_path_buf = PathBuf::from(crate_path);
-	let token = std::env::var("AUTH_TOKEN").context("AUTH_TOKEN not set")?;
-	let rest_url = std::env::var("REST_URL")
-		.unwrap_or("https://aptos.devnet.suzuka.movementlabs.xyz".to_string());
-	let faucet_url = std::env::var("FAUCET_URL")
-		.unwrap_or("https://faucet.devnet.suzuka.movementlabs.xyz".to_string());
 	let bench_output_file =
 		std::env::var("BENCH_OUTPUT_FILE").unwrap_or("howzit_bench_output.dat".to_string());
 
-	let rest_client_builder = Client::builder(AptosBaseUrl::Custom(rest_url.parse()?))
-		.header("Authorization", format!("Bearer {}", token).as_str())?;
-	let rest_client = rest_client_builder.build();
-
 	let howzit = Howzit::generate(
 		crate_path_buf.join("howzit"),
-		rest_client.clone(),
-		faucet_url.parse()?,
+		NODE_URL.clone(),
+		FAUCET_URL.clone(),
 		token,
 	);
+
+	tracing::info!("Generated howzit");
 
 	howzit.build_and_publish().await?;
 
