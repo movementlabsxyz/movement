@@ -39,6 +39,7 @@ members = [
   "util/signing/providers/aws-kms",
   "util/signing/providers/hashicorp-vault",
   "util/signing/testing",
+  "util/vanity",
   "demo/hsm",
   "protocol-units/execution/maptos/framework/releases/*",
   "protocol-units/execution/maptos/framework/migrations/*",
