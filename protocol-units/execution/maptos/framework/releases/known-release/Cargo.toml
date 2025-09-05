@@ -16,6 +16,7 @@ path = "src/lib.rs"
 maptos-framework-release-util = { workspace = true }
 aptos-framework-elsa-release = { workspace = true }
 aptos-framework-biarritz-rc1-release = { workspace = true }
+aptos-framework-pre-l1-merge-release = { workspace = true }
 aptos-framework-head-release = { workspace = true }
 aptos-framework = { workspace = true }
 tokio = { workspace = true }

@@ -47,6 +47,10 @@ name = "movement-tests-e2e-ggp-gas-fee"
 path = "src/bin/e2e/ggp_gas_fee.rs"
 
 [[bin]]
+name = "e2e_ggp_deprecation"
+path = "src/bin/e2e/e2e_ggp_deprecation.rs"
+
+[[bin]]
 name = "movement-tests-e2e-transfer"
 path = "src/bin/e2e/transfer.rs"
 

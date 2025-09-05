@@ -37,11 +37,9 @@ script {
 
         let core_address: address = signer::address_of(core_resources);
 
-        // this initialize function is idempotent, already initialized GGP will not error.
-        governed_gas_pool::initialize(&core_signer, b"aptos_framework::governed_gas_pool");
-
-        // this will burn the mint capability for the core_resource signer
-        aptos_coin::destroy_mint_capability_from(&core_signer, core_address);
+        // NOTE: Disabled in test/upgrade context to preserve faucet minting and avoid GGP side-effects.
+        // governed_gas_pool::initialize(&core_signer, b"aptos_framework::governed_gas_pool");
+        // aptos_coin::destroy_mint_capability_from(&core_signer, core_address);
     }
 }
 "#
