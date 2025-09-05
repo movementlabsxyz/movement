@@ -18,6 +18,7 @@ movement-da-util = { workspace = true }
 maptos-execution-util = { workspace = true }
 mcr-settlement-client = { workspace = true, features = ["eth"] }
 mcr-settlement-manager = { workspace = true }
+serde = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
 futures = { workspace = true }
@@ -48,6 +49,8 @@ movement-signer = { workspace = true }
 movement-signer-loader = { workspace = true }
 syncador = { workspace = true }
 syncup = { workspace = true }
+aptos-rest-client = { workspace = true }
+aptos-types = { workspace = true }
 aptos-crypto = { workspace = true }
 aptos-sdk = { workspace = true }
 aptos-api = { workspace = true }
@@ -62,6 +65,9 @@ movement-da-light-node-setup = { workspace = true }
 movement-da-sequencer-config = { workspace = true }
 ed25519-dalek = { workspace = true }
 mcr-settlement-setup = { workspace = true }
+async-stream = { workspace = true }
+console = { workspace = true }
+similar = { workspace = true }
 
 url = { workspace = true }
 

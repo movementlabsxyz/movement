@@ -1,0 +1,34 @@
+use crate::admin::l1_migration::validate::da_height::DaHeight;
+use crate::admin::l1_migration::validate::display::DisplayTransactionOutputs;
+use crate::admin::l1_migration::validate::replay::DaReplayTransactions;
+use clap::Parser;
+
+mod compare;
+mod da_height;
+mod display;
+mod replay;
+mod types;
+
+#[derive(Parser, Debug)]
+#[clap(name = "Movement Da-Sequencer replay tool", author, disable_version_flag = true)]
+pub enum ValidationTool {
+	Replay(DaReplayTransactions),
+	ExtractDaHeight(DaHeight),
+	Display(DisplayTransactionOutputs),
+}
+
+impl ValidationTool {
+	pub async fn execute(&self) -> anyhow::Result<()> {
+		match self {
+			ValidationTool::Replay(cmd) => cmd.run().await,
+			ValidationTool::ExtractDaHeight(cmd) => cmd.run(),
+			ValidationTool::Display(cmd) => cmd.run().await,
+		}
+	}
+}
+
+#[test]
+fn verify_tool() {
+	use clap::CommandFactory;
+	ValidationTool::command().debug_assert()
+}
