@@ -266,12 +266,13 @@ async fn main() -> Result<(), anyhow::Error> {
 	// Execute test transaction
 	println!("Executing test transaction...");
 	
+	let transfer_amount: u64 = 500;
 	let test_txn = coin_client
-		.transfer(&mut sender, beneficiary.address(), 1_000, None)
+		.transfer(&mut sender, beneficiary.address(), transfer_amount, None)
 		.await
 		.context("Failed to submit test transaction")?;
 	
-	rest_client
+	let confirmed_txn = rest_client
 		.wait_for_transaction(&test_txn)
 		.await
 		.context("Failed when waiting for transfer transaction")?;
@@ -296,9 +297,20 @@ async fn main() -> Result<(), anyhow::Error> {
 		if let Some(final_balance) = final_sender_balance {
 			// Verify that gas fees were deducted and calculate expected amount
 			if final_balance < initial_balance {
-				let gas_fees_deducted = initial_balance - final_balance;
-				let transfer_amount = 1_000;
-				let expected_gas_fee = 13_700; // Based on your test output: 5000 gas * 100 price + 8700 base fee
+				// total_delta includes transfer + gas; subtract transfer to isolate fees
+				let total_delta = initial_balance - final_balance;
+				let gas_fees_deducted = total_delta.saturating_sub(transfer_amount);
+				// Calculate expected gas fee from confirmed transaction
+				let (gas_used, gas_unit_price) = match confirmed_txn.inner() {
+					aptos_sdk::rest_client::aptos_api_types::Transaction::UserTransaction(tx) => {
+						(tx.info.gas_used.0 as u64, tx.request.gas_unit_price.0 as u64)
+					}
+					_ => {
+						println!("[WARN] Unexpected transaction type; cannot compute expected gas accurately");
+						(0u64, 0u64)
+					}
+				};
+				let expected_gas_fee = gas_used.saturating_mul(gas_unit_price);
 				
 				println!("Gas fees deducted: {}", gas_fees_deducted);
 				println!("Expected gas fees: {}", expected_gas_fee);
