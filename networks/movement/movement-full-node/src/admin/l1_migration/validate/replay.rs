@@ -2,9 +2,10 @@ use crate::admin::l1_migration::validate::compare::compare_transaction_outputs;
 use crate::admin::l1_migration::validate::types::api::{AptosRestClient, MovementRestClient};
 use crate::admin::l1_migration::validate::types::da::{get_da_block_height, DaSequencerClient};
 use anyhow::Context;
-use aptos_api_types::AptosError;
+use aptos_api_types::{AptosError, AptosErrorCode, Transaction};
 use aptos_crypto::HashValue;
 use aptos_rest_client::error::RestError;
+use aptos_rest_client::Response;
 use aptos_types::transaction::{SignedTransaction, TransactionPayload};
 use clap::{Args, Parser};
 use std::collections::HashMap;
@@ -16,7 +17,7 @@ use tokio::task::JoinSet;
 use tokio_stream::StreamExt;
 use tracing::{debug, error, info, warn};
 
-const LOG_PREFIX: &str = "@MAR:";
+const LOG_PREFIX: &str = "@R:";
 const SUBMISSION: &str = "S:";
 const EXECUTION: &str = "E:";
 const APTOS_FAILED: &str = "AF:";
@@ -299,7 +300,7 @@ async fn validate_transaction_submission(
 	mut rx_validate_submission: mpsc::UnboundedReceiver<ValidateSubmission>,
 ) {
 	while let Some(ValidateSubmission { hash, error }) = rx_validate_submission.recv().await {
-		let result = movement_rest_client.get_transaction_by_hash(hash).await;
+		let result = get_transaction_by_hash(&movement_rest_client, hash, 3).await;
 
 		match (result, error) {
 			(Ok(_), None) => {
@@ -324,6 +325,36 @@ async fn validate_transaction_submission(
 			}
 		}
 	}
+}
+
+async fn get_transaction_by_hash(
+	movement_rest_client: &MovementRestClient,
+	hash: HashValue,
+	retries: u8,
+) -> Result<Response<Transaction>, RestError> {
+	for idx in (0..retries).into_iter().rev() {
+		let result = movement_rest_client.get_transaction_by_hash(hash).await;
+		match result {
+			Ok(txn_movement) => {
+				return Ok(txn_movement);
+			}
+			Err(err) if idx == 0 => {
+				return Err(err);
+			}
+			Err(err) => match err {
+				RestError::Api(ref api_err) => {
+					if let AptosErrorCode::TransactionNotFound = api_err.error.error_code {
+						tokio::time::sleep(Duration::from_secs(1)).await;
+						continue;
+					} else {
+						return Err(err);
+					}
+				}
+				_ => return Err(err),
+			},
+		}
+	}
+	unreachable!()
 }
 
 fn log_submission(is_error: bool, result: &str, hash: HashValue, message: impl Display) {
