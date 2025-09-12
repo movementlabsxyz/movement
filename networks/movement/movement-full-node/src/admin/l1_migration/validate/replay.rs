@@ -167,7 +167,7 @@ async fn submit_transactions(
 					.map(|item| (item.transaction_index, item.error))
 					.collect::<HashMap<_, _>>();
 
-				if let Some(ref tx_validate_submission) = tx_validate_execution {
+				if let Some(ref tx_validate_execution) = tx_validate_execution {
 					if txns
 						.iter()
 						.enumerate()
@@ -178,7 +178,7 @@ async fn submit_transactions(
 							_ => None,
 						})
 						.try_for_each(|(hash, payload)| {
-							tx_validate_submission.send(ValidateExecution { hash, payload })
+							tx_validate_execution.send(ValidateExecution { hash, payload })
 						})
 						.is_err()
 					{
