@@ -11,12 +11,13 @@ use clap::{Args, Parser};
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::path::PathBuf;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::Duration;
 use tokio::sync::mpsc;
 use tokio::task::JoinSet;
 use tokio_stream::StreamExt;
 use tracing::{debug, error, info, warn};
 
+const DEFAULT_MAX_SERVER_LAG_WAIT_DURATION: Duration = Duration::from_secs(60);
 const LOG_PREFIX: &str = "@R:";
 const SUBMISSION: &str = "S:";
 const EXECUTION: &str = "E:";
@@ -67,9 +68,7 @@ impl DaReplayTransactions {
 		let aptos_rest_client = AptosRestClient::try_connect(&self.aptos_api_url).await?;
 
 		// Spawn a task which compares transaction outputs from the Movement node and Aptos node
-		let (tx_validate_execution, tx_validate_submission) = if let Some(ref movement_api_url) =
-			self.movement_api_url
-		{
+		let tx_validate_submission = if let Some(ref movement_api_url) = self.movement_api_url {
 			let movement_rest_client = MovementRestClient::try_connect(movement_api_url).await?;
 			let (tx_validate_execution, rx_validate_execution) =
 				mpsc::unbounded_channel::<ValidateExecution>();
@@ -84,19 +83,15 @@ impl DaReplayTransactions {
 			tasks.spawn(validate_transaction_submission(
 				movement_rest_client,
 				rx_validate_submission,
+				tx_validate_execution,
 			));
-			(Some(tx_validate_execution), Some(tx_validate_submission))
+			Some(tx_validate_submission)
 		} else {
-			(None, None)
+			None
 		};
 
 		// Spawn a task which submits transaction batches to the validator node
-		tasks.spawn(submit_transactions(
-			aptos_rest_client,
-			rx_batches,
-			tx_validate_execution,
-			tx_validate_submission,
-		));
+		tasks.spawn(submit_transactions(aptos_rest_client, rx_batches, tx_validate_submission));
 		// Spawn a task which fetches transaction batches ahead
 		tasks.spawn(stream_transactions(da_sequencer_client, tx_batches, block_height));
 
@@ -152,7 +147,6 @@ async fn stream_transactions(
 async fn submit_transactions(
 	aptos_rest_client: AptosRestClient,
 	mut rx_batches: mpsc::Receiver<Vec<SignedTransaction>>,
-	tx_validate_execution: Option<mpsc::UnboundedSender<ValidateExecution>>,
 	tx_validate_submission: Option<mpsc::UnboundedSender<ValidateSubmission>>,
 ) {
 	while let Some(txns) = rx_batches.recv().await {
@@ -160,32 +154,12 @@ async fn submit_transactions(
 			Ok(result) => {
 				debug!("Submitted {} Aptos transaction(s)", txns.len());
 
-				let errors = result
+				let mut errors = result
 					.into_inner()
 					.transaction_failures
 					.into_iter()
 					.map(|item| (item.transaction_index, item.error))
 					.collect::<HashMap<_, _>>();
-
-				if let Some(ref tx_validate_execution) = tx_validate_execution {
-					if txns
-						.iter()
-						.enumerate()
-						.filter_map(|item| match item {
-							(idx, txn) if !errors.contains_key(&idx) => {
-								Some((txn.committed_hash(), payload_info(txn)))
-							}
-							_ => None,
-						})
-						.try_for_each(|(hash, payload)| {
-							tx_validate_execution.send(ValidateExecution { hash, payload })
-						})
-						.is_err()
-					{
-						// channel is closed
-						break;
-					}
-				}
 
 				if let Some(ref tx_validate_submission) = tx_validate_submission {
 					if txns
@@ -193,8 +167,12 @@ async fn submit_transactions(
 						.enumerate()
 						.try_for_each(|(idx, txn)| {
 							tx_validate_submission.send(ValidateSubmission {
-								hash: txn.committed_hash(),
-								error: errors.get(&idx).cloned(),
+								txn_info: TransactionInfo {
+									hash: txn.committed_hash(),
+									payload: payload_info(txn),
+									expires: txn.expiration_timestamp_secs(),
+								},
+								error: errors.remove(&idx),
 							})
 						})
 						.is_err()
@@ -221,11 +199,21 @@ async fn validate_transaction_execution(
 ) {
 	use aptos_api_types::transaction::Transaction;
 
-	while let Some(ValidateExecution { hash, payload }) = rx_validate_execution.recv().await {
-		let timeout = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() + 60;
+	while let Some(ValidateExecution { txn_info }) = rx_validate_execution.recv().await {
+		let hash = txn_info.hash;
 		let result = tokio::join!(
-			movement_rest_client.wait_for_transaction_by_hash(hash, timeout, None, None),
-			aptos_rest_client.wait_for_transaction_by_hash(hash, timeout, None, None)
+			movement_rest_client.wait_for_transaction_by_hash(
+				hash,
+				txn_info.expires,
+				Some(DEFAULT_MAX_SERVER_LAG_WAIT_DURATION),
+				None
+			),
+			aptos_rest_client.wait_for_transaction_by_hash(
+				hash,
+				txn_info.expires,
+				Some(DEFAULT_MAX_SERVER_LAG_WAIT_DURATION),
+				None,
+			)
 		);
 
 		match result {
@@ -243,26 +231,26 @@ async fn validate_transaction_execution(
 					(false, true) => (true, "events mismatch"),
 					(false, false) => (true, "events mismatch, changes mismatch"),
 				};
-				log_execution(is_error, BOTH_SUCCEEDED, hash, &payload, msg);
+				log_execution(is_error, BOTH_SUCCEEDED, hash, &txn_info.payload, msg);
 			}
 			(Ok(_), Err(error_aptos)) => {
-				log_execution(true, APTOS_FAILED, hash, &payload, error_aptos);
+				log_execution(true, APTOS_FAILED, hash, &txn_info.payload, error_aptos);
 			}
 			(Err(error_movement), Ok(_)) => {
-				log_execution(true, MOVEMENT_FAILED, hash, &payload, error_movement);
+				log_execution(true, MOVEMENT_FAILED, hash, &txn_info.payload, error_movement);
 			}
 			(Err(error_movement), Err(error_aptos)) => {
 				let error_movement = format!("{}", error_movement);
 				let error_aptos = format!("{}", error_aptos);
 
 				if error_movement == error_aptos {
-					log_execution(false, BOTH_FAILED, hash, &payload, "same error");
+					log_execution(false, BOTH_FAILED, hash, &txn_info.payload, "same error");
 				} else {
 					log_execution(
 						true,
 						BOTH_FAILED,
 						hash,
-						&payload,
+						&txn_info.payload,
 						format!("(movement: {} // aptos: {})", error_movement, error_aptos),
 					);
 				}
@@ -298,8 +286,11 @@ fn log_execution(
 async fn validate_transaction_submission(
 	movement_rest_client: MovementRestClient,
 	mut rx_validate_submission: mpsc::UnboundedReceiver<ValidateSubmission>,
+	tx_validate_execution: mpsc::UnboundedSender<ValidateExecution>,
 ) {
-	while let Some(ValidateSubmission { hash, error }) = rx_validate_submission.recv().await {
+	while let Some(ValidateSubmission { txn_info, error }) = rx_validate_submission.recv().await {
+		let hash = txn_info.hash;
+		let execute = error.is_none();
 		let result = get_transaction_by_hash(&movement_rest_client, hash, 3).await;
 
 		match (result, error) {
@@ -322,6 +313,13 @@ async fn validate_transaction_submission(
 					// would have failed on Aptos in the same way.
 					log_submission(true, APTOS_FAILED, hash, error_aptos);
 				}
+			}
+		};
+
+		if execute {
+			if tx_validate_execution.send(ValidateExecution { txn_info }).is_err() {
+				// channel is closed
+				break;
 			}
 		}
 	}
@@ -378,12 +376,17 @@ fn payload_info(txn: &SignedTransaction) -> String {
 	}
 }
 
-struct ValidateExecution {
+struct TransactionInfo {
 	pub hash: HashValue,
 	pub payload: String,
+	pub expires: u64,
+}
+
+struct ValidateExecution {
+	pub txn_info: TransactionInfo,
 }
 
 struct ValidateSubmission {
-	pub hash: HashValue,
+	pub txn_info: TransactionInfo,
 	pub error: Option<AptosError>,
 }
