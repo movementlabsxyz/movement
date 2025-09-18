@@ -67,9 +67,16 @@ impl DaReplayTransactions {
 		let da_sequencer_client = DaSequencerClient::try_connect(&self.da_sequencer_url).await?;
 		let aptos_rest_client = AptosRestClient::try_connect(&self.aptos_api_url).await?;
 
+		let gas_price = aptos_rest_client.estimate_gas_price().await?.into_inner();
+		info!("Gas price Aptos: {:?}", gas_price);
+
 		// Spawn a task which compares transaction outputs from the Movement node and Aptos node
 		let tx_validate_submission = if let Some(ref movement_api_url) = self.movement_api_url {
 			let movement_rest_client = MovementRestClient::try_connect(movement_api_url).await?;
+
+			let gas_price = aptos_rest_client.estimate_gas_price().await?.into_inner();
+			info!("Gas price Movement: {:?}", gas_price);
+
 			let (tx_validate_execution, rx_validate_execution) =
 				mpsc::unbounded_channel::<ValidateExecution>();
 			let (tx_validate_submission, rx_validate_submission) =
@@ -224,27 +231,81 @@ async fn validate_transaction_execution(
 				let Transaction::UserTransaction(txn_aptos) = txn_aptos.into_inner() else {
 					unreachable!()
 				};
-				let result = compare_transaction_outputs(*txn_movement, *txn_aptos, show_diff);
+				let result = compare_transaction_outputs(&txn_movement, &txn_aptos, show_diff);
 				let (is_error, msg) = match (result.events_match, result.changes_match) {
 					(true, true) => (false, "ok"),
 					(true, false) => (true, "changes mismatch"),
 					(false, true) => (true, "events mismatch"),
 					(false, false) => (true, "events mismatch, changes mismatch"),
 				};
-				log_execution(is_error, BOTH_SUCCEEDED, hash, &txn_info.payload, msg);
+				let version_movement = Some(*txn_movement.info.version.inner());
+				let gas_movement = Some(*txn_movement.info.gas_used.inner());
+				let version_aptos = Some(*txn_aptos.info.version.inner());
+				let gas_aptos = Some(*txn_aptos.info.gas_used.inner());
+				log_execution(
+					is_error,
+					BOTH_SUCCEEDED,
+					hash,
+					&txn_info.payload,
+					msg,
+					version_movement,
+					gas_movement,
+					version_aptos,
+					gas_aptos,
+				);
 			}
-			(Ok(_), Err(error_aptos)) => {
-				log_execution(true, APTOS_FAILED, hash, &txn_info.payload, error_aptos);
+			(Ok(txn_movement), Err(error_aptos)) => {
+				let Transaction::UserTransaction(txn_movement) = txn_movement.into_inner() else {
+					unreachable!()
+				};
+				let version_movement = Some(*txn_movement.info.version.inner());
+				let gas_movement = Some(*txn_movement.info.gas_used.inner());
+				log_execution(
+					true,
+					APTOS_FAILED,
+					hash,
+					&txn_info.payload,
+					error_aptos,
+					version_movement,
+					gas_movement,
+					None,
+					None,
+				);
 			}
-			(Err(error_movement), Ok(_)) => {
-				log_execution(true, MOVEMENT_FAILED, hash, &txn_info.payload, error_movement);
+			(Err(error_movement), Ok(txn_aptos)) => {
+				let Transaction::UserTransaction(txn_aptos) = txn_aptos.into_inner() else {
+					unreachable!()
+				};
+				let version_aptos = Some(*txn_aptos.info.version.inner());
+				let gas_aptos = Some(*txn_aptos.info.gas_used.inner());
+				log_execution(
+					true,
+					MOVEMENT_FAILED,
+					hash,
+					&txn_info.payload,
+					error_movement,
+					None,
+					None,
+					version_aptos,
+					gas_aptos,
+				);
 			}
 			(Err(error_movement), Err(error_aptos)) => {
 				let error_movement = format!("{}", error_movement);
 				let error_aptos = format!("{}", error_aptos);
 
 				if error_movement == error_aptos {
-					log_execution(false, BOTH_FAILED, hash, &txn_info.payload, "same error");
+					log_execution(
+						false,
+						BOTH_FAILED,
+						hash,
+						&txn_info.payload,
+						"same error",
+						None,
+						None,
+						None,
+						None,
+					);
 				} else {
 					log_execution(
 						true,
@@ -252,6 +313,10 @@ async fn validate_transaction_execution(
 						hash,
 						&txn_info.payload,
 						format!("(movement: {} // aptos: {})", error_movement, error_aptos),
+						None,
+						None,
+						None,
+						None,
 					);
 				}
 			}
@@ -266,14 +331,22 @@ fn log_execution(
 	hash: HashValue,
 	payload: &str,
 	message: impl Display,
+	version_movement: Option<u64>,
+	gas_movement: Option<u64>,
+	version_aptos: Option<u64>,
+	gas_aptos: Option<u64>,
 ) {
 	let msg = format!(
-		"{}{}{}({}/{}): {}",
+		"{}{}{}({}/{})[A:{}:{}/M:{}:{}]: {}",
 		LOG_PREFIX,
 		EXECUTION,
 		result,
 		hash.to_hex_literal(),
 		payload,
+		version_aptos.map_or("none".to_string(), |version| version.to_string()),
+		gas_aptos.map_or("none".to_string(), |gas| gas.to_string()),
+		version_movement.map_or("none".to_string(), |version| version.to_string()),
+		gas_movement.map_or("none".to_string(), |gas| gas.to_string()),
 		message
 	);
 	if is_error {

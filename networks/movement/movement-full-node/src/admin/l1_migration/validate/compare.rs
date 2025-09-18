@@ -8,8 +8,8 @@ pub struct CompareResult {
 }
 
 pub fn compare_transaction_outputs(
-	movement_txn: UserTransaction,
-	aptos_txn: UserTransaction,
+	movement_txn: &UserTransaction,
+	aptos_txn: &UserTransaction,
 	show_diff: bool,
 ) -> CompareResult {
 	let txn_hash = movement_txn.info.hash.0.to_hex_literal();
