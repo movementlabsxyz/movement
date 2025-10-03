@@ -47,6 +47,48 @@ interface IRetrieveDelegates {
     function delegates(address account) external view returns (address);
 }
 
+interface IUniswapV3Quoter {
+        function quoteExactInputSingle(
+            address tokenIn,
+            address tokenOut,
+            uint24 fee,
+            uint256 amountIn,
+            uint160 sqrtPriceLimitX96
+        ) external returns (uint256 amountOut);
+    }
+
+    interface ISwapRouter {
+    struct ExactInputSingleParams {
+        address tokenIn;
+        address tokenOut;
+        uint24 fee;
+        address recipient;
+        uint256 amountIn;
+        uint256 amountOutMinimum;
+        uint160 sqrtPriceLimitX96;
+    }
+
+    function exactInputSingle(ExactInputSingleParams calldata params)
+        external
+        payable
+        returns (uint256 amountOut);
+
+    struct ExactOutputSingleParams {
+        address tokenIn;
+        address tokenOut;
+        uint24 fee;
+        address recipient;
+        uint256 amountOut;
+        uint256 amountInMaximum;
+        uint160 sqrtPriceLimitX96;
+    }
+
+    function exactOutputSingle(ExactOutputSingleParams calldata params)
+        external
+        payable
+        returns (uint256 amountIn);
+}
+
 contract MOVETokenV2Test is Test {
     // =============================================================================
     // STATE VARIABLES - CONTRACT INSTANCES
@@ -560,6 +602,86 @@ contract MOVETokenV2Test is Test {
         // Verify total of 2 sends completed
         assertEq(move2.balanceOf(anchorage), balanceBefore - (amount * 2));
         assertEq(move2.totalSupply(), totalSupplyBefore - (amount * 2));
+    }
+
+    function testUniswap() public {
+        testConfigOFT();
+        address v3movePool = 0x663901c2590893fdCe43c128D20603A9b69A053D;
+        address uniswapv3Router = 0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45;
+        address uniswapv4Router = 0x66a9893cC07D91D95644AEDD05D03f95e1dBA8Af;
+        address uniswapv3Quoter = 0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6;
+        address uniswapv4Quoter = 0x61fFE014bA17989E743c5F6cB21bF9697530B21e;
+
+        uint256 amount = 100;
+
+        // quote from uniswap v3
+        (bool successV3, bytes memory dataV3) = uniswapv3Quoter.call(
+            abi.encodeWithSignature(
+                "quoteExactInputSingle(address,address,uint24,uint256,uint160)",
+                address(move2),
+                0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, // WETH
+                10000,
+                amount,
+                0
+            )
+        );
+        require(successV3, "V3 quote failed");
+        uint256 amountOutV3 = abi.decode(dataV3, (uint256));
+
+        // quote from uniswap v4
+        // (bool successV4, bytes memory dataV4) = uniswapv4Quoter.call(
+        //     abi.encodeWithSignature(
+        //         "quoteExactInputSingle(address,address,uint24,uint256,uint160)",
+        //         address(move2),
+        //         0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, // WETH
+        //         3000,
+        //         amount,
+        //         0
+        //     )
+        // );
+        // require(successV4, "V4 quote failed");
+        // uint256 amountOutV4 = abi.decode(dataV4, (uint256));
+
+        uint256 balanceBefore = move2.balanceOf(anchorage);
+        uint256 snapshotId = vm.snapshot();
+
+        vm.prank(anchorage);
+        move2.approve(uniswapv3Router, amount);
+
+        vm.prank(anchorage);
+        ISwapRouter(uniswapv3Router).exactInputSingle(
+            ISwapRouter.ExactInputSingleParams({
+                tokenIn: address(move2),
+                tokenOut: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, // WETH
+                fee: 10000,
+                recipient: anchorage,
+                amountIn: amount,
+                amountOutMinimum: (amountOutV3 * 95) / 100, // slippage 5%
+                sqrtPriceLimitX96: 0
+            })
+        );
+
+        assertEq(move2.balanceOf(anchorage), balanceBefore - amount);
+
+        vm.prank(anchorage);
+        move2.approve(uniswapv4Router, amount);
+        
+        // vm.revertTo(snapshotId);
+        // vm.prank(anchorage);
+        // ISwapRouter(uniswapv4Router).exactInputSingle(
+        //     ISwapRouter.ExactInputSingleParams({
+        //         tokenIn: address(move2),
+        //         tokenOut: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, // WETH
+        //         fee: 300,
+        //         recipient: anchorage,
+        //         deadline: block.timestamp + 100,
+        //         amountIn: amount,
+        //         amountOutMinimum: (amountOutV4 * 95) / 100, // slippage 5%
+        //         sqrtPriceLimitX96: 0
+        //     })
+        // );
+
+        // assertEq(move2.balanceOf(anchorage), balanceBefore - amount);
     }
 
     // =============================================================================
