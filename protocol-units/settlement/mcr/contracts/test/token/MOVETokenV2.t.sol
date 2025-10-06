@@ -39,7 +39,6 @@ import {IOAppCore} from "@layerzerolabs/oapp-evm/contracts/oapp/interfaces/IOApp
 import {MessagingFee} from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
 import {OFTAdapter} from "lib/LayerZero-v2/packages/layerzero-v2/evm/oapp/contracts/oft/OFTAdapter.sol";
 import {OptionsBuilder} from "lib/LayerZero-v2/packages/layerzero-v2/evm/oapp/contracts/oapp/libs/OptionsBuilder.sol";
-
 // Safe contracts
 import {CompatibilityFallbackHandler} from "@safe-smart-account/contracts/handler/CompatibilityFallbackHandler.sol";
 
@@ -47,17 +46,39 @@ interface IRetrieveDelegates {
     function delegates(address account) external view returns (address);
 }
 
-interface IUniswapV3Quoter {
-        function quoteExactInputSingle(
-            address tokenIn,
-            address tokenOut,
-            uint24 fee,
-            uint256 amountIn,
-            uint160 sqrtPriceLimitX96
-        ) external returns (uint256 amountOut);
-    }
+struct PoolKey {
+    /// @notice The lower currency of the pool, sorted numerically.
+    ///         For native ETH, Currency currency0 = Currency.wrap(address(0));
+    address currency0;
+    /// @notice The higher currency of the pool, sorted numerically
+    address currency1;
+    /// @notice The pool LP fee, capped at 1_000_000. If the highest bit is 1, the pool has a dynamic fee and must be exactly equal to 0x800000
+    uint24 fee;
+    /// @notice Ticks that involve positions must be a multiple of tick spacing
+    int24 tickSpacing;
+    /// @notice The hooks of the pool
+    address hooks;
+}
 
-    interface ISwapRouter {
+struct QuoteExactInputSingleParams {
+    address tokenIn;
+    address tokenOut;
+    uint256 amountIn;
+    uint24 fee;
+    uint160 sqrtPriceLimitX96;
+}
+
+interface IUniswapV3Quoter {
+    function quoteExactInputSingle(
+        address tokenIn,
+        address tokenOut,
+        uint24 fee,
+        uint256 amountIn,
+        uint160 sqrtPriceLimitX96
+    ) external returns (uint256 amountOut);
+}
+
+interface ISwapRouter {
     struct ExactInputSingleParams {
         address tokenIn;
         address tokenOut;
@@ -68,25 +89,21 @@ interface IUniswapV3Quoter {
         uint160 sqrtPriceLimitX96;
     }
 
-    function exactInputSingle(ExactInputSingleParams calldata params)
-        external
-        payable
-        returns (uint256 amountOut);
+    function exactInputSingle(ExactInputSingleParams calldata params) external payable returns (uint256 amountOut);
+}
 
-    struct ExactOutputSingleParams {
-        address tokenIn;
-        address tokenOut;
-        uint24 fee;
-        address recipient;
-        uint256 amountOut;
-        uint256 amountInMaximum;
-        uint160 sqrtPriceLimitX96;
+interface IV4Router {
+    struct ExactInputSingleParams {
+        PoolKey poolKey;
+        bool zeroForOne;
+        uint128 amountIn;
+        uint128 amountOutMinimum;
+        bytes hookData;
     }
 
-    function exactOutputSingle(ExactOutputSingleParams calldata params)
+    function execute(bytes memory commands, bytes[] memory inputs, uint256 deadline)
         external
-        payable
-        returns (uint256 amountIn);
+        payable;
 }
 
 contract MOVETokenV2Test is Test {
@@ -167,7 +184,7 @@ contract MOVETokenV2Test is Test {
     uint32 public constant ULN_CONFIG_TYPE = 2;
     /// @dev LayerZero config type for receive library configuration
     uint32 public constant RECEIVE_CONFIG_TYPE = 2;
-    
+
     /// @dev Total supply of MOVE tokens (10 billion with 8 decimals)
     uint256 public constant TOTAL_SUPPLY = 10000000000 * 10 ** 8;
     /// @dev MOVE token decimals
@@ -213,12 +230,16 @@ contract MOVETokenV2Test is Test {
         assertEq(move.hasRole(DEFAULT_ADMIN_ROLE, other), false);
 
         vm.expectRevert(
-            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, address(this), DEFAULT_ADMIN_ROLE)
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, address(this), DEFAULT_ADMIN_ROLE
+            )
         );
         move.grantRole(DEFAULT_ADMIN_ROLE, other);
 
         vm.prank(labs);
-        vm.expectRevert(abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, labs, DEFAULT_ADMIN_ROLE));
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, labs, DEFAULT_ADMIN_ROLE)
+        );
         move.grantRole(DEFAULT_ADMIN_ROLE, other);
 
         vm.prank(oldFoundation);
@@ -288,7 +309,7 @@ contract MOVETokenV2Test is Test {
             address(moveTokenImplementation2),
             initializeData
         );
-        
+
         // Once transaction is scheduled comment out testScheduleAndSetPeer and RERUN TEST to verify that all arguments are correct
         testScheduleAndSetPeer();
 
@@ -396,18 +417,24 @@ contract MOVETokenV2Test is Test {
         assertEq(move2.hasRole(DEFAULT_ADMIN_ROLE, other), false);
 
         vm.prank(other);
-        vm.expectRevert(abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, other, DEFAULT_ADMIN_ROLE));
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, other, DEFAULT_ADMIN_ROLE)
+        );
         move2.grantRole(DEFAULT_ADMIN_ROLE, other);
 
         vm.prank(foundation);
         vm.expectRevert(
-            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, foundation, DEFAULT_ADMIN_ROLE)
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, foundation, DEFAULT_ADMIN_ROLE
+            )
         );
         move2.grantRole(DEFAULT_ADMIN_ROLE, other);
 
         vm.prank(oldFoundation);
         vm.expectRevert(
-            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, oldFoundation, DEFAULT_ADMIN_ROLE)
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, oldFoundation, DEFAULT_ADMIN_ROLE
+            )
         );
         move2.grantRole(DEFAULT_ADMIN_ROLE, other);
 
@@ -451,7 +478,7 @@ contract MOVETokenV2Test is Test {
             composeMsg: bytes(""),
             oftCmd: bytes("")
         });
-        
+
         IOFT deprecatedBridge = IOFT(bridge);
         vm.expectRevert(); // Should fail - bridge is deprecated
         deprecatedBridge.quoteSend(sendParam, false);
@@ -606,7 +633,6 @@ contract MOVETokenV2Test is Test {
 
     function testUniswap() public {
         testConfigOFT();
-        address v3movePool = 0x663901c2590893fdCe43c128D20603A9b69A053D;
         address uniswapv3Router = 0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45;
         address uniswapv4Router = 0x66a9893cC07D91D95644AEDD05D03f95e1dBA8Af;
         address uniswapv3Quoter = 0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6;
@@ -628,19 +654,25 @@ contract MOVETokenV2Test is Test {
         require(successV3, "V3 quote failed");
         uint256 amountOutV3 = abi.decode(dataV3, (uint256));
 
+        // Adds eth and move balance to uniswapv4 pool
+        vm.deal(0x1B42bb0771690a3A82beDb1BC74933788145CbfD, 100 ether);
+        deal(address(move2), 0x1B42bb0771690a3A82beDb1BC74933788145CbfD, 100 ether);
+        uint24 v4fee = 10000;
         // quote from uniswap v4
-        // (bool successV4, bytes memory dataV4) = uniswapv4Quoter.call(
-        //     abi.encodeWithSignature(
-        //         "quoteExactInputSingle(address,address,uint24,uint256,uint160)",
-        //         address(move2),
-        //         0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, // WETH
-        //         3000,
-        //         amount,
-        //         0
-        //     )
-        // );
-        // require(successV4, "V4 quote failed");
-        // uint256 amountOutV4 = abi.decode(dataV4, (uint256));
+        (bool successV4, bytes memory dataV4) = uniswapv4Quoter.call(
+            abi.encodeWithSignature(
+                "quoteExactInputSingle((address,address,uint256,uint24,uint160))",
+                QuoteExactInputSingleParams({
+                    tokenIn: address(move2),
+                    tokenOut: address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2), // ETH
+                    amountIn: amount,
+                    fee: v4fee,
+                    sqrtPriceLimitX96: 0
+                })
+            )
+        );
+        require(successV4, "V4 quote failed");
+        uint256 amountOutV4 = abi.decode(dataV4, (uint256));
 
         uint256 balanceBefore = move2.balanceOf(anchorage);
         uint256 snapshotId = vm.snapshot();
@@ -665,21 +697,23 @@ contract MOVETokenV2Test is Test {
 
         vm.prank(anchorage);
         move2.approve(uniswapv4Router, amount);
-        
-        // vm.revertTo(snapshotId);
-        // vm.prank(anchorage);
-        // ISwapRouter(uniswapv4Router).exactInputSingle(
-        //     ISwapRouter.ExactInputSingleParams({
-        //         tokenIn: address(move2),
-        //         tokenOut: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, // WETH
-        //         fee: 300,
-        //         recipient: anchorage,
-        //         deadline: block.timestamp + 100,
-        //         amountIn: amount,
-        //         amountOutMinimum: (amountOutV4 * 95) / 100, // slippage 5%
-        //         sqrtPriceLimitX96: 0
-        //     })
-        // );
+
+        vm.revertTo(snapshotId);
+        vm.prank(anchorage);
+        move2.approve(uniswapv4Router, amount);
+
+        PoolKey memory key = PoolKey({
+            currency0: address(move2), // currency0 (lower)
+            currency1: address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2), // currency1 (higher)
+            fee: v4fee, // fee
+            tickSpacing: 1, // tickSpacing
+            hooks: address(0) // no hooks
+        });
+
+
+        // vm.startPrank(anchorage);
+        // swapExactInputSingle(uniswapv4Router, key, uint128(amount), uint128((amount * 50) / 100));
+        // vm.stopPrank();
 
         // assertEq(move2.balanceOf(anchorage), balanceBefore - amount);
     }
@@ -687,6 +721,40 @@ contract MOVETokenV2Test is Test {
     // =============================================================================
     // HELPER FUNCTIONS
     // =============================================================================
+
+    function swapExactInputSingle(address router, PoolKey memory key, uint128 amountIn, uint128 minAmountOut)
+        internal
+        returns (uint256 amountOut)
+    {
+        // Encode the Universal Router command
+        bytes memory commands = abi.encodePacked(uint8(0x10));
+        bytes[] memory inputs = new bytes[](1);
+
+        // Encode V4Router actions
+        bytes memory actions =
+            abi.encodePacked(uint8(0x06), uint8(0x0c), uint8(0x0f));
+
+        // Prepare parameters for each action
+        bytes[] memory params = new bytes[](3);
+        params[0] = abi.encode(
+            IV4Router.ExactInputSingleParams({
+                poolKey: key,
+                zeroForOne: true,
+                amountIn: amountIn,
+                amountOutMinimum: minAmountOut,
+                hookData: bytes("")
+            })
+        );
+        params[1] = abi.encode(key.currency0, amountIn);
+        params[2] = abi.encode(key.currency1, minAmountOut);
+
+        // Combine actions and params into inputs
+        inputs[0] = abi.encode(actions, params);
+
+        // Execute the swap
+        uint256 deadline = block.timestamp + 20;
+        IV4Router(router).execute(commands, inputs, deadline);
+    }
 
     /**
      * @dev Utility function to convert bytes to address using keccak256 hash
