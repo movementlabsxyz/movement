@@ -2786,6 +2786,7 @@ dependencies = [
  "aptos-framework-biarritz-rc1-release",
  "aptos-framework-elsa-release",
  "aptos-framework-head-release",
+ "aptos-framework-pre-l1-merge-release",
  "maptos-framework-release-util",
  "thiserror 1.0.69",
  "tokio",
