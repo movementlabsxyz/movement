@@ -8,10 +8,7 @@ contract MOVETokenV2 is MOVEToken, OFTUpgradeable {
     /**
      * @dev Disables potential implementation exploit
      */
-    constructor(address _endpoint) OFTUpgradeable(_endpoint) {
-        require(_endpoint != address(0), "endpoint is zero address");
-        _disableInitializers();
-    }
+    constructor(address _endpoint) OFTUpgradeable(_endpoint) {_disableInitializers();}
 
     /**
      * @dev Initializes the contract with initial parameters.
