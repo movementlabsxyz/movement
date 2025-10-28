@@ -5,11 +5,13 @@ import {MOVEToken} from "./MOVEToken.sol";
 import {OFTUpgradeable, ERC20Upgradeable} from "@layerzerolabs/oft-evm-upgradeable/contracts/oft/OFTUpgradeable.sol";
 
 contract MOVETokenV2 is MOVEToken, OFTUpgradeable {
-
     /**
      * @dev Disables potential implementation exploit
      */
-    constructor(address _endpoint) OFTUpgradeable(_endpoint) {_disableInitializers();}
+    constructor(address _endpoint) OFTUpgradeable(_endpoint) {
+        require(_endpoint != address(0), "endpoint is zero address");
+        _disableInitializers();
+    }
 
     /**
      * @dev Initializes the contract with initial parameters.
@@ -25,7 +27,6 @@ contract MOVETokenV2 is MOVEToken, OFTUpgradeable {
         for (uint256 i = 0; i < _burned.length; i++) {
             _burn(_burned[i], balanceOf(_burned[i]));
         }
-
     }
 
     /**
