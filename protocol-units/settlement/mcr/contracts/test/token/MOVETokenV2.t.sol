@@ -310,7 +310,7 @@ contract MOVETokenV2Test is Test {
             initializeData
         );
 
-        // Once transaction is scheduled comment out testScheduleAndSetPeer and RERUN TEST to verify that all arguments are correct
+        // TODO: Once transaction is scheduled comment out testScheduleAndSetPeer and RERUN TEST to verify that all arguments are correct
         testScheduleAndSetPeer();
 
         // Verify that upgrade cannot be executed before timelock delay

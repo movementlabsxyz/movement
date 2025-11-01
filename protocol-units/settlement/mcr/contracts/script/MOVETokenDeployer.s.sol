@@ -38,12 +38,6 @@ contract MOVETokenDeployer is Helper {
                 // if move is already deployed, upgrade it
                 _upgradeMove() : revert("MOVE: both admin and proxy should be registered");
         
-        require(MOVEToken(deployment.move).balanceOf(address(deployment.movementAnchorage)) == 999999998000000000, "Movement Anchorage Safe balance is wrong");
-        require(MOVEToken(deployment.move).decimals() == 8, "Decimals are expected to be 8"); 
-        require(MOVEToken(deployment.move).totalSupply() == 1000000000000000000,"Total supply is wrong");
-        require(MOVEToken(deployment.move).hasRole(DEFAULT_ADMIN_ROLE, address(deployment.movementFoundationSafe)),"Movement Foundation expected to have token admin role");
-        require(!MOVEToken(deployment.move).hasRole(DEFAULT_ADMIN_ROLE, address(deployment.movementLabsSafe)),"Movement Labs not expected to have token admin role");
-        require(!MOVEToken(deployment.move).hasRole(DEFAULT_ADMIN_ROLE, address(timelock)),"Timelock not expected to have token admin role");
         vm.stopBroadcast();
 
         if (vm.isContext(VmSafe.ForgeContext.ScriptBroadcast)) {
@@ -69,6 +63,13 @@ contract MOVETokenDeployer is Helper {
         console.log("proxy", address(moveProxy));
         deployment.move = address(moveProxy);
         deployment.moveAdmin = _storeAdminDeployment();
+
+        require(MOVEToken(deployment.move).balanceOf(address(deployment.movementAnchorage)) == 999999998000000000, "Movement Anchorage Safe balance is wrong");
+        require(MOVEToken(deployment.move).decimals() == 8, "Decimals are expected to be 8"); 
+        require(MOVEToken(deployment.move).totalSupply() == 1000000000000000000,"Total supply is wrong");
+        require(MOVEToken(deployment.move).hasRole(DEFAULT_ADMIN_ROLE, address(deployment.movementFoundationSafe)),"Movement Foundation expected to have token admin role");
+        require(!MOVEToken(deployment.move).hasRole(DEFAULT_ADMIN_ROLE, address(deployment.movementLabsSafe)),"Movement Labs not expected to have token admin role");
+        require(!MOVEToken(deployment.move).hasRole(DEFAULT_ADMIN_ROLE, address(timelock)),"Timelock not expected to have token admin role");
     }
 
     function _upgradeMove() internal {
@@ -104,5 +105,8 @@ contract MOVETokenDeployer is Helper {
 
         // Data to be used to propose the upgrade
         _proposeUpgrade(data, "movetoken.json");
+
+        // We cannot require changes since they will only happen once the timelock executes the upgrade
+        // Refer to test section that allows us to verify if after upgrade Token will have correct values
     }
 }
