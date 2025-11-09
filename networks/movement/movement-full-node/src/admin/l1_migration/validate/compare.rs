@@ -2,36 +2,28 @@ use aptos_api_types::transaction::UserTransaction;
 use aptos_api_types::{Event, WriteSetChange};
 use tracing::error;
 
-pub fn compare_transaction_outputs(
-	movement_txn: UserTransaction,
-	aptos_txn: UserTransaction,
-	show_diff: bool,
-) -> anyhow::Result<bool> {
-	let txn_hash = movement_txn.info.hash.0.to_hex_literal();
+pub struct CompareResult {
+	pub events_match: bool,
+	pub changes_match: bool,
+}
 
-	if movement_txn.info.hash != aptos_txn.info.hash {
-		error!(
-			"Transaction hash mismatch:\nMovement transaction hash:{}\nAptos transaction hash:{}",
-			txn_hash,
-			aptos_txn.info.hash.0.to_hex_literal()
-		);
-		return Ok(false);
-	}
+pub fn compare_transaction_outputs(
+	movement_txn: &UserTransaction,
+	aptos_txn: &UserTransaction,
+	show_diff: bool,
+) -> CompareResult {
+	let txn_hash = movement_txn.info.hash.0.to_hex_literal();
 
 	let movement_events =
 		movement_txn.events.iter().map(Into::<EventCompare>::into).collect::<Vec<_>>();
 	let aptos_events = aptos_txn.events.iter().map(Into::<EventCompare>::into).collect::<Vec<_>>();
-	if movement_events != aptos_events {
-		if show_diff {
-			error!(
-				"Transaction events mismatch ({})\n{}",
-				txn_hash,
-				display_diff(&movement_txn.events, &aptos_txn.events)?
-			);
-		} else {
-			error!("Transaction events mismatch ({})", txn_hash,);
-		}
-		return Ok(false);
+	let events_match = movement_events == aptos_events;
+	if !events_match && show_diff {
+		error!(
+			"Transaction events mismatch ({})\n{}",
+			txn_hash,
+			display_diff(&movement_txn.events, &aptos_txn.events)
+		);
 	}
 
 	let movement_changes = movement_txn
@@ -46,32 +38,32 @@ pub fn compare_transaction_outputs(
 		.iter()
 		.map(Into::<WriteSetChangeCompare>::into)
 		.collect::<Vec<_>>();
-	if movement_changes != aptos_changes {
-		if show_diff {
-			error!(
-				"Transaction write-set mismatch ({})\n{}",
-				txn_hash,
-				display_diff(&movement_txn.info.changes, &aptos_txn.info.changes)?
-			);
-		} else {
-			error!("Transaction write-set mismatch ({})", txn_hash,);
-		}
-		return Ok(false);
+	let changes_match = movement_changes == aptos_changes;
+	if !changes_match && show_diff {
+		error!(
+			"Transaction write-set mismatch ({})\n{}",
+			txn_hash,
+			display_diff(&movement_txn.info.changes, &aptos_txn.info.changes)
+		);
 	}
 
-	Ok(true)
+	CompareResult { events_match, changes_match }
 }
 
-fn display_diff<T>(movement_values: &[T], aptos_values: &[T]) -> anyhow::Result<String>
+fn display_diff<T>(movement_values: &[T], aptos_values: &[T]) -> String
 where
 	T: serde::Serialize,
 {
-	let movement_json = serde_json::to_string_pretty(movement_values)?;
-	let aptos_json = serde_json::to_string_pretty(aptos_values)?;
-	Ok(create_diff(&movement_json, &aptos_json)?)
+	let movement_json = serde_json::to_string_pretty(movement_values);
+	let aptos_json = serde_json::to_string_pretty(aptos_values);
+	if let (Ok(movement_json), Ok(aptos_json)) = (movement_json, aptos_json) {
+		create_diff(&movement_json, &aptos_json)
+	} else {
+		"Failed to create diff".into()
+	}
 }
 
-fn create_diff(movement: &str, aptos: &str) -> anyhow::Result<String> {
+fn create_diff(movement: &str, aptos: &str) -> String {
 	use console::Style;
 	use similar::{ChangeTag, TextDiff};
 	use std::fmt::Write;
@@ -85,8 +77,8 @@ fn create_diff(movement: &str, aptos: &str) -> anyhow::Result<String> {
 		.collect::<Vec<_>>();
 	let last_hunk_idx = hunks.len() - 1;
 
-	writeln!(out, "--- Movement full-node")?;
-	writeln!(out, "+++ Aptos validator-node")?;
+	writeln!(out, "--- Movement full-node").unwrap();
+	writeln!(out, "+++ Aptos validator-node").unwrap();
 	for (idx, hunk) in hunks.iter().enumerate() {
 		for op in hunk.iter() {
 			for change in diff.iter_changes(op) {
@@ -95,15 +87,15 @@ fn create_diff(movement: &str, aptos: &str) -> anyhow::Result<String> {
 					ChangeTag::Insert => ("+", Style::new().green()),
 					ChangeTag::Equal => (" ", Style::new()),
 				};
-				write!(out, "{}{}", style.apply_to(sign).bold(), style.apply_to(change))?;
+				write!(out, "{}{}", style.apply_to(sign).bold(), style.apply_to(change)).unwrap();
 			}
 		}
 		if idx < last_hunk_idx {
-			writeln!(out, "===")?;
+			writeln!(out, "===").unwrap();
 		}
 	}
 
-	Ok(out)
+	out
 }
 
 struct EventCompare<'a>(&'a Event);
