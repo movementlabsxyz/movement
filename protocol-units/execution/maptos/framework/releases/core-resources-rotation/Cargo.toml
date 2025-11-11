@@ -1,6 +1,6 @@
 [package]
-name = "aptos-framework-pre-l1-merge-release"
-description = "Pre L1 Merge Release"
+name = "aptos-framework-core-resources-rotation-test"
+description = "Core Resources Rotation Release Test"
 authors = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }
@@ -13,10 +13,12 @@ version = { workspace = true }
 path = "src/lib.rs"
 
 [[bin]]
-name = "aptos-framework-pre-l1-merge-release-tool"
+name = "aptos-framework-core-resources-rotation"
 path = "src/bin/release.rs"
 
 [dependencies]
+aptos-crypto = { workspace = true }
+serde = { workspace = true }
 maptos-framework-release-util = { workspace = true }
 movement-config = { workspace = true }
 movement-client = { workspace = true }
@@ -38,6 +40,8 @@ aptos-release-builder = { workspace = true }
 hex = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
+rand = { workspace = true }
+ed25519-dalek = { workspace = true }
 
 [build-dependencies]
 maptos-framework-release-util = { workspace = true }
