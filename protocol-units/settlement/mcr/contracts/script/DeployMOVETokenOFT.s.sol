@@ -6,7 +6,7 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
 // Project contracts
-import {MOVETokenHyperliquid} from "../src/token/MOVETokenHyperliquid.sol";
+import {MOVETokenOFT} from "../src/token/MOVETokenOFT.sol";
 import {CREATE3Factory, ICREATE3Factory} from "./helpers/Create3/CREATE3Factory.sol";
 
 // OpenZeppelin
@@ -24,6 +24,10 @@ import {UlnConfig} from "@layerzerolabs/lz-evm-messagelib-v2/contracts/uln/UlnBa
 import {EnforcedOptionParam} from "@layerzerolabs/oapp-evm/contracts/oapp/interfaces/IOAppOptionsType3.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 
+// LayerZero Address Book
+import {LZProtocol} from "../layerzero_book/LZProtocol.sol";
+import {LZWorkers} from "../layerzero_book/LZWorkers.sol";
+
 interface IProxyFactory {
     function createProxyWithNonce(address masterCopy, bytes memory data, uint256 nonce)
         external
@@ -31,11 +35,11 @@ interface IProxyFactory {
 }
 
 /**
- * @title DeployMOVETokenHyperliquid
- * @notice Deployment script for MOVE token on Hyperliquid with full LayerZero configuration
+ * @title DeployMOVETokenOFT
+ * @notice Deployment script for MOVE token on EVM chain with full LayerZero configuration
  * @dev Deploys implementation, proxy via CREATE3, configures LayerZero DVNs, and sets peer
  */
-contract DeployMOVETokenHyperliquid is Script {
+contract DeployMOVETokenOFT is Script {
     // Deployment addresses
     address constant DEPLOYER_ADDRESS = 0xB2105464215716e1445367BEA5668F581eF7d063;
     address constant ZERO = address(0x0);
@@ -48,16 +52,16 @@ contract DeployMOVETokenHyperliquid is Script {
     address constant EXPECTED_MULTISIG_EXECUTOR = 0x443513664Eab95280360Dc1c33FDe1ad4ED5C7bB;
     address constant EXPECTED_MOVE_TOKEN_PROXY = 0x3073f7aAA4DB83f95e9FFf17424F71D4751a3073;
 
-    // LayerZero endpoint and libraries (Hyperliquid Mainnet)
-    address public lzEndpoint = 0x3A73033C0b1407574C76BdBAc67f126f6b4a9AA9;
-    address public receiveUln302 = 0x7cacBe439EaD55fa1c22790330b12835c6884a91;
-    address public sendUln302 = 0xfd76d9CB0Bac839725aB79127E7411fe71b1e3CA;
-    address public lzExecutor = 0x41Bdb4aa4A63a5b2Efc531858d3118392B1A1C3d;
+    // LayerZero endpoint and libraries
+    address public lzEndpoint;
+    address public receiveUln302;
+    address public sendUln302;
+    address public lzExecutor;
 
     // Data Verification Networks (DVNs)
-    address public p2pDVN = 0xC7423626016bc40375458bc0277F28681EC91C8e;
-    address public horizenDVN = 0xBB83Ecf372CbB6daa629ea9A9A53BEC6d601F229;
-    address public lzDVN = 0xc097ab8CD7b053326DFe9fB3E3a31a0CCe3B526f;
+    address public p2pDVN;
+    address public horizenDVN;
+    address public lzDVN;
 
     // LayerZero config types
     uint32 public constant EXECUTOR_CONFIG_TYPE = 1;
@@ -77,8 +81,8 @@ contract DeployMOVETokenHyperliquid is Script {
     bytes32 public salt = 0x6c0000000000000000000000018eddf77afc0a5c6d05a564a44fe37b068922c3;
 
     // Deployment state
-    MOVETokenHyperliquid public moveTokenImplementation;
-    address public moveTokenProxy = 0x3073f7aAA4DB83f95e9FFf17424F71D4751a3073;
+    MOVETokenOFT public moveTokenImplementation;
+    address public moveTokenProxy;
     address public multisigLabsOps;
     address public multisigExecutor;
     address public multisigDeployer;
@@ -87,6 +91,34 @@ contract DeployMOVETokenHyperliquid is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         require(vm.addr(deployerPrivateKey) == DEPLOYER_ADDRESS, "Private key does not match deployer address");
+
+        // Load LayerZero configuration from layerzero_book/LZProtocol.sol
+        LZProtocol lzProtocol = new LZProtocol();
+        uint32 eid = lzProtocol.getEidByChainId(block.chainid);
+        LZProtocol.ProtocolAddresses memory addresses = lzProtocol.getProtocolAddresses(eid);
+
+        // Set LayerZero addresses from protocol
+        lzEndpoint = addresses.endpointV2;
+        sendUln302 = addresses.sendUln302;
+        receiveUln302 = addresses.receiveUln302;
+        lzExecutor = addresses.executor;
+
+        // Load DVN addresses from LZWorkers
+        LZWorkers lzWorkers = new LZWorkers();
+        p2pDVN = lzWorkers.getDVNAddress("P2P", eid);
+        horizenDVN = lzWorkers.getDVNAddress("Horizen", eid);
+        lzDVN = lzWorkers.getDVNAddress("LayerZero Labs", eid);
+
+        // Assert that all addresses are not zero
+        require(lzEndpoint != address(0), "LayerZero endpoint cannot be zero address");
+        require(sendUln302 != address(0), "Send ULN 302 cannot be zero address");
+        require(receiveUln302 != address(0), "Receive ULN 302 cannot be zero address");
+        require(lzExecutor != address(0), "LayerZero executor cannot be zero address");
+        require(p2pDVN != address(0), "P2P DVN cannot be zero address");
+        require(horizenDVN != address(0), "Horizen DVN cannot be zero address");
+        require(lzDVN != address(0), "LayerZero Labs DVN cannot be zero address");
+
+
 
         vm.startBroadcast(deployerPrivateKey);
 
@@ -131,7 +163,7 @@ contract DeployMOVETokenHyperliquid is Script {
         
         multisigDeployer = proxyFactory.createProxyWithNonce(MASTER_COPY_ADDRESS_130, deployerInitData, 0);
         require(multisigDeployer == EXPECTED_MULTISIG_DEPLOYER, "Multisig Deployer address mismatch");
-        
+
         multisigLabsOps = proxyFactory.createProxyWithNonce(MASTER_COPY_ADDRESS_141, labsOpsInitData, 0);
         require(multisigLabsOps == EXPECTED_MULTISIG_LABS_OPS, "Multisig Labs Ops address mismatch");
 
@@ -148,10 +180,9 @@ contract DeployMOVETokenHyperliquid is Script {
      */
     function deployMoveToken() internal {
         // Deploy implementation
-        moveTokenImplementation = new MOVETokenHyperliquid(lzEndpoint);
+        moveTokenImplementation = new MOVETokenOFT(lzEndpoint);
         console.log("Deployed Implementation:", address(moveTokenImplementation));
         require(timelock != address(0), "Timelock must be deployed before deploying proxy");
-        require(address(moveTokenImplementation) != address(0), "Implementation deployment failed");
         // Prepare CREATE3 deployment bytecode
         bytes memory create3Bytecode = abi.encodePacked(
             type(TransparentUpgradeableProxy).creationCode,
@@ -181,7 +212,7 @@ contract DeployMOVETokenHyperliquid is Script {
         require(moveTokenProxy == EXPECTED_MOVE_TOKEN_PROXY, "MOVE Token proxy address mismatch");
 
         // Verify deployment
-        MOVETokenHyperliquid move = MOVETokenHyperliquid(moveTokenProxy);
+        MOVETokenOFT move = MOVETokenOFT(moveTokenProxy);
 
         // Verify basic token properties
         require(move.decimals() == 8, "Decimals verification failed");
@@ -215,11 +246,6 @@ contract DeployMOVETokenHyperliquid is Script {
 
         console.log("EIP-712 domain verified");
 
-        // Verify finalizer storage slot
-        address finalizer = address(uint160(uint256(vm.load(address(move), keccak256("HyperCore deployer")))));
-        require(finalizer == DEPLOYER_ADDRESS, "Finalizer verification failed");
-        console.log("Finalizer verified");
-
         console.log("All token verifications passed");
     }
 
@@ -227,7 +253,7 @@ contract DeployMOVETokenHyperliquid is Script {
      * @dev Configures LayerZero DVN, executor, and enforced options
      */
     function configureLZ() internal {
-        MOVETokenHyperliquid move = MOVETokenHyperliquid(moveTokenProxy);
+        MOVETokenOFT move = MOVETokenOFT(moveTokenProxy);
 
         // Configure libraries
         console.log("Setting LayerZero libraries...");
@@ -256,7 +282,7 @@ contract DeployMOVETokenHyperliquid is Script {
             requiredDVNCount: uint8(3),
             optionalDVNCount: uint8(0),
             optionalDVNThreshold: uint8(0),
-            requiredDVNs: dvnArray,
+            requiredDVNs: _sortDVNs(dvnArray),
             optionalDVNs: emptyArray
         });
         ExecutorConfig memory executorConfig = ExecutorConfig({maxMessageSize: 0, executor: lzExecutor});
@@ -287,7 +313,7 @@ contract DeployMOVETokenHyperliquid is Script {
      * @dev Sets the peer OApp address on the Movement network
      */
     function setPeer() internal {
-        MOVETokenHyperliquid move = MOVETokenHyperliquid(moveTokenProxy);
+        MOVETokenOFT move = MOVETokenOFT(moveTokenProxy);
         move.setPeer(movementEid, movementOapp);
 
         // Verify peer is set correctly
@@ -345,6 +371,19 @@ contract DeployMOVETokenHyperliquid is Script {
         require(proposer != address(0), "Proposer cannot be zero address");
         require(executor != address(0), "Executor cannot be zero address");
         return address(new TimelockController(172800, _arrayfy(proposer), _arrayfy(executor), ZERO));
+    }
+
+    function _sortDVNs(address[] memory dvns) internal pure returns (address[] memory sortedDVNs) {
+        // Simple bubble sort for demonstration; optimize as needed
+        uint256 n = dvns.length;
+        sortedDVNs = dvns;
+        for (uint256 i = 0; i < n; i++) {
+            for (uint256 j = 0; j < n - i - 1; j++) {
+                if (sortedDVNs[j] > sortedDVNs[j + 1]) {
+                    (sortedDVNs[j], sortedDVNs[j + 1]) = (sortedDVNs[j + 1], sortedDVNs[j]);
+                }
+            }
+        }
     }
 
     function _arrayfy(address addr) internal pure returns (address[] memory arr) {

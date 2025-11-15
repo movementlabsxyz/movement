@@ -33,4 +33,12 @@ contract MOVETokenV2 is MOVEToken, OFTUpgradeable {
     function decimals() public pure override(ERC20Upgradeable, MOVEToken) returns (uint8) {
         return 8;
     }
+
+    /**
+     * @dev Returns the number of shared decimals
+     * @notice shared decimals is set to 8, following the Movement network standard decimals
+     */
+    function sharedDecimals() public pure virtual override returns (uint8) {
+        return 8;
+    }
 }

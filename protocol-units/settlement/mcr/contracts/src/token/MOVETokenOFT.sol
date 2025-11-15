@@ -5,7 +5,7 @@ import {ERC20PermitUpgradeable} from
     "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 import {OFTUpgradeable} from "@layerzerolabs/oft-evm-upgradeable/contracts/oft/OFTUpgradeable.sol";
 
-contract MOVETokenL2 is ERC20PermitUpgradeable, OFTUpgradeable {
+contract MOVETokenOFT is ERC20PermitUpgradeable, OFTUpgradeable {
 
     /**
      * @dev Disables potential implementation exploit
@@ -27,6 +27,14 @@ contract MOVETokenL2 is ERC20PermitUpgradeable, OFTUpgradeable {
      * @notice decimals is set to 8, following the Movement network standard decimals
      */
     function decimals() public pure virtual override returns (uint8) {
+        return 8;
+    }
+
+    /**
+     * @dev Returns the number of shared decimals
+     * @notice shared decimals is set to 8, following the Movement network standard decimals
+     */
+    function sharedDecimals() public pure virtual override returns (uint8) {
         return 8;
     }
 }
