@@ -47,3 +47,9 @@
 [submodule "protocol-units/settlement/mcr/contracts/lib/solidity-bytes-utils"]
 	path = protocol-units/settlement/mcr/contracts/lib/solidity-bytes-utils
 	url = https://github.com/GNSPS/solidity-bytes-utils.git
+[submodule "protocol-units/tokens/mainnet/hyperliquid/lib/forge-std"]
+	path = protocol-units/tokens/mainnet/hyperliquid/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
+[submodule "protocol-units/tokens/mainnet/hyperliquid/lib/devtools"]
+	path = protocol-units/tokens/mainnet/hyperliquid/lib/devtools
+	url = https://github.com/LayerZero-Labs/devtools

@@ -33,7 +33,7 @@ contract UpgradeMOVETokenHyperliquidV2Test is Test {
 
     MOVETokenHyperliquid public moveV1;
     MOVETokenHyperliquidV2 public moveV2;
-    MOVETokenHyperliquidV2 public moveTokenImplementationV2;
+    MOVETokenHyperliquidV2 public moveTokenImplementationV2 = MOVETokenHyperliquidV2(0x2ee631fA49F90a98c7210b2220dcA16dA19147D8);
     TransparentUpgradeableProxy public moveProxy = TransparentUpgradeableProxy(payable(0x3073f7aAA4DB83f95e9FFf17424F71D4751a3073));
     ProxyAdmin public admin = ProxyAdmin(0x8365AA031806A1ac2b31a5d3b8323020FC85DfEc);
 
@@ -80,9 +80,6 @@ contract UpgradeMOVETokenHyperliquidV2Test is Test {
      *      5. Deploying the V2 implementation
      */
     function setUp() public {
-
-        // Deploy V2 implementation
-        moveTokenImplementationV2 = new MOVETokenHyperliquidV2(LZ_ENDPOINT);
         moveV1 = MOVETokenHyperliquid(0x3073f7aAA4DB83f95e9FFf17424F71D4751a3073);
         moveV2 = MOVETokenHyperliquidV2(0x3073f7aAA4DB83f95e9FFf17424F71D4751a3073);
 
@@ -118,9 +115,12 @@ contract UpgradeMOVETokenHyperliquidV2Test is Test {
         bytes memory upgradeData = abi.encodeWithSignature(
             "upgradeAndCall(address,address,bytes)",
             address(EXPECTED_MOVE_TOKEN_PROXY),
-            address(moveTokenImplementationV2),
-            bytes("") // No initialization call
+            0x2ee631fA49F90a98c7210b2220dcA16dA19147D8,
+            bytes("")
         );
+
+        console.log(address(moveTokenImplementationV2));
+        console.logBytes(upgradeData);
 
         // Schedule upgrade via proposer
         vm.prank(PROPOSER_ADDRESS);
@@ -140,6 +140,7 @@ contract UpgradeMOVETokenHyperliquidV2Test is Test {
 
         // Verify V1 token state after upgrade (old interface should still work)
         assertEq(moveV1.decimals(), MOVE_DECIMALS);
+        assertEq(moveV1.sharedDecimals(), MOVE_DECIMALS); // Despite using the V1 interface, it should also return 8
         assertEq(moveV1.name(), "Movement");
         assertEq(moveV1.symbol(), "MOVE");
         assertEq(moveV1.owner(), DEPLOYER_ADDRESS);
@@ -202,6 +203,7 @@ contract UpgradeMOVETokenHyperliquidV2Test is Test {
             address(moveTokenImplementationV2),
             bytes("")
         );
+
 
         // Try to schedule from unauthorized address
         vm.prank(DEPLOYER_ADDRESS);

@@ -631,6 +631,70 @@ contract MOVETokenV2Test is Test {
         assertEq(move2.totalSupply(), totalSupplyBefore - (amount * 2));
     }
 
+    /**
+     * @dev Tests that pausing prevents users from calling the send function
+     *      Verifies that:
+     *      1. Send works normally when not paused
+     *      2. Send reverts when contract is paused
+     *      3. Send works again after unpause
+     */
+    function testPausePreventsSend() public {
+        testConfigOFT();
+
+        uint256 amount = 1 * 10 ** MOVE_DECIMALS;
+        bytes32 moveAddress = 0x98ebb7985c84a89972022edf391bdaa7d95f061d9742efb3703de368413431e1;
+
+        SendParam memory sendParam = SendParam({
+            dstEid: movementEid,
+            to: moveAddress,
+            amountLD: amount,
+            minAmountLD: amount,
+            extraOptions: bytes(""),
+            composeMsg: bytes(""),
+            oftCmd: bytes("")
+        });
+
+        vm.prank(labs);
+        move2.setPeer(movementEid, moveOftAdapterBytes32);
+
+        // Get fee quote
+        MessagingFee memory fee = move2.quoteSend(sendParam, false);
+
+        // Fund anchorage with ETH for gas
+        vm.deal(anchorage, 10 ether);
+
+        // Verify send works when not paused
+        uint256 balanceBefore = move2.balanceOf(anchorage);
+        vm.prank(anchorage);
+        move2.send{value: fee.nativeFee}(sendParam, fee, anchorage);
+        assertEq(move2.balanceOf(anchorage), balanceBefore - amount);
+
+        // Pause the contract
+        vm.prank(labs);
+        move2.pause();
+
+        // Verify contract is paused
+        assertEq(move2.paused(), true);
+
+        // Verify send reverts when paused (0xd93c0665 is EnforcedPause() selector)
+        vm.prank(anchorage);
+        vm.expectRevert(0xd93c0665);
+        move2.send{value: fee.nativeFee}(sendParam, fee, anchorage);
+
+        // Unpause the contract
+        vm.prank(labs);
+        move2.unpause();
+
+        // Verify contract is unpaused
+        assertEq(move2.paused(), false);
+
+        // Verify send works again after unpause
+        balanceBefore = move2.balanceOf(anchorage);
+        vm.prank(anchorage);
+        move2.send{value: fee.nativeFee}(sendParam, fee, anchorage);
+        assertEq(move2.balanceOf(anchorage), balanceBefore - amount);
+    }
+
     function testUniswap() public {
         testConfigOFT();
         address uniswapv3Router = 0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45;

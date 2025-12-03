@@ -70,6 +70,8 @@ contract DeployMOVETokenOFT is Script {
 
     // LayerZero parameters
     uint32 public movementEid = 30325;
+    uint32 public hyperevmEid = 30367;
+    uint32 public ethereumEid = 30101;
     uint64 public confirmations = 0;
     bytes32 public movementOapp = 0x7e4fd97ef92302eea9b10f74be1d96fb1f1511cf7ed28867b0144ca89c6ebc3c;
 
@@ -89,8 +91,6 @@ contract DeployMOVETokenOFT is Script {
     address public timelock;
 
     function run() external {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        require(vm.addr(deployerPrivateKey) == DEPLOYER_ADDRESS, "Private key does not match deployer address");
 
         // Load LayerZero configuration from layerzero_book/LZProtocol.sol
         LZProtocol lzProtocol = new LZProtocol();
@@ -118,9 +118,7 @@ contract DeployMOVETokenOFT is Script {
         require(horizenDVN != address(0), "Horizen DVN cannot be zero address");
         require(lzDVN != address(0), "LayerZero Labs DVN cannot be zero address");
 
-
-
-        vm.startBroadcast(deployerPrivateKey);
+        vm.startBroadcast();
 
         // Step 1: Deploy multisigs
         console.log("=== Step 1: Deploying Multisigs ===");
@@ -134,17 +132,21 @@ contract DeployMOVETokenOFT is Script {
 
         // Step 3: Configure LayerZero
         console.log("\n=== Step 3: Configuring LayerZero ===");
-        configureLZ();
+        bytes memory options = abi.encodePacked(uint176(0x00030100110100000000000000000000000000013880));
 
-        // Step 4: Set peer
-        console.log("\n=== Step 4: Setting Peer ===");
-        setPeer();
+        // Movement
+        configureLZ(MOVETokenOFT(EXPECTED_MOVE_TOKEN_PROXY), movementEid, movementOapp, options);
+        // HyperEVM
+        configureLZ(MOVETokenOFT(EXPECTED_MOVE_TOKEN_PROXY), hyperevmEid, bytes32(uint256(uint160(EXPECTED_MOVE_TOKEN_PROXY))), options);
+        // Ethereum
+        configureLZ(MOVETokenOFT(EXPECTED_MOVE_TOKEN_PROXY), ethereumEid, bytes32(uint256(uint160(EXPECTED_MOVE_TOKEN_PROXY))), options);
 
         vm.stopBroadcast();
 
         // Log final deployment info
         console.log("\n=== Deployment Complete ===");
         console.log("Multisig Labs Ops:", multisigLabsOps);
+        console.log("Multisig Executor:", multisigExecutor);
         console.log("Multisig Deployer:", multisigDeployer);
         console.log("MOVE Token Implementation:", address(moveTokenImplementation));
         console.log("MOVE Token Proxy:", moveTokenProxy);
@@ -169,10 +171,6 @@ contract DeployMOVETokenOFT is Script {
 
         multisigExecutor = proxyFactory.createProxyWithNonce(MASTER_COPY_ADDRESS_141, executorInitData, 0);
         require(multisigExecutor == EXPECTED_MULTISIG_EXECUTOR, "Multisig Executor address mismatch");
-
-        console.log("Deployed Multisig Labs Ops:", multisigLabsOps);
-        console.log("Deployed Multisig Deployer:", multisigDeployer);
-        console.log("Deployed Multisig Executor:", multisigExecutor);
     }
 
     /**
@@ -189,7 +187,7 @@ contract DeployMOVETokenOFT is Script {
             abi.encode(
                 address(moveTokenImplementation),
                 address(timelock),
-                abi.encodeWithSignature("initialize(address)", DEPLOYER_ADDRESS)
+                abi.encodeWithSignature("initialize(address,address)", EXPECTED_MULTISIG_LABS_OPS, DEPLOYER_ADDRESS)
             )
         );
 
@@ -199,7 +197,7 @@ contract DeployMOVETokenOFT is Script {
             address(create3), 0, bytecode, Enum.Operation.Call, 0, 0, 0, ZERO, payable(ZERO), 0
         );
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(vm.envUint("PRIVATE_KEY"), digest);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(digest);
         bytes memory signature = abi.encodePacked(r, s, v);
         require(signature.length >= 65, "Invalid signature length");
 
@@ -216,6 +214,7 @@ contract DeployMOVETokenOFT is Script {
 
         // Verify basic token properties
         require(move.decimals() == 8, "Decimals verification failed");
+        require(move.sharedDecimals() == 8, "Decimals verification failed");
         require(keccak256(bytes(move.name())) == keccak256(bytes("Movement")), "Name verification failed");
         require(keccak256(bytes(move.symbol())) == keccak256(bytes("MOVE")), "Symbol verification failed");
         require(move.owner() == DEPLOYER_ADDRESS, "Owner verification failed");
@@ -252,22 +251,11 @@ contract DeployMOVETokenOFT is Script {
     /**
      * @dev Configures LayerZero DVN, executor, and enforced options
      */
-    function configureLZ() internal {
-        MOVETokenOFT move = MOVETokenOFT(moveTokenProxy);
+    function configureLZ(MOVETokenOFT move, uint32 eid, bytes32 oapp, bytes memory options) internal {
 
         // Configure libraries
         console.log("Setting LayerZero libraries...");
-        setLibraries(moveTokenProxy, movementEid, sendUln302, receiveUln302);
-
-        // Verify send library configuration
-        address receivedSendLib = move.endpoint().getSendLibrary(address(move), movementEid);
-        require(receivedSendLib == sendUln302, "Send library verification failed");
-        console.log("Send library verified:", receivedSendLib);
-
-        // Verify receive library configuration
-        (address receivedReceiveLib,) = move.endpoint().getReceiveLibrary(address(move), movementEid);
-        require(receivedReceiveLib == receiveUln302, "Receive library verification failed");
-        console.log("Receive library verified:", receivedReceiveLib);
+        setLibraries(move, eid, sendUln302, receiveUln302);
 
         // Configure DVNs and executor
         console.log("Configuring DVNs and executor...");
@@ -276,50 +264,58 @@ contract DeployMOVETokenOFT is Script {
         dvnArray[1] = lzDVN;
         dvnArray[2] = p2pDVN;
 
+
+        // TODO: we are currently defaulting library configs to zeroes because of extensive work to be done on wiring DVNs on Movement.
         address[] memory emptyArray = new address[](0);
         UlnConfig memory ulnConfig = UlnConfig({
-            confirmations: uint64(confirmations),
-            requiredDVNCount: uint8(3),
+            confirmations: uint64(0),
+            requiredDVNCount: uint8(0),
             optionalDVNCount: uint8(0),
             optionalDVNThreshold: uint8(0),
-            requiredDVNs: _sortDVNs(dvnArray),
+            requiredDVNs: emptyArray,
             optionalDVNs: emptyArray
         });
         ExecutorConfig memory executorConfig = ExecutorConfig({maxMessageSize: 0, executor: lzExecutor});
 
-        setConfigs(moveTokenProxy, movementEid, sendUln302, receiveUln302, ulnConfig, executorConfig);
+        setLibsConfigs(address(move), eid, sendUln302, receiveUln302, ulnConfig, executorConfig);
         console.log("DVN and executor configuration complete");
 
+        console.log("Setting Enforced Options");
+
+        setEnforcedOptions(move, eid, options);
+
+        console.log("Setting Peer");
+        setPeer(move, eid, oapp);
+
+        console.log("LayerZero configuration complete");
+    }
+
+    function setEnforcedOptions(MOVETokenOFT move, uint32 eid, bytes memory options) internal {
         // Set enforced options
         console.log("Setting enforced options...");
-        bytes memory options = abi.encodePacked(uint176(0x00030100110100000000000000000000000000013880));
-        console.logBytes(options);
         EnforcedOptionParam[] memory enforcedParams = new EnforcedOptionParam[](2);
-        enforcedParams[0] = EnforcedOptionParam({eid: movementEid, msgType: uint16(1), options: options});
-        enforcedParams[1] = EnforcedOptionParam({eid: movementEid, msgType: uint16(2), options: options});
+        enforcedParams[0] = EnforcedOptionParam({eid: eid, msgType: uint16(1), options: options});
+        enforcedParams[1] = EnforcedOptionParam({eid: eid, msgType: uint16(2), options: options});
         move.setEnforcedOptions(enforcedParams);
 
         // Verify enforced options are set for both message types
-        bytes memory verifyOptions1 = move.enforcedOptions(movementEid, uint16(1));
-        bytes memory verifyOptions2 = move.enforcedOptions(movementEid, uint16(2));
+        bytes memory verifyOptions1 = move.enforcedOptions(eid, uint16(1));
+        bytes memory verifyOptions2 = move.enforcedOptions(eid, uint16(2));
         require(keccak256(verifyOptions1) == keccak256(options), "Enforced options verification failed for msgType 1");
         require(keccak256(verifyOptions2) == keccak256(options), "Enforced options verification failed for msgType 2");
         console.log("Enforced options verified for both message types");
 
-        console.log("LayerZero configuration complete");
     }
 
     /**
      * @dev Sets the peer OApp address on the Movement network
      */
-    function setPeer() internal {
-        MOVETokenOFT move = MOVETokenOFT(moveTokenProxy);
-        move.setPeer(movementEid, movementOapp);
-
+    function setPeer(MOVETokenOFT move, uint32 eid, bytes32 oapp) internal {
+        move.setPeer(eid, oapp);
         // Verify peer is set correctly
-        bytes32 verifyPeer = move.peers(movementEid);
-        require(verifyPeer == movementOapp, "Peer verification failed");
-        console.log("Peer verified for Movement EID:", movementEid);
+        bytes32 verifyPeer = move.peers(eid);
+        require(verifyPeer == oapp, "Peer verification failed");
+        console.log("Peer verified for Movement EID:", eid);
     }
 
     /**
@@ -331,7 +327,7 @@ contract DeployMOVETokenOFT is Script {
      * @param ulnConfig ULN configuration with DVN settings
      * @param executorConfig Executor configuration settings
      */
-    function setConfigs(
+    function setLibsConfigs(
         address contractAddress,
         uint32 remoteEid,
         address sendLibraryAddress,
@@ -357,14 +353,24 @@ contract DeployMOVETokenOFT is Script {
 
     /**
      * @dev Sets the send and receive libraries for LayerZero messaging
-     * @param _oapp Address of the OmniApp to configure
+     * @param move Address of the OmniApp to configure
      * @param _eid Endpoint ID to configure for
      * @param _sendLib Address of the send library
      * @param _receiveLib Address of the receive library
      */
-    function setLibraries(address _oapp, uint32 _eid, address _sendLib, address _receiveLib) internal {
-        ILayerZeroEndpointV2(lzEndpoint).setSendLibrary(_oapp, _eid, _sendLib);
-        ILayerZeroEndpointV2(lzEndpoint).setReceiveLibrary(_oapp, _eid, _receiveLib, 0);
+    function setLibraries(MOVETokenOFT move, uint32 _eid, address _sendLib, address _receiveLib) internal {
+        ILayerZeroEndpointV2(lzEndpoint).setSendLibrary(address(move), _eid, _sendLib);
+        ILayerZeroEndpointV2(lzEndpoint).setReceiveLibrary(address(move), _eid, _receiveLib, 0);
+
+         // Verify send library configuration
+        address receivedSendLib = move.endpoint().getSendLibrary(address(move), _eid);
+        require(receivedSendLib == sendUln302, "Send library verification failed");
+        console.log("Send library verified:", receivedSendLib);
+
+        // Verify receive library configuration
+        (address receivedReceiveLib,) = move.endpoint().getReceiveLibrary(address(move), _eid);
+        require(receivedReceiveLib == receiveUln302, "Receive library verification failed");
+        console.log("Receive library verified:", receivedReceiveLib);
     }
 
     function deployTimelock(address proposer, address executor) internal returns (address) {
