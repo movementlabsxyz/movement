@@ -19,7 +19,7 @@ contract MOVETokenHyperliquid is ERC20PermitUpgradeable, OFTUpgradeable {
      * @dev Initializes the contract with initial parameters.
      * @param _delegate The address of the delegate.
      */
-    function initialize(address _delegate) external initializer {
+    function initialize(address _delegate) external virtual initializer {
         __OFT_init("Movement", "MOVE", _delegate);
         __EIP712_init_unchained("Movement", "1");
         __Ownable_init_unchained(_delegate);

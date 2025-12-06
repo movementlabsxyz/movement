@@ -1,0 +1,1 @@
+../../../../../aptos/contracts/worker_peripherals/worker_common/sources/worker_config.move

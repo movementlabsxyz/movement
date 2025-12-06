@@ -8,11 +8,18 @@ importers:
 
   .:
     dependencies:
+      dotenv:
+        specifier: ^17.2.3
+        version: 17.2.3
       pnpm:
         specifier: ^9.4.0
         version: 9.4.0
 
 packages:
+
+  dotenv@17.2.3:
+    resolution: {integrity: sha512-JVUnt+DUIzu87TABbhPmNfVdBDt18BLOWjMUFJMSi/Qqg7NTYtabbvSNJGOJ7afbRuv9D/lngizHtP7QyLQ+9w==}
+    engines: {node: '>=12'}
 
   pnpm@9.4.0:
     resolution: {integrity: sha512-9Um4pSydK4U2di+ZwHIiBe/Fr5E+d4NdvMw7CwssqefcgCK3gGLBcpHEjoh0nHDOiOtadPH6jEv14Yu0bIvYOg==}
@@ -20,5 +27,7 @@ packages:
     hasBin: true
 
 snapshots:
+
+  dotenv@17.2.3: {}
 
   pnpm@9.4.0: {}

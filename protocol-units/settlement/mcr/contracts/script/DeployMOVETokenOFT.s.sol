@@ -72,6 +72,7 @@ contract DeployMOVETokenOFT is Script {
     uint32 public movementEid = 30325;
     uint32 public hyperevmEid = 30367;
     uint32 public ethereumEid = 30101;
+    uint32 public baseEid = 30184;
     uint64 public confirmations = 0;
     bytes32 public movementOapp = 0x7e4fd97ef92302eea9b10f74be1d96fb1f1511cf7ed28867b0144ca89c6ebc3c;
 
