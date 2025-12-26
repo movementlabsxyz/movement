@@ -80,21 +80,23 @@ pub struct Howzit {
 	pub rest_client: Client,
 	faucet_client_url: Url,
 	pub faucet_client: FaucetClient,
+	/// Only required if using on a live network
 	pub faucet_auth_token: String,
 }
 
 impl Clone for Howzit {
 	fn clone(&self) -> Self {
+		let mut faucet_client = FaucetClient::new_from_rest_client(
+			self.faucet_client_url.clone(),
+			self.rest_client.clone(),
+		);
+		faucet_client = faucet_client.with_auth_token(self.faucet_auth_token.clone());
 		Howzit {
 			howzit_package_path: self.howzit_package_path.clone(),
 			wallet: self.wallet.clone(),
 			rest_client: self.rest_client.clone(),
 			faucet_client_url: self.faucet_client_url.clone(),
-			faucet_client: FaucetClient::new_from_rest_client(
-				self.faucet_client_url.clone(),
-				self.rest_client.clone(),
-			)
-			.with_auth_token(self.faucet_auth_token.clone()),
+			faucet_client,
 			faucet_auth_token: self.faucet_auth_token.clone(),
 		}
 	}
@@ -104,19 +106,20 @@ impl Howzit {
 	/// Generates a new Howzit instance with a random wallet
 	pub fn generate(
 		howzit_package_path: PathBuf,
-		rest_client: Client,
+		node_url: Url,
 		faucet_client_url: Url,
-		faucet_auth_token: String,
+		token: String,
 	) -> Self {
 		let wallet = LocalAccount::generate(&mut rand::rngs::OsRng);
+		let mut faucet_client = FaucetClient::new(faucet_client_url.clone(), node_url.clone());
+		faucet_client = faucet_client.with_auth_token(token.clone());
 		Howzit {
 			howzit_package_path,
 			wallet: Arc::new(RwLock::new(wallet)),
-			rest_client: rest_client.clone(),
-			faucet_client_url: faucet_client_url.clone(),
-			faucet_client: FaucetClient::new_from_rest_client(faucet_client_url, rest_client)
-				.with_auth_token(faucet_auth_token.clone()),
-			faucet_auth_token,
+			rest_client: Client::new(node_url.clone()),
+			faucet_client_url,
+			faucet_client,
+			faucet_auth_token: token,
 		}
 	}
 
@@ -220,7 +223,8 @@ impl Howzit {
 		tracing::info!("Funding Alice");
 		let start_time = chrono::Utc::now();
 		match self.faucet_client.fund(alice.address(), 10_000_000_000).await {
-			Ok(_) => {
+			Ok(v) => {
+				tracing::info!("Successfully created Alice account: {:?}", v);
 				let end_time = chrono::Utc::now();
 				let mut results = results.write().await;
 				results.push((
@@ -249,7 +253,8 @@ impl Howzit {
 		tracing::info!("Funding Bob");
 		let start_time = chrono::Utc::now();
 		match self.faucet_client.fund(bob.address(), 10_000_000_000).await {
-			Ok(_) => {
+			Ok(v) => {
+				tracing::info!("Successfully created Bob account: {:?}", v);
 				let end_time = chrono::Utc::now();
 				let mut results = results.write().await;
 				results.push((
