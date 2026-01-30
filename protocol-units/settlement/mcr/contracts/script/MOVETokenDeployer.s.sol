@@ -84,9 +84,11 @@ contract MOVETokenDeployer is Helper {
         assert(deployment.movementLabsSafe != address(0));
 
         // bridge address
-        address[2] memory burn = [0xf1dF43A3053cd18E477233B59a25fC483C2cBe0f, 0x3073f7aAA4DB83f95e9FFf17424F71D4751a3073];
+        address[] memory burn = new address[](2);
+        burn[0] = 0xf1dF43A3053cd18E477233B59a25fC483C2cBe0f;
+        burn[1] = 0x3073f7aAA4DB83f95e9FFf17424F71D4751a3073;
         // Prepare the data for the upgrade
-        bytes upgradeCalldata = abi.encodeWithSignature(
+        bytes memory upgradeCalldata = abi.encodeWithSignature(
                 "upgradeAndCall(address,address,bytes)",
                 address(deployment.move),
                 address(newMoveImplementation),

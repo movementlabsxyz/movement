@@ -227,6 +227,8 @@ contract MOVETokenV2Test is Test {
      * @param other Random address to test role assignment
      */
     function testAdminRoleFuzz(address other) public {
+        vm.assume(other != oldFoundation);
+        vm.assume(other != address(0));
         assertEq(move.hasRole(DEFAULT_ADMIN_ROLE, other), false);
 
         vm.expectRevert(
@@ -264,8 +266,9 @@ contract MOVETokenV2Test is Test {
         assertEq(move.hasRole(DEFAULT_ADMIN_ROLE, labs), false);
 
         // Define deprecated addresses whose balances will be burned during upgrade
-        address[] memory deprecated = new address[](1);
+        address[] memory deprecated = new address[](2);
         deprecated[0] = bridge;
+        deprecated[1] = address(moveProxy); // Token address
 
         bytes memory initializeData =
             abi.encodeWithSignature("initialize(address,address,address[])", labs, oldFoundation, deprecated);
@@ -276,6 +279,8 @@ contract MOVETokenV2Test is Test {
             address(moveTokenImplementation2),
             initializeData
         );
+
+        console.logBytes(upgradeData);
 
         vm.prank(labs);
         timelock.schedule(address(admin), 0, upgradeData, bytes32(0), bytes32(0), minDelay);
@@ -297,8 +302,9 @@ contract MOVETokenV2Test is Test {
      */
     function testUpgradeFromTimelock() public {
         // Define deprecated addresses whose balances will be burned during upgrade
-        address[] memory deprecated = new address[](1);
+        address[] memory deprecated = new address[](2);
         deprecated[0] = bridge;
+        deprecated[1] = address(moveProxy); // Token address
 
         bytes memory initializeData =
             abi.encodeWithSignature("initialize(address,address,address[])", labs, oldFoundation, deprecated);
@@ -320,13 +326,14 @@ contract MOVETokenV2Test is Test {
         vm.warp(block.timestamp + minDelay + 1);
 
         uint256 bridgeBalance = move.balanceOf(bridge);
+        uint256 proxyBalance = move.balanceOf(address(moveProxy));
 
         vm.prank(foundation);
         timelock.execute(address(admin), 0, upgradeData, bytes32(0), bytes32(0));
 
         // Verify V1 token state after upgrade with old interface
         assertEq(move.decimals(), MOVE_DECIMALS);
-        assertEq(move.totalSupply(), TOTAL_SUPPLY - bridgeBalance);
+        assertEq(move.totalSupply(), TOTAL_SUPPLY - (bridgeBalance + proxyBalance));
         assertEq(move.balanceOf(bridge), 0);
         assertEq(move.hasRole(DEFAULT_ADMIN_ROLE, oldFoundation), false);
         assertEq(move.hasRole(DEFAULT_ADMIN_ROLE, foundation), false);
@@ -335,7 +342,7 @@ contract MOVETokenV2Test is Test {
 
         // Verify V2 token state after upgrade
         assertEq(move2.decimals(), 8);
-        assertEq(move2.totalSupply(), 10000000000 * 10 ** 8 - bridgeBalance);
+        assertEq(move2.totalSupply(), 10000000000 * 10 ** 8 - (bridgeBalance + proxyBalance));
         assertEq(move2.balanceOf(bridge), 0);
         assertEq(move2.hasRole(DEFAULT_ADMIN_ROLE, oldFoundation), false);
         assertEq(move2.hasRole(DEFAULT_ADMIN_ROLE, foundation), false);
@@ -364,8 +371,9 @@ contract MOVETokenV2Test is Test {
      *      including labs, oldFoundation, foundation, and proxy admin
      */
     function testCannotReinitialize2() public {
-        address[] memory deprecated = new address[](1);
+        address[] memory deprecated = new address[](2);
         deprecated[0] = bridge;
+        deprecated[1] = address(moveProxy); // Token address
 
         bytes memory initializeData =
             abi.encodeWithSignature("initialize(address,address,address[])", labs, oldFoundation, deprecated);
@@ -414,6 +422,9 @@ contract MOVETokenV2Test is Test {
      */
     function testAdminRole2Fuzz(address other) public {
         testUpgradeFromTimelock();
+        vm.assume(other != address(admin));
+        vm.assume(other != labs);
+        vm.assume(other != address(0));
         assertEq(move2.hasRole(DEFAULT_ADMIN_ROLE, other), false);
 
         vm.prank(other);
@@ -463,6 +474,7 @@ contract MOVETokenV2Test is Test {
     function testDeprecatedBridge() public {
         testSend();
         assertEq(move2.balanceOf(bridge), 0);
+        assertEq(move2.balanceOf(address(moveProxy)), 0);
 
         uint256 amount = 1 * 10 ** MOVE_DECIMALS;
         vm.prank(anchorage);
