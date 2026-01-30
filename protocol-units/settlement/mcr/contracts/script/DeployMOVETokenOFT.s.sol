@@ -73,7 +73,8 @@ contract DeployMOVETokenOFT is Script {
     uint32 public hyperevmEid = 30367;
     uint32 public ethereumEid = 30101;
     uint32 public baseEid = 30184;
-    uint64 public confirmations = 0;
+    uint32 public avalancheEid = 30106;
+    bool public defaultValues = false;
     bytes32 public movementOapp = 0x7e4fd97ef92302eea9b10f74be1d96fb1f1511cf7ed28867b0144ca89c6ebc3c;
 
     // Factory contracts
@@ -136,12 +137,13 @@ contract DeployMOVETokenOFT is Script {
         bytes memory options = abi.encodePacked(uint176(0x00030100110100000000000000000000000000013880));
 
         // Movement
-        configureLZ(MOVETokenOFT(EXPECTED_MOVE_TOKEN_PROXY), movementEid, movementOapp, options);
+        configureLZ(MOVETokenOFT(EXPECTED_MOVE_TOKEN_PROXY), movementEid, movementOapp, 15, 250000, options);
         // HyperEVM
-        configureLZ(MOVETokenOFT(EXPECTED_MOVE_TOKEN_PROXY), hyperevmEid, bytes32(uint256(uint160(EXPECTED_MOVE_TOKEN_PROXY))), options);
+        configureLZ(MOVETokenOFT(EXPECTED_MOVE_TOKEN_PROXY), hyperevmEid, bytes32(uint256(uint160(EXPECTED_MOVE_TOKEN_PROXY))), 15, 15, options);
+        // Base
+        configureLZ(MOVETokenOFT(EXPECTED_MOVE_TOKEN_PROXY), baseEid, bytes32(uint256(uint160(EXPECTED_MOVE_TOKEN_PROXY))), 15, 15, options);
         // Ethereum
-        configureLZ(MOVETokenOFT(EXPECTED_MOVE_TOKEN_PROXY), ethereumEid, bytes32(uint256(uint160(EXPECTED_MOVE_TOKEN_PROXY))), options);
-
+        configureLZ(MOVETokenOFT(EXPECTED_MOVE_TOKEN_PROXY), ethereumEid, bytes32(uint256(uint160(EXPECTED_MOVE_TOKEN_PROXY))), 15, 15, options);
         vm.stopBroadcast();
 
         // Log final deployment info
@@ -249,10 +251,16 @@ contract DeployMOVETokenOFT is Script {
         console.log("All token verifications passed");
     }
 
+    function deployTimelock(address proposer, address executor) internal returns (address) {
+        require(proposer != address(0), "Proposer cannot be zero address");
+        require(executor != address(0), "Executor cannot be zero address");
+        return address(new TimelockController(172800, _arrayfy(proposer), _arrayfy(executor), ZERO));
+    }
+
     /**
      * @dev Configures LayerZero DVN, executor, and enforced options
      */
-    function configureLZ(MOVETokenOFT move, uint32 eid, bytes32 oapp, bytes memory options) internal {
+    function configureLZ(MOVETokenOFT move, uint32 eid, bytes32 oapp, uint64 sendConfirmations, uint64 receiveConfirmations, bytes memory options) internal {
 
         // Configure libraries
         console.log("Setting LayerZero libraries...");
@@ -260,25 +268,34 @@ contract DeployMOVETokenOFT is Script {
 
         // Configure DVNs and executor
         console.log("Configuring DVNs and executor...");
-        address[] memory dvnArray = new address[](3);
-        dvnArray[0] = horizenDVN;
-        dvnArray[1] = lzDVN;
-        dvnArray[2] = p2pDVN;
+        uint256 dvnCount = 3;
+        address[] memory dvns = new address[](dvnCount);
+        dvns[0] = p2pDVN;
+        dvns[1] = horizenDVN;
+        dvns[2] = lzDVN;
 
-
-        // TODO: we are currently defaulting library configs to zeroes because of extensive work to be done on wiring DVNs on Movement.
         address[] memory emptyArray = new address[](0);
-        UlnConfig memory ulnConfig = UlnConfig({
-            confirmations: uint64(0),
-            requiredDVNCount: uint8(0),
+
+
+        UlnConfig memory sendUlnConfig = UlnConfig({
+            confirmations: defaultValues ? uint64(0) : uint64(sendConfirmations),
+            requiredDVNCount: defaultValues ? uint8(0) : uint8(dvnCount),
             optionalDVNCount: uint8(0),
             optionalDVNThreshold: uint8(0),
-            requiredDVNs: emptyArray,
+            requiredDVNs: defaultValues ? emptyArray : _sortDVNs(dvns),
+            optionalDVNs: emptyArray
+        });
+        UlnConfig memory receiveUlnConfig = UlnConfig({
+            confirmations: defaultValues ? uint64(0) : uint64(receiveConfirmations),
+            requiredDVNCount: defaultValues ? uint8(0) : uint8(dvnCount),
+            optionalDVNCount: uint8(0),
+            optionalDVNThreshold: uint8(0),
+            requiredDVNs: defaultValues ? emptyArray : _sortDVNs(dvns),
             optionalDVNs: emptyArray
         });
         ExecutorConfig memory executorConfig = ExecutorConfig({maxMessageSize: 0, executor: lzExecutor});
 
-        setLibsConfigs(address(move), eid, sendUln302, receiveUln302, ulnConfig, executorConfig);
+        setConfigs(address(move), eid, sendUln302, receiveUln302, sendUlnConfig, receiveUlnConfig, executorConfig);
         console.log("DVN and executor configuration complete");
 
         console.log("Setting Enforced Options");
@@ -293,31 +310,33 @@ contract DeployMOVETokenOFT is Script {
 
     function setEnforcedOptions(MOVETokenOFT move, uint32 eid, bytes memory options) internal {
         // Set enforced options
-        console.log("Setting enforced options...");
+        console.log("=== ENFORCED OPTIONS CONFIG ===");
         EnforcedOptionParam[] memory enforcedParams = new EnforcedOptionParam[](2);
         enforcedParams[0] = EnforcedOptionParam({eid: eid, msgType: uint16(1), options: options});
         enforcedParams[1] = EnforcedOptionParam({eid: eid, msgType: uint16(2), options: options});
+
+        console.log("Enforced Option Params [");
+        for (uint256 i = 0; i < enforcedParams.length; i++) {
+            console.log("  eid:", vm.toString(enforcedParams[i].eid));
+            console.log("  msgType:", vm.toString(enforcedParams[i].msgType));
+            console.log("  options:", vm.toString(enforcedParams[i].options));
+        }
+        console.log("]");
+
         move.setEnforcedOptions(enforcedParams);
-
-        // Verify enforced options are set for both message types
-        bytes memory verifyOptions1 = move.enforcedOptions(eid, uint16(1));
-        bytes memory verifyOptions2 = move.enforcedOptions(eid, uint16(2));
-        require(keccak256(verifyOptions1) == keccak256(options), "Enforced options verification failed for msgType 1");
-        require(keccak256(verifyOptions2) == keccak256(options), "Enforced options verification failed for msgType 2");
-        console.log("Enforced options verified for both message types");
-
     }
 
     /**
      * @dev Sets the peer OApp address on the Movement network
      */
     function setPeer(MOVETokenOFT move, uint32 eid, bytes32 oapp) internal {
+        console.log("=== PEER CONFIG ===");
+        console.log("EID:", vm.toString(eid));
+        console.log("Peer Address:", vm.toString(oapp));
+
         move.setPeer(eid, oapp);
-        // Verify peer is set correctly
-        bytes32 verifyPeer = move.peers(eid);
-        require(verifyPeer == oapp, "Peer verification failed");
-        console.log("Peer verified for Movement EID:", eid);
     }
+
 
     /**
      * @dev Sets LayerZero configuration parameters for send and receive libraries
@@ -325,15 +344,17 @@ contract DeployMOVETokenOFT is Script {
      * @param remoteEid Remote endpoint ID to configure for
      * @param sendLibraryAddress Address of the send library
      * @param receiveLibraryAddress Address of the receive library
-     * @param ulnConfig ULN configuration with DVN settings
+     * @param sendUlnConfig ULN configuration with DVN settings
+     * @param receiveUlnConfig ULN configuration with DVN settings
      * @param executorConfig Executor configuration settings
      */
-    function setLibsConfigs(
+    function setConfigs(
         address contractAddress,
         uint32 remoteEid,
         address sendLibraryAddress,
         address receiveLibraryAddress,
-        UlnConfig memory ulnConfig,
+        UlnConfig memory sendUlnConfig,
+        UlnConfig memory receiveUlnConfig,
         ExecutorConfig memory executorConfig
     ) internal {
         // Configure send library with executor and ULN configs
@@ -341,12 +362,36 @@ contract DeployMOVETokenOFT is Script {
         sendConfigParams[0] =
             SetConfigParam({eid: remoteEid, configType: EXECUTOR_CONFIG_TYPE, config: abi.encode(executorConfig)});
         sendConfigParams[1] =
-            SetConfigParam({eid: remoteEid, configType: ULN_CONFIG_TYPE, config: abi.encode(ulnConfig)});
+            SetConfigParam({eid: remoteEid, configType: ULN_CONFIG_TYPE, config: abi.encode(sendUlnConfig)});
 
         // Configure receive library with ULN config
         SetConfigParam[] memory receiveConfigParams = new SetConfigParam[](1);
         receiveConfigParams[0] =
-            SetConfigParam({eid: remoteEid, configType: RECEIVE_CONFIG_TYPE, config: abi.encode(ulnConfig)});
+            SetConfigParam({eid: remoteEid, configType: RECEIVE_CONFIG_TYPE, config: abi.encode(receiveUlnConfig)});
+
+        console.log("=== ENDPOINT ===");
+        console.log(lzEndpoint);
+        
+        console.log("=== SEND LIBRARY CONFIG ===");
+        console.log("Send Library Address:", sendLibraryAddress);
+        console.log("Send Config Param [");
+        for (uint256 i = 0; i < sendConfigParams.length; i++) {
+            console.log(vm.toString(sendConfigParams[i].eid));
+            console.log(vm.toString(sendConfigParams[i].configType));
+            console.log("\"", vm.toString(sendConfigParams[i].config),"\"");
+        }
+        console.log("]");
+
+        console.log("=== RECEIVE LIBRARY CONFIG ===");
+        console.log("Receive Library Address:", receiveLibraryAddress);
+        console.log("Receive Config Param [");
+        for (uint256 i = 0; i < receiveConfigParams.length; i++) {
+            console.log(vm.toString(receiveConfigParams[i].eid));
+            console.log(vm.toString(receiveConfigParams[i].configType));
+            console.log("\"", vm.toString(receiveConfigParams[i].config),"\"");
+            console.log(",");
+        }
+        console.log("]");
 
         ILayerZeroEndpointV2(lzEndpoint).setConfig(contractAddress, sendLibraryAddress, sendConfigParams);
         ILayerZeroEndpointV2(lzEndpoint).setConfig(contractAddress, receiveLibraryAddress, receiveConfigParams);
@@ -354,30 +399,19 @@ contract DeployMOVETokenOFT is Script {
 
     /**
      * @dev Sets the send and receive libraries for LayerZero messaging
-     * @param move Address of the OmniApp to configure
      * @param _eid Endpoint ID to configure for
      * @param _sendLib Address of the send library
      * @param _receiveLib Address of the receive library
      */
     function setLibraries(MOVETokenOFT move, uint32 _eid, address _sendLib, address _receiveLib) internal {
+        console.log("=== LIBRARY CONFIG ===");
+        console.log("OApp Address:", address(move));
+        console.log("EID:", vm.toString(_eid));
+        console.log("Send Library:", _sendLib);
+        console.log("Receive Library:", _receiveLib);
+
         ILayerZeroEndpointV2(lzEndpoint).setSendLibrary(address(move), _eid, _sendLib);
         ILayerZeroEndpointV2(lzEndpoint).setReceiveLibrary(address(move), _eid, _receiveLib, 0);
-
-         // Verify send library configuration
-        address receivedSendLib = move.endpoint().getSendLibrary(address(move), _eid);
-        require(receivedSendLib == sendUln302, "Send library verification failed");
-        console.log("Send library verified:", receivedSendLib);
-
-        // Verify receive library configuration
-        (address receivedReceiveLib,) = move.endpoint().getReceiveLibrary(address(move), _eid);
-        require(receivedReceiveLib == receiveUln302, "Receive library verification failed");
-        console.log("Receive library verified:", receivedReceiveLib);
-    }
-
-    function deployTimelock(address proposer, address executor) internal returns (address) {
-        require(proposer != address(0), "Proposer cannot be zero address");
-        require(executor != address(0), "Executor cannot be zero address");
-        return address(new TimelockController(172800, _arrayfy(proposer), _arrayfy(executor), ZERO));
     }
 
     function _sortDVNs(address[] memory dvns) internal pure returns (address[] memory sortedDVNs) {

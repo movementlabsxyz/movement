@@ -21,16 +21,16 @@ contract MOVETokenV2 is MOVEToken, OFTUpgradeable, PausableUpgradeable {
 
     /**
      * @dev Initializes the contract with initial parameters.
-     * @param _delegate The address of the delegate.
+     * @param _owner The address of the owner.
      * @param _revoke The address of the address to revoke role.
      * @param _burned Burns circulation supply on Ethereum.
      */
-    function initialize(address _delegate, address _revoke, address[] calldata _burned) external reinitializer(2) {
-        __OFTCore_init(_delegate);
-        __Ownable_init_unchained(_delegate);
-        _grantRole(DEFAULT_ADMIN_ROLE, _delegate);
-        _grantRole(PAUSER_ROLE, _delegate);
-        _grantRole(UNPAUSER_ROLE, _delegate);
+    function initialize(address _owner, address _revoke, address[] calldata _burned) external reinitializer(2) {
+        __OFTCore_init(_owner);
+        __Ownable_init_unchained(_owner);
+        _grantRole(DEFAULT_ADMIN_ROLE, _owner);
+        _grantRole(PAUSER_ROLE, _owner);
+        _grantRole(UNPAUSER_ROLE, _owner);
         _revokeRole(DEFAULT_ADMIN_ROLE, _revoke);
         for (uint256 i = 0; i < _burned.length; i++) {
             _burn(_burned[i], balanceOf(_burned[i]));

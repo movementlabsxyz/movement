@@ -73,6 +73,8 @@ contract SetOFTConfigs is Script {
     uint32 public hyperevmEid = 30367;
     uint32 public ethereumEid = 30101;
     uint32 public baseEid = 30184;
+    uint32 public avalancheEid = 30106;
+
     bool public defaultValues = false;
     bytes32 public movementOapp = 0x7e4fd97ef92302eea9b10f74be1d96fb1f1511cf7ed28867b0144ca89c6ebc3c;
 
@@ -124,13 +126,15 @@ contract SetOFTConfigs is Script {
         bytes memory options = abi.encodePacked(uint176(0x00030100110100000000000000000000000000013880));
         bytes32 evmAddress = bytes32(uint256(uint160(EXPECTED_MOVE_TOKEN_PROXY)));
         // Movement
-        // configureLZ(MOVETokenOFT(EXPECTED_MOVE_TOKEN_PROXY), movementEid, movementOapp, options);
+        // configureLZ(MOVETokenOFT(EXPECTED_MOVE_TOKEN_PROXY), movementEid, movementOapp, 10, 250000, options);
+        // Avalanche
+        configureLZ(MOVETokenOFT(EXPECTED_MOVE_TOKEN_PROXY), avalancheEid, evmAddress, 15, 15, options);
         // HyperEVM
         // configureLZ(MOVETokenOFT(EXPECTED_MOVE_TOKEN_PROXY), hyperevmEid, evmAddress, options);
         // Base
-        configureLZ(MOVETokenOFT(EXPECTED_MOVE_TOKEN_PROXY), baseEid, evmAddress, 10, 10, options);
+        // configureLZ(MOVETokenOFT(EXPECTED_MOVE_TOKEN_PROXY), baseEid, evmAddress, 10, 10, options);
         // Ethereum
-        configureLZ(MOVETokenOFT(EXPECTED_MOVE_TOKEN_PROXY), ethereumEid, evmAddress, 10, 15, options);
+        // configureLZ(MOVETokenOFT(EXPECTED_MOVE_TOKEN_PROXY), ethereumEid, evmAddress, 10, 15, options);
 
         vm.stopBroadcast();
     }
@@ -248,6 +252,9 @@ contract SetOFTConfigs is Script {
         SetConfigParam[] memory receiveConfigParams = new SetConfigParam[](1);
         receiveConfigParams[0] =
             SetConfigParam({eid: remoteEid, configType: RECEIVE_CONFIG_TYPE, config: abi.encode(receiveUlnConfig)});
+
+        console.log("=== ENDPOINT ===");
+        console.log(lzEndpoint);
         
         console.log("=== SEND LIBRARY CONFIG ===");
         console.log("Send Library Address:", sendLibraryAddress);

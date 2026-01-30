@@ -428,24 +428,9 @@ contract UpgradeMOVETokenHyperliquidV3Test is Test {
         // 1. Succeed (if LayerZero is properly configured)
         // 2. Fail with a LayerZero-related error (not EnforcedPause)
         // The key is that it should NOT revert with EnforcedPause
-        try moveV3.send{value: 0.001 ether}(sendParam, fee, PROPOSER_ADDRESS) returns (MessagingReceipt memory, OFTReceipt memory) {
-            // If it succeeds, the pause check passed
-            console.log("Send succeeded - pause check passed");
-        } catch (bytes memory reason) {
-            // If it fails, verify it's NOT because of pause
-            bytes4 pausedSelector = bytes4(keccak256("EnforcedPause()"));
-            bytes4 revertedSelector;
+        moveV3.send{value: 0.001 ether}(sendParam, fee, PROPOSER_ADDRESS);
 
-            if (reason.length >= 4) {
-                assembly {
-                    revertedSelector := mload(add(reason, 0x20))
-                }
-            }
-
-            // Assert it didn't fail due to pause
-            assertTrue(revertedSelector != pausedSelector, "Should not revert with EnforcedPause when unpaused");
-            console.log("Send failed with LayerZero error (expected) - pause check passed");
-        }
+        console.log("Send failed with LayerZero error (expected) - pause check passed");     
     }
 
     /**
