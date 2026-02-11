@@ -126,15 +126,15 @@ contract SetOFTConfigs is Script {
         bytes memory options = abi.encodePacked(uint176(0x00030100110100000000000000000000000000013880));
         bytes32 evmAddress = bytes32(uint256(uint160(EXPECTED_MOVE_TOKEN_PROXY)));
         // Movement
-        // configureLZ(MOVETokenOFT(EXPECTED_MOVE_TOKEN_PROXY), movementEid, movementOapp, 10, 250000, options);
+        // configureLZ(MOVETokenOFT(EXPECTED_MOVE_TOKEN_PROXY), movementEid, movementOapp, 15, 250000, options);
         // Avalanche
-        configureLZ(MOVETokenOFT(EXPECTED_MOVE_TOKEN_PROXY), avalancheEid, evmAddress, 15, 15, options);
+        // configureLZ(MOVETokenOFT(EXPECTED_MOVE_TOKEN_PROXY), avalancheEid, evmAddress, 15, 15, options);
         // HyperEVM
-        // configureLZ(MOVETokenOFT(EXPECTED_MOVE_TOKEN_PROXY), hyperevmEid, evmAddress, options);
+        // configureLZ(MOVETokenOFT(EXPECTED_MOVE_TOKEN_PROXY), hyperevmEid, evmAddress, 15, 15, options);
         // Base
-        // configureLZ(MOVETokenOFT(EXPECTED_MOVE_TOKEN_PROXY), baseEid, evmAddress, 10, 10, options);
+        // configureLZ(MOVETokenOFT(EXPECTED_MOVE_TOKEN_PROXY), baseEid, evmAddress, 15, 15, options);
         // Ethereum
-        // configureLZ(MOVETokenOFT(EXPECTED_MOVE_TOKEN_PROXY), ethereumEid, evmAddress, 10, 15, options);
+        configureLZ(MOVETokenOFT(EXPECTED_MOVE_TOKEN_PROXY), ethereumEid, evmAddress, 15, 15, options);
 
         vm.stopBroadcast();
     }

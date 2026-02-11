@@ -201,8 +201,9 @@ contract MOVETokenV2Test is Test {
      *      and initializing proxy instances for both MOVEToken and MOVETokenV2
      */
     function setUp() public {
-        moveTokenImplementation2 = new MOVETokenV2(address(endpoint));
-
+        // TODO: comment out after deployment for testing
+        // moveTokenImplementation2 = new MOVETokenV2(address(endpoint));
+        moveTokenImplementation2 = MOVETokenV2(0x2e2Bc0e2920578E0d46d1f83787b01f1d8094695);
         move = MOVEToken(address(moveProxy));
         move2 = MOVETokenV2(address(moveProxy));
     }
@@ -282,11 +283,12 @@ contract MOVETokenV2Test is Test {
 
         console.logBytes(upgradeData);
 
-        vm.prank(labs);
-        timelock.schedule(address(admin), 0, upgradeData, bytes32(0), bytes32(0), minDelay);
+        // TODO: Once transaction is scheduled comment out timelock.schedule and RERUN TEST to verify that all arguments are correct
+        // vm.prank(labs);
+        // timelock.schedule(address(admin), 0, upgradeData, bytes32(0), bytes32(0), minDelay);
 
         // While upgrade is scheduled, labs pauses the existing bridge to prevent new transactions
-        vm.startPrank(labs);
+        vm.prank(labs);
         OFTAdapter(payable(bridge)).setPeer(30325, 0x0);
     }
 
@@ -316,7 +318,6 @@ contract MOVETokenV2Test is Test {
             initializeData
         );
 
-        // TODO: Once transaction is scheduled comment out testScheduleAndSetPeer and RERUN TEST to verify that all arguments are correct
         testScheduleAndSetPeer();
 
         // Verify that upgrade cannot be executed before timelock delay
@@ -329,7 +330,8 @@ contract MOVETokenV2Test is Test {
         uint256 proxyBalance = move.balanceOf(address(moveProxy));
 
         vm.prank(foundation);
-        timelock.execute(address(admin), 0, upgradeData, bytes32(0), bytes32(0));
+        // timelock.execute(address(admin), 0, upgradeData, bytes32(0), bytes32(0));
+        TimelockController(payable(0x25a5A3FA61cba5Fd5fb1D75D0AcfEB81370778Eb)).execute(0x8365AA031806A1ac2b31a5d3b8323020FC85DfEc, 0, hex"9623609d0000000000000000000000003073f7aaa4db83f95e9fff17424f71d4751a30730000000000000000000000002e2bc0e2920578e0d46d1f83787b01f1d8094695000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000c477a24f36000000000000000000000000d7e22951de7af453aac5400d6e072e3b63beb7e2000000000000000000000000074c155f09ce5fc3b65b4a9bbb01739459c7ad6300000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000002000000000000000000000000f1df43a3053cd18e477233b59a25fc483c2cbe0f0000000000000000000000003073f7aaa4db83f95e9fff17424f71d4751a307300000000000000000000000000000000000000000000000000000000", 0x0000000000000000000000000000000000000000000000000000000000000000, 0x0000000000000000000000000000000000000000000000000000000000000000);
 
         // Verify V1 token state after upgrade with old interface
         assertEq(move.decimals(), MOVE_DECIMALS);
