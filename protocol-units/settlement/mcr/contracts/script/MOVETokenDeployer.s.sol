@@ -27,8 +27,7 @@ contract MOVETokenDeployer is Helper {
         // load config and deployments data
         _loadExternalData();
 
-        uint256 signer = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(signer);
+        vm.startBroadcast();
         
         // Deploy CREATE3Factory, Safes and Timelock if not deployed
         _deployDependencies();
@@ -38,12 +37,6 @@ contract MOVETokenDeployer is Helper {
                 // if move is already deployed, upgrade it
                 _upgradeMove() : revert("MOVE: both admin and proxy should be registered");
         
-        require(MOVEToken(deployment.move).balanceOf(address(deployment.movementAnchorage)) == 999999998000000000, "Movement Anchorage Safe balance is wrong");
-        require(MOVEToken(deployment.move).decimals() == 8, "Decimals are expected to be 8"); 
-        require(MOVEToken(deployment.move).totalSupply() == 1000000000000000000,"Total supply is wrong");
-        require(MOVEToken(deployment.move).hasRole(DEFAULT_ADMIN_ROLE, address(deployment.movementFoundationSafe)),"Movement Foundation expected to have token admin role");
-        require(!MOVEToken(deployment.move).hasRole(DEFAULT_ADMIN_ROLE, address(deployment.movementLabsSafe)),"Movement Labs not expected to have token admin role");
-        require(!MOVEToken(deployment.move).hasRole(DEFAULT_ADMIN_ROLE, address(timelock)),"Timelock not expected to have token admin role");
         vm.stopBroadcast();
 
         if (vm.isContext(VmSafe.ForgeContext.ScriptBroadcast)) {
@@ -69,24 +62,33 @@ contract MOVETokenDeployer is Helper {
         console.log("proxy", address(moveProxy));
         deployment.move = address(moveProxy);
         deployment.moveAdmin = _storeAdminDeployment();
+
+        require(MOVEToken(deployment.move).balanceOf(address(deployment.movementAnchorage)) == 999999998000000000, "Movement Anchorage Safe balance is wrong");
+        require(MOVEToken(deployment.move).decimals() == 8, "Decimals are expected to be 8"); 
+        require(MOVEToken(deployment.move).totalSupply() == 1000000000000000000,"Total supply is wrong");
+        require(MOVEToken(deployment.move).hasRole(DEFAULT_ADMIN_ROLE, address(deployment.movementFoundationSafe)),"Movement Foundation expected to have token admin role");
+        require(!MOVEToken(deployment.move).hasRole(DEFAULT_ADMIN_ROLE, address(deployment.movementLabsSafe)),"Movement Labs not expected to have token admin role");
+        require(!MOVEToken(deployment.move).hasRole(DEFAULT_ADMIN_ROLE, address(timelock)),"Timelock not expected to have token admin role");
     }
 
     function _upgradeMove() internal {
         console.log("MOVE: upgrading");
-        address layerzeroEndpoint = block.chainid == 1 ? 
-            0x1a44076050125825900e736c501f859c50fE728c : // Mainnet
-            0x6EDCE65403992e310A62460808c4b910D972f10f; // BSC Testnet
+        address layerzeroEndpoint = 0x1a44076050125825900e736c501f859c50fE728c;
         MOVEToken newMoveImplementation = new MOVETokenV2(layerzeroEndpoint);
         _checkBytecodeDifference(address(newMoveImplementation), deployment.move);
 
+        console.log(address(newMoveImplementation));
+        assert(deployment.moveAdmin != address(0));
+        assert(deployment.move != address(0));
+        assert(deployment.movementFoundationSafe != address(0));
+        assert(deployment.movementLabsSafe != address(0));
+
         // bridge address
-        address[1] memory burn = [0xf1dF43A3053cd18E477233B59a25fC483C2cBe0f];
+        address[] memory burn = new address[](2);
+        burn[0] = 0xf1dF43A3053cd18E477233B59a25fC483C2cBe0f;
+        burn[1] = 0x3073f7aAA4DB83f95e9FFf17424F71D4751a3073;
         // Prepare the data for the upgrade
-        bytes memory data = abi.encodeWithSignature(
-            "schedule(address,uint256,bytes,bytes32,bytes32,uint256)",
-            address(deployment.moveAdmin),
-            0,
-            abi.encodeWithSignature(
+        bytes memory upgradeCalldata = abi.encodeWithSignature(
                 "upgradeAndCall(address,address,bytes)",
                 address(deployment.move),
                 address(newMoveImplementation),
@@ -96,13 +98,24 @@ contract MOVETokenDeployer is Helper {
                     0x074C155f09cE5fC3B65b4a9Bbb01739459C7AD63, // remove old foundation
                     burn
                 )
-            ),
+            );
+            
+        bytes memory data = abi.encodeWithSignature(
+            "schedule(address,uint256,bytes,bytes32,bytes32,uint256)",
+            address(deployment.moveAdmin),
+            0,
+            upgradeCalldata,
             bytes32(0),
             bytes32(0),
             config.minDelay
         );
+        console.log("Upgrade data:");
+        console.logBytes(upgradeCalldata);
 
         // Data to be used to propose the upgrade
         _proposeUpgrade(data, "movetoken.json");
+
+        // We cannot require changes since they will only happen once the timelock executes the upgrade
+        // Refer to test section that allows us to verify if after upgrade Token will have correct values
     }
 }

@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import {MOVEToken} from "./MOVEToken.sol";
-import {OFTUpgradeable, ERC20Upgradeable} from "@layerzerolabs/oft-evm-upgradeable/contracts/oft/OFTUpgradeable.sol";
+import {MOVETokenHyperliquidV2} from "./MOVETokenHyperliquidV2.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import { SendParam, MessagingFee, MessagingReceipt, OFTReceipt } from "@layerzerolabs/oft-evm/contracts/interfaces/IOFT.sol";
 
-
-contract MOVETokenV2 is MOVEToken, OFTUpgradeable, PausableUpgradeable {
+contract MOVETokenHyperliquidV3 is MOVETokenHyperliquidV2, AccessControlUpgradeable, PausableUpgradeable {
 
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant UNPAUSER_ROLE = keccak256("UNPAUSER_ROLE");
@@ -15,26 +14,16 @@ contract MOVETokenV2 is MOVEToken, OFTUpgradeable, PausableUpgradeable {
     /**
      * @dev Disables potential implementation exploit
      */
-    constructor(address _endpoint) OFTUpgradeable(_endpoint) {
-        _disableInitializers();
-    }
+    constructor(address _endpoint) MOVETokenHyperliquidV2(_endpoint) {_disableInitializers();}
 
     /**
      * @dev Initializes the contract with initial parameters.
-     * @param _owner The address of the owner.
-     * @param _revoke The address of the address to revoke role.
-     * @param _burned Burns circulation supply on Ethereum.
+     * @param _owner The address of the contract owner.
      */
-    function initialize(address _owner, address _revoke, address[] calldata _burned) external reinitializer(2) {
-        __OFTCore_init(_owner);
-        __Ownable_init_unchained(_owner);
+    function initialize(address _owner) external override reinitializer(2) {
         _grantRole(DEFAULT_ADMIN_ROLE, _owner);
         _grantRole(PAUSER_ROLE, _owner);
         _grantRole(UNPAUSER_ROLE, _owner);
-        _revokeRole(DEFAULT_ADMIN_ROLE, _revoke);
-        for (uint256 i = 0; i < _burned.length; i++) {
-            _burn(_burned[i], balanceOf(_burned[i]));
-        }
     }
 
     /**
@@ -86,21 +75,5 @@ contract MOVETokenV2 is MOVEToken, OFTUpgradeable, PausableUpgradeable {
      */
     function unpause() external onlyRole(UNPAUSER_ROLE) {
         _unpause();
-    }
-
-    /**
-     * @dev Returns the number of decimals
-     * @notice decimals is set to 8, following the Movement network standard decimals
-     */
-    function decimals() public pure override(ERC20Upgradeable, MOVEToken) returns (uint8) {
-        return 8;
-    }
-
-    /**
-     * @dev Returns the number of shared decimals
-     * @notice shared decimals is set to 8, following the Movement network standard decimals
-     */
-    function sharedDecimals() public pure virtual override returns (uint8) {
-        return 8;
     }
 }

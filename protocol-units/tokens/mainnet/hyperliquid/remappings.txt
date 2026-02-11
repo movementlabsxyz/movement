@@ -1,0 +1,8 @@
+devtools/=lib/devtools/packages/toolbox-foundry/src/
+forge-std/=lib/forge-std/src/
+@layerzerolabs/hyperliquid-composer/=lib/devtools/packages/hyperliquid-composer/
+@layerzerolabs/oft/=lib/devtools/packages/oft-evm/
+@layerzerolabs/oft-evm/=lib/devtools/packages/oft-evm/
+@layerzerolabs/oapp-evm/=lib/devtools/packages/oapp-evm/
+@layerzerolabs/lz-evm-protocol-v2/=lib/LayerZero-v2/packages/layerzero-v2/evm/protocol/
+@openzeppelin/=lib/openzeppelin-contracts/

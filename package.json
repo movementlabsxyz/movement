@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "dotenv": "^17.2.3",
     "pnpm": "^9.4.0"
   }
 }
