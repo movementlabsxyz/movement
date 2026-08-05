@@ -54,8 +54,11 @@ jobs:
           git fetch --tags
 
       - name: Bump Version
+        env:
+          BUMP_TYPE: ${{ inputs.bump_type }}
+          DRY_RUN: ${{ inputs.dry_run }}
         run: |
-          ./scripts/devops/tag-semantic-release ${{ inputs.bump_type }} ${{ inputs.dry_run }}
+          ./scripts/devops/tag-semantic-release "$BUMP_TYPE" "$DRY_RUN"
       
       - name: Push commit and tags
         run: |

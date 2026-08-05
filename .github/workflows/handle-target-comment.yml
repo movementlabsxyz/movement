@@ -24,8 +24,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Output the comment
+        env:
+          COMMENT: ${{ github.event.inputs.comment }}
         run: |
-         echo "Comment was: ${{ github.event.inputs.comment }}"
+         echo "Comment was: $COMMENT"
     
   manage-infra-pr:
     if: startsWith(github.event.inputs.comment, 'gali')
@@ -36,15 +38,19 @@ jobs:
 
       - name: Extract comment ID
         id: extract-comment-id
+        env:
+          HTML_URL: ${{ github.event.inputs.html_url }}
         run: |
-          comment_url="${{ github.event.inputs.html_url }}"
+          comment_url="$HTML_URL"
           comment_id=$(basename "$comment_url")
           echo "::set-output name=comment_id::$comment_id"
 
       - name: Extract repository name
         id: gali-id
+        env:
+          ISSUE_NUMBER: ${{ github.event.inputs.issue_number }}
         run: |
-          echo "GALI_ID=${{ github.repository }}/${{ github.event.inputs.issue_number }}/${{ github.ref_name }}" >> $GITHUB_ENV
+          echo "GALI_ID=${{ github.repository }}/$ISSUE_NUMBER/${{ github.ref_name }}" >> $GITHUB_ENV
           echo "GALI_SHA=${{ github.sha }}" >> $GITHUB_ENV
 
       - name: Create PR in Infra Repo if not exist

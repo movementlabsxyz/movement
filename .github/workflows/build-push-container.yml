@@ -61,5 +61,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
       
       - name: Build and push container tags
+        env:
+          CONTAINER_NAME: ${{ inputs.container_name }}
         run: |
-          ./scripts/docker/build-push-container -n ${{ inputs.container_name }}
+          ./scripts/docker/build-push-container -n "$CONTAINER_NAME"
